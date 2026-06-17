@@ -32,6 +32,13 @@ venv/
 .pytest_cache/
 .ruff_cache/
 
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+crash.log
+
 # ML artifacts / data
 *.ckpt
 *.pt

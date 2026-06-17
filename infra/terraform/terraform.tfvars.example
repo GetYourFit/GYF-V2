@@ -1,0 +1,18 @@
+# Copy to terraform.tfvars and fill. NEVER commit the real file (gitignored).
+
+project_name = "gyf"
+environment  = "production"
+
+# Vercel — https://vercel.com/account/tokens
+vercel_api_token = ""
+git_repo         = "GetYourFit/GYF-V2"
+
+# Supabase — https://supabase.com/dashboard/account/tokens
+supabase_access_token = ""
+supabase_org_id       = ""
+supabase_db_password  = ""
+supabase_region       = "us-east-1"
+
+# Upstash — https://console.upstash.com (Account > API Keys)
+upstash_email   = ""
+upstash_api_key = ""
