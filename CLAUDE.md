@@ -25,6 +25,7 @@ GetYourFit-New/
 │   │       ├── ideas.md
 │   │       └── ideas.V2.md
 │   ├── tech-stack.md                  # authoritative tech & architecture decisions
+│   ├── implementation-plan.md         # phased build plan (P0–P5) with gates
 │   └── research/
 │       └── deep-research-report.md    # cited SOTA research per pillar
 └── ECC/                               # ECC plugin: reusable skills/agents (see §7)
@@ -36,6 +37,7 @@ GetYourFit-New/
 | `docs/vision/ideas-complete.md` | **Canonical product/vision brief** — the merged superset of all `ideas*.md`. Authoritative for *what* GYF is. |
 | `docs/vision/drafts/ideas.md`, `…/ideas.V2.md` | Raw idea-draft inputs, folded into `ideas-complete.md` (kept for history). |
 | `docs/tech-stack.md` | **Authoritative for *how*** — every technology, model, and architecture decision with rationale and alternatives. |
+| `docs/implementation-plan.md` | **Phased build plan** (P0–P5) with workstreams, DoD, gates, risks, and next steps. |
 | `docs/research/deep-research-report.md` | Cited state-of-the-art research backing each technical pillar (models, papers, alternatives, confidence levels, cost notes). |
 | `ECC/` | ECC plugin folder — reusable skills/agents to leverage during development (see §7). |
 
