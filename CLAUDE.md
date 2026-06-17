@@ -1,0 +1,259 @@
+# CLAUDE.md — GYF (Get Your Fit)
+
+> **Purpose.** This is the operating guide for any AI agent or developer working on GYF.
+> It consolidates the full product vision, feature set, technology stack, and engineering
+> rules into one structured reference. Read it before doing anything.
+>
+> **Sources of truth (read these for the deepest detail):**
+> - [`docs/vision/ideas-complete.md`](./docs/vision/ideas-complete.md) — the canonical product/vision brief (merged superset of all `ideas*.md`).
+> - [`docs/tech-stack.md`](./docs/tech-stack.md) — every technology, model, and architecture decision with rationale.
+> - [`docs/research/deep-research-report.md`](./docs/research/deep-research-report.md) — cited state-of-the-art research backing each technical pillar.
+>
+> When these documents and this file disagree, **the source docs win** — update this file to match.
+
+---
+
+## 0. Repository Map
+
+```
+GetYourFit-New/
+├── CLAUDE.md                          # this file — operating guide & entry point
+├── docs/
+│   ├── vision/
+│   │   ├── ideas-complete.md          # canonical product/vision brief
+│   │   └── drafts/                    # raw idea inputs (history)
+│   │       ├── ideas.md
+│   │       └── ideas.V2.md
+│   ├── tech-stack.md                  # authoritative tech & architecture decisions
+│   ├── implementation-plan.md         # phased build plan (P0–P5) with gates
+│   └── research/
+│       └── deep-research-report.md    # cited SOTA research per pillar
+└── ECC/                               # ECC plugin: reusable skills/agents (see §7)
+```
+
+| Path | Role |
+| --- | --- |
+| `CLAUDE.md` | **This file.** Structured operating guide for agents/devs; entry point that summarizes everything and points to the source docs. |
+| `docs/vision/ideas-complete.md` | **Canonical product/vision brief** — the merged superset of all `ideas*.md`. Authoritative for *what* GYF is. |
+| `docs/vision/drafts/ideas.md`, `…/ideas.V2.md` | Raw idea-draft inputs, folded into `ideas-complete.md` (kept for history). |
+| `docs/tech-stack.md` | **Authoritative for *how*** — every technology, model, and architecture decision with rationale and alternatives. |
+| `docs/implementation-plan.md` | **Phased build plan** (P0–P5) with workstreams, DoD, gates, risks, and next steps. |
+| `docs/research/deep-research-report.md` | Cited state-of-the-art research backing each technical pillar (models, papers, alternatives, confidence levels, cost notes). |
+| `ECC/` | ECC plugin folder — reusable skills/agents to leverage during development (see §7). |
+
+> **Doc hierarchy:** `docs/vision/drafts/*` (raw inputs) → `docs/vision/ideas-complete.md`
+> (canonical vision) → `docs/tech-stack.md` + `docs/research/deep-research-report.md`
+> (how/why) → `CLAUDE.md` (structured summary). Keep them in lockstep; the source docs are
+> authoritative. New code lives under top-level `app/`, `services/`, `ml/`, etc. as the
+> build begins (see `tech-stack.md` §0 architecture).
+
+---
+
+## 1. What GYF Is (the one thing to internalize)
+
+**GYF is an AI-native personal stylist that learns what looks good on *you* and builds
+complete, coordinated outfits you can trust — getting smarter with every person it dresses.**
+
+It is **not** a search box over a clothing catalog. It is a **learning styling
+intelligence**: it perceives clothes visually, models personal taste, and generates finished
+looks (top + bottom + footwear) with a clear reason behind each.
+
+- **The market sells items. GYF delivers outfits, confidence, and taste.**
+- **AI-first from day one** — intelligence is the foundation, not a feature bolted on later.
+- **Trust is the product** — every recommendation is explainable with honest confidence.
+
+### The problem
+A full closet yet "nothing to wear"; apps show items but never *how to wear them together*;
+constant doubt (*does this match? right for the occasion? does it suit me?*); daily decision
+fatigue. A personal stylist has always been a luxury — **GYF makes that intelligence
+universal: free, instant, personal.**
+
+### Why AI-first
+Styling is a **perception + preference problem**: style is *visual* (must be seen, not
+tagged), taste is *personal and learned* (from behavior, continuously), and good styling
+*compounds* (better the more people it dresses). A rules engine can only approximate these.
+
+### Mission
+1. **Replace anxiety with confidence.**
+2. **Truly understand *you*** (taste, body, budget, occasion).
+3. **Be trustworthy, not just impressive** (explainable + honest confidence).
+4. **Compound intelligence** — measurably better the more it's used, for the individual and everyone.
+
+---
+
+## 2. Complete Feature Set
+
+### Identity & accounts
+- Secure sign-up, login, sessions; profile, preferences, full account control (incl. data deletion); private, per-user data.
+
+### Cold start & onboarding
+- **Zero-friction cold start:** from the very first visit — before any history — GYF suggests what looks good and which clothes suit the user.
+- **Two onboarding paths, never rigid:**
+  - **Photo-based:** auto-deduce skin tone and body type from a photo.
+  - **Manual:** user states skin tone, body type, preferred styling, budget range, occasion.
+- Preferences (especially occasion) are **always editable**.
+
+### Intelligent personalization
+- Learns style intent, colors, occasions, budget, body context; continuously-updating taste model.
+- Deepens with **every** interaction, not just onboarding.
+- **Matures "like a fine wine"** — results increasingly suit the user's personality, body type, skin tone, budget, and occasion; they visibly look better over time.
+
+### AI recommendations (the heart)
+- **Complete outfit generation** — top + bottom + footwear coordinated as one look.
+- A clear **stylist explanation** for **every** outfit.
+- **Diverse, ranked** sets (never five near-identical results).
+- An honest **confidence** signal per recommendation.
+- Graceful handling when a category/item is unavailable.
+- **Natural-language styling goals:** a text box where the user types *"I want to look taller / broader / slimmer"*; GYF applies **color theory + body-type intelligence** to pick garments, cuts, and colors that achieve the effect.
+- **Occasion-aware:** user selects the occasion (**casual, formal, wedding, festive, …**); recommendations are conditioned on it.
+- **Region- & culture-aware garments:** respects regional dress (e.g. India includes sarees; the USA does not). Catalog, taxonomy, and styling logic are localized.
+
+### Visual style understanding
+- Perceives garments from images: vibe, color harmony, texture, silhouette, formality.
+- Matches/coordinates by *how things actually look*, not just labels.
+
+### Feedback & continuous learning
+- Save, cart, "not interested" on any look — with easy reversal.
+- Detects and resolves conflicting signals.
+- Every interaction feeds the model that improves the next recommendation.
+
+### Personal collections
+- Saved-items shortlist; saved styling sessions; a **wardrobe** of what you own (styles around your real closet); history of past recommendations.
+
+### See-it-on-you (virtual try-on)
+- Select a **top + bottom + apparel/footwear** and see **all three together** on yourself.
+- User provides a photo; output renders the articles on their own body.
+- Must be **photo-realistic**; maturing toward true on-body preview.
+
+### Social & inspiration (LTK-inspired — [shopltk.com](https://www.shopltk.com/))
+- A dedicated **Socials page** where posts live.
+- **Interactive posts:** shareable, downloadable, reactable.
+- **Style sharing & following:** users upload each other's styles; a user can follow someone's style and dress like them — but **re-rendered for the follower's own skin tone and preferences**, never blindly copied.
+
+### Profile & gamification
+- Professional profile page showing outfits made and liked.
+- **Badges/perks** (e.g. *Fashion Mogger*, *Trendsetter*) earned through likes, shares, comments.
+
+### Discovery & commerce
+- Explore the catalog beyond direct recommendations.
+- **Buy via redirect to the parent retailer's product page.**
+- **Affiliate monetization** on surfaced articles.
+
+### Trust & transparency
+- Honest, user- and operator-facing reporting of what's live, what's experimental, and how confident the system is.
+
+### Quality protection
+- Continuous evaluation so recommendation quality **provably improves** rather than silently degrading.
+
+---
+
+## 3. Business Model & Moat
+
+- **B2C product, B2B data engine.** GYF is a B2C consumer product; in parallel, its data is distilled into a separate model sold as a **B2B service** — a second revenue line.
+- **Affiliate revenue** on articles surfaced and purchases driven.
+- **A real moat:** unique, differentiating, **not copyable** — the compounding learning system, proprietary taste/behavioral data, and the distilled B2B model are central.
+
+---
+
+## 4. Data & Datasets (efficient, low-cost)
+
+- **Bootstrap on free/open datasets:** DeepFashion(2), Fashionpedia (items/attributes); Polyvore Outfits, Polyvore-disjoint, IQON3000 (compatibility); VITON-HD, DressCode (try-on); Fashion-Gen, FashionIQ (multimodal/language-guided).
+- **Catalog** via affiliate-network / retailer **product feeds** — free and current.
+- **First-party behavioral data** (saves, skips, carts, reacts, shares, follows, try-ons) is the compounding proprietary asset and the source of the B2B model.
+- **Synthetic / self-generated** data balances rare body types, skin tones, occasions (fairness).
+- **Cost discipline:** prefer open weights + free data; label only what behavior can't supply; cache embeddings; spend scales with proven value.
+
+> Full citations and alternatives: `research/deep-research-report.md` (Pillar 7).
+
+---
+
+## 5. Technology Stack (summary — details in `tech-stack.md`)
+
+> Architecture: a modular monorepo splitting the **product surface** (web + API) from the
+> **ML platform** (perception, taste, ranking, generation), communicating via versioned
+> contracts and an event backbone so models evolve independently of the UI.
+
+| Layer | Primary choice | Notes |
+| --- | --- | --- |
+| Frontend | **Next.js (App Router) + React 19 + TypeScript**, Tailwind + shadcn/ui, Framer Motion, tRPC | Production/professional UI from day one; accessible (WCAG 2.2); inspiration-first. |
+| Backend | **Python 3.12 + FastAPI** (async); Next.js Route Handlers (BFF); gRPC + events | Same language as ML; typed contracts. |
+| Data | **PostgreSQL 16** (free: Supabase/Neon) + **pgvector** → Qdrant → Milvus; Redis; **Kafka/Redpanda**; S3-compatible storage | Behavioral events are the learning backbone. |
+| Auth | OIDC, JWT + refresh, WebAuthn passkeys 🔜 | Per-user private data; full deletion. |
+| Serving | **NVIDIA Triton** (vision/diffusion), **vLLM** (LLM reasoning) 🔜 | GPU inference. |
+| Infra | Docker + Kubernetes, GitHub Actions, Terraform, MLflow, OpenTelemetry + Prometheus + Grafana + Sentry | Free-tier first (see §7). |
+
+### The ML platform (GYF's core differentiation)
+**Perceive → Model user → Control → Compose & rank → Visualize → Learn.**
+
+1. **Visual style understanding:** `Marqo-FashionSigLIP` (fashion-tuned embeddings, +57% MRR; open/free). Color harmony scored in **CIELAB/CAM16**.
+2. **User modeling from a photo — TWO separate modules:**
+   - **Body-type module** — monocular **SMPL** + measurement nets → body-type taxonomy. *(well-supported)*
+   - **Skin-tone module (separate, custom, fairness-gated) ⚠️** — face/skin segmentation → illumination-robust **CIELAB** tone → undertone palette; **must pass full-spectrum fairness eval** (e.g. Monk Skin Tone) before shipping; manual fallback always available. *(low-confidence; never block the product on it)*
+3. **Controllable styling:** intent parser (light LLM/NLU) maps free text → visual-effect goal (`elongate`/`slim`/`broaden`); a **color-theory + body-type effects engine** turns goals into garment-attribute constraints that re-weight the ranker and feed explanations. Occasion + region/culture are first-class conditioning features.
+4. **Personal taste & recommendation:** launch with **two-tower retrieval + transformer ranker**; content-based **cold start**; scale to **generative recommendation with Semantic IDs (TIGER/HSTU)**. Every rec ships a reason + calibrated confidence.
+5. **Outfit composition & compatibility:** transformer-over-the-outfit-set (+ hypergraph GNN) compatibility scorer; constrained, **diverse (DPP/MMR)** ranked outfits honoring budget/occasion/body/tone/wardrobe.
+6. **Generative virtual try-on:** **IDM-VTON** baseline → **MuGa-VTON** (multi-garment diffusion transformer); **CatVTON** efficiency option. Photo-realistic, multi-garment.
+7. **Continuous learning & quality:** event-sourced feedback → feature store → retraining; **offline metrics for candidate selection only**, promotion gated by **online A/B + interleaving + counterfactual/IPS**; drift monitoring, shadow deploys, auto-rollback. Never silently regress.
+
+### Social, commerce, B2B
+- Ranked social feed on the same taste/embedding stack; style-following re-rendered to the follower's tone; badge engine; "shop the look" → retailer redirect + affiliate attribution; moderation via VLM/policy classifiers.
+- **B2B engine:** event lake → privacy-preserving aggregation (DP + k-anonymity 🔜) → trend/taste/demand features → distilled models served via a versioned partner API, strictly separated from PII.
+
+---
+
+## 6. Phased Rollout (matches the product arc)
+
+| Phase | Ships |
+| --- | --- |
+| **1 — Intelligent stylist (launch)** | Onboarding (photo/manual, separate body + skin-tone modules), cold start, explained outfits, occasion + NL styling goals, region-aware garments, feedback loop, basic try-on (IDM-VTON), social posts, affiliate redirect. |
+| **2 — Personal taste engine** | Wardrobe-aware styling, deeper personalization, context (weather/event/mood), badges; Semantic-ID generative recsys (beta). |
+| **3 — Shopping companion** | Multi-retailer recommendations, smarter buying, richer commerce. |
+| **4 — Visualization layer** | High-fidelity multi-garment on-body try-on (MuGa-VTON). |
+| **5 — Ambient stylist + B2B** | Compounding collective intelligence (HSTU scale), B2B data product. |
+
+---
+
+## 7. Engineering & Operating Principles (non-negotiable)
+
+1. **AI-first.** Visual understanding + learned taste is the foundation.
+2. **Always explainable.** Human-readable reason + honest confidence; never a black box.
+3. **Learn continuously.** Real behavior is the most valuable asset — capture it cleanly.
+4. **Personal and private.** Deep personalization; each user's data protected and theirs.
+5. **Outfits, not items.** Always think in complete, coordinated looks.
+6. **Quality must provably rise.** Evaluate continuously; never silently regress.
+7. **Trust is the product.** Impressiveness without trust is failure.
+8. **Inspiration-first frontend.** Frontend relies on backend endpoints; **production/professional standards from the start** — QoL features, high-end design patterns, high interactiveness and intuitiveness.
+9. **Beta-ready, scale-ready.** Build for a handful of beta users, then scale — **no compromises, no hardcoded limitations**; keep future scaling in mind from day one.
+10. **State-of-the-art, free, and latest.** Cutting-edge tech that is free and current, accounting for efficiency, optimization, and security.
+11. **Best practices throughout.** Strong programming principles and design patterns.
+12. **Genuine and usable.** Everything real, functional, genuinely usable — **no mockups masquerading as features**.
+13. **Plan before build.** Detailed plan first; **nothing is implemented before the plan exists.**
+14. **Research before choosing.** Research the full landscape before adopting any technology/technique; implement the best researched option.
+15. **Free-tier first, cost-disciplined.** Use free tiers/options until scale forces a paid move (or there's genuinely no free path). Spend only when scale demands it.
+16. **Leverage ECC skills.** Use relevant skills from the `ECC` folder whenever they apply.
+
+### Free-tier deployment path (cost-disciplined)
+- **$0 beta:** web on **Vercel / Cloudflare Workers**; DB+vectors on **Supabase / Neon** (free pgvector); GPU inference on **Hugging Face Spaces + ZeroGPU**.
+- **Bridge to scale:** **Modal** ($30/mo credit) / **RunPod** for try-on bursts.
+- **At scale:** dedicated GPU + Qdrant/Milvus, only when usage forces it.
+- *Avoid for GPU:* Fly.io, Railway. (Quotas change — verify at signup.)
+
+### Which ECC skills to use when
+- **Planning:** `ecc:plan`, `ecc:plan-prd` (always plan before building).
+- **Research:** `ecc:deep-research` before adopting a new technology.
+- **Code review:** `react-reviewer`, `python-reviewer`, `typescript-reviewer`, `security-reviewer`.
+- **ML:** `mle-reviewer`, `eval-harness`.
+- **Frontend quality/a11y:** `accessibility`, `a11y-architect`, `frontend-design-direction`.
+- **Architecture:** `architect`, `code-architect`.
+
+---
+
+## 8. Working Agreement for Agents
+
+- **Read the source docs first** (`ideas-complete.md`, `tech-stack.md`, `research/deep-research-report.md`) before proposing or building anything.
+- **Plan before code.** Surface a plan; do not implement until it's agreed.
+- **No mockups.** Ship genuinely functional work.
+- **Default to free/open** tools and models; flag when a paid step is unavoidable.
+- **Keep docs in lockstep.** When `ideas*.md` change, fold them into `ideas-complete.md`; reflect product changes in `tech-stack.md`; update this file's summaries. The source docs are authoritative.
+- **Flag the known risks:** fair/robust **skin-tone** estimation (separate ⚠️ module) and the **offline→online metric gap** in recommendation (gate releases with online + counterfactual eval).
+</content>

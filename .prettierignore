@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.turbo/
+.tmp/
+.bun-cache/
+dist/
+build/
+ECC/
+bun.lockb
+bun.lock
+# Prose docs are hand-formatted (markdown reflow off-limits)
+docs/
+CLAUDE.md
+README.md
