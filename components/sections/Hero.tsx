@@ -1,112 +1,97 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 
 export default function Hero() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+  const logoY = useTransform(scrollYProgress, [0, 1], [0, -60]);
+  const headlineY = useTransform(scrollYProgress, [0, 1], [0, -40]);
+  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-      {/* Background logo */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/assets/logo-bg.jpeg"
-          alt=""
-          fill
-          className="object-cover opacity-10"
-          style={{ filter: "blur(4px)" }}
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-bg/60 via-bg/30 to-bg" />
-      </div>
+    <section ref={ref} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+      {/* Subtle bg glow */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 50% 30%, rgba(191,191,191,0.04) 0%, transparent 65%)" }} />
 
-      <div
-        className="absolute inset-0 z-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 60% at 50% 40%, rgba(200,200,200,0.05) 0%, transparent 70%)",
-        }}
-      />
-
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-5xl mx-auto">
+      <motion.div style={{ opacity }} className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl mx-auto w-full">
+        {/* Logo — transparent PNG, no background */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
+          style={{ y: logoY }}
+          initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-10"
+          transition={{ duration: 1, delay: 3.0, ease: "easeOut" }}
+          className="mb-12"
         >
-          <Image
-            src="/assets/logo.png"
-            alt="GYF"
-            width={80}
-            height={80}
-            className="logo-white object-contain"
-            priority
-          />
+          <Image src="/assets/logo.png" alt="GYF" width={72} height={72} className="logo-white" priority />
         </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-          className="font-light text-text-primary leading-none tracking-tight mb-6"
-          style={{
-            fontFamily: "var(--font-cormorant)",
-            fontSize: "clamp(3.5rem, 9vw, 8.5rem)",
-            lineHeight: 0.95,
-          }}
-        >
-          Your Style.
-          <br />
-          <em>Finally</em> Intelligent.
-        </motion.h1>
+        {/* Headline */}
+        <motion.div style={{ y: headlineY }}>
+          <div className="reveal-clip mb-2">
+            <motion.h1
+              className="font-display font-300 text-text-primary leading-none"
+              style={{ fontFamily: "var(--font-display)", fontSize: "clamp(3rem,8vw,7.5rem)", fontWeight: 300, letterSpacing: "-0.03em", lineHeight: 0.95 }}
+              initial={{ y: "100%" }}
+              animate={{ y: "0%" }}
+              transition={{ duration: 0.9, delay: 3.1, ease: "easeOut" }}
+            >
+              Your Style.
+            </motion.h1>
+          </div>
+          <div className="reveal-clip">
+            <motion.h1
+              className="text-text-muted leading-none"
+              style={{ fontFamily: "var(--font-display)", fontSize: "clamp(3rem,8vw,7.5rem)", fontWeight: 300, letterSpacing: "-0.03em", lineHeight: 0.95 }}
+              initial={{ y: "100%" }}
+              animate={{ y: "0%" }}
+              transition={{ duration: 0.9, delay: 3.22, ease: "easeOut" }}
+            >
+              Finally Intelligent.
+            </motion.h1>
+          </div>
+        </motion.div>
 
+        {/* Sub */}
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
+          className="text-text-muted mt-8 max-w-md"
+          style={{ fontFamily: "var(--font-inter)", fontSize: "clamp(0.85rem,1.4vw,0.975rem)", lineHeight: 1.8, fontWeight: 400 }}
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-          className="text-text-muted max-w-xl mb-12"
-          style={{
-            fontFamily: "var(--font-inter)",
-            fontSize: "clamp(0.875rem, 1.5vw, 1.0625rem)",
-            lineHeight: 1.75,
-          }}
+          transition={{ duration: 0.8, delay: 3.5, ease: "easeOut" }}
         >
-          An AI stylist that learns what looks good on you — and builds complete,
-          coordinated outfits you can trust.
+          An AI stylist that learns what looks good on you — and builds complete, coordinated outfits you can trust.
         </motion.p>
 
+        {/* CTAs */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          className="flex flex-col sm:flex-row items-center gap-4 mt-10"
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.75, ease: [0.25, 0.1, 0.25, 1] }}
-          className="flex flex-col sm:flex-row items-center gap-4"
+          transition={{ duration: 0.7, delay: 3.7, ease: "easeOut" }}
         >
-          <a href="#early-access" className="btn-outline">
-            Get Early Access
-          </a>
-          <a
-            href="#what-we-do"
-            className="text-text-muted hover:text-text-primary transition-colors uppercase tracking-widest flex items-center gap-2"
-            style={{ fontFamily: "var(--font-inter)", fontSize: "0.7rem" }}
-          >
-            Learn More <ArrowDown size={12} />
+          <a href="#early-access" className="btn-outline">Get Early Access</a>
+          <a href="#what-we-do" className="flex items-center gap-2 text-text-muted hover:text-text-primary transition-colors uppercase tracking-widest" style={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem" }}>
+            Explore <ArrowDown size={11} />
           </a>
         </motion.div>
-      </div>
+      </motion.div>
 
+      {/* Scroll line */}
       <motion.div
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.4, duration: 0.8 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2"
+        transition={{ delay: 4.2, duration: 0.8 }}
       >
-        <div
-          className="w-px h-14 origin-top"
-          style={{
-            background: "linear-gradient(to bottom, rgba(200,200,200,0.6), transparent)",
-            animation: "scrollLine 2s ease-in-out infinite",
-          }}
+        <motion.div
+          className="w-px bg-accent-warm"
+          style={{ height: 48, originY: 0 }}
+          animate={{ scaleY: [0, 1, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
       </motion.div>
     </section>

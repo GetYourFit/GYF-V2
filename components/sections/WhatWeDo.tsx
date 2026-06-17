@@ -1,85 +1,62 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 import { Eye, Brain, Layers } from "lucide-react";
 import { fadeUp, fadeIn, staggerContainer, viewportOnce } from "@/lib/animations";
 
 const features = [
-  {
-    icon: Eye,
-    title: "Sees",
-    subtitle: "Visual Intelligence",
-    body: "Understands clothing visually — vibe, color harmony, silhouette, texture. Not just tags and rules.",
-  },
-  {
-    icon: Brain,
-    title: "Learns",
-    subtitle: "Personal Taste Modeling",
-    body: "Builds a living model of your preferences from every interaction, not just onboarding. Gets more you over time.",
-  },
-  {
-    icon: Layers,
-    title: "Builds",
-    subtitle: "Complete Outfits",
-    body: "Delivers top, bottom, and footwear — coordinated as one look — with a stylist's explanation for each choice.",
-  },
+  { icon: Eye, num: "01", title: "Sees", body: "Understands clothing visually — vibe, color harmony, silhouette, texture. Not just tags and labels." },
+  { icon: Brain, num: "02", title: "Learns", body: "Builds a living model of your taste from every interaction. Gets more accurate the longer you use it." },
+  { icon: Layers, num: "03", title: "Builds", body: "Delivers complete outfits — top, bottom, footwear — coordinated as one look with a clear reason for every choice." },
 ];
+
+function TiltCard({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const rotX = useSpring(useMotionValue(0), { stiffness: 120, damping: 20 });
+  const rotY = useSpring(useMotionValue(0), { stiffness: 120, damping: 20 });
+
+  const onMove = (e: React.MouseEvent) => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    rotX.set(((e.clientY - r.top - r.height / 2) / r.height) * -8);
+    rotY.set(((e.clientX - r.left - r.width / 2) / r.width) * 8);
+  };
+
+  return (
+    <motion.div ref={ref} onMouseMove={onMove} onMouseLeave={() => { rotX.set(0); rotY.set(0); }}
+      style={{ rotateX: rotX, rotateY: rotY, transformStyle: "preserve-3d", perspective: 800 }}
+      className="card p-10 flex flex-col gap-5">
+      {children}
+    </motion.div>
+  );
+}
 
 export default function WhatWeDo() {
   return (
     <section id="what-we-do" className="py-32 px-6 bg-bg border-t border-border">
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          variants={fadeIn}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="mb-16"
-        >
-          <p
-            className="uppercase tracking-widest text-text-muted mb-4"
-            style={{ fontFamily: "var(--font-dm-mono)", fontSize: "0.65rem" }}
-          >
-            What GYF Does
-          </p>
-          <h2
-            className="text-text-primary font-light max-w-xl"
-            style={{ fontFamily: "var(--font-cormorant)", fontSize: "clamp(2rem, 4vw, 3.5rem)", lineHeight: 1.1 }}
-          >
+        <motion.div variants={fadeIn} initial="hidden" whileInView="visible" viewport={viewportOnce} className="mb-16">
+          <p className="uppercase tracking-[0.22em] text-text-muted mb-4" style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem" }}>What GYF Does</p>
+          <h2 className="text-text-primary font-light max-w-sm" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.8rem,3.5vw,3rem)", fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
             Three pillars of intelligent styling.
           </h2>
         </motion.div>
 
-        <motion.div
-          variants={staggerContainer(0.14)}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border"
-        >
-          {features.map(({ icon: Icon, title, subtitle, body }) => (
-            <motion.div key={title} variants={fadeUp} className="card p-10 flex flex-col gap-6">
-              <div className="flex items-center gap-3">
-                <Icon size={18} className="text-accent" strokeWidth={1.5} />
-                <span
-                  className="uppercase tracking-widest text-text-muted"
-                  style={{ fontFamily: "var(--font-dm-mono)", fontSize: "0.6rem" }}
-                >
-                  {subtitle}
-                </span>
-              </div>
-              <h3
-                className="text-text-primary font-light"
-                style={{ fontFamily: "var(--font-cormorant)", fontSize: "clamp(2.5rem, 4vw, 3.5rem)", lineHeight: 1 }}
-              >
-                {title}
-              </h3>
-              <p
-                className="text-text-muted"
-                style={{ fontFamily: "var(--font-inter)", fontSize: "0.875rem", lineHeight: 1.8 }}
-              >
-                {body}
-              </p>
+        <motion.div variants={staggerContainer(0.12)} initial="hidden" whileInView="visible" viewport={viewportOnce}
+          className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+          {features.map(({ icon: Icon, num, title, body }) => (
+            <motion.div key={num} variants={fadeUp}>
+              <TiltCard>
+                <div className="flex items-start justify-between">
+                  <Icon size={17} className="text-accent" strokeWidth={1.4} />
+                  <span className="text-text-muted" style={{ fontFamily: "var(--font-mono)", fontSize: "0.58rem" }}>{num}</span>
+                </div>
+                <h3 className="text-text-primary" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(2rem,3.5vw,3rem)", fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                  {title}
+                </h3>
+                <p className="text-text-muted" style={{ fontFamily: "var(--font-inter)", fontSize: "0.875rem", lineHeight: 1.8 }}>{body}</p>
+              </TiltCard>
             </motion.div>
           ))}
         </motion.div>
