@@ -1,8 +1,10 @@
 """Event sink — the write side of the behavioral spine.
 
-P0 ships a working local sink (append-only JSONL) so /feedback genuinely persists
-events end-to-end with no external infra. The broker-backed sink (Kafka/Redpanda)
-is selected by configuration once P0 infra is provisioned — same interface.
+Two interchangeable backends, chosen by ``GYF_EVENT_SINK``:
+- ``local`` (default): append-only JSONL — genuinely persists events end-to-end
+  with no external infra (dev, tests).
+- ``kafka``: publishes to Kafka/Redpanda (``GYF_EVENT_BROKER_URL`` / ``GYF_EVENT_TOPIC``).
+  The ``kafka-python`` dependency is imported lazily so the local path needs nothing.
 """
 
 from __future__ import annotations
@@ -31,8 +33,24 @@ class LocalFileSink:
             fh.write(event.model_dump_json() + "\n")
 
 
+class KafkaSink:
+    """Publishes events to Kafka/Redpanda. Lazy dependency so local needs nothing."""
+
+    def __init__(self, broker_url: str, topic: str) -> None:
+        from kafka import KafkaProducer  # type: ignore[import-untyped]
+
+        self._topic = topic
+        self._producer = KafkaProducer(
+            bootstrap_servers=broker_url,
+            value_serializer=lambda v: v.encode("utf-8"),
+        )
+
+    def publish(self, event: InteractionEvent) -> None:
+        self._producer.send(self._topic, event.model_dump_json())
+
+
 def get_sink() -> EventSink:
-    """Resolve the configured sink. Broker-backed sink wired in P0 infra."""
-    # TODO(P0-C/D): return KafkaSink(settings.event_broker_url) when env != local.
-    _ = settings.event_broker_url
+    """Resolve the configured sink from settings."""
+    if settings.event_sink == "kafka":
+        return KafkaSink(settings.event_broker_url, settings.event_topic)
     return LocalFileSink()

@@ -44,3 +44,14 @@ environments and process.
 Phase **P0 — Foundations** (see `docs/implementation-plan.md`). Free-tier-first, no hardcoded
 limitations, built to scale.
 </content>
+
+## Local services (optional)
+
+Run the full P0 spine locally (Postgres+pgvector, Redis, Redpanda):
+
+```bash
+docker compose -f infra/docker-compose.yml up -d
+```
+
+The API uses an append-only JSONL event sink by default; set `GYF_EVENT_SINK=kafka`
+to publish to Redpanda once it's running.
