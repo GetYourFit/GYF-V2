@@ -18,6 +18,9 @@ dist/
 build/
 .next/
 .turbo/
+.tmp/
+.bun-cache/
+*.tsbuildinfo
 *.log
 
 # Python

@@ -10,8 +10,10 @@ from fastapi import FastAPI
 
 from .config import settings
 from .events import InteractionEvent
+from .sink import get_sink
 
 app = FastAPI(title="GYF Core API", version="0.0.0")
+sink = get_sink()
 
 
 @app.get("/health")
@@ -21,10 +23,10 @@ def health() -> dict[str, str]:
 
 @app.post("/feedback", status_code=202)
 def ingest_feedback(event: InteractionEvent) -> dict[str, str]:
-    """Validate and accept a behavioral event.
+    """Validate and persist a behavioral event onto the learning spine.
 
-    P0: validation only (returns accepted). Broker/lake sink is wired during
-    P0 infra provisioning — see docs/implementation-plan.md P0-D.
+    Uses the configured event sink (local JSONL in dev; broker-backed once P0
+    infra is provisioned — see docs/implementation-plan.md P0-C/D).
     """
-    # TODO(P0-D): publish to event broker; sink to lake.
+    sink.publish(event)
     return {"status": "accepted", "action": event.action.value}

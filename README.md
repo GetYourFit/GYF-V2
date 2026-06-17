@@ -24,15 +24,15 @@ docs/       # documentation
 
 ## Getting started
 
-Prerequisites: Node 20+, pnpm 9+, Python 3.12+, uv (or poetry).
+Prerequisites: Bun 1.1+, Python 3.12+, uv.
 
 ```bash
-pnpm install                 # install JS workspaces
-pnpm dev                     # run web + bff locally
+bun install                  # install JS workspaces
+bun run dev                  # run web locally
 
 # API service
 cd services/api
-uv sync                      # or: poetry install
+uv sync --extra dev          # install Python deps
 uv run uvicorn app.main:app --reload --port 8000
 ```
 

@@ -1,0 +1,56 @@
+name: CD
+
+# Continuous delivery. Runs only after CI succeeds on a branch.
+# - Pull requests -> Vercel preview deploy
+# - main          -> Vercel production deploy
+# Deploy steps are guarded: they no-op gracefully until VERCEL_* secrets are set,
+# so the pipeline is green from day one and "turns on" once infra is provisioned.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+concurrency:
+  group: cd-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-web:
+    name: Deploy web (Vercel)
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      IS_PROD: ${{ github.event.workflow_run.head_branch == 'main' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.1.30"
+
+      - name: Check secrets
+        id: gate
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "Vercel secrets not set — skipping deploy (configure VERCEL_TOKEN/ORG_ID/PROJECT_ID)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pull Vercel env
+        if: steps.gate.outputs.enabled == 'true'
+        run: bunx vercel pull --yes --environment=${{ env.IS_PROD == 'true' && 'production' || 'preview' }} --token "$VERCEL_TOKEN"
+
+      - name: Build
+        if: steps.gate.outputs.enabled == 'true'
+        run: bunx vercel build ${{ env.IS_PROD == 'true' && '--prod' || '' }} --token "$VERCEL_TOKEN"
+
+      - name: Deploy
+        if: steps.gate.outputs.enabled == 'true'
+        run: bunx vercel deploy --prebuilt ${{ env.IS_PROD == 'true' && '--prod' || '' }} --token "$VERCEL_TOKEN"
