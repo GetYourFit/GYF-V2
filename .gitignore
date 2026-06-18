@@ -58,3 +58,9 @@ data/
 models/
 .cache/
 .tools/
+
+# Local scratch / tool caches (never commit)
+.tmpcache/
+.tmp/
+.bun-tmp/
+.bun-cache/

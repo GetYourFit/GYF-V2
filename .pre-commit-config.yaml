@@ -1,0 +1,42 @@
+# Pre-commit hooks for GYF. Install once: `pip install pre-commit && pre-commit install`.
+# Run on demand: `pre-commit run --all-files`. Mirrors the CI gate locally.
+minimum_pre_commit_version: "3.5.0"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # docs/vision/drafts/ are frozen raw idea inputs kept for history (see CLAUDE.md).
+      - id: trailing-whitespace
+        exclude: '^(ECC/|docs/vision/drafts/)'
+      - id: end-of-file-fixer
+        exclude: '^(ECC/|docs/vision/drafts/)'
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-yaml
+        exclude: '^ECC/'
+      - id: check-json
+        exclude: '^(ECC/|.*tsconfig.*\.json$)'  # tsconfig allows comments (JSONC)
+      - id: detect-private-key
+
+  # Python (API + ML) — lint and format with Ruff.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+        files: '^(services/api|ml)/'
+      - id: ruff-format
+        files: '^(services/api|ml)/'
+
+  # JS/TS/JSON/MD — format with Prettier via the workspace toolchain.
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: bun run format:check
+        language: system
+        pass_filenames: false
+        files: '\.(ts|tsx|js|jsx|json|md)$'
+        exclude: '^ECC/'

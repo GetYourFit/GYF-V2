@@ -10,6 +10,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  standards:
+    name: Standards (pre-commit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # ruff/ruff-format and prettier are covered by the api/web jobs; here we run
+      # the repo-hygiene hooks (whitespace, EOF, large files, private keys, YAML/JSON).
+      - run: pip install pre-commit
+      - run: SKIP=prettier,ruff,ruff-format pre-commit run --all-files --show-diff-on-failure
+
   web:
     name: Web & packages
     runs-on: ubuntu-latest

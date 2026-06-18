@@ -1,0 +1,23 @@
+# Code ownership for review routing. Matched bottom-to-top; last match wins.
+# Replace @rvzaku with team handles (e.g. @GetYourFit/backend) as the team grows.
+
+# Default owner for everything.
+*                       @rvzaku
+
+# Product surface
+/app/                   @rvzaku
+/services/              @rvzaku
+/packages/              @rvzaku
+
+# ML platform
+/ml/                    @rvzaku
+
+# Infra, CI/CD, and standards — higher-risk, review carefully.
+/infra/                 @rvzaku
+/.github/               @rvzaku
+/Makefile               @rvzaku
+/.pre-commit-config.yaml @rvzaku
+
+# Canonical docs — keep in lockstep with code.
+/CLAUDE.md              @rvzaku
+/docs/                  @rvzaku
