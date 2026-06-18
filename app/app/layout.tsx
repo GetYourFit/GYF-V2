@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { spaceGrotesk, inter, dmMono } from "@/lib/fonts";
+import { cormorant, inter, dmMono } from "@/lib/fonts";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import SplashScreen from "@/components/SplashScreen";
-import CustomCursor from "@/components/CustomCursor";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,10 +21,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${inter.variable} ${dmMono.variable}`}>
-      <body className="min-h-screen flex flex-col bg-bg text-text-primary">
-        <SplashScreen />
-        <CustomCursor />
+    <html lang="en" className={`${cormorant.variable} ${inter.variable} ${dmMono.variable}`}>
+      <body className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1">{children}</main>
         <Footer />

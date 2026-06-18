@@ -35,7 +35,7 @@ export default function Hero() {
           style={{ y: logoY }}
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 3.0, ease: "easeOut" }}
+          transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
           className="mb-12"
         >
           <Image
@@ -62,7 +62,7 @@ export default function Hero() {
               }}
               initial={{ y: "100%" }}
               animate={{ y: "0%" }}
-              transition={{ duration: 0.9, delay: 3.1, ease: "easeOut" }}
+              transition={{ duration: 0.9, delay: 0.4, ease: "easeOut" }}
             >
               Your Style.
             </motion.h1>
@@ -79,7 +79,7 @@ export default function Hero() {
               }}
               initial={{ y: "100%" }}
               animate={{ y: "0%" }}
-              transition={{ duration: 0.9, delay: 3.22, ease: "easeOut" }}
+              transition={{ duration: 0.9, delay: 0.55, ease: "easeOut" }}
             >
               Finally Intelligent.
             </motion.h1>
@@ -97,7 +97,7 @@ export default function Hero() {
           }}
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 3.5, ease: "easeOut" }}
+          transition={{ duration: 0.8, delay: 0.7, ease: "easeOut" }}
         >
           An AI stylist that learns what looks good on you — and builds complete, coordinated
           outfits you can trust.
@@ -108,7 +108,7 @@ export default function Hero() {
           className="flex flex-col sm:flex-row items-center gap-4 mt-10"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 3.7, ease: "easeOut" }}
+          transition={{ duration: 0.7, delay: 0.9, ease: "easeOut" }}
         >
           <a href="#early-access" className="btn-outline">
             Get Early Access
@@ -128,7 +128,7 @@ export default function Hero() {
         className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 4.2, duration: 0.8 }}
+        transition={{ delay: 1.2, duration: 0.8 }}
       >
         <motion.div
           className="w-px bg-accent-warm"

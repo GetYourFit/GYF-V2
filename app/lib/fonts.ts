@@ -1,8 +1,9 @@
-import { Space_Grotesk, Inter, DM_Mono } from "next/font/google";
+import { Cormorant_Garamond, Inter, DM_Mono } from "next/font/google";
 
-export const spaceGrotesk = Space_Grotesk({
+export const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
 });

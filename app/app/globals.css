@@ -1,14 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --color-bg: #0a0a0a;
-  --color-surface: #111111;
-  --color-surface-2: #1a1a1a;
-  --color-border: #222222;
-  --color-text-primary: #efefef;
-  --color-text-muted: #666666;
-  --color-accent: #bfbfbf;
-  --color-accent-warm: #c8a96e;
+  --color-bg:           #0D0D0D;
+  --color-surface:      #161616;
+  --color-surface-2:    #1F1F1F;
+  --color-border:       #2A2A2A;
+  --color-text-primary: #F0F0F0;
+  --color-text-muted:   #888888;
+  --color-accent:       #C8C8C8;
+  --color-accent-warm:  #D4AF7A;
+
+  --text-display:  clamp(4rem, 10vw, 9rem);
+  --text-headline: clamp(2.5rem, 5vw, 4.5rem);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -20,11 +23,23 @@ body {
   color: var(--color-text-primary);
   font-family: var(--font-inter), system-ui, sans-serif;
   overflow-x: hidden;
-  cursor: none;
 }
 
-/* Hide default cursor site-wide — custom cursor handles it */
-* { cursor: none !important; }
+/* Scroll snap */
+.snap-container {
+  height: 100dvh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+.snap-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 
 /* Grain overlay */
 body::after {
