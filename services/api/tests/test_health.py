@@ -17,14 +17,10 @@ def test_health_ok():
 
 
 def test_feedback_accepts_valid_event():
+    # No bearer token in local mode → resolves to the dev principal.
     res = client.post(
         "/feedback",
-        json={
-            "user_id": "u1",
-            "target_type": "outfit",
-            "target_id": "o1",
-            "action": "save",
-        },
+        json={"target_type": "outfit", "target_id": "o1", "action": "save"},
     )
     assert res.status_code == 202
     assert res.json() == {"status": "accepted", "action": "save"}
@@ -43,11 +39,6 @@ def test_local_sink_appends_event(tmp_path: Path):
 def test_feedback_rejects_invalid_action():
     res = client.post(
         "/feedback",
-        json={
-            "user_id": "u1",
-            "target_type": "outfit",
-            "target_id": "o1",
-            "action": "nope",
-        },
+        json={"target_type": "outfit", "target_id": "o1", "action": "nope"},
     )
     assert res.status_code == 422
