@@ -21,7 +21,6 @@ from fastapi.testclient import TestClient
 
 psycopg = pytest.importorskip("psycopg")
 
-from app.auth import get_current_principal  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.main import app  # noqa: E402
 from app.sink import PostgresSink  # noqa: E402

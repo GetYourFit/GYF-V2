@@ -9,7 +9,6 @@ Two interchangeable backends, chosen by ``GYF_EVENT_SINK``:
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Protocol
 
