@@ -13,15 +13,26 @@ from fastapi import Depends, FastAPI
 from .auth import Principal, get_current_principal
 from .config import settings
 from .events import FeedbackRequest
+from .metrics import install_metrics, metrics_enabled
 from .sink import get_sink
+from .telemetry import configure_telemetry
 
 app = FastAPI(title="GYF Core API", version="0.0.0")
 sink = get_sink()
 
+# Observability (P0-E): structured logs + opt-in traces/errors + always-on metrics.
+_telemetry = configure_telemetry(app)
+install_metrics(app)
+
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": "api", "env": settings.env}
+def health() -> dict[str, object]:
+    return {
+        "status": "ok",
+        "service": "api",
+        "env": settings.env,
+        "telemetry": {**_telemetry, "metrics": metrics_enabled()},
+    }
 
 
 @app.get("/me")

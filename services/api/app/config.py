@@ -24,6 +24,15 @@ class Settings(BaseSettings):
     auth_disabled: bool = False
     dev_user_id: str = "00000000-0000-0000-0000-000000000001"
 
+    # --- Observability (P0-E). All env-driven; unset = no-op (free-tier first). ---
+    service_name: str = "gyf-api"
+    # OTLP traces endpoint (e.g. http://localhost:4318). Unset = tracing disabled.
+    otel_exporter_otlp_endpoint: str = ""
+    # Sentry DSN for error reporting. Unset = Sentry disabled.
+    sentry_dsn: str = ""
+    # Fraction of transactions traced/sampled (0.0–1.0).
+    trace_sample_rate: float = 1.0
+
     @property
     def auth_is_open(self) -> bool:
         """Auth bypass is allowed only in local dev (explicit flag or no secret)."""
