@@ -57,3 +57,4 @@ crash.log
 data/
 models/
 .cache/
+.tools/

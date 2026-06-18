@@ -26,21 +26,20 @@ resource "supabase_project" "db" {
 
 # --- Cache: Upstash Redis (free tier, scale-to-zero) ---
 resource "upstash_redis_database" "cache" {
-  database_name = local.name
-  region        = "global"
-  tls           = true
+  database_name  = local.name
+  region         = "global"
+  primary_region = var.supabase_region
+  tls            = true
 }
 
 # --- Web: Vercel project wired to the repo ---
 resource "vercel_project" "web" {
-  name      = local.name
-  framework = "nextjs"
+  name           = local.name
+  framework      = "nextjs"
   root_directory = "app"
 
-  git_repository = {
-    type = "github"
-    repo = var.git_repo
-  }
+  # Not linked to Git: the GitHub Actions CD workflow deploys via the Vercel CLI.
+  # Hobby (free) plan does not allow connecting a private org-owned repo.
 }
 
 # Environment variables consumed by the web/BFF at build & runtime.
