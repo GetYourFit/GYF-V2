@@ -11,7 +11,7 @@ const navLinks = [
 const socials = [
   {
     label: "Instagram",
-    href: "https://www.instagram.com/getyourfit.ai",
+    href: "https://www.instagram.com/getyourfit.gyf",
     svg: (
       <svg
         width="15"
