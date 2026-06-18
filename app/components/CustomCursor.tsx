@@ -11,8 +11,10 @@ export default function CustomCursor() {
     const dot = dotRef.current;
     if (!ring || !dot) return;
 
-    let mouseX = -100, mouseY = -100;
-    let ringX = -100, ringY = -100;
+    let mouseX = -100,
+      mouseY = -100;
+    let ringX = -100,
+      ringY = -100;
     let rafId: number;
 
     const onMove = (e: MouseEvent) => {

@@ -3,22 +3,33 @@
 import { useReveal } from "@/lib/useReveal";
 
 const problems = [
-  { num: "01", text: "A full closet and still nothing to wear — the daily decision that drains you before the day even starts." },
-  { num: "02", text: "Shopping apps show items, never complete outfits. You're left to figure out how things work together alone." },
-  { num: "03", text: "Constant second-guessing: does this match? Is it right for the occasion? Does it actually suit me?" },
-  { num: "04", text: "A personal stylist has always been a luxury for the few. Everyone else figures it out alone." },
+  {
+    num: "01",
+    text: "A full closet and still nothing to wear — the daily decision that drains you before the day even starts.",
+  },
+  {
+    num: "02",
+    text: "Shopping apps show items, never complete outfits. You're left to figure out how things work together alone.",
+  },
+  {
+    num: "03",
+    text: "Constant second-guessing: does this match? Is it right for the occasion? Does it actually suit me?",
+  },
+  {
+    num: "04",
+    text: "A personal stylist has always been a luxury for the few. Everyone else figures it out alone.",
+  },
 ];
 
 export default function Problem() {
   useReveal();
 
   return (
-    <section
-      id="problem"
-      style={{ background: "var(--text)", color: "var(--bg)" }}
-    >
+    <section id="problem" style={{ background: "var(--text)", color: "var(--bg)" }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <p className="eyebrow reveal" style={{ color: "var(--gold)" }}>The Problem</p>
+        <p className="eyebrow reveal" style={{ color: "var(--gold)" }}>
+          The Problem
+        </p>
         <h2
           className="reveal reveal-d1"
           style={{

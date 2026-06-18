@@ -34,25 +34,30 @@ export default function Hero() {
       }}
     >
       {/* Dot grid background */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        backgroundImage: "radial-gradient(rgba(26,23,20,0.035) 1px, transparent 1px)",
-        backgroundSize: "44px 44px",
-        pointerEvents: "none",
-      }} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "radial-gradient(rgba(26,23,20,0.035) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+          pointerEvents: "none",
+        }}
+      />
 
       {/* Gold radial glow top */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "600px",
-        height: "320px",
-        background: "radial-gradient(ellipse at 50% 0%, rgba(139,107,62,0.11) 0%, transparent 70%)",
-        pointerEvents: "none",
-      }} />
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "600px",
+          height: "320px",
+          background:
+            "radial-gradient(ellipse at 50% 0%, rgba(139,107,62,0.11) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: "780px", width: "100%" }}>
         {/* Eyebrow */}
@@ -91,8 +96,7 @@ export default function Hero() {
         >
           Your AI-Native Personal Stylist.{" "}
           <em style={{ color: "var(--gold)", fontStyle: "italic" }}>Complete Outfits.</em>{" "}
-          <em style={{ color: "var(--gold)", fontStyle: "italic" }}>Clear Reasons.</em>{" "}
-          Yours.
+          <em style={{ color: "var(--gold)", fontStyle: "italic" }}>Clear Reasons.</em> Yours.
         </h1>
 
         {/* Sub copy */}
@@ -116,16 +120,35 @@ export default function Hero() {
         <div className="reveal reveal-d4" style={{ display: "flex", justifyContent: "center" }}>
           {submitted ? (
             <div>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", fontWeight: 300, color: "var(--text)" }}>
+              <p
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "1.4rem",
+                  fontWeight: 300,
+                  color: "var(--text)",
+                }}
+              >
                 You&apos;re on the list.
               </p>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", letterSpacing: "0.2em", color: "var(--faint)", textTransform: "uppercase", marginTop: "0.5rem" }}>
+              <p
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "10px",
+                  letterSpacing: "0.2em",
+                  color: "var(--faint)",
+                  textTransform: "uppercase",
+                  marginTop: "0.5rem",
+                }}
+              >
                 We&apos;ll be in touch when your spot is ready.
               </p>
             </div>
           ) : (
             <form
-              onSubmit={(e) => { e.preventDefault(); if (emailVal.trim()) setSubmitted(true); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (emailVal.trim()) setSubmitted(true);
+              }}
               className="cta-form"
               style={{ margin: 0 }}
             >
@@ -137,7 +160,9 @@ export default function Hero() {
                 required
                 className="cta-input"
               />
-              <button type="submit" className="cta-btn">Get Early Access</button>
+              <button type="submit" className="cta-btn">
+                Get Early Access
+              </button>
             </form>
           )}
         </div>

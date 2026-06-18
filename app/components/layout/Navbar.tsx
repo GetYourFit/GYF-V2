@@ -22,19 +22,34 @@ export default function Navbar() {
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [menuOpen]);
 
   return (
     <>
       <nav className={`gyf-nav${scrolled ? " scrolled" : ""}`}>
         {/* Logo */}
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.65rem", textDecoration: "none" }}>
-          <Image src="/assets/logo.png" alt="GYF" width={36} height={36} priority style={{ objectFit: "contain" }} />
+        <Link
+          href="/"
+          style={{ display: "flex", alignItems: "center", gap: "0.65rem", textDecoration: "none" }}
+        >
+          <Image
+            src="/assets/logo.png"
+            alt="GYF"
+            width={36}
+            height={36}
+            priority
+            style={{ objectFit: "contain" }}
+          />
         </Link>
 
         {/* Desktop links */}
-        <ul className="nav-links" style={{ display: "flex", listStyle: "none", gap: "2.5rem", margin: 0, padding: 0 }}>
+        <ul
+          className="nav-links"
+          style={{ display: "flex", listStyle: "none", gap: "2.5rem", margin: 0, padding: 0 }}
+        >
           {navLinks.map(({ label, href }) => (
             <li key={label} style={{ display: "none" }} className="md-show">
               <a href={href}>{label}</a>
@@ -60,8 +75,12 @@ export default function Navbar() {
               padding: "4px",
             }}
           >
-            <span style={{ display: "block", width: "20px", height: "1px", background: "var(--text)" }} />
-            <span style={{ display: "block", width: "14px", height: "1px", background: "var(--text)" }} />
+            <span
+              style={{ display: "block", width: "20px", height: "1px", background: "var(--text)" }}
+            />
+            <span
+              style={{ display: "block", width: "14px", height: "1px", background: "var(--text)" }}
+            />
           </button>
         </div>
       </nav>
@@ -96,7 +115,13 @@ export default function Navbar() {
               borderBottom: "1px solid var(--rule)",
             }}
           >
-            <Image src="/assets/logo.png" alt="GYF" width={32} height={32} style={{ objectFit: "contain" }} />
+            <Image
+              src="/assets/logo.png"
+              alt="GYF"
+              width={32}
+              height={32}
+              style={{ objectFit: "contain" }}
+            />
             <button
               onClick={() => setMenuOpen(false)}
               aria-label="Close menu"
@@ -114,7 +139,15 @@ export default function Navbar() {
               Close
             </button>
           </div>
-          <nav style={{ padding: "3rem 2rem", flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <nav
+            style={{
+              padding: "3rem 2rem",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+            }}
+          >
             {navLinks.map(({ label, href }) => (
               <a
                 key={label}

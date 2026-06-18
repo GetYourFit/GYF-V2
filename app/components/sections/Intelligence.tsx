@@ -31,7 +31,9 @@ export default function Intelligence() {
   return (
     <section id="intelligence" style={{ background: "var(--text)" }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <p className="eyebrow reveal" style={{ color: "var(--gold)" }}>The Intelligence</p>
+        <p className="eyebrow reveal" style={{ color: "var(--gold)" }}>
+          The Intelligence
+        </p>
         <h2
           className="reveal reveal-d1"
           style={{

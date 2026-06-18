@@ -49,8 +49,14 @@ export default function SplashScreen() {
     };
 
     const timer = setTimeout(dismiss, 2800);
-    const onKey = () => { clearTimeout(timer); dismiss(); };
-    const onClick = () => { clearTimeout(timer); dismiss(); };
+    const onKey = () => {
+      clearTimeout(timer);
+      dismiss();
+    };
+    const onClick = () => {
+      clearTimeout(timer);
+      dismiss();
+    };
 
     document.addEventListener("keydown", onKey, { once: true });
     document.getElementById("gyf-splash")?.addEventListener("click", onClick, { once: true });

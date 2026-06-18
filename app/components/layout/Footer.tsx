@@ -12,7 +12,16 @@ const socials = [
     label: "Instagram",
     href: "https://www.instagram.com/getyourfit.gyf",
     svg: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <rect x="2" y="2" width="20" height="20" rx="5" />
         <circle cx="12" cy="12" r="4" />
         <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
@@ -34,17 +43,33 @@ export default function Footer() {
   return (
     <footer className="gyf-footer">
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "3rem", justifyContent: "space-between", marginBottom: "3rem" }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "3rem",
+            justifyContent: "space-between",
+            marginBottom: "3rem",
+          }}
+        >
           {/* Brand */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <Image src="/assets/logo.png" alt="GYF" width={36} height={36} style={{ objectFit: "contain" }} />
-            <p style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "0.82rem",
-              color: "var(--faint)",
-              lineHeight: 1.7,
-              maxWidth: "220px",
-            }}>
+            <Image
+              src="/assets/logo.png"
+              alt="GYF"
+              width={36}
+              height={36}
+              style={{ objectFit: "contain" }}
+            />
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.82rem",
+                color: "var(--faint)",
+                lineHeight: 1.7,
+                maxWidth: "220px",
+              }}
+            >
               An AI-native personal stylist that learns what looks good on you.
             </p>
           </div>
@@ -88,15 +113,24 @@ export default function Footer() {
           </div>
         </div>
 
-        <div style={{
-          borderTop: "1px solid var(--rule)",
-          paddingTop: "1.5rem",
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          gap: "1rem",
-        }}>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--faint)", letterSpacing: "0.1em" }}>
+        <div
+          style={{
+            borderTop: "1px solid var(--rule)",
+            paddingTop: "1.5rem",
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            gap: "1rem",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "10px",
+              color: "var(--faint)",
+              letterSpacing: "0.1em",
+            }}
+          >
             © 2026 Get Your Fit Ltd
           </p>
           <div style={{ display: "flex", gap: "1.5rem" }}>
@@ -104,7 +138,13 @@ export default function Footer() {
               <a
                 key={t}
                 href="#"
-                style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--faint)", letterSpacing: "0.1em", textDecoration: "none" }}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "10px",
+                  color: "var(--faint)",
+                  letterSpacing: "0.1em",
+                  textDecoration: "none",
+                }}
               >
                 {t}
               </a>

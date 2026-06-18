@@ -83,8 +83,8 @@ export default function Vision() {
             <div className="vision-quote-card reveal reveal-d2">
               <div className="vision-quote-mark">&ldquo;</div>
               <p className="vision-quote-text">
-                A personal stylist has always been a luxury for the few. GYF makes that
-                intelligence universal — not by simplifying style, but by learning it.
+                A personal stylist has always been a luxury for the few. GYF makes that intelligence
+                universal — not by simplifying style, but by learning it.
               </p>
               <div className="vision-quote-rule" />
               <p className="vision-quote-attr">GYF Vision, 2026</p>

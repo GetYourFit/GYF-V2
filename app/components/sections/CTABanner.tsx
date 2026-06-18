@@ -13,7 +13,13 @@ export default function CTABanner() {
     <section id="cta" style={{ textAlign: "center" }}>
       <div style={{ maxWidth: "680px", margin: "0 auto" }}>
         <div className="reveal" style={{ marginBottom: "1.5rem" }}>
-          <Image src="/assets/logo.png" alt="GYF" width={52} height={52} style={{ objectFit: "contain" }} />
+          <Image
+            src="/assets/logo.png"
+            alt="GYF"
+            width={52}
+            height={52}
+            style={{ objectFit: "contain" }}
+          />
         </div>
 
         <h2
@@ -50,7 +56,14 @@ export default function CTABanner() {
         <div className="reveal reveal-d3">
           {submitted ? (
             <div style={{ marginTop: "2rem" }}>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 300, color: "var(--text)" }}>
+              <p
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "1.5rem",
+                  fontWeight: 300,
+                  color: "var(--text)",
+                }}
+              >
                 You&apos;re on the list.
               </p>
               <p className="cta-note">We&apos;ll be in touch when your spot is ready.</p>
@@ -58,7 +71,10 @@ export default function CTABanner() {
           ) : (
             <>
               <form
-                onSubmit={(e) => { e.preventDefault(); if (email.trim()) setSubmitted(true); }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (email.trim()) setSubmitted(true);
+                }}
                 className="cta-form"
               >
                 <input
@@ -69,7 +85,9 @@ export default function CTABanner() {
                   required
                   className="cta-input"
                 />
-                <button type="submit" className="cta-btn">Join Waitlist</button>
+                <button type="submit" className="cta-btn">
+                  Join Waitlist
+                </button>
               </form>
               <p className="cta-note">Free to join · No spam · Leave anytime</p>
             </>
