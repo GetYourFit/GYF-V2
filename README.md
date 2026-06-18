@@ -1,6 +1,6 @@
 # GYF (Get Your Fit)
 
-AI-native personal stylist that learns what looks good on *you* and builds complete,
+AI-native personal stylist that learns what looks good on _you_ and builds complete,
 coordinated outfits you can trust — getting smarter with every person it dresses.
 
 ## Documentation
@@ -8,50 +8,67 @@ coordinated outfits you can trust — getting smarter with every person it dress
 - [`CLAUDE.md`](./CLAUDE.md) — operating guide & entry point.
 - [`docs/vision/ideas-complete.md`](./docs/vision/ideas-complete.md) — canonical product/vision brief.
 - [`docs/tech-stack.md`](./docs/tech-stack.md) — technology & architecture decisions.
-- [`docs/implementation-plan.md`](./docs/implementation-plan.md) — phased build plan.
+- [`docs/implementation-plan.md`](./docs/implementation-plan.md) — phased build plan (P0–P5).
 - [`docs/research/deep-research-report.md`](./docs/research/deep-research-report.md) — cited SOTA research.
 
 ## Repository layout
 
 ```
-app/        # Next.js web (App Router, RSC), PWA
-services/   # FastAPI core API, BFF, async workers
+app/        # Next.js web (App Router, RSC), PWA — landing page live
+services/   # FastAPI core API (auth, event spine, observability); BFF, workers to come
 ml/         # ML platform (perception, user model, recsys, compat, try-on, eval)
 packages/   # shared types, ui kit, config, sdk
-infra/      # IaC (Terraform), CI config
+infra/      # IaC (Terraform), local docker-compose stack, CI config
 docs/       # documentation
 ```
 
 ## Getting started
 
-Prerequisites: Bun 1.1+, Python 3.12+, uv.
+Prerequisites: **Bun 1.1+**, **Python 3.12+**, **uv**, and **Docker** (for local infra).
 
 ```bash
-bun install                  # install JS workspaces
-bun run dev                  # run web locally
-
-# API service
-cd services/api
-uv sync --extra dev          # install Python deps
-uv run uvicorn app.main:app --reload --port 8000
+make install     # install JS workspaces + Python API deps
+make dev         # boot web (:3000) + API (:8000) together
 ```
+
+Prefer running pieces individually? See `make help` for all targets
+(`dev-web`, `dev-api`, `up`/`down` for infra, `fmt`, `lint`, `test`, `ci`).
 
 Copy `.env.example` to `.env` and fill values. See `docs/implementation-plan.md` §10 for
 environments and process.
 
-## Status
-
-Phase **P0 — Foundations** (see `docs/implementation-plan.md`). Free-tier-first, no hardcoded
-limitations, built to scale.
-</content>
-
-## Local services (optional)
+### Local services (optional)
 
 Run the full P0 spine locally (Postgres+pgvector, Redis, Redpanda):
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d
+make up          # docker compose -f infra/docker-compose.yml up -d
 ```
 
-The API uses an append-only JSONL event sink by default; set `GYF_EVENT_SINK=kafka`
-to publish to Redpanda once it's running.
+The API uses an append-only JSONL event sink by default; set `GYF_EVENT_SINK=postgres`
+to persist to the `interactions` table, or `kafka` to publish to Redpanda.
+
+## Engineering standards
+
+- **Conventional commits** (`feat:`, `fix:`, `docs:`, …); trunk-based, short-lived branches.
+- **Pre-commit hooks** mirror CI — install once with `pre-commit install`
+  (see [`.pre-commit-config.yaml`](./.pre-commit-config.yaml)).
+- **Local gate:** `make ci` runs format-check, lint, typecheck, and tests.
+- **CI:** GitHub Actions runs the web and API jobs (the API job spins up a real
+  Postgres and proves the event spine end-to-end); CD deploys to Vercel once secrets are set.
+- **Reviews** routed via [`.github/CODEOWNERS`](./.github/CODEOWNERS); PRs use the
+  [pull request template](./.github/pull_request_template.md).
+
+## Status
+
+Phase **P0 — Foundations** (see `docs/implementation-plan.md`), nearly complete:
+
+| Area | State |
+| --- | --- |
+| Repo & standards (P0-A) | ✅ monorepo, Makefile, pre-commit, CODEOWNERS, PR template |
+| CI/CD (P0-B) | ✅ CI green; CD wired (no-op until Vercel secrets set) |
+| Infra (P0-C) | ✅ Supabase + Upstash + Vercel via Terraform; local docker stack |
+| Contracts & data spine (P0-D) | ✅ schema, auth scaffold, event taxonomy, sinks — **proven end-to-end in CI** |
+| Observability (P0-E) | ✅ Prometheus metrics + opt-in OTel traces + Sentry; structured logs |
+
+Free-tier-first, no hardcoded limitations, built to scale. Next: **P1 — The Intelligent Stylist**.
