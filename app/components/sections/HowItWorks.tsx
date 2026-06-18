@@ -1,105 +1,77 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { slideLeft, fadeIn, staggerContainer, viewportOnce } from "@/lib/animations";
+import { useReveal } from "@/lib/useReveal";
 
 const steps = [
   {
-    number: "01",
+    num: "01",
     title: "Tell GYF about yourself",
     body: "Upload a photo or describe your body type, skin tone, budget, and occasions. Nothing is locked in — update anytime.",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+    ),
   },
   {
-    number: "02",
+    num: "02",
     title: "GYF builds your first outfit",
-    body: "A complete look — top, bottom, footwear — chosen for your specific body and taste. Every choice comes with a reason.",
+    body: "A complete look — top, bottom, footwear — chosen for your specific body and taste. Every choice comes with a clear reason.",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+        <path d="M2 17l10 5 10-5" />
+        <path d="M2 12l10 5 10-5" />
+      </svg>
+    ),
   },
   {
-    number: "03",
+    num: "03",
     title: "It gets smarter with you",
-    body: "Every save, skip, and reaction trains your personal taste model. GYF matures the longer you use it.",
+    body: "Every save, skip, and reaction trains your personal taste model. GYF matures the longer you use it — like a fine wine.",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20V10" />
+        <path d="M18 20V4" />
+        <path d="M6 20v-4" />
+      </svg>
+    ),
   },
 ];
 
 export default function HowItWorks() {
-  return (
-    <section className="py-32 px-6 bg-surface border-t border-border">
-      <div className="max-w-5xl mx-auto">
-        <motion.div
-          variants={fadeIn}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="mb-16"
-        >
-          <p
-            className="uppercase tracking-[0.22em] text-text-muted mb-4"
-            style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem" }}
-          >
-            How It Works
-          </p>
-          <h2
-            className="text-text-primary font-light"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(1.8rem,3.5vw,3rem)",
-              fontWeight: 300,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.15,
-            }}
-          >
-            From first look to lasting style.
-          </h2>
-        </motion.div>
+  useReveal();
 
-        <motion.div
-          variants={staggerContainer(0.18)}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="flex flex-col divide-y divide-border"
+  return (
+    <section id="how-it-works">
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        <p className="eyebrow reveal">How it Works</p>
+        <h2
+          className="reveal reveal-d1"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(2rem, 4vw, 3.2rem)",
+            fontWeight: 300,
+            color: "var(--text)",
+            lineHeight: 1.15,
+            letterSpacing: "-0.02em",
+            maxWidth: "480px",
+          }}
         >
-          {steps.map(({ number, title, body }) => (
-            <motion.div
-              key={number}
-              variants={slideLeft}
-              className="py-10 flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-14 group"
-            >
-              <span
-                className="shrink-0 text-text-muted select-none transition-colors group-hover:text-accent-warm"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "clamp(2rem,4vw,3.5rem)",
-                  lineHeight: 1,
-                  opacity: 0.25,
-                  fontWeight: 300,
-                }}
-              >
-                {number}
-              </span>
-              <div className="flex flex-col gap-2">
-                <h3
-                  className="text-text-primary transition-colors group-hover:text-accent"
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "clamp(1.1rem,2vw,1.5rem)",
-                    fontWeight: 400,
-                    letterSpacing: "-0.01em",
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {title}
-                </h3>
-                <p
-                  className="text-text-muted max-w-lg"
-                  style={{ fontFamily: "var(--font-inter)", fontSize: "0.9rem", lineHeight: 1.8 }}
-                >
-                  {body}
-                </p>
-              </div>
-            </motion.div>
+          Dressed in three steps.
+        </h2>
+
+        <div className="steps-grid">
+          {steps.map(({ num, title, body, icon }, i) => (
+            <div key={num} className={`step reveal reveal-d${i + 1}`}>
+              <div style={{ color: "var(--gold)", marginBottom: "0.25rem" }}>{icon}</div>
+              <div className="step-num">{num}</div>
+              <div className="step-title">{title}</div>
+              <div className="step-body">{body}</div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

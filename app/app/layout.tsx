@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { cormorant, inter, dmMono } from "@/lib/fonts";
+import { cormorant, dmSans, dmMono } from "@/lib/fonts";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import "./globals.css";
@@ -21,10 +21,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${inter.variable} ${dmMono.variable}`}>
-      <body className="min-h-screen flex flex-col">
+    <html lang="en" className={`${cormorant.variable} ${dmSans.variable} ${dmMono.variable}`}>
+      <body style={{ background: "#F0ECE2" }}>
         <Navbar />
-        <main className="flex-1">{children}</main>
+        <main>{children}</main>
         <Footer />
       </body>
     </html>

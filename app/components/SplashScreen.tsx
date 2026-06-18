@@ -2,106 +2,146 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 
 export default function SplashScreen() {
   const [visible, setVisible] = useState(true);
-  const [phase, setPhase] = useState<"in" | "hold" | "out">("in");
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const rotateX = useSpring(useMotionValue(0), { stiffness: 60, damping: 18 });
-  const rotateY = useSpring(useMotionValue(0), { stiffness: 60, damping: 18 });
+  const stageRef = useRef<HTMLDivElement>(null);
+  const lineRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase("hold"), 800);
-    const t2 = setTimeout(() => setPhase("out"), 2400);
-    const t3 = setTimeout(() => setVisible(false), 3200);
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    // 3D mouse tracking
+    const onMouseMove = (e: MouseEvent) => {
+      const rect = stage.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const rx = ((e.clientY - cy) / rect.height) * -12;
+      const ry = ((e.clientX - cx) / rect.width) * 12;
+      stage.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    };
+    const onMouseLeave = () => {
+      stage.style.transform = "perspective(800px) rotateX(0deg) rotateY(0deg)";
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseleave", onMouseLeave);
+
+    // Animate gold line
+    if (lineRef.current) {
+      lineRef.current.style.transition = "width 2.4s cubic-bezier(0.16,1,0.3,1)";
+      requestAnimationFrame(() => {
+        if (lineRef.current) lineRef.current.style.width = "100%";
+      });
+    }
+
+    const dismiss = () => {
+      const el = document.getElementById("gyf-splash");
+      if (!el) return;
+      el.style.transition = "opacity 0.65s ease";
+      el.style.opacity = "0";
+      setTimeout(() => {
+        setVisible(false);
+        const page = document.getElementById("page");
+        if (page) page.classList.add("show");
+      }, 680);
+    };
+
+    const timer = setTimeout(dismiss, 2800);
+    const onKey = () => { clearTimeout(timer); dismiss(); };
+    const onClick = () => { clearTimeout(timer); dismiss(); };
+
+    document.addEventListener("keydown", onKey, { once: true });
+    document.getElementById("gyf-splash")?.addEventListener("click", onClick, { once: true });
+
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      clearTimeout(timer);
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseleave", onMouseLeave);
+      document.removeEventListener("keydown", onKey);
     };
   }, []);
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    rotateX.set(((e.clientY - cy) / rect.height) * -20);
-    rotateY.set(((e.clientX - cx) / rect.width) * 20);
-  };
 
   if (!visible) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        ref={containerRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => {
-          rotateX.set(0);
-          rotateY.set(0);
+    <div
+      id="gyf-splash"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 10000,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background:
+          "radial-gradient(460px circle at 50% 44%, rgba(139,107,62,.18), transparent 62%), radial-gradient(circle at 50% 42%, #201C18 0%, #0E0C0A 74%)",
+        cursor: "pointer",
+      }}
+    >
+      {/* Stage with 3D tilt */}
+      <div
+        ref={stageRef}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "1.25rem",
+          transformStyle: "preserve-3d",
+          transition: "transform 0.1s ease",
         }}
-        className="fixed inset-0 z-[10000] flex flex-col items-center justify-center"
-        style={{ background: "#0a0a0a" }}
-        animate={{ opacity: phase === "out" ? 0 : 1 }}
-        transition={{ duration: 0.75, ease: "easeInOut" }}
       >
-        {/* Ambient glow */}
-        <motion.div
-          className="absolute pointer-events-none rounded-full"
-          style={{
-            width: 480,
-            height: 480,
-            background: "radial-gradient(circle, rgba(191,191,191,0.06) 0%, transparent 70%)",
-          }}
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{
-            scale: phase === "out" ? 1.5 : 1,
-            opacity: phase === "in" ? 0 : phase === "out" ? 0 : 1,
-          }}
-          transition={{ duration: 1, ease: "easeOut" }}
+        <Image
+          src="/assets/logo.png"
+          alt="GYF"
+          width={88}
+          height={88}
+          style={{ filter: "brightness(0) invert(1)" }}
+          priority
         />
-
-        {/* Interactive logo */}
-        <motion.div
-          style={{ rotateX, rotateY, transformStyle: "preserve-3d", perspective: 800 }}
-          initial={{ opacity: 0, scale: 0.78, y: 12 }}
-          animate={{ opacity: phase === "out" ? 0 : 1, scale: phase === "out" ? 1.08 : 1, y: 0 }}
-          transition={{ duration: 0.85, ease: "easeOut" }}
-        >
-          <Image
-            src="/assets/logo.png"
-            alt="GYF"
-            width={110}
-            height={110}
-            className="logo-white select-none"
-            priority
-            draggable={false}
-          />
-        </motion.div>
-
-        {/* Wordmark */}
-        <motion.p
-          className="mt-5 uppercase tracking-[0.32em] text-text-muted select-none"
-          style={{ fontFamily: "var(--font-mono)", fontSize: "0.58rem" }}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: phase === "hold" ? 0.6 : 0, y: phase === "hold" ? 0 : 6 }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
+        <p
+          style={{
+            fontFamily: "var(--font-body), sans-serif",
+            fontWeight: 300,
+            fontSize: "0.6rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.48em",
+            color: "rgba(240,236,226,0.45)",
+          }}
         >
           Get Your Fit
-        </motion.p>
+        </p>
+      </div>
 
-        {/* Progress line */}
-        <motion.div
-          className="absolute bottom-0 left-0 h-px"
-          style={{ background: "rgba(191,191,191,0.18)" }}
-          initial={{ width: "0%" }}
-          animate={{ width: phase === "out" ? "100%" : "55%" }}
-          transition={{ duration: phase === "out" ? 0.5 : 1.8, ease: "easeInOut" }}
-        />
-      </motion.div>
-    </AnimatePresence>
+      {/* Skip text */}
+      <p
+        style={{
+          position: "absolute",
+          bottom: "3.5rem",
+          fontFamily: "var(--font-mono), monospace",
+          fontSize: "9px",
+          letterSpacing: "0.25em",
+          color: "rgba(240,236,226,0.2)",
+          textTransform: "uppercase",
+        }}
+      >
+        Click to enter
+      </p>
+
+      {/* Gold bottom line */}
+      <div
+        ref={lineRef}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          height: "1px",
+          width: "0%",
+          background: "var(--gold)",
+        }}
+      />
+    </div>
   );
 }

@@ -1,38 +1,43 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
 
 export default function CustomCursor() {
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
-  const scale = useMotionValue(1);
-
-  const springX = useSpring(cursorX, { stiffness: 280, damping: 28 });
-  const springY = useSpring(cursorY, { stiffness: 280, damping: 28 });
-  const springScale = useSpring(scale, { stiffness: 300, damping: 22 });
-  const dotX = useSpring(cursorX, { stiffness: 600, damping: 35 });
-  const dotY = useSpring(cursorY, { stiffness: 600, damping: 35 });
-
-  const rafRef = useRef<number>(0);
+  const ringRef = useRef<HTMLDivElement>(null);
+  const dotRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const move = (e: MouseEvent) => {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        cursorX.set(e.clientX);
-        cursorY.set(e.clientY);
-      });
-    };
-    const enter = () => scale.set(2.4);
-    const leave = () => scale.set(1);
+    const ring = ringRef.current;
+    const dot = dotRef.current;
+    if (!ring || !dot) return;
 
-    window.addEventListener("mousemove", move);
+    let mouseX = -100, mouseY = -100;
+    let ringX = -100, ringY = -100;
+    let rafId: number;
+
+    const onMove = (e: MouseEvent) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      dot.style.left = mouseX + "px";
+      dot.style.top = mouseY + "px";
+    };
+
+    const animate = () => {
+      ringX += (mouseX - ringX) * 0.12;
+      ringY += (mouseY - ringY) * 0.12;
+      ring.style.left = ringX + "px";
+      ring.style.top = ringY + "px";
+      rafId = requestAnimationFrame(animate);
+    };
+    rafId = requestAnimationFrame(animate);
+
+    const onEnter = () => ring.classList.add("hovered");
+    const onLeave = () => ring.classList.remove("hovered");
 
     const attach = () => {
-      document.querySelectorAll("a, button, [data-hover]").forEach((el) => {
-        el.addEventListener("mouseenter", enter);
-        el.addEventListener("mouseleave", leave);
+      document.querySelectorAll("a, button").forEach((el) => {
+        el.addEventListener("mouseenter", onEnter);
+        el.addEventListener("mouseleave", onLeave);
       });
     };
     attach();
@@ -40,42 +45,19 @@ export default function CustomCursor() {
     const obs = new MutationObserver(attach);
     obs.observe(document.body, { childList: true, subtree: true });
 
+    window.addEventListener("mousemove", onMove);
+
     return () => {
-      window.removeEventListener("mousemove", move);
-      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(rafId);
       obs.disconnect();
     };
-  }, [cursorX, cursorY, scale]);
+  }, []);
 
   return (
     <>
-      <motion.div
-        className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full"
-        style={{
-          x: springX,
-          y: springY,
-          scale: springScale,
-          translateX: "-50%",
-          translateY: "-50%",
-          width: 30,
-          height: 30,
-          border: "1px solid rgba(191,191,191,0.4)",
-          mixBlendMode: "difference",
-        }}
-      />
-      <motion.div
-        className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full"
-        style={{
-          x: dotX,
-          y: dotY,
-          translateX: "-50%",
-          translateY: "-50%",
-          width: 4,
-          height: 4,
-          background: "rgba(239,239,239,0.95)",
-          mixBlendMode: "difference",
-        }}
-      />
+      <div id="cursor-ring" ref={ringRef} />
+      <div id="cursor-dot" ref={dotRef} />
     </>
   );
 }

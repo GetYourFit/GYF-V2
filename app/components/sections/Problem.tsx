@@ -1,51 +1,47 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { fadeUp, fadeIn, viewportOnce } from "@/lib/animations";
+import { useReveal } from "@/lib/useReveal";
+
+const problems = [
+  { num: "01", text: "A full closet and still nothing to wear — the daily decision that drains you before the day even starts." },
+  { num: "02", text: "Shopping apps show items, never complete outfits. You're left to figure out how things work together alone." },
+  { num: "03", text: "Constant second-guessing: does this match? Is it right for the occasion? Does it actually suit me?" },
+  { num: "04", text: "A personal stylist has always been a luxury for the few. Everyone else figures it out alone." },
+];
 
 export default function Problem() {
+  useReveal();
+
   return (
-    <section className="py-36 px-6 bg-surface border-t border-border">
-      <div className="max-w-4xl mx-auto text-center">
-        <motion.p
-          variants={fadeIn}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="uppercase tracking-[0.22em] text-text-muted mb-10"
-          style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem" }}
-        >
-          The Problem
-        </motion.p>
-        <motion.h2
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="text-text-primary mb-8"
+    <section
+      id="problem"
+      style={{ background: "var(--text)", color: "var(--bg)" }}
+    >
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        <p className="eyebrow reveal" style={{ color: "var(--gold)" }}>The Problem</p>
+        <h2
+          className="reveal reveal-d1"
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: "clamp(2rem,5vw,4rem)",
+            fontSize: "clamp(2rem, 4.5vw, 3.5rem)",
             fontWeight: 300,
+            color: "var(--bg)",
+            lineHeight: 1.15,
             letterSpacing: "-0.02em",
-            lineHeight: 1.1,
+            maxWidth: "560px",
           }}
         >
-          &ldquo;A full closet.
-          <br />
-          And nothing to wear.&rdquo;
-        </motion.h2>
-        <motion.p
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOnce}
-          className="text-text-muted max-w-lg mx-auto"
-          style={{ fontFamily: "var(--font-inter)", fontSize: "0.925rem", lineHeight: 1.85 }}
-        >
-          Everyone knows this feeling. Shopping apps show items — never how to wear them together.
-          Every morning brings the same quiet friction. GYF was built to end it.
-        </motion.p>
+          Everyone lives the same quiet friction.
+        </h2>
+
+        <div className="problem-grid">
+          {problems.map(({ num, text }, i) => (
+            <div key={num} className={`problem-card reveal reveal-d${i + 1}`}>
+              <p className="problem-num">{num}</p>
+              <p>{text}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

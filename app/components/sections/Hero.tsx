@@ -1,142 +1,168 @@
 "use client";
 
-import { useRef } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowDown } from "lucide-react";
+import { useReveal } from "@/lib/useReveal";
 
 export default function Hero() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const logoY = useTransform(scrollYProgress, [0, 1], [0, -60]);
-  const headlineY = useTransform(scrollYProgress, [0, 1], [0, -40]);
-  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  useReveal();
+  const [emailVal, setEmailVal] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
+
+  // Show page immediately if no splash (e.g. server render or direct nav)
+  useEffect(() => {
+    const page = document.getElementById("page");
+    if (page && !page.classList.contains("show")) {
+      // Will be shown by SplashScreen on dismiss
+    }
+  }, []);
 
   return (
     <section
-      ref={ref}
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
+      id="hero"
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "clamp(6rem,12vh,9rem) clamp(1.5rem,5vw,3.5rem) clamp(4rem,8vh,6rem)",
+        position: "relative",
+        overflow: "hidden",
+        textAlign: "center",
+      }}
     >
-      {/* Subtle bg glow */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 50% 30%, rgba(191,191,191,0.04) 0%, transparent 65%)",
-        }}
-      />
+      {/* Dot grid background */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        backgroundImage: "radial-gradient(rgba(26,23,20,0.035) 1px, transparent 1px)",
+        backgroundSize: "44px 44px",
+        pointerEvents: "none",
+      }} />
 
-      <motion.div
-        style={{ opacity }}
-        className="relative z-10 flex flex-col items-center text-center px-6 max-w-4xl mx-auto w-full"
-      >
-        {/* Logo — transparent PNG, no background */}
-        <motion.div
-          style={{ y: logoY }}
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-          className="mb-12"
-        >
+      {/* Gold radial glow top */}
+      <div style={{
+        position: "absolute",
+        top: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "600px",
+        height: "320px",
+        background: "radial-gradient(ellipse at 50% 0%, rgba(139,107,62,0.11) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+
+      <div style={{ position: "relative", zIndex: 1, maxWidth: "780px", width: "100%" }}>
+        {/* Eyebrow */}
+        <p className="eyebrow reveal">Introducing GYF</p>
+
+        {/* Logo */}
+        <div className="reveal reveal-d1" style={{ marginBottom: "2rem" }}>
           <Image
             src="/assets/logo.png"
             alt="GYF"
-            width={72}
-            height={72}
-            className="logo-white"
+            width={104}
+            height={104}
             priority
+            onLoad={() => setLogoLoaded(true)}
+            style={{
+              height: "clamp(64px, 12vw, 104px)",
+              width: "auto",
+              opacity: logoLoaded ? 1 : 0,
+              transition: "opacity 0.8s ease",
+            }}
           />
-        </motion.div>
+        </div>
 
-        {/* Headline */}
-        <motion.div style={{ y: headlineY }}>
-          <div className="reveal-clip mb-2">
-            <motion.h1
-              className="font-display font-300 text-text-primary leading-none"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(3rem,8vw,7.5rem)",
-                fontWeight: 300,
-                letterSpacing: "-0.03em",
-                lineHeight: 0.95,
-              }}
-              initial={{ y: "100%" }}
-              animate={{ y: "0%" }}
-              transition={{ duration: 0.9, delay: 0.4, ease: "easeOut" }}
-            >
-              Your Style.
-            </motion.h1>
-          </div>
-          <div className="reveal-clip">
-            <motion.h1
-              className="text-text-muted leading-none"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(3rem,8vw,7.5rem)",
-                fontWeight: 300,
-                letterSpacing: "-0.03em",
-                lineHeight: 0.95,
-              }}
-              initial={{ y: "100%" }}
-              animate={{ y: "0%" }}
-              transition={{ duration: 0.9, delay: 0.55, ease: "easeOut" }}
-            >
-              Finally Intelligent.
-            </motion.h1>
-          </div>
-        </motion.div>
-
-        {/* Sub */}
-        <motion.p
-          className="text-text-muted mt-8 max-w-md"
+        {/* H1 */}
+        <h1
+          className="reveal reveal-d2"
           style={{
-            fontFamily: "var(--font-inter)",
-            fontSize: "clamp(0.85rem,1.4vw,0.975rem)",
-            lineHeight: 1.8,
-            fontWeight: 400,
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(2.2rem, 5.5vw, 4.8rem)",
+            fontWeight: 300,
+            color: "var(--text)",
+            lineHeight: 1.12,
+            letterSpacing: "-0.02em",
+            marginBottom: "1.5rem",
           }}
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.7, ease: "easeOut" }}
         >
-          An AI stylist that learns what looks good on you — and builds complete, coordinated
-          outfits you can trust.
-        </motion.p>
+          Your AI-Native Personal Stylist.{" "}
+          <em style={{ color: "var(--gold)", fontStyle: "italic" }}>Complete Outfits.</em>{" "}
+          <em style={{ color: "var(--gold)", fontStyle: "italic" }}>Clear Reasons.</em>{" "}
+          Yours.
+        </h1>
 
-        {/* CTAs */}
-        <motion.div
-          className="flex flex-col sm:flex-row items-center gap-4 mt-10"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.9, ease: "easeOut" }}
+        {/* Sub copy */}
+        <p
+          className="reveal reveal-d3"
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "clamp(0.9rem, 1.4vw, 1rem)",
+            fontWeight: 300,
+            color: "var(--faint)",
+            lineHeight: 1.8,
+            maxWidth: "520px",
+            margin: "0 auto 2.5rem",
+          }}
         >
-          <a href="#early-access" className="btn-outline">
-            Get Early Access
-          </a>
-          <a
-            href="#what-we-do"
-            className="flex items-center gap-2 text-text-muted hover:text-text-primary transition-colors uppercase tracking-widest"
-            style={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem" }}
-          >
-            Explore <ArrowDown size={11} />
-          </a>
-        </motion.div>
-      </motion.div>
+          An AI stylist that sees your clothes visually, learns your personal taste, and builds
+          complete coordinated looks — with a clear reason for every choice.
+        </p>
 
-      {/* Scroll line */}
-      <motion.div
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 0.8 }}
-      >
-        <motion.div
-          className="w-px bg-accent-warm"
-          style={{ height: 48, originY: 0 }}
-          animate={{ scaleY: [0, 1, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </motion.div>
+        {/* Email form */}
+        <div className="reveal reveal-d4" style={{ display: "flex", justifyContent: "center" }}>
+          {submitted ? (
+            <div>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", fontWeight: 300, color: "var(--text)" }}>
+                You&apos;re on the list.
+              </p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", letterSpacing: "0.2em", color: "var(--faint)", textTransform: "uppercase", marginTop: "0.5rem" }}>
+                We&apos;ll be in touch when your spot is ready.
+              </p>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (emailVal.trim()) setSubmitted(true); }}
+              className="cta-form"
+              style={{ margin: 0 }}
+            >
+              <input
+                type="email"
+                value={emailVal}
+                onChange={(e) => setEmailVal(e.target.value)}
+                placeholder="your@email.com"
+                required
+                className="cta-input"
+              />
+              <button type="submit" className="cta-btn">Get Early Access</button>
+            </form>
+          )}
+        </div>
+
+        {/* Note */}
+        <p className="cta-note reveal reveal-d5" style={{ marginTop: "1rem" }}>
+          Free to join · No spam · Leave anytime
+        </p>
+
+        {/* Stats row */}
+        <div className="stats-row reveal reveal-d5">
+          <div className="stat">
+            <span className="stat-num">AI</span>
+            <span className="stat-label">Powered styling</span>
+          </div>
+          <div className="stat">
+            <span className="stat-num">3-in-1</span>
+            <span className="stat-label">Top · Bottom · Footwear</span>
+          </div>
+          <div className="stat">
+            <span className="stat-num">∞</span>
+            <span className="stat-label">Learns with every use</span>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
