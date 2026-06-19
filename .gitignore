@@ -64,3 +64,6 @@ models/
 .tmp/
 .bun-tmp/
 .bun-cache/
+
+# Local ML model cache (HF weights) — never committed
+.hf-cache/
