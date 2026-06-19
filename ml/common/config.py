@@ -19,8 +19,9 @@ class Settings(BaseSettings):
     # and every derived attribute is traceable to the model that produced it.
     perception_model: str = "hf-hub:Marqo/marqo-fashionSigLIP"
     perception_model_version: str = "marqo-fashionSigLIP-v1"
-    # "auto" picks the most powerful device available (CUDA > Apple MPS > CPU);
-    # set GYF_PERCEPTION_DEVICE explicitly (e.g. "cpu") to override.
+    # "auto" picks the most powerful device available (CUDA > Intel XPU > CPU);
+    # Apple MPS is never auto-selected. Set GYF_PERCEPTION_DEVICE explicitly
+    # (e.g. "cpu") to override.
     perception_device: str = "auto"
     perception_batch_size: int = 16  # images encoded per GPU forward pass in backfill
     perception_io_workers: int = 8  # parallel image loaders feeding each batch

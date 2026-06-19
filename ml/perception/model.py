@@ -54,24 +54,46 @@ class Encoder(Protocol):
         ...
 
 
+# Accelerator backends we are willing to auto-select, most powerful first. Apple
+# MPS is deliberately excluded: it has no portable speedup for this model and
+# silently returns non-finite / non-unit embeddings for SigLIP, so we never run
+# the catalog on it. CPU is the universal fallback and always works.
+_AUTO_ACCELERATORS: tuple[str, ...] = ("cuda", "xpu")
+
+
+def _accelerator_available(device: str, torch: object) -> bool:
+    """True if ``torch`` exposes ``device`` and reports at least one such unit.
+
+    Probes each backend by name rather than hardcoding ``torch.cuda``, so newer
+    accelerators (Intel ``xpu`` today, others later) light up automatically on
+    machines that have them without any code change here.
+    """
+    backend = getattr(torch, device, None)
+    is_available = getattr(backend, "is_available", None)
+    try:
+        return bool(callable(is_available) and is_available())
+    except (RuntimeError, AssertionError):
+        return False
+
+
 def _resolve_device(preference: str, torch: object) -> str:
     """Pick the most powerful device that actually runs the model when 'auto'.
 
-    Order of preference: CUDA > MPS (Apple GPU) > CPU. We never hardcode a
-    blocklist — instead each accelerator is *empirically probed* (see
+    Order of preference: CUDA > Intel XPU > CPU (see ``_AUTO_ACCELERATORS``);
+    Apple MPS is never auto-selected. We never hardcode a blocklist of broken
+    builds — instead each candidate accelerator is *empirically probed* (see
     :func:`_accelerator_works`) by running the real model on it once, in an
-    isolated subprocess, so an unrecoverable backend abort (e.g. an Apple Metal
-    assertion that some torch/OS versions still throw for SigLIP) can't crash this
-    process. The probe result is cached per torch version, so it costs nothing on
-    subsequent runs and auto-upgrades when a backend is later fixed. CPU always
-    works and is never probed. An explicit preference is always respected.
+    isolated subprocess, so an unrecoverable backend abort can't crash this
+    process and a backend that returns corrupt embeddings is rejected. The probe
+    result is cached per torch version, so it costs nothing on subsequent runs
+    and auto-upgrades when a backend is later fixed. CPU always works and is
+    never probed. An explicit preference is always respected.
     """
     if preference and preference != "auto":
         return preference
-    if torch.cuda.is_available() and _accelerator_works("cuda"):  # type: ignore[attr-defined]
-        return "cuda"
-    if torch.backends.mps.is_available() and _accelerator_works("mps"):  # type: ignore[attr-defined]
-        return "mps"
+    for device in _AUTO_ACCELERATORS:
+        if _accelerator_available(device, torch) and _accelerator_works(device):
+            return device
     return "cpu"
 
 
