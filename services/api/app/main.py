@@ -8,7 +8,7 @@ provisioned.
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 
 from .auth import Principal, get_current_principal
 from .catalog.retrieval import (
@@ -20,6 +20,9 @@ from .catalog.retrieval import (
 from .config import settings
 from .events import FeedbackRequest
 from .metrics import install_metrics, metrics_enabled
+from .profile.account import AccountRepository
+from .profile.models import Profile, ProfileInput, profile_from_manual
+from .profile.repository import ProfileRepository
 from .sink import get_sink
 from .telemetry import configure_telemetry
 
@@ -93,6 +96,71 @@ def search_items(
 ) -> dict[str, list[SearchResult]]:
     """Text->image search over the catalog (e.g. 'red floral summer dress')."""
     return {"results": search_text(repo, embedder, q, k, region)}
+
+
+# --- User modeling (P1-B Cycle 1) dependencies. Overridable in tests. ---
+
+
+def get_profile_repo() -> ProfileRepository:
+    """The Postgres-backed profile repository (lazy connection pool)."""
+    from .profile.repository import PostgresProfileRepository
+
+    return PostgresProfileRepository(settings.database_url)
+
+
+def get_account_repo() -> AccountRepository:
+    """The Postgres-backed account repository (lazy connection pool)."""
+    from .profile.account import PostgresAccountRepository
+
+    return PostgresAccountRepository(settings.database_url)
+
+
+@app.get("/profile")
+def read_profile(
+    principal: Principal = Depends(get_current_principal),
+    repo: ProfileRepository = Depends(get_profile_repo),
+) -> Profile:
+    """The authenticated user's profile. 404 before onboarding completes."""
+    profile = repo.get(principal.user_id)
+    if profile is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
+    return profile
+
+
+@app.put("/profile")
+def upsert_profile(
+    payload: ProfileInput,
+    principal: Principal = Depends(get_current_principal),
+    repo: ProfileRepository = Depends(get_profile_repo),
+) -> Profile:
+    """Manual onboarding / edit: validate, stamp confidences, persist, return it.
+
+    Idempotent upsert keyed by the authenticated user — the same call updates an
+    existing profile, so the always-editable-preferences requirement is satisfied.
+    """
+    profile = profile_from_manual(payload)
+    repo.upsert(principal.user_id, profile)
+    return profile
+
+
+@app.delete("/profile", status_code=status.HTTP_204_NO_CONTENT)
+def delete_profile(
+    principal: Principal = Depends(get_current_principal),
+    repo: ProfileRepository = Depends(get_profile_repo),
+) -> Response:
+    """Erase the user's profile (keeps the account). Idempotent: 204 either way."""
+    repo.delete(principal.user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(
+    principal: Principal = Depends(get_current_principal),
+    repo: AccountRepository = Depends(get_account_repo),
+) -> Response:
+    """Full data deletion: remove the user and all cascaded data. Idempotent."""
+    repo.delete_user(principal.user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.post("/feedback", status_code=202)
