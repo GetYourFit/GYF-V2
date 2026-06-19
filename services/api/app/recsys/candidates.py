@@ -71,8 +71,8 @@ SELECT
     i.attributes #>> '{perception,attributes,aesthetic,value}'     AS aesthetic
 FROM items i
 WHERE i.category = ANY(%s)
-  AND (i.region_tags = '{}' OR %s IS NULL OR %s = ANY(i.region_tags))
-  AND (%s IS NULL OR i.price IS NULL OR i.price <= %s)
+  AND (i.region_tags = '{}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
+  AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
 ORDER BY i.created_at DESC
 LIMIT %s
 """

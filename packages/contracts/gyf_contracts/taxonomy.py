@@ -99,6 +99,8 @@ _SYNONYMS: dict[str, str] = {
     "trainers": "sneakers",
     "kicks": "sneakers",
     "running shoes": "sneakers",
+    "sports shoes": "sneakers",
+    "casual shoes": "sneakers",
     "pumps": "heels",
     "flip flops": "sandals",
     "slides": "sandals",

@@ -30,6 +30,11 @@ _KEEP = {
     "Sweaters",
     "Jackets",
     "Sweatshirts",
+    # Footwear — needed to assemble complete outfits (top+bottom+footwear).
+    "Casual Shoes",
+    "Sports Shoes",
+    "Sandals",
+    "Heels",
 }
 
 
