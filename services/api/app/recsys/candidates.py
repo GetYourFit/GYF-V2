@@ -38,6 +38,11 @@ class Candidate:
     formality: str | None
     formality_certain: bool
     aesthetic: str | None
+    # Perceived structural attributes the controllable-styling effects engine
+    # reasons over (goals.py). ``None`` when not perceived yet (pre-backfill).
+    pattern: str | None = None
+    silhouette: str | None = None
+    fit: str | None = None
     # Cosine similarity in [-1, 1] to the user's taste vector, or ``None`` at cold
     # start (no taste yet). Computed in pgvector against the HNSW index, never in
     # Python, so personalization costs no extra round-trips.
@@ -81,6 +86,9 @@ SELECT
     i.attributes #>> '{{perception,attributes,formality,value}}'     AS formality,
     i.attributes #>> '{{perception,attributes,formality,certain}}'   AS formality_certain,
     i.attributes #>> '{{perception,attributes,aesthetic,value}}'     AS aesthetic,
+    i.attributes #>> '{{perception,attributes,pattern,value}}'       AS pattern,
+    i.attributes #>> '{{perception,attributes,silhouette,value}}'    AS silhouette,
+    i.attributes #>> '{{perception,attributes,fit,value}}'           AS fit,
     {affinity}                                                       AS affinity
 FROM items i
 LEFT JOIN item_embeddings e ON e.item_id = i.id
@@ -146,7 +154,10 @@ def _row_to_candidate(slot: str, row: tuple) -> Candidate:
         formality=row[8],
         formality_certain=(row[9] == "true"),
         aesthetic=row[10],
-        affinity=float(row[11]) if row[11] is not None else None,
+        pattern=row[11],
+        silhouette=row[12],
+        fit=row[13],
+        affinity=float(row[14]) if row[14] is not None else None,
     )
 
 

@@ -47,7 +47,7 @@ DEV_USER = "00000000-0000-0000-0000-000000000001"
 
 def _item(
     item_id, category, slot, *, lch=None, hue_name=None, formality="casual", certain=True,
-    aesthetic=None, price=None, affinity=None,
+    aesthetic=None, price=None, affinity=None, pattern=None, silhouette=None, fit=None,
 ) -> Candidate:
     return Candidate(
         item_id=item_id,
@@ -62,6 +62,9 @@ def _item(
         formality=formality,
         formality_certain=certain,
         aesthetic=aesthetic,
+        pattern=pattern,
+        silhouette=silhouette,
+        fit=fit,
         affinity=affinity,
     )
 
@@ -346,6 +349,96 @@ def test_endpoint_logs_impressions_with_context():
         assert ev.action == InteractionAction.IMPRESSION
         assert ev.context["recommendation_id"] == rec_id
         assert "rank" in ev.context and "score" in ev.context  # propensity captured
+    finally:
+        app.dependency_overrides.clear()
+
+
+# --- Controllable styling: NL goal box (P1-C Cycle 3) ----------------------
+
+
+def test_parse_goal_maps_phrases_to_effects():
+    from app.recsys.goals import Effect, parse_goal
+
+    assert parse_goal("I want to look taller") == frozenset({Effect.ELONGATE})
+    assert parse_goal("make me look slimmer") == frozenset({Effect.SLIM})
+    assert parse_goal("I'd like to look broader and more muscular") == frozenset({Effect.BROADEN})
+    assert parse_goal("taller and slimmer please") == frozenset({Effect.ELONGATE, Effect.SLIM})
+
+
+def test_parse_goal_unknown_text_is_empty_noop():
+    from app.recsys.goals import parse_goal
+
+    assert parse_goal("I belong here") == frozenset()  # 'belong' must not hit BROADEN
+    assert parse_goal("") == frozenset()
+    assert parse_goal(None) == frozenset()
+
+
+def test_goal_fit_rewards_dark_monochrome_for_slim():
+    from app.recsys.goals import Effect, effects_for, goal_fit
+
+    effects = effects_for(frozenset({Effect.SLIM}))
+    dark_tailored = (
+        _item("t", "shirt", "top", lch=(20, 5, 0), silhouette="tailored", fit="slim fit"),
+        _item("b", "trousers", "bottom", lch=(18, 5, 0), silhouette="straight", fit="slim fit"),
+    )
+    light_oversized = (
+        _item("t", "shirt", "top", lch=(85, 5, 0), silhouette="boxy", fit="oversized"),
+        _item("b", "trousers", "bottom", lch=(80, 5, 0), silhouette="wide-leg", fit="loose fit"),
+    )
+    assert goal_fit(dark_tailored, effects) > goal_fit(light_oversized, effects)
+
+
+def test_goal_fit_neutral_without_goal():
+    from app.recsys.goals import effects_for, goal_fit
+
+    empty = effects_for(frozenset())
+    items = (_item("t", "shirt", "top", lch=(50, 5, 0)),)
+    assert goal_fit(items, empty) == 0.5
+
+
+def test_compose_slim_goal_prefers_dark_tailored_look():
+    from app.recsys.goals import parse_goal
+
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None, parse_goal("slimmer"))
+    dark = _item("t1", "shirt", "top", lch=(20, 5, 0), silhouette="tailored", fit="slim fit")
+    light = _item("t2", "shirt", "top", lch=(88, 5, 0), silhouette="boxy", fit="oversized")
+    bottom = _item("b1", "jeans", "bottom", lch=(30, 5, 0), silhouette="straight", fit="slim fit")
+    foot = _item("f1", "sneakers", "footwear", lch=(50, 5, 0))
+    pools = {"top": [dark, light], "bottom": [bottom], "footwear": [foot], "full_body": []}
+    outfits = compose(pools, c, k=2)
+    top_ids = [next(it.item_id for it in o.items if it.slot == "top") for o in outfits]
+    assert top_ids[0] == "t1"  # the dark, tailored top leads under a SLIM goal
+
+
+def test_compose_no_goal_is_identical_to_cycle2():
+    # No goal must leave scoring byte-identical to the un-goal path (no regression).
+    items = (
+        _item("t1", "shirt", "top", lch=(40, 30, 30), silhouette="boxy", fit="oversized"),
+        _item("b1", "jeans", "bottom", lch=(35, 10, 250), silhouette="wide-leg"),
+        _item("f1", "sneakers", "footwear", lch=(80, 5, 0)),
+    )
+    base = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    assert score_outfit(items, base)[0] == score_outfit(items, base, 0.0, None)[0]
+
+
+def test_endpoint_echoes_applied_goals_and_logs_them():
+    sink = _CollectingSink()
+    try:
+        client = _client(Profile(occasion="casual"), sink=sink)
+        resp = client.get("/outfits/recommend?k=2&goal=I+want+to+look+slimmer")
+        assert resp.status_code == 200
+        assert resp.json()["applied_goals"] == ["slim"]
+        assert sink.events[0].context["goals"] == ["slim"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_endpoint_unknown_goal_yields_no_applied_goals():
+    try:
+        client = _client(Profile(occasion="casual"))
+        resp = client.get("/outfits/recommend?k=2&goal=hello+there")
+        assert resp.status_code == 200
+        assert resp.json()["applied_goals"] == []
     finally:
         app.dependency_overrides.clear()
 

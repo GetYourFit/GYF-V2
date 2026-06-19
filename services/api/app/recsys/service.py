@@ -21,6 +21,7 @@ import uuid
 from . import conditioning
 from .candidates import CANDIDATE_SLOTS, CandidateRepository
 from .compose import ScoredOutfit, compose
+from .goals import parse_goal
 from .models import Outfit, OutfitRecommendation
 from .taste import TasteProfile, TasteRepository, build_taste
 from ..events import InteractionAction, InteractionEvent, InteractionTarget
@@ -47,9 +48,17 @@ def recommend(
     occasion: str | None,
     region: str | None,
     k: int,
+    goal: str | None = None,
 ) -> OutfitRecommendation:
-    """Produce up to ``k`` diverse, explained, taste-aware outfits and log them."""
-    constraints = conditioning.resolve(profile, occasion, region)
+    """Produce up to ``k`` diverse, explained, taste-aware outfits and log them.
+
+    ``goal`` is the user's free-text controllable-styling request ("look taller /
+    slimmer / broader"); it is parsed into canonical effects that re-weight the
+    composer toward looks achieving the effect. Unrecognized/empty goals are a
+    no-op, leaving the recommendation identical to the un-goal path.
+    """
+    goals = parse_goal(goal)
+    constraints = conditioning.resolve(profile, occasion, region, goals)
     taste = build_taste(taste_repo.engagements(user_id, _TASTE_HISTORY))
 
     pools = candidates.candidates_by_slot(
@@ -63,7 +72,10 @@ def recommend(
     scored = compose(pools, constraints, k, strength)
 
     recommendation_id = str(uuid.uuid4())
-    _log_impressions(sink, user_id, recommendation_id, constraints.occasion, scored)
+    applied_goals = [g.value for g in goals]
+    _log_impressions(
+        sink, user_id, recommendation_id, constraints.occasion, applied_goals, scored
+    )
 
     return OutfitRecommendation(
         recommendation_id=recommendation_id,
@@ -72,6 +84,7 @@ def recommend(
         cold_start=not taste.has_signal,
         personalized=constraints.personalization_strength > 0.0 or taste.has_signal,
         taste_strength=round(strength, 3),
+        applied_goals=applied_goals,
     )
 
 
@@ -80,6 +93,7 @@ def _log_impressions(
     user_id: str,
     recommendation_id: str,
     occasion: str,
+    applied_goals: list[str],
     scored: list[ScoredOutfit],
 ) -> None:
     """Emit one impression per served item with its propensity (rank + score).
@@ -100,6 +114,7 @@ def _log_impressions(
                         context={
                             "recommendation_id": recommendation_id,
                             "occasion": occasion,
+                            "goals": applied_goals,  # goal-conditioned slate
                             "rank": rank,
                             "score": outfit.score,  # propensity for IPS
                         },

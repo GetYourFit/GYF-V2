@@ -228,6 +228,7 @@ def recommend_outfits(
     occasion: str | None = None,
     k: int = Query(5, ge=1, le=20),
     region: str | None = None,
+    goal: str | None = Query(None, max_length=200),
     principal: Principal = Depends(require_active_principal),
     profile_repo: ProfileRepository = Depends(get_profile_repo),
     candidates: CandidateRepository = Depends(get_candidate_repo),
@@ -240,13 +241,15 @@ def recommend_outfits(
     intent) and their learned taste (from prior saves/carts/skips). Works on the
     very first visit (pure cold-start) and sharpens as behavior accrues. Each call
     logs impressions so the recommendation is auditable and trainable. ``occasion``
-    overrides the profile's stored one. 404s before onboarding.
+    overrides the profile's stored one. ``goal`` is a free-text controllable-styling
+    request ("look taller / slimmer / broader") that biases the look toward that
+    visual effect. 404s before onboarding.
     """
     profile = profile_repo.get(principal.user_id)
     if profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
     return recommend(
-        profile, principal.user_id, candidates, taste_repo, event_sink, occasion, region, k
+        profile, principal.user_id, candidates, taste_repo, event_sink, occasion, region, k, goal
     )
 
 

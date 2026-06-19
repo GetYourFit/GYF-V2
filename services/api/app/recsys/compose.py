@@ -19,6 +19,7 @@ from dataclasses import dataclass
 
 from .candidates import Candidate
 from .conditioning import Constraints, formality_rank
+from .goals import Effect, GoalEffects, effects_for, goal_fit
 
 # A garment with chroma below this reads as a neutral (black/white/grey/denim-ish)
 # and coordinates with almost anything — the backbone of real-world outfits.
@@ -34,6 +35,12 @@ _W_AESTHETIC = 0.12
 # MMR trade-off: how much to favour diversity over pure relevance when selecting
 # the final set (0 = relevance only, 1 = diversity only). 0.3 keeps quality first.
 _MMR_LAMBDA = 0.3
+
+# How strongly an explicit styling goal overrides the styling score. Moderate by
+# design: a goal *biases* the ranking toward the requested effect but never lets
+# an incoherent or occasion-inappropriate look win — colour harmony, formality
+# and taste still carry the majority weight (CLAUDE.md §3 guardrail).
+_W_GOAL = 0.35
 
 
 @dataclass(frozen=True)
@@ -162,7 +169,10 @@ def _outfit_affinity(items: tuple[Candidate, ...]) -> float | None:
 
 
 def score_outfit(
-    items: tuple[Candidate, ...], constraints: Constraints, taste_strength: float = 0.0
+    items: tuple[Candidate, ...],
+    constraints: Constraints,
+    taste_strength: float = 0.0,
+    goal_effects: GoalEffects | None = None,
 ) -> tuple[float, float, float]:
     """Overall styling score plus the colour and formality sub-scores (for reasons).
 
@@ -170,6 +180,11 @@ def score_outfit(
     user's taste affinity by ``taste_strength`` (α): ``(1-α)·content + α·affinity``.
     With no taste signal (α=0 or no affinity) this is exactly the cold-start score,
     so a new user is never scored worse than Cycle 1.
+
+    When the user set a controllable-styling goal, the result is then nudged toward
+    looks that achieve the effect: ``(1-γ)·styling + γ·goal_fit``. The goal is
+    applied *after* the content+taste blend so it is a deliberate override; with no
+    goal (``goal_effects`` empty/``None``) the score is byte-identical to Cycle 2.
     """
     color = _outfit_color_harmony(items)
     formality = _formality_fit(items, constraints.target_formality)
@@ -186,6 +201,8 @@ def score_outfit(
         score = (1.0 - taste_strength) * content + taste_strength * affinity
     else:
         score = content
+    if goal_effects is not None and not goal_effects.is_empty:
+        score = (1.0 - _W_GOAL) * score + _W_GOAL * goal_fit(items, goal_effects)
     return score, color, formality
 
 
@@ -238,10 +255,30 @@ def _explain(
     sentence = f"{pieces.capitalize()} — {reason}, styled for {occasion}."
     if constraints.preferred_hues:
         sentence += " The colours are chosen to flatter your undertone."
+    if constraints.goals:
+        sentence += f" {_goal_phrase(constraints.goals)}"
     # Only claim taste personalization when it meaningfully shaped the pick.
     if taste_strength >= 0.25 and _outfit_affinity(items) is not None:
         sentence += " Matched to the styles you've been saving."
     return sentence
+
+
+# Per-goal stylist phrasing for the explanation, naming the visual effect the
+# look is engineered for (CLAUDE.md §7 always explainable).
+_GOAL_PHRASE: dict[Effect, str] = {
+    Effect.ELONGATE: "styled as an unbroken vertical column to make you look taller",
+    Effect.SLIM: "kept dark and tailored for a slimming line",
+    Effect.BROADEN: "shaped with fuller, lighter pieces up top to look broader",
+}
+
+
+def _goal_phrase(goals: frozenset[Effect]) -> str:
+    """Join the active goals' phrases into one clause for the reason."""
+    phrases = [_GOAL_PHRASE[g] for g in Effect if g in goals]
+    if not phrases:
+        return ""
+    joined = phrases[0] if len(phrases) == 1 else "; ".join(phrases)
+    return f"It's {joined}."
 
 
 def _describe(item: Candidate) -> str:
@@ -319,7 +356,13 @@ def compose(
     if not candidates:
         return []
 
-    scored = [(items, *score_outfit(items, constraints, taste_strength)) for items in candidates]
+    # Precompute the goal's effects once; an empty goal set yields a neutral
+    # GoalEffects that leaves scoring unchanged.
+    goal_effects = effects_for(constraints.goals)
+    scored = [
+        (items, *score_outfit(items, constraints, taste_strength, goal_effects))
+        for items in candidates
+    ]
     scored.sort(key=lambda t: t[1], reverse=True)
     # Cap the working set so MMR stays cheap on a large catalog; the best looks are
     # already at the front after the sort.

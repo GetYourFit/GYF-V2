@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 
 from gyf_contracts.taxonomy import CATEGORIES
 
+from .goals import Effect
 from ..profile.models import Profile
 
 # Formality is an ordinal ladder; the perception ``formality`` attribute uses the
@@ -89,6 +90,9 @@ class Constraints:
     # Confidence in the personal signals (undertone/style intent) actually used,
     # so the recommender can be honest when the profile is sparse (CLAUDE.md §7).
     personalization_strength: float = 0.0
+    # Controllable-styling goals parsed from the user's NL goal box (goals.py).
+    # Empty by default — the no-goal path is unchanged.
+    goals: frozenset[Effect] = field(default_factory=frozenset)
     blueprints: tuple[tuple[str, ...], ...] = field(default=OUTFIT_BLUEPRINTS)
 
     def categories_for_slot(self, slot: str) -> tuple[str, ...]:
@@ -102,7 +106,12 @@ def formality_rank(label: str | None) -> int:
     return _FORMALITY_RANK.get(label.strip().lower(), _FORMALITY_RANK[_DEFAULT_FORMALITY])
 
 
-def resolve(profile: Profile, occasion: str | None, region: str | None) -> Constraints:
+def resolve(
+    profile: Profile,
+    occasion: str | None,
+    region: str | None,
+    goals: frozenset[Effect] = frozenset(),
+) -> Constraints:
     """Build :class:`Constraints` from a profile and the requested occasion.
 
     The occasion argument wins over the profile's stored occasion (the user may
@@ -134,6 +143,7 @@ def resolve(profile: Profile, occasion: str | None, region: str | None) -> Const
         preferred_aesthetics=aesthetics,
         preferred_hues=hues,
         personalization_strength=personalization,
+        goals=goals,
     )
 
 

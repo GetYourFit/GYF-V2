@@ -72,3 +72,7 @@ class OutfitRecommendation(BaseModel):
     cold_start: bool = True
     personalized: bool = False
     taste_strength: float = 0.0
+    # Canonical controllable-styling effects parsed from the user's NL goal box and
+    # actually applied to this slate (empty when no goal / unrecognized). Echoed
+    # for transparency and so the client can confirm what it asked for landed.
+    applied_goals: list[str] = []
