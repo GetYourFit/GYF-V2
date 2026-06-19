@@ -76,3 +76,30 @@ drift. Schema changes (vector(768), HNSW index, catalog provenance) are in
 
 **Workstream A DoD:** every item gets embeddings + attributes (A2 backfill); visually-similar
 and text->image retrieval work (A3) and are eval'd with MRR/Recall (A4). ✅
+
+## Performance & device selection
+
+The backfill loads each batch's images **concurrently** (I/O) and encodes them in a **single
+forward pass** (compute), so neither the network nor the accelerator idles. Batch size and IO
+workers are configurable (`GYF_PERCEPTION_BATCH_SIZE`, `GYF_PERCEPTION_IO_WORKERS`).
+
+`GYF_PERCEPTION_DEVICE=auto` (default) picks the most powerful device that **actually runs the
+model correctly**: each accelerator (CUDA > Apple MPS) is *empirically probed* once — a real
+encode in an isolated subprocess, validated for finite, unit-norm output — and the result is
+cached per torch version (`$HF_HOME/gyf_device_probe.json`). A backend that aborts or returns
+non-finite embeddings (as MPS currently does for SigLIP) is rejected and we fall back, never
+hardcoding a blocklist; it auto-upgrades when the backend is fixed. Override with an explicit
+device (e.g. `cpu`, `cuda`, `mps`).
+
+## End-to-end proof on real data (Workstream A)
+
+`scripts/e2e_workstream_a.sh` runs the whole loop against a local Dockerized pgvector — real
+HuggingFace fashion subset → ingest → backfill → live `/items/search` + `/similar` →
+MRR/Recall + zero-shot category accuracy — without touching the live Supabase:
+
+```bash
+bash scripts/e2e_workstream_a.sh        # writes data/e2e/reports/retrieval_*.json
+```
+
+Baseline (120 items, 10 categories, CPU): **MRR 0.83**, zero-shot **category accuracy ~71%**.
+This is the offline signal that gates future model changes (promotion still needs online A/B).
