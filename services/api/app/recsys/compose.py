@@ -219,10 +219,15 @@ def _describe(item: Candidate) -> str:
 
 def _color_reason(items: tuple[Candidate, ...]) -> str:
     """Name the colour relationship driving a high-harmony look, for the reason."""
-    colored = [it.lch for it in items if it.lch is not None and it.lch[1] >= _NEUTRAL_CHROMA]
-    if len(colored) < 2:
+    colored = [it for it in items if it.lch is not None and it.lch[1] >= _NEUTRAL_CHROMA]
+    if not colored:
         return "a clean neutral palette"
-    dh = max(_hue_distance(a[2], b[2]) for a, b in itertools.combinations(colored, 2))
+    if len(colored) == 1:
+        # A single hero colour anchored by neutrals — name the hero, honestly.
+        hero = colored[0].hue_name or "a single colour"
+        return f"a {hero} piece grounded by neutral staples"
+    lch = [it.lch for it in colored]
+    dh = max(_hue_distance(a[2], b[2]) for a, b in itertools.combinations(lch, 2))
     if dh <= 30.0:
         return "harmonious analogous colours"
     if dh >= 150.0:
