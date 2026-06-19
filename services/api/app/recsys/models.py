@@ -59,12 +59,16 @@ class Outfit(BaseModel):
 class OutfitRecommendation(BaseModel):
     """The response: ranked outfits plus the resolved styling context.
 
-    Echoing the occasion and whether personal signal was used keeps the surface
-    transparent (CLAUDE.md §7) — the client can show *why* these looks, and an
-    empty ``outfits`` with ``cold_start=True`` honestly signals catalog scarcity.
+    ``recommendation_id`` ties these outfits to the impression events logged at
+    serve time; clients echo it back on save/skip so engagements join to the slate
+    (the training tuple for the future ranker). Echoing occasion, ``cold_start``
+    and ``taste_strength`` keeps the surface transparent (CLAUDE.md §7) — the
+    client can show *why* these looks and how personalized they are.
     """
 
+    recommendation_id: str
     occasion: str
     outfits: list[Outfit]
     cold_start: bool = True
     personalized: bool = False
+    taste_strength: float = 0.0

@@ -9,7 +9,15 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from app.main import app, get_account_repo, get_candidate_repo, get_profile_repo
+from app.events import InteractionAction
+from app.main import (
+    app,
+    get_account_repo,
+    get_candidate_repo,
+    get_event_sink,
+    get_profile_repo,
+    get_taste_repo,
+)
 from app.profile.account import InMemoryAccountRepository
 from app.profile.models import BudgetRange, Profile
 from app.profile.repository import InMemoryProfileRepository
@@ -17,13 +25,29 @@ from app.recsys import conditioning
 from app.recsys.candidates import Candidate, InMemoryCandidateRepository
 from app.recsys.compose import compose, pair_color_harmony, score_outfit
 from app.recsys.service import recommend
+from app.recsys.taste import (
+    EngagedItem,
+    InMemoryTasteRepository,
+    build_taste,
+    parse_vector,
+)
+
+
+class _CollectingSink:
+    """Captures published events instead of writing them, for assertions."""
+
+    def __init__(self) -> None:
+        self.events: list = []
+
+    def publish(self, event) -> None:
+        self.events.append(event)
 
 DEV_USER = "00000000-0000-0000-0000-000000000001"
 
 
 def _item(
     item_id, category, slot, *, lch=None, hue_name=None, formality="casual", certain=True,
-    aesthetic=None, price=None,
+    aesthetic=None, price=None, affinity=None,
 ) -> Candidate:
     return Candidate(
         item_id=item_id,
@@ -38,6 +62,7 @@ def _item(
         formality=formality,
         formality_certain=certain,
         aesthetic=aesthetic,
+        affinity=affinity,
     )
 
 
@@ -170,13 +195,13 @@ def test_uncertain_formality_lowers_confidence():
 
     s_base, _, _ = score_outfit(base, c)
     s_shaky, _, _ = score_outfit(shaky, c)
-    assert _confidence(shaky, s_shaky, c) < _confidence(base, s_base, c)
+    assert _confidence(shaky, s_shaky, c, 0.0) < _confidence(base, s_base, c, 0.0)
 
 
 # --- Service + API end to end ----------------------------------------------
 
 
-def _client(profile: Profile | None) -> TestClient:
+def _client(profile: Profile | None, taste=None, sink=None) -> TestClient:
     profiles = InMemoryProfileRepository()
     if profile is not None:
         profiles.upsert(DEV_USER, profile)
@@ -185,6 +210,8 @@ def _client(profile: Profile | None) -> TestClient:
     app.dependency_overrides[get_candidate_repo] = lambda: InMemoryCandidateRepository(
         _three_slot_catalog()
     )
+    app.dependency_overrides[get_taste_repo] = lambda: taste or InMemoryTasteRepository()
+    app.dependency_overrides[get_event_sink] = lambda: sink or _CollectingSink()
     return TestClient(app)
 
 
@@ -215,6 +242,128 @@ def test_recommend_404_before_onboarding():
 
 def test_service_recommend_honors_k():
     profile = Profile(occasion="casual")
-    rec = recommend(profile, InMemoryCandidateRepository(_three_slot_catalog()), "casual", None, 2)
+    rec = recommend(
+        profile,
+        DEV_USER,
+        InMemoryCandidateRepository(_three_slot_catalog()),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        2,
+    )
     assert len(rec.outfits) <= 2
     assert rec.cold_start is True
+    assert rec.recommendation_id
+
+
+# --- Taste model (online embedding) ----------------------------------------
+
+
+def test_parse_vector_handles_text_and_list():
+    assert parse_vector("[0.1,0.2,0.3]") == [0.1, 0.2, 0.3]
+    assert parse_vector([1, 2, 3]) == [1.0, 2.0, 3.0]
+
+
+def test_no_engagement_yields_no_taste():
+    taste = build_taste([])
+    assert taste.vector is None
+    assert taste.strength == 0.0
+    assert not taste.has_signal
+
+
+def test_taste_points_toward_saved_items():
+    # Saving items near +x builds a taste vector pointing at +x.
+    saves = [EngagedItem([1.0, 0.0], InteractionAction.SAVE, age_days=0.0) for _ in range(3)]
+    taste = build_taste(saves)
+    assert taste.has_signal
+    assert taste.vector[0] > 0.9  # normalized toward the saved direction
+    assert taste.strength > 0.0
+
+
+def test_skip_pushes_taste_away():
+    items = [
+        EngagedItem([1.0, 0.0], InteractionAction.SAVE, age_days=0.0),
+        EngagedItem([0.0, 1.0], InteractionAction.SKIP, age_days=0.0),
+    ]
+    taste = build_taste(items)
+    # The save direction survives; the skipped direction is suppressed (negative).
+    assert taste.vector[0] > 0
+    assert taste.vector[1] < 0
+
+
+def test_strength_saturates_with_more_positive_signal():
+    few = build_taste([EngagedItem([1.0, 0.0], InteractionAction.SAVE, 0.0)])
+    many = build_taste([EngagedItem([1.0, 0.0], InteractionAction.SAVE, 0.0) for _ in range(20)])
+    assert many.strength > few.strength
+    assert many.strength < 1.0  # never fully certain
+
+
+def test_recency_decay_weights_recent_engagement_more():
+    recent = build_taste([EngagedItem([1.0, 0.0], InteractionAction.SAVE, age_days=0.0)])
+    old = build_taste([EngagedItem([1.0, 0.0], InteractionAction.SAVE, age_days=180.0)])
+    assert recent.strength > old.strength
+
+
+def test_taste_affinity_lifts_matching_outfits():
+    # Two complete catalogs differing only in which top has high taste affinity.
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    liked = _item("t1", "t_shirt", "top", lch=(50, 8, 0), affinity=0.9)
+    disliked = _item("t2", "shirt", "top", lch=(50, 8, 0), affinity=-0.5)
+    bottom = _item("b1", "jeans", "bottom", lch=(40, 8, 0), affinity=0.0)
+    foot = _item("f1", "sneakers", "footwear", lch=(80, 5, 0), affinity=0.0)
+    pools = {"top": [liked, disliked], "bottom": [bottom], "footwear": [foot], "full_body": []}
+    outfits = compose(pools, c, k=2, taste_strength=0.8)
+    # The liked top must lead.
+    top_ids = [next(it.item_id for it in o.items if it.slot == "top") for o in outfits]
+    assert top_ids[0] == "t1"
+
+
+def test_taste_zero_strength_is_identical_to_cold_start():
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    items = (
+        _item("t1", "t_shirt", "top", lch=(50, 40, 30), affinity=0.9),
+        _item("b1", "jeans", "bottom", lch=(40, 10, 250), affinity=0.9),
+        _item("f1", "sneakers", "footwear", lch=(80, 5, 0), affinity=0.9),
+    )
+    cold, _, _ = score_outfit(items, c, 0.0)
+    warm, _, _ = score_outfit(items, c, 0.5)
+    assert cold != warm  # affinity present + strength changes the score
+    # but with no affinity, strength has no effect (pure cold start)
+    plain = tuple(_item(it.item_id, it.category, it.slot, lch=it.lch) for it in items)
+    assert score_outfit(plain, c, 0.0)[0] == score_outfit(plain, c, 0.9)[0]
+
+
+def test_endpoint_logs_impressions_with_context():
+    sink = _CollectingSink()
+    try:
+        client = _client(Profile(occasion="casual"), sink=sink)
+        resp = client.get("/outfits/recommend?k=2")
+        assert resp.status_code == 200
+        rec_id = resp.json()["recommendation_id"]
+        assert sink.events, "no impressions logged"
+        ev = sink.events[0]
+        assert ev.action == InteractionAction.IMPRESSION
+        assert ev.context["recommendation_id"] == rec_id
+        assert "rank" in ev.context and "score" in ev.context  # propensity captured
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_endpoint_personalizes_from_taste_history():
+    # A user with engagement history is personalized (not cold-start). The taste
+    # vector is independent of the in-memory catalog, so any non-zero embedding
+    # exercises the personalized path.
+    taste = InMemoryTasteRepository(
+        {DEV_USER: [EngagedItem([0.0, 0.0, 1.0], InteractionAction.SAVE, 0.0)]}
+    )
+    try:
+        client = _client(Profile(occasion="casual"), taste=taste)
+        resp = client.get("/outfits/recommend?k=3")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["personalized"] is True
+        assert body["cold_start"] is False
+        assert body["taste_strength"] > 0.0
+    finally:
+        app.dependency_overrides.clear()

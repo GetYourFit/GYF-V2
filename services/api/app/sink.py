@@ -51,8 +51,8 @@ class KafkaSink:
 # SQL kept as module constants so tests can assert against them without a live DB.
 _UPSERT_USER = "INSERT INTO users (id) VALUES (%s) ON CONFLICT (id) DO NOTHING"
 _INSERT_INTERACTION = (
-    "INSERT INTO interactions (user_id, target_type, target_id, action, weight, ts) "
-    "VALUES (%s, %s, %s, %s, %s, %s)"
+    "INSERT INTO interactions (user_id, target_type, target_id, action, weight, context, ts) "
+    "VALUES (%s, %s, %s, %s, %s, %s, %s)"
 )
 
 
@@ -73,6 +73,8 @@ class PostgresSink:
         self._pool = pool
 
     def publish(self, event: InteractionEvent) -> None:
+        import json
+
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             conn.execute(_UPSERT_USER, (event.user_id,))
             conn.execute(
@@ -83,6 +85,7 @@ class PostgresSink:
                     event.target_id,
                     event.action.value,
                     event.weight,
+                    json.dumps(event.context),
                     event.ts,
                 ),
             )

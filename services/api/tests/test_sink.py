@@ -52,5 +52,6 @@ def test_postgres_sink_upserts_user_then_inserts_interaction():
         "o1",
         "save",
         1.0,
+        "{}",  # context JSONB-serialized (empty by default)
         event.ts,
     )

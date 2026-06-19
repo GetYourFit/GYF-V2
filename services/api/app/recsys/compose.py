@@ -149,33 +149,63 @@ def _aesthetic_fit(items: tuple[Candidate, ...], preferred: frozenset[str]) -> f
 # --- Whole-outfit scoring ---------------------------------------------------
 
 
-def score_outfit(items: tuple[Candidate, ...], constraints: Constraints) -> tuple[float, float, float]:
-    """Overall styling score plus the colour and formality sub-scores (for reasons)."""
+def _outfit_affinity(items: tuple[Candidate, ...]) -> float | None:
+    """Mean taste affinity of the outfit's items, mapped to [0, 1].
+
+    Cosine similarity in [-1, 1] -> [0, 1]. ``None`` when no item carries an
+    affinity (cold start), so the caller falls back to pure content scoring.
+    """
+    affinities = [it.affinity for it in items if it.affinity is not None]
+    if not affinities:
+        return None
+    return sum((a + 1.0) / 2.0 for a in affinities) / len(affinities)
+
+
+def score_outfit(
+    items: tuple[Candidate, ...], constraints: Constraints, taste_strength: float = 0.0
+) -> tuple[float, float, float]:
+    """Overall styling score plus the colour and formality sub-scores (for reasons).
+
+    The content score (colour/formality/undertone/aesthetic) is blended with the
+    user's taste affinity by ``taste_strength`` (α): ``(1-α)·content + α·affinity``.
+    With no taste signal (α=0 or no affinity) this is exactly the cold-start score,
+    so a new user is never scored worse than Cycle 1.
+    """
     color = _outfit_color_harmony(items)
     formality = _formality_fit(items, constraints.target_formality)
     undertone = _undertone_fit(items, constraints.preferred_hues)
     aesthetic = _aesthetic_fit(items, constraints.preferred_aesthetics)
-    score = (
+    content = (
         _W_COLOR * color
         + _W_FORMALITY * formality
         + _W_UNDERTONE * undertone
         + _W_AESTHETIC * aesthetic
     )
+    affinity = _outfit_affinity(items)
+    if taste_strength > 0.0 and affinity is not None:
+        score = (1.0 - taste_strength) * content + taste_strength * affinity
+    else:
+        score = content
     return score, color, formality
 
 
-def _confidence(items: tuple[Candidate, ...], score: float, constraints: Constraints) -> float:
+def _confidence(
+    items: tuple[Candidate, ...], score: float, constraints: Constraints, taste_strength: float
+) -> float:
     """Honesty-discounted confidence (CLAUDE.md §7: never overclaim).
 
     Starts from the styling score and discounts for: missing perception colour,
     uncertain formality reads (the known weak spot per user feedback), and a thin
-    personal signal at cold start. A great-scoring outfit built on shaky inputs
-    must not report high confidence.
+    personal signal. Personal signal is the *stronger* of stated-profile
+    personalization and learned taste strength — observed behaviour earns as much
+    trust as a stated preference. A great-scoring outfit built on shaky inputs must
+    not report high confidence.
     """
     perceived = sum(1 for it in items if it.lch is not None) / len(items)
     formality_certainty = sum(1.0 if it.formality_certain else 0.5 for it in items) / len(items)
     # Personal signal lifts a floor of 0.6 (occasion-only) toward 1.0.
-    personal = 0.6 + 0.4 * constraints.personalization_strength
+    personal_signal = max(constraints.personalization_strength, taste_strength)
+    personal = 0.6 + 0.4 * personal_signal
     raw = score * perceived * formality_certainty * personal
     return round(max(0.0, min(1.0, raw)), 3)
 
@@ -195,7 +225,11 @@ _OCCASION_PHRASE: dict[str, str] = {
 
 
 def _explain(
-    items: tuple[Candidate, ...], constraints: Constraints, color: float, formality: float
+    items: tuple[Candidate, ...],
+    constraints: Constraints,
+    color: float,
+    formality: float,
+    taste_strength: float,
 ) -> str:
     """A concise stylist reason: what the look is, why it coordinates, who for."""
     pieces = ", ".join(_describe(it) for it in items)
@@ -204,6 +238,9 @@ def _explain(
     sentence = f"{pieces.capitalize()} — {reason}, styled for {occasion}."
     if constraints.preferred_hues:
         sentence += " The colours are chosen to flatter your undertone."
+    # Only claim taste personalization when it meaningfully shaped the pick.
+    if taste_strength >= 0.25 and _outfit_affinity(items) is not None:
+        sentence += " Matched to the styles you've been saving."
     return sentence
 
 
@@ -267,25 +304,32 @@ def _diversity(a: tuple[Candidate, ...], b: tuple[Candidate, ...]) -> float:
 
 
 def compose(
-    pools: dict[str, list[Candidate]], constraints: Constraints, k: int
+    pools: dict[str, list[Candidate]],
+    constraints: Constraints,
+    k: int,
+    taste_strength: float = 0.0,
 ) -> list[ScoredOutfit]:
     """Assemble, score, and MMR-rank the top ``k`` diverse complete outfits.
 
-    Returns fewer than ``k`` (possibly zero) when the catalog cannot fill a
-    blueprint — honest scarcity over padding with bad looks.
+    ``taste_strength`` (α, 0 at cold start) blends the user's learned taste into
+    the score. Returns fewer than ``k`` (possibly zero) when the catalog cannot
+    fill a blueprint — honest scarcity over padding with bad looks.
     """
     candidates = _assemble(pools, constraints)
     if not candidates:
         return []
 
-    scored = [(items, *score_outfit(items, constraints)) for items in candidates]
+    scored = [(items, *score_outfit(items, constraints, taste_strength)) for items in candidates]
     scored.sort(key=lambda t: t[1], reverse=True)
     # Cap the working set so MMR stays cheap on a large catalog; the best looks are
     # already at the front after the sort.
     pool = scored[: max(k * 8, 24)]
 
     selected = _mmr_select(pool, k)
-    return [_finalize(items, score, color, formality, constraints) for items, score, color, formality in selected]
+    return [
+        _finalize(items, score, color, formality, constraints, taste_strength)
+        for items, score, color, formality in selected
+    ]
 
 
 def _mmr_select(
@@ -307,13 +351,18 @@ def _mmr_select(
 
 
 def _finalize(
-    items: tuple[Candidate, ...], score: float, color: float, formality: float, constraints: Constraints
+    items: tuple[Candidate, ...],
+    score: float,
+    color: float,
+    formality: float,
+    constraints: Constraints,
+    taste_strength: float,
 ) -> ScoredOutfit:
     return ScoredOutfit(
         items=items,
         score=round(score, 3),
-        confidence=_confidence(items, score, constraints),
-        explanation=_explain(items, constraints, color, formality),
+        confidence=_confidence(items, score, constraints, taste_strength),
+        explanation=_explain(items, constraints, color, formality, taste_strength),
         color_harmony=round(color, 3),
         formality_fit=round(formality, 3),
     )

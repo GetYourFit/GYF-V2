@@ -38,6 +38,10 @@ class Candidate:
     formality: str | None
     formality_certain: bool
     aesthetic: str | None
+    # Cosine similarity in [-1, 1] to the user's taste vector, or ``None`` at cold
+    # start (no taste yet). Computed in pgvector against the HNSW index, never in
+    # Python, so personalization costs no extra round-trips.
+    affinity: float | None = None
 
 
 class CandidateRepository(Protocol):
@@ -47,8 +51,13 @@ class CandidateRepository(Protocol):
         region: str | None,
         max_price: float | None,
         limit_per_slot: int,
+        taste_vector: list[float] | None = None,
     ) -> dict[str, list[Candidate]]:
-        """Return up to ``limit_per_slot`` candidates for each requested slot."""
+        """Return up to ``limit_per_slot`` candidates for each requested slot.
+
+        When ``taste_vector`` is given, each candidate carries its cosine affinity
+        to it (computed in pgvector); otherwise ``affinity`` is ``None``.
+        """
         ...
 
 
@@ -56,6 +65,9 @@ class CandidateRepository(Protocol):
 # (written by ml/pipelines/backfill.py) via JSONB paths. The region filter matches
 # the retrieval convention: keep region-neutral items and items tagged for the
 # region. Categories for the slot are bound as an array against the indexed column.
+# ``{affinity}`` is filled with either ``NULL`` (cold start) or a pgvector cosine
+# similarity against the user's taste vector. We LEFT JOIN embeddings so an item
+# missing its embedding still appears (just without affinity).
 _CANDIDATES = """
 SELECT
     i.id,
@@ -64,18 +76,26 @@ SELECT
     i.price,
     i.currency,
     i.affiliate_url,
-    i.attributes #> '{perception,color,lch}'                       AS lch,
-    i.attributes #>> '{perception,color,hue_name}'                 AS hue_name,
-    i.attributes #>> '{perception,attributes,formality,value}'     AS formality,
-    i.attributes #>> '{perception,attributes,formality,certain}'   AS formality_certain,
-    i.attributes #>> '{perception,attributes,aesthetic,value}'     AS aesthetic
+    i.attributes #> '{{perception,color,lch}}'                       AS lch,
+    i.attributes #>> '{{perception,color,hue_name}}'                 AS hue_name,
+    i.attributes #>> '{{perception,attributes,formality,value}}'     AS formality,
+    i.attributes #>> '{{perception,attributes,formality,certain}}'   AS formality_certain,
+    i.attributes #>> '{{perception,attributes,aesthetic,value}}'     AS aesthetic,
+    {affinity}                                                       AS affinity
 FROM items i
+LEFT JOIN item_embeddings e ON e.item_id = i.id
 WHERE i.category = ANY(%s)
-  AND (i.region_tags = '{}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
+  AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
   AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
 ORDER BY i.created_at DESC
 LIMIT %s
 """
+
+_AFFINITY_EXPR = "1 - (e.embedding <=> %s::vector)"
+
+
+def _pgvector(embedding: list[float]) -> str:
+    return "[" + ",".join(repr(float(x)) for x in embedding) + "]"
 
 
 class PostgresCandidateRepository:
@@ -94,18 +114,20 @@ class PostgresCandidateRepository:
         region: str | None,
         max_price: float | None,
         limit_per_slot: int,
+        taste_vector: list[float] | None = None,
     ) -> dict[str, list[Candidate]]:
+        affinity_expr = _AFFINITY_EXPR if taste_vector else "NULL"
+        sql = _CANDIDATES.format(affinity=affinity_expr)
+        # The affinity param (if any) is bound first — it appears before WHERE.
+        prefix: tuple = (_pgvector(taste_vector),) if taste_vector else ()
         out: dict[str, list[Candidate]] = {}
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             for slot in slots:
                 categories = list(_CATEGORIES_BY_SLOT.get(slot, ()))
                 if not categories:
                     continue
-                rows = conn.execute(
-                    _CANDIDATES,
-                    (categories, region, region, max_price, max_price, limit_per_slot),
-                )
-                out[slot] = [_row_to_candidate(slot, r) for r in rows]
+                params = prefix + (categories, region, region, max_price, max_price, limit_per_slot)
+                out[slot] = [_row_to_candidate(slot, r) for r in conn.execute(sql, params)]
         return out
 
 
@@ -124,6 +146,7 @@ def _row_to_candidate(slot: str, row: tuple) -> Candidate:
         formality=row[8],
         formality_certain=(row[9] == "true"),
         aesthetic=row[10],
+        affinity=float(row[11]) if row[11] is not None else None,
     )
 
 
@@ -139,6 +162,7 @@ class InMemoryCandidateRepository:
         region: str | None,
         max_price: float | None,
         limit_per_slot: int,
+        taste_vector: list[float] | None = None,
     ) -> dict[str, list[Candidate]]:
         out: dict[str, list[Candidate]] = {slot: [] for slot in slots}
         for item in self.items:
