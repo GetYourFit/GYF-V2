@@ -27,12 +27,19 @@ _PURGE_EXPIRED = (
     "DELETE FROM users "
     "WHERE deleted_at IS NOT NULL AND deleted_at < now() - make_interval(days => %s)"
 )
+# Provision a user row if absent, leaving any existing row (incl. its deleted_at)
+# untouched — so this never resurrects a tombstoned account.
+_ENSURE_USER = "INSERT INTO users (id) VALUES (%s) ON CONFLICT (id) DO NOTHING"
 _GET_CONSENT = "SELECT consent_flags FROM users WHERE id = %s"
 # Merge (not replace) so granting one consent never clears another.
 _UPDATE_CONSENT = "UPDATE users SET consent_flags = consent_flags || %s WHERE id = %s"
 
 
 class AccountRepository(Protocol):
+    def ensure_user(self, user_id: str) -> None:
+        """Provision the user row if absent; never touches an existing one."""
+        ...
+
     def soft_delete(self, user_id: str) -> bool:
         """Tombstone the user (set deleted_at). True iff newly tombstoned."""
         ...
@@ -63,6 +70,10 @@ class PostgresAccountRepository:
 
             pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
         self._pool = pool
+
+    def ensure_user(self, user_id: str) -> None:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            conn.execute(_ENSURE_USER, (user_id,))
 
     def soft_delete(self, user_id: str) -> bool:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
@@ -100,6 +111,9 @@ class InMemoryAccountRepository:
             uid: {"deleted": False, "consent": {}} for uid in (existing or set())
         }
         self.purged: set[str] = set()
+
+    def ensure_user(self, user_id: str) -> None:
+        self.users.setdefault(user_id, {"deleted": False, "consent": {}})
 
     def soft_delete(self, user_id: str) -> bool:
         user = self.users.get(user_id)

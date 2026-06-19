@@ -30,7 +30,40 @@ from .recsys.taste import TasteRepository
 from .sink import EventSink, get_sink
 from .telemetry import configure_telemetry
 
-app = FastAPI(title="GYF Core API", version="0.0.0")
+_API_DESCRIPTION = """
+GYF — your AI-native personal stylist. This is the core API.
+
+### Quick-start (local dev — no auth needed)
+In local mode every call is the same **dev user**, auto-provisioned for you, so
+you can click **Authorize** nothing and just hit endpoints in order:
+
+1. **PUT `/profile`** — create your style profile (the form is pre-filled with a
+   valid example; just press *Execute*). Required before recommendations.
+2. **GET `/outfits/recommend`** — your outfits. Try the **`goal`** box:
+   *"I want to look slimmer / taller / broader"* and watch the looks (and each
+   `explanation`) change. `applied_goals` echoes what GYF understood.
+3. **POST `/feedback`** — `save` an item id you liked, then call
+   `/outfits/recommend` again: it personalizes (`taste_strength` rises).
+4. **GET `/items/search`** / **`/items/{id}/similar`** — visual search.
+5. **GET/PUT `/consent`**, **DELETE `/profile`**, **DELETE `/account`** — privacy
+   and right-to-erasure.
+
+Every recommendation ships a human reason and an honest confidence — trust is
+the product.
+"""
+
+app = FastAPI(
+    title="GYF Core API",
+    version="0.1.0",
+    description=_API_DESCRIPTION,
+    openapi_tags=[
+        {"name": "recommendations", "description": "Outfit composition & the NL styling-goal box."},
+        {"name": "profile", "description": "Onboarding, consent, and account lifecycle."},
+        {"name": "catalog", "description": "Visual search & shop-the-look."},
+        {"name": "feedback", "description": "Behavioral events that train personalization."},
+        {"name": "system", "description": "Health & identity probes."},
+    ],
+)
 sink = get_sink()
 
 # Observability (P0-E): structured logs + opt-in traces/errors + always-on metrics.
@@ -38,7 +71,7 @@ _telemetry = configure_telemetry(app)
 install_metrics(app)
 
 
-@app.get("/health")
+@app.get("/health", tags=["system"])
 def health() -> dict[str, object]:
     return {
         "status": "ok",
@@ -48,7 +81,7 @@ def health() -> dict[str, object]:
     }
 
 
-@app.get("/me")
+@app.get("/me", tags=["system"])
 def me(principal: Principal = Depends(get_current_principal)) -> dict[str, str | None]:
     """Trivial authenticated endpoint — proves the auth scaffold end-to-end."""
     return {"user_id": principal.user_id, "email": principal.email}
@@ -79,7 +112,7 @@ def get_text_embedder() -> TextEmbedder:
         raise HTTPException(status_code=503, detail="text search unavailable") from exc
 
 
-@app.get("/items/{item_id}/similar")
+@app.get("/items/{item_id}/similar", tags=["catalog"])
 def similar_items(
     item_id: str,
     k: int = Query(10, ge=1, le=50),
@@ -90,7 +123,7 @@ def similar_items(
     return {"results": repo.similar_to_item(item_id, k, region)}
 
 
-@app.get("/items/search")
+@app.get("/items/search", tags=["catalog"])
 def search_items(
     q: str = Query(..., min_length=1),
     k: int = Query(10, ge=1, le=50),
@@ -127,13 +160,20 @@ def require_active_principal(
 
     A tombstoned user is disabled the instant they request deletion: no further
     reads or writes until the grace window elapses and the purge job erases them.
+
+    In local/open-auth mode the dev principal is auto-provisioned so a freshly
+    rebuilt database (empty ``users`` table) just works — without this, an absent
+    row reads as "deleted" and every call 403s. It never resurrects a real
+    tombstone (insert-if-absent only), so deletion semantics are preserved.
     """
+    if settings.auth_is_open:
+        repo.ensure_user(principal.user_id)
     if repo.is_deleted(principal.user_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account deleted")
     return principal
 
 
-@app.get("/profile")
+@app.get("/profile", tags=["profile"])
 def read_profile(
     principal: Principal = Depends(require_active_principal),
     repo: ProfileRepository = Depends(get_profile_repo),
@@ -145,7 +185,7 @@ def read_profile(
     return profile
 
 
-@app.put("/profile")
+@app.put("/profile", tags=["profile"])
 def upsert_profile(
     payload: ProfileInput,
     principal: Principal = Depends(require_active_principal),
@@ -161,7 +201,7 @@ def upsert_profile(
     return profile
 
 
-@app.delete("/profile", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/profile", status_code=status.HTTP_204_NO_CONTENT, tags=["profile"])
 def delete_profile(
     principal: Principal = Depends(require_active_principal),
     repo: ProfileRepository = Depends(get_profile_repo),
@@ -171,7 +211,7 @@ def delete_profile(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.get("/consent")
+@app.get("/consent", tags=["profile"])
 def read_consent(
     principal: Principal = Depends(require_active_principal),
     repo: AccountRepository = Depends(get_account_repo),
@@ -180,7 +220,7 @@ def read_consent(
     return repo.get_consent(principal.user_id)
 
 
-@app.put("/consent")
+@app.put("/consent", tags=["profile"])
 def update_consent(
     payload: ConsentInput,
     principal: Principal = Depends(require_active_principal),
@@ -190,7 +230,7 @@ def update_consent(
     return repo.update_consent(principal.user_id, payload.flags)
 
 
-@app.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/account", status_code=status.HTTP_204_NO_CONTENT, tags=["profile"])
 def delete_account(
     principal: Principal = Depends(get_current_principal),
     repo: AccountRepository = Depends(get_account_repo),
@@ -223,12 +263,36 @@ def get_event_sink() -> EventSink:
     return sink
 
 
-@app.get("/outfits/recommend")
+@app.get("/outfits/recommend", tags=["recommendations"], summary="Recommend complete outfits")
 def recommend_outfits(
-    occasion: str | None = None,
-    k: int = Query(5, ge=1, le=20),
-    region: str | None = None,
-    goal: str | None = Query(None, max_length=200),
+    occasion: str | None = Query(
+        None,
+        description="What you're dressing for. Overrides your profile's stored occasion.",
+        openapi_examples={
+            "casual": {"summary": "Casual", "value": "casual"},
+            "business": {"summary": "Business", "value": "business"},
+            "wedding": {"summary": "Wedding", "value": "wedding"},
+            "festive": {"summary": "Festive", "value": "festive"},
+        },
+    ),
+    k: int = Query(5, ge=1, le=20, description="How many outfits to return."),
+    region: str | None = Query(None, description="Region code (e.g. IN) for culture-aware garments."),
+    goal: str | None = Query(
+        None,
+        max_length=200,
+        description=(
+            "Free-text styling goal. GYF parses it into visual effects (taller / "
+            "slimmer / broader) and steers the look with color theory + body-type "
+            "intelligence. Unrecognized text is a no-op."
+        ),
+        openapi_examples={
+            "none": {"summary": "No goal (baseline)", "value": None},
+            "slimmer": {"summary": "Look slimmer", "value": "I want to look slimmer"},
+            "taller": {"summary": "Look taller", "value": "I want to look taller"},
+            "broader": {"summary": "Look broader", "value": "I want to look broader and more muscular"},
+            "combined": {"summary": "Taller + slimmer", "value": "taller and slimmer"},
+        },
+    ),
     principal: Principal = Depends(require_active_principal),
     profile_repo: ProfileRepository = Depends(get_profile_repo),
     candidates: CandidateRepository = Depends(get_candidate_repo),
@@ -253,7 +317,7 @@ def recommend_outfits(
     )
 
 
-@app.post("/feedback", status_code=202)
+@app.post("/feedback", status_code=202, tags=["feedback"])
 def ingest_feedback(
     body: FeedbackRequest,
     principal: Principal = Depends(get_current_principal),

@@ -56,6 +56,18 @@ class FeedbackRequest(BaseModel):
     """Client-supplied feedback. ``user_id`` is intentionally absent — it is taken
     from the authenticated principal so callers cannot attribute events to others."""
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "target_type": "item",
+                    "target_id": "paste-an-item_id-from-a-recommendation",
+                    "action": "save",
+                }
+            ]
+        }
+    }
+
     target_type: InteractionTarget
     target_id: str
     action: InteractionAction

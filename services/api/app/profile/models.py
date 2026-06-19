@@ -81,7 +81,21 @@ class ProfileInput(BaseModel):
     than being silently dropped into the void.
     """
 
-    model_config = {"extra": "forbid"}
+    model_config = {
+        "extra": "forbid",
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "skin_tone": "medium",
+                    "undertone": "cool",
+                    "body_type": "rectangle",
+                    "style_intent": ["minimalist", "streetwear"],
+                    "budget_range": {"max": 120, "currency": "USD"},
+                    "occasion": "casual",
+                }
+            ]
+        },
+    }
 
     skin_tone: str | None = None
     undertone: str | None = None
