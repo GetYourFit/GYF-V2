@@ -51,9 +51,11 @@ def test_style_intent_envelope_round_trips_occasion():
 
 
 def _client(profiles=None, accounts=None) -> TestClient:
+    # The active-account guard resolves the account repo on every profile call,
+    # so it must always be overridden; default to an active dev user.
+    accounts = accounts if accounts is not None else InMemoryAccountRepository(existing={DEV_USER})
     app.dependency_overrides[get_profile_repo] = lambda: profiles or InMemoryProfileRepository()
-    if accounts is not None:
-        app.dependency_overrides[get_account_repo] = lambda: accounts
+    app.dependency_overrides[get_account_repo] = lambda: accounts
     return TestClient(app)
 
 
@@ -111,12 +113,46 @@ def test_delete_profile_is_204_and_idempotent():
         app.dependency_overrides.clear()
 
 
-def test_delete_account_removes_user():
+def test_delete_account_soft_deletes_and_disables():
     accounts = InMemoryAccountRepository(existing={DEV_USER})
     try:
         client = _client(InMemoryProfileRepository(), accounts)
         assert client.delete("/account").status_code == 204
-        assert DEV_USER in accounts.deleted
+        assert accounts.is_deleted(DEV_USER) is True
+        # account is disabled immediately: further profile calls are rejected.
+        assert client.get("/profile").status_code == 403
+        assert client.put("/profile", json={"body_type": "oval"}).status_code == 403
+        # re-requesting deletion is idempotent (still 204).
+        assert client.delete("/account").status_code == 204
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_purge_expired_hard_deletes_tombstoned():
+    accounts = InMemoryAccountRepository(existing={DEV_USER})
+    accounts.soft_delete(DEV_USER)
+    assert accounts.purge_expired(30) == 1
+    assert DEV_USER in accounts.purged
+    assert DEV_USER not in accounts.users
+
+
+# --- Consent ----------------------------------------------------------------
+
+
+def test_consent_merge_keeps_known_keys_and_drops_unknown():
+    accounts = InMemoryAccountRepository(existing={DEV_USER})
+    try:
+        client = _client(InMemoryProfileRepository(), accounts)
+        assert client.get("/consent").json() == {}
+        r = client.put("/consent", json={"flags": {"data_processing": True, "made_up": True}})
+        assert r.status_code == 200
+        assert r.json() == {"data_processing": True}  # unknown key dropped
+        # a second update merges rather than replaces.
+        r = client.put("/consent", json={"flags": {"personalization": True}})
+        assert r.json() == {"data_processing": True, "personalization": True}
+        # revoking flips the flag, leaving others intact.
+        r = client.put("/consent", json={"flags": {"data_processing": False}})
+        assert r.json() == {"data_processing": False, "personalization": True}
     finally:
         app.dependency_overrides.clear()
 

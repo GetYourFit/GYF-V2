@@ -30,6 +30,34 @@ from pydantic import BaseModel, Field, field_validator
 # Manual onboarding asserts ground truth about oneself: full confidence.
 MANUAL_CONFIDENCE = 1.0
 
+# Controlled set of consent keys the user can grant/revoke (CLAUDE.md §2 privacy).
+# A closed vocabulary keeps the legal surface auditable; unknown keys are dropped.
+CONSENT_KEYS: frozenset[str] = frozenset(
+    {
+        "data_processing",  # process my data to provide the service (required to use GYF)
+        "personalization",  # learn my taste from my behavior
+        "photo_storage",  # store photos I upload (body/skin-tone modules, try-on)
+        "marketing",  # send me marketing communications
+    }
+)
+
+
+class ConsentInput(BaseModel):
+    """A partial consent update: a map of known consent keys to grant/revoke.
+
+    Unknown keys are dropped (not rejected) so a client on a newer/older schema
+    can't write an unauditable flag; an empty map after filtering is a no-op.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    flags: dict[str, bool] = Field(default_factory=dict)
+
+    @field_validator("flags")
+    @classmethod
+    def _only_known_keys(cls, v: dict[str, bool]) -> dict[str, bool]:
+        return {k: bool(val) for k, val in v.items() if k in CONSENT_KEYS}
+
 Money = Annotated[float, Field(ge=0)]
 
 

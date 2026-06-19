@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     auth_disabled: bool = False
     dev_user_id: str = "00000000-0000-0000-0000-000000000001"
 
+    # --- Account lifecycle (P1-B) ---
+    # Right-to-erasure is a two-step soft delete: DELETE /account tombstones the
+    # user (sets users.deleted_at) and disables the account immediately; a purge
+    # job hard-deletes (cascading) once the account has been tombstoned for at
+    # least this many days, leaving a recovery window before data is irreversible.
+    account_deletion_grace_days: int = 30
+
     # --- Observability (P0-E). All env-driven; unset = no-op (free-tier first). ---
     service_name: str = "gyf-api"
     # OTLP traces endpoint (e.g. http://localhost:4318). Unset = tracing disabled.

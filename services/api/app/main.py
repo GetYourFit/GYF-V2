@@ -21,7 +21,7 @@ from .config import settings
 from .events import FeedbackRequest
 from .metrics import install_metrics, metrics_enabled
 from .profile.account import AccountRepository
-from .profile.models import Profile, ProfileInput, profile_from_manual
+from .profile.models import ConsentInput, Profile, ProfileInput, profile_from_manual
 from .profile.repository import ProfileRepository
 from .sink import get_sink
 from .telemetry import configure_telemetry
@@ -115,9 +115,23 @@ def get_account_repo() -> AccountRepository:
     return PostgresAccountRepository(settings.database_url)
 
 
+def require_active_principal(
+    principal: Principal = Depends(get_current_principal),
+    repo: AccountRepository = Depends(get_account_repo),
+) -> Principal:
+    """The caller, rejected with 403 if their account has been (soft) deleted.
+
+    A tombstoned user is disabled the instant they request deletion: no further
+    reads or writes until the grace window elapses and the purge job erases them.
+    """
+    if repo.is_deleted(principal.user_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account deleted")
+    return principal
+
+
 @app.get("/profile")
 def read_profile(
-    principal: Principal = Depends(get_current_principal),
+    principal: Principal = Depends(require_active_principal),
     repo: ProfileRepository = Depends(get_profile_repo),
 ) -> Profile:
     """The authenticated user's profile. 404 before onboarding completes."""
@@ -130,7 +144,7 @@ def read_profile(
 @app.put("/profile")
 def upsert_profile(
     payload: ProfileInput,
-    principal: Principal = Depends(get_current_principal),
+    principal: Principal = Depends(require_active_principal),
     repo: ProfileRepository = Depends(get_profile_repo),
 ) -> Profile:
     """Manual onboarding / edit: validate, stamp confidences, persist, return it.
@@ -145,7 +159,7 @@ def upsert_profile(
 
 @app.delete("/profile", status_code=status.HTTP_204_NO_CONTENT)
 def delete_profile(
-    principal: Principal = Depends(get_current_principal),
+    principal: Principal = Depends(require_active_principal),
     repo: ProfileRepository = Depends(get_profile_repo),
 ) -> Response:
     """Erase the user's profile (keeps the account). Idempotent: 204 either way."""
@@ -153,13 +167,33 @@ def delete_profile(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@app.get("/consent")
+def read_consent(
+    principal: Principal = Depends(require_active_principal),
+    repo: AccountRepository = Depends(get_account_repo),
+) -> dict[str, bool]:
+    """The user's current consent flags."""
+    return repo.get_consent(principal.user_id)
+
+
+@app.put("/consent")
+def update_consent(
+    payload: ConsentInput,
+    principal: Principal = Depends(require_active_principal),
+    repo: AccountRepository = Depends(get_account_repo),
+) -> dict[str, bool]:
+    """Grant/revoke consent. Merges known flags; unknown keys are ignored."""
+    return repo.update_consent(principal.user_id, payload.flags)
+
+
 @app.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
 def delete_account(
     principal: Principal = Depends(get_current_principal),
     repo: AccountRepository = Depends(get_account_repo),
 ) -> Response:
-    """Full data deletion: remove the user and all cascaded data. Idempotent."""
-    repo.delete_user(principal.user_id)
+    """Right-to-erasure: tombstone the account now; a purge job hard-deletes it
+    (cascading) after the grace window. Idempotent — re-requesting is a no-op."""
+    repo.soft_delete(principal.user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
