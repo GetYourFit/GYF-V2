@@ -54,17 +54,49 @@ def run_backfill(
     model_version: str,
     *,
     limit: int | None = None,
+    batch_size: int = 16,
+    io_workers: int = 8,
 ) -> BackfillResult:
-    """Perceive and persist every pending item. Items with no loadable image are skipped."""
+    """Perceive and persist every pending item, in parallel-loaded GPU batches.
+
+    Images for a batch are loaded concurrently (I/O bound), then encoded in a
+    single forward pass (compute bound) — so neither the network nor the GPU sits
+    idle waiting on the other. Items with no loadable image are skipped, never
+    fatal. Behaviour matches one-at-a-time processing; only throughput differs.
+    """
     result = BackfillResult()
-    for item in store.pending(model_version, limit):
-        image = _first_loadable(item.image_refs, loader)
-        if image is None:
-            result.skipped += 1
+    for batch in _batched(store.pending(model_version, limit), batch_size):
+        loaded = _load_batch(batch, loader, io_workers)
+        result.skipped += len(batch) - len(loaded)
+        if not loaded:
             continue
-        store.save(item.item_id, perceptor.perceive(image), model_version)
-        result.processed += 1
+        results = perceptor.perceive_batch([image for _, image in loaded])
+        for (item, _), perception in zip(loaded, results):
+            store.save(item.item_id, perception, model_version)
+            result.processed += 1
     return result
+
+
+def _batched(items: Iterable[PendingItem], size: int) -> Iterator[list[PendingItem]]:
+    batch: list[PendingItem] = []
+    for item in items:
+        batch.append(item)
+        if len(batch) >= size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
+
+
+def _load_batch(
+    batch: list[PendingItem], loader: ImageLoader, io_workers: int
+) -> list[tuple[PendingItem, Image]]:
+    """Load the first usable image for each item concurrently, preserving order."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=io_workers) as pool:
+        images = pool.map(lambda item: _first_loadable(item.image_refs, loader), batch)
+    return [(item, image) for item, image in zip(batch, images) if image is not None]
 
 
 def _first_loadable(refs: Iterable[str], loader: ImageLoader) -> Image | None:
@@ -162,6 +194,8 @@ def main(argv: Iterable[str] | None = None) -> None:
         default_image_loader,
         settings.perception_model_version,
         limit=args.limit,
+        batch_size=settings.perception_batch_size,
+        io_workers=settings.perception_io_workers,
     )
     print(f"backfill: processed={result.processed} skipped={result.skipped}")
 

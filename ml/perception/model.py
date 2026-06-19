@@ -14,6 +14,11 @@ model weights (mirrors the lazy-dependency pattern in services/api app.sink).
 
 from __future__ import annotations
 
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
@@ -49,6 +54,86 @@ class Encoder(Protocol):
         ...
 
 
+def _resolve_device(preference: str, torch: object) -> str:
+    """Pick the most powerful device that actually runs the model when 'auto'.
+
+    Order of preference: CUDA > MPS (Apple GPU) > CPU. We never hardcode a
+    blocklist — instead each accelerator is *empirically probed* (see
+    :func:`_accelerator_works`) by running the real model on it once, in an
+    isolated subprocess, so an unrecoverable backend abort (e.g. an Apple Metal
+    assertion that some torch/OS versions still throw for SigLIP) can't crash this
+    process. The probe result is cached per torch version, so it costs nothing on
+    subsequent runs and auto-upgrades when a backend is later fixed. CPU always
+    works and is never probed. An explicit preference is always respected.
+    """
+    if preference and preference != "auto":
+        return preference
+    if torch.cuda.is_available() and _accelerator_works("cuda"):  # type: ignore[attr-defined]
+        return "cuda"
+    if torch.backends.mps.is_available() and _accelerator_works("mps"):  # type: ignore[attr-defined]
+        return "mps"
+    return "cpu"
+
+
+def _probe_cache_path() -> Path:
+    base = os.environ.get("HF_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
+    return Path(base) / "gyf_device_probe.json"
+
+
+def _accelerator_works(device: str) -> bool:
+    """Has a real model forward pass succeeded on ``device``? Cached per torch ver."""
+    import torch
+
+    cache = _probe_cache_path()
+    key = f"{device}-{torch.__version__}"
+    try:
+        results = json.loads(cache.read_text())
+        if key in results:
+            return bool(results[key])
+    except (OSError, ValueError):
+        results = {}
+
+    works = _run_accelerator_probe(device)
+    results[key] = works
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(results))
+    except OSError:
+        pass
+    return works
+
+
+def _run_accelerator_probe(device: str) -> bool:
+    """Encode a realistic batch on ``device`` in a subprocess; True iff it is valid.
+
+    Isolation matters two ways: an abort (e.g. a Metal assertion) terminates the
+    child, not us; and we validate *numerics*, not just exit code — a backend that
+    silently returns non-finite or non-unit embeddings (as Apple MPS does for this
+    model) is rejected so it can never corrupt the catalog. The child exits 0 only
+    when every embedding is finite and L2-normalized.
+    """
+    code = (
+        "import numpy as np;"
+        "from PIL import Image;"
+        "from perception.model import SiglipEncoder;"
+        "from common.config import settings;"
+        "rng = np.random.default_rng(0);"
+        "imgs = [Image.fromarray(rng.integers(0, 256, (224, 224, 3), dtype='uint8')) "
+        "for _ in range(4)];"
+        f"emb = SiglipEncoder(settings.perception_model, device={device!r}).encode_images(imgs);"
+        "ok = np.isfinite(emb).all() and np.allclose(np.linalg.norm(emb, axis=1), 1.0, atol=1e-2);"
+        "raise SystemExit(0 if ok else 1)"
+    )
+    env = dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path), PYTORCH_ENABLE_MPS_FALLBACK="1")
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-c", code], env=env, capture_output=True, timeout=300
+        )
+    except (subprocess.SubprocessError, OSError):
+        return False
+    return proc.returncode == 0
+
+
 def l2_normalize(x: np.ndarray) -> np.ndarray:
     """Row-wise L2 normalization, safe against zero vectors."""
     norms = np.linalg.norm(x, axis=-1, keepdims=True)
@@ -73,6 +158,7 @@ class SiglipEncoder:
         import open_clip  # lazy: only when actually encoding
         import torch
 
+        self._device = _resolve_device(self._device, torch)
         model, preprocess = open_clip.create_model_from_pretrained(self._model_id)
         self._model = model.to(self._device).eval()
         self._preprocess = preprocess
@@ -80,7 +166,7 @@ class SiglipEncoder:
         self._torch = torch
         # `logit_scale` is stored in log space; exponentiate once to the temperature.
         scale = getattr(model, "logit_scale", None)
-        self._logit_scale = float(scale.exp()) if scale is not None else DEFAULT_LOGIT_SCALE
+        self._logit_scale = float(scale.detach().exp()) if scale is not None else DEFAULT_LOGIT_SCALE
 
     @property
     def logit_scale(self) -> float:

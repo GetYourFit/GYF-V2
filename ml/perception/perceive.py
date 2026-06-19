@@ -48,13 +48,26 @@ class Perceptor:
         self._extractor = extractor or AttributeExtractor(encoder)
 
     def perceive(self, image: Image) -> PerceptionResult:
-        embedding = self._encoder.encode_images([image])[0]
-        preds = self._extractor.predict(embedding)
-        return PerceptionResult(
-            embedding=[float(x) for x in embedding],
-            attributes={
-                name: {"value": p.label, "confidence": p.confidence, "certain": p.certain}
-                for name, p in preds.items()
-            },
-            color=dominant_color(image),
-        )
+        return self.perceive_batch([image])[0]
+
+    def perceive_batch(self, images: list[Image]) -> list[PerceptionResult]:
+        """Perceive a batch in one encoder forward pass (GPU-efficient).
+
+        The image encode — the dominant cost — runs once for the whole batch; the
+        per-image attribute/color work is cheap and done per result.
+        """
+        embeddings = self._encoder.encode_images(images)
+        results = []
+        for image, embedding in zip(images, embeddings):
+            preds = self._extractor.predict(embedding)
+            results.append(
+                PerceptionResult(
+                    embedding=[float(x) for x in embedding],
+                    attributes={
+                        name: {"value": p.label, "confidence": p.confidence, "certain": p.certain}
+                        for name, p in preds.items()
+                    },
+                    color=dominant_color(image),
+                )
+            )
+        return results
