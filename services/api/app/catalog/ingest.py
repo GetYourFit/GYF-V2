@@ -21,8 +21,9 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Protocol
 
+from gyf_contracts.taxonomy import classify
+
 from .sources import FeedSource, OpenDatasetSource, RawFeedItem
-from .taxonomy import classify
 
 
 @dataclass(frozen=True)

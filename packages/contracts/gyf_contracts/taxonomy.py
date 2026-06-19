@@ -10,9 +10,12 @@ We normalize each to a canonical category that carries:
   styling logic is localized: India includes sarees; the USA does not. An empty
   tuple means the garment is region-neutral and shown everywhere.
 
-This is a deliberately small, controlled vocabulary for the beta; it grows as the
-catalog widens. Unknown inputs map to :data:`UNKNOWN` rather than being dropped,
-so nothing is silently lost.
+This is the shared source of truth for **both** sides of GYF: the catalog
+(``gyf-api``) normalizes feed text into these categories, and perception
+(``gyf-ml``) predicts into the *same* vocabulary, so vision and feed signals
+reconcile without a second, drifting copy. It is a deliberately small, controlled
+vocabulary for the beta; it grows as the catalog widens. Unknown inputs map to
+:data:`UNKNOWN` rather than being dropped, so nothing is silently lost.
 """
 
 from __future__ import annotations
@@ -40,7 +43,7 @@ class Category:
 UNKNOWN = Category(name="unknown", slot="unknown")
 
 # Canonical categories keyed by name. Region-specific garments carry region_tags.
-_CATEGORIES: tuple[Category, ...] = (
+CATEGORIES: tuple[Category, ...] = (
     # Region-neutral western staples.
     Category("t_shirt", "top"),
     Category("shirt", "top"),
@@ -67,7 +70,7 @@ _CATEGORIES: tuple[Category, ...] = (
     Category("sherwani", "full_body", ("IN",)),
 )
 
-_BY_NAME: dict[str, Category] = {c.name: c for c in _CATEGORIES}
+_BY_NAME: dict[str, Category] = {c.name: c for c in CATEGORIES}
 
 # Synonyms (already normalized: lowercased, non-alnum collapsed to single spaces)
 # mapped onto canonical category names.
@@ -111,6 +114,16 @@ def _normalize(raw: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", raw.lower()).strip()
 
 
+def get(name: str) -> Category:
+    """Return the canonical :class:`Category` for an exact canonical ``name``.
+
+    Unlike :func:`classify` (which resolves messy feed text), this looks up a
+    name already known to be canonical — e.g. a perception category prediction.
+    Returns :data:`UNKNOWN` if the name is not in the vocabulary.
+    """
+    return _BY_NAME.get(name, UNKNOWN)
+
+
 def classify(raw_category: str) -> Category:
     """Map a raw feed category label onto a canonical :class:`Category`.
 
@@ -131,7 +144,7 @@ def classify(raw_category: str) -> Category:
     # Containment fallback: longest matching key wins to avoid "shirt" beating
     # "t shirt" on "long t shirt".
     candidates = [(k, v) for k, v in _SYNONYMS.items() if k in norm]
-    candidates += [(c.name.replace("_", " "), c.name) for c in _CATEGORIES]
+    candidates += [(c.name.replace("_", " "), c.name) for c in CATEGORIES]
     matches = [(key, name) for key, name in candidates if key in norm]
     if matches:
         best = max(matches, key=lambda kv: len(kv[0]))

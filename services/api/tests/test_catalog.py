@@ -12,7 +12,7 @@ from app.catalog.ingest import (
     normalize,
 )
 from app.catalog.sources import OpenDatasetSource, RawFeedItem
-from app.catalog.taxonomy import UNKNOWN, classify
+from gyf_contracts.taxonomy import UNKNOWN, classify
 
 
 # --- taxonomy ---

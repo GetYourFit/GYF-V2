@@ -4,10 +4,15 @@ version = "0.0.0"
 description = "GYF ML platform — perception, user modeling, recsys, compatibility, try-on, eval"
 requires-python = ">=3.12"
 dependencies = [
+  "gyf-contracts",
   "numpy>=1.26",
   "pillow>=10.0",
   "pydantic>=2.9.0",
 ]
+
+# Local monorepo source for the shared domain contracts (uv resolves the path).
+[tool.uv.sources]
+gyf-contracts = { path = "../packages/contracts", editable = true }
 
 [project.optional-dependencies]
 # Heavy perception runtime — Marqo-FashionSigLIP via open_clip. Optional so the

@@ -4,6 +4,7 @@ version = "0.0.0"
 description = "GYF core API (accounts, catalog, social, commerce, feedback)"
 requires-python = ">=3.12"
 dependencies = [
+  "gyf-contracts",
   "fastapi>=0.115.0",
   "uvicorn[standard]>=0.30.0",
   "pydantic>=2.9.0",
@@ -11,6 +12,10 @@ dependencies = [
   "pyjwt>=2.9.0",
   "prometheus-client>=0.21.0",
 ]
+
+# Local monorepo source for the shared domain contracts (uv resolves the path).
+[tool.uv.sources]
+gyf-contracts = { path = "../../packages/contracts", editable = true }
 
 [project.optional-dependencies]
 kafka = [
