@@ -23,6 +23,9 @@ from .metrics import install_metrics, metrics_enabled
 from .profile.account import AccountRepository
 from .profile.models import ConsentInput, Profile, ProfileInput, profile_from_manual
 from .profile.repository import ProfileRepository
+from .recsys.candidates import CandidateRepository
+from .recsys.models import OutfitRecommendation
+from .recsys.service import recommend
 from .sink import get_sink
 from .telemetry import configure_telemetry
 
@@ -195,6 +198,38 @@ def delete_account(
     (cascading) after the grace window. Idempotent — re-requesting is a no-op."""
     repo.soft_delete(principal.user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- Recommendation & composition (P1-C Cycle 1) dependencies. Overridable in tests. ---
+
+
+def get_candidate_repo() -> CandidateRepository:
+    """The Postgres-backed candidate repository (lazy connection pool)."""
+    from .recsys.candidates import PostgresCandidateRepository
+
+    return PostgresCandidateRepository(settings.database_url)
+
+
+@app.get("/outfits/recommend")
+def recommend_outfits(
+    occasion: str | None = None,
+    k: int = Query(5, ge=1, le=20),
+    region: str | None = None,
+    principal: Principal = Depends(require_active_principal),
+    profile_repo: ProfileRepository = Depends(get_profile_repo),
+    candidates: CandidateRepository = Depends(get_candidate_repo),
+) -> OutfitRecommendation:
+    """Cold-start outfit recommendations: complete, explained, diverse looks.
+
+    Works on the very first visit — it conditions on the user's onboarding profile
+    (occasion, budget, undertone, style intent) and the catalog alone, with no
+    behavioral history required. ``occasion`` overrides the profile's stored one
+    for today's look. 404s before onboarding, since there is no profile to style.
+    """
+    profile = profile_repo.get(principal.user_id)
+    if profile is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
+    return recommend(profile, candidates, occasion, region, k)
 
 
 @app.post("/feedback", status_code=202)
