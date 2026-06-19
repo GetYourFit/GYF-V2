@@ -1,4 +1,7 @@
--- GYF core schema (P0 baseline). Managed via migrations (Alembic) going forward.
+-- GYF core schema — human-readable snapshot of the P0 baseline (migration 0001_baseline).
+-- The database is now managed by Alembic (services/api/db/migrations); this file is a
+-- reference snapshot, not the source of truth. P1-A perception/catalog changes (vector(768),
+-- HNSW index, catalog provenance + dedupe_key) live in migration 0002_perception_catalog.
 -- Conventions: UUID PKs, soft-delete + hard-delete pipeline for GDPR,
 -- PII columns tagged, derived attributes carry confidence + model_version.
 
