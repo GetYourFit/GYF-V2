@@ -12,7 +12,12 @@ from collections.abc import Iterator
 import numpy as np
 from PIL import Image
 
-from perception.attributes import ATTRIBUTE_LABELS, AttributeExtractor
+from perception.attributes import (
+    ATTRIBUTE_SPECS,
+    CATEGORY,
+    AttributeExtractor,
+    AttributeSpec,
+)
 from perception.color import dominant_color
 from perception.model import EMBEDDING_DIM, l2_normalize
 from perception.perceive import PerceptionResult, Perceptor
@@ -67,14 +72,30 @@ def test_dominant_color_neutral_is_named_grayscale():
 # --- attributes ---
 
 
-def test_attribute_extractor_returns_a_prediction_per_attribute():
+def test_attribute_extractor_predicts_category_and_valid_labels():
     extractor = AttributeExtractor(FakeEncoder())
     img_emb = FakeEncoder().encode_images([_solid_image()])[0]
     preds = extractor.predict(img_emb)
-    assert set(preds) == set(ATTRIBUTE_LABELS)
+
+    assert CATEGORY in preds  # category is always present
+    assert set(preds) <= set(ATTRIBUTE_SPECS)  # only known attributes
     for name, pred in preds.items():
-        assert pred.label in ATTRIBUTE_LABELS[name]
+        assert pred.label in ATTRIBUTE_SPECS[name].labels
         assert 0.0 <= pred.confidence <= 1.0
+
+
+def test_attribute_extractor_gates_by_category_slot():
+    """A garment is only scored for attributes that fit its slot.
+
+    The FakeEncoder steers the prediction to a 'top' category, which must surface
+    a neckline but never a length (length applies only to bottoms/full-body).
+    """
+    preds = AttributeExtractor(FakeEncoder()).predict(
+        FakeEncoder().encode_images([_solid_image()])[0]
+    )
+    assert preds[CATEGORY].label in ATTRIBUTE_SPECS[CATEGORY].labels
+    assert "neckline" in preds  # tops get a neckline
+    assert "length" not in preds  # ...but never a length (bottoms/full-body only)
 
 
 def test_attribute_confidence_uses_encoder_logit_scale():
@@ -90,10 +111,14 @@ def test_attribute_confidence_uses_encoder_logit_scale():
             self.logit_scale = logit_scale
 
     img_emb = FakeEncoder().encode_images([_solid_image()])[0]
-    # Distinct labels so one candidate clearly wins; only 'pattern' needed here.
-    labels = {"pattern": ["a", "b", "c", "d"]}
-    sharp = AttributeExtractor(ScaledEncoder(100.0), labels).predict(img_emb)["pattern"]
-    flat = AttributeExtractor(ScaledEncoder(0.01), labels).predict(img_emb)["pattern"]
+    # Minimal registry: a single-label category (so a slot resolves) plus a
+    # 'pattern' with distinct labels where one candidate clearly wins.
+    specs = {
+        CATEGORY: AttributeSpec(("dress",), None, "a photo of a {label}"),
+        "pattern": AttributeSpec(("a", "b", "c", "d")),
+    }
+    sharp = AttributeExtractor(ScaledEncoder(100.0), specs).predict(img_emb)["pattern"]
+    flat = AttributeExtractor(ScaledEncoder(0.01), specs).predict(img_emb)["pattern"]
     assert sharp.confidence > 0.9  # peaked
     assert flat.confidence < 0.3  # near-uniform over 4 labels (~0.25)
 
@@ -106,7 +131,8 @@ def test_perceptor_combines_embedding_attributes_color():
     assert len(result.embedding) == 4
     block = result.attributes_block("v1")["perception"]
     assert block["model_version"] == "v1"
-    assert set(block["attributes"]) == set(ATTRIBUTE_LABELS)
+    assert CATEGORY in block["attributes"]
+    assert set(block["attributes"]) <= set(ATTRIBUTE_SPECS)
     assert block["color"]["hue_name"] == "red"
 
 

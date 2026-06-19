@@ -29,10 +29,20 @@ lazily, and all logic is tested against an injected fake `Encoder` (see
 
 - `perception/model.py` — `Encoder` protocol + `SiglipEncoder` (Marqo-FashionSigLIP,
   shared 768-d image/text space; lazy weights).
-- `perception/attributes.py` — zero-shot pattern/formality/fit via text prompts; each
-  prediction carries a softmax confidence.
+- `perception/attributes.py` — zero-shot garment attributes via per-attribute text prompts,
+  each with a **calibrated** confidence (cosine sims scaled by the encoder's learned
+  `logit_scale`, not raw). Attributes are **category-gated**: category is predicted first
+  (into the shared canonical vocabulary, `gyf_contracts.taxonomy`), its outfit slot then
+  selects which others apply — so a sneaker is never asked for a neckline. Current set:
+  `category, pattern, formality, material, aesthetic, season, target_audience` (all garments)
+  plus `fit, silhouette, neckline, sleeve, length` (gated by slot). Add an attribute by adding
+  one `AttributeSpec` to the registry; nothing else changes. A trained head can later replace
+  any single attribute without changing this interface or the stored shape.
 - `perception/color.py` — dominant garment color in CIELAB / LCh (CAM16 is the upgrade path).
 - `perception/perceive.py` — combines embedding + attributes + color into one result.
+- `perception/inspect.py` — manual check: run the real model on any image.
+  `python -m perception.inspect <image> [--json]` (needs the `perception` extra; first run
+  downloads the weights). See the repo root `README` for the `HF_HOME` cache note.
 - `pipelines/backfill.py` — idempotent, resumable: embeds + attributes every item lacking
   the current `model_version`, writing `item_embeddings` + merging `items.attributes`.
 
@@ -40,9 +50,13 @@ lazily, and all logic is tested against an injected fake `Encoder` (see
 python -m pipelines.backfill --limit 100   # process pending items
 ```
 
-Catalog ingestion (feeds → `items`, taxonomy, region facet, dedupe) lives with its schema
-owner in `services/api/app/catalog/` (`python -m app.catalog.ingest`). Schema changes
-(vector(768), HNSW index, catalog provenance) are in `services/api/db/migrations/0002_*`.
+Catalog ingestion (feeds → `items`, region facet, dedupe) lives with its schema owner in
+`services/api/app/catalog/` (`python -m app.catalog.ingest`). The **canonical garment
+taxonomy** (categories, slots, region tags) is the shared contract
+`packages/contracts/gyf_contracts/taxonomy.py`, imported by *both* the catalog (to normalize
+feed text) and perception (to predict into the same vocabulary) — one source of truth, no
+drift. Schema changes (vector(768), HNSW index, catalog provenance) are in
+`services/api/db/migrations/0002_*`.
 
 ## P1-A — Retrieval & Eval (Cycle 2: A3–A4, shipped)
 

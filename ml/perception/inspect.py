@@ -46,8 +46,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"model:      {block['model_version']}")
     print(f"embedding:  {block['embedding_dim']}-d (L2-normalized)")
     print("attributes:")
+    width = max((len(n) for n in attrs), default=0)  # type: ignore[union-attr]
     for name, pred in attrs.items():  # type: ignore[union-attr]
-        print(f"  {name:10} {pred['value']:14} (confidence {pred['confidence']:.2f})")
+        print(f"  {name:<{width}}  {pred['value']:<20} (confidence {pred['confidence']:.2f})")
     print(f"color:      {color['hue_name']}  LCh={[round(x, 1) for x in color['lch']]}")
     return 0
 
