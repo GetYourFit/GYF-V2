@@ -26,10 +26,19 @@ if TYPE_CHECKING:
 EMBEDDING_DIM = 768
 
 
+# Fallback temperature for zero-shot scoring when an encoder does not expose a
+# learned scale (e.g. test doubles). Real SigLIP carries its own `logit_scale`;
+# this CLIP-typical value only keeps softmax confidences non-degenerate offline.
+DEFAULT_LOGIT_SCALE = 100.0
+
+
 class Encoder(Protocol):
     """Encodes images/text into the shared, L2-normalized embedding space."""
 
     dim: int
+    # Learned softmax temperature: cosine sims must be multiplied by this before
+    # softmax, otherwise zero-shot confidences collapse toward uniform.
+    logit_scale: float
 
     def encode_images(self, images: list[Image]) -> np.ndarray:
         """Return an (N, dim) float32 array of L2-normalized image embeddings."""
@@ -69,6 +78,14 @@ class SiglipEncoder:
         self._preprocess = preprocess
         self._tokenizer = open_clip.get_tokenizer(self._model_id)
         self._torch = torch
+        # `logit_scale` is stored in log space; exponentiate once to the temperature.
+        scale = getattr(model, "logit_scale", None)
+        self._logit_scale = float(scale.exp()) if scale is not None else DEFAULT_LOGIT_SCALE
+
+    @property
+    def logit_scale(self) -> float:
+        self._load()
+        return self._logit_scale
 
     def encode_images(self, images: list[Image]) -> np.ndarray:
         self._load()

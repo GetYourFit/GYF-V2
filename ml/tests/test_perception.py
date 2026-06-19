@@ -77,6 +77,27 @@ def test_attribute_extractor_returns_a_prediction_per_attribute():
         assert 0.0 <= pred.confidence <= 1.0
 
 
+def test_attribute_confidence_uses_encoder_logit_scale():
+    """A learned temperature must sharpen confidence; a tiny one flattens it.
+
+    Locks in the SigLIP calibration fix: raw cosine sims are near-uniform under
+    softmax, so the encoder's logit_scale must be applied before softmax.
+    """
+
+    class ScaledEncoder(FakeEncoder):
+        def __init__(self, logit_scale: float) -> None:
+            super().__init__()
+            self.logit_scale = logit_scale
+
+    img_emb = FakeEncoder().encode_images([_solid_image()])[0]
+    # Distinct labels so one candidate clearly wins; only 'pattern' needed here.
+    labels = {"pattern": ["a", "b", "c", "d"]}
+    sharp = AttributeExtractor(ScaledEncoder(100.0), labels).predict(img_emb)["pattern"]
+    flat = AttributeExtractor(ScaledEncoder(0.01), labels).predict(img_emb)["pattern"]
+    assert sharp.confidence > 0.9  # peaked
+    assert flat.confidence < 0.3  # near-uniform over 4 labels (~0.25)
+
+
 # --- perceive ---
 
 

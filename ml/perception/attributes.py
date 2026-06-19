@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .model import Encoder
+from .model import DEFAULT_LOGIT_SCALE, Encoder
 
 # Candidate label spaces. Prompt templating turns each label into a caption the
 # fashion-tuned text encoder understands.
@@ -56,12 +56,19 @@ class AttributeExtractor:
             self._text_emb[attribute] = self._encoder.encode_texts(prompts)
         return self._text_emb[attribute]
 
+    @property
+    def _temperature(self) -> float:
+        # Scale cosine sims by the encoder's learned temperature so confidences are
+        # calibrated, not near-uniform. Test doubles fall back to a sane default.
+        return getattr(self._encoder, "logit_scale", DEFAULT_LOGIT_SCALE)
+
     def predict(self, image_embedding: np.ndarray) -> dict[str, AttributePrediction]:
         """Predict every attribute for one L2-normalized image embedding."""
+        scale = self._temperature
         out: dict[str, AttributePrediction] = {}
         for attribute, labels in self._labels.items():
             sims = self._label_embeddings(attribute) @ image_embedding
-            probs = _softmax(sims)
+            probs = _softmax(scale * sims)
             best = int(np.argmax(probs))
             out[attribute] = AttributePrediction(labels[best], round(float(probs[best]), 4))
         return out
