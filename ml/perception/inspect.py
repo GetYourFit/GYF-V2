@@ -48,7 +48,8 @@ def main(argv: list[str] | None = None) -> int:
     print("attributes:")
     width = max((len(n) for n in attrs), default=0)  # type: ignore[union-attr]
     for name, pred in attrs.items():  # type: ignore[union-attr]
-        print(f"  {name:<{width}}  {pred['value']:<20} (confidence {pred['confidence']:.2f})")
+        flag = "" if pred["certain"] else "  ~uncertain"
+        print(f"  {name:<{width}}  {pred['value']:<20} (confidence {pred['confidence']:.2f}){flag}")
     print(f"color:      {color['hue_name']}  LCh={[round(x, 1) for x in color['lch']]}")
     return 0
 

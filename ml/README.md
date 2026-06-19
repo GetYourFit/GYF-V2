@@ -38,6 +38,10 @@ lazily, and all logic is tested against an injected fake `Encoder` (see
   plus `fit, silhouette, neckline, sleeve, length` (gated by slot). Add an attribute by adding
   one `AttributeSpec` to the registry; nothing else changes. A trained head can later replace
   any single attribute without changing this interface or the stored shape.
+  Each label is embedded with an **ensemble** of caption templates (averaged, cached once) for
+  a zero-shot accuracy lift, and every prediction reports **`certain`**: below the attribute's
+  `min_confidence` floor (default 0.35) the argmax label is kept but flagged uncertain, so
+  downstream never acts on a low-confidence guess. Stored shape: `{value, confidence, certain}`.
 - `perception/color.py` — dominant garment color in CIELAB / LCh (CAM16 is the upgrade path).
 - `perception/perceive.py` — combines embedding + attributes + color into one result.
 - `perception/inspect.py` — manual check: run the real model on any image.

@@ -50,6 +50,14 @@ class FakeEncoder:
         return l2_normalize(np.array(out, dtype=np.float32))
 
 
+class ScaledEncoder(FakeEncoder):
+    """A FakeEncoder that exposes a learned temperature, for confidence tests."""
+
+    def __init__(self, logit_scale: float) -> None:
+        super().__init__()
+        self.logit_scale = logit_scale
+
+
 def _solid_image(rgb=(200, 30, 30)) -> Image.Image:
     return Image.new("RGB", (32, 32), rgb)
 
@@ -104,23 +112,43 @@ def test_attribute_confidence_uses_encoder_logit_scale():
     Locks in the SigLIP calibration fix: raw cosine sims are near-uniform under
     softmax, so the encoder's logit_scale must be applied before softmax.
     """
-
-    class ScaledEncoder(FakeEncoder):
-        def __init__(self, logit_scale: float) -> None:
-            super().__init__()
-            self.logit_scale = logit_scale
-
     img_emb = FakeEncoder().encode_images([_solid_image()])[0]
     # Minimal registry: a single-label category (so a slot resolves) plus a
     # 'pattern' with distinct labels where one candidate clearly wins.
     specs = {
-        CATEGORY: AttributeSpec(("dress",), None, "a photo of a {label}"),
+        CATEGORY: AttributeSpec(("dress",), None, ("a photo of a {label}",)),
         "pattern": AttributeSpec(("a", "b", "c", "d")),
     }
     sharp = AttributeExtractor(ScaledEncoder(100.0), specs).predict(img_emb)["pattern"]
     flat = AttributeExtractor(ScaledEncoder(0.01), specs).predict(img_emb)["pattern"]
     assert sharp.confidence > 0.9  # peaked
     assert flat.confidence < 0.3  # near-uniform over 4 labels (~0.25)
+
+
+def test_low_confidence_prediction_is_flagged_uncertain():
+    """Below an attribute's min_confidence floor, the label is kept but ~uncertain."""
+    img_emb = FakeEncoder().encode_images([_solid_image()])[0]
+    specs = {
+        CATEGORY: AttributeSpec(("dress",), None, ("a photo of a {label}",)),
+        "pattern": AttributeSpec(("a", "b", "c", "d"), min_confidence=0.9),
+    }
+    # Flat distribution (~0.25) is below the 0.9 floor -> uncertain.
+    flat = AttributeExtractor(ScaledEncoder(0.01), specs).predict(img_emb)["pattern"]
+    assert flat.confidence < 0.9 and flat.certain is False
+    # Peaked distribution (~1.0) clears the floor -> certain.
+    sharp = AttributeExtractor(ScaledEncoder(100.0), specs).predict(img_emb)["pattern"]
+    assert sharp.certain is True
+
+
+def test_prompt_ensembling_averages_templates_per_label():
+    """Multi-template specs collapse to one L2-normalized vector per label."""
+    encoder = FakeEncoder()
+    extractor = AttributeExtractor(
+        encoder, {"x": AttributeSpec(("a", "b"), prompts=("p1 {label}", "p2 {label}"))}
+    )
+    emb = extractor._label_embeddings("x")
+    assert emb.shape == (2, encoder.dim)  # one row per label, templates averaged
+    assert np.allclose(np.linalg.norm(emb, axis=1), 1.0)  # rows stay unit vectors
 
 
 # --- perceive ---
@@ -133,6 +161,7 @@ def test_perceptor_combines_embedding_attributes_color():
     assert block["model_version"] == "v1"
     assert CATEGORY in block["attributes"]
     assert set(block["attributes"]) <= set(ATTRIBUTE_SPECS)
+    assert set(block["attributes"][CATEGORY]) == {"value", "confidence", "certain"}
     assert block["color"]["hue_name"] == "red"
 
 

@@ -53,7 +53,8 @@ class Perceptor:
         return PerceptionResult(
             embedding=[float(x) for x in embedding],
             attributes={
-                name: {"value": p.label, "confidence": p.confidence} for name, p in preds.items()
+                name: {"value": p.label, "confidence": p.confidence, "certain": p.certain}
+                for name, p in preds.items()
             },
             color=dominant_color(image),
         )
