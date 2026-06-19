@@ -77,6 +77,16 @@ def test_dominant_color_neutral_is_named_grayscale():
     assert dominant_color(_solid_image((250, 250, 250))).hue_name == "white"
 
 
+def test_dominant_color_masks_white_background():
+    # A blue garment centered on a white catalog backdrop must read blue, not the
+    # majority-white background (the foreground-masking fix).
+    img = Image.new("RGB", (64, 64), (255, 255, 255))
+    img.paste(Image.new("RGB", (24, 24), (20, 40, 200)), (20, 20))
+    color = dominant_color(img)
+    assert color.hue_name == "blue"
+    assert color.lch[1] > 14  # chromatic, not a washed-out neutral
+
+
 # --- attributes ---
 
 

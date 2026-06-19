@@ -75,19 +75,77 @@ def _hue_name(hue_deg: float, chroma: float, lightness: float) -> str:
     return "red"
 
 
-def dominant_color(image: Image.Image, *, sample: int = 64) -> GarmentColor:
-    """Extract the dominant color of an image as CIELAB / LCh.
+# Below this share of foreground pixels the background estimate is untrustworthy
+# (garment fills the frame, or the image is a flat-lay with no clear backdrop), so
+# we fall back to whole-image quantization rather than masking to noise.
+_MIN_FOREGROUND = 0.05
+# A pixel within this RGB Euclidean distance of the estimated background colour is
+# treated as background. ~10% of the 0–441 diagonal — tolerant of JPEG noise and
+# soft shadows without eating saturated garment pixels.
+_BG_DISTANCE = 44.0
 
-    Uses median-cut quantization (Pillow) to the most frequent palette color,
-    which is robust to JPEG noise and background gradients without segmentation.
-    Garment masking (foreground-only) is a later refinement; the return shape is
-    stable so callers do not change.
+
+def _background_rgb(arr: np.ndarray) -> np.ndarray:
+    """Estimate the backdrop colour from the image border (median is outlier-safe).
+
+    Product/catalog photos sit on a near-uniform backdrop that the border frame
+    samples almost purely; the median shrugs off the few garment pixels that spill
+    to the edge.
     """
-    small = image.convert("RGB").resize((sample, sample))
-    quantized = small.quantize(colors=8, method=Image.Quantize.MEDIANCUT)
-    palette = np.array(quantized.getpalette()[: 8 * 3]).reshape(-1, 3)
-    counts = np.bincount(np.asarray(quantized).ravel(), minlength=len(palette))
-    rgb = palette[int(np.argmax(counts))]
+    border = np.concatenate(
+        [arr[0, :], arr[-1, :], arr[:, 0], arr[:, -1]]  # top, bottom, left, right rows
+    )
+    return np.median(border, axis=0)
+
+
+def _foreground_pixels(arr: np.ndarray) -> np.ndarray:
+    """Garment pixels: those far enough from the estimated background colour.
+
+    Returns an ``(n, 3)`` float array, or an empty array when masking is
+    untrustworthy (too little foreground) so the caller can fall back.
+    """
+    background = _background_rgb(arr)
+    flat = arr.reshape(-1, 3).astype(float)
+    distance = np.linalg.norm(flat - background, axis=1)
+    foreground = flat[distance > _BG_DISTANCE]
+    if len(foreground) < _MIN_FOREGROUND * len(flat):
+        return np.empty((0, 3))
+    return foreground
+
+
+def _dominant_rgb(pixels: np.ndarray, *, bits: int = 4) -> np.ndarray:
+    """Most common colour among ``pixels``, by coarse RGB binning.
+
+    Bins each channel to ``2**bits`` levels, finds the most populated bin, then
+    returns the *mean* of the pixels in it — a representative colour, not a bin
+    centroid, so the reported value is a real garment colour.
+    """
+    shift = 8 - bits
+    keys = (pixels.astype(int) >> shift)
+    flat_keys = (keys[:, 0] << (2 * bits)) | (keys[:, 1] << bits) | keys[:, 2]
+    dominant_key = np.bincount(flat_keys).argmax()
+    return pixels[flat_keys == dominant_key].mean(axis=0)
+
+
+def dominant_color(image: Image.Image, *, sample: int = 64) -> GarmentColor:
+    """Extract the dominant *garment* color of an image as CIELAB / LCh.
+
+    Catalog photos sit on a near-white backdrop, so naive most-frequent-colour
+    quantization returns the background. We first mask out the backdrop (estimated
+    from the border) and take the dominant colour of the remaining foreground;
+    when the backdrop can't be told apart (garment fills the frame) we fall back to
+    whole-image quantization. Pure numpy/Pillow — no segmentation model. The return
+    shape is stable so callers do not change.
+    """
+    arr = np.asarray(image.convert("RGB").resize((sample, sample)))
+    foreground = _foreground_pixels(arr)
+    if len(foreground):
+        rgb = _dominant_rgb(foreground)
+    else:
+        quantized = Image.fromarray(arr).quantize(colors=8, method=Image.Quantize.MEDIANCUT)
+        palette = np.array(quantized.getpalette()[: 8 * 3]).reshape(-1, 3)
+        counts = np.bincount(np.asarray(quantized).ravel(), minlength=len(palette))
+        rgb = palette[int(np.argmax(counts))].astype(float)
 
     lab = _rgb_to_lab(rgb.astype(float))
     chroma = float(np.hypot(lab[1], lab[2]))
