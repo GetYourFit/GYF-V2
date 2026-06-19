@@ -19,6 +19,10 @@ kafka = [
 postgres = [
   "psycopg[binary,pool]>=3.2.0",
 ]
+migrate = [
+  "alembic>=1.16.0",
+  "sqlalchemy>=2.0.0",
+]
 otel = [
   "opentelemetry-sdk>=1.27.0",
   "opentelemetry-exporter-otlp-proto-http>=1.27.0",

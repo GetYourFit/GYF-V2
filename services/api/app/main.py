@@ -8,9 +8,15 @@ provisioned.
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, Query
 
 from .auth import Principal, get_current_principal
+from .catalog.retrieval import (
+    SearchResult,
+    TextEmbedder,
+    VectorSearchRepository,
+    search_text,
+)
 from .config import settings
 from .events import FeedbackRequest
 from .metrics import install_metrics, metrics_enabled
@@ -39,6 +45,54 @@ def health() -> dict[str, object]:
 def me(principal: Principal = Depends(get_current_principal)) -> dict[str, str | None]:
     """Trivial authenticated endpoint — proves the auth scaffold end-to-end."""
     return {"user_id": principal.user_id, "email": principal.email}
+
+
+# --- Retrieval (P1-A A3) dependencies. Overridable in tests via dependency_overrides. ---
+
+
+def get_search_repo() -> VectorSearchRepository:
+    """The pgvector-backed retrieval repository (lazy connection pool)."""
+    from .catalog.retrieval import PostgresVectorSearchRepository
+
+    return PostgresVectorSearchRepository(settings.database_url)
+
+
+def get_text_embedder() -> TextEmbedder:
+    """The SigLIP text-query embedder from the ML runtime.
+
+    Imported lazily so the API needs the ML/torch stack only when text search is
+    actually served. When the perception runtime is not installed, ``/items/search``
+    returns an honest 503 rather than pretending to work.
+    """
+    try:
+        from .catalog.perception_adapter import cached_text_embedder
+
+        return cached_text_embedder()
+    except ImportError as exc:  # perception runtime / torch not installed
+        raise HTTPException(status_code=503, detail="text search unavailable") from exc
+
+
+@app.get("/items/{item_id}/similar")
+def similar_items(
+    item_id: str,
+    k: int = Query(10, ge=1, le=50),
+    region: str | None = None,
+    repo: VectorSearchRepository = Depends(get_search_repo),
+) -> dict[str, list[SearchResult]]:
+    """Visually-similar items (nearest neighbours of the item's embedding)."""
+    return {"results": repo.similar_to_item(item_id, k, region)}
+
+
+@app.get("/items/search")
+def search_items(
+    q: str = Query(..., min_length=1),
+    k: int = Query(10, ge=1, le=50),
+    region: str | None = None,
+    repo: VectorSearchRepository = Depends(get_search_repo),
+    embedder: TextEmbedder = Depends(get_text_embedder),
+) -> dict[str, list[SearchResult]]:
+    """Text->image search over the catalog (e.g. 'red floral summer dress')."""
+    return {"results": search_text(repo, embedder, q, k, region)}
 
 
 @app.post("/feedback", status_code=202)
