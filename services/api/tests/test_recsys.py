@@ -42,12 +42,25 @@ class _CollectingSink:
     def publish(self, event) -> None:
         self.events.append(event)
 
+
 DEV_USER = "00000000-0000-0000-0000-000000000001"
 
 
 def _item(
-    item_id, category, slot, *, lch=None, hue_name=None, formality="casual", certain=True,
-    aesthetic=None, price=None, affinity=None, pattern=None, silhouette=None, fit=None,
+    item_id,
+    category,
+    slot,
+    *,
+    lch=None,
+    hue_name=None,
+    formality="casual",
+    certain=True,
+    aesthetic=None,
+    price=None,
+    affinity=None,
+    pattern=None,
+    silhouette=None,
+    fit=None,
 ) -> Candidate:
     return Candidate(
         item_id=item_id,
@@ -187,12 +200,12 @@ def test_empty_when_a_slot_is_missing():
 
 
 def test_uncertain_formality_lowers_confidence():
-    base = (_item("t1", "t_shirt", "top", lch=(50, 8, 0)),
-            _item("b1", "jeans", "bottom", lch=(40, 8, 0)),
-            _item("f1", "sneakers", "footwear", lch=(80, 5, 0)))
-    shaky = tuple(
-        _item(it.item_id, it.category, it.slot, lch=it.lch, certain=False) for it in base
+    base = (
+        _item("t1", "t_shirt", "top", lch=(50, 8, 0)),
+        _item("b1", "jeans", "bottom", lch=(40, 8, 0)),
+        _item("f1", "sneakers", "footwear", lch=(80, 5, 0)),
     )
+    shaky = tuple(_item(it.item_id, it.category, it.slot, lch=it.lch, certain=False) for it in base)
     c = conditioning.resolve(Profile(), "casual", None)
     from app.recsys.compose import _confidence
 
@@ -209,7 +222,9 @@ def _client(profile: Profile | None, taste=None, sink=None) -> TestClient:
     if profile is not None:
         profiles.upsert(DEV_USER, profile)
     app.dependency_overrides[get_profile_repo] = lambda: profiles
-    app.dependency_overrides[get_account_repo] = lambda: InMemoryAccountRepository(existing={DEV_USER})
+    app.dependency_overrides[get_account_repo] = lambda: InMemoryAccountRepository(
+        existing={DEV_USER}
+    )
     app.dependency_overrides[get_candidate_repo] = lambda: InMemoryCandidateRepository(
         _three_slot_catalog()
     )
@@ -220,8 +235,9 @@ def _client(profile: Profile | None, taste=None, sink=None) -> TestClient:
 
 def test_recommend_endpoint_returns_explained_outfits():
     try:
-        client = _client(Profile(occasion="casual", undertone="warm",
-                                 field_confidence={"undertone": 1.0}))
+        client = _client(
+            Profile(occasion="casual", undertone="warm", field_confidence={"undertone": 1.0})
+        )
         resp = client.get("/outfits/recommend?k=3")
         assert resp.status_code == 200
         body = resp.json()
@@ -460,3 +476,70 @@ def test_endpoint_personalizes_from_taste_history():
         assert body["taste_strength"] > 0.0
     finally:
         app.dependency_overrides.clear()
+
+
+# --- perception abstention on uncertain attributes (feedback v1) -------------
+
+
+def _attr_row(*, pattern_certain, silhouette_certain, fit_certain, aesthetic_certain):
+    """A candidates SQL row (20 cols) with scripted per-attribute certainty flags."""
+    return (
+        "id-1",
+        "Tee",
+        "shirt",
+        19.0,
+        "USD",
+        None,  # 0-5
+        None,
+        "blue",  # 6 lch, 7 hue_name
+        "casual",
+        "true",  # 8 formality, 9 formality_certain
+        "streetwear",
+        "striped",
+        "boxy",
+        "loose fit",  # 10-13 aesthetic/pattern/silhouette/fit
+        None,
+        [],  # 14 affinity, 15 image_refs
+        aesthetic_certain,
+        pattern_certain,
+        silhouette_certain,
+        fit_certain,  # 16-19
+    )
+
+
+def test_uncertain_structural_attributes_abstain():
+    from app.recsys.candidates import _row_to_candidate
+
+    c = _row_to_candidate(
+        "top",
+        _attr_row(
+            pattern_certain="false",
+            silhouette_certain=None,  # legacy item: no flag → treated as uncertain
+            fit_certain="true",
+            aesthetic_certain="false",
+        ),
+    )
+    assert c.pattern is None  # low-confidence read dropped
+    assert c.silhouette is None  # unflagged read dropped
+    assert c.aesthetic is None
+    assert c.fit == "loose fit"  # certain read kept
+
+
+def test_certain_structural_attributes_pass_through():
+    from app.recsys.candidates import _row_to_candidate
+
+    c = _row_to_candidate(
+        "top",
+        _attr_row(
+            pattern_certain="true",
+            silhouette_certain="true",
+            fit_certain="true",
+            aesthetic_certain="true",
+        ),
+    )
+    assert (c.pattern, c.silhouette, c.fit, c.aesthetic) == (
+        "striped",
+        "boxy",
+        "loose fit",
+        "streetwear",
+    )

@@ -65,6 +65,25 @@ the column until a candidate has *won* the bake-off — measure first, migrate o
   decision is recorded here with the numbers.
 - Promotion (if any) goes through M1 unchanged — proving the gate pipeline on a live candidate.
 
+## Feedback v1 implementation (shipped) — abstain on uncertain attributes
+
+User manual-test feedback (`docs/feedbacks/gyf-feedback-v1.md`): perception is accurate "most of
+the time, only some attributes with low confidence are incorrect." Errors concentrate in the
+low-confidence tail — exactly where D6 says to **abstain**, not guess.
+
+Perception already tags each attribute `{value, confidence, certain}` (`certain = confidence ≥
+min_confidence`), but only `formality` honored it downstream; `aesthetic`/`pattern`/`silhouette`/
+`fit` — the signals the NL-goal effects engine and aesthetic conditioning act on — were read as
+fact regardless of confidence. So a wrong low-confidence `silhouette` could misguide a "look
+slimmer" goal.
+
+**Fix (`services/api/app/recsys/candidates.py`):** the candidate SQL now also reads each
+structural attribute's `certain` flag, and `_row_to_candidate` drops the value (→ `None`) unless
+perception was certain (`_certain` helper). Downstream already guards `is not None`, so an
+uncertain read now cleanly **abstains** instead of misranking. Legacy items without the flag are
+treated as uncertain (conservative). Verified: `test_uncertain_structural_attributes_abstain`,
+`test_certain_structural_attributes_pass_through`; full suite green (API 105, ML 23).
+
 ## Honesty note (D6)
 
 If no candidate beats the incumbent, we say so plainly and keep `marqo-fashionSigLIP`. "Latest"

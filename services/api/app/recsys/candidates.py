@@ -94,7 +94,16 @@ SELECT
     i.attributes #>> '{{perception,attributes,silhouette,value}}'    AS silhouette,
     i.attributes #>> '{{perception,attributes,fit,value}}'           AS fit,
     {affinity}                                                       AS affinity,
-    i.image_refs                                                     AS image_refs
+    i.image_refs                                                     AS image_refs,
+    -- Per-attribute certainty flags (perception D6 abstention). A structural
+    -- attribute is trusted only when its calibrated confidence cleared the floor;
+    -- below it, _row_to_candidate drops the value so the effects engine abstains
+    -- instead of acting on a likely-wrong read (user feedback v1: errors concentrate
+    -- in the low-confidence tail).
+    i.attributes #>> '{{perception,attributes,aesthetic,certain}}'   AS aesthetic_certain,
+    i.attributes #>> '{{perception,attributes,pattern,certain}}'     AS pattern_certain,
+    i.attributes #>> '{{perception,attributes,silhouette,certain}}'  AS silhouette_certain,
+    i.attributes #>> '{{perception,attributes,fit,certain}}'         AS fit_certain
 FROM items i
 LEFT JOIN item_embeddings e ON e.item_id = i.id
 WHERE i.category = ANY(%s)
@@ -144,6 +153,16 @@ class PostgresCandidateRepository:
         return out
 
 
+def _certain(value: str | None, certain_flag: str | None) -> str | None:
+    """A perceived attribute value, or ``None`` when perception was not certain of it.
+
+    JSONB ``#>>`` yields the boolean as the text ``"true"``/``"false"`` (and ``None`` for legacy
+    items embedded before the flag existed). We trust the value only on an explicit ``"true"`` —
+    so an uncertain or unflagged read abstains rather than misguiding the effects engine (D6).
+    """
+    return value if certain_flag == "true" else None
+
+
 def _row_to_candidate(slot: str, row: tuple) -> Candidate:
     lch = tuple(float(x) for x in row[6]) if row[6] is not None else None
     return Candidate(
@@ -158,10 +177,11 @@ def _row_to_candidate(slot: str, row: tuple) -> Candidate:
         hue_name=row[7],
         formality=row[8],
         formality_certain=(row[9] == "true"),
-        aesthetic=row[10],
-        pattern=row[11],
-        silhouette=row[12],
-        fit=row[13],
+        # Structural/style attributes abstain when uncertain (feedback v1).
+        aesthetic=_certain(row[10], row[16]),
+        pattern=_certain(row[11], row[17]),
+        silhouette=_certain(row[12], row[18]),
+        fit=_certain(row[13], row[19]),
         affinity=float(row[14]) if row[14] is not None else None,
         image_url=image_url_from_refs(row[15]),
     )
