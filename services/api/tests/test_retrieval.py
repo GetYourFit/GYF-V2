@@ -37,7 +37,7 @@ class FakePool:
 
 
 def test_similar_sql_excludes_self_and_orders_by_distance():
-    pool = FakePool([("22222222", "Other Tee", 0.91)])
+    pool = FakePool([("22222222", "Other Tee", 0.91, ["/imgs/22222222.jpg"])])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     results = repo.similar_to_item("11111111", k=5, region=None)
 
@@ -45,7 +45,9 @@ def test_similar_sql_excludes_self_and_orders_by_distance():
     assert "e.item_id <> %s" in sql
     assert "ORDER BY e.embedding <=> q.embedding" in sql
     assert params == ("11111111", "11111111", 5)
-    assert results == [SearchResult("22222222", "Other Tee", 0.91)]
+    assert results == [
+        SearchResult("22222222", "Other Tee", 0.91, image_url="/media/22222222.jpg")
+    ]
 
 
 def test_region_filter_added_only_when_region_given():

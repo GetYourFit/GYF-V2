@@ -58,10 +58,16 @@ def _decode(token: str) -> Principal:
 def get_current_principal(
     creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> Principal:
-    """FastAPI dependency: the verified caller, or a dev principal in local mode."""
+    """FastAPI dependency: the verified caller, or a dev principal in local mode.
+
+    When auth is open (local dev with no JWT secret wired) we resolve to the dev
+    principal regardless of whether a token is presented. A stale Supabase token
+    left in the client must not be verified against an empty secret — doing so
+    raises and would surface as a 500.
+    """
+    if settings.auth_is_open:
+        return Principal(user_id=settings.dev_user_id, email="dev@local")
     if creds is None:
-        if settings.auth_is_open:
-            return Principal(user_id=settings.dev_user_id, email="dev@local")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing bearer token",

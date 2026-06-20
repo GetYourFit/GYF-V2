@@ -8,7 +8,11 @@ provisioned.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from .auth import Principal, get_current_principal
 from .catalog.retrieval import (
@@ -33,18 +37,25 @@ from .telemetry import configure_telemetry
 _API_DESCRIPTION = """
 GYF — your AI-native personal stylist. This is the core API.
 
+### See it visually first → open [`/gallery`](/gallery)
+The fastest way to test: open **`/gallery`** in your browser. Type a styling goal
+(*"look slimmer / taller / broader"*), pick an occasion, and see complete outfits
+rendered **with real product photos** — no JSON, no clicking.
+
 ### Quick-start (local dev — no auth needed)
 In local mode every call is the same **dev user**, auto-provisioned for you, so
-you can click **Authorize** nothing and just hit endpoints in order:
+you can ignore **Authorize** and just hit endpoints in order:
 
 1. **PUT `/profile`** — create your style profile (the form is pre-filled with a
    valid example; just press *Execute*). Required before recommendations.
-2. **GET `/outfits/recommend`** — your outfits. Try the **`goal`** box:
+2. **GET `/outfits/recommend`** — your outfits. Each garment carries an
+   **`image_url`** (served under `/media`). Try the **`goal`** box:
    *"I want to look slimmer / taller / broader"* and watch the looks (and each
    `explanation`) change. `applied_goals` echoes what GYF understood.
 3. **POST `/feedback`** — `save` an item id you liked, then call
    `/outfits/recommend` again: it personalizes (`taste_strength` rises).
-4. **GET `/items/search`** / **`/items/{id}/similar`** — visual search.
+4. **GET `/items/search`** / **`/items/{id}/similar`** — visual search; results
+   include `image_url`.
 5. **GET/PUT `/consent`**, **DELETE `/profile`**, **DELETE `/account`** — privacy
    and right-to-erasure.
 
@@ -52,23 +63,71 @@ Every recommendation ships a human reason and an honest confidence — trust is
 the product.
 """
 
+# A self-contained gallery page (no build step, no external assets) so a tester
+# can see complete outfits with real photos and exercise the NL goal box live.
+# It talks only to the public JSON API; in local mode auth is the dev user.
+_GALLERY_HTML = (Path(__file__).resolve().parent / "static" / "gallery.html").read_text(
+    encoding="utf-8"
+)
+
 app = FastAPI(
-    title="GYF Core API",
+    title="GYF — AI Personal Stylist API",
     version="0.1.0",
+    summary="Learns what looks good on you and builds complete, explained outfits.",
     description=_API_DESCRIPTION,
+    contact={"name": "GYF", "url": "https://github.com/"},
+    license_info={"name": "Proprietary"},
+    docs_url="/docs",
+    redoc_url="/redoc",
     openapi_tags=[
         {"name": "recommendations", "description": "Outfit composition & the NL styling-goal box."},
         {"name": "profile", "description": "Onboarding, consent, and account lifecycle."},
         {"name": "catalog", "description": "Visual search & shop-the-look."},
         {"name": "feedback", "description": "Behavioral events that train personalization."},
-        {"name": "system", "description": "Health & identity probes."},
+        {"name": "system", "description": "Health, identity probes & the visual gallery."},
     ],
 )
 sink = get_sink()
 
+
+def _media_root() -> Path | None:
+    """Resolve the catalog-image directory, or ``None`` if it doesn't exist.
+
+    A relative ``media_dir`` resolves against the repo root (this file is at
+    ``services/api/app/main.py``) so the mount works regardless of the process
+    working directory.
+    """
+    configured = Path(settings.media_dir)
+    root = configured if configured.is_absolute() else Path(__file__).resolve().parents[3] / configured
+    return root if root.is_dir() else None
+
+
+# Serve catalog images read-only under /media so API responses (image_url) and the
+# gallery can render real photos. Skipped cleanly when the directory is absent.
+_media = _media_root()
+if _media is not None:
+    app.mount("/media", StaticFiles(directory=str(_media)), name="media")
+
 # Observability (P0-E): structured logs + opt-in traces/errors + always-on metrics.
 _telemetry = configure_telemetry(app)
 install_metrics(app)
+
+
+@app.get("/", include_in_schema=False)
+def root() -> RedirectResponse:
+    """Land on the interactive docs."""
+    return RedirectResponse(url="/docs")
+
+
+@app.get("/gallery", response_class=HTMLResponse, tags=["system"], summary="Visual outfit gallery")
+def gallery() -> HTMLResponse:
+    """A self-contained page that renders recommended outfits with real photos.
+
+    Pure client-side: it calls ``/outfits/recommend`` and lays out each look with
+    its garments' ``image_url``. The single best way to *see* the stylist work —
+    the NL goal box and occasion selector are wired in.
+    """
+    return HTMLResponse(_GALLERY_HTML)
 
 
 @app.get("/health", tags=["system"])

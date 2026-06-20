@@ -19,6 +19,8 @@ class OutfitItem(BaseModel):
     currency: str | None = None
     color: str | None = None
     affiliate_url: str | None = None
+    # Served photo URL (``/media/<file>``) so clients can render the look.
+    image_url: str | None = None
 
     @classmethod
     def from_candidate(cls, c: Candidate) -> OutfitItem:
@@ -31,6 +33,7 @@ class OutfitItem(BaseModel):
             currency=c.currency,
             color=c.hue_name,
             affiliate_url=c.affiliate_url,
+            image_url=c.image_url,
         )
 
 

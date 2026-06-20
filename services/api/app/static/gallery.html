@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GYF — Stylist Gallery</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --ink:#f4f5f7; --muted:#9aa3b2; --accent:#7c5cff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  header { padding:28px 32px 12px; }
+  h1 { margin:0; font-size:24px; letter-spacing:-.02em; }
+  .sub { color:var(--muted); margin-top:4px; }
+  form { display:flex; flex-wrap:wrap; gap:12px; align-items:end; padding:16px 32px; }
+  label { display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--muted); }
+  input,select,button { font:inherit; padding:10px 12px; border-radius:10px;
+         border:1px solid #2a2e38; background:var(--card); color:var(--ink); }
+  input { min-width:320px; }
+  button { background:var(--accent); border:0; color:#fff; cursor:pointer; font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
+  .meta { padding:0 32px; color:var(--muted); min-height:22px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+          gap:18px; padding:18px 32px 48px; }
+  .outfit { background:var(--card); border:1px solid #242833; border-radius:16px; overflow:hidden; }
+  .pics { display:flex; gap:2px; background:#0c0e12; }
+  .pics figure { margin:0; flex:1; display:flex; flex-direction:column; align-items:center; }
+  .pics img { width:100%; height:150px; object-fit:cover; background:#222; }
+  .pics figcaption { font-size:11px; color:var(--muted); padding:4px; text-align:center; }
+  .body { padding:14px 16px; }
+  .explain { font-size:13.5px; }
+  .chips { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { font-size:11px; padding:3px 9px; border-radius:999px; background:#23262f; color:var(--muted); }
+  .conf { color:var(--accent); font-weight:600; }
+  .err { color:#ff6b6b; }
+</style>
+</head>
+<body>
+<header>
+  <h1>GYF — Stylist Gallery</h1>
+  <div class="sub">Complete, explained outfits with real photos. Type a goal and watch the looks change.</div>
+</header>
+<form id="f">
+  <label>Styling goal
+    <input id="goal" placeholder="e.g. I want to look slimmer" />
+  </label>
+  <label>Occasion
+    <select id="occasion">
+      <option value="">(from profile)</option>
+      <option>casual</option><option>business</option>
+      <option>wedding</option><option>festive</option>
+    </select>
+  </label>
+  <label>How many
+    <select id="k"><option>3</option><option>5</option><option>8</option></select>
+  </label>
+  <button id="go" type="submit">Style me</button>
+</form>
+<div class="meta" id="meta"></div>
+<div class="grid" id="grid"></div>
+<script>
+const PROFILE = {skin_tone:"medium",undertone:"warm",body_type:"rectangle",
+  style_intent:["minimalist","classic"],budget_range:{min:0,max:150,currency:"USD"},occasion:"casual"};
+const $ = (id) => document.getElementById(id);
+
+async function ensureProfile() {
+  const r = await fetch("/profile");
+  if (r.ok) return;
+  await fetch("/profile", {method:"PUT", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(PROFILE)});
+}
+function card(o) {
+  const pics = o.items.map(it => `<figure>
+      <img src="${it.image_url || ''}" alt="${it.title}" loading="lazy"
+           onerror="this.style.opacity=.25;this.alt='no image'">
+      <figcaption>${it.slot}</figcaption></figure>`).join("");
+  const conf = Math.round((o.confidence ?? 0) * 100);
+  return `<div class="outfit"><div class="pics">${pics}</div>
+    <div class="body"><div class="explain">${o.explanation}</div>
+    <div class="chips"><span class="chip conf">${conf}% confident</span>
+      <span class="chip">harmony ${Number(o.color_harmony ?? 0).toFixed(2)}</span>
+      <span class="chip">${o.formality_fit ?? ''}</span></div></div></div>`;
+}
+async function run(e) {
+  if (e) e.preventDefault();
+  $("go").disabled = true; $("meta").innerHTML = "Styling…"; $("grid").innerHTML = "";
+  try {
+    await ensureProfile();
+    const p = new URLSearchParams({k:$("k").value});
+    if ($("goal").value.trim()) p.set("goal", $("goal").value.trim());
+    if ($("occasion").value) p.set("occasion", $("occasion").value);
+    const r = await fetch("/outfits/recommend?" + p.toString());
+    if (!r.ok) throw new Error("recommend failed: " + r.status);
+    const d = await r.json();
+    const goals = (d.applied_goals||[]).join(", ") || "none";
+    $("meta").innerHTML = `${d.outfits.length} looks · goals understood: <b>${goals}</b>`
+      + ` · ${d.cold_start ? "cold-start" : "personalized"}`
+      + (d.taste_strength!=null ? ` · taste ${d.taste_strength.toFixed(2)}` : "");
+    $("grid").innerHTML = d.outfits.map(card).join("") || "<p>No outfits.</p>";
+  } catch (err) {
+    $("meta").innerHTML = `<span class="err">${err.message}</span>`;
+  } finally { $("go").disabled = false; }
+}
+$("f").addEventListener("submit", run);
+run();
+</script>
+</body>
+</html>

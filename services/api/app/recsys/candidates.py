@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from ..media import image_url_from_refs
 from .conditioning import CANDIDATE_SLOTS, _CATEGORIES_BY_SLOT
 
 
@@ -47,6 +48,9 @@ class Candidate:
     # start (no taste yet). Computed in pgvector against the HNSW index, never in
     # Python, so personalization costs no extra round-trips.
     affinity: float | None = None
+    # Served image URL (``/media/<file>``) for the item's primary photo, or
+    # ``None`` when the item has no stored image.
+    image_url: str | None = None
 
 
 class CandidateRepository(Protocol):
@@ -89,7 +93,8 @@ SELECT
     i.attributes #>> '{{perception,attributes,pattern,value}}'       AS pattern,
     i.attributes #>> '{{perception,attributes,silhouette,value}}'    AS silhouette,
     i.attributes #>> '{{perception,attributes,fit,value}}'           AS fit,
-    {affinity}                                                       AS affinity
+    {affinity}                                                       AS affinity,
+    i.image_refs                                                     AS image_refs
 FROM items i
 LEFT JOIN item_embeddings e ON e.item_id = i.id
 WHERE i.category = ANY(%s)
@@ -158,6 +163,7 @@ def _row_to_candidate(slot: str, row: tuple) -> Candidate:
         silhouette=row[12],
         fit=row[13],
         affinity=float(row[14]) if row[14] is not None else None,
+        image_url=image_url_from_refs(row[15]),
     )
 
 

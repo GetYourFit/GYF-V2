@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     event_sink: str = "local"
     event_topic: str = "gyf.interactions"
 
+    # Directory of catalog images, served read-only under ``/media`` so API
+    # responses can hand clients fetchable image URLs. Defaults to the local-dev
+    # seed location (scripts/e2e_workstream_a.sh). Unset/missing dir = no media mount.
+    media_dir: str = "data/e2e/images"
+
     # --- Auth (Supabase-issued JWTs) ---
     # HS256 secret from the Supabase project (Settings → API → JWT Secret).
     # When empty in a non-local env, protected routes reject all requests.

@@ -16,12 +16,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from ..media import image_url_from_refs
+
 
 @dataclass(frozen=True)
 class SearchResult:
     item_id: str
     title: str
     score: float  # cosine similarity in [-1, 1] (1 = identical)
+    image_url: str | None = None  # served ``/media/<file>`` URL, or None
 
 
 def _pgvector(embedding: list[float]) -> str:
@@ -49,7 +52,7 @@ class VectorSearchRepository(Protocol):
 _REGION_FILTER = "AND (i.region_tags = '{}' OR %s = ANY(i.region_tags))"
 
 _SIMILAR = """
-SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score
+SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score, i.image_refs
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 CROSS JOIN (SELECT embedding FROM item_embeddings WHERE item_id = %s) q
@@ -58,7 +61,7 @@ ORDER BY e.embedding <=> q.embedding
 LIMIT %s
 """
 _SEARCH = """
-SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score
+SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 WHERE TRUE {region}
@@ -93,7 +96,12 @@ class PostgresVectorSearchRepository:
     def _run(self, sql: str, params: tuple) -> list[SearchResult]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             return [
-                SearchResult(item_id=str(r[0]), title=r[1], score=float(r[2]))
+                SearchResult(
+                    item_id=str(r[0]),
+                    title=r[1],
+                    score=float(r[2]),
+                    image_url=image_url_from_refs(r[3]),
+                )
                 for r in conn.execute(sql, params)
             ]
 
