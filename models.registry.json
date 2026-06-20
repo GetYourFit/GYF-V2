@@ -10,7 +10,7 @@
       "commercial_ok": true,
       "train_data_commercial_ok": true,
       "train_data_license": "Apache-2.0 (GCL over public fashion corpora)",
-      "eval_report": "p1a-retrieval-mrr-0.85",
+      "eval_report": "encoder-marqo-fashionSigLIP-v1",
       "model_uri": "hf://Marqo/marqo-fashionSigLIP",
       "notes": "Shipped P1-A perception. Upgrade target: SigLIP 2 / FashionSigLIP-2 (M2) — verify v2 card before swap."
     },

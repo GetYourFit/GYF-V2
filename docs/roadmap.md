@@ -26,6 +26,11 @@
   → controllable styling (NL goal box). Color theory, occasion/region, honest confidence.
 - **Infra for testing** — image serving + `/gallery`.
 - **Engineering doctrine adopted** (commit a34a176) + commercial-clean stack decided.
+- **M0** — model registry + CI license gate (D2) + import-boundary lint (D1).
+- **M1** — eval-report contract + per-capability gates + promotion gate (D5): `eval_report` is now
+  a resolvable, gate-checked artifact (`eval-reports/`), CI `check_promotion.py` blocks any
+  production model lacking a passing report; online-eval scaffolding stubbed. Plan:
+  `docs/plans/m1-eval-harness.md`.
 
 **The honest gap:** the **backend "brain" is strong; the product surface is not built.** The
 `app/` frontend is a **marketing landing page only** (Hero/Vision/About). There is **no

@@ -33,6 +33,8 @@ jobs:
           python-version: "3.12"
       # engineering-doctrine D2: no non-commercial model in the serving path.
       - run: python scripts/check_model_licenses.py
+      # engineering-doctrine D5: no unevaluated model in the serving path.
+      - run: python scripts/check_promotion.py
       # engineering-doctrine D1: the API layer imports no model package directly.
       - run: python scripts/check_ports.py
 

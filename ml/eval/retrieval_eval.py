@@ -13,9 +13,11 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
+from gyf_contracts.eval_report import EvalReport
 
 from .metrics import mean_reciprocal_rank, recall_at_k
 
@@ -34,6 +36,27 @@ class RetrievalReport:
             "mrr": round(self.mrr, 4),
             "recall_at": {str(k): round(v, 4) for k, v in self.recall_at.items()},
         }
+
+    def to_eval_report(self, *, report_id: str, dataset: str, notes: str = "") -> EvalReport:
+        """Promote this raw retrieval run into the canonical, gate-checkable contract.
+
+        The harness is the producer of :class:`~gyf_contracts.eval_report.EvalReport`: flattens
+        ``recall_at`` into ``recall_at_<k>`` metric keys so the shared ``encoder`` gate
+        (``mrr``) and any future recall gate read the same schema across capabilities.
+        """
+        metrics = {"mrr": self.mrr}
+        for k, v in self.recall_at.items():
+            metrics[f"recall_at_{k}"] = v
+        return EvalReport(
+            report_id=report_id,
+            capability="encoder",
+            model_version=self.model_version,
+            metrics=metrics,
+            num_samples=self.num_queries,
+            dataset=dataset,
+            created_at=datetime.now(timezone.utc).isoformat(),
+            notes=notes,
+        )
 
 
 def evaluate_retrieval(

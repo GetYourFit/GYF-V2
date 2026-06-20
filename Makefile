@@ -5,7 +5,7 @@
 SHELL := bash
 API_DIR := services/api
 
-.PHONY: help install dev dev-web dev-api up down logs fmt fmt-check lint typecheck test test-api ci clean
+.PHONY: help install dev dev-web dev-api up down logs fmt fmt-check lint typecheck test test-api doctrine ci clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -57,7 +57,12 @@ test: test-api ## Run all tests
 test-api: ## Run API tests
 	cd $(API_DIR) && uv run pytest -q
 
-ci: fmt-check lint typecheck test ## Run the full local CI gate
+doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1)
+	python scripts/check_model_licenses.py
+	python scripts/check_promotion.py
+	python scripts/check_ports.py
+
+ci: fmt-check lint typecheck doctrine test ## Run the full local CI gate
 
 clean: ## Remove build artifacts and caches
 	rm -rf app/.next .turbo $(API_DIR)/.pytest_cache
