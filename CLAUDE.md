@@ -20,6 +20,7 @@ GetYourFit-New/
 ├── CLAUDE.md                          # this file — operating guide & entry point
 ├── docs/
 │   ├── engineering-doctrine.md        # THE HIGHEST-IQ WAY — cross-cutting design law (how every pillar is built)
+│   ├── roadmap.md                     # the SEQUENCE — dependency-correct build order (M0→M12→P2–P5)
 │   ├── vision/
 │   │   ├── ideas-complete.md          # canonical product/vision brief
 │   │   └── drafts/                    # raw idea inputs (history)

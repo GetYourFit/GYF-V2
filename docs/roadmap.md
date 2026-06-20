@@ -1,0 +1,187 @@
+# GYF Build Roadmap — the sequential, high-IQ path to the full product
+
+> **Status:** authoritative build sequence (created 2026-06-20).
+> **Relationship to other docs (DRY — each fact lives once):**
+> - *What & when, per phase* → `implementation-plan.md` (P0–P5 definitions + DoD).
+> - *How every pillar is built* → `engineering-doctrine.md` (ports, two-lane license gate,
+>   foundation+adapter, real-data flywheel, eval-gated promotion).
+> - *Which model per pillar* → `tech-stack.md`.
+> - **This file = the *order*.** The single, dependency-correct sequence of buildable
+>   increments from today to the full platform. Each milestone references the others; it does
+>   not restate them.
+>
+> **Reading rule:** build top-to-bottom. A milestone may start only when its dependencies are
+> ✅. Every milestone obeys the doctrine: new capability ⇒ port + baseline first, model behind
+> it, license-gated, eval-gated, confidence+reason on output.
+
+---
+
+## 0. Where we are (ground truth, 2026-06-20)
+
+**Done & verified:**
+- **P0** infra (Supabase/Upstash/Vercel via Terraform), CI, telemetry.
+- **P1-A** perception & catalog — ingestion, SigLIP perception, pgvector retrieval, eval harness.
+- **P1-B Cycle 1** — manual onboarding (profile, consent, soft-delete/erasure).
+- **P1-C Cycles 1–3** — cold-start outfit composition → online taste model + impression logging
+  → controllable styling (NL goal box). Color theory, occasion/region, honest confidence.
+- **Infra for testing** — image serving + `/gallery`.
+- **Engineering doctrine adopted** (commit a34a176) + commercial-clean stack decided.
+
+**The honest gap:** the **backend "brain" is strong; the product surface is not built.** The
+`app/` frontend is a **marketing landing page only** (Hero/Vision/About). There is **no
+onboarding UI, no recommendations UI, no try-on UI, no auth flow.** *This is the largest piece
+of "the thing people pay for," and most of Stage 2 below.*
+
+---
+
+## 1. The sequence (high-IQ ordering principle)
+
+Ordered by **dependency × leverage**, not by excitement:
+1. **Controls before models** — the license/eval gates must exist before models flow through them.
+2. **Brain before face, but only just** — finish enough intelligence to be worth a UI, then build the UI; don't gold-plate the brain in a vacuum.
+3. **Usable slice early** — reach a payable end-to-end experience (onboard → see designed outfits → act) before breadth (social, try-on, multi-retailer).
+4. **Heavy/licensing-risky last within a stage** — try-on after the stylist UI; owned models after rented ones.
+
+---
+
+## STAGE 0 — Foundation controls (the doctrine enablers) · *do first*
+
+> Small, load-bearing. Everything downstream depends on these. (`engineering-doctrine.md` D1/D2/D5)
+
+- **M0 · Model registry + CI license gate + import lint.**
+  Registry metadata (`license/lane/commercial_ok/train_data_license/model_card`); one
+  `is_servable(artifact)` policy fn + test; CI check that blocks non-commercial weights from the
+  serving path; D1 lint (app code may not import model packages — must go through a port).
+  *DoD:* a non-commercial-tagged artifact fails CI; a clean one passes. *Dep:* none.
+- **M1 · Evaluation harness foundation.**
+  Generalize the existing retrieval eval into a per-capability harness (offline metrics +
+  report schema) and the **promotion gate** (no passing report ⇒ no production promotion).
+  Online A/B + interleaving + IPS scaffolding stubbed for when traffic exists.
+  *DoD:* a model promotion requires an attached eval report meeting its gate. *Dep:* M0.
+
+---
+
+## STAGE 1 — Finish the Intelligent Stylist brain (P1 completion, backend)
+
+> Each model lands as an **adapter behind an existing port**, through the M0 gate and M1 harness.
+
+- **M2 · Embedding upgrade — SigLIP 2 / Marqo-FashionSigLIP-2 adapter.**
+  Behind the `Encoder` port. Highest quality-per-effort: lifts retrieval, taste, and cold-start
+  at once (they share the embedding). Proves the gate+harness pipeline end-to-end.
+  *DoD:* re-embedded catalog, MRR/Recall ≥ current, promoted via M1. *Dep:* M1.
+- **M3 · Photo body-type module (P1-B Cycle 2).**
+  Plan ready: `docs/plans/p1b-cycle2-photo-body-type.md` — SAM 3D Body→MHR + Anny, `BodyEstimator`
+  port, `POST /profile/photo`, consent-gated, fairness report.
+  *DoD:* photo → body_type + measurements + confidence; manual path intact. *Dep:* M0.
+- **M4 · Skin-tone module (P1-B Cycle 3). ⚠️ fairness-gated.**
+  `SkinToneEstimator` port: segmentation → CIELAB tone → undertone; **Monk-spectrum fairness
+  eval before enable**; manual fallback always. Real consented photos, no synthetic.
+  *DoD:* fairness report passes before the flag flips; degrades to manual. *Dep:* M3 (shares photo intake).
+
+✅ **End of Stage 1 = the stylist brain is complete, clean, measured, and fair.**
+
+---
+
+## STAGE 2 — The product surface (frontend MVP) · *the thing people pay for*
+
+> Currently only a landing page exists. This stage makes GYF **usable end-to-end**.
+> Inspiration-first, production/professional standards, WCAG 2.2 AA (CLAUDE.md §7.8).
+> Consumes the existing API via the typed contracts (`packages/types`).
+
+- **M5 · Auth + onboarding UI.** Sign-up/login (OIDC/JWT), the two onboarding paths (manual
+  form **and** photo upload → body/skin), consent capture, always-editable profile. *Dep:* M3/M4.
+- **M6 · The stylist experience (core screen).** Complete-outfit cards with real photos, the
+  **why-it-suits-you explanation + confidence**, the **NL goal box**, occasion selector, and
+  feedback actions (save/skip/cart) wired to `/feedback` (taste updates live). This is the
+  `/gallery` idea, rebuilt as the real, beautiful product. *Dep:* M5.
+- **M7 · Discovery & commerce.** Visual search/explore, shop-the-look **redirect to retailer +
+  affiliate attribution**. *Dep:* M6.
+- **M8 · Collections & profile.** Saved items, history, wardrobe (stub), profile page. *Dep:* M6.
+
+✅ **End of Stage 2 = a real person can onboard, get explained designed outfits tuned to them,
+act on them, and buy — the minimum payable product.**
+
+---
+
+## STAGE 3 — See-it-on-you (try-on v1, Workstream E)
+
+- **M9 · "Designed look on you."** `TryOnRenderer` port → **licensed model at inference**
+  (no training); render the stylist's complete outfit on the user's uploaded photo + the reason
+  it suits them. Async job + progress UI, result caching, input/output safety filter,
+  `photo_storage` consent, honest fallback to a measurement-matched body. Detail: `tech-stack.md`
+  §4.5. *Dep:* M6 (needs the outfit + a photo intake), M3 (measurements for fallback).
+
+---
+
+## STAGE 4 — Social, inspiration & gamification (P1 social)
+
+- **M10 · Socials.** Posts page; interactive (share/download/react); **style-following
+  re-rendered to the follower's own tone/preferences** (not blind copy). *Dep:* M6.
+- **M11 · Gamification.** Badges/perks (Fashion Mogger, Trendsetter) from likes/shares/comments;
+  professional profile. *Dep:* M10.
+
+---
+
+## STAGE 5 — Beta launch hardening
+
+- **M12 · Ship the $0 beta.** Security review (auth, uploads, SSRF, secrets), rate limits,
+  e2e tests, perf + a11y audit, observability/alerting, free-tier deploy (Vercel + Supabase/Neon
+  + HF ZeroGPU/Modal for GPU). **Beta gate.** *Dep:* Stages 1–4 (try-on/social may trail).
+
+> **🎯 Phase-1 launch milestone:** intelligent, explained, occasion/region-aware stylist with
+> photo+manual onboarding, NL goals, feedback loop, basic try-on, social posts, affiliate
+> redirect — matching `implementation-plan.md` Phase 1.
+
+---
+
+## PHASE 2 — Personal Taste Engine *(post-launch, data-driven)*
+
+Unlocks once first-party behaviour accrues:
+- **Taste model maturation** — HSTU (Apache) **foundation+adapter trained on our events**
+  behind the `Ranker` port; promote over the online-embedding baseline only via M1's online gate.
+  (Two-tower/generative path documented; the embedding stays as cold-start fallback forever.)
+- **Outfit compatibility** — TATTOO-style **training-free** on an Apache VLM behind
+  `CompatibilityScorer`, → a GNN as first-party outfit feedback grows.
+- **Wardrobe-aware styling**, **context** (weather/event/mood), deeper personalization, badges
+  deepen. (`implementation-plan.md` Phase 2.)
+
+## PHASE 3 — Shopping Companion
+Multi-retailer recommendations, price/availability sync, smarter buying, richer commerce.
+
+## PHASE 4 — Visualization layer
+**Own** multi-garment photoreal try-on: train an MIT/Apache architecture on **brand on-model
+photos** (real paired data) when per-render cost justifies ownership; footwear quality push.
+
+## PHASE 5 — Ambient stylist + B2B
+Collective intelligence at scale (HSTU scale); the **B2B data engine** — event lake →
+privacy-preserving aggregation (DP + k-anonymity) → distilled models via a versioned partner
+API, strictly PII-separated. The real-data moat becomes the second revenue line.
+
+---
+
+## Cross-cutting (every stage, never deferred)
+Per the **five invariants** (`engineering-doctrine.md`): no silent quality regression
+(M1 gate), nothing non-commercial served (M0 gate), confidence+reason on every output, user owns
+their data (consent/erasure), and a working baseline behind every port. Privacy, a11y, cost
+budgets, and observability are acceptance criteria — not later milestones.
+
+---
+
+## One-screen sequence
+
+```
+M0  license/eval gates ───┐ (controls first)
+M1  eval harness         ─┘
+M2  embeddings ↑quality   ┐
+M3  photo body-type       ├ Stage 1: finish the brain (clean, measured, fair)
+M4  skin-tone (fairness)  ┘
+M5  auth + onboarding UI   ┐
+M6  stylist experience     ├ Stage 2: the payable product surface
+M7  discovery + commerce   │
+M8  collections + profile  ┘
+M9  try-on (licensed)        Stage 3: see-it-on-you
+M10 socials / following     ┐ Stage 4
+M11 gamification            ┘
+M12 beta hardening + ship    Stage 5  → 🎯 Phase-1 launch
+P2  taste engine (HSTU) · P3 shopping · P4 owned try-on · P5 B2B moat
+```
