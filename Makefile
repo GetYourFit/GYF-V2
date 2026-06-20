@@ -5,7 +5,7 @@
 SHELL := bash
 API_DIR := services/api
 
-.PHONY: help install dev dev-web dev-api up down logs fmt fmt-check lint typecheck test test-api doctrine ci clean
+.PHONY: help install dev dev-web dev-api up down logs fmt fmt-check lint typecheck test test-api doctrine ci m2-bakeoff m2-clean clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -63,6 +63,19 @@ doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1)
 	python scripts/check_ports.py
 
 ci: fmt-check lint typecheck doctrine test ## Run the full local CI gate
+
+m2-bakeoff: ## Build + run the M2 encoder bake-off in Docker (weights in a named volume; reports to host)
+	docker build -f ml/Dockerfile -t gyf-ml-bakeoff .
+	mkdir -p eval-reports/bakeoffs
+	docker run --rm \
+	  -v gyf-hf-cache:/cache \
+	  -v "$(CURDIR)/data/e2e:/app/data/e2e:ro" \
+	  -v "$(CURDIR)/eval-reports/bakeoffs:/app/eval-reports/bakeoffs" \
+	  gyf-ml-bakeoff
+
+m2-clean: ## Delete the bake-off image and its model-weights volume (reclaim all Docker space)
+	-docker rmi gyf-ml-bakeoff
+	-docker volume rm gyf-hf-cache
 
 clean: ## Remove build artifacts and caches
 	rm -rf app/.next .turbo $(API_DIR)/.pytest_cache

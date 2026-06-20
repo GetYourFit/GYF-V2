@@ -1,0 +1,33 @@
+# Keep the build context tiny and the image clean — only what the bake-off needs is
+# COPYed in the Dockerfile; everything heavy or irrelevant is excluded here.
+.git
+.github
+.venv
+**/.venv
+node_modules
+**/node_modules
+app
+web
+**/__pycache__
+**/*.pyc
+.ruff_cache
+**/.ruff_cache
+.pytest_cache
+**/.pytest_cache
+
+# Model-weight cache lives in a Docker named volume, never in the image/context.
+.hf-cache
+
+# Large catalog images are bind-mounted read-only at run time, not baked in.
+data
+ml/data
+ml/*.jpg
+ml/*.jpeg
+ml/*.png
+
+# Docs, infra, and unrelated services.
+docs
+infra
+eval-reports
+services
+packages/types
