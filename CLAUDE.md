@@ -44,11 +44,44 @@ GetYourFit-New/
 | `docs/research/deep-research-report.md` | Cited state-of-the-art research backing each technical pillar (models, papers, alternatives, confidence levels, cost notes). |
 | `ECC/` | ECC plugin folder — reusable skills/agents to leverage during development (see §7). |
 
-> **Doc hierarchy:** `docs/vision/drafts/*` (raw inputs) → `docs/vision/ideas-complete.md`
-> (canonical vision) → `docs/tech-stack.md` + `docs/research/deep-research-report.md`
-> (how/why) → `CLAUDE.md` (structured summary). Keep them in lockstep; the source docs are
-> authoritative. New code lives under top-level `app/`, `services/`, `ml/`, etc. as the
-> build begins (see `tech-stack.md` §0 architecture).
+> **Doc precedence (read in this order; on conflict, higher wins):**
+> 1. `docs/vision/ideas-complete.md` — **what** GYF is (canonical product brief). `vision/drafts/*` are raw history.
+> 2. `docs/engineering-doctrine.md` — **how** every pillar is built (binding design law: ports, license gate, foundation+adapter, real data, eval-gated).
+> 3. `docs/tech-stack.md` — **which** model/tech per pillar + rationale. `docs/research/deep-research-report.md` — cited SOTA backing.
+> 4. `docs/roadmap.md` — **the order** (dependency-correct build sequence M0→M12→P2–P5). `docs/implementation-plan.md` — phase detail + DoD. `docs/plans/*` — per-cycle execution specs.
+> 5. `CLAUDE.md` (this file) — structured summary + operating rules. When it disagrees with a source doc, **the source doc wins — fix this file.** Keep all in lockstep (DRY: each fact lives in one doc; others reference it).
+
+---
+
+## 0.5 Current Status (2026-06-20)
+
+**Done & verified:** P0 infra; P1-A perception & catalog; P1-B Cycle 1 manual onboarding (+ consent/erasure); P1-C Cycles 1–3 (cold-start outfit composition → online taste model + impression logging → NL styling-goal box); image serving + `/gallery`; **engineering doctrine adopted** + commercial-clean stack decided.
+
+**The honest gap:** the **backend "brain" is strong; the product *surface* is not built** — `app/` is a **marketing landing page only** (no onboarding/recommendations/try-on UI). That UI is most of Stage 2 in `roadmap.md` and the bulk of remaining launch work.
+
+**Next:** **M0** (model registry + CI license gate + import lint — `docs/plans/m0-license-gate.md`), then finish the brain (embeddings → photo body-type → skin-tone), then the product surface.
+
+---
+
+## 0.6 Development — environment & commands
+
+> Toolchain: **Bun 1.1+** (JS workspaces), **uv** (Python/API, target **3.12**), **Docker** (local infra). Canonical interface is the **Makefile** — prefer it over ad-hoc commands.
+
+```bash
+make install     # JS workspaces + Python API deps (bun install; uv sync)
+make up          # local infra: Postgres+pgvector, Redis, Redpanda (infra/docker-compose.yml)
+make dev         # web (:3000) + API (:8000) together
+make dev-api     # API only (uvicorn app.main:app --reload --port 8000)
+make test        # all tests (API pytest + JS)
+make lint        # ruff (Python) + JS lint
+make fmt         # auto-format (Prettier + Ruff)
+make ci          # full local gate: fmt-check + lint + typecheck + test  (run before pushing)
+```
+
+- **API surface (local):** `/health`, `/me`, `/metrics`, `/docs` (Swagger), `/gallery` (visual tester).
+- **Live-DB verification** (real Postgres, no fakes — see Working Agreement): `bash scripts/e2e_workstream_a.sh` brings up Dockerized `pgvector/pgvector:pg16` on **:5433** (`GYF_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/gyf`); tear down with `docker rm -f gyf-pg`.
+- **ML model cache:** point `HF_HOME` at the repo-local `.hf-cache` (gitignored) — the default `~/.cache` may be unwritable.
+- **Local-venv caveat:** a project-local `.venv` may be Python **3.9** (target is 3.12). The shared `packages/contracts` is 3.12-pinned and *not* pip-installed locally, so 3.9 runs need `PYTHONPATH` to include it and `eval_type_backport` installed for Pydantic to parse `X | None`. CI uses uv + 3.12 and needs neither. **Never use stubs/fakes to dodge a real run** (Working Agreement).
 
 ---
 
@@ -231,6 +264,16 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 
 ## 7. Engineering & Operating Principles (non-negotiable)
 
+### 7.0 The Engineering Doctrine (the highest-IQ way) — full text: `docs/engineering-doctrine.md`
+**Thesis:** *models are commodities; the moat is real data + abstraction + evaluation.* Own the data and the contracts; rent the models; gate the licenses by machine; promote only what evaluation proves. Then the latest, cleanest, and best are the same choice.
+
+**Five invariants (never traded, including for speed):** (1) quality never silently regresses (eval-gated); (2) nothing non-commercial reaches the serving path (CI license gate); (3) every user-facing output carries calibrated confidence + a human reason; (4) personal data is the user's (consent + erasure); (5) a working baseline always sits behind every capability port.
+
+**Eight doctrines:** D1 capability ports (app code never imports a model) · D2 two-lane (research/production) lifecycle + CI license gate · D3 clean foundation + our-data adapter · D4 **real-data flywheel, no synthetic** (user photos + brand catalog + behaviour) · D5 eval-gated promotion (offline selects, online promotes) · D6 honest intelligence (confidence/reason/abstain) · D7 free-tier-first serving · D8 privacy & erasure by construction.
+
+**Commercial-clean stack (SMPL & most try-on weights are non-commercial — avoid):** body-type = SAM 3D Body→MHR+Anny · perception = SigLIP 2 / Marqo-FashionSigLIP-2 · recsys = HSTU/OneRec (train on our events) · intent = Qwen 3.x · serving = vLLM/SGLang · try-on = licensed model at inference (beta) → own on brand on-model photos.
+
+### 7.1 Standing principles
 1. **AI-first.** Visual understanding + learned taste is the foundation.
 2. **Always explainable.** Human-readable reason + honest confidence; never a black box.
 3. **Learn continuously.** Real behavior is the most valuable asset — capture it cleanly.

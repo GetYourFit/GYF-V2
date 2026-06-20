@@ -1,0 +1,91 @@
+{
+  "_comment": "GYF model registry — the machine-enforced license/lane gate (engineering-doctrine D2). Every model GYF can load is tagged here. CI (scripts/check_model_licenses.py) fails if any 'production' model is not commercial-clean + evaluated. RESEARCH-lane models are OFFLINE-only north-stars and never served. Keep in lockstep with tech-stack.md.",
+  "models": [
+    {
+      "name": "marqo-fashionSigLIP",
+      "capability": "encoder",
+      "provider": "Marqo",
+      "license": "Apache-2.0",
+      "lane": "production",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "Apache-2.0 (GCL over public fashion corpora)",
+      "eval_report": "p1a-retrieval-mrr-0.85",
+      "model_uri": "hf://Marqo/marqo-fashionSigLIP",
+      "notes": "Shipped P1-A perception. Upgrade target: SigLIP 2 / FashionSigLIP-2 (M2) — verify v2 card before swap."
+    },
+    {
+      "name": "sam-3d-body",
+      "capability": "body_estimator",
+      "provider": "Meta",
+      "license": "SAM License (commercial OK; bars military/ITAR/weapons)",
+      "lane": "research",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "per SAM 3D Body release",
+      "eval_report": null,
+      "model_uri": "hf://facebook/sam-3d-body-dinov3",
+      "notes": "Body-type estimator (M3, plan p1b-cycle2). Promote to production once M3 ships + eval attached + SAM License accepted."
+    },
+    {
+      "name": "mhr",
+      "capability": "body_model",
+      "provider": "Meta",
+      "license": "Apache-2.0",
+      "lane": "research",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "Apache-2.0",
+      "eval_report": null,
+      "notes": "Parametric body model SAM 3D Body decodes into; SMPL-free. Promote with M3."
+    },
+    {
+      "name": "anny",
+      "capability": "body_model",
+      "provider": "NAVER",
+      "license": "Apache-2.0",
+      "lane": "research",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "Apache-2.0 / CC0 (MakeHuman); avoid the SMPL-X topology variant",
+      "eval_report": null,
+      "notes": "WHO-calibrated body model for measurement-threshold calibration + fairness (M3)."
+    },
+    {
+      "name": "qwen3",
+      "capability": "intent_parser",
+      "provider": "Alibaba",
+      "license": "Apache-2.0",
+      "lane": "research",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "Apache-2.0",
+      "eval_report": null,
+      "notes": "LLM upgrade for the NL goal box (currently rule-based parse_goal). Promote when wired behind IntentParser port."
+    },
+    {
+      "name": "fitdit",
+      "capability": "try_on",
+      "provider": "Tencent",
+      "license": "non-commercial (Tencent Cloud for commercial)",
+      "lane": "research",
+      "commercial_ok": false,
+      "train_data_commercial_ok": false,
+      "train_data_license": "VITON-HD/DressCode (research-only)",
+      "eval_report": null,
+      "notes": "North-star try-on quality, OFFLINE benchmark only. MUST NOT be served — see engineering-doctrine try-on path (use a licensed model at inference)."
+    },
+    {
+      "name": "idm-vton",
+      "capability": "try_on",
+      "provider": "academic",
+      "license": "CC-BY-NC",
+      "lane": "research",
+      "commercial_ok": false,
+      "train_data_commercial_ok": false,
+      "train_data_license": "VITON-HD/DressCode (research-only)",
+      "eval_report": null,
+      "notes": "Non-commercial try-on baseline; research-lane reference only."
+    }
+  ]
+}

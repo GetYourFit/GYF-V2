@@ -23,6 +23,19 @@ jobs:
       - run: pip install pre-commit
       - run: SKIP=prettier,ruff,ruff-format pre-commit run --all-files --show-diff-on-failure
 
+  doctrine:
+    name: Doctrine gates (license + ports)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # engineering-doctrine D2: no non-commercial model in the serving path.
+      - run: python scripts/check_model_licenses.py
+      # engineering-doctrine D1: the API layer imports no model package directly.
+      - run: python scripts/check_ports.py
+
   web:
     name: Web & packages
     runs-on: ubuntu-latest
