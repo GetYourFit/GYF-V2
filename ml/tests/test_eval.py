@@ -39,6 +39,20 @@ def test_report_roundtrip(tmp_path):
     assert report.to_dict()["model_version"] == "v1"
 
 
+def test_to_eval_report_clears_encoder_gate():
+    from gyf_contracts.eval_report import meets_gate
+
+    base = np.array([[1, 0, 0, 0], [0.99, 0.05, 0, 0], [0, 0, 1, 0], [0, 0, 0.98, 0.1]])
+    emb = l2_normalize(base.astype(np.float32))
+    report = evaluate_retrieval(emb, ["a", "a", "b", "b"], model_version="v1").to_eval_report(
+        report_id="encoder-v1", dataset="unit"
+    )
+    assert report.capability == "encoder"
+    assert report.metrics["mrr"] == 1.0
+    assert "recall_at_1" in report.metrics  # recall_at flattened into the shared schema
+    assert meets_gate(report)[0]
+
+
 def test_shape_mismatch_raises():
     import pytest
 

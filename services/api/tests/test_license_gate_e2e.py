@@ -51,6 +51,51 @@ def test_license_gate_fails_on_production_non_commercial(tmp_path):
     assert gate.main(["x", str(bad)]) == 1  # a leaked NC model in production → CI red
 
 
+def test_promotion_gate_passes_on_real_registry():
+    gate = _load("check_promotion")
+    assert gate.main(["x", str(_ROOT / "models.registry.json"), str(_ROOT / "eval-reports")]) == 0
+
+
+def test_promotion_gate_fails_on_subthreshold_report(tmp_path):
+    gate = _load("check_promotion")
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    (reports / "encoder-bad.json").write_text(
+        json.dumps(
+            {
+                "report_id": "encoder-bad",
+                "capability": "encoder",
+                "model_version": "bad-v1",
+                "metrics": {"mrr": 0.10},
+                "num_samples": 10,
+                "dataset": "d",
+                "created_at": "2026-06-20T00:00:00Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+    registry = tmp_path / "reg.json"
+    registry.write_text(
+        json.dumps(
+            {
+                "models": [
+                    {
+                        "name": "weak-encoder",
+                        "capability": "encoder",
+                        "license": "Apache-2.0",
+                        "lane": "production",
+                        "commercial_ok": True,
+                        "train_data_commercial_ok": True,
+                        "eval_report": "encoder-bad",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert gate.main(["x", str(registry), str(reports)]) == 1  # below the gate → CI red
+
+
 def test_port_lint_clean_on_real_api():
     ports = _load("check_ports")
     assert ports.find_violations(ports.API_APP, rel_to=ports.ROOT) == []
