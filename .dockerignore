@@ -1,21 +1,29 @@
-# Keep the build context tiny and the image clean — only what the bake-off needs is
-# COPYed in the Dockerfile; everything heavy or irrelevant is excluded here.
+# Keep build contexts tiny and clean. Three images build from the repo root (ml bake-off,
+# services/api, app/web); each COPYs only what it needs. Exclude everything heavy, host-
+# specific, or regenerable so nothing host-built (esp. node_modules/.venv across OS/arch)
+# leaks into an image.
 .git
 .github
+
+# Host-built dependency trees — always reinstalled inside the image.
 .venv
 **/.venv
 node_modules
 **/node_modules
-app
-web
-**/__pycache__
-**/*.pyc
+
+# Caches and build output.
+.turbo
+**/.turbo
 .ruff_cache
 **/.ruff_cache
 .pytest_cache
 **/.pytest_cache
+**/__pycache__
+**/*.pyc
+app/.next
+**/*.tsbuildinfo
 
-# Model-weight cache lives in a Docker named volume, never in the image/context.
+# Model-weight cache lives in a Docker named volume, never in an image/context.
 .hf-cache
 
 # Large catalog images are bind-mounted read-only at run time, not baked in.
@@ -25,9 +33,7 @@ ml/*.jpg
 ml/*.jpeg
 ml/*.png
 
-# Docs, infra, and unrelated services.
+# Provisioning tooling and local docs not needed by any image build.
+.tools
 docs
-infra
 eval-reports
-services
-packages/types

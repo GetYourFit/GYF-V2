@@ -49,5 +49,58 @@ services:
       timeout: 5s
       retries: 10
 
+  # ---- Application services (fully dockerized dev: the host needs no local venv/node_modules) ----
+
+  api:
+    build:
+      context: ..
+      dockerfile: services/api/Dockerfile
+    working_dir: /app/services/api
+    environment:
+      GYF_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gyf
+      GYF_REDIS_URL: redis://redis:6379/0
+      GYF_EVENT_BROKER_URL: redpanda:9092
+      GYF_ENV: local
+      GYF_AUTH_DISABLED: "true"
+      GYF_MEDIA_DIR: /app/services/api/data/e2e/images
+    ports:
+      - "8000:8000"
+    volumes:
+      # Source bind-mounted for hot reload; the venv lives at /opt/venv (outside /app) so
+      # these mounts never shadow installed dependencies.
+      - ../services/api:/app/services/api
+      - ../packages/contracts:/app/packages/contracts
+      # Catalog images (seeded by scripts/e2e_workstream_a.sh) served read-only under /media.
+      - ../data:/app/services/api/data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: app/Dockerfile
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Browser-side calls hit the host-published API port.
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      # Bind only source — node_modules stays container-only (host darwin vs container linux
+      # resolve different native binaries), so it is masked by named volumes below.
+      - ../app:/repo/app
+      - ../packages:/repo/packages
+      - web_root_modules:/repo/node_modules
+      - web_app_modules:/repo/app/node_modules
+      - web_next_cache:/repo/app/.next
+    depends_on:
+      - api
+
 volumes:
   pgdata:
+  web_root_modules:
+  web_app_modules:
+  web_next_cache:

@@ -70,6 +70,8 @@ GetYourFit-New/
 ```bash
 make install     # JS workspaces + Python API deps (bun install; uv sync)
 make up          # local infra: Postgres+pgvector, Redis, Redpanda (infra/docker-compose.yml)
+make stack       # FULL stack in Docker (web :3000 + api :8000 + Postgres/Redis) — host needs NO local deps
+make nuke        # stop the stack and delete its volumes + locally-built images (reclaim every byte)
 make dev         # web (:3000) + API (:8000) together
 make dev-api     # API only (uvicorn app.main:app --reload --port 8000)
 make test        # all tests (API pytest + JS)
@@ -80,6 +82,8 @@ make ci          # full local gate: fmt-check + lint + typecheck + test  (run be
 
 - **API surface (local):** `/health`, `/me`, `/metrics`, `/docs` (Swagger), `/gallery` (visual tester).
 - **Live-DB verification** (real Postgres, no fakes — see Working Agreement): `bash scripts/e2e_workstream_a.sh` brings up Dockerized `pgvector/pgvector:pg16` on **:5433** (`GYF_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/gyf`); tear down with `docker rm -f gyf-pg`.
+- **Fully-dockerized dev (disposable host):** `make stack` builds & runs **web + API + Postgres/Redis** entirely in containers (Dockerfiles: `app/Dockerfile`, `services/api/Dockerfile`); source is bind-mounted for hot reload, deps live in the image/named volumes, never on the host — so the working tree can be `rm -rf`'d and rebuilt from git. `make nuke` removes containers, volumes, and locally-built images. ML stays disposable too: `make m2-bakeoff` (weights in the `gyf-hf-cache` named volume) / `make m2-clean`.
+  - *Buildx caveat (this machine):* `~/.docker/buildx/activity` is locked by macOS, so the compose build targets force the classic builder (`DOCKER_BUILDKIT=0`). Restart Docker Desktop or grant the terminal Full Disk Access to restore BuildKit, then drop the env prefix in the Makefile.
 - **ML model cache:** point `HF_HOME` at the repo-local `.hf-cache` (gitignored) — the default `~/.cache` may be unwritable.
 - **Local-venv caveat:** a project-local `.venv` may be Python **3.9** (target is 3.12). The shared `packages/contracts` is 3.12-pinned and *not* pip-installed locally, so 3.9 runs need `PYTHONPATH` to include it and `eval_type_backport` installed for Pydantic to parse `X | None`. CI uses uv + 3.12 and needs neither. **Never use stubs/fakes to dodge a real run** (Working Agreement).
 

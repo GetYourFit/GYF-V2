@@ -11,7 +11,11 @@ FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 ENV HF_HOME=/cache \
     UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    # CPU-only torch: the bake-off runs on CPU here, so we skip the multi-GB CUDA
+    # wheels (smaller image, faster build, no GPU junk). uv selects CPU wheels.
+    UV_TORCH_BACKEND=cpu \
+    UV_HTTP_TIMEOUT=300
 
 WORKDIR /app
 
@@ -24,12 +28,15 @@ COPY models.registry.json /app/models.registry.json
 WORKDIR /app/ml
 RUN uv sync --extra perception --no-dev
 
-# Run unprivileged; /cache is the weights volume mountpoint and must be writable by the runner.
+# Run unprivileged; /cache is the weights mountpoint and must be writable by the runner.
+# NOTE: intentionally no `VOLUME ["/cache"]` — a declared VOLUME makes Docker auto-create an
+# anonymous volume on every run that doesn't bind an explicit one, silently littering the host
+# with dangling volumes. `make m2-bakeoff` mounts the named `gyf-hf-cache` for persistence and
+# `make m2-clean` removes it; without VOLUME, a bare `docker run` leaves zero residue.
 RUN useradd --create-home runner \
     && mkdir -p /cache /app/eval-reports/bakeoffs \
     && chown -R runner:runner /cache /app
 USER runner
-VOLUME ["/cache"]
 
 # Default command runs the bake-off with repo defaults; args pass through (e.g. --out, --images).
 ENTRYPOINT ["uv", "run", "python", "-m", "eval.bake_off"]

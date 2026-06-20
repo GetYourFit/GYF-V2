@@ -5,7 +5,13 @@
 SHELL := bash
 API_DIR := services/api
 
-.PHONY: help install dev dev-web dev-api up down logs fmt fmt-check lint typecheck test test-api doctrine ci m2-bakeoff m2-clean clean
+COMPOSE := docker compose -f infra/docker-compose.yml
+# Build with the classic builder: this machine's ~/.docker/buildx/activity dir is locked by
+# macOS ("operation not permitted"), which aborts BuildKit. Drop the env prefix once buildx is
+# writable again (restart Docker Desktop, or grant the terminal Full Disk Access).
+COMPOSE_BUILD := DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 $(COMPOSE)
+
+.PHONY: help install dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci m2-bakeoff m2-clean clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -28,14 +34,27 @@ dev-web: ## Run only the web app
 dev-api: ## Run only the API service
 	cd $(API_DIR) && uv run uvicorn app.main:app --reload --port 8000
 
-up: ## Start local infra (Postgres+pgvector, Redis, Redpanda)
-	docker compose -f infra/docker-compose.yml up -d
+up: ## Start local infra only (Postgres+pgvector, Redis, Redpanda)
+	$(COMPOSE) up -d postgres redis redpanda
 
-down: ## Stop local infra
-	docker compose -f infra/docker-compose.yml down
+down: ## Stop everything (keeps data volumes)
+	$(COMPOSE) down
 
-logs: ## Tail local infra logs
-	docker compose -f infra/docker-compose.yml logs -f
+logs: ## Tail infra logs
+	$(COMPOSE) logs -f
+
+stack: ## Build + run the FULL stack in Docker (web :3000, api :8000, +Postgres/Redis). Host needs no local deps.
+	$(COMPOSE_BUILD) up -d --build web api
+	@echo "web → http://localhost:3000   api → http://localhost:8000   (make stack-logs to tail)"
+
+stack-down: ## Stop the full Docker stack (keeps data volumes)
+	$(COMPOSE) down
+
+stack-logs: ## Tail web + api logs
+	$(COMPOSE) logs -f web api
+
+nuke: ## Stop the stack and delete its volumes + locally-built images (reclaim every byte)
+	$(COMPOSE) down -v --rmi local
 
 fmt: ## Auto-format everything (Prettier + Ruff)
 	bun run format
