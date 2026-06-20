@@ -36,15 +36,24 @@ _PATTERN = re.compile(
 )
 
 
-def main() -> int:
+def find_violations(app_dir: Path, *, rel_to: Path | None = None) -> list[str]:
+    """Return one message per forbidden model import found under ``app_dir`` (empty = clean)."""
+    rel_to = rel_to or app_dir
     violations: list[str] = []
-    for py in sorted(API_APP.rglob("*.py")):
+    for py in sorted(app_dir.rglob("*.py")):
         for lineno, line in enumerate(py.read_text(encoding="utf-8").splitlines(), 1):
             m = _PATTERN.match(line)
             if m:
-                rel = py.relative_to(ROOT)
+                try:
+                    rel = py.relative_to(rel_to)
+                except ValueError:
+                    rel = py
                 violations.append(f"{rel}:{lineno}: imports '{m.group(1)}' — go through a port")
+    return violations
 
+
+def main() -> int:
+    violations = find_violations(API_APP, rel_to=ROOT)
     if violations:
         print("❌ API layer imports a model package directly (engineering-doctrine D1):")
         for v in violations:
