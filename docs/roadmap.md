@@ -96,10 +96,16 @@ Ordered by **dependency × leverage**, not by excitement:
   `/gallery` idea, rebuilt as the real, beautiful product. *Dep:* M5.
 - **M7 · Discovery & commerce.** Visual search/explore, shop-the-look **redirect to retailer +
   affiliate attribution**. *Dep:* M6.
-- **M8 · Collections & profile.** Saved items, history, wardrobe (stub), profile page. *Dep:* M6.
+- **M8 · Collections & profile.** Saved items, **saved styling sessions** (revisitable), history,
+  wardrobe (stub), professional profile page. *Dep:* M6.
+- **M8.5 · Trust & Transparency surface.** A **user- and operator-facing** view of *what's live
+  vs experimental* and *how confident the system is* — the visible side of the doctrine's
+  honesty invariant (D6) and the registry's `lane`/experimental tags (D2). User-facing: honest
+  confidence + "experimental" labels on immature features. Operator-facing: a status/health view
+  of live vs shadow models + their eval scores. *Dep:* M1 (eval scores), M6.
 
 ✅ **End of Stage 2 = a real person can onboard, get explained designed outfits tuned to them,
-act on them, and buy — the minimum payable product.**
+act on them, buy, and *trust what they see* — the minimum payable product.**
 
 ---
 
@@ -162,8 +168,16 @@ API, strictly PII-separated. The real-data moat becomes the second revenue line.
 ## Cross-cutting (every stage, never deferred)
 Per the **five invariants** (`engineering-doctrine.md`): no silent quality regression
 (M1 gate), nothing non-commercial served (M0 gate), confidence+reason on every output, user owns
-their data (consent/erasure), and a working baseline behind every port. Privacy, a11y, cost
-budgets, and observability are acceptance criteria — not later milestones.
+their data (consent/erasure), and a working baseline behind every port. Privacy, a11y (WCAG 2.2
+AA), cost budgets, and observability are acceptance criteria — not later milestones.
+
+**Threaded requirements (not standalone milestones — built into the relevant stages):**
+- **Region/culture localization** — catalog, taxonomy, and styling logic localized per region
+  (e.g. India includes sarees, USA does not). Lives in `gyf_contracts.taxonomy` + conditioning;
+  every recommendation/perception milestone respects it.
+- **Mobile** — **PWA-first** from Stage 2 (native camera for try-on capture), React Native/Expo
+  later (`tech-stack.md`). The stylist experience is mobile-first, not desktop-ported.
+- **Conflicting-signal resolution** in feedback/taste — handled in M6 (reversal) + P2 (taste).
 
 ---
 
@@ -178,7 +192,8 @@ M4  skin-tone (fairness)  ┘
 M5  auth + onboarding UI   ┐
 M6  stylist experience     ├ Stage 2: the payable product surface
 M7  discovery + commerce   │
-M8  collections + profile  ┘
+M8  collections + sessions │
+M8.5 trust/transparency    ┘
 M9  try-on (licensed)        Stage 3: see-it-on-you
 M10 socials / following     ┐ Stage 4
 M11 gamification            ┘

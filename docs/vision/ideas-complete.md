@@ -258,8 +258,14 @@ free/open sources first and proprietary data generated as a by-product of usage.
 - **The real moat is first-party behavioral data.** Every save, skip, cart, react, share,
   follow, and try-on is captured cleanly and becomes proprietary training signal no
   competitor has. This is the compounding asset and the source of the B2B model.
-- **Synthetic & self-generated data.** Use the generative/try-on stack to augment scarce
-  cases (rare body types, skin tones, occasions) and to balance datasets for fairness.
+- **Real data only — no synthetic (product direction, 2026-06-20).** GYF trains on *real*
+  data we are given/earn: **consented user-uploaded photos** (body type & skin tone — real,
+  diverse bodies/tones give fairness from reality, not simulation), the **brand/aggregator
+  catalog** (garments + attributes + on-model photos), and **first-party behaviour**. Open
+  datasets are used only to bootstrap/pretrain perception/compatibility offline; try-on is
+  *used* via a licensed model at inference, then owned later by training on **brand on-model
+  photos** (real paired data). See `engineering-doctrine.md` D4. *(Supersedes the earlier
+  synthetic-augmentation approach.)*
 - **Cost discipline.** Prefer open weights and free datasets; label only what behavior
   can't supply; cache embeddings; avoid expensive re-computation. Data spend scales with
   proven value, never speculatively.
