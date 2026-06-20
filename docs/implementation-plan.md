@@ -122,10 +122,13 @@ immutable with schema versioning. **Migrations** via Alembic; reviewed by ECC
 End-to-end discipline applied to **every** model (perception, body, ⚠️skin-tone, recsys,
 compat, try-on):
 
-1. **Data:** sourced (open datasets + feeds + behavioral + synthetic — see `ideas-complete.md`
-   §7.6 / research Pillar 7); versioned (DVC/lakeFS-style); documented data cards.
+1. **Data:** **real, not synthetic** (product direction) — consented **user photos**
+   (body/skin), **brand/aggregator catalog** feeds incl. on-model photos, and **first-party
+   behaviour**; open datasets only to *bootstrap/pretrain* offline. Versioned; data cards with
+   **license + consent provenance** per set (engineering-doctrine D4).
 2. **Train:** reproducible pipelines in `ml/pipelines/`; configs tracked; seeds fixed.
-3. **Register:** MLflow registry; model card with metrics, intended use, fairness results.
+3. **Register:** MLflow registry; model card with metrics, intended use, fairness results, and
+   the **`license`/`lane`/`commercial_ok` tags** the CI license gate enforces (doctrine D2).
 4. **Evaluate:** offline metrics for **candidate selection only**; ⚠️ promotion requires
    **online A/B + interleaving + counterfactual/IPS** (offline never promotes alone).
 5. **Serve:** Triton (vision/diffusion), vLLM (LLM reasoning); HF ZeroGPU free → Modal/RunPod
@@ -282,7 +285,11 @@ try-on v1, social posts, profile/badges, affiliate redirect.
 ### Workstream B — User Modeling (two SEPARATE modules)
 - **Onboarding flow:** photo path **and** always-available manual path; capture occasion,
   budget, style intent; preferences editable; consent + privacy copy.
-- **Body-type module:** SMPL + measurement nets → body-type taxonomy; confidence per field.
+- **Body-type module:** **SAM 3D Body (3DB) → MHR** mesh (Apache-2.0, SMPL-free) +
+  **Anny** calibration → measurements → body-type taxonomy; confidence per field. **Fast
+  SAM 3D Body** for serving. SMPL/SMPL-X/SHAPY/NLF rejected as non-commercial-gated. Accept
+  the SAM License before the prod enable flag (MHR/Anny Apache-2.0 fallback). See
+  `docs/plans/p1b-cycle2-photo-body-type.md`.
 - **⚠️ Skin-tone module (separate, fairness-gated):** segmentation → CIELAB tone → undertone
   palette; **must pass full-spectrum fairness eval (Monk Skin Tone) before enabling**; ships
   behind a flag with manual fallback; never blocks launch.
@@ -309,11 +316,16 @@ try-on v1, social posts, profile/badges, affiliate redirect.
   **⚠️ promotion gated by online A/B + interleaving + counterfactual/IPS**.
 - **DoD:** a model change is evaluated and promoted/rejected through the harness; rollback works.
 
-### Workstream E — Try-On v1
-- **IDM-VTON** single-look try-on; async job + progress UI; result caching; input/output
-  **safety filter**; serve on **HF ZeroGPU** (free) → Modal/RunPod for bursts.
-- **DoD:** user uploads a photo and sees a realistic rendered look; FID/LPIPS + human-eval
-  baseline recorded; cost/latency within budget.
+### Workstream E — Try-On ("the designed look, on you")
+> Approach & licensing rationale: `tech-stack.md` §4.5. Below = the build.
+- **Beta build:** `TryOnRenderer` port → a **licensed/hosted** model at **inference** (no
+  training); render hero pieces (top+bottom) on the user's photo, footwear alongside; async job
+  + progress UI; result caching; input/output **safety filter**; **`photo_storage` consent**,
+  ephemeral + erasable; serve on **HF ZeroGPU** → Modal/RunPod for bursts.
+- **Later:** swap to **multi-garment photoreal** (MuGa-VTON/OmniDiT/DiT-VTON); own it by training
+  an MIT/Apache arch on **brand on-model photos**. Honest fallback to a measurement-matched body.
+- **DoD:** user uploads a photo and sees the **complete designed outfit** rendered on themselves
+  with an explanation; FID/LPIPS + human-eval baseline recorded; cost/latency in budget.
 
 ### Workstream F — Social, Profile, Commerce
 - **Socials page;** posts shareable/downloadable/reactable; **follow a style** re-rendered to

@@ -144,13 +144,20 @@ the body-shape literature does *not* solve skin tone; they have different models
 data, and evaluation regimes.
 
 #### 4.2a Body-Type Module (well-supported)
-- Monocular **SMPL**-based 3D body shape & pose estimation; predict semantic measurements
-  (chest/waist/shoulder, height ratios) and map to a body-type taxonomy. Grounded in the
-  SMPL line of work and single-image measurement estimators (BMnet-style adversarial
-  augmentation). ([Keep It SMPL](https://www.researchgate.net/publication/308190183_Keep_It_SMPL_Automatic_Estimation_of_3D_Human_Pose_and_Shape_from_a_Single_Image),
-  [Body Measurement Estimation, arXiv 2210.05667](https://arxiv.org/pdf/2210.05667))
+- Monocular single-image 3D body-shape estimation → semantic measurements
+  (chest/waist/shoulder, height ratios) → body-type taxonomy. **Commercial-clean,
+  SMPL-free stack** (decided 2026-06-20): **SAM 3D Body (3DB)** as the estimator
+  (SOTA, in-the-wild robust) outputting **MHR (Momentum Human Rig, Apache-2.0)** —
+  *not* SMPL; **Fast SAM 3D Body** for real-time inference; **Anny** (NAVER,
+  Apache-2.0, WHO-calibrated, all-ages) for offline measurement-threshold calibration
+  and fairness coverage. **Why not SMPL:** SMPL/SMPL-X/SHAPY/NLF are non-commercial
+  (Meshcapade/MPI-gated) and unusable in a monetizing product; the academic line is
+  retained only as reference. ([SAM 3D Body, arXiv 2602.15989](https://arxiv.org/abs/2602.15989),
+  [MHR](https://github.com/facebookresearch/MHR), [Anny](https://github.com/naver/anny))
 - **Pose/landmarks:** MediaPipe / RTMPose for fast, on-device-capable keypoints (also feeds
   try-on warping).
+- **Licensing gate:** accept the SAM License before enabling in production; MHR + Anny
+  (Apache-2.0) are the guaranteed fallback. Build & verify freely; gate the prod flag.
 - *Confidence: well-supported by current research.*
 
 #### 4.2b Skin-Tone Module (separate, custom, fairness-gated) — ⚠️ low-confidence area
@@ -158,7 +165,7 @@ A **dedicated, independent** module — flagged in the deep-research report as t
 confidence pillar, so it is engineered and evaluated on its own track:
 - **Pipeline:** face/skin segmentation → illumination-robust tone estimation in **CIELAB** →
   perceptual undertone palette (warm/cool/neutral) used for color recommendation.
-- **Why separate:** the pose/shape (SMPL) literature provides no tone solution; naïve
+- **Why separate:** the pose/shape (body-mesh) literature provides no tone solution; naïve
   RGB/lighting estimators are biased. This module needs its own data and lighting
   normalization.
 - **Fairness gate (mandatory):** explicit evaluation across the **full tone spectrum** (e.g.
@@ -236,27 +243,44 @@ region/culture-aware garments — all steering the recommender, not bolted on af
 *Confidence: Medium — composes well-understood NLU + constrained ranking; the color-theory →
 attribute mapping is a curated, testable rule+ML layer.*
 
-### 4.5 Generative Virtual Try-On
+### 4.5 Generative Virtual Try-On — "see the look we designed, on *you*"
 
-**Goal.** Photo-realistic on-body preview of a *selected top + bottom + apparel together*,
-from the user's own photo — the brief's explicit multi-garment requirement.
+**Goal.** Not a product flat-lay. The user uploads a photo; GYF renders the **complete,
+coordinated outfit the stylist chose for them** (top + bottom + footwear, selected for their
+skin tone / body type / occasion) **on their own body**, shown *with the explanation of why
+it suits them* + an honest confidence. This is the fusion of the stylist (§4.4) and the
+renderer — the moment GYF stops being a catalog and becomes a mirror.
 
-- **Baseline (✅):** **IDM-VTON** — diffusion try-on that fuses high-level garment semantics
-  into cross-attention and low-level detail via a parallel UNet, strong at identity/detail
-  preservation in the wild (ECCV 2024). Great quality-per-cost starting point.
-  ([IDM-VTON](https://idm-vton.github.io/), [paper 2403.05139](https://arxiv.org/abs/2403.05139))
-- **Efficiency option:** **CatVTON** ("concatenation is all you need," ICLR 2025) — a
-  lightweight diffusion try-on (SSIM ≈ 0.871, LPIPS ≈ 0.082) for cheaper inference.
-- **Multi-garment target (🔜):** **MuGa-VTON** — multi-garment virtual try-on via **diffusion
-  transformers** with prompt customization, preserving garment + identity — the closest
-  match to "top + bottom + apparel in one render." Also tracking **Leffa** (CVPR 2025,
-  flow-field attention control) and **Voost** (unified try-on/try-off DiT).
-  ([MuGa-VTON](https://arxiv.org/pdf/2508.08488), [Leffa/CatVTON survey of models](https://github.com/Zheng-Chong/Awesome-Try-On-Models))
-- **Serving:** distilled/few-step diffusion (LCM/Turbo-style) on GPU via Triton; async job
-  with progress, results cached in object storage; safety filter on inputs/outputs.
-- **Why diffusion-DiT:** the field has converged on diffusion *transformers* as the
-  photorealism leader for single- and multi-garment try-on — directly meeting the
-  "really photo realistic" bar.
+**Behind the `TryOnRenderer` port** (engineering-doctrine D1) so the model is swappable.
+
+- **Use, don't train (beta).** *Using* try-on (user photo + catalog garment → rendered result)
+  needs **no training data** — it's inference. Only *building* a model needs paired data. So
+  beta **rents/licenses a try-on model at inference**, no dataset, no GPU training. The garment
+  comes from the brand feed (licensed), the photo from the user (consented) — both clean to use;
+  the only gate is the **model's license** (engineering-doctrine D2).
+- **Licensing reality (researched 2026-06-20):** most open try-on *weights* are
+  **non-commercial** (IDM-VTON, CatVTON, **FitDiT** → Tencent for commercial). **Leffa** is
+  MIT *code* but its weights derive from research-only datasets (VITON-HD/DressCode). ⟹ for a
+  monetizing product, **pay for a commercial try-on license / hosted API at inference**, or
+  later train an MIT/Apache architecture on **clean real paired data** (see below).
+- **Multi-garment is the hard, cutting-edge case.** Easy/cheap models dress *one* garment;
+  putting top+bottom+**footwear** on one person at once is the SOTA frontier
+  (**MuGa-VTON / OmniDiT / DiT-VTON "try-all"**). **Footwear is the weakest area** across all
+  models — flag and phase it.
+- **Own-it-later (scale).** When per-render cost justifies owning the model, train/fine-tune a
+  permissive (MIT/Apache) architecture on the **clean real paired data we legitimately have:
+  brand "on-model" photos** (a model wearing the exact item, supplied in the feed) + accumulated
+  real try-on results. **No synthetic data** (per product direction).
+- **Phasing (never blocks):**
+  1. *Now/beta* — stylist composes the complete look; show it as one coordinated **"look"** with
+     the why-it-suits-you reason; render the **hero pieces** (top+bottom) on the user's photo via
+     a **licensed** model, footwear shown alongside.
+  2. *Later* — full **multi-garment photoreal** render (whole outfit incl. footwear, on their body).
+  - *Honest fallback (D6):* if a photo renders poorly, show the look on a **body matched to their
+    measurements** rather than ship an uncanny result — trust over flash.
+- **Serving:** distilled/few-step diffusion (LCM/Turbo-style) off the API box (HF ZeroGPU →
+  Modal/RunPod); async job + progress; results cached; **safety filter on inputs/outputs**;
+  body photos handled under `photo_storage` consent, ephemeral + erasable (D8).
 
 ### 4.6 Continuous Learning & Quality Protection
 
@@ -370,8 +394,8 @@ genuinely functional — no mockups. Leverage relevant **ECC** skills throughout
 | Events | Kafka/Redpanda | NATS, Pulsar |
 | Fashion embeddings | Marqo-FashionSigLIP | OpenCLIP, FashionCLIP 2.0, SigLIP 2, DINOv2 |
 | Recsys | Two-tower + transformer → TIGER/HSTU | DLRM, classic CF, pure LLM-recsys |
-| Try-on | IDM-VTON → MuGa-VTON | CatVTON, Leffa, Voost, OutfitAnyone |
-| Body type | SMPL + measurement nets | OpenPose-only, manual-only |
+| Try-on | Licensed/hosted model at inference (beta) → own MIT/Apache arch on brand on-model photos (multi-garment, complete look on user) | IDM-VTON/CatVTON/FitDiT (all non-commercial), MuGa-VTON/OmniDiT/DiT-VTON (multi-garment targets) |
+| Body type | SAM 3D Body (3DB) → MHR + Anny calibration (Apache-2.0, SMPL-free) | SMPL/SMPL-X/SHAPY/NLF (non-commercial-gated), MediaPipe-ratios-only, manual-only |
 | Skin tone (separate module ⚠️) | Custom CIELAB tone + fairness gate | RGB heuristics (biased), manual-only |
 | Controllable styling | Intent parser + color-theory/body-type effects engine | Free-text-only with no structure |
 | Serving | Triton + vLLM | TorchServe, BentoML, KServe |
@@ -384,7 +408,7 @@ genuinely functional — no mockups. Leverage relevant **ECC** skills throughout
 - MuGa-VTON — [arXiv 2508.08488](https://arxiv.org/pdf/2508.08488) · CatVTON / Leffa / Voost via [Awesome-Try-On-Models](https://github.com/Zheng-Chong/Awesome-Try-On-Models)
 - Marqo-FashionSigLIP / FashionCLIP — [model card](https://huggingface.co/Marqo/marqo-fashionSigLIP) · [Marqo blog](https://www.marqo.ai/blog/search-model-for-fashion)
 - Generative recsys / Semantic IDs — [TIGER (NeurIPS 2023)](https://papers.neurips.cc/paper_files/paper/2023/file/20dcab0f14046a5c6b02b61da9f13229-Paper-Conference.pdf) · [Semantic IDs Handbook (arXiv 2507.22224)](https://arxiv.org/pdf/2507.22224)
-- Body shape/measurement — [Keep It SMPL](https://www.researchgate.net/publication/308190183_Keep_It_SMPL_Automatic_Estimation_of_3D_Human_Pose_and_Shape_from_a_Single_Image) · [Body Measurement Estimation (arXiv 2210.05667)](https://arxiv.org/pdf/2210.05667)
+- Body shape/measurement (commercial-clean, SMPL-free) — [SAM 3D Body (arXiv 2602.15989)](https://arxiv.org/abs/2602.15989) · [Fast SAM 3D Body (arXiv 2603.15603)](https://arxiv.org/pdf/2603.15603) · [MHR (Apache-2.0)](https://github.com/facebookresearch/MHR) · [Anny (Apache-2.0)](https://github.com/naver/anny). Reference only (non-commercial): [Keep It SMPL](https://www.researchgate.net/publication/308190183_Keep_It_SMPL_Automatic_Estimation_of_3D_Human_Pose_and_Shape_from_a_Single_Image) · [Body Measurement Estimation (arXiv 2210.05667)](https://arxiv.org/pdf/2210.05667)
 - Vector DBs — [pgvector vs Qdrant](https://www.tigerdata.com/blog/pgvector-vs-qdrant) · [Milvus vs Qdrant 2026](https://www.kunalganglani.com/blog/milvus-vs-qdrant)
 
 > **Maintenance.** When a better/free SOTA technique appears, update the relevant section

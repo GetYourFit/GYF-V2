@@ -64,12 +64,21 @@ fairness-critical problem.
 
 ### 2a. Body-Type Module (well-supported)
 
-- **Body shape/type:** the **SMPL** statistical body model is the field standard — a
+- **Body shape/type:** the **SMPL** statistical body model is the historical field standard — a
   low-dimensional, differentiable 3D mesh underpinning most monocular pose/shape pipelines
   ([Keep It SMPL](https://www.researchgate.net/publication/308190183_Keep_It_SMPL_Automatic_Estimation_of_3D_Human_Pose_and_Shape_from_a_Single_Image)).
   Predict **semantic measurements** (chest/waist/shoulder, height ratios) from a single
   frontal silhouette/image (BMnet-style, with adversarial augmentation), then map to a
   body-type taxonomy ([Body Measurement Estimation, arXiv 2210.05667](https://arxiv.org/pdf/2210.05667)).
+  > **⚠️ Commercial-licensing update (2026-06-20):** SMPL/SMPL-X (and SHAPY, NLF) are
+  > **non-commercial-gated** (Meshcapade/MPI own the body model; academic weights are
+  > research-only) and therefore **cannot ship in a monetizing product**. GYF adopts the
+  > **commercial-clean, SMPL-free** stack instead: **SAM 3D Body (3DB)** → **MHR**
+  > (Apache-2.0) for estimation, **Fast SAM 3D Body** for serving, **Anny** (Apache-2.0,
+  > WHO-calibrated) for measurement calibration & fairness. SMPL is retained here as
+  > reference only. ([SAM 3D Body, arXiv 2602.15989](https://arxiv.org/abs/2602.15989),
+  > [MHR](https://github.com/facebookresearch/MHR), [Anny](https://github.com/naver/anny);
+  > full plan: `docs/plans/p1b-cycle2-photo-body-type.md`.)
 - **Pose/landmarks:** MediaPipe / RTMPose for fast, on-device-capable keypoints (feeds both
   body estimation and try-on warping).
 - *Confidence: High — well-sourced, mature literature.*

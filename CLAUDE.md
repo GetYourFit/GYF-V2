@@ -19,6 +19,7 @@
 GetYourFit-New/
 ├── CLAUDE.md                          # this file — operating guide & entry point
 ├── docs/
+│   ├── engineering-doctrine.md        # THE HIGHEST-IQ WAY — cross-cutting design law (how every pillar is built)
 │   ├── vision/
 │   │   ├── ideas-complete.md          # canonical product/vision brief
 │   │   └── drafts/                    # raw idea inputs (history)
@@ -34,6 +35,7 @@ GetYourFit-New/
 | Path | Role |
 | --- | --- |
 | `CLAUDE.md` | **This file.** Structured operating guide for agents/devs; entry point that summarizes everything and points to the source docs. |
+| `docs/engineering-doctrine.md` | **The highest-IQ way — authoritative cross-cutting design law.** *How* every ML pillar is built so GYF is SOTA, commercially clean, never quality-compromised, and never dev-blocked: capability ports, two-lane (research/production) model lifecycle with a CI license gate, foundation+adapter, the data-flywheel moat, eval-gated promotion. Read alongside `tech-stack.md`. |
 | `docs/vision/ideas-complete.md` | **Canonical product/vision brief** — the merged superset of all `ideas*.md`. Authoritative for *what* GYF is. |
 | `docs/vision/drafts/ideas.md`, `…/ideas.V2.md` | Raw idea-draft inputs, folded into `ideas-complete.md` (kept for history). |
 | `docs/tech-stack.md` | **Authoritative for *how*** — every technology, model, and architecture decision with rationale and alternatives. |
@@ -120,10 +122,14 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 ### Personal collections
 - Saved-items shortlist; saved styling sessions; a **wardrobe** of what you own (styles around your real closet); history of past recommendations.
 
-### See-it-on-you (virtual try-on)
-- Select a **top + bottom + apparel/footwear** and see **all three together** on yourself.
-- User provides a photo; output renders the articles on their own body.
-- Must be **photo-realistic**; maturing toward true on-body preview.
+### See-it-on-you (virtual try-on) — the complete designed look, on *you*
+- **Not product flat-lays.** The user uploads a photo and sees the **complete outfit the stylist
+  designed for them** rendered **on their own body**, with the **reason it suits them** + honest
+  confidence — GYF as a mirror, not a catalog.
+- **How** (authoritative detail in `tech-stack.md` §4.5 + `engineering-doctrine.md`): a swappable
+  `TryOnRenderer` port; **use a licensed model at inference** for beta (no training data needed);
+  **multi-garment photoreal** (top+bottom+footwear, footwear weakest) phased in; **own-it-later**
+  on real **brand on-model photos** (no synthetic). Consented, ephemeral, erasable.
 
 ### Social & inspiration (LTK-inspired — [shopltk.com](https://www.shopltk.com/))
 - A dedicated **Socials page** where posts live.
@@ -157,11 +163,20 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 
 ## 4. Data & Datasets (efficient, low-cost)
 
-- **Bootstrap on free/open datasets:** DeepFashion(2), Fashionpedia (items/attributes); Polyvore Outfits, Polyvore-disjoint, IQON3000 (compatibility); VITON-HD, DressCode (try-on); Fashion-Gen, FashionIQ (multimodal/language-guided).
-- **Catalog** via affiliate-network / retailer **product feeds** — free and current.
-- **First-party behavioral data** (saves, skips, carts, reacts, shares, follows, try-ons) is the compounding proprietary asset and the source of the B2B model.
-- **Synthetic / self-generated** data balances rare body types, skin tones, occasions (fairness).
-- **Cost discipline:** prefer open weights + free data; label only what behavior can't supply; cache embeddings; spend scales with proven value.
+> **GYF trains on REAL data, not synthetic** (product direction, 2026-06-20). Three owned
+> streams: **user-uploaded photos** (body-type/skin-tone, consented), the **brand/aggregator
+> catalog** (garment images + attributes + on-model photos), and **first-party behaviour**.
+
+- **Real user photos** — the body-type & skin-tone modules learn from consented uploads (real,
+  diverse bodies/tones → fairness from reality, not simulation). Ephemeral + erasable.
+- **Catalog** via brand/aggregator **product feeds** — garments, attributes, and **on-model
+  photos** (the clean, real paired-data source for owning try-on later); free and current.
+- **First-party behavioral data** (saves, skips, carts, reacts, shares, follows, try-ons) is the
+  compounding proprietary asset and the source of the B2B model.
+- **Open datasets** (DeepFashion(2), Fashionpedia, Polyvore, …) are used **only to bootstrap/
+  pretrain** perception/compatibility offline — never served, never a substitute for real data.
+- **Cost discipline:** prefer open *weights* + the real data we're given; label only what behavior
+  can't supply; cache embeddings; spend scales with proven value.
 
 > Full citations and alternatives: `research/deep-research-report.md` (Pillar 7).
 
@@ -187,12 +202,12 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 
 1. **Visual style understanding:** `Marqo-FashionSigLIP` (fashion-tuned embeddings, +57% MRR; open/free). Color harmony scored in **CIELAB/CAM16**.
 2. **User modeling from a photo — TWO separate modules:**
-   - **Body-type module** — monocular **SMPL** + measurement nets → body-type taxonomy. *(well-supported)*
+   - **Body-type module** — monocular **SAM 3D Body (3DB) → MHR** (Apache-2.0, SMPL-free) + **Anny** calibration → measurements → body-type taxonomy. *(well-supported; SMPL/SMPL-X rejected as non-commercial-gated — see `docs/plans/p1b-cycle2-photo-body-type.md`)*
    - **Skin-tone module (separate, custom, fairness-gated) ⚠️** — face/skin segmentation → illumination-robust **CIELAB** tone → undertone palette; **must pass full-spectrum fairness eval** (e.g. Monk Skin Tone) before shipping; manual fallback always available. *(low-confidence; never block the product on it)*
 3. **Controllable styling:** intent parser (light LLM/NLU) maps free text → visual-effect goal (`elongate`/`slim`/`broaden`); a **color-theory + body-type effects engine** turns goals into garment-attribute constraints that re-weight the ranker and feed explanations. Occasion + region/culture are first-class conditioning features.
 4. **Personal taste & recommendation:** launch with **two-tower retrieval + transformer ranker**; content-based **cold start**; scale to **generative recommendation with Semantic IDs (TIGER/HSTU)**. Every rec ships a reason + calibrated confidence.
 5. **Outfit composition & compatibility:** transformer-over-the-outfit-set (+ hypergraph GNN) compatibility scorer; constrained, **diverse (DPP/MMR)** ranked outfits honoring budget/occasion/body/tone/wardrobe.
-6. **Generative virtual try-on:** **IDM-VTON** baseline → **MuGa-VTON** (multi-garment diffusion transformer); **CatVTON** efficiency option. Photo-realistic, multi-garment.
+6. **Generative virtual try-on (behind a `TryOnRenderer` port):** render the **complete designed outfit on the user's photo**. **Beta = use a licensed/hosted model at inference** (no training data needed; most open try-on weights are non-commercial). **Multi-garment** (top+bottom+footwear at once, footwear weakest) is the SOTA target — **MuGa-VTON / OmniDiT / DiT-VTON** — phased in. **Own-it-later** by training a permissive (MIT/Apache) architecture on **brand on-model photos** (real paired data; no synthetic).
 7. **Continuous learning & quality:** event-sourced feedback → feature store → retraining; **offline metrics for candidate selection only**, promotion gated by **online A/B + interleaving + counterfactual/IPS**; drift monitoring, shadow deploys, auto-rollback. Never silently regress.
 
 ### Social, commerce, B2B
@@ -251,6 +266,7 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 ## 8. Working Agreement for Agents
 
 - **Read the source docs first** (`ideas-complete.md`, `tech-stack.md`, `research/deep-research-report.md`) before proposing or building anything.
+- **Follow the engineering doctrine** (`docs/engineering-doctrine.md`) — it is binding for every ML pillar: consume capabilities through a **port** (never import a model in app code), keep a **research vs production lane** with a **CI license gate** so nothing non-commercial is served, prefer **clean foundation + our-data adapter** over non-commercial task weights, and **promote only through evaluation**. The five invariants are non-negotiable.
 - **Plan before code.** Surface a plan; do not implement until it's agreed.
 - **No mockups.** Ship genuinely functional work.
 - **Default to free/open** tools and models; flag when a paid step is unavoidable.
