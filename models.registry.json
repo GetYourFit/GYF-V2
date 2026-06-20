@@ -15,6 +15,32 @@
       "notes": "Shipped P1-A perception. Upgrade target: SigLIP 2 / FashionSigLIP-2 (M2) — verify v2 card before swap."
     },
     {
+      "name": "google-siglip2-base",
+      "capability": "encoder",
+      "provider": "Google",
+      "license": "Apache-2.0",
+      "lane": "research",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "Apache-2.0 (WebLI)",
+      "eval_report": null,
+      "model_uri": "hf-hub:timm/ViT-B-16-SigLIP2",
+      "notes": "M2 bake-off candidate (plan m2-embedding-upgrade). SigLIP 2 recipe, B/16, 768-dim — generic, NOT fashion-tuned, so likely loses to marqo-fashionSigLIP. Research-lane until it beats the incumbent on the encoder gate."
+    },
+    {
+      "name": "google-siglip2-so400m",
+      "capability": "encoder",
+      "provider": "Google",
+      "license": "Apache-2.0",
+      "lane": "research",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "Apache-2.0 (WebLI)",
+      "eval_report": null,
+      "model_uri": "hf-hub:timm/ViT-SO400M-16-SigLIP2-384",
+      "notes": "M2 bake-off candidate. Larger backbone (1152-dim → needs a vector-dim migration + re-embed if promoted). Only escalate to this if the base candidate is competitive. Research-lane until proven."
+    },
+    {
       "name": "sam-3d-body",
       "capability": "body_estimator",
       "provider": "Meta",
