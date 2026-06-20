@@ -67,3 +67,8 @@ models/
 
 # Local ML model cache (HF weights) — never committed
 .hf-cache/
+
+# Loose local test photos (body/skin/try-on inputs) — never commit user/test imagery
+ml/*.jpg
+ml/*.jpeg
+ml/*.png
