@@ -1,0 +1,36 @@
+# GYF web — production image (Next.js via Bun workspaces).
+#
+# Unlike app/Dockerfile (dev: hot-reload server, bind-mounted source), this image
+# is self-contained: it installs the workspace, runs `next build`, and serves with
+# `next start`. Build context is the repo root because `app` is a Bun workspace that
+# depends on packages/*.
+#
+# NEXT_PUBLIC_* are inlined into the client bundle at build time, so they arrive as
+# build ARGs (Render exposes service env vars to the Docker build). They are public
+# by design (the anon key ships to the browser).
+FROM oven/bun:1.3
+
+WORKDIR /repo
+
+# Manifests first so the install layer caches across source edits.
+COPY package.json bun.lock turbo.json tsconfig.base.json ./
+COPY app/package.json ./app/package.json
+COPY packages ./packages
+
+RUN bun install --frozen-lockfile
+
+COPY . .
+
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+    NEXT_TELEMETRY_DISABLED=1
+
+RUN bun run --filter @gyf/web build
+
+EXPOSE 3000
+# `next start` binds to $PORT (Render injects it).
+CMD ["bun", "run", "--filter", "@gyf/web", "start"]
