@@ -87,7 +87,7 @@ export function OnboardingForm() {
       await api.putProfile(form);
       await api.putConsent({ flags: consent });
       setSaved(true);
-      router.push("/app");
+      router.push("/");
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save your profile.");

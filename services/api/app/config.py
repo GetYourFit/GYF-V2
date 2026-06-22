@@ -19,6 +19,17 @@ class Settings(BaseSettings):
     # seed location (scripts/e2e_workstream_a.sh). Unset/missing dir = no media mount.
     media_dir: str = "data/e2e/images"
 
+    # Public base URL for catalog images. When set (e.g. a Supabase Storage public
+    # bucket: "https://<ref>.supabase.co/storage/v1/object/public/catalog"),
+    # image_url points there. Empty = serve locally from the "/media" mount.
+    media_base_url: str = ""
+
+    # --- CORS ---
+    # Comma-separated browser origins allowed to call the API (the deployed web
+    # app, e.g. "https://gyf.vercel.app"). Empty = no cross-origin browser access
+    # (same-origin only) — the safe default for local same-host dev.
+    allowed_origins: str = ""
+
     # --- Auth (Supabase-issued JWTs) ---
     # HS256 secret from the Supabase project (Settings → API → JWT Secret).
     # When empty in a non-local env, protected routes reject all requests.
@@ -44,6 +55,11 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     # Fraction of transactions traced/sampled (0.0–1.0).
     trace_sample_rate: float = 1.0
+
+    @property
+    def cors_origins(self) -> list[str]:
+        """Allowed browser origins, parsed from the comma-separated setting."""
+        return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
 
     @property
     def auth_is_open(self) -> bool:

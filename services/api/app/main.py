@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -87,6 +88,19 @@ app = FastAPI(
         {"name": "system", "description": "Health, identity probes & the visual gallery."},
     ],
 )
+
+# Allow the deployed web app (a different origin than the API) to call us from the
+# browser. Configured via GYF_ALLOWED_ORIGINS; empty in local same-host dev = no
+# cross-origin access. Credentials are enabled so the Supabase JWT can be sent.
+if settings.cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 sink = get_sink()
 
 

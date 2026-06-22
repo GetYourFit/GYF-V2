@@ -42,7 +42,9 @@ export function StylistFeed() {
   }, []);
 
   useEffect(() => {
-    void load(EMPTY_QUERY);
+    // Defer to a microtask so the synchronous setState inside `load` doesn't run
+    // in the effect body (avoids cascading renders flagged by react-hooks).
+    void Promise.resolve().then(() => load(EMPTY_QUERY));
   }, [load]);
 
   function apply(q: StylistQuery) {
@@ -107,7 +109,7 @@ export function StylistFeed() {
           A few quick preferences and your stylist gets to work.
         </p>
         <Link
-          href="/app/onboarding"
+          href="/onboarding"
           className="mt-6 inline-flex min-h-11 items-center bg-[var(--text)] px-6 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.18em] text-[var(--bg)] hover:bg-[var(--gold)]"
         >
           Set up my profile

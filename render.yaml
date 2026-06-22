@@ -1,0 +1,38 @@
+# GYF API — free-tier deployment blueprint (Render).
+#
+# Deploys the FastAPI service as a Docker web service on Render's free plan.
+# The build context is the repo root (the API has an editable path dep on
+# packages/contracts); the existing services/api/Dockerfile resolves deps into
+# /opt/venv. We override the dev CMD (--reload + bind-mount assumptions) with a
+# production uvicorn bound to Render's injected $PORT.
+#
+# Secrets (DB URL, JWT secret, allowed origins) are set in the Render dashboard
+# or via `render` CLI — never committed (sync: false).
+services:
+  - type: web
+    name: gyf-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./services/api/Dockerfile
+    dockerContext: .
+    dockerCommand: sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: GYF_ENV
+        value: production
+      - key: GYF_AUTH_DISABLED
+        value: "false"
+      # Catalog images aren't baked into the image (see .dockerignore). Until they
+      # move to object storage, /media is empty and image_url 404s — outfits still
+      # compose, photos just don't render.
+      - key: GYF_MEDIA_DIR
+        value: data/e2e/images
+      # --- Secrets: set in dashboard / `render` CLI, not committed ---
+      - key: GYF_DATABASE_URL # Supabase pooler URL (postgresql://...:6543/postgres)
+        sync: false
+      - key: GYF_SUPABASE_JWT_SECRET # Supabase → Settings → API → JWT Secret
+        sync: false
+      - key: GYF_ALLOWED_ORIGINS # the Vercel web origin, e.g. https://gyf.vercel.app
+        sync: false

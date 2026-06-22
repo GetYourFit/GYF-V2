@@ -33,7 +33,7 @@ const COPY: Record<Mode, { title: string; cta: string; altPrompt: string; altHre
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/app";
+  const next = params.get("next") || "/";
   const copy = COPY[mode];
 
   const [email, setEmail] = useState("");

@@ -21,8 +21,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable} ${dmMono.variable}`}>
       {/* Root holds only the document shell + fonts. Each area supplies its own
-          chrome: (marketing) the landing nav/footer, (auth) a centred shell, and
-          the product surface (/app) its own stylist chrome. */}
+          chrome: (auth) a centred shell, and the product surface (app) its own
+          stylist chrome. */}
       <body style={{ background: "#F0ECE2" }}>{children}</body>
     </html>
   );

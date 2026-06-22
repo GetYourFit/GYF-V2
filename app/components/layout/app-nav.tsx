@@ -7,9 +7,9 @@ import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const LINKS = [
-  { href: "/app", label: "Stylist" },
-  { href: "/app/saved", label: "Saved" },
-  { href: "/app/onboarding", label: "Profile" },
+  { href: "/", label: "Stylist" },
+  { href: "/saved", label: "Saved" },
+  { href: "/onboarding", label: "Profile" },
 ];
 
 /** The product surface's own chrome — editorial wordmark + tracked nav, distinct
@@ -31,7 +31,7 @@ export function AppNav() {
         className="mx-auto flex max-w-6xl items-center justify-between px-[clamp(1.25rem,5vw,3rem)] py-4"
       >
         <Link
-          href="/app"
+          href="/"
           className="font-[family-name:var(--font-display)] text-2xl tracking-tight text-[var(--text)]"
         >
           GYF
