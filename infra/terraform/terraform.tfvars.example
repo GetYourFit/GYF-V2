@@ -3,10 +3,6 @@
 project_name = "gyf"
 environment  = "production"
 
-# Vercel — https://vercel.com/account/tokens
-vercel_api_token = ""
-git_repo         = "GetYourFit/GYF-V2"
-
 # Supabase — https://supabase.com/dashboard/account/tokens
 supabase_access_token = ""
 supabase_org_id       = ""

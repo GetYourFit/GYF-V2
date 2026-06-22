@@ -2,10 +2,6 @@ terraform {
   required_version = ">= 1.7"
 
   required_providers {
-    vercel = {
-      source  = "vercel/vercel"
-      version = "~> 2.0"
-    }
     supabase = {
       source  = "supabase/supabase"
       version = "~> 1.0"
@@ -18,10 +14,6 @@ terraform {
 
   # Remote state recommended once a team forms (e.g. Terraform Cloud free tier).
   # backend "remote" {}
-}
-
-provider "vercel" {
-  api_token = var.vercel_api_token
 }
 
 provider "supabase" {

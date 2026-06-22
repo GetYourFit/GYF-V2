@@ -31,8 +31,10 @@ coverage/
 *.tsbuildinfo
 *.log
 
-# Vercel
-.vercel
+# Cloudflare Workers / wrangler (build output + redirected config dir)
+.open-next/
+.wrangler/
+.wrangler-home/
 
 # Python
 __pycache__/
@@ -64,6 +66,7 @@ models/
 .tmp/
 .bun-tmp/
 .bun-cache/
+.cache-local/
 
 # Local ML model cache (HF weights) — never committed
 .hf-cache/

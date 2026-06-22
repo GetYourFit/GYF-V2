@@ -1,10 +1,18 @@
 name: CD
 
-# Continuous delivery. Runs only after CI succeeds on a branch.
-# - Pull requests -> Vercel preview deploy
-# - main          -> Vercel production deploy
-# Deploy steps are guarded: they no-op gracefully until VERCEL_* secrets are set,
-# so the pipeline is green from day one and "turns on" once infra is provisioned.
+# Continuous delivery. Runs only after CI succeeds on main.
+# Deploys the web to Cloudflare Workers via the wrangler CLI (OpenNext adapter).
+# CLI/token deploy means the private repo needs no third-party Git OAuth.
+# The API ships separately on Render from render.yaml.
+#
+# The deploy step is guarded: it no-ops gracefully until the Cloudflare secrets
+# are set, so the pipeline is green from day one and "turns on" once configured.
+#
+# Required repo secrets:
+#   CLOUDFLARE_API_TOKEN  — token with the "Edit Cloudflare Workers" template
+#   CLOUDFLARE_ACCOUNT_ID — Cloudflare account id
+# Required repo variables (NEXT_PUBLIC_* are inlined into the build):
+#   NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 on:
   workflow_run:
@@ -17,14 +25,17 @@ concurrency:
 
 jobs:
   deploy-web:
-    name: Deploy web (Vercel)
+    name: Deploy web (Cloudflare Workers)
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_branch == 'main' }}
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      IS_PROD: ${{ github.event.workflow_run.head_branch == 'main' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,21 +47,18 @@ jobs:
       - name: Check secrets
         id: gate
         run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "Vercel secrets not set — skipping deploy (configure VERCEL_TOKEN/ORG_ID/PROJECT_ID)."
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "Cloudflare secrets not set — skipping deploy (set CLOUDFLARE_API_TOKEN/ACCOUNT_ID)."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Pull Vercel env
+      - name: Install deps
         if: steps.gate.outputs.enabled == 'true'
-        run: bunx vercel pull --yes --environment=${{ env.IS_PROD == 'true' && 'production' || 'preview' }} --token "$VERCEL_TOKEN"
+        run: bun install --frozen-lockfile
 
-      - name: Build
+      - name: Build & deploy
         if: steps.gate.outputs.enabled == 'true'
-        run: bunx vercel build ${{ env.IS_PROD == 'true' && '--prod' || '' }} --token "$VERCEL_TOKEN"
-
-      - name: Deploy
-        if: steps.gate.outputs.enabled == 'true'
-        run: bunx vercel deploy --prebuilt ${{ env.IS_PROD == 'true' && '--prod' || '' }} --token "$VERCEL_TOKEN"
+        working-directory: app
+        run: bun run cf:deploy

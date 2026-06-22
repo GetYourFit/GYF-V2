@@ -1,6 +1,10 @@
 # GYF infrastructure — free-tier first (see docs/implementation-plan.md P0-C).
-# Resources here provision: Postgres + pgvector (Supabase), Redis (Upstash),
-# and the Vercel web project wired to the Git repo with environment variables.
+# Resources here provision the stateful backing services: Postgres + pgvector
+# (Supabase) and Redis (Upstash).
+#
+# Deployment is NOT managed here. The web ships to Cloudflare Workers via the
+# `wrangler` CLI (app/wrangler.jsonc) and the API to Render (render.yaml) — both
+# CLI/blueprint driven so a private repo needs no third-party Git OAuth.
 #
 # NOT YET APPLIED — requires accounts + tokens (see infra/SETUP.md).
 
@@ -32,36 +36,6 @@ resource "upstash_redis_database" "cache" {
   tls            = true
 }
 
-# --- Web: Vercel project wired to the repo ---
-resource "vercel_project" "web" {
-  name           = local.name
-  framework      = "nextjs"
-  root_directory = "app"
-
-  # Not linked to Git: the GitHub Actions CD workflow deploys via the Vercel CLI.
-  # Hobby (free) plan does not allow connecting a private org-owned repo.
-}
-
-# Environment variables consumed by the web/BFF at build & runtime.
-resource "vercel_project_environment_variable" "api_base_url" {
-  project_id = vercel_project.web.id
-  key        = "API_BASE_URL"
-  value      = "https://api.${var.environment == "production" ? "" : "staging."}getyourfit.app"
-  target     = ["production", "preview"]
-}
-
-resource "vercel_project_environment_variable" "database_url" {
-  project_id = vercel_project.web.id
-  key        = "DATABASE_URL"
-  value      = "postgresql://postgres:${var.supabase_db_password}@db.${supabase_project.db.id}.supabase.co:5432/postgres"
-  target     = ["production", "preview"]
-  sensitive  = true
-}
-
-resource "vercel_project_environment_variable" "redis_url" {
-  project_id = vercel_project.web.id
-  key        = "REDIS_URL"
-  value      = upstash_redis_database.cache.endpoint
-  target     = ["production", "preview"]
-  sensitive  = true
-}
+# Web (Cloudflare Workers) and API (Render) deploys are CLI/blueprint driven and
+# carry their own env/secrets (Cloudflare dashboard secrets + render.yaml). They
+# are intentionally not provisioned here.

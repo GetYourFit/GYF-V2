@@ -4,7 +4,8 @@ Infrastructure-as-code for GYF (Terraform) and CI config.
 
 P0 provisions, free-tier first (see `docs/implementation-plan.md` P0-C):
 
-- Web: Vercel / Cloudflare
+- Web: Cloudflare Workers (wrangler CLI deploy)
+- API: Render (FastAPI Docker, `render.yaml`)
 - Database + vectors: Supabase or Neon (Postgres + pgvector)
 - Cache: Redis
 - Events: Redpanda / managed Kafka free tier

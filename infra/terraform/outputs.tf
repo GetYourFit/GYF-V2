@@ -10,7 +10,3 @@ output "redis_endpoint" {
   value     = upstash_redis_database.cache.endpoint
   sensitive = true
 }
-
-output "vercel_project_id" {
-  value = vercel_project.web.id
-}

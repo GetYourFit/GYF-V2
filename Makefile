@@ -4,6 +4,16 @@
 .DEFAULT_GOAL := help
 SHELL := bash
 API_DIR := services/api
+WEB_DIR := app
+
+# wrangler's default config dir (~/Library/Preferences) is locked by macOS on this
+# box, so redirect XDG_CONFIG_HOME at a writable, gitignored repo-local dir.
+WRANGLER_ENV := XDG_CONFIG_HOME=$(CURDIR)/$(WEB_DIR)/.wrangler-home
+
+# Same macOS lock hits ~/.cache (uv) and ~/.cache/huggingface. Redirect every
+# cache the Python/ML toolchain touches at gitignored, repo-local dirs so the API
+# boots without manual env. Drop these once ~/.cache is writable again.
+CACHE_ENV := UV_CACHE_DIR=$(CURDIR)/.uv-cache XDG_CACHE_HOME=$(CURDIR)/.cache-local HF_HOME=$(CURDIR)/.hf-cache
 
 COMPOSE := docker compose -f infra/docker-compose.yml
 # Build with the classic builder: this machine's ~/.docker/buildx/activity dir is locked by
@@ -11,7 +21,7 @@ COMPOSE := docker compose -f infra/docker-compose.yml
 # writable again (restart Docker Desktop, or grant the terminal Full Disk Access).
 COMPOSE_BUILD := DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 $(COMPOSE)
 
-.PHONY: help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean
+.PHONY: help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean deploy-web deploy-web-preview
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -28,20 +38,26 @@ check-uv: ## Verify the uv toolchain is installed (fail with install hint otherw
 		exit 1; }
 
 migrate: check-uv ## Apply DB migrations (alembic) to GYF_DATABASE_URL
-	cd $(API_DIR) && uv run --extra postgres --extra migrate python -m alembic upgrade head
+	cd $(API_DIR) && $(CACHE_ENV) uv run --extra postgres --extra migrate python -m alembic upgrade head
 
 dev: check-uv ## Boot web + API together (Ctrl-C stops both)
 	@echo "web → http://localhost:3000   api → http://localhost:8000"
 	@trap 'kill 0' EXIT; \
-		( cd $(API_DIR) && uv run uvicorn app.main:app --reload --port 8000 ) & \
+		( cd $(API_DIR) && $(CACHE_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000 ) & \
 		bun run dev & \
 		wait
 
 dev-web: ## Run only the web app
 	bun run dev
 
+deploy-web: ## Deploy web to Cloudflare Workers (set CLOUDFLARE_API_TOKEN; build inlines NEXT_PUBLIC_* from app/.env.production.local)
+	cd $(WEB_DIR) && $(WRANGLER_ENV) bun run cf:deploy
+
+deploy-web-preview: ## Build + preview the worker locally (no deploy)
+	cd $(WEB_DIR) && $(WRANGLER_ENV) bun run cf:preview
+
 dev-api: check-uv ## Run only the API service
-	cd $(API_DIR) && uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000
+	cd $(API_DIR) && $(CACHE_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000
 
 up: ## Start local infra only (Postgres+pgvector, Redis, Redpanda)
 	$(COMPOSE) up -d postgres redis redpanda

@@ -42,4 +42,5 @@ services:
       - key: GYF_ALLOWED_ORIGINS # the web origin (public, not a secret)
         value: https://gyf-web.workers.dev
 
-  # The web (Next.js) is deployed on Netlify, not Render — see netlify.toml.
+  # The web (Next.js) is deployed on Cloudflare Workers, not Render —
+  # see app/wrangler.jsonc and `bun run cf:deploy`.

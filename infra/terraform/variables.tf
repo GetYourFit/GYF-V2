@@ -12,18 +12,6 @@ variable "environment" {
   }
 }
 
-# --- Vercel ---
-variable "vercel_api_token" {
-  type      = string
-  sensitive = true
-}
-
-variable "git_repo" {
-  type        = string
-  description = "owner/repo for the connected Git repository."
-  default     = "GetYourFit/GYF-V2"
-}
-
 # --- Supabase ---
 variable "supabase_access_token" {
   type      = string
