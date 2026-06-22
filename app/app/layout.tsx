@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { cormorant, dmSans, dmMono } from "@/lib/fonts";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,11 +20,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable} ${dmMono.variable}`}>
-      <body style={{ background: "#F0ECE2" }}>
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
-      </body>
+      {/* Root holds only the document shell + fonts. Each area supplies its own
+          chrome: (marketing) the landing nav/footer, (auth) a centred shell, and
+          the product surface (/app) its own stylist chrome. */}
+      <body style={{ background: "#F0ECE2" }}>{children}</body>
     </html>
   );
 }

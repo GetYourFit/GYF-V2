@@ -22,17 +22,20 @@ export function Field({ label, children, error, hint, className }: FieldProps) {
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-sm font-medium text-neutral-800">
+      <label
+        htmlFor={id}
+        className="font-[family-name:var(--font-body)] text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--faint)]"
+      >
         {label}
       </label>
       {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
       {hint && !error && (
-        <p id={hintId} className="text-xs text-neutral-500">
+        <p id={hintId} className="text-xs text-[var(--faint)]">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} role="alert" className="text-xs font-medium text-red-600">
+        <p id={errorId} role="alert" className="text-xs font-medium text-[#8a2b22]">
           {error}
         </p>
       )}
