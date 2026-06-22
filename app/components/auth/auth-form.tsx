@@ -11,7 +11,10 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
 
-const COPY: Record<Mode, { title: string; cta: string; altPrompt: string; altHref: string; altLabel: string }> = {
+const COPY: Record<
+  Mode,
+  { title: string; cta: string; altPrompt: string; altHref: string; altLabel: string }
+> = {
   login: {
     title: "Welcome back",
     cta: "Sign in",
@@ -121,7 +124,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       <p className="text-sm text-neutral-600">
         {copy.altPrompt}{" "}
-        <Link href={copy.altHref} className="font-medium text-neutral-900 underline underline-offset-4">
+        <Link
+          href={copy.altHref}
+          className="font-medium text-neutral-900 underline underline-offset-4"
+        >
           {copy.altLabel}
         </Link>
       </p>

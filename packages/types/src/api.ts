@@ -4,842 +4,851 @@
  */
 
 export interface paths {
-    "/gallery": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Visual outfit gallery
-         * @description A self-contained page that renders recommended outfits with real photos.
-         *
-         *     Pure client-side: it calls ``/outfits/recommend`` and lays out each look with
-         *     its garments' ``image_url``. The single best way to *see* the stylist work —
-         *     the NL goal box and occasion selector are wired in.
-         */
-        get: operations["gallery_gallery_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/gallery": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Health */
-        get: operations["health_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Visual outfit gallery
+     * @description A self-contained page that renders recommended outfits with real photos.
+     *
+     *     Pure client-side: it calls ``/outfits/recommend`` and lays out each look with
+     *     its garments' ``image_url``. The single best way to *see* the stylist work —
+     *     the NL goal box and occasion selector are wired in.
+     */
+    get: operations["gallery_gallery_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Me
-         * @description Trivial authenticated endpoint — proves the auth scaffold end-to-end.
-         */
-        get: operations["me_me_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Health */
+    get: operations["health_health_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/items/{item_id}/similar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Similar Items
-         * @description Visually-similar items (nearest neighbours of the item's embedding).
-         */
-        get: operations["similar_items_items__item_id__similar_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Me
+     * @description Trivial authenticated endpoint — proves the auth scaffold end-to-end.
+     */
+    get: operations["me_me_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/items/{item_id}/similar": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/items/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Search Items
-         * @description Text->image search over the catalog (e.g. 'red floral summer dress').
-         */
-        get: operations["search_items_items_search_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Similar Items
+     * @description Visually-similar items (nearest neighbours of the item's embedding).
+     */
+    get: operations["similar_items_items__item_id__similar_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/items/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read Profile
-         * @description The authenticated user's profile. 404 before onboarding completes.
-         */
-        get: operations["read_profile_profile_get"];
-        /**
-         * Upsert Profile
-         * @description Manual onboarding / edit: validate, stamp confidences, persist, return it.
-         *
-         *     Idempotent upsert keyed by the authenticated user — the same call updates an
-         *     existing profile, so the always-editable-preferences requirement is satisfied.
-         */
-        put: operations["upsert_profile_profile_put"];
-        post?: never;
-        /**
-         * Delete Profile
-         * @description Erase the user's profile (keeps the account). Idempotent: 204 either way.
-         */
-        delete: operations["delete_profile_profile_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Search Items
+     * @description Text->image search over the catalog (e.g. 'red floral summer dress').
+     */
+    get: operations["search_items_items_search_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/profile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/consent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read Consent
-         * @description The user's current consent flags.
-         */
-        get: operations["read_consent_consent_get"];
-        /**
-         * Update Consent
-         * @description Grant/revoke consent. Merges known flags; unknown keys are ignored.
-         */
-        put: operations["update_consent_consent_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Read Profile
+     * @description The authenticated user's profile. 404 before onboarding completes.
+     */
+    get: operations["read_profile_profile_get"];
+    /**
+     * Upsert Profile
+     * @description Manual onboarding / edit: validate, stamp confidences, persist, return it.
+     *
+     *     Idempotent upsert keyed by the authenticated user — the same call updates an
+     *     existing profile, so the always-editable-preferences requirement is satisfied.
+     */
+    put: operations["upsert_profile_profile_put"];
+    post?: never;
+    /**
+     * Delete Profile
+     * @description Erase the user's profile (keeps the account). Idempotent: 204 either way.
+     */
+    delete: operations["delete_profile_profile_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/consent": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/account": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Account
-         * @description Right-to-erasure: tombstone the account now; a purge job hard-deletes it
-         *     (cascading) after the grace window. Idempotent — re-requesting is a no-op.
-         */
-        delete: operations["delete_account_account_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Read Consent
+     * @description The user's current consent flags.
+     */
+    get: operations["read_consent_consent_get"];
+    /**
+     * Update Consent
+     * @description Grant/revoke consent. Merges known flags; unknown keys are ignored.
+     */
+    put: operations["update_consent_consent_put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/account": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/outfits/recommend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Recommend complete outfits
-         * @description Personalized outfit recommendations: complete, explained, diverse looks.
-         *
-         *     Conditions on the user's onboarding profile (occasion, budget, undertone, style
-         *     intent) and their learned taste (from prior saves/carts/skips). Works on the
-         *     very first visit (pure cold-start) and sharpens as behavior accrues. Each call
-         *     logs impressions so the recommendation is auditable and trainable. ``occasion``
-         *     overrides the profile's stored one. ``goal`` is a free-text controllable-styling
-         *     request ("look taller / slimmer / broader") that biases the look toward that
-         *     visual effect. 404s before onboarding.
-         */
-        get: operations["recommend_outfits_outfits_recommend_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete Account
+     * @description Right-to-erasure: tombstone the account now; a purge job hard-deletes it
+     *     (cascading) after the grace window. Idempotent — re-requesting is a no-op.
+     */
+    delete: operations["delete_account_account_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/outfits/recommend": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/feedback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Ingest Feedback
-         * @description Validate and persist a behavioral event onto the learning spine.
-         *
-         *     The event is attributed to the authenticated principal (not a client-supplied
-         *     id) and written via the configured sink (local JSONL in dev; broker-backed once
-         *     P0 infra is provisioned — see docs/implementation-plan.md P0-C/D).
-         */
-        post: operations["ingest_feedback_feedback_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Recommend complete outfits
+     * @description Personalized outfit recommendations: complete, explained, diverse looks.
+     *
+     *     Conditions on the user's onboarding profile (occasion, budget, undertone, style
+     *     intent) and their learned taste (from prior saves/carts/skips). Works on the
+     *     very first visit (pure cold-start) and sharpens as behavior accrues. Each call
+     *     logs impressions so the recommendation is auditable and trainable. ``occasion``
+     *     overrides the profile's stored one. ``goal`` is a free-text controllable-styling
+     *     request ("look taller / slimmer / broader") that biases the look toward that
+     *     visual effect. 404s before onboarding.
+     */
+    get: operations["recommend_outfits_outfits_recommend_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/feedback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    /**
+     * Ingest Feedback
+     * @description Validate and persist a behavioral event onto the learning spine.
+     *
+     *     The event is attributed to the authenticated principal (not a client-supplied
+     *     id) and written via the configured sink (local JSONL in dev; broker-backed once
+     *     P0 infra is provisioned — see docs/implementation-plan.md P0-C/D).
+     */
+    post: operations["ingest_feedback_feedback_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /**
-         * BudgetRange
-         * @description A min/max spend band in a single currency (per-garment, not per-outfit).
-         */
-        BudgetRange: {
-            /**
-             * Min
-             * @default 0
-             */
-            min: number;
-            /** Max */
-            max?: number | null;
-            /**
-             * Currency
-             * @default USD
-             */
-            currency: string;
-        };
-        /**
-         * ConsentInput
-         * @description A partial consent update: a map of known consent keys to grant/revoke.
-         *
-         *     Unknown keys are dropped (not rejected) so a client on a newer/older schema
-         *     can't write an unauditable flag; an empty map after filtering is a no-op.
-         */
-        ConsentInput: {
-            /** Flags */
-            flags?: {
-                [key: string]: boolean;
-            };
-        };
-        /**
-         * FeedbackRequest
-         * @description Client-supplied feedback. ``user_id`` is intentionally absent — it is taken
-         *     from the authenticated principal so callers cannot attribute events to others.
-         * @example {
-         *       "action": "save",
-         *       "target_id": "paste-an-item_id-from-a-recommendation",
-         *       "target_type": "item"
-         *     }
-         */
-        FeedbackRequest: {
-            target_type: components["schemas"]["InteractionTarget"];
-            /** Target Id */
-            target_id: string;
-            action: components["schemas"]["InteractionAction"];
-            /** Weight */
-            weight?: number | null;
-            /** Context */
-            context?: {
-                [key: string]: unknown;
-            };
-        };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /**
-         * InteractionAction
-         * @enum {string}
-         */
-        InteractionAction: "view" | "save" | "cart" | "skip" | "react" | "share" | "follow" | "tryon" | "impression";
-        /**
-         * InteractionTarget
-         * @enum {string}
-         */
-        InteractionTarget: "item" | "outfit" | "post" | "user";
-        /**
-         * Outfit
-         * @description A complete, explained, scored look.
-         */
-        Outfit: {
-            /** Items */
-            items: components["schemas"]["OutfitItem"][];
-            /** Explanation */
-            explanation: string;
-            /** Score */
-            score: number;
-            /** Confidence */
-            confidence: number;
-            /** Color Harmony */
-            color_harmony: number;
-            /** Formality Fit */
-            formality_fit: number;
-        };
-        /**
-         * OutfitItem
-         * @description One garment in a recommended outfit, with its shop-the-look link.
-         */
-        OutfitItem: {
-            /** Item Id */
-            item_id: string;
-            /** Title */
-            title: string;
-            /** Category */
-            category: string;
-            /** Slot */
-            slot: string;
-            /** Price */
-            price?: number | null;
-            /** Currency */
-            currency?: string | null;
-            /** Color */
-            color?: string | null;
-            /** Affiliate Url */
-            affiliate_url?: string | null;
-            /** Image Url */
-            image_url?: string | null;
-        };
-        /**
-         * OutfitRecommendation
-         * @description The response: ranked outfits plus the resolved styling context.
-         *
-         *     ``recommendation_id`` ties these outfits to the impression events logged at
-         *     serve time; clients echo it back on save/skip so engagements join to the slate
-         *     (the training tuple for the future ranker). Echoing occasion, ``cold_start``
-         *     and ``taste_strength`` keeps the surface transparent (CLAUDE.md §7) — the
-         *     client can show *why* these looks and how personalized they are.
-         */
-        OutfitRecommendation: {
-            /** Recommendation Id */
-            recommendation_id: string;
-            /** Occasion */
-            occasion: string;
-            /** Outfits */
-            outfits: components["schemas"]["Outfit"][];
-            /**
-             * Cold Start
-             * @default true
-             */
-            cold_start: boolean;
-            /**
-             * Personalized
-             * @default false
-             */
-            personalized: boolean;
-            /**
-             * Taste Strength
-             * @default 0
-             */
-            taste_strength: number;
-            /**
-             * Applied Goals
-             * @default []
-             */
-            applied_goals: string[];
-        };
-        /**
-         * Profile
-         * @description A stored profile: input fields plus provenance and per-field confidence.
-         */
-        Profile: {
-            /** Skin Tone */
-            skin_tone?: string | null;
-            /** Undertone */
-            undertone?: string | null;
-            /** Body Type */
-            body_type?: string | null;
-            /** Measurements */
-            measurements?: {
-                [key: string]: number;
-            };
-            /** Style Intent */
-            style_intent?: string[];
-            budget_range?: components["schemas"]["BudgetRange"] | null;
-            /** Occasion */
-            occasion?: string | null;
-            /**
-             * Source
-             * @default manual
-             */
-            source: string;
-            /** Field Confidence */
-            field_confidence?: {
-                [key: string]: number;
-            };
-            /** Model Version */
-            model_version?: string | null;
-        };
-        /**
-         * ProfileInput
-         * @description Manual onboarding input. Every field optional; unknowns coerced, not rejected.
-         *
-         *     ``model_config`` forbids extra keys so a typo'd field surfaces as a 422 rather
-         *     than being silently dropped into the void.
-         * @example {
-         *       "body_type": "rectangle",
-         *       "budget_range": {
-         *         "currency": "USD",
-         *         "max": 120
-         *       },
-         *       "occasion": "casual",
-         *       "skin_tone": "medium",
-         *       "style_intent": [
-         *         "minimalist",
-         *         "streetwear"
-         *       ],
-         *       "undertone": "cool"
-         *     }
-         */
-        ProfileInput: {
-            /** Skin Tone */
-            skin_tone?: string | null;
-            /** Undertone */
-            undertone?: string | null;
-            /** Body Type */
-            body_type?: string | null;
-            /** Measurements */
-            measurements?: {
-                [key: string]: number;
-            };
-            /** Style Intent */
-            style_intent?: string[];
-            budget_range?: components["schemas"]["BudgetRange"] | null;
-            /** Occasion */
-            occasion?: string | null;
-        };
-        /** SearchResult */
-        SearchResult: {
-            /** Item Id */
-            item_id: string;
-            /** Title */
-            title: string;
-            /** Score */
-            score: number;
-            /** Image Url */
-            image_url?: string | null;
-        };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
-        };
+  schemas: {
+    /**
+     * BudgetRange
+     * @description A min/max spend band in a single currency (per-garment, not per-outfit).
+     */
+    BudgetRange: {
+      /**
+       * Min
+       * @default 0
+       */
+      min: number;
+      /** Max */
+      max?: number | null;
+      /**
+       * Currency
+       * @default USD
+       */
+      currency: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    /**
+     * ConsentInput
+     * @description A partial consent update: a map of known consent keys to grant/revoke.
+     *
+     *     Unknown keys are dropped (not rejected) so a client on a newer/older schema
+     *     can't write an unauditable flag; an empty map after filtering is a no-op.
+     */
+    ConsentInput: {
+      /** Flags */
+      flags?: {
+        [key: string]: boolean;
+      };
+    };
+    /**
+     * FeedbackRequest
+     * @description Client-supplied feedback. ``user_id`` is intentionally absent — it is taken
+     *     from the authenticated principal so callers cannot attribute events to others.
+     * @example {
+     *       "action": "save",
+     *       "target_id": "paste-an-item_id-from-a-recommendation",
+     *       "target_type": "item"
+     *     }
+     */
+    FeedbackRequest: {
+      target_type: components["schemas"]["InteractionTarget"];
+      /** Target Id */
+      target_id: string;
+      action: components["schemas"]["InteractionAction"];
+      /** Weight */
+      weight?: number | null;
+      /** Context */
+      context?: {
+        [key: string]: unknown;
+      };
+    };
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components["schemas"]["ValidationError"][];
+    };
+    /**
+     * InteractionAction
+     * @enum {string}
+     */
+    InteractionAction:
+      | "view"
+      | "save"
+      | "cart"
+      | "skip"
+      | "react"
+      | "share"
+      | "follow"
+      | "tryon"
+      | "impression";
+    /**
+     * InteractionTarget
+     * @enum {string}
+     */
+    InteractionTarget: "item" | "outfit" | "post" | "user";
+    /**
+     * Outfit
+     * @description A complete, explained, scored look.
+     */
+    Outfit: {
+      /** Items */
+      items: components["schemas"]["OutfitItem"][];
+      /** Explanation */
+      explanation: string;
+      /** Score */
+      score: number;
+      /** Confidence */
+      confidence: number;
+      /** Color Harmony */
+      color_harmony: number;
+      /** Formality Fit */
+      formality_fit: number;
+    };
+    /**
+     * OutfitItem
+     * @description One garment in a recommended outfit, with its shop-the-look link.
+     */
+    OutfitItem: {
+      /** Item Id */
+      item_id: string;
+      /** Title */
+      title: string;
+      /** Category */
+      category: string;
+      /** Slot */
+      slot: string;
+      /** Price */
+      price?: number | null;
+      /** Currency */
+      currency?: string | null;
+      /** Color */
+      color?: string | null;
+      /** Affiliate Url */
+      affiliate_url?: string | null;
+      /** Image Url */
+      image_url?: string | null;
+    };
+    /**
+     * OutfitRecommendation
+     * @description The response: ranked outfits plus the resolved styling context.
+     *
+     *     ``recommendation_id`` ties these outfits to the impression events logged at
+     *     serve time; clients echo it back on save/skip so engagements join to the slate
+     *     (the training tuple for the future ranker). Echoing occasion, ``cold_start``
+     *     and ``taste_strength`` keeps the surface transparent (CLAUDE.md §7) — the
+     *     client can show *why* these looks and how personalized they are.
+     */
+    OutfitRecommendation: {
+      /** Recommendation Id */
+      recommendation_id: string;
+      /** Occasion */
+      occasion: string;
+      /** Outfits */
+      outfits: components["schemas"]["Outfit"][];
+      /**
+       * Cold Start
+       * @default true
+       */
+      cold_start: boolean;
+      /**
+       * Personalized
+       * @default false
+       */
+      personalized: boolean;
+      /**
+       * Taste Strength
+       * @default 0
+       */
+      taste_strength: number;
+      /**
+       * Applied Goals
+       * @default []
+       */
+      applied_goals: string[];
+    };
+    /**
+     * Profile
+     * @description A stored profile: input fields plus provenance and per-field confidence.
+     */
+    Profile: {
+      /** Skin Tone */
+      skin_tone?: string | null;
+      /** Undertone */
+      undertone?: string | null;
+      /** Body Type */
+      body_type?: string | null;
+      /** Measurements */
+      measurements?: {
+        [key: string]: number;
+      };
+      /** Style Intent */
+      style_intent?: string[];
+      budget_range?: components["schemas"]["BudgetRange"] | null;
+      /** Occasion */
+      occasion?: string | null;
+      /**
+       * Source
+       * @default manual
+       */
+      source: string;
+      /** Field Confidence */
+      field_confidence?: {
+        [key: string]: number;
+      };
+      /** Model Version */
+      model_version?: string | null;
+    };
+    /**
+     * ProfileInput
+     * @description Manual onboarding input. Every field optional; unknowns coerced, not rejected.
+     *
+     *     ``model_config`` forbids extra keys so a typo'd field surfaces as a 422 rather
+     *     than being silently dropped into the void.
+     * @example {
+     *       "body_type": "rectangle",
+     *       "budget_range": {
+     *         "currency": "USD",
+     *         "max": 120
+     *       },
+     *       "occasion": "casual",
+     *       "skin_tone": "medium",
+     *       "style_intent": [
+     *         "minimalist",
+     *         "streetwear"
+     *       ],
+     *       "undertone": "cool"
+     *     }
+     */
+    ProfileInput: {
+      /** Skin Tone */
+      skin_tone?: string | null;
+      /** Undertone */
+      undertone?: string | null;
+      /** Body Type */
+      body_type?: string | null;
+      /** Measurements */
+      measurements?: {
+        [key: string]: number;
+      };
+      /** Style Intent */
+      style_intent?: string[];
+      budget_range?: components["schemas"]["BudgetRange"] | null;
+      /** Occasion */
+      occasion?: string | null;
+    };
+    /** SearchResult */
+    SearchResult: {
+      /** Item Id */
+      item_id: string;
+      /** Title */
+      title: string;
+      /** Score */
+      score: number;
+      /** Image Url */
+      image_url?: string | null;
+    };
+    /** ValidationError */
+    ValidationError: {
+      /** Location */
+      loc: (string | number)[];
+      /** Message */
+      msg: string;
+      /** Error Type */
+      type: string;
+      /** Input */
+      input?: unknown;
+      /** Context */
+      ctx?: Record<string, never>;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    gallery_gallery_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-        };
+  gallery_gallery_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    health_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
+        content: {
+          "text/html": string;
         };
+      };
     };
-    me_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string | null;
-                    };
-                };
-            };
-        };
+  };
+  health_health_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    similar_items_items__item_id__similar_get: {
-        parameters: {
-            query?: {
-                k?: number;
-                region?: string | null;
-            };
-            header?: never;
-            path: {
-                item_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: components["schemas"]["SearchResult"][];
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
         };
+      };
     };
-    search_items_items_search_get: {
-        parameters: {
-            query: {
-                q: string;
-                k?: number;
-                region?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: components["schemas"]["SearchResult"][];
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  me_me_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    read_profile_profile_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Profile"];
-                };
-            };
+        content: {
+          "application/json": {
+            [key: string]: string | null;
+          };
         };
+      };
     };
-    upsert_profile_profile_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProfileInput"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Profile"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  similar_items_items__item_id__similar_get: {
+    parameters: {
+      query?: {
+        k?: number;
+        region?: string | null;
+      };
+      header?: never;
+      path: {
+        item_id: string;
+      };
+      cookie?: never;
     };
-    delete_profile_profile_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": {
+            [key: string]: components["schemas"]["SearchResult"][];
+          };
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    read_consent_consent_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
-                };
-            };
-        };
+  };
+  search_items_items_search_get: {
+    parameters: {
+      query: {
+        q: string;
+        k?: number;
+        region?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    update_consent_consent_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConsentInput"];
-            };
+        content: {
+          "application/json": {
+            [key: string]: components["schemas"]["SearchResult"][];
+          };
         };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    delete_account_account_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  read_profile_profile_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    recommend_outfits_outfits_recommend_get: {
-        parameters: {
-            query?: {
-                /** @description What you're dressing for. Overrides your profile's stored occasion. */
-                occasion?: string | null;
-                /** @description How many outfits to return. */
-                k?: number;
-                /** @description Region code (e.g. IN) for culture-aware garments. */
-                region?: string | null;
-                /** @description Free-text styling goal. GYF parses it into visual effects (taller / slimmer / broader) and steers the look with color theory + body-type intelligence. Unrecognized text is a no-op. */
-                goal?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OutfitRecommendation"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Profile"];
         };
+      };
     };
-    ingest_feedback_feedback_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FeedbackRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  upsert_profile_profile_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProfileInput"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Profile"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_profile_profile_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  read_consent_consent_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: boolean;
+          };
+        };
+      };
+    };
+  };
+  update_consent_consent_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConsentInput"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: boolean;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_account_account_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  recommend_outfits_outfits_recommend_get: {
+    parameters: {
+      query?: {
+        /** @description What you're dressing for. Overrides your profile's stored occasion. */
+        occasion?: string | null;
+        /** @description How many outfits to return. */
+        k?: number;
+        /** @description Region code (e.g. IN) for culture-aware garments. */
+        region?: string | null;
+        /** @description Free-text styling goal. GYF parses it into visual effects (taller / slimmer / broader) and steers the look with color theory + body-type intelligence. Unrecognized text is a no-op. */
+        goal?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OutfitRecommendation"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  ingest_feedback_feedback_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FeedbackRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
 }

@@ -15,8 +15,8 @@ export default function SavedPage() {
         Your saved looks
       </h1>
       <p className="mt-3 text-sm text-[var(--faint)]">
-        Looks you save will gather here. This collection view arrives with the next milestone —
-        your saves are already being remembered.
+        Looks you save will gather here. This collection view arrives with the next milestone — your
+        saves are already being remembered.
       </p>
     </div>
   );

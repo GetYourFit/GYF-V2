@@ -5,8 +5,7 @@ import { cn } from "@/lib/cn";
 export function ConfidenceMeter({ value }: { value: number }) {
   const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
   const label = pct >= 75 ? "High confidence" : pct >= 50 ? "Moderate confidence" : "Exploring";
-  const tone =
-    pct >= 75 ? "bg-[var(--gold)]" : pct >= 50 ? "bg-[var(--mid)]" : "bg-[var(--faint)]";
+  const tone = pct >= 75 ? "bg-[var(--gold)]" : pct >= 50 ? "bg-[var(--mid)]" : "bg-[var(--faint)]";
 
   return (
     <div className="flex items-center gap-2.5" title={`Calibrated confidence: ${pct}%`}>

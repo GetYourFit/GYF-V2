@@ -10,7 +10,8 @@ const VARIANTS: Record<Variant, string> = {
     "bg-[var(--text)] text-[var(--bg)] hover:bg-[var(--gold)] focus-visible:ring-[var(--gold)]",
   secondary:
     "border border-[var(--border-mid)] bg-[var(--surface)] text-[var(--text)] hover:border-[var(--gold)] focus-visible:ring-[var(--gold)]",
-  ghost: "text-[var(--mid)] hover:text-[var(--text)] hover:bg-[var(--gold-light)] focus-visible:ring-[var(--rule)]",
+  ghost:
+    "text-[var(--mid)] hover:text-[var(--text)] hover:bg-[var(--gold-light)] focus-visible:ring-[var(--rule)]",
   danger: "bg-[#8a2b22] text-[var(--bg)] hover:bg-[#a23329] focus-visible:ring-[#8a2b22]",
 };
 

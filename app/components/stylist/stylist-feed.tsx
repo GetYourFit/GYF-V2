@@ -133,7 +133,10 @@ export function StylistFeed() {
       <StylistControls value={query} busy={loading} onApply={apply} />
 
       {error && (
-        <p role="alert" className="border border-[#8a2b22]/30 bg-[#8a2b22]/5 px-4 py-3 text-sm text-[#8a2b22]">
+        <p
+          role="alert"
+          className="border border-[#8a2b22]/30 bg-[#8a2b22]/5 px-4 py-3 text-sm text-[#8a2b22]"
+        >
           {error}
         </p>
       )}
@@ -201,7 +204,11 @@ function UndoStrip({ index, onUndo }: { index: number; onUndo: () => void }) {
   return (
     <div className="flex items-center justify-between border border-dashed border-[var(--border-mid)] bg-[var(--surface)]/50 px-4 py-6 text-sm text-[var(--faint)]">
       <span>Removed look {index + 1}</span>
-      <button type="button" onClick={onUndo} className="uppercase tracking-[0.16em] text-[var(--gold)] hover:underline">
+      <button
+        type="button"
+        onClick={onUndo}
+        className="uppercase tracking-[0.16em] text-[var(--gold)] hover:underline"
+      >
         Undo
       </button>
     </div>

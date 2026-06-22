@@ -35,7 +35,10 @@ export function OutfitCard({
         {outfit.items.map((item) => {
           const src = mediaUrl(item.image_url);
           return (
-            <div key={item.item_id} className="relative aspect-[3/4] flex-1 overflow-hidden bg-[var(--wash)]">
+            <div
+              key={item.item_id}
+              className="relative aspect-[3/4] flex-1 overflow-hidden bg-[var(--wash)]"
+            >
               {src ? (
                 // eslint-disable-next-line @next/next/no-img-element -- API host isn't in next/image domains; plain img is fine for beta.
                 <img

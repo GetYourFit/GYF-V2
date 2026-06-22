@@ -3,20 +3,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, GyfApi } from "./api";
 
 // A typed stand-in for the global fetch the client calls.
-function mockFetch(response: {
-  status: number;
-  body?: unknown;
-  text?: string;
-}): typeof fetch {
+function mockFetch(response: { status: number; body?: unknown; text?: string }): typeof fetch {
   const text = response.text ?? (response.body !== undefined ? JSON.stringify(response.body) : "");
   // A 204/205 response must have a null body per the Fetch spec (the Response
   // constructor throws otherwise) — mirror real server behaviour.
   const body = text === "" ? null : text;
-  return vi.fn(async () =>
-    new Response(body, {
-      status: response.status,
-      headers: { "Content-Type": "application/json" },
-    }),
+  return vi.fn(
+    async () =>
+      new Response(body, {
+        status: response.status,
+        headers: { "Content-Type": "application/json" },
+      }),
   ) as unknown as typeof fetch;
 }
 

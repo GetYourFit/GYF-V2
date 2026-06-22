@@ -64,7 +64,9 @@ export function OnboardingForm() {
         }
         setConsent({ data_processing: true, ...consentFlags });
       })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Could not load your profile."))
+      .catch((e: unknown) =>
+        setError(e instanceof Error ? e.message : "Could not load your profile."),
+      )
       .finally(() => setLoading(false));
   }, []);
 
@@ -75,7 +77,10 @@ export function OnboardingForm() {
 
   function toggleStyle(value: string) {
     const current = form.style_intent ?? [];
-    set("style_intent", current.includes(value) ? current.filter((s) => s !== value) : [...current, value]);
+    set(
+      "style_intent",
+      current.includes(value) ? current.filter((s) => s !== value) : [...current, value],
+    );
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -147,7 +152,10 @@ export function OnboardingForm() {
         </p>
       </Section>
 
-      <Section title="Style" hint="Pick any aesthetics you lean toward, and what you dress for most.">
+      <Section
+        title="Style"
+        hint="Pick any aesthetics you lean toward, and what you dress for most."
+      >
         <fieldset>
           <legend className="mb-2 text-sm font-medium text-neutral-800">Style intent</legend>
           <div className="flex flex-wrap gap-2">
@@ -221,7 +229,9 @@ export function OnboardingForm() {
                 options={CURRENCIES}
                 placeholder="USD"
                 value={budget.currency ?? "USD"}
-                onChange={(e) => set("budget_range", { ...budget, currency: e.target.value || "USD" })}
+                onChange={(e) =>
+                  set("budget_range", { ...budget, currency: e.target.value || "USD" })
+                }
               />
             )}
           </Field>
@@ -271,7 +281,15 @@ export function OnboardingForm() {
   );
 }
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-6">
       <div>
@@ -300,7 +318,13 @@ function DeleteAccount() {
   }
 
   return (
-    <Button type="button" variant="ghost" className="text-red-600" disabled={busy} onClick={onDelete}>
+    <Button
+      type="button"
+      variant="ghost"
+      className="text-red-600"
+      disabled={busy}
+      onClick={onDelete}
+    >
       Delete account
     </Button>
   );
