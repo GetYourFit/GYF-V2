@@ -464,12 +464,18 @@ Run continuously, every phase:
 
 - **P0 spine** blocks everything (events + contracts + infra).
 - **Perception (P1-A)** blocks recsys, compatibility, try-on, and social ranking.
-- **User modeling (P1-B)** blocks personalization + try-on conditioning; ⚠️skin-tone is
-  decoupled (flagged) so it never blocks the critical path.
+- **User modeling (P1-B)** — the **manual path** is done and is all the **frontend (Workstream
+  G)** needs to ship onboarding; the **photo modules** (body-type, ⚠️skin-tone) are **decoupled**
+  (flagged) and land *behind* the live surface, so they **never block** the product surface or the
+  critical path. *(See `roadmap.md` §1 principle #5 — Stage 1 backend and Stage 2 surface run in
+  parallel; the moat is the behavioural flywheel, which needs the surface live first.)*
 - **Eval harness (P1-D)** blocks all later model promotions (P2 generative, P4 try-on).
 - **Multi-retailer (P3)** blocks the shopping-companion economics.
-- **Critical path:** P0 spine → perception + user modeling → recsys/compat + eval harness →
-  beta loop → generative recsys → multi-retailer → multi-garment try-on → scale + B2B.
+- **Critical path (revised 2026-06-22):** P0 spine → perception + recsys/compat + eval harness →
+  **frontend surface on the manual path (the payable beta loop)**, *in parallel with* embeddings +
+  photo user-modeling feeding in behind it → generative recsys → multi-retailer →
+  multi-garment try-on → scale + B2B. The surface is now **on** the critical path; the photo
+  modules are **off** it.
 
 ## 21. Glossary
 
@@ -485,7 +491,12 @@ Run continuously, every phase:
 
 ---
 
-> **Next action.** Begin **P0**: run `ecc:plan` to expand P0 workstreams A–E into tickets, then
-> scaffold the monorepo + CI + infra. Each subsequent phase repeats: `ecc:plan` → build behind
-> flags → eval/review → phase-gate review → advance.
+> **Next action (2026-06-22).** P0 + most of P1 backend are ✅ (perception, manual onboarding,
+> recsys/composition, eval gates M0/M1). Per the **parallel-track strategy** (`roadmap.md` §1
+> principle #5), the next build is the **product surface (P1 Workstream G)**: **M5 auth +
+> onboarding on the manual path** → **M6 stylist experience**, wired to the existing API via the
+> typed contracts. In a parallel background track, finish the brain through the gates (**M2**
+> embeddings → **M3** photo body-type → **M4** ⚠️skin-tone), which fill the onboarding *photo*
+> path behind the live surface. Expand each milestone with `ecc:plan` → build behind flags →
+> unit + integration + system tests → eval/review → gate → advance.
 </content>

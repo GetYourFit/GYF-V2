@@ -53,13 +53,13 @@ GetYourFit-New/
 
 ---
 
-## 0.5 Current Status (2026-06-20)
+## 0.5 Current Status (2026-06-22)
 
-**Done & verified:** P0 infra; P1-A perception & catalog; P1-B Cycle 1 manual onboarding (+ consent/erasure); P1-C Cycles 1–3 (cold-start outfit composition → online taste model + impression logging → NL styling-goal box); image serving + `/gallery`; **engineering doctrine adopted** + commercial-clean stack decided.
+**Done & verified:** P0 infra; P1-A perception & catalog; P1-B Cycle 1 manual onboarding (+ consent/erasure); P1-C Cycles 1–3 (cold-start outfit composition → online taste model + impression logging → NL styling-goal box); image serving + `/gallery`; fully-dockerized disposable dev stack; **engineering doctrine adopted** + commercial-clean stack decided; **M0** (registry + CI license gate + import lint) and **M1** (eval-report contract + per-capability + promotion gate) ✅. **M2 ⏳** embedding bake-off harness built; real run + promotion **pending a GPU lane**.
 
-**The honest gap:** the **backend "brain" is strong; the product *surface* is not built** — `app/` is a **marketing landing page only** (no onboarding/recommendations/try-on UI). That UI is most of Stage 2 in `roadmap.md` and the bulk of remaining launch work.
+**The honest gap:** the **backend "brain" is strong; the product *surface* is not built** — `app/` is a **marketing landing page only** (no onboarding/recommendations/try-on UI). That UI is most of Stage 2 in `roadmap.md`, the bulk of remaining launch work, **and the only way to start the real-data flywheel (D4) that is GYF's moat.**
 
-**Next:** **M0** (model registry + CI license gate + import lint — `docs/plans/m0-license-gate.md`), then finish the brain (embeddings → photo body-type → skin-tone), then the product surface.
+**Next (parallel-track strategy — see `roadmap.md` §1 principle #5):** the brain is already worth a UI, so **start the product surface now** — **M5 auth + onboarding on the already-built manual path** (it does *not* depend on the photo modules) → **M6 stylist experience**. In a **parallel background track**, finish the brain through the gates: **M2** embeddings (GPU-lane gated) → **M3** photo body-type → **M4** skin-tone (⚠️ fairness-gated), which fill the onboarding *photo* path *behind* the live surface. This starts behavioural data weeks earlier without breaking any dependency or invariant.
 
 ---
 

@@ -16,7 +16,7 @@
 
 ---
 
-## 0. Where we are (ground truth, 2026-06-20)
+## 0. Where we are (ground truth, 2026-06-22)
 
 **Done & verified:**
 - **P0** infra (Supabase/Upstash/Vercel via Terraform), CI, telemetry.
@@ -24,7 +24,7 @@
 - **P1-B Cycle 1** — manual onboarding (profile, consent, soft-delete/erasure).
 - **P1-C Cycles 1–3** — cold-start outfit composition → online taste model + impression logging
   → controllable styling (NL goal box). Color theory, occasion/region, honest confidence.
-- **Infra for testing** — image serving + `/gallery`.
+- **Infra for testing** — image serving + `/gallery`; fully-dockerized disposable dev stack.
 - **Engineering doctrine adopted** (commit a34a176) + commercial-clean stack decided.
 - **M0** — model registry + CI license gate (D2) + import-boundary lint (D1).
 - **M1** — eval-report contract + per-capability gates + promotion gate (D5): `eval_report` is now
@@ -32,10 +32,18 @@
   production model lacking a passing report; online-eval scaffolding stubbed. Plan:
   `docs/plans/m1-eval-harness.md`.
 
+**In progress:**
+- **M2 ⏳** embedding upgrade — dockerized encoder bake-off harness is built (`make m2-bakeoff`);
+  the real bake-off run + promotion is **pending a GPU lane**. (Note: no "FashionSigLIP-2" weight
+  actually exists yet; candidates under research.) The `eval-reports/encoder-*.json` must be a
+  **real run** before M2 counts as done (milestone-done discipline). Plan:
+  `docs/plans/m2-embedding-upgrade.md`.
+
 **The honest gap:** the **backend "brain" is strong; the product surface is not built.** The
 `app/` frontend is a **marketing landing page only** (Hero/Vision/About). There is **no
 onboarding UI, no recommendations UI, no try-on UI, no auth flow.** *This is the largest piece
-of "the thing people pay for," and most of Stage 2 below.*
+of "the thing people pay for," and most of Stage 2 below — and the **only** way to start the
+real-data flywheel (D4) that is GYF's actual moat.*
 
 ---
 
@@ -43,9 +51,18 @@ of "the thing people pay for," and most of Stage 2 below.*
 
 Ordered by **dependency × leverage**, not by excitement:
 1. **Controls before models** — the license/eval gates must exist before models flow through them.
-2. **Brain before face, but only just** — finish enough intelligence to be worth a UI, then build the UI; don't gold-plate the brain in a vacuum.
+2. **Brain before face, but only just** — finish enough intelligence to be worth a UI, then build the UI; don't gold-plate the brain in a vacuum. **The brain is already past that bar** (P1-A/B/C done): the stylist produces explained, diverse, occasion/region/goal-aware outfits today.
 3. **Usable slice early** — reach a payable end-to-end experience (onboard → see designed outfits → act) before breadth (social, try-on, multi-retailer).
 4. **Heavy/licensing-risky last within a stage** — try-on after the stylist UI; owned models after rented ones.
+5. **Start the flywheel as early as possible (refinement, 2026-06-22).** The moat is **real
+   first-party behaviour (D4)** — and it stays at *zero* until real users touch a real surface.
+   The non-obvious unlock: **M5 onboarding does NOT depend on M3/M4.** The **manual onboarding
+   path is already built and verified** (P1-B Cycle 1), and the doctrine guarantees a manual
+   fallback always exists. So **Stage 2 (the product surface) is not blocked on the photo
+   modules** and **runs in PARALLEL with the rest of Stage 1**, not strictly after it. M3/M4
+   (photo body-type / skin-tone) and M2 (embeddings) land *behind the live surface* as
+   enhancements that flow through the same gates — they sharpen a product that is already
+   collecting data, instead of delaying the data.
 
 ---
 
@@ -69,6 +86,12 @@ Ordered by **dependency × leverage**, not by excitement:
 ## STAGE 1 — Finish the Intelligent Stylist brain (P1 completion, backend)
 
 > Each model lands as an **adapter behind an existing port**, through the M0 gate and M1 harness.
+>
+> **⏩ Parallelism (2026-06-22):** Stage 1 and Stage 2 **overlap by design** (ordering principle
+> #5). The brain is already worth a UI, so **Stage 2 starts now on the manual onboarding path**
+> while M2–M4 proceed as a background track (M2 gated on a GPU lane). Treat the diagram's
+> top-to-bottom order as *dependency* order, **not** a serialization mandate: a milestone may
+> start as soon as its own dependencies are ✅, regardless of which "stage" it's labelled.
 
 - **M2 · Embedding upgrade — SigLIP 2 / Marqo-FashionSigLIP-2 adapter.**
   Behind the `Encoder` port. Highest quality-per-effort: lifts retrieval, taste, and cold-start
@@ -78,6 +101,8 @@ Ordered by **dependency × leverage**, not by excitement:
   Plan ready: `docs/plans/p1b-cycle2-photo-body-type.md` — SAM 3D Body→MHR + Anny, `BodyEstimator`
   port, `POST /profile/photo`, consent-gated, fairness report.
   *DoD:* photo → body_type + measurements + confidence; manual path intact. *Dep:* M0.
+  *Sequencing:* an **enhancement to the already-live M5 onboarding** (manual path ships first);
+  not a blocker for the surface.
 - **M4 · Skin-tone module (P1-B Cycle 3). ⚠️ fairness-gated.**
   `SkinToneEstimator` port: segmentation → CIELAB tone → undertone; **Monk-spectrum fairness
   eval before enable**; manual fallback always. Real consented photos, no synthetic.
@@ -93,8 +118,11 @@ Ordered by **dependency × leverage**, not by excitement:
 > Inspiration-first, production/professional standards, WCAG 2.2 AA (CLAUDE.md §7.8).
 > Consumes the existing API via the typed contracts (`packages/types`).
 
-- **M5 · Auth + onboarding UI.** Sign-up/login (OIDC/JWT), the two onboarding paths (manual
-  form **and** photo upload → body/skin), consent capture, always-editable profile. *Dep:* M3/M4.
+- **M5 · Auth + onboarding UI.** Sign-up/login (OIDC/JWT), consent capture, always-editable
+  profile. **Ships on the manual onboarding path first** (already built + verified, P1-B Cycle 1);
+  the **photo path is a stubbed "experimental" placeholder** that M3/M4 fill in later without UI
+  rework. *Dep:* none beyond the existing API (manual path). *Photo upload* depends on M3/M4 but
+  is **decoupled** from M5 shipping — this is the parallelism unlock (principle #5).
 - **M6 · The stylist experience (core screen).** Complete-outfit cards with real photos, the
   **why-it-suits-you explanation + confidence**, the **NL goal box**, occasion selector, and
   feedback actions (save/skip/cart) wired to `/feedback` (taste updates live). This is the
@@ -191,17 +219,21 @@ AA), cost budgets, and observability are acceptance criteria — not later miles
 ```
 M0  license/eval gates ───┐ (controls first)
 M1  eval harness         ─┘
-M2  embeddings ↑quality   ┐
-M3  photo body-type       ├ Stage 1: finish the brain (clean, measured, fair)
-M4  skin-tone (fairness)  ┘
-M5  auth + onboarding UI   ┐
-M6  stylist experience     ├ Stage 2: the payable product surface
-M7  discovery + commerce   │
-M8  collections + sessions │
-M8.5 trust/transparency    ┘
-M9  try-on (licensed)        Stage 3: see-it-on-you
+                          ══ Stages 1 & 2 run in PARALLEL (principle #5) ══
+ Track A — finish the brain (background, gated)   Track B — product surface (start now, manual path)
+  M2  embeddings ↑quality  (GPU-lane gated)         M5  auth + onboarding UI (manual path)
+  M3  photo body-type ─────────┐                    M6  stylist experience
+  M4  skin-tone (fairness) ────┤ fill the photo     M7  discovery + commerce
+                               └ path behind M5     M8  collections + sessions
+                                                    M8.5 trust/transparency
+M9  try-on (licensed)        Stage 3: see-it-on-you  (Dep: M6 + a photo intake; M3 for fallback)
 M10 socials / following     ┐ Stage 4
 M11 gamification            ┘
 M12 beta hardening + ship    Stage 5  → 🎯 Phase-1 launch
 P2  taste engine (HSTU) · P3 shopping · P4 owned try-on · P5 B2B moat
 ```
+
+> **Read:** arrows are *dependencies*, columns are *parallel tracks*. M5 starts immediately
+> (manual path, no M2–M4 dependency); M2/M3/M4 land behind the live surface as gated
+> enhancements. This starts the D4 behavioural flywheel weeks earlier without violating any
+> dependency or invariant.
