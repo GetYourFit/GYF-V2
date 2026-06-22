@@ -58,8 +58,20 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        """Allowed browser origins, parsed from the comma-separated setting."""
-        return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+        """Allowed browser origins, parsed from the comma-separated setting.
+
+        In local dev the web (:3000) and API (:8000) are different origins, so the
+        browser needs them explicitly allowed; we default them in so `make dev` works
+        out of the box. Other envs stay locked to the configured origins only.
+        """
+        configured = [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+        if self.env == "local":
+            local_dev = [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+            ]
+            return list(dict.fromkeys(configured + local_dev))
+        return configured
 
     @property
     def auth_is_open(self) -> bool:
