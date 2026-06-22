@@ -11,7 +11,7 @@ COMPOSE := docker compose -f infra/docker-compose.yml
 # writable again (restart Docker Desktop, or grant the terminal Full Disk Access).
 COMPOSE_BUILD := DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 $(COMPOSE)
 
-.PHONY: help install dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci m2-bakeoff m2-clean clean
+.PHONY: help install dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -69,6 +69,11 @@ lint: ## Lint JS + Python
 
 typecheck: ## Typecheck JS workspaces
 	bun run typecheck
+
+types: ## Generate FE API types from the FastAPI OpenAPI schema (single source of truth — never hand-edit api.ts)
+	cd $(API_DIR) && uv run python -c "import json, app.main as m; print(json.dumps(m.app.openapi()))" > ../../packages/types/openapi.json
+	bunx openapi-typescript packages/types/openapi.json -o packages/types/src/api.ts
+	@echo "regenerated packages/types/src/api.ts — run 'make typecheck' to confirm FE/BE lockstep"
 
 test: test-api ## Run all tests
 	bun run test

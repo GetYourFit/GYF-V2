@@ -1,5 +1,23 @@
 // Shared types — single source of truth across web, BFF, and (mirrored) the API.
 // Keep in lockstep with services/api/app/events.py and the DB schema.
+//
+// API request/response types are GENERATED from the FastAPI OpenAPI schema
+// (`make types` → src/api.ts, never hand-edited). The hand-written event types
+// below predate the API surface and remain the canonical client-side event shape.
+
+export type { paths, components, operations } from "./api";
+import type { components } from "./api";
+
+/** Convenience aliases for the API models the web app consumes most. */
+export type ProfileInput = components["schemas"]["ProfileInput"];
+export type Profile = components["schemas"]["Profile"];
+export type BudgetRange = components["schemas"]["BudgetRange"];
+export type ConsentInput = components["schemas"]["ConsentInput"];
+export type OutfitRecommendation = components["schemas"]["OutfitRecommendation"];
+export type Outfit = components["schemas"]["Outfit"];
+export type OutfitItem = components["schemas"]["OutfitItem"];
+export type SearchResult = components["schemas"]["SearchResult"];
+export type FeedbackRequest = components["schemas"]["FeedbackRequest"];
 
 /** Interaction actions captured as the behavioral event spine. */
 export const INTERACTION_ACTIONS = [

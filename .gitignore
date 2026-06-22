@@ -72,3 +72,6 @@ models/
 ml/*.jpg
 ml/*.jpeg
 ml/*.png
+
+# Generated intermediate (api.ts is the committed artifact)
+packages/types/openapi.json
