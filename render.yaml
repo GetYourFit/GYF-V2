@@ -35,10 +35,11 @@ services:
         sync: false
       - key: GYF_SUPABASE_JWT_SECRET # Supabase → Settings → API → JWT Secret
         sync: false
-      # The web origin is the Netlify site (see netlify.toml). Update this to the
-      # real site URL after the first Netlify deploy so CORS lets the browser in.
-      # Comma-separate to allow several (e.g. a custom domain + the *.netlify.app).
+      # The web origin is the Cloudflare Worker (see app/wrangler.jsonc). Update
+      # this to the real *.workers.dev URL (or custom domain) after the first
+      # Cloudflare deploy so CORS lets the browser in. Comma-separate to allow
+      # several origins.
       - key: GYF_ALLOWED_ORIGINS # the web origin (public, not a secret)
-        value: https://gyf-web.netlify.app
+        value: https://gyf-web.workers.dev
 
   # The web (Next.js) is deployed on Netlify, not Render — see netlify.toml.

@@ -1,0 +1,17 @@
+{
+  // GYF web — Cloudflare Workers config (deployed via the OpenNext adapter).
+  // Free tier, unlimited private repos, native Next.js SSR/middleware.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gyf-web",
+  "main": ".open-next/worker.js",
+  // nodejs_compat + a recent compat date are required by @opennextjs/cloudflare.
+  "compatibility_date": "2025-03-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
