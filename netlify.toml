@@ -1,0 +1,27 @@
+# GYF web — Netlify deployment (Vercel alternative; free tier + free private repos).
+#
+# The frontend is a Next.js App Router package inside a Bun workspace monorepo
+# (`app/`, depends on `packages/*`), so the build runs from the repo root and
+# Netlify's Next.js runtime (auto-installed) serves SSR + middleware as functions.
+#
+# NEXT_PUBLIC_* are public (inlined into the client bundle) and set in the
+# Netlify dashboard / CLI under Site settings → Environment variables:
+#   NEXT_PUBLIC_API_URL            = https://gyf-api.onrender.com
+#   NEXT_PUBLIC_SUPABASE_URL       = https://tabjvaatrikogutkrjom.supabase.co
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY  = <anon key>
+# After the first deploy, copy the site URL into the API's GYF_ALLOWED_ORIGINS
+# (Render dashboard) so CORS lets the browser through.
+
+[build]
+  # Build context is the repo root (Bun workspace). Netlify detects bun.lock and
+  # installs with Bun automatically; we just build the @gyf/web package.
+  command = "bun run --filter @gyf/web build"
+  # The Next.js runtime finds the build output here and wraps it in functions.
+  publish = "app/.next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

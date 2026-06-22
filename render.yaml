@@ -35,24 +35,10 @@ services:
         sync: false
       - key: GYF_SUPABASE_JWT_SECRET # Supabase → Settings → API → JWT Secret
         sync: false
+      # The web origin is the Netlify site (see netlify.toml). Update this to the
+      # real site URL after the first Netlify deploy so CORS lets the browser in.
+      # Comma-separate to allow several (e.g. a custom domain + the *.netlify.app).
       - key: GYF_ALLOWED_ORIGINS # the web origin (public, not a secret)
-        value: https://gyf-web.onrender.com
+        value: https://gyf-web.netlify.app
 
-  # --- Web: Next.js (Bun workspace) as a Docker service ---
-  # Repo already connected to Render; free tier, full SSR/middleware via next start.
-  - type: web
-    name: gyf-web
-    runtime: docker
-    plan: free
-    region: oregon
-    dockerfilePath: ./app/Dockerfile.web
-    dockerContext: .
-    autoDeploy: false
-    envVars:
-      # NEXT_PUBLIC_* (public; inlined into the client bundle at build time).
-      - key: NEXT_PUBLIC_API_URL
-        value: https://gyf-api.onrender.com
-      - key: NEXT_PUBLIC_SUPABASE_URL
-        value: https://tabjvaatrikogutkrjom.supabase.co
-      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhYmp2YWF0cmlrb2d1dGtyam9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NDY3MjYsImV4cCI6MjA5NzMyMjcyNn0.ElJNK_w5DkQ2XbRRdU-VDp4ZDlsCtuDOgZkgxJnEdV4
+  # The web (Next.js) is deployed on Netlify, not Render — see netlify.toml.
