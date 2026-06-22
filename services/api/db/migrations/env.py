@@ -14,7 +14,16 @@ from sqlalchemy import engine_from_config, pool
 from app.config import settings
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url)
+
+# The application uses psycopg (v3); pin SQLAlchemy to that driver explicitly so
+# alembic doesn't fall back to the psycopg2 default for a bare ``postgresql://``
+# URL (psycopg2 isn't a project dependency). psycopg3 covers alembic's sync use.
+_db_url = settings.database_url
+for _prefix in ("postgresql+asyncpg://", "postgresql+psycopg2://", "postgresql://"):
+    if _db_url.startswith(_prefix):
+        _db_url = "postgresql+psycopg://" + _db_url[len(_prefix) :]
+        break
+config.set_main_option("sqlalchemy.url", _db_url)
 
 # No ORM models — migrations are explicit SQL, so there is no target metadata.
 target_metadata = None

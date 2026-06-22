@@ -11,17 +11,26 @@ COMPOSE := docker compose -f infra/docker-compose.yml
 # writable again (restart Docker Desktop, or grant the terminal Full Disk Access).
 COMPOSE_BUILD := DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 $(COMPOSE)
 
-.PHONY: help install dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean
+.PHONY: help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-install: ## Install all dependencies (JS workspaces + Python API)
+install: check-uv ## Install all dependencies (JS workspaces + Python API)
 	bun install
-	cd $(API_DIR) && uv sync --extra dev --extra postgres
+	cd $(API_DIR) && uv sync --extra dev --extra postgres --extra migrate
 
-dev: ## Boot web + API together (Ctrl-C stops both)
+check-uv: ## Verify the uv toolchain is installed (fail with install hint otherwise)
+	@command -v uv >/dev/null 2>&1 || { \
+		echo "error: 'uv' is not installed — the Python toolchain needs it."; \
+		echo "  install: curl -LsSf https://astral.sh/uv/install.sh | sh"; \
+		exit 1; }
+
+migrate: check-uv ## Apply DB migrations (alembic) to GYF_DATABASE_URL
+	cd $(API_DIR) && uv run --extra postgres --extra migrate python -m alembic upgrade head
+
+dev: check-uv ## Boot web + API together (Ctrl-C stops both)
 	@echo "web → http://localhost:3000   api → http://localhost:8000"
 	@trap 'kill 0' EXIT; \
 		( cd $(API_DIR) && uv run uvicorn app.main:app --reload --port 8000 ) & \
@@ -31,8 +40,8 @@ dev: ## Boot web + API together (Ctrl-C stops both)
 dev-web: ## Run only the web app
 	bun run dev
 
-dev-api: ## Run only the API service
-	cd $(API_DIR) && uv run uvicorn app.main:app --reload --port 8000
+dev-api: check-uv ## Run only the API service
+	cd $(API_DIR) && uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000
 
 up: ## Start local infra only (Postgres+pgvector, Redis, Redpanda)
 	$(COMPOSE) up -d postgres redis redpanda
