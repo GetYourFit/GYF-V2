@@ -35,5 +35,5 @@ services:
         sync: false
       - key: GYF_SUPABASE_JWT_SECRET # Supabase → Settings → API → JWT Secret
         sync: false
-      - key: GYF_ALLOWED_ORIGINS # the Vercel web origin, e.g. https://gyf.vercel.app
-        sync: false
+      - key: GYF_ALLOWED_ORIGINS # the Vercel web origin (public, not a secret)
+        value: https://get-your-fit-v2-app.vercel.app
