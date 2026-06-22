@@ -16,7 +16,9 @@ services:
     region: oregon
     dockerfilePath: ./services/api/Dockerfile
     dockerContext: .
-    dockerCommand: sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    # Exec form (Render word-splits this — no shell, so no $PORT expansion).
+    # Bind a fixed port; Render auto-detects the open port. 8000 matches EXPOSE.
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port 8000
     healthCheckPath: /health
     autoDeploy: false
     envVars:
