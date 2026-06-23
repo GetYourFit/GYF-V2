@@ -26,5 +26,13 @@ class Settings(BaseSettings):
     perception_batch_size: int = 16  # images encoded per GPU forward pass in backfill
     perception_io_workers: int = 8  # parallel image loaders feeding each batch
 
+    # Free-tier GPU serving lane (D7). When set, perception encodes through a
+    # remote HF ZeroGPU Space (see spaces/gyf-gpu) instead of loading weights
+    # locally; unset = local SiglipEncoder baseline (invariant #5: a baseline
+    # always sits behind the port). Example: "https://<user>-gyf-gpu.hf.space".
+    encoder_remote_url: str = ""
+    # HF token for private Spaces / higher ZeroGPU quota; passed to gradio_client.
+    hf_token: str = ""
+
 
 settings = Settings()

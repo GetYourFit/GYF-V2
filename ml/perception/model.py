@@ -210,8 +210,15 @@ class SiglipEncoder:
         return l2_normalize(feats.cpu().numpy().astype(np.float32))
 
 
-def default_encoder() -> SiglipEncoder:
-    """Build the configured production encoder."""
+def default_encoder() -> Encoder:
+    """Build the configured production encoder.
+
+    Delegates to :func:`perception.remote.encoder_for`, which returns the remote
+    HF ZeroGPU lane when ``GYF_ENCODER_REMOTE_URL`` is set and the local
+    :class:`SiglipEncoder` baseline otherwise (invariant #5).
+    """
     from common.config import settings
 
-    return SiglipEncoder(settings.perception_model, device=settings.perception_device)
+    from .remote import encoder_for
+
+    return encoder_for(settings.perception_model)

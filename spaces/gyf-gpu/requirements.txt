@@ -1,0 +1,6 @@
+spaces
+gradio>=4.44
+open_clip_torch>=2.24
+torch
+pillow
+numpy

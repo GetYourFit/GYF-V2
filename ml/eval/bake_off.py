@@ -68,6 +68,14 @@ def encoders_from_registry(registry_path: Path) -> dict[str, Encoder]:
     here. A model that fails to load (e.g. an open_clip tag mismatch) is reported and skipped so a
     bad candidate cannot abort the incumbent's evaluation.
     """
+    from common.config import settings
+
+    from perception.remote import RemoteEncoder
+
+    # If a GPU serving lane is configured, embed through it (the catalog stays local;
+    # only the heavy forward pass goes remote). Otherwise load weights locally.
+    remote_url = settings.encoder_remote_url
+
     encoders: dict[str, Encoder] = {}
     for card in load_registry(registry_path):
         if card.capability != ENCODER_CAPABILITY:
@@ -76,7 +84,12 @@ def encoders_from_registry(registry_path: Path) -> dict[str, Encoder]:
             print(f"[bake_off] {card.name}: no model_uri, skipping")
             continue
         try:
-            encoders[card.name] = SiglipEncoder(card.model_uri, device="auto")
+            if remote_url:
+                encoders[card.name] = RemoteEncoder(
+                    card.model_uri, remote_url, hf_token=settings.hf_token or None
+                )
+            else:
+                encoders[card.name] = SiglipEncoder(card.model_uri, device="auto")
         except Exception as exc:  # noqa: BLE001 — surface, don't abort the bake-off
             print(f"[bake_off] {card.name}: failed to construct ({exc}); skipping")
     return encoders

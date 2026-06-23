@@ -68,8 +68,9 @@ models/
 .bun-cache/
 .cache-local/
 
-# Local ML model cache (HF weights) — never committed
+# Local ML model cache (HF weights / torch hub) — never committed
 .hf-cache/
+.torch-cache/
 
 # Loose local test photos (body/skin/try-on inputs) — never commit user/test imagery
 ml/*.jpg
