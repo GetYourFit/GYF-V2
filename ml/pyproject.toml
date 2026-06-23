@@ -8,6 +8,7 @@ dependencies = [
   "numpy>=1.26",
   "pillow>=10.0",
   "pydantic>=2.9.0",
+  "pydantic-settings>=2.5.0",
 ]
 
 # Local monorepo source for the shared domain contracts (uv resolves the path).

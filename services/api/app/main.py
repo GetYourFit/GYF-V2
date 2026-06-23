@@ -234,13 +234,15 @@ def require_active_principal(
     A tombstoned user is disabled the instant they request deletion: no further
     reads or writes until the grace window elapses and the purge job erases them.
 
-    In local/open-auth mode the dev principal is auto-provisioned so a freshly
-    rebuilt database (empty ``users`` table) just works — without this, an absent
-    row reads as "deleted" and every call 403s. It never resurrects a real
-    tombstone (insert-if-absent only), so deletion semantics are preserved.
+    The principal is provisioned just-in-time on first authed call (JIT user
+    provisioning from the identity provider): a verified Supabase user — or the
+    dev principal in open-auth — gets a ``users`` row so a freshly rebuilt or
+    empty database just works, instead of an absent row reading as "deleted" and
+    every call 403-ing. ``ensure_user`` is insert-if-absent, so it never
+    resurrects a real tombstone — deletion/erasure semantics are preserved (a
+    tombstoned user still 403s; a fully purged one re-registers as a new account).
     """
-    if settings.auth_is_open:
-        repo.ensure_user(principal.user_id)
+    repo.ensure_user(principal.user_id)
     if repo.is_deleted(principal.user_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account deleted")
     return principal

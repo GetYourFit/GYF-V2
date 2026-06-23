@@ -113,6 +113,45 @@ def test_delete_profile_is_204_and_idempotent():
         app.dependency_overrides.clear()
 
 
+def test_authed_user_is_provisioned_just_in_time():
+    """A verified Supabase user with no row yet is provisioned, not 403'd.
+
+    Simulates auth-ON (closed bypass) with a fresh `users` table: the JIT
+    provisioning in `require_active_principal` must create the row so the call
+    proceeds (404 — no profile yet — rather than 403 account-deleted).
+    """
+    from app.auth import Principal, get_current_principal
+
+    real_user = "supabase-uuid-xyz"
+    accounts = InMemoryAccountRepository()  # empty: the user does not exist yet
+    app.dependency_overrides[get_current_principal] = lambda: Principal(
+        user_id=real_user, email="real@user.com"
+    )
+    try:
+        client = _client(InMemoryProfileRepository(), accounts)
+        assert client.get("/profile").status_code == 404
+        assert accounts.is_deleted(real_user) is False  # provisioned as a live account
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_authed_tombstoned_user_still_403s():
+    """JIT provisioning must not resurrect a tombstoned account."""
+    from app.auth import Principal, get_current_principal
+
+    real_user = "tombstoned-uuid"
+    accounts = InMemoryAccountRepository(existing={real_user})
+    accounts.soft_delete(real_user)
+    app.dependency_overrides[get_current_principal] = lambda: Principal(
+        user_id=real_user, email="gone@user.com"
+    )
+    try:
+        client = _client(InMemoryProfileRepository(), accounts)
+        assert client.get("/profile").status_code == 403
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_delete_account_soft_deletes_and_disables():
     accounts = InMemoryAccountRepository(existing={DEV_USER})
     try:
