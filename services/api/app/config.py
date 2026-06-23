@@ -31,8 +31,13 @@ class Settings(BaseSettings):
     allowed_origins: str = ""
 
     # --- Auth (Supabase-issued JWTs) ---
-    # HS256 secret from the Supabase project (Settings → API → JWT Secret).
-    # When empty in a non-local env, protected routes reject all requests.
+    # Supabase projects sign access tokens with an asymmetric ES256 key (the modern
+    # default): we verify against the project's public JWKS, derived from this URL
+    # (e.g. "https://<ref>.supabase.co"). Preferred over the shared secret.
+    supabase_url: str = ""
+    # Legacy HS256 fallback: the shared secret from older projects (Settings → API →
+    # JWT Secret). Used only when a token is HS256-signed. Asymmetric ES256 tokens
+    # are verified via the JWKS instead and need no secret.
     supabase_jwt_secret: str = ""
     jwt_audience: str = "authenticated"
     # Local dev convenience: when true, missing/invalid tokens resolve to a dev
@@ -74,9 +79,21 @@ class Settings(BaseSettings):
         return configured
 
     @property
+    def jwks_url(self) -> str:
+        """The Supabase project's public JWKS endpoint (for ES256 verification)."""
+        return f"{self.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+
+    @property
     def auth_is_open(self) -> bool:
-        """Auth bypass is allowed only in local dev (explicit flag or no secret)."""
-        return self.auth_disabled or (self.env == "local" and not self.supabase_jwt_secret)
+        """Auth bypass is allowed only in local dev with no auth provider wired.
+
+        Wiring either the JWKS source (``supabase_url``) or the legacy HS256 secret
+        turns verification on, even in local — so a configured project is enforced.
+        """
+        if self.auth_disabled:
+            return True
+        configured = bool(self.supabase_url) or bool(self.supabase_jwt_secret)
+        return self.env == "local" and not configured
 
 
 settings = Settings()
