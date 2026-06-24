@@ -49,8 +49,8 @@ services:
       # this to the real *.workers.dev URL (or custom domain) after the first
       # Cloudflare deploy so CORS lets the browser in. Comma-separate to allow
       # several origins.
-      - key: GYF_ALLOWED_ORIGINS # the web origin (public, not a secret)
-        value: https://gyf-web.workers.dev
+      - key: GYF_ALLOWED_ORIGINS # the web origin (public, not a secret) — exact, no trailing slash
+        value: https://gyf-web.gyf-web.workers.dev
 
   # The web (Next.js) is deployed on Cloudflare Workers, not Render —
   # see app/wrangler.jsonc and `bun run cf:deploy`.
