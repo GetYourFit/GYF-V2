@@ -65,14 +65,18 @@ def _decode(token: str) -> Principal:
             if not settings.supabase_jwt_secret:
                 raise _unauthorized("HS256 token presented but no JWT secret configured")
             key: object = settings.supabase_jwt_secret
+            allowed_algs = ["HS256"]
         else:
+            # Asymmetric signing keys verified against the project JWKS. Supabase
+            # supports both ECC (ES256) and RSA (RS256) signing keys, so accept both.
             if not settings.supabase_url:
                 raise _unauthorized(f"{alg} token presented but no JWKS source configured")
             key = _jwks_client().get_signing_key_from_jwt(token).key
+            allowed_algs = ["ES256", "RS256"]
         claims = jwt.decode(
             token,
             key,
-            algorithms=["ES256", "HS256"],
+            algorithms=allowed_algs,
             audience=settings.jwt_audience,
         )
     except jwt.PyJWKClientError as exc:
