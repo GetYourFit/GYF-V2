@@ -15,7 +15,9 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ../services/api/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      # No schema.sql side-load: Alembic is the single source of truth. The API
+      # container migrates to head on boot (services/api/docker-entrypoint.sh), so a
+      # fresh volume is built from migrations alone — never a competing snapshot.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -62,6 +64,11 @@ services:
       GYF_EVENT_BROKER_URL: redpanda:9092
       GYF_ENV: local
       GYF_AUTH_DISABLED: "true"
+      # Persist behavioral events to the interactions table so the taste loop
+      # actually closes in the stack: save → interactions → next recommend
+      # personalizes. The bare default (local file sink) leaves them on disk and
+      # the taste model never sees them.
+      GYF_EVENT_SINK: postgres
       GYF_MEDIA_DIR: /app/services/api/data/e2e/images
     ports:
       - "8000:8000"

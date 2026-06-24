@@ -30,12 +30,17 @@ RUN uv sync --extra dev --extra postgres --extra migrate --no-install-project
 # App source is COPYed for standalone runs and overlaid by a bind mount in dev compose.
 COPY services/api /app/services/api
 
+# Bring the schema to head on boot (Alembic is the single source of truth), then run
+# the CMD. /opt/venv is on PATH, so the entrypoint's `python -m alembic` resolves here.
+ENTRYPOINT ["/app/services/api/docker-entrypoint.sh"]
+
 EXPOSE 8000
 # In-container env points at the compose service names, not localhost.
 ENV GYF_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/gyf \
     GYF_REDIS_URL=redis://redis:6379/0 \
     GYF_EVENT_BROKER_URL=redpanda:9092 \
     GYF_ENV=local \
-    GYF_AUTH_DISABLED=true
+    GYF_AUTH_DISABLED=true \
+    GYF_EVENT_SINK=postgres
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

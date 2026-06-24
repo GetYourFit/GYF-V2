@@ -15,6 +15,12 @@ WRANGLER_ENV := XDG_CONFIG_HOME=$(CURDIR)/$(WEB_DIR)/.wrangler-home
 # boots without manual env. Drop these once ~/.cache is writable again.
 CACHE_ENV := UV_CACHE_DIR=$(CURDIR)/.uv-cache XDG_CACHE_HOME=$(CURDIR)/.cache-local HF_HOME=$(CURDIR)/.hf-cache
 
+# Persist behavioral events to the interactions table so the taste loop closes on the
+# host dev path too (save → interactions → next recommend personalizes). Without this
+# the bare default is a local file sink the taste model never reads. The Docker stack
+# sets the same via compose/Dockerfile env.
+DEV_ENV := $(CACHE_ENV) GYF_EVENT_SINK=postgres
+
 COMPOSE := docker compose -f infra/docker-compose.yml
 # Build with the classic builder: this machine's ~/.docker/buildx/activity dir is locked by
 # macOS ("operation not permitted"), which aborts BuildKit. Drop the env prefix once buildx is
@@ -43,7 +49,7 @@ migrate: check-uv ## Apply DB migrations (alembic) to GYF_DATABASE_URL
 dev: check-uv ## Boot web + API together (Ctrl-C stops both)
 	@echo "web → http://localhost:3000   api → http://localhost:8000"
 	@trap 'kill 0' EXIT; \
-		( cd $(API_DIR) && $(CACHE_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000 ) & \
+		( cd $(API_DIR) && $(DEV_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000 ) & \
 		bun run dev & \
 		wait
 
@@ -57,7 +63,7 @@ deploy-web-preview: ## Build + preview the worker locally (no deploy)
 	cd $(WEB_DIR) && $(WRANGLER_ENV) bun run cf:preview
 
 dev-api: check-uv ## Run only the API service
-	cd $(API_DIR) && $(CACHE_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000
+	cd $(API_DIR) && $(DEV_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000
 
 up: ## Start local infra only (Postgres+pgvector, Redis, Redpanda)
 	$(COMPOSE) up -d postgres redis redpanda
