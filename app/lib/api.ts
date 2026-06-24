@@ -96,6 +96,16 @@ export class GyfApi {
     return this.request<void>("DELETE", "/profile");
   }
 
+  /** Photo onboarding: upload one photo to estimate skin tone + body type.
+   *  Returns the merged profile (estimated fields are editable and never override
+   *  higher-confidence manual values). A 503 means neither photo module is
+   *  available — fall back to the manual form. */
+  uploadPhoto(file: File): Promise<Profile> {
+    const form = new FormData();
+    form.append("photo", file);
+    return this.requestMultipart<Profile>("/profile/photo", form);
+  }
+
   // --- Consent & erasure ---
 
   getConsent(): Promise<Record<string, boolean>> {
@@ -150,6 +160,21 @@ export class GyfApi {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
+    return this.handle<T>(res);
+  }
+
+  /** Like `request`, but sends multipart form data — the browser sets the
+   *  `Content-Type` (with boundary) itself, so we must NOT set it here. */
+  private async requestMultipart<T>(path: string, form: FormData): Promise<T> {
+    const token = await this.getToken();
+    const headers = new Headers({ Accept: "application/json" });
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+
+    const res = await fetch(`${this.base}${path}`, { method: "POST", headers, body: form });
+    return this.handle<T>(res);
+  }
+
+  private async handle<T>(res: Response): Promise<T> {
     if (res.status === 204) return undefined as T;
 
     const raw = await res.text();

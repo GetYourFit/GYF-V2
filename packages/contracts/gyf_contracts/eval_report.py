@@ -110,6 +110,19 @@ GATES: dict[str, CapabilityGate] = {
             "scores ~0.81 (clears with margin); a regression below 0.50 fails CI."
         ),
     ),
+    "skin_tone": CapabilityGate(
+        capability="skin_tone",
+        metric="max_band_gap",
+        op=GateOp.LTE,
+        threshold=1.0,
+        rationale=(
+            "Fairness floor for the skin-tone module (P1-B Cycle 3, ⚠). 'max_band_gap' is the "
+            "largest difference in mean-absolute MST-bucket error between any two Monk Skin Tone "
+            "bands; it must stay within one bucket so the module is not measurably worse for any "
+            "skin tone. Until a real run on a balanced full-MST set clears this, skin-tone stays "
+            "in shadow (computed, not surfaced) behind the GYF_SKIN_TONE_ENABLED flag."
+        ),
+    ),
 }
 
 

@@ -49,6 +49,44 @@ SKIN_TONES: frozenset[str] = frozenset({f"mst{n}" for n in range(1, 11)} | {UNKN
 UNKNOWN_UNDERTONE = "unknown"
 UNDERTONES: frozenset[str] = frozenset({"warm", "cool", "neutral", "olive", UNKNOWN_UNDERTONE})
 
+# --- Body measurements (shared sizing vocabulary) --------------------------
+#
+# The canonical anthropometric keys the body-type module derives from a photo
+# (P1-B Cycle 2) and that manual onboarding may also carry. Kept normalized
+# (height-relative, unit-free) so the recommender, body-type classifier, and a
+# future try-on sizing layer all agree on one measurement vocabulary instead of
+# drifting copies. Unknown keys are dropped rather than rejected.
+MEASUREMENT_KEYS: frozenset[str] = frozenset(
+    {
+        "shoulder_width",
+        "chest",
+        "waist",
+        "hip",
+        "height",
+    }
+)
+
+
+def canonical_measurements(values: dict[str, float] | None) -> dict[str, float]:
+    """Keep only known measurement keys, coercing values to ``float``.
+
+    Drops out-of-vocabulary keys and any value that cannot be read as a number,
+    so a partial or slightly-off measurement dict is accepted rather than
+    rejected — mirroring the lenient ``canonical_*`` helpers above.
+    """
+    if not values:
+        return {}
+    canonical: dict[str, float] = {}
+    for key, value in values.items():
+        if key not in MEASUREMENT_KEYS:
+            continue
+        try:
+            canonical[key] = float(value)
+        except (TypeError, ValueError):
+            continue
+    return canonical
+
+
 # --- Occasion (first-class conditioning feature for recsys, P1-C) ----------
 
 OCCASIONS: frozenset[str] = frozenset(

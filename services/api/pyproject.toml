@@ -11,6 +11,9 @@ dependencies = [
   "pydantic-settings>=2.5.0",
   "pyjwt[crypto]>=2.9.0",
   "prometheus-client>=0.21.0",
+  # Photo onboarding (POST /profile/photo): multipart intake + image decode/EXIF strip.
+  "python-multipart>=0.0.9",
+  "pillow>=10.0",
 ]
 
 # Local monorepo source for the shared domain contracts (uv resolves the path).

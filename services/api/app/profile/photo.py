@@ -1,0 +1,168 @@
+"""Photo-onboarding adapters + profile merge (P1-B Cycles 2 & 3).
+
+Bridges the API to the two user-model estimators in the ``gyf-ml`` runtime —
+body-type (SAM 3D Body → MHR) and skin-tone (face-parse → CIELAB → MST) — behind
+small Protocols, exactly like ``catalog/perception_adapter.py`` bridges perception.
+Each adapter imports its heavy ml package lazily on construction, so the API runs
+without those runtimes installed; ``main.py`` catches the ImportError and the
+corresponding module simply abstains (the other still runs; manual is always there).
+
+The adapters return transport results decoupled from the ml dataclasses, and
+:func:`profile_from_photo` folds whichever ran into a stored :class:`Profile` with
+``source="photo"`` and a **merge policy that never overwrites a higher-confidence
+field** — so a value the user stated by hand (confidence 1.0) always wins over a
+model guess, satisfying the always-editable invariant.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from functools import lru_cache
+from typing import Protocol
+
+from .models import Profile
+
+# Photo-derived fields are stamped with this provenance so the recommender (and the
+# UI's "we estimated this — fix if wrong" affordance) can tell them from manual input.
+PHOTO_SOURCE = "photo"
+
+
+@dataclass(frozen=True)
+class SkinToneResult:
+    """Transport result of the skin-tone module (decoupled from the ml dataclass)."""
+
+    skin_tone: str
+    undertone: str
+    field_confidence: dict[str, float] = field(default_factory=dict)
+    model_version: str = ""
+
+
+@dataclass(frozen=True)
+class BodyResult:
+    """Transport result of the body-type module (decoupled from the ml dataclass)."""
+
+    body_type: str
+    measurements: dict[str, float] = field(default_factory=dict)
+    field_confidence: dict[str, float] = field(default_factory=dict)
+    model_version: str = ""
+
+
+class SkinToneAdapter(Protocol):
+    def estimate(self, image: object) -> SkinToneResult: ...
+
+
+class BodyAdapter(Protocol):
+    def estimate(self, image: object) -> BodyResult: ...
+
+
+class FaceParsingSkinToneAdapter:
+    """In-process bridge to ``usermodel.skintone`` (RetinaFace + FaRL + CIELAB)."""
+
+    def __init__(self) -> None:
+        # Import here so the ImportError surfaces only when this adapter is built;
+        # main.py turns that into a graceful per-module abstain.
+        from usermodel.skintone import FaceParsingSkinToneEstimator, estimate_skin_tone
+
+        self._estimate = estimate_skin_tone
+        self._estimator = FaceParsingSkinToneEstimator()
+
+    def estimate(self, image: object) -> SkinToneResult:
+        est = self._estimate(image, self._estimator)
+        return SkinToneResult(
+            skin_tone=est.skin_tone,
+            undertone=est.undertone,
+            field_confidence=dict(est.field_confidence),
+            model_version=est.model_version,
+        )
+
+
+class Sam3DBodyAdapter:
+    """In-process bridge to ``usermodel.body`` (SAM 3D Body → MHR measurements)."""
+
+    def __init__(self) -> None:
+        from usermodel.body import Sam3DBodyEstimator, estimate_body
+
+        self._estimate = estimate_body
+        self._estimator = Sam3DBodyEstimator()
+
+    def estimate(self, image: object) -> BodyResult:
+        est = self._estimate(image, self._estimator)
+        return BodyResult(
+            body_type=est.body_type,
+            measurements=dict(est.measurements),
+            field_confidence=dict(est.field_confidence),
+            model_version=est.model_version,
+        )
+
+
+@lru_cache(maxsize=1)
+def cached_skin_adapter() -> FaceParsingSkinToneAdapter:
+    """Process-wide singleton so segmentation weights load once."""
+    return FaceParsingSkinToneAdapter()
+
+
+@lru_cache(maxsize=1)
+def cached_body_adapter() -> Sam3DBodyAdapter:
+    """Process-wide singleton so the mesh model loads once."""
+    return Sam3DBodyAdapter()
+
+
+def _adopt(
+    profile: Profile,
+    field_name: str,
+    value: object,
+    confidence: float,
+    *,
+    unknown: str | None,
+) -> bool:
+    """Write ``value`` onto ``profile.field_name`` iff it beats what's already there.
+
+    Skips empty / abstained values (``unknown`` sentinel or falsy) and never
+    overwrites an existing field whose recorded confidence is >= this one (manual
+    input is 1.0, so it always wins). Returns whether the field was adopted.
+    """
+    if value is None or value == "" or (unknown is not None and value == unknown):
+        return False
+    existing = profile.field_confidence.get(field_name)
+    if existing is not None and existing >= confidence:
+        return False
+    setattr(profile, field_name, value)
+    profile.field_confidence[field_name] = round(confidence, 4)
+    return True
+
+
+def profile_from_photo(
+    *,
+    skin: SkinToneResult | None,
+    body: BodyResult | None,
+    existing: Profile | None = None,
+) -> Profile:
+    """Fold whichever modules ran into a stored profile (merge-by-confidence).
+
+    Starts from the user's ``existing`` profile (so manual fields and untouched
+    values survive) and overlays photo estimates only where they are present and
+    more confident. Stamps ``source="photo"`` and a combined ``model_version`` from
+    the modules that contributed.
+    """
+    profile = existing.model_copy(deep=True) if existing is not None else Profile()
+    versions: list[str] = []
+
+    if skin is not None:
+        sc = skin.field_confidence
+        _adopt(profile, "skin_tone", skin.skin_tone, sc.get("skin_tone", 0.0), unknown="unknown")
+        _adopt(profile, "undertone", skin.undertone, sc.get("undertone", 0.0), unknown="unknown")
+        if skin.model_version:
+            versions.append(skin.model_version)
+
+    if body is not None:
+        bc = body.field_confidence
+        _adopt(profile, "body_type", body.body_type, bc.get("body_type", 0.0), unknown="unknown")
+        _adopt(
+            profile, "measurements", body.measurements, bc.get("measurements", 0.0), unknown=None
+        )
+        if body.model_version:
+            versions.append(body.model_version)
+
+    profile.source = PHOTO_SOURCE
+    profile.model_version = "+".join(versions) if versions else profile.model_version
+    return profile

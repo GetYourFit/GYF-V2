@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
+import { PhotoUpload } from "@/components/onboarding/photo-upload";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import {
   STYLE_INTENTS,
   UNDERTONES,
 } from "@/lib/vocab";
-import type { ProfileInput } from "@gyf/types";
+import type { Profile, ProfileInput } from "@gyf/types";
 
 type ConsentState = Record<string, boolean>;
 
@@ -83,6 +84,22 @@ export function OnboardingForm() {
     );
   }
 
+  /** Merge photo-estimated fields into the form (always editable). Only overlays
+   *  what the estimate actually returned, leaving manual entries untouched. */
+  function applyEstimated(profile: Profile) {
+    setForm((f) => ({
+      ...f,
+      skin_tone: profile.skin_tone ?? f.skin_tone,
+      undertone: profile.undertone ?? f.undertone,
+      body_type: profile.body_type ?? f.body_type,
+      measurements:
+        profile.measurements && Object.keys(profile.measurements).length > 0
+          ? profile.measurements
+          : f.measurements,
+    }));
+    setSaved(false);
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -117,6 +134,7 @@ export function OnboardingForm() {
       </header>
 
       <Section title="You" hint="Helps GYF choose flattering colours and cuts.">
+        <PhotoUpload onEstimated={applyEstimated} />
         <Field label="Skin tone">
           {(p) => (
             <Select
@@ -147,9 +165,6 @@ export function OnboardingForm() {
             />
           )}
         </Field>
-        <p className="rounded-lg bg-neutral-100 px-3 py-2 text-xs text-neutral-500">
-          📷 Photo onboarding (auto-detect tone & body type) — experimental, coming soon.
-        </p>
       </Section>
 
       <Section

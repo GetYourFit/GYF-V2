@@ -8,9 +8,10 @@ provisioned.
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,6 +28,7 @@ from .events import FeedbackRequest
 from .metrics import install_metrics, metrics_enabled
 from .profile.account import AccountRepository
 from .profile.models import ConsentInput, Profile, ProfileInput, profile_from_manual
+from .profile.photo import BodyAdapter, SkinToneAdapter, profile_from_photo
 from .profile.repository import ProfileRepository
 from .recsys.candidates import CandidateRepository
 from .recsys.models import OutfitRecommendation
@@ -284,6 +286,103 @@ def delete_profile(
     """Erase the user's profile (keeps the account). Idempotent: 204 either way."""
     repo.delete(principal.user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# --- Photo onboarding (P1-B Cycles 2 & 3) dependencies. Overridable in tests. ---
+
+_ACCEPTED_PHOTO_TYPES = frozenset({"image/jpeg", "image/png", "image/webp"})
+
+
+def get_skin_adapter() -> SkinToneAdapter | None:
+    """The skin-tone estimator adapter, or ``None`` if its ml runtime is absent.
+
+    Unlike text search (a hard 503), a missing module here is a graceful per-module
+    abstain: the endpoint still runs the other module, and manual entry is always
+    available. Construction loads weights, so it is cached inside the adapter.
+    """
+    try:
+        from .profile.photo import cached_skin_adapter
+
+        return cached_skin_adapter()
+    except ImportError:
+        return None
+
+
+def get_body_adapter() -> BodyAdapter | None:
+    """The body-type estimator adapter, or ``None`` if its ml runtime is absent."""
+    try:
+        from .profile.photo import cached_body_adapter
+
+        return cached_body_adapter()
+    except ImportError:
+        return None
+
+
+@app.post("/profile/photo", tags=["profile"], summary="Onboard from a photo")
+async def upsert_profile_from_photo(
+    photo: UploadFile = File(..., description="A clear, well-lit photo of the user."),
+    principal: Principal = Depends(require_active_principal),
+    profile_repo: ProfileRepository = Depends(get_profile_repo),
+    account_repo: AccountRepository = Depends(get_account_repo),
+    skin_adapter: SkinToneAdapter | None = Depends(get_skin_adapter),
+    body_adapter: BodyAdapter | None = Depends(get_body_adapter),
+) -> Profile:
+    """Estimate skin tone + undertone and body type from one photo, merge into the profile.
+
+    Consent-gated (`data_processing` required). The image is processed **in memory
+    and is ephemeral** — bytes are never logged and never persisted here (durable,
+    consented photo storage arrives with try-on). Each module **abstains** if its ml
+    runtime is unavailable, so the endpoint still succeeds with whatever ran; the
+    manual `PUT /profile` is always the fallback. Skin-tone is held in **shadow**
+    (computed, not surfaced) until the fairness gate flips `skin_tone_enabled`.
+    Every estimated field stays editable and never overwrites a higher-confidence
+    manual value.
+    """
+    if not account_repo.get_consent(principal.user_id).get("data_processing", False):
+        raise HTTPException(status_code=403, detail="data_processing consent required")
+
+    if photo.content_type not in _ACCEPTED_PHOTO_TYPES:
+        raise HTTPException(status_code=415, detail="unsupported image type (use jpeg, png, webp)")
+
+    raw = await photo.read(settings.max_photo_bytes + 1)
+    if len(raw) > settings.max_photo_bytes:
+        raise HTTPException(status_code=413, detail="image too large")
+    if not raw:
+        raise HTTPException(status_code=422, detail="empty upload")
+
+    image = _decode_photo(raw)
+
+    skin = skin_adapter.estimate(image) if skin_adapter is not None else None
+    body = body_adapter.estimate(image) if body_adapter is not None else None
+    if skin is None and body is None:
+        raise HTTPException(status_code=503, detail="photo onboarding unavailable")
+
+    # Shadow gate (D5/D6): skin-tone is computed but not surfaced until it passes
+    # the fairness eval and the flag is flipped.
+    surfaced_skin = skin if settings.skin_tone_enabled else None
+
+    existing = profile_repo.get(principal.user_id)
+    profile = profile_from_photo(skin=surfaced_skin, body=body, existing=existing)
+    profile_repo.upsert(principal.user_id, profile)
+    return profile
+
+
+def _decode_photo(raw: bytes) -> object:
+    """Decode bytes to an orientation-corrected, EXIF-stripped RGB image.
+
+    Applies EXIF orientation then re-bakes pixels so no camera metadata (incl. GPS)
+    survives into anything downstream — privacy by construction (D8).
+    """
+    from PIL import Image, ImageOps
+
+    try:
+        with Image.open(io.BytesIO(raw)) as img:
+            img.load()
+            return ImageOps.exif_transpose(img).convert("RGB")
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001 — any decode failure is a bad upload
+        raise HTTPException(status_code=422, detail="could not decode image") from exc
 
 
 @app.get("/consent", tags=["profile"])

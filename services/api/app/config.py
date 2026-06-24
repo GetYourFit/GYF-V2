@@ -52,6 +52,16 @@ class Settings(BaseSettings):
     # least this many days, leaving a recovery window before data is irreversible.
     account_deletion_grace_days: int = 30
 
+    # --- Photo onboarding (P1-B Cycles 2 & 3) ---
+    # Max accepted upload size for POST /profile/photo (bytes); larger is rejected
+    # before decode so an oversized image can't exhaust memory. Default 10 MiB.
+    max_photo_bytes: int = 10 * 1024 * 1024
+    # ⚠ Fairness gate (engineering-doctrine D5/D6): the skin-tone module runs in
+    # SHADOW (computed, logged for eval, NOT surfaced to the user) until it passes
+    # the full-MST fairness eval. Flip to true only once that report clears the
+    # `skin_tone` gate. Body-type is unaffected; manual skin-tone is always allowed.
+    skin_tone_enabled: bool = False
+
     # --- Observability (P0-E). All env-driven; unset = no-op (free-tier first). ---
     service_name: str = "gyf-api"
     # OTLP traces endpoint (e.g. http://localhost:4318). Unset = tracing disabled.
