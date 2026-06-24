@@ -31,9 +31,19 @@ services:
       - key: GYF_MEDIA_BASE_URL
         value: https://tabjvaatrikogutkrjom.supabase.co/storage/v1/object/public/catalog
       # --- Secrets: set in dashboard / `render` CLI, not committed ---
-      - key: GYF_DATABASE_URL # Supabase pooler URL (postgresql://...:6543/postgres)
+      # The entrypoint runs `alembic upgrade head` on boot. DDL must NOT go through
+      # the transaction pooler (:6543) — pgbouncer transaction mode breaks Alembic's
+      # locks/prepared statements. Use the :5432 session connection here (runtime
+      # queries work over it too on free tier). A fresh Supabase DB also needs the
+      # catalog ingested after migrating, or /outfits/recommend returns nothing.
+      - key: GYF_DATABASE_URL # Supabase connection (use :5432 session URL for migrations)
         sync: false
-      - key: GYF_SUPABASE_JWT_SECRET # Supabase → Settings → API → JWT Secret
+      # Auth: modern Supabase signs ES256 — verified against the project JWKS, which
+      # is PREFERRED over the legacy HS256 secret (see app/auth.py + config.py). Set
+      # GYF_SUPABASE_URL or real ES256 tokens won't verify (the HS256-only path fails).
+      - key: GYF_SUPABASE_URL # https://<ref>.supabase.co — enables JWKS (ES256) verification
+        sync: false
+      - key: GYF_SUPABASE_JWT_SECRET # legacy HS256 fallback (Settings → API → JWT Secret)
         sync: false
       # The web origin is the Cloudflare Worker (see app/wrangler.jsonc). Update
       # this to the real *.workers.dev URL (or custom domain) after the first
