@@ -39,10 +39,11 @@ services:
       - key: GYF_DATABASE_URL # Supabase connection (use :5432 session URL for migrations)
         sync: false
       # Auth: modern Supabase signs ES256 — verified against the project JWKS, which
-      # is PREFERRED over the legacy HS256 secret (see app/auth.py + config.py). Set
-      # GYF_SUPABASE_URL or real ES256 tokens won't verify (the HS256-only path fails).
-      - key: GYF_SUPABASE_URL # https://<ref>.supabase.co — enables JWKS (ES256) verification
-        sync: false
+      # is PREFERRED over the legacy HS256 secret (see app/auth.py + config.py). This
+      # is the PUBLIC project URL (not a secret — same one the web uses), so pin it
+      # here: without it, ES256 tokens fail with "no JWKS source configured".
+      - key: GYF_SUPABASE_URL # public project URL — enables JWKS (ES256) verification
+        value: https://tabjvaatrikogutkrjom.supabase.co
       - key: GYF_SUPABASE_JWT_SECRET # legacy HS256 fallback (Settings → API → JWT Secret)
         sync: false
       # The web origin is the Cloudflare Worker (see app/wrangler.jsonc). Update
