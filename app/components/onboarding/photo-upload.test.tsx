@@ -8,7 +8,8 @@ import { ApiError } from "@/lib/api";
 import { PhotoUpload } from "./photo-upload";
 
 const uploadPhoto = vi.fn();
-vi.mock("@/lib/api-client", () => ({ browserApi: () => ({ uploadPhoto }) }));
+const putConsent = vi.fn().mockResolvedValue({ data_processing: true });
+vi.mock("@/lib/api-client", () => ({ browserApi: () => ({ uploadPhoto, putConsent }) }));
 
 beforeAll(() => {
   // jsdom has no object-URL support; the component only needs it not to throw.

@@ -59,7 +59,12 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
     setBusy(true);
     setError(null);
     try {
-      const profile = await browserApi().uploadPhoto(file);
+      // Uploading a photo to be analysed IS the data-processing consent action.
+      // Persist it first so the API (which checks the stored flag, not the form's
+      // unsaved local state) doesn't 403 before the form is submitted.
+      const api = browserApi();
+      await api.putConsent({ flags: { data_processing: true } });
+      const profile = await api.uploadPhoto(file);
       setDone(true);
       onEstimated(profile);
     } catch (e) {
