@@ -28,10 +28,14 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [estimated, setEstimated] = useState<string[]>([]);
+  const [missed, setMissed] = useState(false);
 
   function selectFile(next: File | null) {
     setError(null);
     setDone(false);
+    setEstimated([]);
+    setMissed(false);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     if (!next) {
       setFile(null);
@@ -65,6 +69,14 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       const api = browserApi();
       await api.putConsent({ flags: { data_processing: true } });
       const profile = await api.uploadPhoto(file);
+      // Report exactly which fields the estimate filled, so an abstain (or a disabled
+      // module) reads as honest feedback instead of a silent "Estimated" with empty fields.
+      const filled: string[] = [];
+      if (profile.skin_tone) filled.push("skin tone");
+      if (profile.undertone) filled.push("undertone");
+      if (profile.body_type) filled.push("body type");
+      setEstimated(filled);
+      setMissed(filled.length === 0);
       setDone(true);
       onEstimated(profile);
     } catch (e) {
@@ -127,9 +139,15 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           {error}
         </p>
       )}
-      {done && (
+      {done && !missed && (
         <p role="status" className="text-xs font-medium text-green-700">
-          Estimated — review and edit the fields below, then save.
+          Estimated {estimated.join(" & ")} — review and edit below, then save.
+        </p>
+      )}
+      {done && missed && (
+        <p role="status" className="text-xs font-medium text-amber-700">
+          Couldn’t read your features from this photo — try a clearer, well-lit, front-facing
+          photo, or just set the fields below manually.
         </p>
       )}
 
