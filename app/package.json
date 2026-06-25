@@ -10,9 +10,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cf:build": "opennextjs-cloudflare build",
-    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "cf:clean": "rm -rf .next .open-next node_modules/.cache",
+    "cf:build": "bun run cf:clean && opennextjs-cloudflare build",
+    "cf:preview": "bun run cf:build && opennextjs-cloudflare preview",
+    "cf:deploy": "bun run cf:build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@gyf/types": "workspace:*",
