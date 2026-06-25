@@ -83,6 +83,30 @@ def embed_texts(model_id: str, texts: list[str]) -> dict:
     return {"embeddings": emb.tolist(), "dim": int(emb.shape[1])}
 
 
+# --- Skin-tone lane (M4): face-parse → CIELAB → MST, runs the vendored pipeline -
+@lru_cache(maxsize=1)
+def _skin_estimator():
+    """The real face-parsing skin-tone estimator (vendored under skintone/)."""
+    from skintone import FaceParsingSkinToneEstimator
+
+    return FaceParsingSkinToneEstimator()
+
+
+@spaces.GPU
+def estimate_skin_tone(image_b64: str) -> dict:
+    """One photo → {'skin_tone': 'mstN', 'undertone': str, 'field_confidence': {...},
+    'model_version': str}. Abstains ('unknown') honestly when no face/skin is found."""
+    from skintone import estimate_skin_tone as _run
+
+    est = _run(_decode_image(image_b64), _skin_estimator())
+    return {
+        "skin_tone": est.skin_tone,
+        "undertone": est.undertone,
+        "field_confidence": dict(est.field_confidence),
+        "model_version": est.model_version,
+    }
+
+
 # --- Body-type lane (M3): SAM 3D Body → MHR mesh, GPU-only -------------------
 # Gated (request access to facebook/sam-3d-body-dinov3 + accept the SAM License)
 # and heavy (PyTorch3D + hydra, installed from facebookresearch/sam-3d-body). The
@@ -145,6 +169,12 @@ with gr.Blocks(title="GYF GPU lane") as demo:
         txt_out = gr.JSON(label="embeddings")
         gr.Button("embed_texts").click(
             embed_texts, [model_in, txt_in], txt_out, api_name="embed_texts"
+        )
+    with gr.Tab("skintone"):
+        skin_in = gr.Textbox(label="image_b64 (base64 PNG)")
+        skin_out = gr.JSON(label="skin tone")
+        gr.Button("estimate_skin_tone").click(
+            estimate_skin_tone, skin_in, skin_out, api_name="estimate_skin_tone"
         )
     with gr.Tab("body"):
         body_in = gr.Textbox(label="image_b64 (base64 PNG)")

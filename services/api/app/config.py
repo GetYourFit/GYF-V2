@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     # silhouette taxonomy still runs here. Unset = local Sam3DBodyEstimator baseline
     # (invariant #5), which abstains on a CPU box without the weights.
     body_remote_url: str = ""
+    # Skin-tone GPU lane (M4, doctrine D7). When set, the CIELAB→MST pipeline runs on
+    # the ZeroGPU Space (the API host needs no pyfacer/torch); unset = local in-process.
+    skintone_remote_url: str = ""
     # HF token for the gated SAM checkpoint / higher ZeroGPU quota; passed to gradio_client.
     hf_token: str = ""
     # ⚠ Fairness gate (engineering-doctrine D5/D6): the skin-tone module is surfaced

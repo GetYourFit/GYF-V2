@@ -56,18 +56,29 @@ class BodyAdapter(Protocol):
 
 
 class FaceParsingSkinToneAdapter:
-    """In-process bridge to ``usermodel.skintone`` (RetinaFace + FaRL + CIELAB)."""
+    """Bridge to ``usermodel.skintone`` (RetinaFace + FaRL + CIELAB).
 
-    def __init__(self) -> None:
-        # Import here so the ImportError surfaces only when this adapter is built;
+    When ``remote_url`` is set the whole pipeline runs on the ZeroGPU Space (the API
+    host needs no pyfacer/torch); otherwise it runs in-process. Either way the result
+    is the same :class:`SkinToneResult`.
+    """
+
+    def __init__(self, *, remote_url: str = "", hf_token: str | None = None) -> None:
+        # Import here so an ImportError surfaces only when this adapter is built;
         # main.py turns that into a graceful per-module abstain.
-        from usermodel.skintone import FaceParsingSkinToneEstimator, estimate_skin_tone
+        if remote_url:
+            from usermodel.skintone.remote import RemoteSkinToneEstimator
 
-        self._estimate = estimate_skin_tone
-        self._estimator = FaceParsingSkinToneEstimator()
+            remote = RemoteSkinToneEstimator(remote_url, hf_token=hf_token)
+            self._run = remote.estimate
+        else:
+            from usermodel.skintone import FaceParsingSkinToneEstimator, estimate_skin_tone
+
+            local = FaceParsingSkinToneEstimator()
+            self._run = lambda img: estimate_skin_tone(img, local)
 
     def estimate(self, image: object) -> SkinToneResult:
-        est = self._estimate(image, self._estimator)
+        est = self._run(image)
         return SkinToneResult(
             skin_tone=est.skin_tone,
             undertone=est.undertone,
@@ -103,8 +114,12 @@ class Sam3DBodyAdapter:
 
 @lru_cache(maxsize=1)
 def cached_skin_adapter() -> FaceParsingSkinToneAdapter:
-    """Process-wide singleton so segmentation weights load once."""
-    return FaceParsingSkinToneAdapter()
+    """Process-wide singleton. ``GYF_SKINTONE_REMOTE_URL`` routes to the ZeroGPU Space."""
+    from ..config import settings
+
+    return FaceParsingSkinToneAdapter(
+        remote_url=settings.skintone_remote_url, hf_token=settings.hf_token or None
+    )
 
 
 @lru_cache(maxsize=1)

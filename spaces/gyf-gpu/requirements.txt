@@ -9,3 +9,6 @@ numpy
 transformers>=4.40
 sentencepiece
 protobuf
+# Skin-tone lane (M4): RetinaFace face detect + FaRL face-parsing (MIT) for the
+# real CIELAB->MST pipeline vendored under skintone/. CPU-capable; torch already present.
+pyfacer>=0.0.5
