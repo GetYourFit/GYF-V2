@@ -69,6 +69,20 @@ export function StylistFeed() {
     );
   }
 
+  function onShopCart(itemId: string) {
+    if (!data) return;
+    // The strongest commercial signal — log it at the moment of buy intent. Best-effort:
+    // a failed event must never interfere with the retailer redirect the user just triggered.
+    void browserApi()
+      .feedback({
+        target_type: "item",
+        target_id: itemId,
+        action: "cart",
+        context: { recommendation_id: data.recommendation_id },
+      })
+      .catch(() => {});
+  }
+
   function onSave(index: number) {
     setSaved((s) => new Set(s).add(index)); // optimistic
     void sendFeedback(index, "save").catch(() =>
@@ -168,6 +182,7 @@ export function StylistFeed() {
                 saved={saved.has(i)}
                 onSave={() => onSave(i)}
                 onDismiss={() => onDismiss(i)}
+                onShopCart={onShopCart}
               />
             ),
           )}

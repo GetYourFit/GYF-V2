@@ -21,13 +21,18 @@ export function OutfitCard({
   saved,
   onSave,
   onDismiss,
+  onShopCart,
 }: {
   outfit: Outfit;
   index: number;
   saved: boolean;
   onSave: () => void;
   onDismiss: () => void;
+  /** Fired with the shopped garment's id when the user clicks through to buy —
+   *  a `cart` intent signal logged before the retailer redirect opens. */
+  onShopCart: (itemId: string) => void;
 }) {
+  const shopItem = outfit.items.find((i) => i.affiliate_url);
   return (
     <article className="group flex flex-col border border-[var(--rule)] bg-[var(--surface)] transition-shadow duration-300 hover:shadow-[0_8px_40px_rgba(139,107,62,0.10)]">
       {/* Garment images, side by side — the look, seen. */}
@@ -96,11 +101,15 @@ export function OutfitCard({
             {saved ? "Saved" : "Save look"}
           </button>
 
-          {outfit.items.find((i) => i.affiliate_url) && (
+          {shopItem?.affiliate_url && (
             <a
-              href={outfit.items.find((i) => i.affiliate_url)?.affiliate_url ?? "#"}
+              href={shopItem.affiliate_url}
               target="_blank"
               rel="noopener noreferrer"
+              // Log the cart intent before the new tab opens. Fire-and-forget so the
+              // redirect is never blocked by the feedback request; the anchor's default
+              // navigation still carries the user to the retailer.
+              onClick={() => onShopCart(shopItem.item_id)}
               className="inline-flex min-h-10 items-center justify-center gap-2 bg-[var(--text)] px-4 text-[11px] uppercase tracking-[0.16em] text-[var(--bg)] transition-colors hover:bg-[var(--gold)]"
             >
               <ExternalLink className="h-3.5 w-3.5" aria-hidden />
