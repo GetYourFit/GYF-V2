@@ -47,6 +47,11 @@ def compare_encoders(
             dataset=dataset,
             notes="Bake-off candidate (M2). Promote only if it beats the incumbent.",
         )
+        # Release this encoder's weights before loading the next so candidates are not all
+        # co-resident (peak memory = one model, not the whole field). Fakes have no `unload`.
+        unload = getattr(encoder, "unload", None)
+        if callable(unload):
+            unload()
     return reports
 
 

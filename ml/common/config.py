@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     # Perception model identity. The version string is written to
     # item_embeddings.model_version and items.attributes so backfill is idempotent
     # and every derived attribute is traceable to the model that produced it.
-    perception_model: str = "hf-hub:Marqo/marqo-fashionSigLIP"
-    perception_model_version: str = "marqo-fashionSigLIP-v1"
+    perception_model: str = "hf-hub:timm/ViT-B-16-SigLIP2"
+    perception_model_version: str = "google-siglip2-base-v1"
     # "auto" picks the most powerful device available (CUDA > Intel XPU > CPU);
     # Apple MPS is never auto-selected. Set GYF_PERCEPTION_DEVICE explicitly
     # (e.g. "cpu") to override.

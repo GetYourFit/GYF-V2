@@ -1,0 +1,15 @@
+{
+  "report_id": "encoder-google-siglip2-so400m",
+  "capability": "encoder",
+  "model_version": "google-siglip2-so400m",
+  "metrics": {
+    "mrr": 0.8414,
+    "recall_at_1": 0.0907,
+    "recall_at_5": 0.3185,
+    "recall_at_10": 0.4836
+  },
+  "num_samples": 112,
+  "dataset": "p1a-e2e-catalog (bake-off, image->image LOO by category)",
+  "created_at": "2026-06-25T07:25:48.299193+00:00",
+  "notes": "Bake-off candidate (M2). Promote only if it beats the incumbent."
+}

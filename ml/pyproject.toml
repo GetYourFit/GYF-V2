@@ -31,7 +31,7 @@ postgres = [
 # instead of loading weights locally. Lightweight on purpose (no torch): this is the
 # alternative to the `perception` extra. See docs/deploy/gpu-lane.md.
 remote = [
-  "gradio-client>=1.3.0",
+  "gradio-client>=2.0.0",
 ]
 # Skin-tone runtime — RetinaFace face detection + FaRL face-parsing via pyfacer
 # (MIT), per-pixel skin segmentation. CPU-capable (slower) — no GPU required.

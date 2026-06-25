@@ -195,12 +195,21 @@ class SiglipEncoder:
         self._load()
         return self._logit_scale
 
-    def encode_images(self, images: list[Image]) -> np.ndarray:
+    def encode_images(self, images: list[Image], *, batch_size: int = 32) -> np.ndarray:
+        if not images:
+            return np.empty((0, self.dim), dtype=np.float32)
         self._load()
-        batch = self._torch.stack([self._preprocess(img.convert("RGB")) for img in images])
-        with self._torch.no_grad():
-            feats = self._model.encode_image(batch.to(self._device))
-        return l2_normalize(feats.cpu().numpy().astype(np.float32))
+        # Encode in fixed-size chunks so activation memory stays bounded regardless of how many
+        # images are passed (a single stacked forward over a large catalog through a big backbone
+        # would otherwise spike RAM and OOM). Per-chunk features move to CPU immediately.
+        chunks: list[np.ndarray] = []
+        for start in range(0, len(images), batch_size):
+            window = images[start : start + batch_size]
+            batch = self._torch.stack([self._preprocess(img.convert("RGB")) for img in window])
+            with self._torch.no_grad():
+                feats = self._model.encode_image(batch.to(self._device))
+            chunks.append(feats.cpu().numpy().astype(np.float32))
+        return l2_normalize(np.concatenate(chunks, axis=0))
 
     def encode_texts(self, texts: list[str]) -> np.ndarray:
         self._load()
@@ -208,6 +217,24 @@ class SiglipEncoder:
         with self._torch.no_grad():
             feats = self._model.encode_text(tokens.to(self._device))
         return l2_normalize(feats.cpu().numpy().astype(np.float32))
+
+    def unload(self) -> None:
+        """Free the model weights so a peak-memory-bound caller can hold one encoder at a time.
+
+        The bake-off benchmarks several encoders back-to-back; without releasing each one after
+        use, all candidates' weights stay co-resident (the large SO400M backbone alone is several
+        GB), which OOM-kills a memory-limited box. Dropping the references and emptying the CUDA
+        cache returns the encoder to its lazy, unloaded state — the next ``encode_*`` reloads it.
+        """
+        if self._model is None:
+            return
+        torch = self._torch
+        self._model = self._preprocess = self._tokenizer = None
+        if torch is not None and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        import gc
+
+        gc.collect()
 
 
 def default_encoder() -> Encoder:

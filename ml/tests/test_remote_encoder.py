@@ -67,8 +67,37 @@ def test_encode_texts_calls_text_api() -> None:
     assert client.calls[0][0] == ("hf-hub:Marqo/marqo-fashionSigLIP", ["a red dress"])
 
 
-def test_bad_shape_rejected() -> None:
-    enc, _ = _encoder_with([[1.0, 2.0, 3.0]])  # wrong dim
+class _RawClient:
+    """Returns a fixed payload verbatim (for testing malformed responses)."""
+
+    def __init__(self, payload: object) -> None:
+        self._payload = payload
+
+    def predict(self, *args, api_name: str):
+        return self._payload
+
+
+def test_non_2d_payload_rejected() -> None:
+    enc = RemoteEncoder("m", "https://x.hf.space")
+    enc._client = _RawClient({"embeddings": [1.0, 2.0, 3.0]})  # 1-D, not (N, dim)
+    with pytest.raises(ValueError):
+        enc.encode_images([Image.new("RGB", (8, 8))])
+
+
+def test_dim_learned_from_response() -> None:
+    # The width is the served model's property (768 vs so400m's 1152), learned from the
+    # response — an arbitrary dim is accepted, not asserted against a hard-coded 768.
+    enc, _ = _encoder_with([[1.0] * 1152])
+    out = enc.encode_images([Image.new("RGB", (8, 8))])
+    assert out.shape == (1, 1152)
+    assert enc.dim == 1152
+
+
+def test_dim_inconsistency_across_batches_rejected() -> None:
+    enc = RemoteEncoder("m", "https://x.hf.space")
+    enc._client = _FakeClient([[1.0] * 768])
+    enc.encode_images([Image.new("RGB", (8, 8))])  # locks dim=768
+    enc._client = _FakeClient([[1.0] * 1152])  # a later batch disagrees
     with pytest.raises(ValueError):
         enc.encode_images([Image.new("RGB", (8, 8))])
 

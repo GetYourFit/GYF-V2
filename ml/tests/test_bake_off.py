@@ -70,4 +70,6 @@ def test_encoders_from_registry_selects_all_encoder_models():
 
 
 def test_incumbent_is_the_production_encoder():
-    assert incumbent_name(_REGISTRY) == "marqo-fashionSigLIP"
+    # google-siglip2-base was promoted to the production lane at M2 (it won the bake-off);
+    # marqo-fashionSigLIP is now the research-lane fallback baseline behind the encoder port.
+    assert incumbent_name(_REGISTRY) == "google-siglip2-base"

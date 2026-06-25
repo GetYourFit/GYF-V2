@@ -6,26 +6,26 @@
       "capability": "encoder",
       "provider": "Marqo",
       "license": "Apache-2.0",
-      "lane": "production",
+      "lane": "research",
       "commercial_ok": true,
       "train_data_commercial_ok": true,
       "train_data_license": "Apache-2.0 (GCL over public fashion corpora)",
       "eval_report": "encoder-marqo-fashionSigLIP-v1",
-      "model_uri": "hf://Marqo/marqo-fashionSigLIP",
-      "notes": "Shipped P1-A perception. Upgrade target: SigLIP 2 / FashionSigLIP-2 (M2) — verify v2 card before swap."
+      "model_uri": "hf-hub:Marqo/marqo-fashionSigLIP",
+      "notes": "Shipped P1-A perception; superseded by google-siglip2-base at M2 (lost the bake-off on mrr/recall@5/recall@10). Kept as the commercial-clean fallback baseline behind the encoder port (invariant #5)."
     },
     {
       "name": "google-siglip2-base",
       "capability": "encoder",
       "provider": "Google",
       "license": "Apache-2.0",
-      "lane": "research",
+      "lane": "production",
       "commercial_ok": true,
       "train_data_commercial_ok": true,
       "train_data_license": "Apache-2.0 (WebLI)",
-      "eval_report": null,
+      "eval_report": "encoder-google-siglip2-base-v1",
       "model_uri": "hf-hub:timm/ViT-B-16-SigLIP2",
-      "notes": "M2 bake-off candidate (plan m2-embedding-upgrade). SigLIP 2 recipe, B/16, 768-dim — generic, NOT fashion-tuned, so likely loses to marqo-fashionSigLIP. Research-lane until it beats the incumbent on the encoder gate."
+      "notes": "Promoted at M2. SigLIP 2 recipe, B/16, 768-dim (same width as the old incumbent => no vector migration). Won the M2 bake-off against marqo-fashionSigLIP on mrr/recall@5/recall@10; despite not being fashion-tuned, the SigLIP 2 training recipe wins. Served via local SiglipEncoder baseline or the ZeroGPU remote lane."
     },
     {
       "name": "google-siglip2-so400m",

@@ -4,3 +4,8 @@ open_clip_torch>=2.24
 torch
 pillow
 numpy
+# Marqo-FashionSigLIP / SigLIP2 load their tokenizer via HF Transformers at
+# runtime (open_clip.get_tokenizer); SigLIP's tokenizer needs sentencepiece+protobuf.
+transformers>=4.40
+sentencepiece
+protobuf

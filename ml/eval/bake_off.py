@@ -46,8 +46,12 @@ def load_dataset(feed_path: Path, images_dir: Path) -> tuple[list, list[str]]:
         urls = rec.get("image_urls") or []
         if not urls:
             continue
+        # The feed may carry absolute paths from whatever machine generated it (not portable
+        # across the Docker mount or another checkout). Trust the path only if it resolves here;
+        # otherwise fall back to the basename under the local images dir — the contract the
+        # bake-off actually runs against (`--images`, mounted read-only in the container).
         path = Path(urls[0])
-        if not path.is_absolute():
+        if not path.exists():
             path = images_dir / path.name
         if not path.exists():
             missing += 1
@@ -61,12 +65,15 @@ def load_dataset(feed_path: Path, images_dir: Path) -> tuple[list, list[str]]:
     return images, groups
 
 
-def encoders_from_registry(registry_path: Path) -> dict[str, Encoder]:
+def encoders_from_registry(
+    registry_path: Path, *, only: set[str] | None = None
+) -> dict[str, Encoder]:
     """Build one encoder per registry `encoder` model (incumbent + research candidates).
 
     The registry is the single source of truth for *what to benchmark*; we never hand-list models
     here. A model that fails to load (e.g. an open_clip tag mismatch) is reported and skipped so a
-    bad candidate cannot abort the incumbent's evaluation.
+    bad candidate cannot abort the incumbent's evaluation. ``only`` optionally restricts the field
+    to a named subset (the production incumbent is always kept so the ranking has its bar to beat).
     """
     from common.config import settings
 
@@ -79,6 +86,8 @@ def encoders_from_registry(registry_path: Path) -> dict[str, Encoder]:
     encoders: dict[str, Encoder] = {}
     for card in load_registry(registry_path):
         if card.capability != ENCODER_CAPABILITY:
+            continue
+        if only is not None and card.name not in only and card.lane is not Lane.PRODUCTION:
             continue
         if not card.model_uri:
             print(f"[bake_off] {card.name}: no model_uri, skipping")
@@ -110,9 +119,10 @@ def run(
     images_dir: Path,
     out_dir: Path,
     dataset_name: str,
+    only: set[str] | None = None,
 ) -> int:
     images, groups = load_dataset(feed_path, images_dir)
-    encoders = encoders_from_registry(registry_path)
+    encoders = encoders_from_registry(registry_path, only=only)
     incumbent = incumbent_name(registry_path)
     if incumbent not in encoders:
         raise SystemExit(f"incumbent '{incumbent}' could not be loaded; cannot rank")
@@ -162,6 +172,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--images", type=Path, default=root / "data" / "e2e" / "images")
     p.add_argument("--out", type=Path, default=root / "eval-reports" / "bakeoffs")
     p.add_argument("--dataset", default="p1a-e2e-catalog (bake-off, image->image LOO by category)")
+    p.add_argument(
+        "--only",
+        nargs="*",
+        default=None,
+        help="restrict candidates to these registry names (the production incumbent is always "
+        "included). Useful for staged runs — e.g. benchmark the cheap base candidate before the "
+        "heavy so400m one.",
+    )
     args = p.parse_args(argv)
     return run(
         registry_path=args.registry,
@@ -169,6 +187,7 @@ def main(argv: list[str] | None = None) -> int:
         images_dir=args.images,
         out_dir=args.out,
         dataset_name=args.dataset,
+        only=set(args.only) if args.only is not None else None,
     )
 
 

@@ -55,7 +55,10 @@ class RemoteEncoder:
     ) -> None:
         if not url:
             raise ValueError("RemoteEncoder requires a non-empty Space url")
+        # `dim` is only a hint for the empty-input fast path; the real width is learned from the
+        # first response (so a 1152-dim so400m candidate is accepted, not rejected against 768).
         self.dim = dim
+        self._dim_locked = False
         self._model_id = model_id
         self._url = url
         self._hf_token = hf_token or None
@@ -66,7 +69,8 @@ class RemoteEncoder:
         if self._client is None:
             from gradio_client import Client  # lazy: only the first real call needs it
 
-            self._client = Client(self._url, hf_token=self._hf_token)
+            # gradio_client renamed the auth kwarg `hf_token` -> `token` in 2.x.
+            self._client = Client(self._url, token=self._hf_token)
         return self._client
 
     @property
@@ -76,23 +80,44 @@ class RemoteEncoder:
         return self._logit_scale
 
     def _embeddings_from_payload(self, payload: object) -> np.ndarray:
-        """Coerce the Space's JSON response into a validated (N, dim) float32 array."""
+        """Coerce the Space's JSON response into a validated (N, dim) float32 array.
+
+        The embedding width is a property of the served model, not a constant: the incumbent
+        and base candidate are 768-dim, but the so400m candidate is 1152-dim. So we *learn* the
+        dim from the first non-empty response (the Space reports it) and then require every later
+        batch to match it — catching a corrupted response or a mid-run model swap, without
+        hard-coding a width that would wrongly reject a valid larger encoder.
+        """
         rows = payload["embeddings"] if isinstance(payload, dict) else payload
         arr = np.asarray(rows, dtype=np.float32)
-        if arr.ndim != 2 or arr.shape[1] != self.dim:
+        if arr.ndim != 2:
+            raise ValueError(f"remote encoder returned non-2D embeddings, shape {arr.shape}")
+        if self._dim_locked and arr.shape[1] != self.dim:
             raise ValueError(
-                f"remote encoder returned shape {arr.shape}, expected (N, {self.dim})"
+                f"remote encoder returned dim {arr.shape[1]}, but earlier batches were {self.dim}"
             )
+        self.dim = int(arr.shape[1])
+        self._dim_locked = True
         # Re-normalize defensively: JSON round-trips can perturb the unit norm slightly.
         return l2_normalize(arr)
 
-    def encode_images(self, images: list[Image]) -> np.ndarray:
-        payload = self._get_client().predict(
-            self._model_id,
-            [_image_to_b64_png(img) for img in images],
-            api_name=_EMBED_IMAGES_API,
-        )
-        return self._embeddings_from_payload(payload)
+    def encode_images(self, images: list[Image], *, batch_size: int = 32) -> np.ndarray:
+        if not images:
+            return np.empty((0, self.dim), dtype=np.float32)
+        # Send images in fixed-size chunks rather than one giant request: a ZeroGPU call has
+        # payload/time limits, and 100+ base64 PNGs in a single predict() can exceed them and
+        # time out. Each chunk is an independent GPU request; we concatenate the results.
+        client = self._get_client()
+        chunks: list[np.ndarray] = []
+        for start in range(0, len(images), batch_size):
+            window = images[start : start + batch_size]
+            payload = client.predict(
+                self._model_id,
+                [_image_to_b64_png(img) for img in window],
+                api_name=_EMBED_IMAGES_API,
+            )
+            chunks.append(self._embeddings_from_payload(payload))
+        return np.concatenate(chunks, axis=0)
 
     def encode_texts(self, texts: list[str]) -> np.ndarray:
         payload = self._get_client().predict(

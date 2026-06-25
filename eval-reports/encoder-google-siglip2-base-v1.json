@@ -1,0 +1,15 @@
+{
+  "report_id": "encoder-google-siglip2-base-v1",
+  "capability": "encoder",
+  "model_version": "google-siglip2-base-v1",
+  "metrics": {
+    "mrr": 0.8422,
+    "recall_at_1": 0.0855,
+    "recall_at_5": 0.3264,
+    "recall_at_10": 0.5072
+  },
+  "num_samples": 112,
+  "dataset": "p1a-e2e-catalog (image->image leave-one-out, grouped by product)",
+  "created_at": "2026-06-25T07:24:58Z",
+  "notes": "M2 promotion record. SigLIP 2 B/16 (hf-hub:timm/ViT-B-16-SigLIP2, 768-dim). Won the M2 bake-off (ml/eval/bake_off.py on the live ZeroGPU Space) against the incumbent marqo-fashionSigLIP — beats it on mrr (0.8422 vs 0.8078), recall@5 (0.3264 vs 0.3212), and recall@10 (0.5072 vs 0.5057), measured apples-to-apples in the same run. Clears the encoder gate (mrr >= 0.50) and is a non-regression over the incumbent. Bake-off candidates: eval-reports/bakeoffs/. Same 768 dim as incumbent => no vector-dim migration, clean re-embed."
+}
