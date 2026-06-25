@@ -95,13 +95,27 @@ app = FastAPI(
 # Allow the deployed web app (a different origin than the API) to call us from the
 # browser. Configured via GYF_ALLOWED_ORIGINS; empty in local same-host dev = no
 # cross-origin access. Credentials are enabled so the Supabase JWT can be sent.
-if settings.cors_origins:
+if settings.cors_origins or settings.allowed_origin_regex:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
+        allow_origin_regex=settings.allowed_origin_regex or None,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+    # Log the effective allow-list at startup so a CORS preflight 404 is diagnosable
+    # from the deploy logs (vs. silently guessing which origin is missing).
+    logging.getLogger("gyf.cors").info(
+        "CORS enabled: origins=%s regex=%r",
+        settings.cors_origins or "(none)",
+        settings.allowed_origin_regex or None,
+    )
+else:
+    logging.getLogger("gyf.cors").warning(
+        "CORS disabled: GYF_ALLOWED_ORIGINS is empty and env is %r — browser calls "
+        "from a different origin will fail preflight with 404. Set GYF_ALLOWED_ORIGINS.",
+        settings.env,
     )
 
 sink = get_sink()

@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # app, e.g. "https://gyf.vercel.app"). Empty = no cross-origin browser access
     # (same-origin only) — the safe default for local same-host dev.
     allowed_origins: str = ""
+    # Optional regex for browser origins (e.g. r"https://.*\.vercel\.app" to allow all
+    # preview deploys). Applied alongside the exact list above. Empty = no regex match.
+    allowed_origin_regex: str = ""
 
     # --- Auth (Supabase-issued JWTs) ---
     # Supabase projects sign access tokens with an asymmetric ES256 key (the modern
@@ -92,8 +95,13 @@ class Settings(BaseSettings):
         In local dev the web (:3000) and API (:8000) are different origins, so the
         browser needs them explicitly allowed; we default them in so `make dev` works
         out of the box. Other envs stay locked to the configured origins only.
+
+        A trailing slash is stripped from each entry: browsers send the Origin header
+        with no path (``https://app.example.com``), so a configured value with a
+        trailing slash would silently never match — the single most common CORS
+        misconfiguration. We normalize it away so that mistake can't break preflight.
         """
-        configured = [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+        configured = [o.strip().rstrip("/") for o in self.allowed_origins.split(",") if o.strip()]
         if self.env == "local":
             local_dev = [
                 "http://localhost:3000",
