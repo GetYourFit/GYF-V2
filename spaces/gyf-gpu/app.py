@@ -83,6 +83,50 @@ def embed_texts(model_id: str, texts: list[str]) -> dict:
     return {"embeddings": emb.tolist(), "dim": int(emb.shape[1])}
 
 
+# --- Body-type lane (M3): SAM 3D Body → MHR mesh, GPU-only -------------------
+# Gated (request access to facebook/sam-3d-body-dinov3 + accept the SAM License)
+# and heavy (PyTorch3D + hydra, installed from facebookresearch/sam-3d-body). The
+# Space does only the GPU mesh fit; the caller's CPU runs the mesh→measurements→
+# silhouette taxonomy (usermodel.body.estimate), so no SAM deps touch the API host.
+_BODY_HF_REPO = "facebook/sam-3d-body-dinov3"
+
+
+@lru_cache(maxsize=1)
+def _load_body():
+    """Set up the SAM 3D Body estimator once (checkpoints downloaded on first call)."""
+    from notebook.utils import setup_sam_3d_body  # provided by the sam-3d-body repo
+
+    return setup_sam_3d_body(hf_repo_id=_BODY_HF_REPO)
+
+
+@spaces.GPU
+def estimate_body(image_b64: str) -> dict:
+    """One photo → MHR mesh of the largest detected person.
+
+    Returns ``{'vertices': [[x,y,z],...], 'region_quality': {}, 'model_confidence':
+    float, 'model_version': str}``. An empty/zero-confidence result is an honest
+    "no body found" the caller turns into an abstention (unknown body type).
+    """
+    image = _decode_image(image_b64)
+    rgb = np.ascontiguousarray(np.asarray(image))
+    people = _load_body().process_one_image(rgb)
+    if not people:
+        return {"vertices": [], "region_quality": {}, "model_confidence": 0.0,
+                "model_version": "sam3dbody-mhr-v1"}
+    person = max(people, key=lambda p: float(p.get("score", p.get("confidence", 1.0)) or 0.0))
+    verts = np.asarray(person.get("pred_vertices"), dtype=np.float32)
+    if verts.ndim != 2 or verts.shape[0] == 0:
+        return {"vertices": [], "region_quality": {}, "model_confidence": 0.0,
+                "model_version": "sam3dbody-mhr-v1"}
+    score = float(person.get("score", person.get("confidence", 1.0)) or 1.0)
+    return {
+        "vertices": verts.tolist(),
+        "region_quality": {},
+        "model_confidence": max(0.0, min(1.0, score)),
+        "model_version": "sam3dbody-mhr-v1",
+    }
+
+
 with gr.Blocks(title="GYF GPU lane") as demo:
     gr.Markdown(
         "# GYF GPU serving lane\n"
@@ -101,6 +145,12 @@ with gr.Blocks(title="GYF GPU lane") as demo:
         txt_out = gr.JSON(label="embeddings")
         gr.Button("embed_texts").click(
             embed_texts, [model_in, txt_in], txt_out, api_name="embed_texts"
+        )
+    with gr.Tab("body"):
+        body_in = gr.Textbox(label="image_b64 (base64 PNG)")
+        body_out = gr.JSON(label="mesh")
+        gr.Button("estimate_body").click(
+            estimate_body, body_in, body_out, api_name="estimate_body"
         )
 
 

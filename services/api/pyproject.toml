@@ -24,6 +24,12 @@ gyf-contracts = { path = "../../packages/contracts", editable = true }
 kafka = [
   "kafka-python>=2.0.2",
 ]
+# Body-type GPU lane (M3): the photo endpoint reaches the SAM 3D Body ZeroGPU Space
+# via gradio_client. Lightweight — no torch/SAM on the API host. Requires the ml
+# `usermodel` package on the path and GYF_BODY_REMOTE_URL set. See docs/deploy/gpu-lane.md.
+photo-remote = [
+  "gradio-client>=2.0.0",
+]
 postgres = [
   "psycopg[binary,pool]>=3.2.0",
 ]

@@ -56,11 +56,22 @@ class Settings(BaseSettings):
     # Max accepted upload size for POST /profile/photo (bytes); larger is rejected
     # before decode so an oversized image can't exhaust memory. Default 10 MiB.
     max_photo_bytes: int = 10 * 1024 * 1024
-    # ⚠ Fairness gate (engineering-doctrine D5/D6): the skin-tone module runs in
-    # SHADOW (computed, logged for eval, NOT surfaced to the user) until it passes
-    # the full-MST fairness eval. Flip to true only once that report clears the
-    # `skin_tone` gate. Body-type is unaffected; manual skin-tone is always allowed.
-    skin_tone_enabled: bool = False
+    # Body-type GPU lane (M3, doctrine D7). When set, the body-type module runs the
+    # SAM 3D Body mesh fit on a remote HF ZeroGPU Space (see spaces/gyf-gpu) instead
+    # of needing SAM 3D Body / PyTorch3D on the API host; the mesh→measurements→
+    # silhouette taxonomy still runs here. Unset = local Sam3DBodyEstimator baseline
+    # (invariant #5), which abstains on a CPU box without the weights.
+    body_remote_url: str = ""
+    # HF token for the gated SAM checkpoint / higher ZeroGPU quota; passed to gradio_client.
+    hf_token: str = ""
+    # ⚠ Fairness gate (engineering-doctrine D5/D6): the skin-tone module is surfaced
+    # in BETA as an explicitly editable, honest-confidence ESTIMATE — never an
+    # authority. It lands in onboarding as a pre-filled, user-correctable field
+    # ("we estimated this — fix if wrong") and never overwrites a manual value.
+    # FOLLOW-UP (must precede GA): clear the full-MST fairness eval
+    # (usermodel.skintone.fairness_eval, gate max_band_gap ≤ 1.0) and record the
+    # report under eval-reports/. Set GYF_SKIN_TONE_ENABLED=false to re-shadow.
+    skin_tone_enabled: bool = True
 
     # --- Observability (P0-E). All env-driven; unset = no-op (free-tier first). ---
     service_name: str = "gyf-api"

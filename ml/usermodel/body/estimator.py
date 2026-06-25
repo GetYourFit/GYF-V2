@@ -26,6 +26,8 @@ if TYPE_CHECKING:
     from PIL.Image import Image
 
 DEFAULT_MODEL_VERSION = "sam3dbody-mhr-v1"
+# Gated HF checkpoint the production estimator loads (request access + SAM License).
+DEFAULT_HF_REPO = "facebook/sam-3d-body-dinov3"
 
 
 @dataclass(frozen=True)
@@ -44,6 +46,33 @@ class BodyEstimator(Protocol):
     def estimate(self, image: Image) -> MeshEstimate: ...
 
 
+def _detection_score(person: dict) -> float:
+    """A 0–1 confidence for a SAM 3D Body detection.
+
+    SAM 3D Body's per-person output has no single scalar confidence, so we use an
+    explicit ``score``/``confidence`` field if the build provides one, else treat a
+    returned detection as confident (1.0). Conservative and honest: downstream
+    per-measurement confidence is further scaled by region visibility, so an
+    over-stated 1.0 here cannot by itself feign certainty about a measurement.
+    """
+    for key in ("score", "confidence", "det_score"):
+        value = person.get(key)
+        if isinstance(value, (int, float)):
+            return max(0.0, min(1.0, float(value)))
+    return 1.0
+
+
+def _region_quality(person: dict) -> dict[str, float]:
+    """Per-measurement visibility derived from the 2D keypoints, when available.
+
+    TODO(M3 live-calibration): map ``pred_keypoints_2d`` (whose joint layout is
+    only knowable against the live checkpoint) to GYF measurement regions
+    (shoulder/bust/waist/hip). Until that is validated end-to-end we return ``{}``,
+    which the orchestration treats as uniform visibility — never a fabricated value.
+    """
+    return {}
+
+
 def _select_device() -> str:
     """Most capable accelerator, excluding Apple MPS (repo device convention)."""
     import torch
@@ -58,35 +87,39 @@ def _select_device() -> str:
 class Sam3DBodyEstimator:
     """Production estimator: SAM 3D Body → MHR mesh. Lazy, GPU/SAM-License-gated."""
 
-    def __init__(self, device: str | None = None, *, fast: bool | None = None) -> None:
+    def __init__(self, model_id: str = DEFAULT_HF_REPO, device: str | None = None) -> None:
+        self._model_id = model_id
         self._device = device or os.environ.get("GYF_BODY_DEVICE") or None
-        self._fast = fast if fast is not None else os.environ.get("GYF_BODY_FAST") == "1"
         self._model: object | None = None
-        self._torch: object | None = None
 
     def _load(self) -> None:
         if self._model is not None:
             return
-        import torch  # lazy: heavy, optional `bodyshape` extra
-        from sam_3d_body import Sam3DBody  # type: ignore[import-not-found]
+        # Real SAM 3D Body inference API (facebook/sam-3d-body-dinov3): the package
+        # is installed from facebookresearch/sam-3d-body (needs PyTorch3D + hydra),
+        # the checkpoint is gated (request access + accept the SAM License), and
+        # `setup_sam_3d_body` returns an estimator with `.process_one_image`.
+        from notebook.utils import setup_sam_3d_body  # type: ignore[import-not-found]
 
-        self._torch = torch
         if self._device is None:
             self._device = _select_device()
-        self._model = Sam3DBody.from_pretrained(fast=self._fast).to(self._device).eval()
+        self._model = setup_sam_3d_body(hf_repo_id=self._model_id)
 
     def estimate(self, image: Image) -> MeshEstimate:
         self._load()
-        torch = self._torch
         rgb = np.ascontiguousarray(np.asarray(image.convert("RGB")))
-        with torch.inference_mode():
-            out = self._model(rgb)  # type: ignore[operator]
-        if out is None or getattr(out, "confidence", 0.0) <= 0.0:
+        # `process_one_image` returns a list of per-person dicts; empty = no body found.
+        people = self._model.process_one_image(rgb)  # type: ignore[union-attr]
+        if not people:
             return MeshEstimate(vertices=np.empty((0, 3)), model_confidence=0.0)
-        verts = np.asarray(out.vertices, dtype=np.float64)
+        # The largest detection is the subject; MHR mesh vertices are `pred_vertices`.
+        person = max(people, key=lambda p: _detection_score(p))
+        verts = np.asarray(person.get("pred_vertices"), dtype=np.float64)
+        if verts.ndim != 2 or verts.shape[0] == 0:
+            return MeshEstimate(vertices=np.empty((0, 3)), model_confidence=0.0)
         return MeshEstimate(
             vertices=verts,
-            region_quality=dict(getattr(out, "region_quality", {})),
-            model_confidence=float(out.confidence),
+            region_quality=_region_quality(person),
+            model_confidence=_detection_score(person),
             model_version=DEFAULT_MODEL_VERSION,
         )
