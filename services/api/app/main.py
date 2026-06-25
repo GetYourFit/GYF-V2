@@ -9,6 +9,7 @@ provisioned.
 from __future__ import annotations
 
 import io
+import logging
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Response, UploadFile, status
@@ -352,8 +353,12 @@ async def upsert_profile_from_photo(
 
     image = _decode_photo(raw)
 
-    skin = skin_adapter.estimate(image) if skin_adapter is not None else None
-    body = body_adapter.estimate(image) if body_adapter is not None else None
+    # Each module abstains on ANY runtime failure (remote Space down, weights/runtime
+    # missing, decode error), not just an import error at build time — a flaky or
+    # not-yet-deployed module must never 500 the whole onboarding; the other module
+    # still runs and the manual path is always the fallback.
+    skin = _estimate_or_abstain(skin_adapter, image, "skin-tone")
+    body = _estimate_or_abstain(body_adapter, image, "body-type")
     if skin is None and body is None:
         raise HTTPException(status_code=503, detail="photo onboarding unavailable")
 
@@ -365,6 +370,23 @@ async def upsert_profile_from_photo(
     profile = profile_from_photo(skin=surfaced_skin, body=body, existing=existing)
     profile_repo.upsert(principal.user_id, profile)
     return profile
+
+
+def _estimate_or_abstain(adapter: object | None, image: object, label: str) -> object | None:
+    """Run a photo-module adapter, turning any runtime failure into an honest abstain.
+
+    Build-time import errors are already handled by the get_*_adapter providers; this
+    catches *call*-time failures (a remote Space down, a missing local runtime that
+    only errors on first use) so one module never takes the endpoint down.
+    """
+    if adapter is None:
+        return None
+    try:
+        return adapter.estimate(image)  # type: ignore[attr-defined]
+    except Exception:  # noqa: BLE001 — any module failure must degrade to abstain, not 500
+        logging.getLogger("gyf.photo").warning("%s estimation failed; abstaining", label,
+                                               exc_info=True)
+        return None
 
 
 def _decode_photo(raw: bytes) -> object:

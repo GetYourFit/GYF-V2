@@ -18,14 +18,17 @@ ENV UV_LINK_MODE=copy \
 
 WORKDIR /app
 
-# Shared contracts (editable path dep) resolved first so dependency layers cache well.
+# Shared contracts + the ml package (editable path deps) resolved first so dependency
+# layers cache well. gyf-ml is needed by the photo-remote extra (ZeroGPU onboarding
+# lane); only its light base deps install here — no torch/pyfacer/SAM on the API host.
 COPY packages/contracts /app/packages/contracts
+COPY ml /app/ml
 COPY services/api/pyproject.toml /app/services/api/pyproject.toml
 
-# Resolve the full dev runtime (postgres + dev + migrate extras) into /opt/venv — kept
-# outside /app so a bind-mount over /app/services/api at run time never shadows it.
+# Resolve the runtime (postgres + dev + migrate + photo-remote extras) into /opt/venv —
+# kept outside /app so a bind-mount over /app/services/api at run time never shadows it.
 WORKDIR /app/services/api
-RUN uv sync --extra dev --extra postgres --extra migrate --no-install-project
+RUN uv sync --extra dev --extra postgres --extra migrate --extra photo-remote --no-install-project
 
 # App source is COPYed for standalone runs and overlaid by a bind mount in dev compose.
 COPY services/api /app/services/api
