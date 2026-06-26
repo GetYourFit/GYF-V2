@@ -59,7 +59,29 @@ internal leak); `/ready` readiness probe (503 when DB unreachable) distinct from
 - **Rubric/gate:** a promotion cannot merge without a passing `eval_report` (already enforced by M1);
   E2E covers login→onboard→recommend→feedback green; CI blocks on red.
 
-## W2 — Data & catalog (real + expanded)  [needs open input: provider, size, regions]
+## W2 — Data & catalog  ⏳  (decisions locked: ~25k US+India · no affiliate provider yet · see [[launch-decisions]])
+
+**W2(A) code — ✅ verified+pushed (commit d5141fc, 133 tests pass, ruff clean):**
+- Affiliate ingestion port already existed (`FeedSource`/`AffiliateFeedSource`); added a **generic
+  `DelimitedFeedSource`** (CSV/TSV → `RawFeedItem` via column-map; skips title-less rows; safe price
+  parse) so a real network (CJ/Awin/Rakuten/Google-Merchant feed) is *config not code* when access lands.
+- Broadened India taxonomy: +anarkali, palazzo, churidar, dhoti, nehru_jacket, bandhgala, dupatta,
+  mojari (+synonyms jodhpuri/jutti/…), all `IN`-tagged; western staples stay region-neutral.
+
+**W2(B) runbook — needs the LIVE stack + GPU (run on the Mac, not verifiable in the agent sandbox; do
+NOT assert done until artifacts exist):**
+1. `make stack` (Apple container: web+api+Postgres/Redis) — see [[apple-container-stack]].
+2. Export the open dataset(s) (DeepFashion2/Polyvore/Fashionpedia via `ml` tooling) to JSONL
+   `RawFeedItem` shape; target **~25k** deduped, US+India mix. Dedup/quality pass.
+3. Ingest: `python -m app.catalog.ingest --provider <name> --license <lic> catalog.jsonl`.
+4. **Perception backfill at scale** on the GPU lane (`ml/pipelines/backfill.py`; ZeroGPU or local
+   accelerator) — embeddings into `item_embeddings`. See [[catalog-seeding-recipe]].
+5. **M2 embedding promotion** through the bake-off gate (`make m2-bakeoff` → eval report under
+   `eval-reports/`, MRR/Recall ≥ baseline) — promote only on pass (M1 gate).
+**Gate:** N≥~25k items each with embedding+image+ (real or honestly-flagged) buy link; retrieval
+MRR/Recall ≥ baseline; region filter conditions results (India shows sarees, US doesn't).
+
+### W2 (original scope reference)
 **Files:** `ml/pipelines/backfill.py`, `services/api/app/catalog/ingest.py`, `scripts/seed_catalog*.py`,
 new `services/api/app/catalog/feeds/` (affiliate ingestion), `packages/contracts/gyf_contracts/taxonomy.py`.
 - (a) Scale open fashion dataset → launch-sized, de-duped, attribute-rich; (b) affiliate/brand-feed
