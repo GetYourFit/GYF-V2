@@ -383,6 +383,22 @@ async def upsert_profile_from_photo(
     existing = profile_repo.get(principal.user_id)
     profile = profile_from_photo(skin=surfaced_skin, body=body, existing=existing)
     profile_repo.upsert(principal.user_id, profile)
+
+    # Observability at the decision point (no PII — only which modules ran, the coarse
+    # outcome, and adoption confidences). Lets a "fields didn't fill" report be diagnosed
+    # from `render logs` instead of guesswork: a present field with positive confidence
+    # means the API handed the browser a real value (so any gap is frontend/cache), while
+    # an absent field means the module abstained on this photo.
+    logging.getLogger("gyf.photo").info(
+        "photo onboarding outcome: skin_ran=%s body_ran=%s skin_tone=%s undertone=%s "
+        "body_type=%s confidences=%s",
+        skin is not None,
+        body is not None,
+        bool(profile.skin_tone),
+        bool(profile.undertone),
+        bool(profile.body_type),
+        profile.field_confidence,
+    )
     return profile
 
 
