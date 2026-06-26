@@ -221,8 +221,17 @@ def search_items(
     repo: VectorSearchRepository = Depends(get_search_repo),
     embedder: TextEmbedder = Depends(get_text_embedder),
 ) -> dict[str, list[SearchResult]]:
-    """Text->image search over the catalog (e.g. 'red floral summer dress')."""
-    return {"results": search_text(repo, embedder, q, k, region)}
+    """Text->image search over the catalog (e.g. 'red floral summer dress').
+
+    The encoder loads its backend lazily, so a missing runtime (e.g. ``open_clip``
+    absent from the API image, which delegates GPU work to the remote lane) only
+    raises when we actually embed. Convert that into the same honest 503 the
+    construction-time path returns, never a 500 that pretends the search broke.
+    """
+    try:
+        return {"results": search_text(repo, embedder, q, k, region)}
+    except ImportError as exc:  # encoder backend not installed in this runtime
+        raise HTTPException(status_code=503, detail="text search unavailable") from exc
 
 
 # --- User modeling (P1-B Cycle 1) dependencies. Overridable in tests. ---

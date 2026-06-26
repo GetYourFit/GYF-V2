@@ -1,5 +1,5 @@
 # GYF developer tasks. Run `make` or `make help` for the list.
-# Toolchain: Bun 1.1+ (JS workspaces), uv (Python/API), Docker (local infra).
+# Toolchain: Bun 1.1+ (JS workspaces), uv (Python/API), Apple `container` (local infra).
 
 .DEFAULT_GOAL := help
 SHELL := bash
@@ -21,11 +21,10 @@ CACHE_ENV := UV_CACHE_DIR=$(CURDIR)/.uv-cache XDG_CACHE_HOME=$(CURDIR)/.cache-lo
 # sets the same via compose/Dockerfile env.
 DEV_ENV := $(CACHE_ENV) GYF_EVENT_SINK=postgres
 
-COMPOSE := docker compose -f infra/docker-compose.yml
-# Build with the classic builder: this machine's ~/.docker/buildx/activity dir is locked by
-# macOS ("operation not permitted"), which aborts BuildKit. Drop the env prefix once buildx is
-# writable again (restart Docker Desktop, or grant the terminal Full Disk Access).
-COMPOSE_BUILD := DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 $(COMPOSE)
+# Local stack runs on Apple `container` (no Docker). infra/container-stack.sh is the
+# compose replacement — it orchestrates the same images/env/ports/mounts with explicit
+# health-wait loops and gyf.test service-name DNS. Requires `container system start`.
+STACK := bash infra/container-stack.sh
 
 .PHONY: help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean deploy-web deploy-web-preview
 
@@ -66,26 +65,25 @@ dev-api: check-uv ## Run only the API service
 	cd $(API_DIR) && $(DEV_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000
 
 up: ## Start local infra only (Postgres+pgvector, Redis, Redpanda)
-	$(COMPOSE) up -d postgres redis redpanda
+	$(STACK) infra
 
 down: ## Stop everything (keeps data volumes)
-	$(COMPOSE) down
+	$(STACK) down
 
-logs: ## Tail infra logs
-	$(COMPOSE) logs -f
+logs: ## Tail web + api logs
+	$(STACK) logs
 
-stack: ## Build + run the FULL stack in Docker (web :3000, api :8000, +Postgres/Redis). Host needs no local deps.
-	$(COMPOSE_BUILD) up -d --build web api
-	@echo "web → http://localhost:3000   api → http://localhost:8000   (make stack-logs to tail)"
+stack: ## Build + run the FULL stack on Apple container (web :3000, api :8000, +Postgres/Redis). Host needs no local deps.
+	$(STACK) up --build
 
-stack-down: ## Stop the full Docker stack (keeps data volumes)
-	$(COMPOSE) down
+stack-down: ## Stop the full stack (keeps data volumes)
+	$(STACK) down
 
 stack-logs: ## Tail web + api logs
-	$(COMPOSE) logs -f web api
+	$(STACK) logs
 
 nuke: ## Stop the stack and delete its volumes + locally-built images (reclaim every byte)
-	$(COMPOSE) down -v --rmi local
+	$(STACK) nuke
 
 fmt: ## Auto-format everything (Prettier + Ruff)
 	bun run format
@@ -119,18 +117,19 @@ doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1)
 
 ci: fmt-check lint typecheck doctrine test ## Run the full local CI gate
 
-m2-bakeoff: ## Build + run the M2 encoder bake-off in Docker (weights in a named volume; reports to host)
-	docker build -f ml/Dockerfile -t gyf-ml-bakeoff .
+m2-bakeoff: ## Build + run the M2 encoder bake-off on Apple container (weights in a named volume; reports to host)
+	container build -f ml/Dockerfile -t gyf-ml-bakeoff .
 	mkdir -p eval-reports/bakeoffs
-	docker run --rm \
+	container volume inspect gyf-hf-cache >/dev/null 2>&1 || container volume create gyf-hf-cache
+	container run --rm \
 	  -v gyf-hf-cache:/cache \
-	  -v "$(CURDIR)/data/e2e:/app/data/e2e:ro" \
+	  --mount "source=$(CURDIR)/data/e2e,target=/app/data/e2e,readonly" \
 	  -v "$(CURDIR)/eval-reports/bakeoffs:/app/eval-reports/bakeoffs" \
 	  gyf-ml-bakeoff
 
-m2-clean: ## Delete the bake-off image and its model-weights volume (reclaim all Docker space)
-	-docker rmi gyf-ml-bakeoff
-	-docker volume rm gyf-hf-cache
+m2-clean: ## Delete the bake-off image and its model-weights volume (reclaim all space)
+	-container image delete gyf-ml-bakeoff
+	-container volume delete gyf-hf-cache
 
 clean: ## Remove build artifacts and caches
 	rm -rf app/.next .turbo $(API_DIR)/.pytest_cache

@@ -3,7 +3,7 @@
 #
 #   catalog ingest -> perception backfill -> live retrieval -> MRR/Recall baseline
 #
-# Reproducible and self-contained: a Dockerized Postgres+pgvector, a real
+# Reproducible and self-contained: an Apple-container Postgres+pgvector, a real
 # HuggingFace fashion subset, the actual ingest/backfill/eval CLIs. Nothing here
 # touches the live Supabase. Run from the repo root:  bash scripts/e2e_workstream_a.sh
 #
@@ -31,11 +31,11 @@ PER_CATEGORY="${PER_CATEGORY:-12}"
 api()   { ( cd "$ROOT/services/api" && uv run --extra postgres --extra migrate "$@" ); }
 mlrun() { ( cd "$ROOT/ml" && uv run --extra postgres --extra perception "$@" ); }
 
-echo "==> 1/6  start pgvector (docker)"
-docker rm -f gyf-pg >/dev/null 2>&1 || true
-docker run -d --name gyf-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=gyf \
+echo "==> 1/6  start pgvector (apple container)"
+container delete --force gyf-pg >/dev/null 2>&1 || true
+container run -d --name gyf-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=gyf \
   -p 5433:5432 pgvector/pgvector:pg16 >/dev/null
-until docker exec gyf-pg pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
+until container exec gyf-pg pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
 
 echo "==> 2/6  apply migrations (alembic)"
 api python -m alembic upgrade head
@@ -57,4 +57,4 @@ mlrun python -m pipelines.backfill
 echo "==> 6/6  retrieval eval (MRR / Recall + category accuracy)"
 mlrun python "$ROOT/scripts/eval_e2e.py"
 
-echo "==> done. (stop the db with: docker rm -f gyf-pg)"
+echo "==> done. (stop the db with: container delete -f gyf-pg)"

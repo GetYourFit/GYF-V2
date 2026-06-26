@@ -81,3 +81,4 @@ ml/*.png
 packages/types/openapi.json
 .uv-cache/
 .uv-python/
+.vercel
