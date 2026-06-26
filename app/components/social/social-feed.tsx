@@ -12,7 +12,10 @@ const MOCK_POSTS: SocialPost[] = [
     id: "1",
     author: { name: "Aria Khan", handle: "ariakhan", avatarInitial: "A" },
     caption: "Perfect casual Friday look — linen over fitted trousers.",
-    outfit: { items: ["Cream linen shirt", "Slim charcoal trousers", "White leather loafers"], occasion: "Casual" },
+    outfit: {
+      items: ["Cream linen shirt", "Slim charcoal trousers", "White leather loafers"],
+      occasion: "Casual",
+    },
     likes: 84,
     comments: 12,
     createdAt: "2026-06-24T10:00:00Z",
@@ -21,7 +24,10 @@ const MOCK_POSTS: SocialPost[] = [
     id: "2",
     author: { name: "Marco D.", handle: "marcod", avatarInitial: "M" },
     caption: "Wedding guest done right — no florals, just structure.",
-    outfit: { items: ["Navy double-breasted blazer", "Ivory trousers", "Brown oxford shoes"], occasion: "Wedding" },
+    outfit: {
+      items: ["Navy double-breasted blazer", "Ivory trousers", "Brown oxford shoes"],
+      occasion: "Wedding",
+    },
     likes: 211,
     comments: 37,
     createdAt: "2026-06-23T18:30:00Z",
@@ -39,7 +45,10 @@ const MOCK_POSTS: SocialPost[] = [
     id: "4",
     author: { name: "James O.", handle: "jamesofit", avatarInitial: "J" },
     caption: "Streetwear minimal — less is more.",
-    outfit: { items: ["Black oversized tee", "Carpenter pants", "Air Force 1"], occasion: "Casual" },
+    outfit: {
+      items: ["Black oversized tee", "Carpenter pants", "Air Force 1"],
+      occasion: "Casual",
+    },
     likes: 147,
     comments: 23,
     createdAt: "2026-06-21T09:15:00Z",
@@ -79,11 +88,7 @@ export function SocialFeed() {
         <Plus size={24} />
       </motion.button>
 
-      <CreatePostSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        onPost={handlePost}
-      />
+      <CreatePostSheet open={sheetOpen} onClose={() => setSheetOpen(false)} onPost={handlePost} />
     </>
   );
 }

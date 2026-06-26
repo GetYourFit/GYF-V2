@@ -26,8 +26,14 @@ export function CreatePostSheet({ open, onClose, onPost }: CreatePostSheetProps)
 
   function handleImage(file: File | null) {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    if (!file) { setPreviewUrl(null); return; }
-    if (!file.type.startsWith("image/")) { setError("Please choose an image."); return; }
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image.");
+      return;
+    }
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
   }
@@ -39,11 +45,17 @@ export function CreatePostSheet({ open, onClose, onPost }: CreatePostSheetProps)
     setError(null);
   }
 
-  function handleClose() { reset(); onClose(); }
+  function handleClose() {
+    reset();
+    onClose();
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!caption.trim()) { setError("Add a caption before posting."); return; }
+    if (!caption.trim()) {
+      setError("Add a caption before posting.");
+      return;
+    }
     onPost({
       id: randomId(),
       author: { name: "You", handle: "you", avatarInitial: "Y" },
@@ -63,13 +75,17 @@ export function CreatePostSheet({ open, onClose, onPost }: CreatePostSheetProps)
         <>
           <motion.div
             key="bd"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 bg-black/70"
             onClick={handleClose}
           />
           <motion.aside
             key="sheet"
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-none border-t border-[var(--border-mid)] bg-[var(--surface)]"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -82,13 +98,20 @@ export function CreatePostSheet({ open, onClose, onPost }: CreatePostSheetProps)
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
               <p className="t-title text-[var(--text)]">New post</p>
-              <button type="button" aria-label="Close" onClick={handleClose}
-                className="text-[var(--text-faint)] hover:text-[var(--text)]">
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={handleClose}
+                className="text-[var(--text-faint)] hover:text-[var(--text)]"
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5"
+            >
               {/* Image picker */}
               <button
                 type="button"
@@ -116,18 +139,27 @@ export function CreatePostSheet({ open, onClose, onPost }: CreatePostSheetProps)
 
               {/* Caption */}
               <div className="flex flex-col gap-2">
-                <label htmlFor={captionId} className="t-label text-[var(--text-faint)]">Caption</label>
+                <label htmlFor={captionId} className="t-label text-[var(--text-faint)]">
+                  Caption
+                </label>
                 <textarea
                   id={captionId}
                   rows={3}
                   placeholder="Describe your outfit…"
                   value={caption}
-                  onChange={(e) => { setCaption(e.target.value); setError(null); }}
+                  onChange={(e) => {
+                    setCaption(e.target.value);
+                    setError(null);
+                  }}
                   className="w-full resize-none border border-[var(--border-mid)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors"
                 />
               </div>
 
-              {error && <p role="alert" className="t-caption text-[var(--error)]">{error}</p>}
+              {error && (
+                <p role="alert" className="t-caption text-[var(--error)]">
+                  {error}
+                </p>
+              )}
 
               <Button type="submit" variant="primary" size="lg" className="w-full mt-auto">
                 Post

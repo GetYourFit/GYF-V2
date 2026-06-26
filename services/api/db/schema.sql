@@ -259,5 +259,3 @@ ALTER TABLE ONLY public.profiles
 
 
 -- PostgreSQL database dump complete
-
-

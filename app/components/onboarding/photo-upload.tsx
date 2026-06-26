@@ -72,7 +72,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       if (e instanceof ApiError && e.isUnavailable) {
         setError("Photo onboarding isn’t available right now — please use the form below.");
       } else if (e instanceof ApiError && e.status === 403) {
-        setError('Please accept “Process my data” consent below, then try again.');
+        setError("Please accept “Process my data” consent below, then try again.");
       } else {
         setError(e instanceof Error ? e.message : "Could not read that photo. Try another.");
       }
@@ -86,8 +86,8 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       <div>
         <p className="t-label text-[var(--text)]">Estimate from a photo</p>
         <p className="t-caption mt-1">
-          Upload one clear, well-lit photo and GYF will estimate your skin tone and body type —
-          you can edit anything it gets wrong. The image is processed privately and not stored.
+          Upload one clear, well-lit photo and GYF will estimate your skin tone and body type — you
+          can edit anything it gets wrong. The image is processed privately and not stored.
         </p>
       </div>
 
@@ -102,11 +102,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       >
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={previewUrl}
-            alt="Selected photo preview"
-            className="max-h-48 object-contain"
-          />
+          <img src={previewUrl} alt="Selected photo preview" className="max-h-48 object-contain" />
         ) : (
           <span className="t-body text-[var(--text-faint)]">
             <span className="text-[var(--text)]">Choose a photo</span> or drag it here
@@ -135,7 +131,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       )}
       {done && missed && (
         <p role="status" className="t-caption text-[var(--text-mid)]">
-          Couldn't read your features from this photo — try a clearer, well-lit, front-facing
+          Couldn&apos;t read your features from this photo — try a clearer, well-lit, front-facing
           photo, or just set the fields below manually.
         </p>
       )}

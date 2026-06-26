@@ -14,8 +14,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </Link>
         <div>
           <p className="t-display text-[clamp(2rem,4vw,3.5rem)] text-[var(--text)] leading-[1.05]">
-            Your style,<br />
-            <em>finally</em><br />
+            Your style,
+            <br />
+            <em>finally</em>
+            <br />
             intelligent.
           </p>
           <p className="mt-6 t-caption max-w-[340px]">

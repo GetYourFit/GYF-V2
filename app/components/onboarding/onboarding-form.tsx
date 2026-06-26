@@ -163,7 +163,10 @@ export function OnboardingForm() {
         </Field>
       </Section>
 
-      <Section title="Style" hint="Pick any aesthetics you lean toward, and what you dress for most.">
+      <Section
+        title="Style"
+        hint="Pick any aesthetics you lean toward, and what you dress for most."
+      >
         <fieldset>
           <legend className="t-label mb-3 text-[var(--text-faint)]">Style intent</legend>
           <div className="flex flex-wrap gap-2">

@@ -35,8 +35,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
     set("q", e.target.value);
   }
 
-  const hasActive =
-    filters.occasion || filters.style || filters.maxPrice || filters.q;
+  const hasActive = filters.occasion || filters.style || filters.maxPrice || filters.q;
 
   return (
     <div className="flex flex-col gap-3">
@@ -77,7 +76,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         >
           <option value="">All occasions</option>
           {OCCASIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
           ))}
         </select>
 
@@ -90,7 +91,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         >
           <option value="">All styles</option>
           {STYLE_INTENTS.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
           ))}
         </select>
 
@@ -113,7 +116,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           className="border border-[var(--border-mid)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--text-mid)] focus:border-[var(--accent)] focus:outline-none transition-colors appearance-none"
         >
           {SORT_OPTIONS.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
           ))}
         </select>
 
@@ -121,7 +126,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         {hasActive && (
           <button
             type="button"
-            onClick={() => onChange({ q: "", occasion: "", style: "", maxPrice: "", sort: "relevance" })}
+            onClick={() =>
+              onChange({ q: "", occasion: "", style: "", maxPrice: "", sort: "relevance" })
+            }
             className="t-caption text-[var(--text-faint)] underline underline-offset-4 hover:text-[var(--text)] transition-colors"
           >
             Clear

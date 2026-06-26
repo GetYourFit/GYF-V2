@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { GarmentCategory, WardrobeItem } from "@/lib/wardrobe-store";
@@ -32,24 +32,27 @@ function Skeleton() {
 }
 
 export function WardrobeGrid() {
-  const [mounted, setMounted] = useState(false);
-  const [items, setItems] = useState<WardrobeItem[]>([]);
+  // Store-backed list; `[]` on the server so SSR + first client render agree.
+  const items = useSyncExternalStore(
+    wardrobeStore.subscribe,
+    wardrobeStore.getSnapshot,
+    wardrobeStore.getServerSnapshot,
+  );
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [filter, setFilter] = useState<Filter>(ALL);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  useEffect(() => {
-    setItems(wardrobeStore.getAll());
-    setMounted(true);
-  }, []);
-
   function handleAdd(item: Omit<WardrobeItem, "addedAt">) {
-    const added = wardrobeStore.add(item);
-    setItems((prev) => [added, ...prev]);
+    // Adding emits a store update, which re-renders this list.
+    wardrobeStore.add(item);
   }
 
   function handleRemove(id: string) {
     wardrobeStore.remove(id);
-    setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
   const visible = filter === ALL ? items : items.filter((i) => i.category === filter);
@@ -122,10 +125,7 @@ export function WardrobeGrid() {
           </Button>
         </motion.div>
       ) : (
-        <motion.div
-          layout
-          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
-        >
+        <motion.div layout className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <AnimatePresence mode="popLayout">
             {visible.map((item) => (
               <GarmentCard key={item.id} item={item} onRemove={handleRemove} />
@@ -134,11 +134,7 @@ export function WardrobeGrid() {
         </motion.div>
       )}
 
-      <AddGarmentSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        onAdd={handleAdd}
-      />
+      <AddGarmentSheet open={sheetOpen} onClose={() => setSheetOpen(false)} onAdd={handleAdd} />
     </>
   );
 }

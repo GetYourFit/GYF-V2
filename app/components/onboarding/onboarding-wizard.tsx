@@ -35,9 +35,9 @@ const EMPTY: ProfileInput = {
 };
 
 const STEPS = [
-  { id: "you",     label: "You"     },
-  { id: "style",   label: "Style"   },
-  { id: "budget",  label: "Budget"  },
+  { id: "you", label: "You" },
+  { id: "style", label: "Style" },
+  { id: "budget", label: "Budget" },
   { id: "privacy", label: "Privacy" },
 ] as const;
 
@@ -146,9 +146,9 @@ export function OnboardingWizard() {
   const currentStepId: StepId = STEPS[step]!.id;
 
   const variants = {
-    enter:  (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
+    enter: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit:   (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0 }),
+    exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0 }),
   };
 
   return (
@@ -195,22 +195,12 @@ export function OnboardingWizard() {
             className="flex flex-col gap-6"
           >
             {currentStepId === "you" && (
-              <StepYou
-                form={form}
-                set={set}
-                applyEstimated={applyEstimated}
-              />
+              <StepYou form={form} set={set} applyEstimated={applyEstimated} />
             )}
             {currentStepId === "style" && (
-              <StepStyle
-                form={form}
-                set={set}
-                toggleStyle={toggleStyle}
-              />
+              <StepStyle form={form} set={set} toggleStyle={toggleStyle} />
             )}
-            {currentStepId === "budget" && (
-              <StepBudget budget={budget} set={set} />
-            )}
+            {currentStepId === "budget" && <StepBudget budget={budget} set={set} />}
             {currentStepId === "privacy" && (
               <StepPrivacy consent={consent} setConsent={setConsent} />
             )}
@@ -229,12 +219,7 @@ export function OnboardingWizard() {
       <div className="flex items-center justify-between gap-3 border-t border-[var(--rule)] pt-6">
         <div className="flex gap-3">
           {step > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => goTo(step - 1)}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={() => goTo(step - 1)}>
               <ChevronLeft className="h-4 w-4" aria-hidden />
               Back
             </Button>
@@ -411,7 +396,9 @@ function StepBudget({
               options={CURRENCIES}
               placeholder="USD"
               value={budget.currency ?? "USD"}
-              onChange={(e) => set("budget_range", { ...budget, currency: e.target.value || "USD" })}
+              onChange={(e) =>
+                set("budget_range", { ...budget, currency: e.target.value || "USD" })
+              }
             />
           )}
         </Field>

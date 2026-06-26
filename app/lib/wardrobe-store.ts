@@ -33,6 +33,17 @@ function read(): WardrobeItem[] {
   }
 }
 
+// Cached snapshot for `useSyncExternalStore` (stable reference between renders;
+// invalidated on write). Recomputed lazily on read.
+let snapshot: WardrobeItem[] | null = null;
+const EMPTY: WardrobeItem[] = [];
+const listeners = new Set<() => void>();
+
+function emit(): void {
+  snapshot = null;
+  for (const cb of listeners) cb();
+}
+
 function write(items: WardrobeItem[]): void {
   if (typeof window === "undefined") return;
   try {
@@ -40,11 +51,30 @@ function write(items: WardrobeItem[]): void {
   } catch {
     // storage quota exceeded
   }
+  emit();
 }
 
 export const wardrobeStore = {
   getAll(): WardrobeItem[] {
     return read();
+  },
+
+  /** Subscribe to store changes (for `useSyncExternalStore`). */
+  subscribe(cb: () => void): () => void {
+    listeners.add(cb);
+    return () => listeners.delete(cb);
+  },
+
+  /** Stable client snapshot; `[]` on the server (localStorage is client-only). */
+  getSnapshot(): WardrobeItem[] {
+    if (typeof window === "undefined") return EMPTY;
+    if (snapshot === null) snapshot = read();
+    return snapshot;
+  },
+
+  /** Server snapshot for SSR/hydration — always empty. */
+  getServerSnapshot(): WardrobeItem[] {
+    return EMPTY;
   },
 
   getByCategory(category: GarmentCategory): WardrobeItem[] {

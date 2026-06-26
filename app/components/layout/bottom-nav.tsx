@@ -7,11 +7,11 @@ import { Sparkles, Compass, Bookmark, Users, User } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const TAB_ITEMS = [
-  { href: "/",        icon: Sparkles, label: "Stylist"  },
-  { href: "/explore", icon: Compass,  label: "Explore"  },
-  { href: "/saved",   icon: Bookmark, label: "Saved"    },
-  { href: "/social",  icon: Users,    label: "Social"   },
-  { href: "/profile", icon: User,     label: "Profile"  },
+  { href: "/", icon: Sparkles, label: "Stylist" },
+  { href: "/explore", icon: Compass, label: "Explore" },
+  { href: "/saved", icon: Bookmark, label: "Saved" },
+  { href: "/social", icon: Users, label: "Social" },
+  { href: "/profile", icon: User, label: "Profile" },
 ] as const;
 
 export function BottomNav() {
@@ -36,7 +36,10 @@ export function BottomNav() {
             )}
           >
             {active && (
-              <span className="absolute top-0 left-1/2 h-[1px] w-8 -translate-x-1/2 bg-[var(--accent)]" aria-hidden />
+              <span
+                className="absolute top-0 left-1/2 h-[1px] w-8 -translate-x-1/2 bg-[var(--accent)]"
+                aria-hidden
+              />
             )}
             <Icon className="h-[22px] w-[22px] shrink-0" aria-hidden />
             <span className="t-mono text-[9px] tracking-[0.12em]">{label}</span>

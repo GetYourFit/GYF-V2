@@ -34,10 +34,7 @@ export function StylistControls({
       className="flex flex-col gap-4 border border-[var(--border)] bg-[var(--surface)] p-5 sm:flex-row sm:items-end"
     >
       <div className="flex-1">
-        <label
-          htmlFor="goal"
-          className="t-label mb-2 block text-[var(--text-faint)]"
-        >
+        <label htmlFor="goal" className="t-label mb-2 block text-[var(--text-faint)]">
           Tell your stylist a goal
         </label>
         <input
@@ -50,10 +47,7 @@ export function StylistControls({
         />
       </div>
       <div className="sm:w-48">
-        <label
-          htmlFor="occasion"
-          className="t-label mb-2 block text-[var(--text-faint)]"
-        >
+        <label htmlFor="occasion" className="t-label mb-2 block text-[var(--text-faint)]">
           Occasion
         </label>
         <Select

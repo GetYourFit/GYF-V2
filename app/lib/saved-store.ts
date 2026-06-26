@@ -32,6 +32,18 @@ function read(): SavedLook[] {
   }
 }
 
+// A cached snapshot so `useSyncExternalStore` gets a referentially-stable value
+// between renders (returning a fresh array each call would loop). Invalidated on
+// every write; recomputed lazily on read.
+let snapshot: SavedLook[] | null = null;
+const EMPTY: SavedLook[] = [];
+const listeners = new Set<() => void>();
+
+function emit(): void {
+  snapshot = null;
+  for (const cb of listeners) cb();
+}
+
 function write(looks: SavedLook[]): void {
   if (typeof window === "undefined") return;
   try {
@@ -39,11 +51,30 @@ function write(looks: SavedLook[]): void {
   } catch {
     // storage quota exceeded — silently no-op
   }
+  emit();
 }
 
 export const savedStore = {
   getAll(): SavedLook[] {
     return read();
+  },
+
+  /** Subscribe to store changes (for `useSyncExternalStore`). */
+  subscribe(cb: () => void): () => void {
+    listeners.add(cb);
+    return () => listeners.delete(cb);
+  },
+
+  /** Stable client snapshot; `[]` on the server (localStorage is client-only). */
+  getSnapshot(): SavedLook[] {
+    if (typeof window === "undefined") return EMPTY;
+    if (snapshot === null) snapshot = read();
+    return snapshot;
+  },
+
+  /** Server snapshot for SSR/hydration — always empty (no localStorage). */
+  getServerSnapshot(): SavedLook[] {
+    return EMPTY;
   },
 
   has(id: string): boolean {

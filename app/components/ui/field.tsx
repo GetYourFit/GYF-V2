@@ -23,10 +23,7 @@ export function Field({ label, children, error, hint, className }: FieldProps) {
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label
-        htmlFor={id}
-        className="t-label text-[var(--text-faint)]"
-      >
+      <label htmlFor={id} className="t-label text-[var(--text-faint)]">
         {label}
       </label>
       {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}

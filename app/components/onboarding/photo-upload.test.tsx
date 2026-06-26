@@ -43,10 +43,12 @@ describe("PhotoUpload", () => {
     render(<PhotoUpload onEstimated={onEstimated} />);
     pickFile("image/png");
     fireEvent.click(screen.getByRole("button", { name: /estimate from photo/i }));
-    await waitFor(() => expect(onEstimated).toHaveBeenCalledWith({
-      body_type: "hourglass",
-      source: "photo",
-    }));
+    await waitFor(() =>
+      expect(onEstimated).toHaveBeenCalledWith({
+        body_type: "hourglass",
+        source: "photo",
+      }),
+    );
     expect(screen.getByRole("status")).toHaveTextContent(/estimated/i);
   });
 

@@ -12,8 +12,7 @@ const VARIANTS: Record<Variant, string> = {
     "border border-[var(--border-mid)] bg-transparent text-[var(--text)] hover:border-[var(--border-hi)] hover:bg-[var(--surface-2)] focus-visible:ring-[var(--border-hi)]",
   ghost:
     "text-[var(--text-mid)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] focus-visible:ring-[var(--border-mid)]",
-  danger:
-    "bg-[var(--error)] text-white hover:opacity-90 focus-visible:ring-[var(--error)]",
+  danger: "bg-[var(--error)] text-white hover:opacity-90 focus-visible:ring-[var(--error)]",
 };
 
 const SIZES: Record<Size, string> = {

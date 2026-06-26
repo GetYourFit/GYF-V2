@@ -48,7 +48,9 @@ describe("readAccessToken", () => {
   });
 
   it("returns null for a malformed cookie value", () => {
-    expect(readAccessToken(requestWithCookies({ [KEY]: "base64-@@@notbase64@@@" }), KEY)).toBeNull();
+    expect(
+      readAccessToken(requestWithCookies({ [KEY]: "base64-@@@notbase64@@@" }), KEY),
+    ).toBeNull();
     expect(readAccessToken(requestWithCookies({ [KEY]: "base64-" }), KEY)).toBeNull();
   });
 

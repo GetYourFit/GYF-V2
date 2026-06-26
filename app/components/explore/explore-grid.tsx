@@ -36,42 +36,52 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const query = [filters.q || "fashion", filters.occasion, filters.style]
-    .filter(Boolean)
-    .join(" ");
+  const query = [filters.q || "fashion", filters.occasion, filters.style].filter(Boolean).join(" ");
 
-  async function loadPage(pageNum: number, reset: boolean) {
-    if (loading) return;
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    setLoading(true);
-    setError(null);
-    try {
-      const api = browserApi();
-      const results = await api.search(query, { k: PAGE_SIZE });
-      const filtered = applyClientFilters(results, filters);
+  const loadPage = useCallback(
+    async (pageNum: number, reset: boolean) => {
+      // Append loads yield while one is in flight; a reset (filter change) always
+      // proceeds, aborting any prior request first.
+      if (loading && !reset) return;
+      abortRef.current?.abort();
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
       if (reset) {
-        setItems(filtered);
-      } else {
-        setItems((prev) => [...prev, ...filtered]);
+        setItems([]);
+        setPage(0);
+        setHasMore(true);
       }
-      setPage(pageNum);
-      setHasMore(results.length === PAGE_SIZE);
-    } catch (e) {
-      if ((e as { name?: string }).name === "AbortError") return;
-      setError(e instanceof Error ? e.message : "Could not load items.");
-    } finally {
-      setLoading(false);
-    }
-  }
+      setLoading(true);
+      setError(null);
+      try {
+        const api = browserApi();
+        const results = await api.search(query, { k: PAGE_SIZE });
+        const filtered = applyClientFilters(results, filters);
+        if (reset) {
+          setItems(filtered);
+        } else {
+          setItems((prev) => [...prev, ...filtered]);
+        }
+        setPage(pageNum);
+        setHasMore(results.length === PAGE_SIZE);
+      } catch (e) {
+        if ((e as { name?: string }).name === "AbortError") return;
+        setError(e instanceof Error ? e.message : "Could not load items.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    // `query`/`filters` capture the current filter set; intentionally the only deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [query, filters],
+  );
 
-  // Reset when filters change
+  // Reload from scratch whenever the filters change. This is the legitimate
+  // "fetch on dependency change" effect; the reset setState lives in loadPage's
+  // reset branch, which the rule flags transitively — intentional here.
   useEffect(() => {
-    setItems([]);
-    setPage(0);
-    setHasMore(true);
-    loadPage(0, true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadPage(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.q, filters.occasion, filters.style, filters.maxPrice, filters.sort]);
 
@@ -112,7 +122,9 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
           <div className="absolute inset-6 border border-[var(--border-hi)]" />
         </div>
         <p className="t-title text-[var(--text)]">No items found</p>
-        <p className="t-caption text-[var(--text-faint)]">Try a different search or adjust your filters.</p>
+        <p className="t-caption text-[var(--text-faint)]">
+          Try a different search or adjust your filters.
+        </p>
       </div>
     );
   }
@@ -143,7 +155,9 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
       )}
 
       {error && (
-        <p role="alert" className="mt-6 t-caption text-[var(--error)] text-center">{error}</p>
+        <p role="alert" className="mt-6 t-caption text-[var(--error)] text-center">
+          {error}
+        </p>
       )}
 
       {/* Infinite scroll sentinel */}

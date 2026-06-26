@@ -15,11 +15,16 @@ export function AppIntro() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem(SESSION_KEY)) return;
-    setVisible(true);
     sessionStorage.setItem(SESSION_KEY, "1");
 
+    // Reveal on the next frame so the state update is not a synchronous setState
+    // in the effect body (avoids cascading-render lint) while staying instant.
+    const raf = requestAnimationFrame(() => setVisible(true));
     const t = setTimeout(() => setVisible(false), 2800);
-    return () => clearTimeout(t);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+    };
   }, []);
 
   return (

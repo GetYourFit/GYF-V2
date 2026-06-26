@@ -4,11 +4,7 @@ export function ConfidenceMeter({ value }: { value: number }) {
   const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
   const label = pct >= 75 ? "High" : pct >= 50 ? "Moderate" : "Exploring";
   const barColor =
-    pct >= 75
-      ? "bg-[var(--text)]"
-      : pct >= 50
-        ? "bg-[var(--text-mid)]"
-        : "bg-[var(--text-faint)]";
+    pct >= 75 ? "bg-[var(--text)]" : pct >= 50 ? "bg-[var(--text-mid)]" : "bg-[var(--text-faint)]";
 
   return (
     <div className="flex items-center gap-3" title={`Confidence: ${pct}%`}>

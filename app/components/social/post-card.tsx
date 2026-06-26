@@ -80,7 +80,10 @@ export function PostCard({ post, onDressLikeMe }: PostCardProps) {
         {post.outfit?.items && post.outfit.items.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {post.outfit.items.map((item, i) => (
-              <span key={i} className="t-mono text-[9px] border border-[var(--border)] px-2 py-0.5 text-[var(--text-faint)]">
+              <span
+                key={i}
+                className="t-mono text-[9px] border border-[var(--border)] px-2 py-0.5 text-[var(--text-faint)]"
+              >
                 {item}
               </span>
             ))}
@@ -98,7 +101,9 @@ export function PostCard({ post, onDressLikeMe }: PostCardProps) {
         >
           <Heart
             size={20}
-            className={liked ? "fill-[var(--error)] text-[var(--error)]" : "text-[var(--text-faint)]"}
+            className={
+              liked ? "fill-[var(--error)] text-[var(--error)]" : "text-[var(--text-faint)]"
+            }
           />
           <span className="t-mono text-[11px] text-[var(--text-faint)]">{likeCount}</span>
         </button>

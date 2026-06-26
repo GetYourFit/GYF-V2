@@ -36,7 +36,14 @@ async function waitForGuardToAccept(path: string, timeoutMs = 4000): Promise<voi
 
 const COPY: Record<
   Mode,
-  { title: string; subtitle: string; cta: string; altPrompt: string; altHref: string; altLabel: string }
+  {
+    title: string;
+    subtitle: string;
+    cta: string;
+    altPrompt: string;
+    altHref: string;
+    altLabel: string;
+  }
 > = {
   login: {
     title: "Welcome back",

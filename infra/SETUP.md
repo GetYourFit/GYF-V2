@@ -5,14 +5,14 @@ tokens. Follow top to bottom.
 
 ## 1. Create free-tier accounts
 
-| Service                                 | Purpose                                  | Free tier                          |
-| --------------------------------------- | ---------------------------------------- | ---------------------------------- |
-| [Vercel](https://vercel.com)            | Web hosting (Next.js) + CD target        | Hobby free                         |
-| [Render](https://render.com)            | API hosting (FastAPI Docker)             | Free web service                   |
-| [Supabase](https://supabase.com)        | Postgres + **pgvector** + storage + auth | Free project                       |
-| [Upstash](https://upstash.com)          | Redis (cache, scale-to-zero)             | Free                               |
-| (later) Redpanda Cloud / Confluent      | Event broker                             | — uses local JSONL sink until then |
-| (later) Hugging Face                    | ZeroGPU model serving                    | Free                               |
+| Service                            | Purpose                                  | Free tier                          |
+| ---------------------------------- | ---------------------------------------- | ---------------------------------- |
+| [Vercel](https://vercel.com)       | Web hosting (Next.js) + CD target        | Hobby free                         |
+| [Render](https://render.com)       | API hosting (FastAPI Docker)             | Free web service                   |
+| [Supabase](https://supabase.com)   | Postgres + **pgvector** + storage + auth | Free project                       |
+| [Upstash](https://upstash.com)     | Redis (cache, scale-to-zero)             | Free                               |
+| (later) Redpanda Cloud / Confluent | Event broker                             | — uses local JSONL sink until then |
+| (later) Hugging Face               | ZeroGPU model serving                    | Free                               |
 
 > **Deployment model.** Terraform provisions only the stateful backends
 > (Supabase, Upstash). The **web** ships to Vercel (project `gyf-v2-app`) via the

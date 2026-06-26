@@ -2,26 +2,30 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import { SavedCard } from "@/components/saved/saved-card";
 import { browserApi } from "@/lib/api-client";
-import { savedStore, type SavedLook } from "@/lib/saved-store";
+import { savedStore } from "@/lib/saved-store";
 
 const lux = [0.16, 1, 0.3, 1] as const;
 
 export function SavedGrid() {
-  const [looks, setLooks] = useState<SavedLook[]>([]);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setLooks(savedStore.getAll());
-    setMounted(true);
-  }, []);
+  // Subscribe to the client store; `[]` on the server so SSR + first client
+  // render agree (the skeleton shows until `mounted` flips client-side).
+  const looks = useSyncExternalStore(
+    savedStore.subscribe,
+    savedStore.getSnapshot,
+    savedStore.getServerSnapshot,
+  );
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   function remove(id: string) {
-    // Optimistic local remove
-    setLooks((prev) => prev.filter((l) => l.id !== id));
+    // Removing emits a store update, which re-renders this list.
     savedStore.remove(id);
 
     // Best-effort API signal — skip feedback so the ranker learns this look
@@ -57,10 +61,7 @@ export function SavedGrid() {
         {looks.length} saved {looks.length === 1 ? "look" : "looks"}
       </p>
 
-      <motion.div
-        layout
-        className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-      >
+      <motion.div layout className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence mode="popLayout">
           {looks.map((look, i) => (
             <motion.div
@@ -95,7 +96,8 @@ function EmptyState() {
 
       <p className="t-headline text-[var(--text)]">No saved looks yet</p>
       <p className="mt-3 t-caption max-w-[260px] mx-auto">
-        When you find an outfit you love, tap <strong className="text-[var(--text)]">Save look</strong> — it gathers here.
+        When you find an outfit you love, tap{" "}
+        <strong className="text-[var(--text)]">Save look</strong> — it gathers here.
       </p>
       <Link
         href="/"

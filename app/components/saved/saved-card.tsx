@@ -73,7 +73,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
           {outfit.items.map((item) => {
             const priceStr =
               item.price != null
-                ? `${({ USD: "$", EUR: "€", GBP: "£", INR: "₹" }[item.currency ?? "USD"] ?? "")}${Math.round(item.price)}`
+                ? `${{ USD: "$", EUR: "€", GBP: "£", INR: "₹" }[item.currency ?? "USD"] ?? ""}${Math.round(item.price)}`
                 : null;
             return (
               <li key={item.item_id} className="flex items-baseline justify-between gap-3">
@@ -88,9 +88,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
 
         {/* Footer: date saved + actions */}
         <div className="mt-auto flex items-center justify-between gap-3 pt-1 border-t border-[var(--rule)]">
-          <span className="t-mono text-[var(--text-faint)]">
-            Saved {formatDate(look.savedAt)}
-          </span>
+          <span className="t-mono text-[var(--text-faint)]">Saved {formatDate(look.savedAt)}</span>
 
           <div className="flex items-center gap-2">
             {shopItem?.affiliate_url && (

@@ -34,10 +34,7 @@ function decodeJson(segment: string): Record<string, unknown> {
  *  middleware runtime. A direct crypto.subtle import+verify is reliable there and
  *  keeps the guard free of any session/lock machinery. JWT ES256 signatures are
  *  raw r‖s (64 bytes), exactly the form WebCrypto's ECDSA verify expects. */
-export async function verifyAccessToken(
-  token: string,
-  jwks: JwkSet,
-): Promise<JwtClaims | null> {
+export async function verifyAccessToken(token: string, jwks: JwkSet): Promise<JwtClaims | null> {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [headerSeg, payloadSeg, signatureSeg] = parts;
