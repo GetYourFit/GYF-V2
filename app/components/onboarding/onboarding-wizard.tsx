@@ -21,7 +21,7 @@ import {
   STYLE_INTENTS,
   UNDERTONES,
 } from "@/lib/vocab";
-import type { Profile, ProfileInput } from "@gyf/types";
+import type { BudgetRange, Profile, ProfileInput } from "@gyf/types";
 
 type ConsentState = Record<string, boolean>;
 
@@ -370,7 +370,7 @@ function StepBudget({
   budget,
   set,
 }: {
-  budget: { min: number | null; max: number | null; currency: string };
+  budget: BudgetRange;
   set: <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) => void;
 }) {
   return (
