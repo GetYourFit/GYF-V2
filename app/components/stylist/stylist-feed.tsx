@@ -8,6 +8,7 @@ import { OutfitCard } from "@/components/stylist/outfit-card";
 import { StylistControls, type StylistQuery } from "@/components/stylist/stylist-controls";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
+import { savedStore } from "@/lib/saved-store";
 import type { InteractionAction } from "@gyf/types";
 import type { OutfitRecommendation } from "@gyf/types";
 
@@ -82,7 +83,17 @@ export function StylistFeed() {
   }
 
   function onSave(index: number) {
+    if (!data) return;
+    const outfit = data.outfits[index];
+    if (!outfit) return;
     setSaved((s) => new Set(s).add(index));
+    // Persist to local store so Saved page can display it without a backend read.
+    savedStore.save({
+      id: `${data.recommendation_id}:${index}`,
+      outfit,
+      recommendation_id: data.recommendation_id,
+      occasion: data.occasion,
+    });
     void sendFeedback(index, "save").catch(() =>
       setSaved((s) => {
         const next = new Set(s);
