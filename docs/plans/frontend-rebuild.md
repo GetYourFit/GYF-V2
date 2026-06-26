@@ -675,7 +675,7 @@ Before any phase is considered complete:
 - `lib/vocab.ts` — constants untouched
 - `lib/cn.ts` — utility untouched
 - `middleware.ts` — auth middleware untouched
-- `next.config.ts`, `wrangler.jsonc`, `open-next.config.ts` — build config untouched
+- `next.config.ts`, `vercel.json` — build config untouched
 - All backend contracts (`@gyf/types`, FastAPI endpoints) — strictly out of scope
 - All test files — updated only where component APIs change (prop names, etc.)
 

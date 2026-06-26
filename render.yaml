@@ -46,12 +46,11 @@ services:
         value: https://tabjvaatrikogutkrjom.supabase.co
       - key: GYF_SUPABASE_JWT_SECRET # legacy HS256 fallback (Settings → API → JWT Secret)
         sync: false
-      # The web origin is the Cloudflare Worker (see app/wrangler.jsonc). Update
-      # this to the real *.workers.dev URL (or custom domain) after the first
-      # Cloudflare deploy so CORS lets the browser in. Comma-separate to allow
-      # several origins.
+      # The web origin is the Vercel deployment (project gyf-v2-app). Update this
+      # to the custom domain once attached so CORS lets the browser in.
+      # Comma-separate to allow several origins (e.g. preview + production).
       - key: GYF_ALLOWED_ORIGINS # the web origin (public, not a secret) — exact, no trailing slash
-        value: https://gyf-web.gyf-web.workers.dev
+        value: https://gyf-v2-app.vercel.app
 
-  # The web (Next.js) is deployed on Cloudflare Workers, not Render —
-  # see app/wrangler.jsonc and `bun run cf:deploy`.
+  # The web (Next.js) is deployed on Vercel (project gyf-v2-app), not Render —
+  # Vercel's Git integration auto-deploys app/ on push; see vercel.json.

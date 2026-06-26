@@ -2,9 +2,9 @@
 # Resources here provision the stateful backing services: Postgres + pgvector
 # (Supabase) and Redis (Upstash).
 #
-# Deployment is NOT managed here. The web ships to Cloudflare Workers via the
-# `wrangler` CLI (app/wrangler.jsonc) and the API to Render (render.yaml) — both
-# CLI/blueprint driven so a private repo needs no third-party Git OAuth.
+# Deployment is NOT managed here. The web ships to Vercel (project gyf-v2-app)
+# via the Vercel Git integration (root vercel.json, framework nextjs) and the
+# API to Render (render.yaml).
 #
 # NOT YET APPLIED — requires accounts + tokens (see infra/SETUP.md).
 
@@ -36,6 +36,6 @@ resource "upstash_redis_database" "cache" {
   tls            = true
 }
 
-# Web (Cloudflare Workers) and API (Render) deploys are CLI/blueprint driven and
-# carry their own env/secrets (Cloudflare dashboard secrets + render.yaml). They
-# are intentionally not provisioned here.
+# Web (Vercel) and API (Render) deploys are Git/blueprint driven and carry their
+# own env/secrets (Vercel project env vars + render.yaml). They are intentionally
+# not provisioned here.

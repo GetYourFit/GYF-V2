@@ -6,10 +6,6 @@ SHELL := bash
 API_DIR := services/api
 WEB_DIR := app
 
-# wrangler's default config dir (~/Library/Preferences) is locked by macOS on this
-# box, so redirect XDG_CONFIG_HOME at a writable, gitignored repo-local dir.
-WRANGLER_ENV := XDG_CONFIG_HOME=$(CURDIR)/$(WEB_DIR)/.wrangler-home
-
 # Same macOS lock hits ~/.cache (uv) and ~/.cache/huggingface. Redirect every
 # cache the Python/ML toolchain touches at gitignored, repo-local dirs so the API
 # boots without manual env. Drop these once ~/.cache is writable again.
@@ -55,11 +51,11 @@ dev: check-uv ## Boot web + API together (Ctrl-C stops both)
 dev-web: ## Run only the web app
 	bun run dev
 
-deploy-web: ## Deploy web to Cloudflare Workers (set CLOUDFLARE_API_TOKEN; build inlines NEXT_PUBLIC_* from app/.env.production.local)
-	cd $(WEB_DIR) && $(WRANGLER_ENV) bun run cf:deploy
+deploy-web: ## Deploy web to Vercel prod (project gyf-v2-app; NEXT_PUBLIC_* come from the Vercel project env). Normally Git auto-deploys on push.
+	cd $(WEB_DIR) && vercel --prod
 
-deploy-web-preview: ## Build + preview the worker locally (no deploy)
-	cd $(WEB_DIR) && $(WRANGLER_ENV) bun run cf:preview
+deploy-web-preview: ## Build + deploy a Vercel preview (no prod promote)
+	cd $(WEB_DIR) && vercel
 
 dev-api: check-uv ## Run only the API service
 	cd $(API_DIR) && $(DEV_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000

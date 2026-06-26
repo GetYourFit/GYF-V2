@@ -248,20 +248,22 @@ augment with synthetic data.** All names below are standard, citable open resour
 
 ## Pillar 8 — Free-Tier Deployment & Serving Infrastructure
 
-**Recommendation (beta, ~$0):** Vercel/Cloudflare (web) + a free Postgres-with-pgvector
+**Recommendation (beta, ~$0):** Vercel (web — GYF's chosen host; Cloudflare Workers evaluated
+as an alternative) + a free Postgres-with-pgvector
 (**Supabase** or **Neon**) + **Hugging Face ZeroGPU** for diffusion/embedding inference;
 graduate to serverless GPU (**Modal**, **RunPod**) then dedicated GPU as usage grows.
 
 | Layer | Free / low-cost option | Limits & notes |
 | --- | --- | --- |
-| Web/edge | **Cloudflare Workers** free | 100K req/day, 10ms CPU/invocation — lightweight APIs only ([Render free-tier roundup](https://render.com/articles/platforms-with-a-real-free-tier-for-developers-in-2026)). |
+| Web (chosen) | **Vercel** Hobby free | Native Next.js host; Git auto-deploy, preview URLs per PR — GYF web ships here (project `gyf-v2-app`). |
+| Web/edge (alt) | **Cloudflare Workers** free | 100K req/day, 10ms CPU/invocation — lightweight APIs only; evaluated, not chosen ([Render free-tier roundup](https://render.com/articles/platforms-with-a-real-free-tier-for-developers-in-2026)). |
 | DB + vectors | **Supabase free** (500MB DB, 50K MAU, pgvector bundled) or **Neon free** (3 GiB/branch, scale-to-zero) | `pgvector` itself is $0; pay only Postgres infra ([Koyeb Postgres free tiers](https://www.koyeb.com/blog/top-postgresql-database-free-tiers-in-2026), [DigitalApplied vector DBs 2026](https://www.digitalapplied.com/blog/vector-databases-for-ai-agents-pinecone-qdrant-2026)). |
 | GPU inference | **HF Spaces + ZeroGPU** | Free: shared RTX Pro 6000 Blackwell pool, ~5 min GPU/day; PRO $9/mo → 40 min + priority; overage $1 / 10 min ([ZeroGPU docs](https://huggingface.co/docs/hub/en/spaces-zerogpu), [eesel HF pricing](https://www.eesel.ai/blog/hugging-face-pricing)). Best true-free GPU path. |
 | Serverless GPU (scale) | **Modal** ($30/mo free credit, 10 concurrent GPUs; H100 ≈ $3.95/hr), **RunPod** | Bridge to production ([RunPod serverless GPU guide](https://www.runpod.io/articles/guides/top-serverless-gpu-clouds), [Modal pricing](https://costbench.com/software/ai-gpu-cloud/modal/)). |
 | Avoid for GPU | **Fly.io, Railway** | Fly.io dropped GPU ambitions & free tier; Railway free credit ≈ a few hrs ([ExpressTech Fly.io](https://expresstech.io/7-fly-io-alternatives-in-2026-real-pricing-after-the-free-tier-died/)). |
 | Vector at scale | **Qdrant** (usage-based; self-host free) → **Milvus** (billion-scale) | Move off pgvector beyond ~50–100M vectors. |
 
-**Cost path:** $0 beta (HF ZeroGPU + Supabase/Neon + Cloudflare/Vercel) → Modal/RunPod credits
+**Cost path:** $0 beta (HF ZeroGPU + Supabase/Neon + Vercel) → Modal/RunPod credits
 for try-on bursts → dedicated GPU + Qdrant/Milvus only when scale forces it. Matches the
 brief's "free-tier first, spend only when scale demands."
 

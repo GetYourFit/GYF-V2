@@ -248,7 +248,7 @@ into a live system.
 - **DoD:** PR opens a preview URL; main deploys to staging automatically.
 
 ### C. Infra skeleton (free-tier)
-- Terraform: web (Vercel/Cloudflare), Postgres+pgvector (Supabase/Neon), Redis, object store,
+- Terraform: web (Vercel, project `gyf-v2-app`), Postgres+pgvector (Supabase/Neon), Redis, object store,
   event stream (Redpanda/managed free), secrets vault, MLflow.
 - **DoD:** all envs provisioned from IaC; reproducible; **$0**.
 

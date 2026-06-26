@@ -303,7 +303,7 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 16. **Leverage ECC skills.** Use relevant skills from the `ECC` folder whenever they apply.
 
 ### Free-tier deployment path (cost-disciplined)
-- **$0 beta:** web on **Vercel / Cloudflare Workers**; DB+vectors on **Supabase / Neon** (free pgvector); GPU inference on **Hugging Face Spaces + ZeroGPU**.
+- **$0 beta:** web on **Vercel** (project `gyf-v2-app`, Git auto-deploy of `app/`); DB+vectors on **Supabase / Neon** (free pgvector); GPU inference on **Hugging Face Spaces + ZeroGPU**.
 - **Bridge to scale:** **Modal** ($30/mo credit) / **RunPod** for try-on bursts.
 - **At scale:** dedicated GPU + Qdrant/Milvus, only when usage forces it.
 - *Avoid for GPU:* Fly.io, Railway. (Quotas change — verify at signup.)

@@ -354,7 +354,7 @@ techniques 🔜; contractual + technical access controls.
 | Cost/efficiency | Step-down diffusion, embedding caches, autoscaling GPU, CDN for media — "efficiency, optimization, security" mandate. |
 
 **Free-tier-first deployment path (cost-disciplined, per the brief).**
-- **$0 beta:** web on **Vercel / Cloudflare** (Workers free: 100K req/day) · DB+vectors on
+- **$0 beta:** web on **Vercel** (Hobby free; project `gyf-v2-app`, Git auto-deploy of `app/`) · DB+vectors on
   **Supabase** or **Neon** free pgvector · GPU inference (diffusion/embeddings) on **Hugging
   Face Spaces + ZeroGPU** (free shared GPU pool, ~5 min/day; PRO $9/mo → 40 min + priority).
 - **Bridge to scale:** **Modal** ($30/mo free credit, 10 concurrent GPUs) or **RunPod** for
