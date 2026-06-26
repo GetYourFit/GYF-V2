@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -18,7 +18,7 @@ interface AddGarmentSheetProps {
 }
 
 const CATEGORY_OPTIONS = (Object.entries(CATEGORY_LABELS) as [GarmentCategory, string][]).map(
-  ([value, label]) => ({ value, label })
+  ([value, label]) => ({ value, label }),
 );
 
 function randomId() {
@@ -26,11 +26,6 @@ function randomId() {
 }
 
 export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) {
-  const nameId = useId();
-  const categoryId = useId();
-  const brandId = useId();
-  const colorId = useId();
-
   const [name, setName] = useState("");
   const [category, setCategory] = useState<GarmentCategory>("tops");
   const [brand, setBrand] = useState("");
@@ -108,48 +103,57 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-6">
-              <Field label="Name *" htmlFor={nameId}>
-                <Input
-                  id={nameId}
-                  placeholder="e.g. White Oxford Shirt"
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); setError(null); }}
-                  autoFocus
-                />
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-6"
+            >
+              <Field label="Name *">
+                {(p) => (
+                  <Input
+                    {...p}
+                    placeholder="e.g. White Oxford Shirt"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setError(null);
+                    }}
+                    autoFocus
+                  />
+                )}
               </Field>
 
-              <Field label="Category" htmlFor={categoryId}>
-                <Select
-                  id={categoryId}
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as GarmentCategory)}
-                >
-                  {CATEGORY_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </Select>
+              <Field label="Category">
+                {(p) => (
+                  <Select
+                    {...p}
+                    options={CATEGORY_OPTIONS}
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as GarmentCategory)}
+                  />
+                )}
               </Field>
 
-              <Field label="Brand" htmlFor={brandId}>
-                <Input
-                  id={brandId}
-                  placeholder="e.g. Zara"
-                  value={brand}
-                  onChange={(e) => setBrand(e.target.value)}
-                />
+              <Field label="Brand">
+                {(p) => (
+                  <Input
+                    {...p}
+                    placeholder="e.g. Zara"
+                    value={brand}
+                    onChange={(e) => setBrand(e.target.value)}
+                  />
+                )}
               </Field>
 
-              <Field label="Color" htmlFor={colorId}>
+              <div className="flex flex-col gap-2">
+                <span className="t-label text-[var(--text-faint)]">Color</span>
                 <div className="flex items-center gap-3">
                   <input
-                    id={colorId}
                     type="color"
                     value={color || "#888888"}
                     onChange={(e) => setColor(e.target.value)}
                     className="h-10 w-14 cursor-pointer border border-[var(--border-mid)] bg-[var(--surface-2)] p-1"
                   />
-                  <span className="t-mono text-[var(--text-faint)] text-[11px]">
+                  <span className="t-mono text-[11px] text-[var(--text-faint)]">
                     {color || "none"}
                   </span>
                   {color && (
@@ -162,19 +166,23 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                     </button>
                   )}
                 </div>
-              </Field>
+              </div>
 
-              <Field label="Image URL" htmlFor={`${nameId}-img`}>
-                <Input
-                  id={`${nameId}-img`}
-                  placeholder="https://…"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                />
+              <Field label="Image URL">
+                {(p) => (
+                  <Input
+                    {...p}
+                    placeholder="https://…"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                  />
+                )}
               </Field>
 
               {error && (
-                <p role="alert" className="t-caption text-[var(--error)]">{error}</p>
+                <p role="alert" className="t-caption text-[var(--error)]">
+                  {error}
+                </p>
               )}
 
               <div className="mt-auto flex gap-3 pt-4">
