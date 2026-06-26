@@ -145,3 +145,19 @@ def reset_user_state(live_db: str):
     _clear()
     yield live_db
     _clear()
+
+
+@pytest.fixture(autouse=True)
+def _disable_rate_limit_by_default():
+    """Rate limiting uses a shared in-process counter; left on, its per-route caps
+    would couple unrelated tests (e.g. repeated photo uploads tripping the limit).
+    Disable it for the suite by default; the dedicated rate-limit test re-enables it."""
+    from app.config import settings
+    from app.ratelimit import limiter
+
+    prev = settings.rate_limit_enabled
+    settings.rate_limit_enabled = False
+    limiter.reset()
+    yield
+    settings.rate_limit_enabled = prev
+    limiter.reset()

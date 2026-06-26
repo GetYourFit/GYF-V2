@@ -88,6 +88,21 @@ class Settings(BaseSettings):
     # Fraction of transactions traced/sampled (0.0–1.0).
     trace_sample_rate: float = 1.0
 
+    # --- Rate limiting (W1, security H-3). In-process fixed-window limiter keyed by
+    # client (authenticated user when present, else IP) + route. Defaults are generous
+    # so normal use never trips; they exist to blunt abuse — GPU-cost exhaustion on
+    # photo onboarding, taste-model poisoning via feedback-stuffing, request floods.
+    # NOTE (W7): the in-process counter is per-replica; a multi-replica deploy needs a
+    # shared Redis backend for a global limit. Tracked, not silently shipped. ---
+    rate_limit_enabled: bool = True
+    rate_limit_window_seconds: int = 60
+    # Per-window request caps per client. 0 disables the limit for that route.
+    rate_limit_photo: int = 5
+    rate_limit_recommend: int = 60
+    rate_limit_feedback: int = 60
+    rate_limit_search: int = 60
+    rate_limit_default: int = 120
+
     @property
     def cors_origins(self) -> list[str]:
         """Allowed browser origins, parsed from the comma-separated setting.

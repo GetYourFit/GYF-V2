@@ -14,7 +14,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .auth import Principal, get_current_principal
@@ -27,10 +27,12 @@ from .catalog.retrieval import (
 from .config import settings
 from .events import FeedbackRequest
 from .metrics import install_metrics, metrics_enabled
+from .observability import database_ready, install_request_context
 from .profile.account import AccountRepository
 from .profile.models import ConsentInput, Profile, ProfileInput, profile_from_manual
 from .profile.photo import BodyAdapter, SkinToneAdapter, profile_from_photo
 from .profile.repository import ProfileRepository
+from .ratelimit import rate_limit
 from .recsys.candidates import CandidateRepository
 from .recsys.models import OutfitRecommendation
 from .recsys.service import recommend
@@ -142,6 +144,8 @@ if _media is not None:
 # Observability (P0-E): structured logs + opt-in traces/errors + always-on metrics.
 _telemetry = configure_telemetry(app)
 install_metrics(app)
+# Foundation hardening (W1): request ids, structured access log, uniform error envelope.
+install_request_context(app)
 
 
 @app.get("/", include_in_schema=False)
@@ -163,12 +167,28 @@ def gallery() -> HTMLResponse:
 
 @app.get("/health", tags=["system"])
 def health() -> dict[str, object]:
+    """Liveness: the process is up and serving. Cheap, never touches the DB."""
     return {
         "status": "ok",
         "service": "api",
         "env": settings.env,
         "telemetry": {**_telemetry, "metrics": metrics_enabled()},
     }
+
+
+def get_readiness() -> bool:
+    """Readiness signal — DB reachable. Overridable in tests via dependency_overrides."""
+    return database_ready(settings.database_url)
+
+
+@app.get("/ready", tags=["system"], summary="Readiness probe (dependencies reachable)")
+def ready(db_ready: bool = Depends(get_readiness)) -> Response:
+    """Readiness: distinct from liveness — reports whether the API can actually serve
+    (its datastore is reachable). Returns 503 so a load balancer / K8s readiness gate
+    stops routing traffic to a replica that can't reach Postgres, instead of serving 500s."""
+    body = {"status": "ready" if db_ready else "not_ready", "checks": {"database": db_ready}}
+    code = status.HTTP_200_OK if db_ready else status.HTTP_503_SERVICE_UNAVAILABLE
+    return JSONResponse(content=body, status_code=code)
 
 
 @app.get("/me", tags=["system"])
@@ -213,7 +233,11 @@ def similar_items(
     return {"results": repo.similar_to_item(item_id, k, region)}
 
 
-@app.get("/items/search", tags=["catalog"])
+@app.get(
+    "/items/search",
+    tags=["catalog"],
+    dependencies=[Depends(rate_limit("search", "rate_limit_search"))],
+)
 def search_items(
     q: str = Query(..., min_length=1),
     k: int = Query(10, ge=1, le=50),
@@ -342,7 +366,12 @@ def get_body_adapter() -> BodyAdapter | None:
         return None
 
 
-@app.post("/profile/photo", tags=["profile"], summary="Onboard from a photo")
+@app.post(
+    "/profile/photo",
+    tags=["profile"],
+    summary="Onboard from a photo",
+    dependencies=[Depends(rate_limit("photo", "rate_limit_photo"))],
+)
 async def upsert_profile_from_photo(
     photo: UploadFile = File(..., description="A clear, well-lit photo of the user."),
     principal: Principal = Depends(require_active_principal),
@@ -498,7 +527,12 @@ def get_event_sink() -> EventSink:
     return sink
 
 
-@app.get("/outfits/recommend", tags=["recommendations"], summary="Recommend complete outfits")
+@app.get(
+    "/outfits/recommend",
+    tags=["recommendations"],
+    summary="Recommend complete outfits",
+    dependencies=[Depends(rate_limit("recommend", "rate_limit_recommend"))],
+)
 def recommend_outfits(
     occasion: str | None = Query(
         None,
@@ -552,7 +586,12 @@ def recommend_outfits(
     )
 
 
-@app.post("/feedback", status_code=202, tags=["feedback"])
+@app.post(
+    "/feedback",
+    status_code=202,
+    tags=["feedback"],
+    dependencies=[Depends(rate_limit("feedback", "rate_limit_feedback"))],
+)
 def ingest_feedback(
     body: FeedbackRequest,
     principal: Principal = Depends(get_current_principal),
