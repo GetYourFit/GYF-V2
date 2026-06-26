@@ -20,7 +20,7 @@ services:
     # Bind a fixed port; Render auto-detects the open port. 8000 matches EXPOSE.
     dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port 8000
     healthCheckPath: /health
-    autoDeploy: false
+    autoDeploy: true
     envVars:
       - key: GYF_ENV
         value: production

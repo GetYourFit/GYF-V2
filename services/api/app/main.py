@@ -18,11 +18,18 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .auth import Principal, get_current_principal
+from .catalog.directory import ItemDirectory
 from .catalog.retrieval import (
     SearchResult,
     TextEmbedder,
     VectorSearchRepository,
     search_text,
+)
+from .collections import (
+    CollectionRepository,
+    SaveItemRequest,
+    SavedItem,
+    enrich as enrich_saved,
 )
 from .config import settings
 from .events import FeedbackRequest
@@ -32,13 +39,29 @@ from .profile.account import AccountRepository
 from .profile.models import ConsentInput, Profile, ProfileInput, profile_from_manual
 from .profile.photo import BodyAdapter, SkinToneAdapter, profile_from_photo
 from .profile.repository import ProfileRepository
+from .profile.summary import ProfileSummary, SummaryRepository, summarize
 from .ratelimit import rate_limit
 from .recsys.candidates import CandidateRepository
 from .recsys.models import OutfitRecommendation
 from .recsys.service import recommend
 from .recsys.taste import TasteRepository
 from .sink import EventSink, get_sink
+from .social import (
+    Post,
+    PostInput,
+    ReactionInput,
+    SocialRepository,
+    enrich_feed,
+    make_record,
+)
 from .telemetry import configure_telemetry
+from .wardrobe import (
+    WardrobeItem,
+    WardrobeItemInput,
+    WardrobeRepository,
+    build_record,
+    enrich as enrich_wardrobe,
+)
 
 _API_DESCRIPTION = """
 GYF — your AI-native personal stylist. This is the core API.
@@ -89,6 +112,9 @@ app = FastAPI(
         {"name": "recommendations", "description": "Outfit composition & the NL styling-goal box."},
         {"name": "profile", "description": "Onboarding, consent, and account lifecycle."},
         {"name": "catalog", "description": "Visual search & shop-the-look."},
+        {"name": "collections", "description": "Server-backed saved-items shortlist."},
+        {"name": "wardrobe", "description": "The garments a user owns; styled around."},
+        {"name": "social", "description": "Shareable style posts, reactions & follower re-rendering."},
         {"name": "feedback", "description": "Behavioral events that train personalization."},
         {"name": "system", "description": "Health, identity probes & the visual gallery."},
     ],
@@ -605,3 +631,223 @@ def ingest_feedback(
     event = body.to_event(principal.user_id)
     sink.publish(event)
     return {"status": "accepted", "action": event.action.value}
+
+
+# --- Stage-2 surfaces (W4): saved collections, wardrobe, social, profile summary ---
+# Each persists what its web page previously mocked. Dependencies are injectable so
+# the routes are tested with in-memory repos (mirrors the recsys/profile pattern).
+
+
+def get_item_directory() -> ItemDirectory:
+    """The Postgres-backed item directory used to enrich saved/wardrobe/social ids."""
+    from .catalog.directory import PostgresItemDirectory
+
+    return PostgresItemDirectory(settings.database_url)
+
+
+def get_collection_repo() -> CollectionRepository:
+    from .collections import PostgresCollectionRepository
+
+    return PostgresCollectionRepository(settings.database_url)
+
+
+def get_wardrobe_repo() -> WardrobeRepository:
+    from .wardrobe import PostgresWardrobeRepository
+
+    return PostgresWardrobeRepository(settings.database_url)
+
+
+def get_social_repo() -> SocialRepository:
+    from .social import PostgresSocialRepository
+
+    return PostgresSocialRepository(settings.database_url)
+
+
+def get_summary_repo() -> SummaryRepository:
+    from .profile.summary import PostgresSummaryRepository
+
+    return PostgresSummaryRepository(settings.database_url)
+
+
+@app.post("/collections", status_code=201, tags=["collections"], summary="Save an item")
+def save_to_collection(
+    body: SaveItemRequest,
+    principal: Principal = Depends(require_active_principal),
+    repo: CollectionRepository = Depends(get_collection_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
+) -> SavedItem:
+    """Save a catalog item to the user's shortlist. Idempotent per (user, item).
+
+    404s if the item id is not in the catalog (so a typo never silently saves a
+    dangling reference). Returns the saved item enriched for immediate render.
+    """
+    detail = directory.lookup([body.item_id]).get(body.item_id)
+    if detail is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown item")
+    repo.save(principal.user_id, body.item_id)
+    return enrich_saved([body.item_id], directory)[0]
+
+
+@app.get("/collections", tags=["collections"], summary="The user's saved items")
+def list_collection(
+    principal: Principal = Depends(require_active_principal),
+    repo: CollectionRepository = Depends(get_collection_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
+) -> dict[str, list[SavedItem]]:
+    """The user's saved items, most-recently-saved first, enriched for display."""
+    return {"items": enrich_saved(repo.list_item_ids(principal.user_id), directory)}
+
+
+@app.delete(
+    "/collections/{item_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["collections"],
+    summary="Unsave an item",
+)
+def remove_from_collection(
+    item_id: str,
+    principal: Principal = Depends(require_active_principal),
+    repo: CollectionRepository = Depends(get_collection_repo),
+) -> Response:
+    """Remove an item from the shortlist. Idempotent: 204 whether or not present."""
+    repo.remove(principal.user_id, item_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.post("/wardrobe/items", status_code=201, tags=["wardrobe"], summary="Add an owned garment")
+def add_wardrobe_item(
+    body: WardrobeItemInput,
+    principal: Principal = Depends(require_active_principal),
+    repo: WardrobeRepository = Depends(get_wardrobe_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
+) -> WardrobeItem:
+    """Add a garment to the wardrobe: a catalog ``item_id`` or a freeform ``title``.
+
+    A catalog reference is enriched from the catalog (404 if the id is unknown); a
+    freeform garment is auto-classified into the shared taxonomy so it still slots
+    into outfit logic.
+    """
+    record = build_record(body, directory)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown item")
+    repo.add(principal.user_id, record)
+    return enrich_wardrobe([record], directory)[0]
+
+
+@app.get("/wardrobe/items", tags=["wardrobe"], summary="The user's wardrobe")
+def list_wardrobe(
+    principal: Principal = Depends(require_active_principal),
+    repo: WardrobeRepository = Depends(get_wardrobe_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
+) -> dict[str, list[WardrobeItem]]:
+    """The user's owned garments, most-recently-added first."""
+    return {"items": enrich_wardrobe(repo.list(principal.user_id), directory)}
+
+
+@app.delete(
+    "/wardrobe/items/{wardrobe_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["wardrobe"],
+    summary="Remove a wardrobe garment",
+)
+def remove_wardrobe_item(
+    wardrobe_id: str,
+    principal: Principal = Depends(require_active_principal),
+    repo: WardrobeRepository = Depends(get_wardrobe_repo),
+) -> Response:
+    """Remove a wardrobe garment by id. Idempotent: 204 either way."""
+    repo.remove(principal.user_id, wardrobe_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.get("/social/posts", tags=["social"], summary="The ranked social feed")
+def social_feed(
+    limit: int = Query(20, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
+) -> dict[str, list[Post]]:
+    """Posts ranked by engagement then recency, each with its look rendered."""
+    return {"posts": enrich_feed(repo.feed(limit, offset), directory)}
+
+
+@app.post("/social/posts", status_code=201, tags=["social"], summary="Share a look")
+def create_post(
+    body: PostInput,
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
+) -> Post:
+    """Share an outfit as a post. The look's item ids are stored and re-rendered."""
+    record = make_record(body, principal.user_id)
+    repo.create(record)
+    return enrich_feed([record], directory)[0]
+
+
+@app.post(
+    "/social/posts/{post_id}/react",
+    tags=["social"],
+    summary="React to a post",
+    dependencies=[Depends(rate_limit("feedback", "rate_limit_feedback"))],
+)
+def react_to_post(
+    post_id: str,
+    body: ReactionInput,
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+) -> dict[str, object]:
+    """React once per (post, user). 404 if the post does not exist."""
+    if repo.get(post_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown post")
+    newly = repo.react(post_id, principal.user_id, body.reaction)
+    return {"post_id": post_id, "reacted": newly}
+
+
+@app.post(
+    "/social/posts/{post_id}/recreate",
+    tags=["social"],
+    summary="Recreate a look for yourself",
+    dependencies=[Depends(rate_limit("recommend", "rate_limit_recommend"))],
+)
+def recreate_post(
+    post_id: str,
+    principal: Principal = Depends(require_active_principal),
+    social_repo: SocialRepository = Depends(get_social_repo),
+    profile_repo: ProfileRepository = Depends(get_profile_repo),
+    candidates: CandidateRepository = Depends(get_candidate_repo),
+    taste_repo: TasteRepository = Depends(get_taste_repo),
+    event_sink: EventSink = Depends(get_event_sink),
+) -> OutfitRecommendation:
+    """Re-render a post's look for the *caller* — never a blind copy (CLAUDE.md §2).
+
+    The post supplies the styling intent (its occasion); GYF re-composes the look
+    for the follower's own region, body and taste via the recommendation path. This
+    is a real composition, not try-on imagery (deferred). 404 if the post is gone,
+    404 if the caller has not onboarded.
+    """
+    post = social_repo.get(post_id)
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown post")
+    profile = profile_repo.get(principal.user_id)
+    if profile is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
+    return recommend(
+        profile,
+        principal.user_id,
+        candidates,
+        taste_repo,
+        event_sink,
+        post.occasion,
+        post.region,
+        k=5,
+    )
+
+
+@app.get("/profile/summary", tags=["profile"], summary="Profile stats & badges")
+def profile_summary(
+    principal: Principal = Depends(require_active_principal),
+    repo: SummaryRepository = Depends(get_summary_repo),
+) -> ProfileSummary:
+    """Stats (outfits made, items saved, wardrobe size, posts, reactions) + badges."""
+    return summarize(repo, principal.user_id)
