@@ -18,6 +18,13 @@
 ```
 GetYourFit-New/
 ├── CLAUDE.md                          # this file — operating guide & entry point
+├── app/                               # Next.js web (App Router) — core stylist surface (auth, onboarding, recs, feedback)
+├── services/api/                      # FastAPI core API (auth, profile/photo, recsys, retrieval, events, metrics)
+├── ml/                                # ML platform (perception, usermodel: body+skintone, recsys, eval, pipelines)
+├── packages/                          # shared contracts (Python gyf_contracts) + types (TS api.ts)
+├── infra/                             # Terraform (Supabase/Upstash/Vercel) + container-stack.sh (Apple-container local stack)
+├── scripts/                           # ops + verification (license/port/promotion gates, e2e, seeders, flywheel)
+├── spaces/gyf-gpu/                    # HuggingFace ZeroGPU Space (generated deploy bundle of ml/usermodel + contracts)
 ├── docs/
 │   ├── engineering-doctrine.md        # THE HIGHEST-IQ WAY — cross-cutting design law (how every pillar is built)
 │   ├── roadmap.md                     # the SEQUENCE — dependency-correct build order (M0→M12→P2–P5)
@@ -65,12 +72,12 @@ GetYourFit-New/
 
 ## 0.6 Development — environment & commands
 
-> Toolchain: **Bun 1.1+** (JS workspaces), **uv** (Python/API, target **3.12**), **Docker** (local infra). Canonical interface is the **Makefile** — prefer it over ad-hoc commands.
+> Toolchain: **Bun 1.1+** (JS workspaces), **uv** (Python/API, target **3.12**), **Apple `container`** (local infra; macOS-native, replaces Docker). Canonical interface is the **Makefile** — prefer it over ad-hoc commands.
 
 ```bash
 make install     # JS workspaces + Python API deps (bun install; uv sync)
-make up          # local infra: Postgres+pgvector, Redis, Redpanda (infra/docker-compose.yml)
-make stack       # FULL stack in Docker (web :3000 + api :8000 + Postgres/Redis) — host needs NO local deps
+make up          # local infra: Postgres+pgvector, Redis, Redpanda (infra/container-stack.sh)
+make stack       # FULL stack on Apple container (web :3000 + api :8000 + Postgres/Redis) — host needs NO local deps
 make nuke        # stop the stack and delete its volumes + locally-built images (reclaim every byte)
 make dev         # web (:3000) + API (:8000) together
 make dev-api     # API only (uvicorn app.main:app --reload --port 8000)
@@ -81,9 +88,9 @@ make ci          # full local gate: fmt-check + lint + typecheck + test  (run be
 ```
 
 - **API surface (local):** `/health`, `/me`, `/metrics`, `/docs` (Swagger), `/gallery` (visual tester).
-- **Live-DB verification** (real Postgres, no fakes — see Working Agreement): `bash scripts/e2e_workstream_a.sh` brings up Dockerized `pgvector/pgvector:pg16` on **:5433** (`GYF_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/gyf`); tear down with `docker rm -f gyf-pg`.
-- **Fully-dockerized dev (disposable host):** `make stack` builds & runs **web + API + Postgres/Redis** entirely in containers (Dockerfiles: `app/Dockerfile`, `services/api/Dockerfile`); source is bind-mounted for hot reload, deps live in the image/named volumes, never on the host — so the working tree can be `rm -rf`'d and rebuilt from git. `make nuke` removes containers, volumes, and locally-built images. ML stays disposable too: `make m2-bakeoff` (weights in the `gyf-hf-cache` named volume) / `make m2-clean`.
-  - *Buildx caveat (this machine):* `~/.docker/buildx/activity` is locked by macOS, so the compose build targets force the classic builder (`DOCKER_BUILDKIT=0`). Restart Docker Desktop or grant the terminal Full Disk Access to restore BuildKit, then drop the env prefix in the Makefile.
+- **Live-DB verification** (real Postgres, no fakes — see Working Agreement): `bash scripts/e2e_workstream_a.sh` brings up an Apple-container `pgvector/pgvector:pg16` on **:5433** (`GYF_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/gyf`); tear down with `container delete -f gyf-pg`.
+- **Fully-containerized dev (disposable host):** `make stack` builds & runs **web + API + Postgres/Redis** entirely in Apple `container` (Dockerfiles: `app/Dockerfile`, `services/api/Dockerfile`); source is bind-mounted for hot reload, deps live in the image/named volumes, never on the host — so the working tree can be `rm -rf`'d and rebuilt from git. `make nuke` removes containers, volumes, and locally-built images. ML stays disposable too: `make m2-bakeoff` (weights in the `gyf-hf-cache` named volume) / `make m2-clean`.
+  - *Orchestration:* Apple `container` has no compose, so `infra/container-stack.sh` is the orchestrator (same images/env/ports/mounts as the old compose, with explicit health-wait loops). **Prereqs (one-time, per login session):** `container system start`; a default DNS domain so services resolve each other by name — `sudo container system dns create gyf.test` + `~/.config/container/config.toml` with `[dns]\ndomain = "gyf.test"`, then restart the apiserver. Postgres uses `PGDATA=…/pgdata` (container volumes are ext4 with a `lost+found`); web node_modules volumes are **seeded from the image** (unlike Docker, container does not auto-populate volumes).
 - **ML model cache:** point `HF_HOME` at the repo-local `.hf-cache` (gitignored) — the default `~/.cache` may be unwritable.
 - **Local-venv caveat:** a project-local `.venv` may be Python **3.9** (target is 3.12). The shared `packages/contracts` is 3.12-pinned and *not* pip-installed locally, so 3.9 runs need `PYTHONPATH` to include it and `eval_type_backport` installed for Pydantic to parse `X | None`. CI uses uv + 3.12 and needs neither. **Never use stubs/fakes to dodge a real run** (Working Agreement).
 

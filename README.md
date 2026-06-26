@@ -14,17 +14,19 @@ coordinated outfits you can trust — getting smarter with every person it dress
 ## Repository layout
 
 ```
-app/        # Next.js web (App Router, RSC), PWA — landing page live
+app/        # Next.js web (App Router, RSC), PWA — core stylist surface
 services/   # FastAPI core API (auth, event spine, observability); BFF, workers to come
 ml/         # ML platform (perception, user model, recsys, compat, try-on, eval)
-packages/   # shared types, ui kit, config, sdk
-infra/      # IaC (Terraform), local docker-compose stack, CI config
-docs/       # documentation
+packages/   # shared types (TS) + contracts (Python), config
+infra/      # IaC (Terraform) + local Apple-container stack (container-stack.sh), CI config
+scripts/    # ops + verification scripts (gates, e2e, seeders, flywheel)
+docs/       # documentation (vision, doctrine, tech-stack, roadmap, plans)
 ```
 
 ## Getting started
 
-Prerequisites: **Bun 1.1+**, **Python 3.12+**, **uv**, and **Docker** (for local infra).
+Prerequisites: **Bun 1.1+**, **Python 3.12+**, **uv**, and **Apple `container`** (local infra
+on Apple Silicon; replaces Docker for local dev — Docker is used only for Linux/K8s deploy).
 
 ```bash
 make install     # install JS workspaces + Python API deps
@@ -42,7 +44,7 @@ environments and process.
 Run the full P0 spine locally (Postgres+pgvector, Redis, Redpanda):
 
 ```bash
-make up          # docker compose -f infra/docker-compose.yml up -d
+make up          # bash infra/container-stack.sh up  (Apple container: Postgres+pgvector, Redis, Redpanda)
 ```
 
 The API uses an append-only JSONL event sink by default; set `GYF_EVENT_SINK=postgres`
