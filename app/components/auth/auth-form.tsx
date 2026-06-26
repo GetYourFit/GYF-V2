@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,29 @@ import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Mode = "login" | "signup";
+
+/** Poll the destination until the server-side auth guard accepts the freshly
+ *  written session, then we can navigate without the guard bouncing us back to
+ *  /login. @supabase/ssr commits the session cookie asynchronously after sign-in,
+ *  so the *first* request to a guarded route can race that write; rather than
+ *  guess at the timing, we ask the guard directly (a same-origin GET that the
+ *  middleware redirects to /login while still anonymous) and proceed only once it
+ *  stops redirecting. Falls through after a bounded wait so login never hangs. */
+async function waitForGuardToAccept(path: string, timeoutMs = 4000): Promise<void> {
+  const target = new URL(path, window.location.origin).pathname;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(target, { credentials: "same-origin", redirect: "follow" });
+      // The guard sends anonymous callers to /login; once authed, the request
+      // resolves on the target itself.
+      if (!new URL(res.url).pathname.startsWith("/login")) return;
+    } catch {
+      // network hiccup — retry until the deadline
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
 
 const COPY: Record<
   Mode,
@@ -34,7 +57,6 @@ const COPY: Record<
 };
 
 export function AuthForm({ mode }: { mode: Mode }) {
-  const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/";
   const copy = COPY[mode];
@@ -63,8 +85,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
       }
-      router.push(next);
-      router.refresh();
+      // @supabase/ssr writes the session cookie asynchronously (via the
+      // auth-state-change event) *after* the sign-in promise resolves, so a
+      // navigation fired immediately races that write — the server guard then
+      // sees no session and bounces back to /login (intermittent "stuck on
+      // login"). Wait until the auth cookie is actually committed, then do a
+      // full-page navigation so the guard runs against the freshly-set cookie.
+      await waitForGuardToAccept(next);
+      window.location.assign(next);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
