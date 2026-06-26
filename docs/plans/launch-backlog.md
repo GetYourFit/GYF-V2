@@ -32,7 +32,14 @@ codemap generated.
 
 ---
 
-## W1 — Foundation hardening  ⏳ (core slice ✅ verified+pushed)
+## W1 — Foundation hardening  ✅ (core slice complete; reviewer gate passed)
+**Reviewer-close (commit 9eabec8):** fastapi-reviewer gate run; all HIGH/MEDIUM/LOW fixed +
+tested (137 pass): XFF-spoof-proof rate keys (only trust `GYF_TRUSTED_PROXIES`), fail-loud feed
+column validation, startup auth-bypass guard (model_validator), bounded/sanitized request-ids,
+readiness `statement_timeout`, limiter bucket eviction. **Remaining (next session, needs live DB):**
+domain error taxonomy beyond generic 500.
+
+## W1 — Foundation hardening (original) ⏳
 **Done (126 tests pass, ruff clean, commit 05e9ca7):** request IDs + `X-Request-ID` propagation
 (`app/observability.py`); structured JSON access log; uniform 500 error envelope (no traceback/
 internal leak); `/ready` readiness probe (503 when DB unreachable) distinct from `/health` liveness;
