@@ -152,6 +152,13 @@ def _adopt(
     """
     if value is None or value == "" or (unknown is not None and value == unknown):
         return False
+    # A zero-confidence estimate is, by definition, an abstain — never surface a guess
+    # (D6 honesty). This catches modules that emit a sentinel-free fallback label (e.g.
+    # the undertone classifier defaults to "neutral") whose quality collapsed to 0.0.
+    # Without this, a first-time user (no prior confidence to gate against) would adopt
+    # the guess, showing "Estimated …" while the real fields stay blank.
+    if confidence <= 0.0:
+        return False
     existing = profile.field_confidence.get(field_name)
     if existing is not None and existing >= confidence:
         return False

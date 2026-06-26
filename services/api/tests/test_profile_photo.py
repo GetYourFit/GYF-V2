@@ -122,6 +122,25 @@ def test_manual_field_precedence(monkeypatch):
     assert body["body_type"] == "hourglass"  # but the un-stated body_type is adopted
 
 
+def test_zero_confidence_undertone_guess_is_not_surfaced(monkeypatch):
+    # Mirrors the live Space on an abstain: no clean face → skin_tone="unknown" but the
+    # undertone classifier has no sentinel and falls back to "neutral", with quality
+    # (and thus confidence) collapsed to 0.0. A zero-confidence guess must never be
+    # adopted (D6), or the user sees "Estimated undertone" while skin tone stays blank.
+    monkeypatch.setattr(main.settings, "skin_tone_enabled", True)
+    abstained = SkinToneResult(
+        skin_tone="unknown",
+        undertone="neutral",
+        field_confidence={"skin_tone": 0.0, "undertone": 0.0},
+        model_version="st1",
+    )
+    client = _client(skin=_FakeSkin(abstained), body=None)
+    body = _upload(client).json()
+    assert body["skin_tone"] is None  # abstained sentinel → not surfaced
+    assert body["undertone"] is None  # zero-confidence guess → not surfaced either
+    assert body["field_confidence"] == {}
+
+
 def test_consent_required():
     client = _client(skin=_FakeSkin(SKIN), body=_FakeBody(BODY), consent=())
     assert _upload(client).status_code == 403
