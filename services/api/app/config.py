@@ -1,3 +1,4 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -96,6 +97,11 @@ class Settings(BaseSettings):
     # shared Redis backend for a global limit. Tracked, not silently shipped. ---
     rate_limit_enabled: bool = True
     rate_limit_window_seconds: int = 60
+    # Comma-separated IPs of trusted reverse proxies (the ingress/load balancer). Only
+    # when the immediate TCP peer is in this set do we trust its X-Forwarded-For to
+    # identify the real client; otherwise a client could spoof XFF to cycle identities
+    # and bypass the limit entirely. Empty (default) = never trust XFF, key on the peer.
+    trusted_proxies: str = ""
     # Per-window request caps per client. 0 disables the limit for that route.
     rate_limit_photo: int = 5
     rate_limit_recommend: int = 60
@@ -147,6 +153,20 @@ class Settings(BaseSettings):
             return True
         configured = bool(self.supabase_url) or bool(self.supabase_jwt_secret)
         return self.env == "local" and not configured
+
+    @property
+    def trusted_proxy_set(self) -> frozenset[str]:
+        """Peer IPs whose X-Forwarded-For we trust (the ingress/LB)."""
+        return frozenset(p.strip() for p in self.trusted_proxies.split(",") if p.strip())
+
+    @model_validator(mode="after")
+    def _fail_fast_on_unsafe_auth(self) -> "Settings":
+        """Refuse to construct (→ process won't start) if the auth bypass is set
+        outside local. A misconfiguration becomes an unmissable startup crash rather
+        than silent 500s or, worse, an open door on a live deployment."""
+        if self.auth_disabled and self.env != "local":
+            raise ValueError("GYF_AUTH_DISABLED must not be set outside the local environment")
+        return self
 
 
 settings = Settings()

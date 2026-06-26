@@ -83,6 +83,17 @@ def test_requires_title_column() -> None:
         DelimitedFeedSource("x.csv", provider="p", license="l", column_map={"category": "c"})
 
 
+def test_column_map_mismatch_fails_loud_not_silent(tmp_path) -> None:
+    # A mapped column absent from the header must raise — never silently drop the feed.
+    import pytest
+
+    csv_path = _write_csv(tmp_path / "feed.csv", ["SKU,Tee,t shirt,https://s,https://i.jpg,9,USD"])
+    bad_map = {**_COLUMN_MAP, "title": "product_name"}  # header has 'name', not 'product_name'
+    source = DelimitedFeedSource(csv_path, provider="p", license="l", column_map=bad_map)
+    with pytest.raises(ValueError, match="missing mapped columns"):
+        list(source.fetch())
+
+
 def test_expanded_india_taxonomy_classifies_with_region_tag() -> None:
     for raw, expected, slot in [
         ("Anarkali Suit", "anarkali", "full_body"),

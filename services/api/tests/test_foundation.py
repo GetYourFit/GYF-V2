@@ -117,3 +117,55 @@ def test_rate_limited_route_returns_429_with_retry_after(monkeypatch) -> None:
     assert blocked.status_code == 429
     assert int(blocked.headers["Retry-After"]) >= 0
     limiter.reset()
+
+
+def test_xforwarded_for_cannot_bypass_limit_from_untrusted_peer(monkeypatch) -> None:
+    # Spoofing X-Forwarded-For must NOT mint new identities when the peer isn't a
+    # trusted proxy — otherwise the rate limit is meaningless.
+    from app import config
+
+    monkeypatch.setattr(config.settings, "rate_limit_enabled", True)
+    monkeypatch.setattr(config.settings, "rate_limit_search", 1)
+    monkeypatch.setattr(config.settings, "trusted_proxies", "")  # peer not trusted
+    limiter.reset()
+
+    mini = FastAPI()
+
+    @mini.get("/ping", dependencies=[Depends(rate_limit("xff", "rate_limit_search"))])
+    def ping() -> dict[str, str]:
+        return {"ok": "1"}
+
+    c = TestClient(mini)
+    assert c.get("/ping", headers={"X-Forwarded-For": "1.1.1.1"}).status_code == 200
+    # Different spoofed IP, but same real peer → same bucket → blocked.
+    assert c.get("/ping", headers={"X-Forwarded-For": "2.2.2.2"}).status_code == 429
+    limiter.reset()
+
+
+def test_xforwarded_for_is_honored_from_a_trusted_proxy(monkeypatch) -> None:
+    from app import config
+
+    monkeypatch.setattr(config.settings, "rate_limit_enabled", True)
+    monkeypatch.setattr(config.settings, "rate_limit_search", 1)
+    monkeypatch.setattr(config.settings, "trusted_proxies", "testclient")  # peer trusted
+    limiter.reset()
+
+    mini = FastAPI()
+
+    @mini.get("/ping", dependencies=[Depends(rate_limit("xfftrust", "rate_limit_search"))])
+    def ping() -> dict[str, str]:
+        return {"ok": "1"}
+
+    c = TestClient(mini)
+    # Distinct forwarded clients via a trusted proxy → distinct buckets → both allowed.
+    assert c.get("/ping", headers={"X-Forwarded-For": "1.1.1.1"}).status_code == 200
+    assert c.get("/ping", headers={"X-Forwarded-For": "2.2.2.2"}).status_code == 200
+    limiter.reset()
+
+
+def test_request_id_is_sanitized_and_bounded() -> None:
+    nasty = "a b/c\n" + "x" * 200  # spaces, slash, newline, overlong
+    resp = client.get("/health", headers={REQUEST_ID_HEADER: nasty})
+    rid = resp.headers[REQUEST_ID_HEADER]
+    assert len(rid) <= 64
+    assert all(ch.isalnum() or ch == "-" for ch in rid)

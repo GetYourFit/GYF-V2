@@ -16,17 +16,31 @@ Three foundation-hardening pieces the audit flagged as missing:
 from __future__ import annotations
 
 import logging
+import re
 import time
 import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger("gyf.access")
 _error_logger = logging.getLogger("gyf.error")
 
 REQUEST_ID_HEADER = "X-Request-ID"
+_REQUEST_ID_RE = re.compile(r"[^a-zA-Z0-9\-]")
+
+
+def _sanitize_request_id(value: str | None) -> str:
+    """Bound an inbound request id: alnum/hyphen only, max 64 chars, else generate.
+    Prevents a client from pushing a huge or odd value into every log line + the
+    response header."""
+    if value:
+        cleaned = _REQUEST_ID_RE.sub("", value)[:64]
+        if cleaned:
+            return cleaned
+    return uuid.uuid4().hex
 
 
 def _request_id(request: Request) -> str:
@@ -37,8 +51,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     """Assign a request id, time the request, and emit one structured access line."""
 
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
-        incoming = request.headers.get(REQUEST_ID_HEADER)
-        request_id = incoming or uuid.uuid4().hex
+        request_id = _sanitize_request_id(request.headers.get(REQUEST_ID_HEADER))
         request.state.request_id = request_id
 
         start = time.perf_counter()
@@ -85,6 +98,10 @@ def install_request_context(app: FastAPI) -> None:
     """Wire the request-context middleware and the catch-all error handler."""
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(Exception, unhandled_exception_handler)
+    # Guard: the catch-all must not shadow HTTPException (401/404/422). FastAPI
+    # pre-registers a handler keyed on Starlette's HTTPException; if a refactor ever
+    # drops it, fail loud here rather than silently turning 401s into opaque 500s.
+    assert StarletteHTTPException in app.exception_handlers, "HTTPException handler missing"
 
 
 def database_ready(database_url: str) -> bool:
@@ -98,6 +115,7 @@ def database_ready(database_url: str) -> bool:
 
         with psycopg.connect(database_url, connect_timeout=2) as conn:
             with conn.cursor() as cur:
+                cur.execute("SET statement_timeout = 1000")  # ms — never stall a probe
                 cur.execute("SELECT 1")
                 cur.fetchone()
         return True

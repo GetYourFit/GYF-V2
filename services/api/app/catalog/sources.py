@@ -13,11 +13,14 @@ interchangeable backends and lazy/optional dependencies.
 from __future__ import annotations
 
 import csv
+import logging
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Protocol
 
 from pydantic import BaseModel, Field
+
+_log = logging.getLogger("gyf.catalog.feed")
 
 
 class RawFeedItem(BaseModel):
@@ -161,9 +164,30 @@ class DelimitedFeedSource:
             region_hints=split("region_hints") or list(self._default_region_hints),
         )
 
+    def _validate_header(self, fieldnames: Sequence[str] | None) -> None:
+        """Fail loud if any mapped column is absent — a misconfigured map would
+        otherwise silently discard an entire feed (seen=N, written=0)."""
+        present = set(fieldnames or ())
+        missing = {f: c for f, c in self._column_map.items() if c not in present}
+        if missing:
+            raise ValueError(
+                f"feed header is missing mapped columns {missing}; "
+                f"available columns: {sorted(present)}"
+            )
+
     def fetch(self) -> Iterator[RawFeedItem]:
         with self._path.open(encoding="utf-8", newline="") as fh:
-            for row in csv.DictReader(fh, delimiter=self._delimiter):
+            reader = csv.DictReader(fh, delimiter=self._delimiter)
+            self._validate_header(reader.fieldnames)
+            skipped = 0
+            for line_no, row in enumerate(reader, start=2):  # row 1 is the header
                 item = self._to_item(row)
-                if item is not None:
-                    yield item
+                if item is None:
+                    skipped += 1
+                    _log.warning("DelimitedFeedSource skipped row %d (no usable title)", line_no)
+                    continue
+                yield item
+            if skipped:
+                _log.warning(
+                    "DelimitedFeedSource %s: skipped %d unusable row(s)", self.provider, skipped
+                )

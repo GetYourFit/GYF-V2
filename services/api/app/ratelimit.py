@@ -41,11 +41,17 @@ class FixedWindowLimiter:
         self._buckets: dict[str, _Window] = {}
         self._lock = threading.Lock()
 
+    # Sweep expired buckets when the map grows past this, so a flood of distinct IPs
+    # can't grow memory without bound (the windows are short-lived anyway).
+    _SWEEP_THRESHOLD = 10_000
+
     def hit(self, key: str, limit: int, window_seconds: int) -> tuple[bool, int]:
         if limit <= 0:  # 0 = disabled for this route
             return True, 0
         now = time.monotonic()
         with self._lock:
+            if len(self._buckets) > self._SWEEP_THRESHOLD:
+                self._buckets = {k: w for k, w in self._buckets.items() if now < w.reset_monotonic}
             window = self._buckets.get(key)
             if window is None or now >= window.reset_monotonic:
                 window = _Window(count=0, reset_monotonic=now + window_seconds)
@@ -65,13 +71,16 @@ limiter = FixedWindowLimiter()
 
 
 def _client_id(request: Request) -> str:
-    """Identify the caller by client IP (proxy-aware via X-Forwarded-For's first hop
-    when present, else the socket peer)."""
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return f"ip:{forwarded.split(',')[0].strip()}"
-    client = request.client
-    return f"ip:{client.host}" if client else "ip:unknown"
+    """Identify the caller by client IP. X-Forwarded-For is trusted **only** when the
+    immediate TCP peer is a configured trusted proxy (``GYF_TRUSTED_PROXIES``);
+    otherwise a client could spoof XFF to mint unlimited identities and bypass the
+    limit. With no trusted proxy configured we always key on the real socket peer."""
+    peer = request.client.host if request.client else "unknown"
+    if peer in settings.trusted_proxy_set:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return f"ip:{forwarded.split(',')[0].strip()}"
+    return f"ip:{peer}"
 
 
 def rate_limit(route: str, limit_attr: str) -> object:
