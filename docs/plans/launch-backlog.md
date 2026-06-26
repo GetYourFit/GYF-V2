@@ -32,7 +32,16 @@ codemap generated.
 
 ---
 
-## W1 — Foundation hardening
+## W1 — Foundation hardening  ⏳ (core slice ✅ verified+pushed)
+**Done (126 tests pass, ruff clean, commit 05e9ca7):** request IDs + `X-Request-ID` propagation
+(`app/observability.py`); structured JSON access log; uniform 500 error envelope (no traceback/
+internal leak); `/ready` readiness probe (503 when DB unreachable) distinct from `/health` liveness;
+**H-3 rate limiting** — dependency-free in-process fixed-window limiter on `/profile/photo` (5/min),
+`/outfits/recommend` (60), `/feedback` (60), `/items/search` (60), keyed by client IP (`app/ratelimit.py`).
+**Remaining:** domain error taxonomy (map known errors, not just generic 500); `silent-failure-hunter`
++ `fastapi-reviewer` gate pass; Redis-backed limiter for multi-replica (→W7).
+
+### W1 (original scope reference)
 **Files:** `services/api/app/main.py`, `app/config.py`, new `app/errors.py`, `app/observability.py`,
 `app/ratelimit.py`; `app/middleware.py`.
 - Typed settings audit; structured logging (JSON) + request IDs; error taxonomy + graceful
