@@ -13,26 +13,26 @@ type Mode = "login" | "signup";
 
 const COPY: Record<
   Mode,
-  { title: string; cta: string; altPrompt: string; altHref: string; altLabel: string }
+  { title: string; subtitle: string; cta: string; altPrompt: string; altHref: string; altLabel: string }
 > = {
   login: {
     title: "Welcome back",
+    subtitle: "Sign in to your GYF account.",
     cta: "Sign in",
     altPrompt: "New to GYF?",
     altHref: "/signup",
     altLabel: "Create an account",
   },
   signup: {
-    title: "Create your account",
-    cta: "Sign up",
+    title: "Create account",
+    subtitle: "Start dressing better, instantly.",
+    cta: "Get started",
     altPrompt: "Already have an account?",
     altHref: "/login",
     altLabel: "Sign in",
   },
 };
 
-/** Shared email/password auth form for both login and signup (DRY). On success it
- *  routes to the originally-requested page (?next=) or the stylist surface. */
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -55,7 +55,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
       if (mode === "signup") {
         const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
         if (signUpError) throw signUpError;
-        // When email confirmation is on, there's no session yet — tell the user.
         if (!data.session) {
           setNotice("Check your email to confirm your account, then sign in.");
           return;
@@ -74,46 +73,51 @@ export function AuthForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
-      <h1 className="text-2xl font-semibold text-neutral-900">{copy.title}</h1>
+    <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
+      <div>
+        <h1 className="t-headline text-[var(--text)]">{copy.title}</h1>
+        <p className="mt-1 t-caption">{copy.subtitle}</p>
+      </div>
 
-      <Field label="Email">
-        {(p) => (
-          <Input
-            {...p}
-            type="email"
-            name="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-          />
-        )}
-      </Field>
+      <div className="flex flex-col gap-4">
+        <Field label="Email">
+          {(p) => (
+            <Input
+              {...p}
+              type="email"
+              name="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+          )}
+        </Field>
 
-      <Field label="Password" hint={mode === "signup" ? "At least 6 characters." : undefined}>
-        {(p) => (
-          <Input
-            {...p}
-            type="password"
-            name="password"
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        )}
-      </Field>
+        <Field label="Password" hint={mode === "signup" ? "At least 6 characters." : undefined}>
+          {(p) => (
+            <Input
+              {...p}
+              type="password"
+              name="password"
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          )}
+        </Field>
+      </div>
 
       {error && (
-        <p role="alert" className="text-sm font-medium text-red-600">
+        <p role="alert" className="t-caption text-[var(--error)]">
           {error}
         </p>
       )}
       {notice && (
-        <p role="status" className="text-sm font-medium text-green-700">
+        <p role="status" className="t-caption text-[var(--accent-warm)]">
           {notice}
         </p>
       )}
@@ -122,11 +126,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {busy ? "Working…" : copy.cta}
       </Button>
 
-      <p className="text-sm text-neutral-600">
+      <p className="t-caption text-center">
         {copy.altPrompt}{" "}
         <Link
           href={copy.altHref}
-          className="font-medium text-neutral-900 underline underline-offset-4"
+          className="text-[var(--text)] underline underline-offset-4 hover:no-underline"
         >
           {copy.altLabel}
         </Link>

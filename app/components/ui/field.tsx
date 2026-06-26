@@ -4,7 +4,6 @@ import { cn } from "@/lib/cn";
 
 export interface FieldProps {
   label: string;
-  /** Render the control given the id/aria props to spread onto it. */
   children: (props: {
     id: string;
     "aria-invalid"?: boolean;
@@ -15,9 +14,6 @@ export interface FieldProps {
   className?: string;
 }
 
-/** Label + control + error/hint wired together for accessibility: the label is
- *  associated by id, errors are announced (role=alert) and linked via
- *  aria-describedby, and aria-invalid is set when there's an error. */
 export function Field({ label, children, error, hint, className }: FieldProps) {
   const id = useId();
   const errorId = `${id}-error`;
@@ -26,21 +22,21 @@ export function Field({ label, children, error, hint, className }: FieldProps) {
     [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
+    <div className={cn("flex flex-col gap-2", className)}>
       <label
         htmlFor={id}
-        className="font-[family-name:var(--font-body)] text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--faint)]"
+        className="t-label text-[var(--text-faint)]"
       >
         {label}
       </label>
       {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
       {hint && !error && (
-        <p id={hintId} className="text-xs text-[var(--faint)]">
+        <p id={hintId} className="text-xs text-[var(--text-faint)]">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} role="alert" className="text-xs font-medium text-[#8a2b22]">
+        <p id={errorId} role="alert" className="text-xs text-[var(--error)]">
           {error}
         </p>
       )}

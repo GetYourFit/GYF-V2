@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { cormorant, dmSans, dmMono } from "@/lib/fonts";
+import { playfair, inter, jetbrainsMono } from "@/lib/fonts";
+import { AppIntro } from "@/components/intro/app-intro";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,11 +20,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${dmSans.variable} ${dmMono.variable}`}>
-      {/* Root holds only the document shell + fonts. Each area supplies its own
-          chrome: (auth) a centred shell, and the product surface (app) its own
-          stylist chrome. */}
-      <body style={{ background: "#F0ECE2" }}>{children}</body>
+    <html
+      lang="en"
+      className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+    >
+      <body>
+        <AppIntro />
+        {children}
+      </body>
     </html>
   );
 }

@@ -32,8 +32,6 @@ const EMPTY: ProfileInput = {
   budget_range: { min: 0, max: null, currency: "USD" },
 };
 
-/** Manual onboarding (P1-B Cycle 1 path): every field optional, pre-filled when a
- *  profile exists (always-editable), persisted via PUT /profile + PUT /consent. */
 export function OnboardingForm() {
   const router = useRouter();
   const [form, setForm] = useState<ProfileInput>(EMPTY);
@@ -47,7 +45,7 @@ export function OnboardingForm() {
     const api = browserApi();
     Promise.all([
       api.getProfile().catch((e: unknown) => {
-        if (e instanceof ApiError && e.isNotOnboarded) return null; // first-time user
+        if (e instanceof ApiError && e.isNotOnboarded) return null;
         throw e;
       }),
       api.getConsent().catch(() => ({}) as ConsentState),
@@ -84,8 +82,6 @@ export function OnboardingForm() {
     );
   }
 
-  /** Merge photo-estimated fields into the form (always editable). Only overlays
-   *  what the estimate actually returned, leaving manual entries untouched. */
   function applyEstimated(profile: Profile) {
     setForm((f) => ({
       ...f,
@@ -119,16 +115,16 @@ export function OnboardingForm() {
   }
 
   if (loading) {
-    return <p className="text-neutral-500">Loading your profile…</p>;
+    return <p className="t-caption text-[var(--text-faint)]">Loading your profile…</p>;
   }
 
   const budget = form.budget_range ?? { min: 0, max: null, currency: "USD" };
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-8">
+    <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold text-neutral-900">Your style profile</h1>
-        <p className="mt-1 text-sm text-neutral-600">
+        <h1 className="t-headline text-[var(--text)]">Your style profile</h1>
+        <p className="mt-2 t-caption">
           Everything is optional and editable anytime — GYF sharpens as you use it.
         </p>
       </header>
@@ -167,12 +163,9 @@ export function OnboardingForm() {
         </Field>
       </Section>
 
-      <Section
-        title="Style"
-        hint="Pick any aesthetics you lean toward, and what you dress for most."
-      >
+      <Section title="Style" hint="Pick any aesthetics you lean toward, and what you dress for most.">
         <fieldset>
-          <legend className="mb-2 text-sm font-medium text-neutral-800">Style intent</legend>
+          <legend className="t-label mb-3 text-[var(--text-faint)]">Style intent</legend>
           <div className="flex flex-wrap gap-2">
             {STYLE_INTENTS.map((s) => {
               const active = (form.style_intent ?? []).includes(s.value);
@@ -183,10 +176,10 @@ export function OnboardingForm() {
                   aria-pressed={active}
                   onClick={() => toggleStyle(s.value)}
                   className={
-                    "min-h-9 rounded-full border px-3 py-1 text-sm transition-colors " +
+                    "min-h-9 border px-3 py-1 t-label text-[10px] tracking-[0.14em] transition-all duration-[180ms] " +
                     (active
-                      ? "border-neutral-900 bg-neutral-900 text-white"
-                      : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50")
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--bg)]"
+                      : "border-[var(--border-mid)] text-[var(--text-faint)] hover:border-[var(--border-hi)] hover:text-[var(--text)]")
                   }
                 >
                   {s.label}
@@ -254,21 +247,23 @@ export function OnboardingForm() {
       </Section>
 
       <Section title="Privacy & consent" hint="You control your data. Change or revoke anytime.">
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-4">
           {CONSENT_OPTIONS.map((c) => (
             <li key={c.value} className="flex items-start gap-3">
               <input
                 id={`consent-${c.value}`}
                 type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-neutral-300"
+                className="mt-1 h-4 w-4 border-[var(--border-mid)] bg-[var(--surface)] accent-[var(--accent)]"
                 checked={consent[c.value] ?? false}
                 disabled={c.required}
                 onChange={(e) => setConsent((s) => ({ ...s, [c.value]: e.target.checked }))}
               />
-              <label htmlFor={`consent-${c.value}`} className="text-sm">
-                <span className="font-medium text-neutral-800">{c.label}</span>
-                {c.required && <span className="ml-2 text-xs text-neutral-500">(required)</span>}
-                <span className="block text-xs text-neutral-500">{c.description}</span>
+              <label htmlFor={`consent-${c.value}`} className="t-body text-[0.875rem]">
+                <span className="font-medium text-[var(--text)]">{c.label}</span>
+                {c.required && (
+                  <span className="ml-2 t-mono text-[var(--text-faint)]">(required)</span>
+                )}
+                <span className="block t-caption mt-0.5">{c.description}</span>
               </label>
             </li>
           ))}
@@ -276,12 +271,12 @@ export function OnboardingForm() {
       </Section>
 
       {error && (
-        <p role="alert" className="text-sm font-medium text-red-600">
+        <p role="alert" className="t-caption text-[var(--error)]">
           {error}
         </p>
       )}
       {saved && (
-        <p role="status" className="text-sm font-medium text-green-700">
+        <p role="status" className="t-caption text-[var(--accent-warm)]">
           Saved.
         </p>
       )}
@@ -306,17 +301,16 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-6">
+    <section className="flex flex-col gap-4 border border-[var(--border)] bg-[var(--surface)] p-6">
       <div>
-        <h2 className="text-base font-semibold text-neutral-900">{title}</h2>
-        {hint && <p className="text-xs text-neutral-500">{hint}</p>}
+        <h2 className="t-title text-[var(--text)]">{title}</h2>
+        {hint && <p className="t-caption mt-1">{hint}</p>}
       </div>
       {children}
     </section>
   );
 }
 
-/** Right-to-erasure: tombstones the account, then returns to the marketing site. */
 function DeleteAccount() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -336,7 +330,7 @@ function DeleteAccount() {
     <Button
       type="button"
       variant="ghost"
-      className="text-red-600"
+      className="text-[var(--error)] hover:text-[var(--error)]"
       disabled={busy}
       onClick={onDelete}
     >

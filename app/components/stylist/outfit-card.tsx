@@ -13,8 +13,6 @@ function price(item: OutfitItem): string | null {
   return `${symbol}${Math.round(item.price)}`;
 }
 
-/** One complete look: image-forward garments, the stylist's reason, honest
- *  confidence, and the act-on-it controls. The heart of the GYF surface. */
 export function OutfitCard({
   outfit,
   index,
@@ -28,24 +26,23 @@ export function OutfitCard({
   saved: boolean;
   onSave: () => void;
   onDismiss: () => void;
-  /** Fired with the shopped garment's id when the user clicks through to buy —
-   *  a `cart` intent signal logged before the retailer redirect opens. */
   onShopCart: (itemId: string) => void;
 }) {
   const shopItem = outfit.items.find((i) => i.affiliate_url);
+
   return (
-    <article className="group flex flex-col border border-[var(--rule)] bg-[var(--surface)] transition-shadow duration-300 hover:shadow-[0_8px_40px_rgba(139,107,62,0.10)]">
-      {/* Garment images, side by side — the look, seen. */}
-      <div className="flex gap-px bg-[var(--rule)]">
+    <article className="group flex flex-col border border-[var(--border)] bg-[var(--surface)] transition-all duration-300 hover:border-[var(--border-hi)] hover:shadow-[0_0_0_1px_var(--border-hi)]">
+      {/* Garment images */}
+      <div className="flex gap-[1px] bg-[var(--border)]">
         {outfit.items.map((item) => {
           const src = mediaUrl(item.image_url);
           return (
             <div
               key={item.item_id}
-              className="relative aspect-[3/4] flex-1 overflow-hidden bg-[var(--wash)]"
+              className="relative aspect-[3/4] flex-1 overflow-hidden bg-[var(--surface-2)]"
             >
               {src ? (
-                // eslint-disable-next-line @next/next/no-img-element -- API host isn't in next/image domains; plain img is fine for beta.
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={src}
                   alt={item.title}
@@ -53,11 +50,11 @@ export function OutfitCard({
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-[10px] uppercase tracking-widest text-[var(--faint)]">
+                <div className="flex h-full items-center justify-center t-mono text-[var(--text-faint)]">
                   {item.category.replace(/_/g, " ")}
                 </div>
               )}
-              <span className="absolute left-2 top-2 bg-[var(--bg)]/85 px-2 py-0.5 font-[family-name:var(--font-mono)] text-[9px] uppercase tracking-[0.18em] text-[var(--mid)]">
+              <span className="absolute left-2 top-2 bg-[var(--bg)]/80 px-2 py-0.5 t-mono text-[var(--text-mid)]">
                 {item.slot}
               </span>
             </div>
@@ -72,14 +69,12 @@ export function OutfitCard({
 
         <ConfidenceMeter value={outfit.confidence} />
 
-        <ul className="flex flex-col gap-1.5 border-t border-[var(--border)] pt-3">
+        <ul className="flex flex-col gap-1.5 border-t border-[var(--rule)] pt-3">
           {outfit.items.map((item) => (
-            <li key={item.item_id} className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="truncate text-[var(--mid)]">{item.title}</span>
+            <li key={item.item_id} className="flex items-baseline justify-between gap-3">
+              <span className="truncate t-caption text-[var(--text-mid)]">{item.title}</span>
               {price(item) && (
-                <span className="font-[family-name:var(--font-mono)] text-xs text-[var(--faint)]">
-                  {price(item)}
-                </span>
+                <span className="t-mono text-[var(--text-faint)] shrink-0">{price(item)}</span>
               )}
             </li>
           ))}
@@ -91,10 +86,10 @@ export function OutfitCard({
             onClick={onSave}
             aria-pressed={saved}
             className={cn(
-              "inline-flex min-h-10 flex-1 items-center justify-center gap-2 border text-[11px] uppercase tracking-[0.16em] transition-colors",
+              "inline-flex min-h-10 flex-1 items-center justify-center gap-2 border text-[11px] uppercase tracking-[0.16em] transition-all duration-[180ms]",
               saved
-                ? "border-[var(--gold)] bg-[var(--gold-light)] text-[var(--gold)]"
-                : "border-[var(--border-mid)] text-[var(--mid)] hover:border-[var(--gold)] hover:text-[var(--text)]",
+                ? "border-[var(--accent)] bg-[var(--surface-2)] text-[var(--accent)]"
+                : "border-[var(--border-mid)] text-[var(--text-faint)] hover:border-[var(--border-hi)] hover:text-[var(--text)]",
             )}
           >
             <Bookmark className="h-3.5 w-3.5" aria-hidden />
@@ -106,11 +101,8 @@ export function OutfitCard({
               href={shopItem.affiliate_url}
               target="_blank"
               rel="noopener noreferrer"
-              // Log the cart intent before the new tab opens. Fire-and-forget so the
-              // redirect is never blocked by the feedback request; the anchor's default
-              // navigation still carries the user to the retailer.
               onClick={() => onShopCart(shopItem.item_id)}
-              className="inline-flex min-h-10 items-center justify-center gap-2 bg-[var(--text)] px-4 text-[11px] uppercase tracking-[0.16em] text-[var(--bg)] transition-colors hover:bg-[var(--gold)]"
+              className="inline-flex min-h-10 items-center justify-center gap-2 bg-[var(--accent)] px-4 text-[11px] uppercase tracking-[0.16em] text-[var(--bg)] transition-all duration-[180ms] hover:bg-[var(--text-mid)]"
             >
               <ExternalLink className="h-3.5 w-3.5" aria-hidden />
               Shop
@@ -121,7 +113,7 @@ export function OutfitCard({
             type="button"
             onClick={onDismiss}
             aria-label={`Not interested in look ${index + 1}`}
-            className="inline-flex h-10 w-10 items-center justify-center border border-[var(--border-mid)] text-[var(--faint)] transition-colors hover:border-[var(--text)] hover:text-[var(--text)]"
+            className="inline-flex h-10 w-10 items-center justify-center border border-[var(--border-mid)] text-[var(--text-faint)] transition-all duration-[180ms] hover:border-[var(--border-hi)] hover:text-[var(--text)]"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>

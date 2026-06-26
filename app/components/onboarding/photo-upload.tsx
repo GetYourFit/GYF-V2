@@ -8,18 +8,12 @@ import { browserApi } from "@/lib/api-client";
 import type { Profile } from "@gyf/types";
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
-const MAX_BYTES = 10 * 1024 * 1024; // mirrors GYF_MAX_PHOTO_BYTES (API default 10 MiB)
+const MAX_BYTES = 10 * 1024 * 1024;
 
 interface PhotoUploadProps {
-  /** Called with the merged profile after a successful estimate, so the parent
-   *  form can pre-fill the (always-editable) skin-tone / body-type fields. */
   onEstimated: (profile: Profile) => void;
 }
 
-/** Photo onboarding path: upload one photo → the API estimates skin tone + body
- *  type and returns the merged profile. Estimated fields land in the form below as
- *  editable values ("we estimated this — fix if wrong"). Degrades honestly: a 503
- *  means the photo modules aren't available, and the manual form is right there. */
 export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,14 +57,9 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
     setBusy(true);
     setError(null);
     try {
-      // Uploading a photo to be analysed IS the data-processing consent action.
-      // Persist it first so the API (which checks the stored flag, not the form's
-      // unsaved local state) doesn't 403 before the form is submitted.
       const api = browserApi();
       await api.putConsent({ flags: { data_processing: true } });
       const profile = await api.uploadPhoto(file);
-      // Report exactly which fields the estimate filled, so an abstain (or a disabled
-      // module) reads as honest feedback instead of a silent "Estimated" with empty fields.
       const filled: string[] = [];
       if (profile.skin_tone) filled.push("skin tone");
       if (profile.undertone) filled.push("undertone");
@@ -81,9 +70,9 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       onEstimated(profile);
     } catch (e) {
       if (e instanceof ApiError && e.isUnavailable) {
-        setError("Photo onboarding isn’t available right now — please use the form below.");
+        setError("Photo onboarding isn't available right now — please use the form below.");
       } else if (e instanceof ApiError && e.status === 403) {
-        setError("Please accept “Process my data” consent below, then try again.");
+        setError("Please accept "Process my data" consent below, then try again.");
       } else {
         setError(e instanceof Error ? e.message : "Could not read that photo. Try another.");
       }
@@ -93,10 +82,10 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4">
+    <div className="flex flex-col gap-4 border border-dashed border-[var(--border-mid)] bg-[var(--surface-2)] p-5">
       <div>
-        <p className="text-sm font-medium text-neutral-800">📷 Estimate from a photo</p>
-        <p className="text-xs text-neutral-500">
+        <p className="t-label text-[var(--text)]">Estimate from a photo</p>
+        <p className="t-caption mt-1">
           Upload one clear, well-lit photo and GYF will estimate your skin tone and body type —
           you can edit anything it gets wrong. The image is processed privately and not stored.
         </p>
@@ -109,18 +98,18 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           e.preventDefault();
           selectFile(e.dataTransfer.files?.[0] ?? null);
         }}
-        className="flex cursor-pointer flex-col items-center gap-2 rounded-md border border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-600 hover:border-neutral-400"
+        className="flex cursor-pointer flex-col items-center gap-3 border border-[var(--border-mid)] bg-[var(--surface)] px-4 py-8 text-center transition-colors duration-[180ms] hover:border-[var(--border-hi)]"
       >
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={previewUrl}
             alt="Selected photo preview"
-            className="max-h-48 rounded object-contain"
+            className="max-h-48 object-contain"
           />
         ) : (
-          <span>
-            <span className="font-medium text-neutral-800">Choose a photo</span> or drag it here
+          <span className="t-body text-[var(--text-faint)]">
+            <span className="text-[var(--text)]">Choose a photo</span> or drag it here
           </span>
         )}
         <input
@@ -135,26 +124,27 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       </label>
 
       {error && (
-        <p role="alert" className="text-xs font-medium text-red-600">
+        <p role="alert" className="t-caption text-[var(--error)]">
           {error}
         </p>
       )}
       {done && !missed && (
-        <p role="status" className="text-xs font-medium text-green-700">
+        <p role="status" className="t-caption text-[var(--accent-warm)]">
           Estimated {estimated.join(" & ")} — review and edit below, then save.
         </p>
       )}
       {done && missed && (
-        <p role="status" className="text-xs font-medium text-amber-700">
-          Couldn’t read your features from this photo — try a clearer, well-lit, front-facing
+        <p role="status" className="t-caption text-[var(--text-mid)]">
+          Couldn't read your features from this photo — try a clearer, well-lit, front-facing
           photo, or just set the fields below manually.
         </p>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <Button
           type="button"
           variant="secondary"
+          size="sm"
           disabled={!file || busy}
           aria-busy={busy}
           onClick={onUpload}
@@ -164,7 +154,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
         {file && (
           <button
             type="button"
-            className="text-xs text-neutral-500 underline"
+            className="t-caption text-[var(--text-faint)] underline underline-offset-4 hover:text-[var(--text)] hover:no-underline transition-colors"
             onClick={() => selectFile(null)}
           >
             Remove

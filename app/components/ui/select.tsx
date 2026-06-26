@@ -5,11 +5,9 @@ import type { Option } from "@/lib/vocab";
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   options: Option[];
-  /** Label for the empty choice (kept selectable so a field can stay unset). */
   placeholder?: string;
 }
 
-/** Accessible native select in the brand language. */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
   { className, options, placeholder = "Prefer not to say", ...props },
   ref,
@@ -18,10 +16,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
     <select
       ref={ref}
       className={cn(
-        "min-h-11 w-full border border-[var(--border-mid)] bg-[var(--surface)] px-3.5 py-2.5",
+        "min-h-11 w-full border border-[var(--border-mid)] bg-[var(--surface)] px-4 py-2.5",
         "font-[family-name:var(--font-body)] text-sm text-[var(--text)]",
-        "transition-colors focus-visible:border-[var(--gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-light)]",
-        "disabled:cursor-not-allowed disabled:opacity-50",
+        "transition-colors duration-[180ms] appearance-none",
+        "focus-visible:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)]",
+        "disabled:cursor-not-allowed disabled:opacity-40",
+        "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23505050' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")] bg-no-repeat bg-[right_1rem_center]",
         className,
       )}
       {...props}

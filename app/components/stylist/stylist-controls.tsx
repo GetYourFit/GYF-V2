@@ -11,8 +11,6 @@ export interface StylistQuery {
   occasion: string;
 }
 
-/** The styling controls: the natural-language goal box ("look taller / slimmer /
- *  broader") and the occasion selector — GYF's two headline conditioning inputs. */
 export function StylistControls({
   value,
   busy,
@@ -33,12 +31,12 @@ export function StylistControls({
   return (
     <form
       onSubmit={submit}
-      className="flex flex-col gap-3 border border-[var(--rule)] bg-[var(--surface)] p-5 sm:flex-row sm:items-end"
+      className="flex flex-col gap-4 border border-[var(--border)] bg-[var(--surface)] p-5 sm:flex-row sm:items-end"
     >
       <div className="flex-1">
         <label
           htmlFor="goal"
-          className="mb-1.5 block font-[family-name:var(--font-body)] text-[10.5px] uppercase tracking-[0.28em] text-[var(--gold)]"
+          className="t-label mb-2 block text-[var(--text-faint)]"
         >
           Tell your stylist a goal
         </label>
@@ -48,13 +46,13 @@ export function StylistControls({
           onChange={(e) => setGoal(e.target.value)}
           maxLength={200}
           placeholder="I want to look taller and slimmer…"
-          className="min-h-11 w-full border-b border-[var(--border-mid)] bg-transparent pb-2 font-[family-name:var(--font-display)] text-lg text-[var(--text)] placeholder:text-[var(--faint)] placeholder:italic focus:border-[var(--gold)] focus:outline-none"
+          className="min-h-11 w-full border-b border-[var(--border-mid)] bg-transparent pb-2 font-[family-name:var(--font-display)] text-lg italic text-[var(--text)] placeholder:text-[var(--text-faint)] placeholder:not-italic focus:border-[var(--accent)] focus:outline-none transition-colors duration-[180ms]"
         />
       </div>
       <div className="sm:w-48">
         <label
           htmlFor="occasion"
-          className="mb-1.5 block font-[family-name:var(--font-body)] text-[10.5px] uppercase tracking-[0.28em] text-[var(--faint)]"
+          className="t-label mb-2 block text-[var(--text-faint)]"
         >
           Occasion
         </label>

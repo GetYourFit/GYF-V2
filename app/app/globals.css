@@ -1,36 +1,156 @@
 @import "tailwindcss";
 
-:root {
-  --bg:         #F0ECE2;
-  --surface:    #F7F4EE;
-  --text:       #1A1714;
-  --mid:        #524E48;
-  --faint:      #6A665E;
-  --gold:       #8B6B3E;
-  --gold-light: rgba(139,107,62,0.09);
-  --wash:       #E2D8C4;
-  --rule:       #D4CABB;
-  --border:     rgba(26,23,20,0.08);
-  --border-mid: rgba(26,23,20,0.14);
-  --lux: cubic-bezier(0.16, 1, 0.3, 1);
+/* ─── Design tokens: black/white industrial ─────────────────────────────── */
+@theme {
+  --color-bg:          #0A0A0A;
+  --color-surface:     #111111;
+  --color-surface-2:   #1A1A1A;
+  --color-surface-3:   #252525;
+  --color-border:      rgba(255, 255, 255, 0.06);
+  --color-border-mid:  rgba(255, 255, 255, 0.12);
+  --color-border-hi:   rgba(255, 255, 255, 0.24);
+  --color-text:        #F0F0F0;
+  --color-text-mid:    #999999;
+  --color-text-faint:  #505050;
+  --color-accent:      #FFFFFF;
+  --color-accent-warm: #C8A96E;
+  --color-rule:        rgba(255, 255, 255, 0.07);
+  --color-error:       #E05252;
+
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Courier New", monospace;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Raw CSS vars — used for arbitrary-value classes (bg-[var(--bg)]) and JS */
+:root {
+  --bg:          #0A0A0A;
+  --surface:     #111111;
+  --surface-2:   #1A1A1A;
+  --surface-3:   #252525;
+  --border:      rgba(255, 255, 255, 0.06);
+  --border-mid:  rgba(255, 255, 255, 0.12);
+  --border-hi:   rgba(255, 255, 255, 0.24);
+  --text:        #F0F0F0;
+  --text-mid:    #999999;
+  --text-faint:  #505050;
+  --accent:      #FFFFFF;
+  --accent-warm: #C8A96E;
+  --rule:        rgba(255, 255, 255, 0.07);
+  --error:       #E05252;
+  --lux:         cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   scrollbar-width: thin;
   scrollbar-color: var(--border-mid) var(--bg);
 }
 
-::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar       { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border-mid); }
+::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 0; }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-body);
   overflow-x: hidden;
+  min-height: 100dvh;
+}
+
+/* ─── Semantic type scale ────────────────────────────────────────────────── */
+@layer components {
+  .t-display {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 400;
+    line-height: 1.03;
+    letter-spacing: -0.025em;
+  }
+  .t-headline {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: -0.018em;
+  }
+  .t-title {
+    font-family: var(--font-body);
+    font-size: 1.125rem;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+  .t-body {
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 400;
+    line-height: 1.65;
+  }
+  .t-caption {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--text-mid);
+  }
+  .t-label {
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .t-mono {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0.06em;
+  }
+}
+
+/* ─── Focus ring ─────────────────────────────────────────────────────────── */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+}
+
+/* ─── Intro animation keyframes ──────────────────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+
+@keyframes scan-line {
+  0%   { top: 0%; opacity: 1; }
+  95%  { top: 100%; opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* ─── Skeleton shimmer ───────────────────────────────────────────────────── */
+@layer components {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--surface) 0%,
+      var(--surface-2) 50%,
+      var(--surface) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
 }
