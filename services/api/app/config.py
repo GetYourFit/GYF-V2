@@ -123,6 +123,12 @@ class Settings(BaseSettings):
         turns verification on, even in local — so a configured project is enforced.
         """
         if self.auth_disabled:
+            # Hard guard: an auth bypass must never be reachable outside local dev.
+            # Turn a misconfiguration into a startup-time failure, not a silent hole.
+            if self.env != "local":
+                raise RuntimeError(
+                    "GYF_AUTH_DISABLED must not be set outside the local environment"
+                )
             return True
         configured = bool(self.supabase_url) or bool(self.supabase_jwt_secret)
         return self.env == "local" and not configured

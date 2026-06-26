@@ -79,8 +79,11 @@ export async function verifyAccessToken(
   }
   if (!valid) return null;
 
-  const { exp, sub } = payload;
+  const { exp, sub, aud } = payload;
   if (typeof exp !== "number" || typeof sub !== "string") return null;
+  // Only accept user-session tokens: reject service-role / other audiences that
+  // share the project's signing key but must not grant a user session.
+  if (aud !== "authenticated") return null;
   if (Date.now() >= exp * 1000) return null; // expired
 
   return payload as JwtClaims;

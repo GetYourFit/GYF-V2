@@ -57,7 +57,7 @@ def _decode(token: str) -> Principal:
     try:
         header = jwt.get_unverified_header(token)
     except jwt.InvalidTokenError as exc:
-        raise _unauthorized(f"Malformed token: {exc}") from exc
+        raise _unauthorized("Authentication failed") from exc
 
     alg = header.get("alg")
     try:
@@ -80,9 +80,9 @@ def _decode(token: str) -> Principal:
             audience=settings.jwt_audience,
         )
     except jwt.PyJWKClientError as exc:
-        raise _unauthorized(f"Unable to resolve signing key: {exc}") from exc
+        raise _unauthorized("Authentication failed") from exc
     except jwt.InvalidTokenError as exc:
-        raise _unauthorized(f"Invalid token: {exc}") from exc
+        raise _unauthorized("Authentication failed") from exc
 
     subject = claims.get("sub")
     if not subject:
