@@ -65,9 +65,17 @@ CATEGORIES: tuple[Category, ...] = (
     # India.
     Category("saree", "full_body", ("IN",)),
     Category("lehenga", "full_body", ("IN",)),
+    Category("anarkali", "full_body", ("IN",)),
     Category("kurta", "top", ("IN",)),
     Category("salwar", "bottom", ("IN",)),
+    Category("churidar", "bottom", ("IN",)),
+    Category("palazzo", "bottom", ("IN",)),
+    Category("dhoti", "bottom", ("IN",)),
     Category("sherwani", "full_body", ("IN",)),
+    Category("nehru_jacket", "outerwear", ("IN",)),
+    Category("bandhgala", "outerwear", ("IN",)),
+    Category("dupatta", "accessory", ("IN",)),
+    Category("mojari", "footwear", ("IN",)),
 )
 
 _BY_NAME: dict[str, Category] = {c.name: c for c in CATEGORIES}
@@ -107,7 +115,12 @@ _SYNONYMS: dict[str, str] = {
     "sari": "saree",
     "kurti": "kurta",
     "salwar kameez": "salwar",
-    "churidar": "salwar",
+    "anarkali suit": "anarkali",
+    "palazzo pants": "palazzo",
+    "nehru jacket": "nehru_jacket",
+    "jodhpuri": "bandhgala",
+    "jutti": "mojari",
+    "juti": "mojari",
 }
 
 
