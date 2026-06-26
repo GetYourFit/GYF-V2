@@ -20,7 +20,8 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-[var(--rule)] bg-[var(--bg)]/90 backdrop-blur-xl lg:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-[var(--rule)] bg-[var(--bg)]/95 backdrop-blur-xl"
     >
       {TAB_ITEMS.map(({ href, icon: Icon, label }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -30,15 +31,15 @@ export function BottomNav() {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-3 transition-colors duration-[180ms]",
+              "relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 transition-colors duration-150 active:opacity-70",
               active ? "text-[var(--text)]" : "text-[var(--text-faint)]",
             )}
           >
-            <Icon className="h-5 w-5 shrink-0" aria-hidden />
-            <span className="t-mono text-[9px] tracking-[0.12em]">{label}</span>
             {active && (
-              <span className="absolute top-0 h-[1px] w-8 bg-[var(--accent)]" aria-hidden />
+              <span className="absolute top-0 left-1/2 h-[1px] w-8 -translate-x-1/2 bg-[var(--accent)]" aria-hidden />
             )}
+            <Icon className="h-[22px] w-[22px] shrink-0" aria-hidden />
+            <span className="t-mono text-[9px] tracking-[0.12em]">{label}</span>
           </Link>
         );
       })}

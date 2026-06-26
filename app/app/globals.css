@@ -54,6 +54,10 @@ html {
   -moz-osx-font-smoothing: grayscale;
   scrollbar-width: thin;
   scrollbar-color: var(--border-mid) var(--bg);
+  /* prevent elastic overscroll on iOS */
+  overscroll-behavior: none;
+  /* fill notch/status bar area */
+  padding-top: env(safe-area-inset-top);
 }
 
 ::-webkit-scrollbar       { width: 3px; height: 3px; }
@@ -66,6 +70,10 @@ body {
   font-family: var(--font-body);
   overflow-x: hidden;
   min-height: 100dvh;
+  /* mobile: suppress tap flash, enable momentum scroll */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 /* ─── Semantic type scale ────────────────────────────────────────────────── */

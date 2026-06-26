@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function WardrobePage() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    <div className="mx-auto w-full px-4 py-6">
       <header className="mb-8">
         <h1 className="t-display text-[var(--text)]">Wardrobe</h1>
         <p className="t-caption mt-2 text-[var(--text-faint)]">

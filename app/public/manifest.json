@@ -1,0 +1,14 @@
+{
+  "name": "GYF — Get Your Fit",
+  "short_name": "GYF",
+  "description": "Your AI personal stylist",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/assets/logo-bg.jpeg", "sizes": "192x192", "type": "image/jpeg" },
+    { "src": "/assets/logo-bg.jpeg", "sizes": "512x512", "type": "image/jpeg" }
+  ]
+}

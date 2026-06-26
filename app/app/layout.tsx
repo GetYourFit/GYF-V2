@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { playfair, inter, jetbrainsMono } from "@/lib/fonts";
 import { AppIntro } from "@/components/intro/app-intro";
 import "./globals.css";
@@ -16,6 +16,17 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary_large_image" },
   metadataBase: new URL("https://getyourfit.tech"),
+  appleWebApp: { capable: true, title: "GYF", statusBarStyle: "black-translucent" },
+  manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0A0A0A",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
