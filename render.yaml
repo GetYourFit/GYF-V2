@@ -30,6 +30,20 @@ services:
       # local /media mount is absent on Render), so image_url points at the CDN.
       - key: GYF_MEDIA_BASE_URL
         value: https://tabjvaatrikogutkrjom.supabase.co/storage/v1/object/public/catalog
+      # Surface skin-tone + undertone estimates from photo onboarding. NOTE: this
+      # is an OWNER-AUTHORIZED override of the fairness gate (the skin-tone module
+      # has not yet passed the Monk Skin Tone eval — doctrine D6 / invariant #3).
+      # The manual field is always the fallback and every value stays editable.
+      # Revert to "false" (shadow) if needed; flip to the validated default once the
+      # fairness eval passes.
+      - key: GYF_SKIN_TONE_ENABLED
+        value: "true"
+      # Body-type mesh fit runs on a remote HF ZeroGPU Space (spaces/gyf-gpu). Set
+      # the live Space URL in the dashboard (sync:false) once it's deployed AND
+      # within quota — pointing at a dead/cold Space makes onboarding hang, so it
+      # stays unset (module abstains → manual fallback) until confirmed live.
+      - key: GYF_BODY_REMOTE_URL
+        sync: false
       # --- Secrets: set in dashboard / `render` CLI, not committed ---
       # The entrypoint runs `alembic upgrade head` on boot. DDL must NOT go through
       # the transaction pooler (:6543) — pgbouncer transaction mode breaks Alembic's
