@@ -640,7 +640,7 @@ def recommend_outfits(
 )
 def ingest_feedback(
     body: FeedbackRequest,
-    principal: Principal = Depends(get_current_principal),
+    principal: Principal = Depends(require_active_principal),
 ) -> dict[str, str]:
     """Validate and persist a behavioral event onto the learning spine.
 

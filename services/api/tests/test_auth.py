@@ -117,6 +117,12 @@ def test_feedback_attributes_event_to_principal(monkeypatch: pytest.MonkeyPatch)
         return Principal(user_id="token-user", email=None)
 
     app.dependency_overrides[get_current_principal] = fake_principal
+    # /feedback gates on require_active_principal → needs an account repo; an empty
+    # in-memory repo JIT-provisions token-user via ensure_user (not tombstoned).
+    from app.main import get_account_repo
+    from app.profile.account import InMemoryAccountRepository
+
+    app.dependency_overrides[get_account_repo] = lambda: InMemoryAccountRepository()
 
     from app import main
 

@@ -4,8 +4,14 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.events import InteractionEvent
-from app.main import app
+from app.main import app, get_account_repo
+from app.profile.account import InMemoryAccountRepository
 from app.sink import LocalFileSink
+
+# /feedback now gates on require_active_principal, which needs an account repo to
+# reject tombstoned users. Override with an in-memory repo holding the dev user.
+DEV_USER = "00000000-0000-0000-0000-000000000001"
+app.dependency_overrides[get_account_repo] = lambda: InMemoryAccountRepository(existing={DEV_USER})
 
 client = TestClient(app)
 
