@@ -1,4 +1,4 @@
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -79,6 +79,25 @@ class Settings(BaseSettings):
     # (usermodel.skintone.fairness_eval, gate max_band_gap ≤ 1.0) and record the
     # report under eval-reports/. Set GYF_SKIN_TONE_ENABLED=false to re-shadow.
     skin_tone_enabled: bool = True
+
+    @field_validator("body_remote_url", "skintone_remote_url", mode="after")
+    @classmethod
+    def _normalise_space_ref(cls, value: str) -> str:
+        """Drop an implausible Space reference (e.g. a stray ``GYF_BODY_REMOTE_URL=true``).
+
+        A valid ref is an http(s) URL or an ``owner/repo`` Space id. Anything else is
+        treated as unset so a misconfigured env var abstains instantly instead of
+        hanging ~10s on a 404 ``gradio_client`` Space lookup on every photo upload.
+        """
+        candidate = value.strip()
+        if not candidate:
+            return ""
+        if candidate.startswith(("http://", "https://")):
+            return candidate
+        # "owner/repo" form: exactly one slash with non-empty halves and no whitespace.
+        if candidate.count("/") == 1 and " " not in candidate and all(candidate.split("/")):
+            return candidate
+        return ""
 
     # --- Observability (P0-E). All env-driven; unset = no-op (free-tier first). ---
     service_name: str = "gyf-api"
