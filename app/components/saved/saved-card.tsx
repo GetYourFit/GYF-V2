@@ -3,26 +3,20 @@
 import { Trash2, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 
+import type { SavedOutfit } from "@gyf/types";
+
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { mediaUrl } from "@/lib/media";
-import type { SavedLook } from "@/lib/saved-store";
 
 interface SavedCardProps {
-  look: SavedLook;
-  onRemove: (id: string) => void;
+  look: SavedOutfit;
+  onRemove: () => void;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+const CURRENCY: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", INR: "₹" };
 
 export function SavedCard({ look, onRemove }: SavedCardProps) {
-  const { outfit } = look;
-  const shopItem = outfit.items.find((i) => i.affiliate_url);
+  const shopItem = look.items.find((i) => i.buy_url);
 
   return (
     <motion.article
@@ -33,7 +27,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
     >
       {/* Garment image strip */}
       <div className="flex gap-[1px] bg-[var(--border)]">
-        {outfit.items.map((item) => {
+        {look.items.map((item) => {
           const src = mediaUrl(item.image_url);
           return (
             <div
@@ -62,18 +56,20 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
       </div>
 
       <div className="flex flex-1 flex-col gap-4 p-5">
-        <p className="font-[family-name:var(--font-display)] text-lg italic leading-snug text-[var(--text)]">
-          {outfit.explanation}
-        </p>
+        {look.explanation && (
+          <p className="font-[family-name:var(--font-display)] text-lg italic leading-snug text-[var(--text)]">
+            {look.explanation}
+          </p>
+        )}
 
-        <ConfidenceMeter value={outfit.confidence} />
+        {look.confidence != null && <ConfidenceMeter value={look.confidence} />}
 
         {/* Item list */}
         <ul className="flex flex-col gap-1.5 border-t border-[var(--rule)] pt-3">
-          {outfit.items.map((item) => {
+          {look.items.map((item) => {
             const priceStr =
               item.price != null
-                ? `${{ USD: "$", EUR: "€", GBP: "£", INR: "₹" }[item.currency ?? "USD"] ?? ""}${Math.round(item.price)}`
+                ? `${CURRENCY[item.currency ?? "USD"] ?? ""}${Math.round(item.price)}`
                 : null;
             return (
               <li key={item.item_id} className="flex items-baseline justify-between gap-3">
@@ -86,14 +82,16 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
           })}
         </ul>
 
-        {/* Footer: date saved + actions */}
+        {/* Footer: occasion + actions */}
         <div className="mt-auto flex items-center justify-between gap-3 pt-1 border-t border-[var(--rule)]">
-          <span className="t-mono text-[var(--text-faint)]">Saved {formatDate(look.savedAt)}</span>
+          <span className="t-mono text-[var(--text-faint)] capitalize">
+            {look.occasion ?? "saved look"}
+          </span>
 
           <div className="flex items-center gap-2">
-            {shopItem?.affiliate_url && (
+            {shopItem?.buy_url && (
               <a
-                href={shopItem.affiliate_url}
+                href={shopItem.buy_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex h-9 items-center justify-center gap-1.5 border border-[var(--border-mid)] px-3 t-label text-[10px] text-[var(--text-faint)] transition-all duration-[180ms] hover:border-[var(--border-hi)] hover:text-[var(--text)]"
@@ -104,7 +102,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
             )}
             <button
               type="button"
-              onClick={() => onRemove(look.id)}
+              onClick={onRemove}
               aria-label="Remove saved look"
               className="inline-flex h-9 w-9 items-center justify-center border border-[var(--border-mid)] text-[var(--text-faint)] transition-all duration-[180ms] hover:border-[var(--error)]/50 hover:text-[var(--error)]"
             >

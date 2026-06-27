@@ -2,53 +2,57 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import type { SavedOutfit } from "@gyf/types";
 
 import { SavedCard } from "@/components/saved/saved-card";
 import { browserApi } from "@/lib/api-client";
-import { savedStore } from "@/lib/saved-store";
 
 const lux = [0.16, 1, 0.3, 1] as const;
 
+type Status = "loading" | "ready" | "error";
+
 export function SavedGrid() {
-  // Subscribe to the client store; `[]` on the server so SSR + first client
-  // render agree (the skeleton shows until `mounted` flips client-side).
-  const looks = useSyncExternalStore(
-    savedStore.subscribe,
-    savedStore.getSnapshot,
-    savedStore.getServerSnapshot,
-  );
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  const [looks, setLooks] = useState<SavedOutfit[]>([]);
+  const [status, setStatus] = useState<Status>("loading");
 
-  function remove(id: string) {
-    // Removing emits a store update, which re-renders this list.
-    savedStore.remove(id);
+  const load = useCallback(async () => {
+    setStatus("loading");
+    try {
+      setLooks(await browserApi().listSavedOutfits());
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    }
+  }, []);
 
-    // Best-effort API signal — skip feedback so the ranker learns this look
-    // was removed from the collection; failure must never block the UI action.
-    const look = looks.find((l) => l.id === id);
-    if (!look) return;
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const remove = useCallback((look: SavedOutfit) => {
+    // Optimistic removal; restore on failure so the UI never lies about state.
+    setLooks((cur) => cur.filter((l) => l.id !== look.id));
     void browserApi()
-      .feedback({
-        target_type: "outfit",
-        target_id: look.recommendation_id,
-        action: "skip",
-        context: { source: "saved_remove" },
-      })
-      .catch(() => {});
-  }
+      .removeSavedOutfit(look.id)
+      .catch(() => setLooks((cur) => [look, ...cur]));
+    // Behavioral signal: this look was removed from the collection (best-effort).
+    if (look.recommendation_id) {
+      void browserApi()
+        .feedback({
+          target_type: "outfit",
+          target_id: look.recommendation_id,
+          action: "skip",
+          context: { source: "saved_remove" },
+        })
+        .catch(() => {});
+    }
+  }, []);
 
-  if (!mounted) {
-    return <SkeletonGrid />;
-  }
-
-  if (looks.length === 0) {
-    return <EmptyState />;
-  }
+  if (status === "loading") return <SkeletonGrid />;
+  if (status === "error") return <ErrorState onRetry={load} />;
+  if (looks.length === 0) return <EmptyState />;
 
   return (
     <motion.div
@@ -56,7 +60,6 @@ export function SavedGrid() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: lux }}
     >
-      {/* Count */}
       <p className="t-mono text-[var(--text-faint)] mb-6">
         {looks.length} saved {looks.length === 1 ? "look" : "looks"}
       </p>
@@ -72,7 +75,7 @@ export function SavedGrid() {
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.38, delay: i * 0.05, ease: lux }}
             >
-              <SavedCard look={look} onRemove={remove} />
+              <SavedCard look={look} onRemove={() => remove(look)} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -89,7 +92,6 @@ function EmptyState() {
       transition={{ duration: 0.4, ease: lux }}
       className="mx-auto max-w-sm py-20 text-center"
     >
-      {/* Decorative frame */}
       <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center border border-[var(--border-mid)]">
         <div className="h-12 w-12 border border-dashed border-[var(--border-hi)]" />
       </div>
@@ -105,6 +107,29 @@ function EmptyState() {
       >
         See my outfits
       </Link>
+    </motion.div>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: lux }}
+      className="mx-auto max-w-sm py-20 text-center"
+    >
+      <p className="t-headline text-[var(--text)]">Couldn&apos;t load your saved looks</p>
+      <p className="mt-3 t-caption max-w-[260px] mx-auto">
+        Something went wrong reaching the stylist. Your looks are safe — try again.
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-8 inline-flex min-h-11 items-center border border-[var(--border-hi)] px-8 t-label text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-[180ms]"
+      >
+        Retry
+      </button>
     </motion.div>
   );
 }
