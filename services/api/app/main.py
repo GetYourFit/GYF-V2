@@ -489,16 +489,30 @@ def _estimate_or_abstain(adapter: object | None, image: object, label: str) -> o
         return None
 
 
+# A generous ceiling for genuine phone photos (~40 MP covers 48 MP sensors after
+# downscale) that still rejects decompression bombs — a few-KB file that inflates
+# to gigapixels and exhausts memory. `Image.open` reads the dimensions from the
+# header without decoding pixels, so we reject BEFORE `load()` does the work.
+_MAX_IMAGE_PIXELS = 40_000_000
+
+
 def _decode_photo(raw: bytes) -> object:
     """Decode bytes to an orientation-corrected, EXIF-stripped RGB image.
 
     Applies EXIF orientation then re-bakes pixels so no camera metadata (incl. GPS)
-    survives into anything downstream — privacy by construction (D8).
+    survives into anything downstream — privacy by construction (D8). Guards against
+    decompression bombs by rejecting oversized images before pixels are decoded.
     """
     from PIL import Image, ImageOps
 
     try:
         with Image.open(io.BytesIO(raw)) as img:
+            width, height = img.size
+            if width * height > _MAX_IMAGE_PIXELS:
+                raise HTTPException(
+                    status_code=422,
+                    detail="image resolution is too large — please use a normal photo",
+                )
             img.load()
             return ImageOps.exif_transpose(img).convert("RGB")
     except HTTPException:
