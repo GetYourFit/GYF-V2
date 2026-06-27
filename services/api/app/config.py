@@ -187,5 +187,23 @@ class Settings(BaseSettings):
             raise ValueError("GYF_AUTH_DISABLED must not be set outside the local environment")
         return self
 
+    @model_validator(mode="after")
+    def _anchor_cors_in_production(self) -> "Settings":
+        """Refuse to start in production with no browser origin configured (L-3).
+
+        Outside local dev the web app is a different origin than the API, so an
+        empty ``GYF_ALLOWED_ORIGINS`` means every browser request is blocked by
+        CORS — the kind of silent misconfiguration that invites a panicked,
+        over-permissive ``*`` fix in prod. Anchoring it here turns the mistake
+        into an unmissable startup crash and documents that the value is required.
+        ``allowed_origin_regex`` alone also satisfies the anchor (preview deploys).
+        """
+        if self.env != "local" and not (self.cors_origins or self.allowed_origin_regex.strip()):
+            raise ValueError(
+                "GYF_ALLOWED_ORIGINS (or GYF_ALLOWED_ORIGIN_REGEX) must be set outside "
+                "the local environment so the browser can reach the API"
+            )
+        return self
+
 
 settings = Settings()
