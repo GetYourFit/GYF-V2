@@ -19,6 +19,18 @@ export type OutfitItem = components["schemas"]["OutfitItem"];
 export type SearchResult = components["schemas"]["SearchResult"];
 export type FeedbackRequest = components["schemas"]["FeedbackRequest"];
 
+/** Collections (saved shortlist), wardrobe (owned garments) & social (shared looks). */
+export type SaveItemRequest = components["schemas"]["SaveItemRequest"];
+export type SavedItem = components["schemas"]["SavedItem"];
+export type WardrobeItem = components["schemas"]["WardrobeItem"];
+export type WardrobeItemInput = components["schemas"]["WardrobeItemInput"];
+export type Post = components["schemas"]["Post"];
+export type PostInput = components["schemas"]["PostInput"];
+export type ReactionInput = components["schemas"]["ReactionInput"];
+export type SavedOutfit = components["schemas"]["SavedOutfit"];
+export type SavedOutfitItem = components["schemas"]["SavedOutfitItem"];
+export type SaveOutfitRequest = components["schemas"]["SaveOutfitRequest"];
+
 /** Interaction actions captured as the behavioral event spine. */
 export const INTERACTION_ACTIONS = [
   "view",

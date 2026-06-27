@@ -42,6 +42,12 @@ from .profile.repository import ProfileRepository
 from .profile.summary import ProfileSummary, SummaryRepository, summarize
 from .ratelimit import rate_limit
 from .recsys.candidates import CandidateRepository
+from .saved_outfits import (
+    SavedOutfit,
+    SavedOutfitRepository,
+    SaveOutfitRequest,
+    enrich as enrich_saved_outfits,
+)
 from .recsys.models import OutfitRecommendation
 from .recsys.service import recommend
 from .recsys.taste import TasteRepository
@@ -651,6 +657,12 @@ def get_collection_repo() -> CollectionRepository:
     return PostgresCollectionRepository(settings.database_url)
 
 
+def get_saved_outfit_repo() -> SavedOutfitRepository:
+    from .saved_outfits import PostgresSavedOutfitRepository
+
+    return PostgresSavedOutfitRepository(settings.database_url)
+
+
 def get_wardrobe_repo() -> WardrobeRepository:
     from .wardrobe import PostgresWardrobeRepository
 
@@ -711,6 +723,55 @@ def remove_from_collection(
 ) -> Response:
     """Remove an item from the shortlist. Idempotent: 204 whether or not present."""
     repo.remove(principal.user_id, item_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.post(
+    "/collections/outfits",
+    status_code=201,
+    tags=["collections"],
+    summary="Save a whole look",
+)
+def save_outfit(
+    body: SaveOutfitRequest,
+    principal: Principal = Depends(require_active_principal),
+    repo: SavedOutfitRepository = Depends(get_saved_outfit_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
+) -> SavedOutfit:
+    """Save a complete look (a "saved styling session"). Idempotent per
+    ``(user, outfit_key)`` — re-saving updates the stored snapshot. Returns the
+    saved look enriched for immediate render."""
+    outfit_id = repo.save(principal.user_id, body)
+    saved = enrich_saved_outfits(repo.list(principal.user_id), directory)
+    for look in saved:
+        if look.id == outfit_id:
+            return look
+    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Save failed")
+
+
+@app.get("/collections/outfits", tags=["collections"], summary="The user's saved looks")
+def list_saved_outfits(
+    principal: Principal = Depends(require_active_principal),
+    repo: SavedOutfitRepository = Depends(get_saved_outfit_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
+) -> dict[str, list[SavedOutfit]]:
+    """The user's saved looks, most-recently-saved first, each re-rendered."""
+    return {"outfits": enrich_saved_outfits(repo.list(principal.user_id), directory)}
+
+
+@app.delete(
+    "/collections/outfits/{outfit_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["collections"],
+    summary="Unsave a look",
+)
+def remove_saved_outfit(
+    outfit_id: str,
+    principal: Principal = Depends(require_active_principal),
+    repo: SavedOutfitRepository = Depends(get_saved_outfit_repo),
+) -> Response:
+    """Remove a saved look. Idempotent: 204 whether or not present."""
+    repo.remove(principal.user_id, outfit_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

@@ -12,9 +12,16 @@ import type {
   ConsentInput,
   FeedbackRequest,
   OutfitRecommendation,
+  Post,
+  PostInput,
   Profile,
   ProfileInput,
+  SavedItem,
+  SavedOutfit,
+  SaveOutfitRequest,
   SearchResult,
+  WardrobeItem,
+  WardrobeItemInput,
 } from "@gyf/types";
 
 const DEFAULT_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -144,6 +151,85 @@ export class GyfApi {
       "GET",
       `/items/${encodeURIComponent(itemId)}/similar${query}`,
     ).then((r) => r.results);
+  }
+
+  // --- Collections (saved shortlist) ---
+
+  /** Save a catalog item to the shortlist. Idempotent per (user, item). 404 if unknown. */
+  saveItem(itemId: string): Promise<SavedItem> {
+    return this.request<SavedItem>("POST", "/collections", { item_id: itemId });
+  }
+
+  /** The user's saved items, most-recently-saved first, enriched for display. */
+  listSaved(): Promise<SavedItem[]> {
+    return this.request<{ items: SavedItem[] }>("GET", "/collections").then((r) => r.items);
+  }
+
+  /** Remove an item from the shortlist. Idempotent. */
+  unsaveItem(itemId: string): Promise<void> {
+    return this.request<void>("DELETE", `/collections/${encodeURIComponent(itemId)}`);
+  }
+
+  // --- Saved outfits (saved looks / styling sessions) ---
+
+  /** Save a whole look. Idempotent per (user, outfit_key) — re-saving updates the snapshot. */
+  saveOutfit(input: SaveOutfitRequest): Promise<SavedOutfit> {
+    return this.request<SavedOutfit>("POST", "/collections/outfits", input);
+  }
+
+  /** The user's saved looks, most-recently-saved first, each re-rendered. */
+  listSavedOutfits(): Promise<SavedOutfit[]> {
+    return this.request<{ outfits: SavedOutfit[] }>("GET", "/collections/outfits").then(
+      (r) => r.outfits,
+    );
+  }
+
+  /** Remove a saved look by id. Idempotent. */
+  removeSavedOutfit(outfitId: string): Promise<void> {
+    return this.request<void>("DELETE", `/collections/outfits/${encodeURIComponent(outfitId)}`);
+  }
+
+  // --- Wardrobe (owned garments) ---
+
+  /** Add a garment: a catalog `item_id` or a freeform `title` (auto-classified). */
+  addWardrobeItem(input: WardrobeItemInput): Promise<WardrobeItem> {
+    return this.request<WardrobeItem>("POST", "/wardrobe/items", input);
+  }
+
+  /** The user's owned garments, most-recently-added first. */
+  listWardrobe(): Promise<WardrobeItem[]> {
+    return this.request<{ items: WardrobeItem[] }>("GET", "/wardrobe/items").then((r) => r.items);
+  }
+
+  /** Remove a wardrobe garment by id. Idempotent. */
+  removeWardrobeItem(wardrobeId: string): Promise<void> {
+    return this.request<void>("DELETE", `/wardrobe/items/${encodeURIComponent(wardrobeId)}`);
+  }
+
+  // --- Social (shared looks) ---
+
+  /** The ranked social feed: posts by engagement then recency, each look rendered. */
+  socialFeed(params: { limit?: number; offset?: number } = {}): Promise<Post[]> {
+    const query = toQuery({ ...params });
+    return this.request<{ posts: Post[] }>("GET", `/social/posts${query}`).then((r) => r.posts);
+  }
+
+  /** Share an outfit as a post. The look's item ids are stored and re-rendered. */
+  createPost(input: PostInput): Promise<Post> {
+    return this.request<Post>("POST", "/social/posts", input);
+  }
+
+  /** React once per (post, user). 404 if the post does not exist. */
+  reactToPost(postId: string, reaction = "like"): Promise<{ post_id: string; reacted: boolean }> {
+    return this.request("POST", `/social/posts/${encodeURIComponent(postId)}/react`, { reaction });
+  }
+
+  /** Re-render a post's look for the *caller* — never a blind copy. 404 if gone / not onboarded. */
+  recreatePost(postId: string): Promise<OutfitRecommendation> {
+    return this.request<OutfitRecommendation>(
+      "POST",
+      `/social/posts/${encodeURIComponent(postId)}/recreate`,
+    );
   }
 
   // --- internals ---
