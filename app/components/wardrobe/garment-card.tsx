@@ -3,25 +3,28 @@
 import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 
-import type { GarmentCategory, WardrobeItem } from "@/lib/wardrobe-store";
-import { CATEGORY_LABELS } from "@/lib/wardrobe-store";
+import type { WardrobeItem } from "@gyf/types";
+
+import { mediaUrl } from "@/lib/media";
 
 interface GarmentCardProps {
   item: WardrobeItem;
   onRemove: (id: string) => void;
 }
 
-const CATEGORY_ICONS: Record<GarmentCategory, string> = {
-  tops: "👕",
-  bottoms: "👖",
+const SLOT_ICONS: Record<string, string> = {
+  top: "👕",
+  bottom: "👖",
   outerwear: "🧥",
   footwear: "👟",
-  accessories: "🎒",
-  dresses: "👗",
-  other: "🪡",
+  accessory: "🎒",
+  dress: "👗",
 };
 
 export function GarmentCard({ item, onRemove }: GarmentCardProps) {
+  const src = mediaUrl(item.image_url);
+  const icon = SLOT_ICONS[item.slot] ?? "🪡";
+
   return (
     <motion.article
       layout
@@ -33,23 +36,24 @@ export function GarmentCard({ item, onRemove }: GarmentCardProps) {
     >
       {/* Image / placeholder */}
       <div className="relative aspect-[3/4] overflow-hidden bg-[var(--surface-2)]">
-        {item.imageUrl ? (
+        {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={item.imageUrl}
-            alt={item.name}
+            src={src}
+            alt={item.title}
+            loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <span className="text-4xl opacity-40 select-none">{CATEGORY_ICONS[item.category]}</span>
+            <span className="text-4xl opacity-40 select-none">{icon}</span>
           </div>
         )}
 
         {/* Remove button */}
         <button
           type="button"
-          aria-label={`Remove ${item.name}`}
+          aria-label={`Remove ${item.title}`}
           onClick={() => onRemove(item.id)}
           className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center border border-[var(--border-mid)] bg-[var(--bg)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:border-[var(--error)] hover:text-[var(--error)]"
         >
@@ -68,14 +72,10 @@ export function GarmentCard({ item, onRemove }: GarmentCardProps) {
 
       {/* Meta */}
       <div className="flex flex-col gap-1 p-3">
-        <p className="t-label truncate text-[var(--text)]">{item.name}</p>
+        <p className="t-label truncate text-[var(--text)]">{item.title}</p>
         <div className="flex items-center justify-between">
-          <span className="t-caption text-[var(--text-faint)]">
-            {CATEGORY_LABELS[item.category]}
-          </span>
-          {item.brand && (
-            <span className="t-mono text-[var(--text-faint)] text-[10px]">{item.brand}</span>
-          )}
+          <span className="t-caption capitalize text-[var(--text-faint)]">{item.category}</span>
+          <span className="t-mono text-[var(--text-faint)] text-[10px] capitalize">{item.slot}</span>
         </div>
       </div>
     </motion.article>
