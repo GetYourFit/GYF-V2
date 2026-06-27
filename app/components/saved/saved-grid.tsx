@@ -28,8 +28,21 @@ export function SavedGrid() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    browserApi()
+      .listSavedOutfits()
+      .then((data) => {
+        if (!active) return;
+        setLooks(data);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (active) setStatus("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const remove = useCallback((look: SavedOutfit) => {
     // Optimistic removal; restore on failure so the UI never lies about state.

@@ -16,6 +16,7 @@ import type {
   PostInput,
   Profile,
   ProfileInput,
+  ProfileSummary,
   SavedItem,
   SavedOutfit,
   SaveOutfitRequest,
@@ -101,6 +102,12 @@ export class GyfApi {
 
   deleteProfile(): Promise<void> {
     return this.request<void>("DELETE", "/profile");
+  }
+
+  /** Profile stats (outfits made, items saved, wardrobe size, posts, reactions)
+   *  plus the gamification badges those thresholds unlock. */
+  getProfileSummary(): Promise<ProfileSummary> {
+    return this.request<ProfileSummary>("GET", "/profile/summary");
   }
 
   /** Photo onboarding: upload one photo to estimate skin tone + body type.

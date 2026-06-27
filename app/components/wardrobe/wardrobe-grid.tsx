@@ -41,8 +41,21 @@ export function WardrobeGrid() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    browserApi()
+      .listWardrobe()
+      .then((data) => {
+        if (!active) return;
+        setItems(data);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (active) setStatus("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleAdd = useCallback(async (input: WardrobeItemInput) => {
     const added = await browserApi().addWardrobeItem(input);

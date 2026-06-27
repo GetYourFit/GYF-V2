@@ -11,6 +11,7 @@ import type { components } from "./api";
 /** Convenience aliases for the API models the web app consumes most. */
 export type ProfileInput = components["schemas"]["ProfileInput"];
 export type Profile = components["schemas"]["Profile"];
+export type ProfileSummary = components["schemas"]["ProfileSummary"];
 export type BudgetRange = components["schemas"]["BudgetRange"];
 export type ConsentInput = components["schemas"]["ConsentInput"];
 export type OutfitRecommendation = components["schemas"]["OutfitRecommendation"];
