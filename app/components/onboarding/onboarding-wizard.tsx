@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
+import { mergeEstimated } from "@/lib/estimate";
 import {
   BODY_TYPES,
   CONSENT_OPTIONS,
@@ -97,17 +98,10 @@ export function OnboardingWizard() {
     );
   }
 
-  function applyEstimated(profile: Profile) {
-    setForm((f) => ({
-      ...f,
-      skin_tone: profile.skin_tone ?? f.skin_tone,
-      undertone: profile.undertone ?? f.undertone,
-      body_type: profile.body_type ?? f.body_type,
-      measurements:
-        profile.measurements && Object.keys(profile.measurements).length > 0
-          ? profile.measurements
-          : f.measurements,
-    }));
+  function applyEstimated(profile: Profile): string[] {
+    const { patch, applied } = mergeEstimated(profile);
+    setForm((f) => ({ ...f, ...patch }));
+    return applied;
   }
 
   function goTo(next: number) {
@@ -252,7 +246,7 @@ function StepYou({
 }: {
   form: ProfileInput;
   set: <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) => void;
-  applyEstimated: (profile: Profile) => void;
+  applyEstimated: (profile: Profile) => string[];
 }) {
   return (
     <>

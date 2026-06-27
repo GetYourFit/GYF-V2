@@ -11,7 +11,9 @@ const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 10 * 1024 * 1024;
 
 interface PhotoUploadProps {
-  onEstimated: (profile: Profile) => void;
+  /** Applies the estimate to the form and returns the human labels of the fields
+   *  that were actually adopted (vocab-valid). Drives the honest status message. */
+  onEstimated: (profile: Profile) => string[];
 }
 
 export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
@@ -60,14 +62,13 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       const api = browserApi();
       await api.putConsent({ flags: { data_processing: true } });
       const profile = await api.uploadPhoto(file);
-      const filled: string[] = [];
-      if (profile.skin_tone) filled.push("skin tone");
-      if (profile.undertone) filled.push("undertone");
-      if (profile.body_type) filled.push("body type");
-      setEstimated(filled);
-      setMissed(filled.length === 0);
+      // The form merge is the single source of truth: it applies only values the
+      // manual selects can show, and reports exactly those — so the message can
+      // never claim a field that stays blank.
+      const applied = onEstimated(profile);
+      setEstimated(applied);
+      setMissed(applied.length === 0);
       setDone(true);
-      onEstimated(profile);
     } catch (e) {
       if (e instanceof ApiError && e.isUnavailable) {
         setError("Photo onboarding isn’t available right now — please use the form below.");

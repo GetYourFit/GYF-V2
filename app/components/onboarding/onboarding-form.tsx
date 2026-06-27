@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
+import { mergeEstimated } from "@/lib/estimate";
 import {
   BODY_TYPES,
   CONSENT_OPTIONS,
@@ -82,18 +83,11 @@ export function OnboardingForm() {
     );
   }
 
-  function applyEstimated(profile: Profile) {
-    setForm((f) => ({
-      ...f,
-      skin_tone: profile.skin_tone ?? f.skin_tone,
-      undertone: profile.undertone ?? f.undertone,
-      body_type: profile.body_type ?? f.body_type,
-      measurements:
-        profile.measurements && Object.keys(profile.measurements).length > 0
-          ? profile.measurements
-          : f.measurements,
-    }));
+  function applyEstimated(profile: Profile): string[] {
+    const { patch, applied } = mergeEstimated(profile);
+    setForm((f) => ({ ...f, ...patch }));
     setSaved(false);
+    return applied;
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
