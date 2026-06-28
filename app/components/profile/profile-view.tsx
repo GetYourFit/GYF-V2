@@ -101,7 +101,10 @@ function Stats({ summary }: { summary: ProfileSummary }) {
     { label: "Reactions", value: summary.reactions_received },
   ];
   return (
-    <section className="grid grid-cols-3 gap-px border border-[var(--border)] bg-[var(--border)] sm:grid-cols-5">
+    <section
+      aria-label="Profile statistics"
+      className="grid grid-cols-3 gap-px border border-[var(--border)] bg-[var(--border)] sm:grid-cols-5"
+    >
       {items.map(({ label, value, href }) => {
         const inner = (
           <>
@@ -283,7 +286,11 @@ function AccountControls() {
           </div>
         )}
       </div>
-      {error && <p className="t-caption text-[var(--danger,#c0392b)]">{error}</p>}
+      {error && (
+        <p role="alert" className="t-caption text-[var(--danger,#c0392b)]">
+          {error}
+        </p>
+      )}
       <p className="t-caption text-[var(--text-faint)] max-w-[420px]">
         Deleting erases your profile, saved looks, wardrobe, and posts. Your data is yours — GYF
         removes it on request.

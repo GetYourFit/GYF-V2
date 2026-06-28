@@ -38,6 +38,9 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const sentinelRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Synchronous in-flight guard — never stale in the loadPage closure (unlike the
+  // `loading` state, which would lag a render and let a concurrent append slip through).
+  const loadingRef = useRef(false);
 
   const query = [filters.q || "fashion", filters.occasion, filters.style].filter(Boolean).join(" ");
 
@@ -45,7 +48,8 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
     async (pageNum: number, reset: boolean) => {
       // Append loads yield while one is in flight; a reset (filter change) always
       // proceeds, aborting any prior request first.
-      if (loading && !reset) return;
+      if (loadingRef.current && !reset) return;
+      loadingRef.current = true;
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
@@ -74,11 +78,11 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
         if ((e as { name?: string }).name === "AbortError") return;
         setError(e instanceof Error ? e.message : "Could not load items.");
       } finally {
+        loadingRef.current = false;
         setLoading(false);
       }
     },
     // `query`/`filters` capture the current filter set; intentionally the only deps.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [query, filters],
   );
 

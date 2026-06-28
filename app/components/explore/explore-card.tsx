@@ -51,8 +51,9 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
           </div>
         )}
 
-        {/* Actions overlay */}
-        <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        {/* Actions overlay — also revealed on keyboard focus so the control is
+            never focusable-while-invisible (WCAG 2.4.7). */}
+        <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
           <button
             type="button"
             aria-label={saved ? "Saved" : "Save item"}

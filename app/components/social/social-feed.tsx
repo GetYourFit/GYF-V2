@@ -41,9 +41,9 @@ export function SocialFeed() {
     return res.reacted;
   }, []);
 
-  function handleCreated(post: Post) {
+  const handleCreated = useCallback((post: Post) => {
     setPosts((prev) => [post, ...prev]);
-  }
+  }, []);
 
   return (
     <>
