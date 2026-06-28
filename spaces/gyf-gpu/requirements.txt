@@ -12,13 +12,16 @@ protobuf
 # Skin-tone lane (M4): RetinaFace face detect + FaRL face-parsing (MIT) for the
 # real CIELAB->MST pipeline vendored under skintone/. CPU-capable; torch already present.
 pyfacer>=0.0.5
-# Body-type lane (M3): SAM 3D Body → MHR mesh. Provides `notebook.utils.setup_sam_3d_body`,
-# which app.py imports — WITHOUT this the body call raises ModuleNotFoundError on the Space
-# (skin-tone still works). GATED: the HF account behind GYF_HF_TOKEN must request access to
-# facebook/sam-3d-body-dinov3 AND accept the SAM license, or the checkpoint download 401s.
-# PyTorch3D is the fragile part on ZeroGPU — pin a CUDA-matched prebuilt wheel if the source
-# build times out / fails to compile.
-hydra-core>=1.3
-iopath
-git+https://github.com/facebookresearch/pytorch3d.git@stable
-git+https://github.com/facebookresearch/sam-3d-body.git
+# Body-type lane (M3): commercial-clean, ZeroGPU-deployable silhouette pipeline
+# (replaces SAM 3D Body — that stack needs detectron2+pyrender+pytorch3d+conda and
+# is NOT pip-deployable on a Space; see docs/plans/m3-body-type-rtmw-birefnet.md).
+#   - rtmlib: RTMW whole-body keypoints as plain ONNX (Apache-2.0, no mmcv/mmpose/mmdet)
+#   - BiRefNet: SOTA high-res body silhouette mask (MIT)
+# Mask widths at keypoint-anchored shoulder/waist/hip lines → ratios → silhouette taxonomy.
+# NOTE: app.py estimate_body + ml/usermodel/body still need the matching rewrite before
+# GYF_BODY_REMOTE_URL is pointed here — until then keep body unset (skin-tone unaffected).
+rtmlib>=0.0.13
+onnxruntime-gpu
+# BiRefNet is loaded from HF (ZhengPeng7/BiRefNet) via transformers AutoModel + timm/kornia.
+timm
+kornia
