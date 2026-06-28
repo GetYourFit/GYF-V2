@@ -6,6 +6,11 @@
 > - *How every pillar is built* → `engineering-doctrine.md` (ports, two-lane license gate,
 >   foundation+adapter, real-data flywheel, eval-gated promotion).
 > - *Which model per pillar* → `tech-stack.md`.
+> - *How we stay provably dependable* → `plans/reliability-trustworthiness.md` (the
+>   **Reliability track**: live-verified Definition-of-Done, post-deploy smoke gate,
+>   module observability/alerting, remote-lane resilience, accuracy+fairness eval gates).
+>   It runs **in parallel** with the feature milestones below — a standing quality system,
+>   not a phase to finish first. Its DoD upgrade is binding on every milestone from now.
 > - **This file = the *order*.** The single, dependency-correct sequence of buildable
 >   increments from today to the full platform. Each milestone references the others; it does
 >   not restate them.
