@@ -11,8 +11,8 @@ from __future__ import annotations
 import pytest
 from PIL import Image
 
+from common.remote_client import image_to_b64_png
 from usermodel.body import RemoteBodyEstimator, SilhouetteBodyEstimator, body_estimator_for
-from usermodel.body.remote import _image_to_b64_png
 
 _MEASUREMENTS = {"height": 1.0, "shoulder_width": 0.5, "chest": 0.46, "waist": 0.33, "hip": 0.5}
 
@@ -42,7 +42,7 @@ def test_requires_url() -> None:
 
 
 def test_image_to_b64_png_roundtrips() -> None:
-    assert isinstance(_image_to_b64_png(Image.new("RGB", (4, 4), (1, 2, 3))), str)
+    assert isinstance(image_to_b64_png(Image.new("RGB", (4, 4), (1, 2, 3))), str)
 
 
 def test_estimate_returns_shape_and_calls_api() -> None:

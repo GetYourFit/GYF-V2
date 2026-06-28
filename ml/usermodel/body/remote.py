@@ -18,10 +18,9 @@ module imports — and unit-tests with a fake client — without network or heav
 
 from __future__ import annotations
 
-import base64
-import io
 from typing import TYPE_CHECKING
 
+from common.remote_client import GradioSpaceClient, image_to_b64_png
 from gyf_contracts.usermodel import canonical_measurements
 
 from .estimator import DEFAULT_MODEL_VERSION, BodyShapeEstimate
@@ -33,34 +32,12 @@ if TYPE_CHECKING:
 _ESTIMATE_BODY_API = "/estimate_body"
 
 
-def _image_to_b64_png(image: Image) -> str:
-    """Encode a PIL image as a base64 PNG string (the wire format the Space decodes)."""
-    buffer = io.BytesIO()
-    image.convert("RGB").save(buffer, format="PNG")
-    return base64.b64encode(buffer.getvalue()).decode("ascii")
-
-
-class RemoteBodyEstimator:
+class RemoteBodyEstimator(GradioSpaceClient):
     """BodyEstimator port backed by a remote HF ZeroGPU Space; same contract as local."""
-
-    def __init__(self, url: str, *, hf_token: str | None = None) -> None:
-        if not url:
-            raise ValueError("RemoteBodyEstimator requires a non-empty Space url")
-        self._url = url
-        self._hf_token = hf_token or None
-        self._client: object | None = None
-
-    def _get_client(self) -> object:
-        if self._client is None:
-            from gradio_client import Client  # lazy: only the first real call needs it
-
-            # gradio_client 2.x renamed the auth kwarg `hf_token` -> `token`.
-            self._client = Client(self._url, token=self._hf_token)
-        return self._client
 
     def estimate(self, image: Image) -> BodyShapeEstimate:
         payload = self._get_client().predict(  # type: ignore[attr-defined]
-            _image_to_b64_png(image),
+            image_to_b64_png(image),
             api_name=_ESTIMATE_BODY_API,
         )
         return self._shape_from_payload(payload)

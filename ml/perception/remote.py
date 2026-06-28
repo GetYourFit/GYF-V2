@@ -18,11 +18,11 @@ pattern in :class:`~perception.model.SiglipEncoder`.
 
 from __future__ import annotations
 
-import base64
-import io
 from typing import TYPE_CHECKING
 
 import numpy as np
+
+from common.remote_client import GradioSpaceClient, image_to_b64_png
 
 from .model import DEFAULT_LOGIT_SCALE, EMBEDDING_DIM, Encoder, l2_normalize
 
@@ -34,14 +34,7 @@ _EMBED_IMAGES_API = "/embed_images"
 _EMBED_TEXTS_API = "/embed_texts"
 
 
-def _image_to_b64_png(image: Image) -> str:
-    """Encode a PIL image as a base64 PNG string (the wire format the Space decodes)."""
-    buffer = io.BytesIO()
-    image.convert("RGB").save(buffer, format="PNG")
-    return base64.b64encode(buffer.getvalue()).decode("ascii")
-
-
-class RemoteEncoder:
+class RemoteEncoder(GradioSpaceClient):
     """Encoder port backed by a remote HF ZeroGPU Space; same contract as SiglipEncoder."""
 
     def __init__(
@@ -53,25 +46,13 @@ class RemoteEncoder:
         dim: int = EMBEDDING_DIM,
         logit_scale: float = DEFAULT_LOGIT_SCALE,
     ) -> None:
-        if not url:
-            raise ValueError("RemoteEncoder requires a non-empty Space url")
+        super().__init__(url, hf_token=hf_token)
         # `dim` is only a hint for the empty-input fast path; the real width is learned from the
         # first response (so a 1152-dim so400m candidate is accepted, not rejected against 768).
         self.dim = dim
         self._dim_locked = False
         self._model_id = model_id
-        self._url = url
-        self._hf_token = hf_token or None
         self._logit_scale = logit_scale
-        self._client = None  # built lazily on first call
-
-    def _get_client(self):
-        if self._client is None:
-            from gradio_client import Client  # lazy: only the first real call needs it
-
-            # gradio_client renamed the auth kwarg `hf_token` -> `token` in 2.x.
-            self._client = Client(self._url, token=self._hf_token)
-        return self._client
 
     @property
     def logit_scale(self) -> float:
@@ -113,7 +94,7 @@ class RemoteEncoder:
             window = images[start : start + batch_size]
             payload = client.predict(
                 self._model_id,
-                [_image_to_b64_png(img) for img in window],
+                [image_to_b64_png(img) for img in window],
                 api_name=_EMBED_IMAGES_API,
             )
             chunks.append(self._embeddings_from_payload(payload))

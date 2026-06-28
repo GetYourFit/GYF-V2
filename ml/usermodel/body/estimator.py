@@ -27,6 +27,8 @@ from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
 
+from common.device import select_device
+
 from .measurements import silhouette_measurements
 
 if TYPE_CHECKING:
@@ -56,17 +58,6 @@ class BodyEstimator(Protocol):
     def estimate(self, image: Image) -> BodyShapeEstimate: ...
 
 
-def _select_device() -> str:
-    """Most capable accelerator, excluding Apple MPS (repo device convention)."""
-    import torch
-
-    if torch.cuda.is_available():
-        return "cuda"
-    if hasattr(torch, "xpu") and torch.xpu.is_available():
-        return "xpu"
-    return "cpu"
-
-
 class SilhouetteBodyEstimator:
     """Reference estimator: BiRefNet silhouette + RTMW keypoints → torso widths.
 
@@ -88,7 +79,7 @@ class SilhouetteBodyEstimator:
         from transformers import AutoModelForImageSegmentation
 
         if self._device is None:
-            self._device = _select_device()
+            self._device = select_device()
         seg = AutoModelForImageSegmentation.from_pretrained(_BIREFNET_REPO, trust_remote_code=True)
         # BiRefNet ships half-precision weights; pin float32 so it matches our float
         # input on every device (CPU has no half kernels; avoids a dtype mismatch).

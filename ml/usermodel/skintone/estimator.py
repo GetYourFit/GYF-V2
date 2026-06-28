@@ -23,6 +23,8 @@ from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
 
+from common.device import select_device
+
 from .color import srgb_to_lab
 from .whitebalance import shades_of_gray
 
@@ -58,17 +60,6 @@ class SkinToneEstimator(Protocol):
     def estimate(self, image: Image) -> SkinReadout: ...
 
 
-def _select_device() -> str:
-    """Most capable accelerator, excluding Apple MPS (repo device convention)."""
-    import torch
-
-    if torch.cuda.is_available():
-        return "cuda"
-    if hasattr(torch, "xpu") and torch.xpu.is_available():
-        return "xpu"
-    return "cpu"
-
-
 class FaceParsingSkinToneEstimator:
     """Production estimator: RetinaFace detect → FaRL parse → white-balanced Lab."""
 
@@ -88,7 +79,7 @@ class FaceParsingSkinToneEstimator:
         self._torch = torch
         self._facer = facer
         if self._device is None:
-            self._device = _select_device()
+            self._device = select_device()
         # RetinaFace handles in-the-wild / small / non-frontal faces; FaRL on the
         # CelebM label set is a strong, commercial-clean per-pixel face parser.
         self._detector = facer.face_detector("retinaface/mobilenet", device=self._device)

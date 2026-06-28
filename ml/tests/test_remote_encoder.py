@@ -14,7 +14,8 @@ import pytest
 from PIL import Image
 
 from perception.model import EMBEDDING_DIM
-from perception.remote import RemoteEncoder, _image_to_b64_png, encoder_for
+from common.remote_client import image_to_b64_png
+from perception.remote import RemoteEncoder, encoder_for
 
 
 class _FakeClient:
@@ -43,7 +44,7 @@ def test_requires_url() -> None:
 
 def test_image_to_b64_png_roundtrips() -> None:
     img = Image.new("RGB", (4, 4), (10, 20, 30))
-    decoded = Image.open(__import__("io").BytesIO(base64.b64decode(_image_to_b64_png(img))))
+    decoded = Image.open(__import__("io").BytesIO(base64.b64decode(image_to_b64_png(img))))
     assert decoded.size == (4, 4)
 
 
