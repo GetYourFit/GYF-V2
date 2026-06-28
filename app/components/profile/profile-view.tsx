@@ -93,21 +93,36 @@ export function ProfileView() {
 }
 
 function Stats({ summary }: { summary: ProfileSummary }) {
-  const items = [
+  const items: Array<{ label: string; value: number; href?: string }> = [
     { label: "Outfits", value: summary.outfits_made },
-    { label: "Saved", value: summary.items_saved },
-    { label: "Wardrobe", value: summary.wardrobe_size },
-    { label: "Posts", value: summary.posts },
+    { label: "Saved", value: summary.items_saved, href: "/saved" },
+    { label: "Wardrobe", value: summary.wardrobe_size, href: "/wardrobe" },
+    { label: "Posts", value: summary.posts, href: "/social" },
     { label: "Reactions", value: summary.reactions_received },
   ];
   return (
     <section className="grid grid-cols-3 gap-px border border-[var(--border)] bg-[var(--border)] sm:grid-cols-5">
-      {items.map(({ label, value }) => (
-        <div key={label} className="flex flex-col gap-1 bg-[var(--surface)] p-5">
-          <span className="t-display text-[var(--text)]">{value}</span>
-          <span className="t-label text-[var(--text-faint)]">{label}</span>
-        </div>
-      ))}
+      {items.map(({ label, value, href }) => {
+        const inner = (
+          <>
+            <span className="t-display text-[var(--text)]">{value}</span>
+            <span className="t-label text-[var(--text-faint)]">{label}</span>
+          </>
+        );
+        return href ? (
+          <Link
+            key={label}
+            href={href}
+            className="flex flex-col gap-1 bg-[var(--surface)] p-5 transition-colors hover:bg-[var(--surface-2)]"
+          >
+            {inner}
+          </Link>
+        ) : (
+          <div key={label} className="flex flex-col gap-1 bg-[var(--surface)] p-5">
+            {inner}
+          </div>
+        );
+      })}
     </section>
   );
 }
