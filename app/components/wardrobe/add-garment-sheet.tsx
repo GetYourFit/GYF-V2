@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, X } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 
 import type { SearchResult, WardrobeItemInput } from "@gyf/types";
 
@@ -32,6 +32,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) {
+  const titleId = useId();
   const [mode, setMode] = useState<Mode>("catalog");
   // Catalog search
   const [query, setQuery] = useState("");
@@ -122,11 +123,19 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") handleClose();
+            }}
             className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col border-l border-[var(--border-mid)] bg-[var(--surface)]"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5">
-              <p className="t-title text-[var(--text)]">Add to wardrobe</p>
+              <p id={titleId} className="t-title text-[var(--text)]">
+                Add to wardrobe
+              </p>
               <button
                 type="button"
                 aria-label="Close"
@@ -143,6 +152,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                 <button
                   key={m}
                   type="button"
+                  aria-pressed={mode === m}
                   onClick={() => {
                     setMode(m);
                     setError(null);
