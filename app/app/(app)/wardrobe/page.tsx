@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 import { WardrobeGrid } from "@/components/wardrobe/wardrobe-grid";
 
 export const metadata: Metadata = {
@@ -9,14 +11,13 @@ export const metadata: Metadata = {
 
 export default function WardrobePage() {
   return (
-    <div className="mx-auto w-full px-4 py-6">
-      <header className="mb-8">
-        <h1 className="t-display text-[var(--text)]">Wardrobe</h1>
-        <p className="t-caption mt-2 text-[var(--text-faint)]">
-          Everything you own — GYF styles around it.
-        </p>
-      </header>
+    <PageContainer width="wide">
+      <PageHeader
+        eyebrow="Your closet"
+        title="Wardrobe"
+        description="Everything you own — GYF styles around it."
+      />
       <WardrobeGrid />
-    </div>
+    </PageContainer>
   );
 }

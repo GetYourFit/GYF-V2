@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { ExploreShell } from "@/components/explore/explore-shell";
+import { PageContainer } from "@/components/layout/page-container";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = {
   title: "Explore — GYF",
@@ -9,14 +11,13 @@ export const metadata: Metadata = {
 
 export default function ExplorePage() {
   return (
-    <div className="mx-auto w-full px-4 py-6">
-      <header className="mb-8">
-        <h1 className="t-display text-[var(--text)]">Explore</h1>
-        <p className="t-caption mt-2 text-[var(--text-faint)]">
-          Discover garments beyond your recommendations.
-        </p>
-      </header>
+    <PageContainer width="wide">
+      <PageHeader
+        eyebrow="Catalog"
+        title="Explore"
+        description="Discover garments beyond your recommendations."
+      />
       <ExploreShell />
-    </div>
+    </PageContainer>
   );
 }
