@@ -39,7 +39,9 @@ describe("PhotoUpload", () => {
 
   it("estimates and reports the merged profile on success", async () => {
     uploadPhoto.mockResolvedValueOnce({ body_type: "hourglass", source: "photo" });
-    const onEstimated = vi.fn();
+    // onEstimated returns the human labels actually adopted; the component reads
+    // `.length` on it to decide the status message, so it must return an array.
+    const onEstimated = vi.fn(() => ["body type"]);
     render(<PhotoUpload onEstimated={onEstimated} />);
     pickFile("image/png");
     fireEvent.click(screen.getByRole("button", { name: /estimate from photo/i }));

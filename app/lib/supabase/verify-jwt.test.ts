@@ -38,7 +38,9 @@ async function signJwt(
   alg = "ES256",
 ): Promise<string> {
   const head = b64urlJson({ alg, typ: "JWT", kid });
-  const body = b64urlJson(payload);
+  // Real Supabase user-session tokens carry aud "authenticated"; verifyAccessToken
+  // requires it, so default it here (callers may override via payload).
+  const body = b64urlJson({ aud: "authenticated", ...payload });
   const sig = new Uint8Array(
     await crypto.subtle.sign(
       { name: "ECDSA", hash: "SHA-256" },
