@@ -52,10 +52,11 @@ def test_authenticated_feedback_lands_in_postgres_and_is_queryable(
         algorithm="HS256",
     )
 
-    # Wire the API to a real Postgres sink for this test.
-    from app import main
+    # Wire the API to a real Postgres sink for this test. The feedback route reads
+    # the sink through ``get_event_sink`` → ``app.dependencies.sink``, so patch there.
+    from app import dependencies
 
-    monkeypatch.setattr(main, "sink", PostgresSink(DSN))
+    monkeypatch.setattr(dependencies, "sink", PostgresSink(DSN))
 
     client = TestClient(app)
     res = client.post(

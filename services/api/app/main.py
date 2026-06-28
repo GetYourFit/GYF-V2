@@ -1,74 +1,41 @@
-"""GYF core API — P0 foundations.
+"""GYF core API — application wiring.
 
-Exposes health, an authenticated identity probe, and a feedback-ingestion
-endpoint that validates the behavioral event taxonomy and attributes each event
-to the authenticated principal. Persistence/broker wiring lands as P0 infra is
-provisioned.
+Constructs the FastAPI app (OpenAPI metadata, CORS, observability, static media)
+and mounts the system probes + the visual gallery. Every product surface lives in
+its own router under :mod:`app.routers`, and all repository/adapter construction
+lives in :mod:`app.dependencies`. This module is the composition root — it wires
+those together and nothing else.
+
+The dependency providers are re-exported at the bottom so existing
+``from app.main import get_*`` imports (and ``app.dependency_overrides`` keyed on
+them) keep working unchanged.
 """
 
 from __future__ import annotations
 
-import io
 import logging
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, Response, UploadFile, status
+from fastapi import Depends, FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .auth import Principal, get_current_principal
-from .catalog.directory import ItemDirectory
-from .catalog.retrieval import (
-    SearchResult,
-    TextEmbedder,
-    VectorSearchRepository,
-    enrich_results,
-    search_text,
-)
-from .collections import (
-    CollectionRepository,
-    SaveItemRequest,
-    SavedItem,
-    enrich as enrich_saved,
-)
 from .config import settings
-from .events import FeedbackRequest
+from .dependencies import get_readiness
 from .metrics import install_metrics, metrics_enabled
-from .observability import database_ready, install_request_context
-from .profile.account import AccountRepository
-from .profile.models import ConsentInput, Profile, ProfileInput, profile_from_manual
-from .profile.photo import BodyAdapter, SkinToneAdapter, profile_from_photo
-from .profile.repository import ProfileRepository
-from .profile.summary import ProfileSummary, SummaryRepository, summarize
-from .ratelimit import rate_limit
-from .recsys.candidates import CandidateRepository
-from .saved_outfits import (
-    SavedOutfit,
-    SavedOutfitRepository,
-    SaveOutfitRequest,
-    enrich as enrich_saved_outfits,
-)
-from .recsys.models import OutfitRecommendation
-from .recsys.service import recommend
-from .recsys.taste import TasteRepository
-from .sink import EventSink, get_sink
-from .social import (
-    Post,
-    PostInput,
-    ReactionInput,
-    SocialRepository,
-    enrich_feed,
-    make_record,
+from .observability import install_request_context
+from .routers import (
+    catalog,
+    collections,
+    feedback,
+    profile,
+    recommendations,
+    social,
+    wardrobe,
 )
 from .telemetry import configure_telemetry
-from .wardrobe import (
-    WardrobeItem,
-    WardrobeItemInput,
-    WardrobeRepository,
-    build_record,
-    enrich as enrich_wardrobe,
-)
 
 _API_DESCRIPTION = """
 GYF — your AI-native personal stylist. This is the core API.
@@ -121,7 +88,10 @@ app = FastAPI(
         {"name": "catalog", "description": "Visual search & shop-the-look."},
         {"name": "collections", "description": "Server-backed saved-items shortlist."},
         {"name": "wardrobe", "description": "The garments a user owns; styled around."},
-        {"name": "social", "description": "Shareable style posts, reactions & follower re-rendering."},
+        {
+            "name": "social",
+            "description": "Shareable style posts, reactions & follower re-rendering.",
+        },
         {"name": "feedback", "description": "Behavioral events that train personalization."},
         {"name": "system", "description": "Health, identity probes & the visual gallery."},
     ],
@@ -153,8 +123,6 @@ else:
         settings.env,
     )
 
-sink = get_sink()
-
 
 def _media_root() -> Path | None:
     """Resolve the catalog-image directory, or ``None`` if it doesn't exist.
@@ -164,7 +132,9 @@ def _media_root() -> Path | None:
     working directory.
     """
     configured = Path(settings.media_dir)
-    root = configured if configured.is_absolute() else Path(__file__).resolve().parents[3] / configured
+    root = (
+        configured if configured.is_absolute() else Path(__file__).resolve().parents[3] / configured
+    )
     return root if root.is_dir() else None
 
 
@@ -179,6 +149,9 @@ _telemetry = configure_telemetry(app)
 install_metrics(app)
 # Foundation hardening (W1): request ids, structured access log, uniform error envelope.
 install_request_context(app)
+
+
+# --- System probes & the visual gallery ------------------------------------
 
 
 @app.get("/", include_in_schema=False)
@@ -209,11 +182,6 @@ def health() -> dict[str, object]:
     }
 
 
-def get_readiness() -> bool:
-    """Readiness signal — DB reachable. Overridable in tests via dependency_overrides."""
-    return database_ready(settings.database_url)
-
-
 @app.get("/ready", tags=["system"], summary="Readiness probe (dependencies reachable)")
 def ready(db_ready: bool = Depends(get_readiness)) -> Response:
     """Readiness: distinct from liveness — reports whether the API can actually serve
@@ -230,730 +198,61 @@ def me(principal: Principal = Depends(get_current_principal)) -> dict[str, str |
     return {"user_id": principal.user_id, "email": principal.email}
 
 
-# --- Retrieval (P1-A A3) dependencies. Overridable in tests via dependency_overrides. ---
+# --- Product surfaces ------------------------------------------------------
+
+app.include_router(catalog.router)
+app.include_router(profile.router)
+app.include_router(recommendations.router)
+app.include_router(feedback.router)
+app.include_router(collections.router)
+app.include_router(wardrobe.router)
+app.include_router(social.router)
 
 
-def get_search_repo() -> VectorSearchRepository:
-    """The pgvector-backed retrieval repository (lazy connection pool)."""
-    from .catalog.retrieval import PostgresVectorSearchRepository
-
-    return PostgresVectorSearchRepository(settings.database_url)
-
-
-def get_text_embedder() -> TextEmbedder:
-    """The SigLIP text-query embedder from the ML runtime.
-
-    Imported lazily so the API needs the ML/torch stack only when text search is
-    actually served. When the perception runtime is not installed, ``/items/search``
-    returns an honest 503 rather than pretending to work.
-    """
-    try:
-        from .catalog.perception_adapter import cached_text_embedder
-
-        return cached_text_embedder()
-    except ImportError as exc:  # perception runtime / torch not installed
-        raise HTTPException(status_code=503, detail="text search unavailable") from exc
-
-
-def get_item_directory() -> ItemDirectory:
-    """The Postgres-backed item directory used to enrich saved/wardrobe/social ids
-    and to attach real commerce fields (price/buy_url) to catalog search hits."""
-    from .catalog.directory import PostgresItemDirectory
-
-    return PostgresItemDirectory(settings.database_url)
-
-
-@app.get("/items/{item_id}/similar", tags=["catalog"])
-def similar_items(
-    item_id: str,
-    k: int = Query(10, ge=1, le=50),
-    offset: int = Query(0, ge=0),
-    region: str | None = None,
-    repo: VectorSearchRepository = Depends(get_search_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> dict[str, list[SearchResult]]:
-    """Visually-similar items (nearest neighbours of the item's embedding)."""
-    hits = repo.similar_to_item(item_id, k, region, offset)
-    return {"results": enrich_results(hits, directory)}
-
-
-@app.get(
-    "/items/search",
-    tags=["catalog"],
-    dependencies=[Depends(rate_limit("search", "rate_limit_search"))],
+# --- Back-compat re-exports -------------------------------------------------
+# The dependency providers moved to ``app.dependencies``; re-export them so
+# ``from app.main import get_*`` and ``app.dependency_overrides[get_*]`` keep
+# working. ``sink`` is re-exported for callers that reference ``main.sink``;
+# tests that need to swap it should patch ``app.dependencies.sink`` (the single
+# source ``get_event_sink`` reads).
+from .dependencies import (  # noqa: E402  (re-export after app construction)
+    get_account_repo,
+    get_body_adapter,
+    get_candidate_repo,
+    get_collection_repo,
+    get_event_sink,
+    get_item_directory,
+    get_profile_repo,
+    get_saved_outfit_repo,
+    get_search_repo,
+    get_skin_adapter,
+    get_social_repo,
+    get_summary_repo,
+    get_taste_repo,
+    get_text_embedder,
+    get_wardrobe_repo,
+    require_active_principal,
+    sink,
 )
-def search_items(
-    q: str = Query(..., min_length=1),
-    k: int = Query(10, ge=1, le=50),
-    offset: int = Query(0, ge=0),
-    region: str | None = None,
-    repo: VectorSearchRepository = Depends(get_search_repo),
-    embedder: TextEmbedder = Depends(get_text_embedder),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> dict[str, list[SearchResult]]:
-    """Text->image search over the catalog (e.g. 'red floral summer dress').
 
-    The encoder loads its backend lazily, so a missing runtime (e.g. ``open_clip``
-    absent from the API image, which delegates GPU work to the remote lane) only
-    raises when we actually embed. Convert that into the same honest 503 the
-    construction-time path returns, never a 500 that pretends the search broke.
-    """
-    try:
-        hits = search_text(repo, embedder, q, k, region, offset)
-        return {"results": enrich_results(hits, directory)}
-    except ImportError as exc:  # encoder backend not installed in this runtime
-        raise HTTPException(status_code=503, detail="text search unavailable") from exc
-
-
-# --- User modeling (P1-B Cycle 1) dependencies. Overridable in tests. ---
-
-
-def get_profile_repo() -> ProfileRepository:
-    """The Postgres-backed profile repository (lazy connection pool)."""
-    from .profile.repository import PostgresProfileRepository
-
-    return PostgresProfileRepository(settings.database_url)
-
-
-def get_account_repo() -> AccountRepository:
-    """The Postgres-backed account repository (lazy connection pool)."""
-    from .profile.account import PostgresAccountRepository
-
-    return PostgresAccountRepository(settings.database_url)
-
-
-def require_active_principal(
-    principal: Principal = Depends(get_current_principal),
-    repo: AccountRepository = Depends(get_account_repo),
-) -> Principal:
-    """The caller, rejected with 403 if their account has been (soft) deleted.
-
-    A tombstoned user is disabled the instant they request deletion: no further
-    reads or writes until the grace window elapses and the purge job erases them.
-
-    The principal is provisioned just-in-time on first authed call (JIT user
-    provisioning from the identity provider): a verified Supabase user — or the
-    dev principal in open-auth — gets a ``users`` row so a freshly rebuilt or
-    empty database just works, instead of an absent row reading as "deleted" and
-    every call 403-ing. ``ensure_user`` is insert-if-absent, so it never
-    resurrects a real tombstone — deletion/erasure semantics are preserved (a
-    tombstoned user still 403s; a fully purged one re-registers as a new account).
-    """
-    repo.ensure_user(principal.user_id)
-    if repo.is_deleted(principal.user_id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account deleted")
-    return principal
-
-
-@app.get("/profile", tags=["profile"])
-def read_profile(
-    principal: Principal = Depends(require_active_principal),
-    repo: ProfileRepository = Depends(get_profile_repo),
-) -> Profile:
-    """The authenticated user's profile. 404 before onboarding completes."""
-    profile = repo.get(principal.user_id)
-    if profile is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
-    return profile
-
-
-@app.put("/profile", tags=["profile"])
-def upsert_profile(
-    payload: ProfileInput,
-    principal: Principal = Depends(require_active_principal),
-    repo: ProfileRepository = Depends(get_profile_repo),
-) -> Profile:
-    """Manual onboarding / edit: validate, stamp confidences, persist, return it.
-
-    Idempotent upsert keyed by the authenticated user — the same call updates an
-    existing profile, so the always-editable-preferences requirement is satisfied.
-    """
-    profile = profile_from_manual(payload)
-    repo.upsert(principal.user_id, profile)
-    return profile
-
-
-@app.delete("/profile", status_code=status.HTTP_204_NO_CONTENT, tags=["profile"])
-def delete_profile(
-    principal: Principal = Depends(require_active_principal),
-    repo: ProfileRepository = Depends(get_profile_repo),
-) -> Response:
-    """Erase the user's profile (keeps the account). Idempotent: 204 either way."""
-    repo.delete(principal.user_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-# --- Photo onboarding (P1-B Cycles 2 & 3) dependencies. Overridable in tests. ---
-
-_ACCEPTED_PHOTO_TYPES = frozenset({"image/jpeg", "image/png", "image/webp"})
-
-
-def get_skin_adapter() -> SkinToneAdapter | None:
-    """The skin-tone estimator adapter, or ``None`` if its ml runtime is absent.
-
-    Unlike text search (a hard 503), a missing module here is a graceful per-module
-    abstain: the endpoint still runs the other module, and manual entry is always
-    available. Construction loads weights, so it is cached inside the adapter.
-    """
-    try:
-        from .profile.photo import cached_skin_adapter
-
-        return cached_skin_adapter()
-    except ImportError:
-        return None
-
-
-def get_body_adapter() -> BodyAdapter | None:
-    """The body-type estimator adapter, or ``None`` if its ml runtime is absent."""
-    try:
-        from .profile.photo import cached_body_adapter
-
-        return cached_body_adapter()
-    except ImportError:
-        return None
-
-
-@app.post(
-    "/profile/photo",
-    tags=["profile"],
-    summary="Onboard from a photo",
-    dependencies=[Depends(rate_limit("photo", "rate_limit_photo"))],
-)
-async def upsert_profile_from_photo(
-    photo: UploadFile = File(..., description="A clear, well-lit photo of the user."),
-    principal: Principal = Depends(require_active_principal),
-    profile_repo: ProfileRepository = Depends(get_profile_repo),
-    account_repo: AccountRepository = Depends(get_account_repo),
-    skin_adapter: SkinToneAdapter | None = Depends(get_skin_adapter),
-    body_adapter: BodyAdapter | None = Depends(get_body_adapter),
-) -> Profile:
-    """Estimate skin tone + undertone and body type from one photo, merge into the profile.
-
-    Consent-gated (`data_processing` required). The image is processed **in memory
-    and is ephemeral** — bytes are never logged and never persisted here (durable,
-    consented photo storage arrives with try-on). Each module **abstains** if its ml
-    runtime is unavailable, so the endpoint still succeeds with whatever ran; the
-    manual `PUT /profile` is always the fallback. Skin-tone is held in **shadow**
-    (computed, not surfaced) until the fairness gate flips `skin_tone_enabled`.
-    Every estimated field stays editable and never overwrites a higher-confidence
-    manual value.
-    """
-    if not account_repo.get_consent(principal.user_id).get("data_processing", False):
-        raise HTTPException(status_code=403, detail="data_processing consent required")
-
-    if photo.content_type not in _ACCEPTED_PHOTO_TYPES:
-        raise HTTPException(status_code=415, detail="unsupported image type (use jpeg, png, webp)")
-
-    raw = await photo.read(settings.max_photo_bytes + 1)
-    if len(raw) > settings.max_photo_bytes:
-        raise HTTPException(status_code=413, detail="image too large")
-    if not raw:
-        raise HTTPException(status_code=422, detail="empty upload")
-
-    # Defence in depth: the client-supplied content_type is spoofable, so verify the
-    # actual leading bytes are a real JPEG/PNG/WebP before PIL ever parses them — a
-    # crafted file with an image MIME header must not reach the decoder (M-4).
-    if not _is_supported_image(raw):
-        raise HTTPException(status_code=415, detail="unsupported image type (use jpeg, png, webp)")
-
-    image = _decode_photo(raw)
-
-    # Each module abstains on ANY runtime failure (remote Space down, weights/runtime
-    # missing, decode error), not just an import error at build time — a flaky or
-    # not-yet-deployed module must never 500 the whole onboarding; the other module
-    # still runs and the manual path is always the fallback.
-    skin = _estimate_or_abstain(skin_adapter, image, "skin-tone")
-    body = _estimate_or_abstain(body_adapter, image, "body-type")
-    if skin is None and body is None:
-        raise HTTPException(status_code=503, detail="photo onboarding unavailable")
-
-    # Shadow gate (D5/D6): skin-tone is computed but not surfaced until it passes
-    # the fairness eval and the flag is flipped.
-    surfaced_skin = skin if settings.skin_tone_enabled else None
-
-    existing = profile_repo.get(principal.user_id)
-    profile = profile_from_photo(skin=surfaced_skin, body=body, existing=existing)
-    profile_repo.upsert(principal.user_id, profile)
-
-    # Observability at the decision point (no PII — only which modules ran, the coarse
-    # outcome, and adoption confidences). Lets a "fields didn't fill" report be diagnosed
-    # from `render logs` instead of guesswork: a present field with positive confidence
-    # means the API handed the browser a real value (so any gap is frontend/cache), while
-    # an absent field means the module abstained on this photo.
-    logging.getLogger("gyf.photo").info(
-        "photo onboarding outcome: skin_ran=%s body_ran=%s skin_tone=%s undertone=%s "
-        "body_type=%s confidences=%s",
-        skin is not None,
-        body is not None,
-        bool(profile.skin_tone),
-        bool(profile.undertone),
-        bool(profile.body_type),
-        profile.field_confidence,
-    )
-    return profile
-
-
-def _estimate_or_abstain(adapter: object | None, image: object, label: str) -> object | None:
-    """Run a photo-module adapter, turning any runtime failure into an honest abstain.
-
-    Build-time import errors are already handled by the get_*_adapter providers; this
-    catches *call*-time failures (a remote Space down, a missing local runtime that
-    only errors on first use) so one module never takes the endpoint down.
-    """
-    if adapter is None:
-        return None
-    try:
-        return adapter.estimate(image)  # type: ignore[attr-defined]
-    except Exception:  # noqa: BLE001 — any module failure must degrade to abstain, not 500
-        logging.getLogger("gyf.photo").warning("%s estimation failed; abstaining", label,
-                                               exc_info=True)
-        return None
-
-
-# A generous ceiling for genuine phone photos (~40 MP covers 48 MP sensors after
-# downscale) that still rejects decompression bombs — a few-KB file that inflates
-# to gigapixels and exhausts memory. `Image.open` reads the dimensions from the
-# header without decoding pixels, so we reject BEFORE `load()` does the work.
-_MAX_IMAGE_PIXELS = 40_000_000
-
-
-def _is_supported_image(raw: bytes) -> bool:
-    """True iff the leading bytes are a real JPEG, PNG, or WebP signature.
-
-    Magic-byte sniff, independent of the (spoofable) declared content type. WebP is
-    a RIFF container: ``RIFF`` at 0 and ``WEBP`` at 8.
-    """
-    if len(raw) < 12:
-        return False
-    if raw[:3] == b"\xff\xd8\xff":  # JPEG
-        return True
-    if raw[:8] == b"\x89PNG\r\n\x1a\n":  # PNG
-        return True
-    if raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":  # WebP
-        return True
-    return False
-
-
-def _decode_photo(raw: bytes) -> object:
-    """Decode bytes to an orientation-corrected, EXIF-stripped RGB image.
-
-    Applies EXIF orientation then re-bakes pixels so no camera metadata (incl. GPS)
-    survives into anything downstream — privacy by construction (D8). Guards against
-    decompression bombs by rejecting oversized images before pixels are decoded.
-    """
-    from PIL import Image, ImageOps
-
-    try:
-        with Image.open(io.BytesIO(raw)) as img:
-            width, height = img.size
-            if width * height > _MAX_IMAGE_PIXELS:
-                raise HTTPException(
-                    status_code=422,
-                    detail="image resolution is too large — please use a normal photo",
-                )
-            img.load()
-            return ImageOps.exif_transpose(img).convert("RGB")
-    except HTTPException:
-        raise
-    except Exception as exc:  # noqa: BLE001 — any decode failure is a bad upload
-        raise HTTPException(status_code=422, detail="could not decode image") from exc
-
-
-@app.get("/consent", tags=["profile"])
-def read_consent(
-    principal: Principal = Depends(require_active_principal),
-    repo: AccountRepository = Depends(get_account_repo),
-) -> dict[str, bool]:
-    """The user's current consent flags."""
-    return repo.get_consent(principal.user_id)
-
-
-@app.put("/consent", tags=["profile"])
-def update_consent(
-    payload: ConsentInput,
-    principal: Principal = Depends(require_active_principal),
-    repo: AccountRepository = Depends(get_account_repo),
-) -> dict[str, bool]:
-    """Grant/revoke consent. Merges known flags; unknown keys are ignored."""
-    return repo.update_consent(principal.user_id, payload.flags)
-
-
-@app.delete("/account", status_code=status.HTTP_204_NO_CONTENT, tags=["profile"])
-def delete_account(
-    principal: Principal = Depends(get_current_principal),
-    repo: AccountRepository = Depends(get_account_repo),
-) -> Response:
-    """Right-to-erasure: tombstone the account now; a purge job hard-deletes it
-    (cascading) after the grace window. Idempotent — re-requesting is a no-op."""
-    repo.soft_delete(principal.user_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-# --- Recommendation & composition (P1-C Cycle 1) dependencies. Overridable in tests. ---
-
-
-def get_candidate_repo() -> CandidateRepository:
-    """The Postgres-backed candidate repository (lazy connection pool)."""
-    from .recsys.candidates import PostgresCandidateRepository
-
-    return PostgresCandidateRepository(settings.database_url)
-
-
-def get_taste_repo() -> TasteRepository:
-    """The Postgres-backed taste repository (lazy connection pool)."""
-    from .recsys.taste import PostgresTasteRepository
-
-    return PostgresTasteRepository(settings.database_url)
-
-
-def get_event_sink() -> EventSink:
-    """The configured event sink (overridable in tests to avoid real writes)."""
-    return sink
-
-
-@app.get(
-    "/outfits/recommend",
-    tags=["recommendations"],
-    summary="Recommend complete outfits",
-    dependencies=[Depends(rate_limit("recommend", "rate_limit_recommend"))],
-)
-def recommend_outfits(
-    occasion: str | None = Query(
-        None,
-        description="What you're dressing for. Overrides your profile's stored occasion.",
-        openapi_examples={
-            "casual": {"summary": "Casual", "value": "casual"},
-            "business": {"summary": "Business", "value": "business"},
-            "wedding": {"summary": "Wedding", "value": "wedding"},
-            "festive": {"summary": "Festive", "value": "festive"},
-        },
-    ),
-    k: int = Query(5, ge=1, le=20, description="How many outfits to return."),
-    region: str | None = Query(None, description="Region code (e.g. IN) for culture-aware garments."),
-    goal: str | None = Query(
-        None,
-        max_length=200,
-        description=(
-            "Free-text styling goal. GYF parses it into visual effects (taller / "
-            "slimmer / broader) and steers the look with color theory + body-type "
-            "intelligence. Unrecognized text is a no-op."
-        ),
-        openapi_examples={
-            "none": {"summary": "No goal (baseline)", "value": None},
-            "slimmer": {"summary": "Look slimmer", "value": "I want to look slimmer"},
-            "taller": {"summary": "Look taller", "value": "I want to look taller"},
-            "broader": {"summary": "Look broader", "value": "I want to look broader and more muscular"},
-            "combined": {"summary": "Taller + slimmer", "value": "taller and slimmer"},
-        },
-    ),
-    principal: Principal = Depends(require_active_principal),
-    profile_repo: ProfileRepository = Depends(get_profile_repo),
-    candidates: CandidateRepository = Depends(get_candidate_repo),
-    taste_repo: TasteRepository = Depends(get_taste_repo),
-    event_sink: EventSink = Depends(get_event_sink),
-) -> OutfitRecommendation:
-    """Personalized outfit recommendations: complete, explained, diverse looks.
-
-    Conditions on the user's onboarding profile (occasion, budget, undertone, style
-    intent) and their learned taste (from prior saves/carts/skips). Works on the
-    very first visit (pure cold-start) and sharpens as behavior accrues. Each call
-    logs impressions so the recommendation is auditable and trainable. ``occasion``
-    overrides the profile's stored one. ``goal`` is a free-text controllable-styling
-    request ("look taller / slimmer / broader") that biases the look toward that
-    visual effect. 404s before onboarding.
-    """
-    profile = profile_repo.get(principal.user_id)
-    if profile is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
-    return recommend(
-        profile, principal.user_id, candidates, taste_repo, event_sink, occasion, region, k, goal
-    )
-
-
-@app.post(
-    "/feedback",
-    status_code=202,
-    tags=["feedback"],
-    dependencies=[Depends(rate_limit("feedback", "rate_limit_feedback"))],
-)
-def ingest_feedback(
-    body: FeedbackRequest,
-    principal: Principal = Depends(require_active_principal),
-) -> dict[str, str]:
-    """Validate and persist a behavioral event onto the learning spine.
-
-    The event is attributed to the authenticated principal (not a client-supplied
-    id) and written via the configured sink (local JSONL in dev; broker-backed once
-    P0 infra is provisioned — see docs/implementation-plan.md P0-C/D).
-    """
-    event = body.to_event(principal.user_id)
-    sink.publish(event)
-    return {"status": "accepted", "action": event.action.value}
-
-
-# --- Stage-2 surfaces (W4): saved collections, wardrobe, social, profile summary ---
-# Each persists what its web page previously mocked. Dependencies are injectable so
-# the routes are tested with in-memory repos (mirrors the recsys/profile pattern).
-
-
-def get_collection_repo() -> CollectionRepository:
-    from .collections import PostgresCollectionRepository
-
-    return PostgresCollectionRepository(settings.database_url)
-
-
-def get_saved_outfit_repo() -> SavedOutfitRepository:
-    from .saved_outfits import PostgresSavedOutfitRepository
-
-    return PostgresSavedOutfitRepository(settings.database_url)
-
-
-def get_wardrobe_repo() -> WardrobeRepository:
-    from .wardrobe import PostgresWardrobeRepository
-
-    return PostgresWardrobeRepository(settings.database_url)
-
-
-def get_social_repo() -> SocialRepository:
-    from .social import PostgresSocialRepository
-
-    return PostgresSocialRepository(settings.database_url)
-
-
-def get_summary_repo() -> SummaryRepository:
-    from .profile.summary import PostgresSummaryRepository
-
-    return PostgresSummaryRepository(settings.database_url)
-
-
-@app.post("/collections", status_code=201, tags=["collections"], summary="Save an item")
-def save_to_collection(
-    body: SaveItemRequest,
-    principal: Principal = Depends(require_active_principal),
-    repo: CollectionRepository = Depends(get_collection_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> SavedItem:
-    """Save a catalog item to the user's shortlist. Idempotent per (user, item).
-
-    404s if the item id is not in the catalog (so a typo never silently saves a
-    dangling reference). Returns the saved item enriched for immediate render.
-    """
-    detail = directory.lookup([body.item_id]).get(body.item_id)
-    if detail is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown item")
-    repo.save(principal.user_id, body.item_id)
-    return enrich_saved([body.item_id], directory)[0]
-
-
-@app.get("/collections", tags=["collections"], summary="The user's saved items")
-def list_collection(
-    principal: Principal = Depends(require_active_principal),
-    repo: CollectionRepository = Depends(get_collection_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> dict[str, list[SavedItem]]:
-    """The user's saved items, most-recently-saved first, enriched for display."""
-    return {"items": enrich_saved(repo.list_item_ids(principal.user_id), directory)}
-
-
-@app.delete(
-    "/collections/{item_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["collections"],
-    summary="Unsave an item",
-)
-def remove_from_collection(
-    item_id: str,
-    principal: Principal = Depends(require_active_principal),
-    repo: CollectionRepository = Depends(get_collection_repo),
-) -> Response:
-    """Remove an item from the shortlist. Idempotent: 204 whether or not present."""
-    repo.remove(principal.user_id, item_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@app.post(
-    "/collections/outfits",
-    status_code=201,
-    tags=["collections"],
-    summary="Save a whole look",
-)
-def save_outfit(
-    body: SaveOutfitRequest,
-    principal: Principal = Depends(require_active_principal),
-    repo: SavedOutfitRepository = Depends(get_saved_outfit_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> SavedOutfit:
-    """Save a complete look (a "saved styling session"). Idempotent per
-    ``(user, outfit_key)`` — re-saving updates the stored snapshot. Returns the
-    saved look enriched for immediate render."""
-    outfit_id = repo.save(principal.user_id, body)
-    saved = enrich_saved_outfits(repo.list(principal.user_id), directory)
-    for look in saved:
-        if look.id == outfit_id:
-            return look
-    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Save failed")
-
-
-@app.get("/collections/outfits", tags=["collections"], summary="The user's saved looks")
-def list_saved_outfits(
-    principal: Principal = Depends(require_active_principal),
-    repo: SavedOutfitRepository = Depends(get_saved_outfit_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> dict[str, list[SavedOutfit]]:
-    """The user's saved looks, most-recently-saved first, each re-rendered."""
-    return {"outfits": enrich_saved_outfits(repo.list(principal.user_id), directory)}
-
-
-@app.delete(
-    "/collections/outfits/{outfit_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["collections"],
-    summary="Unsave a look",
-)
-def remove_saved_outfit(
-    outfit_id: str,
-    principal: Principal = Depends(require_active_principal),
-    repo: SavedOutfitRepository = Depends(get_saved_outfit_repo),
-) -> Response:
-    """Remove a saved look. Idempotent: 204 whether or not present."""
-    repo.remove(principal.user_id, outfit_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@app.post("/wardrobe/items", status_code=201, tags=["wardrobe"], summary="Add an owned garment")
-def add_wardrobe_item(
-    body: WardrobeItemInput,
-    principal: Principal = Depends(require_active_principal),
-    repo: WardrobeRepository = Depends(get_wardrobe_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> WardrobeItem:
-    """Add a garment to the wardrobe: a catalog ``item_id`` or a freeform ``title``.
-
-    A catalog reference is enriched from the catalog (404 if the id is unknown); a
-    freeform garment is auto-classified into the shared taxonomy so it still slots
-    into outfit logic.
-    """
-    record = build_record(body, directory)
-    if record is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown item")
-    repo.add(principal.user_id, record)
-    return enrich_wardrobe([record], directory)[0]
-
-
-@app.get("/wardrobe/items", tags=["wardrobe"], summary="The user's wardrobe")
-def list_wardrobe(
-    principal: Principal = Depends(require_active_principal),
-    repo: WardrobeRepository = Depends(get_wardrobe_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> dict[str, list[WardrobeItem]]:
-    """The user's owned garments, most-recently-added first."""
-    return {"items": enrich_wardrobe(repo.list(principal.user_id), directory)}
-
-
-@app.delete(
-    "/wardrobe/items/{wardrobe_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["wardrobe"],
-    summary="Remove a wardrobe garment",
-)
-def remove_wardrobe_item(
-    wardrobe_id: str,
-    principal: Principal = Depends(require_active_principal),
-    repo: WardrobeRepository = Depends(get_wardrobe_repo),
-) -> Response:
-    """Remove a wardrobe garment by id. Idempotent: 204 either way."""
-    repo.remove(principal.user_id, wardrobe_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@app.get("/social/posts", tags=["social"], summary="The ranked social feed")
-def social_feed(
-    limit: int = Query(20, ge=1, le=50),
-    offset: int = Query(0, ge=0),
-    principal: Principal = Depends(require_active_principal),
-    repo: SocialRepository = Depends(get_social_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> dict[str, list[Post]]:
-    """Posts ranked by engagement then recency, each with its look rendered."""
-    return {"posts": enrich_feed(repo.feed(limit, offset), directory)}
-
-
-@app.post("/social/posts", status_code=201, tags=["social"], summary="Share a look")
-def create_post(
-    body: PostInput,
-    principal: Principal = Depends(require_active_principal),
-    repo: SocialRepository = Depends(get_social_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
-) -> Post:
-    """Share an outfit as a post. The look's item ids are stored and re-rendered."""
-    record = make_record(body, principal.user_id)
-    repo.create(record)
-    return enrich_feed([record], directory)[0]
-
-
-@app.post(
-    "/social/posts/{post_id}/react",
-    tags=["social"],
-    summary="React to a post",
-    dependencies=[Depends(rate_limit("feedback", "rate_limit_feedback"))],
-)
-def react_to_post(
-    post_id: str,
-    body: ReactionInput,
-    principal: Principal = Depends(require_active_principal),
-    repo: SocialRepository = Depends(get_social_repo),
-) -> dict[str, object]:
-    """React once per (post, user). 404 if the post does not exist."""
-    if repo.get(post_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown post")
-    newly = repo.react(post_id, principal.user_id, body.reaction)
-    return {"post_id": post_id, "reacted": newly}
-
-
-@app.post(
-    "/social/posts/{post_id}/recreate",
-    tags=["social"],
-    summary="Recreate a look for yourself",
-    dependencies=[Depends(rate_limit("recommend", "rate_limit_recommend"))],
-)
-def recreate_post(
-    post_id: str,
-    principal: Principal = Depends(require_active_principal),
-    social_repo: SocialRepository = Depends(get_social_repo),
-    profile_repo: ProfileRepository = Depends(get_profile_repo),
-    candidates: CandidateRepository = Depends(get_candidate_repo),
-    taste_repo: TasteRepository = Depends(get_taste_repo),
-    event_sink: EventSink = Depends(get_event_sink),
-) -> OutfitRecommendation:
-    """Re-render a post's look for the *caller* — never a blind copy (CLAUDE.md §2).
-
-    The post supplies the styling intent (its occasion); GYF re-composes the look
-    for the follower's own region, body and taste via the recommendation path. This
-    is a real composition, not try-on imagery (deferred). 404 if the post is gone,
-    404 if the caller has not onboarded.
-    """
-    post = social_repo.get(post_id)
-    if post is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown post")
-    profile = profile_repo.get(principal.user_id)
-    if profile is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
-    return recommend(
-        profile,
-        principal.user_id,
-        candidates,
-        taste_repo,
-        event_sink,
-        post.occasion,
-        post.region,
-        k=5,
-    )
-
-
-@app.get("/profile/summary", tags=["profile"], summary="Profile stats & badges")
-def profile_summary(
-    principal: Principal = Depends(require_active_principal),
-    repo: SummaryRepository = Depends(get_summary_repo),
-) -> ProfileSummary:
-    """Stats (outfits made, items saved, wardrobe size, posts, reactions) + badges."""
-    return summarize(repo, principal.user_id)
+__all__ = [
+    "app",
+    "get_account_repo",
+    "get_body_adapter",
+    "get_candidate_repo",
+    "get_collection_repo",
+    "get_event_sink",
+    "get_item_directory",
+    "get_profile_repo",
+    "get_readiness",
+    "get_saved_outfit_repo",
+    "get_search_repo",
+    "get_skin_adapter",
+    "get_social_repo",
+    "get_summary_repo",
+    "get_taste_repo",
+    "get_text_embedder",
+    "get_wardrobe_repo",
+    "require_active_principal",
+    "sink",
+]

@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.events import InteractionEvent
@@ -8,12 +9,32 @@ from app.main import app, get_account_repo
 from app.profile.account import InMemoryAccountRepository
 from app.sink import LocalFileSink
 
-# /feedback now gates on require_active_principal, which needs an account repo to
-# reject tombstoned users. Override with an in-memory repo holding the dev user.
 DEV_USER = "00000000-0000-0000-0000-000000000001"
-app.dependency_overrides[get_account_repo] = lambda: InMemoryAccountRepository(existing={DEV_USER})
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _account_repo_override():
+    """Apply the in-memory account repo per test, so the suite is order-independent.
+
+    ``/feedback`` gates on ``require_active_principal``, which needs an account repo
+    to reject tombstoned users. A module-level override would be wiped by any other
+    test calling ``dependency_overrides.clear()`` in teardown; applying it (and
+    restoring the prior state) per test keeps these tests passing regardless of run
+    order.
+    """
+    previous = app.dependency_overrides.get(get_account_repo)
+    app.dependency_overrides[get_account_repo] = lambda: InMemoryAccountRepository(
+        existing={DEV_USER}
+    )
+    try:
+        yield
+    finally:
+        if previous is None:
+            app.dependency_overrides.pop(get_account_repo, None)
+        else:
+            app.dependency_overrides[get_account_repo] = previous
 
 
 def test_health_ok():

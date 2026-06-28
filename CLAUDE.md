@@ -328,7 +328,10 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
   eval/verification loops, and prefer continuous closed loops over one-shot fixes.
   **Never trade quality for session cost** — cost is not a constraint on doing it right.
   This governs how every milestone below is executed (see `plans/accuracy-precision-trust.md`
-  §5 for the L1–L6 loop catalog and `plans/reliability-trustworthiness.md` for the gates).
+  §5 for the L1–L6 loop catalog, `plans/reliability-trustworthiness.md` for the gates, and
+  `plans/gyf-elevation-program.md` for the real-data / premium-surface / clean-codebase track —
+  every workstream there runs as a bounded `rubric → generate → evaluate → specialist-review →
+  GATE → promote|iterate` loop with the per-workstream reviewer agents named in §0 of that doc).
 - **Read the source docs first** (`ideas-complete.md`, `tech-stack.md`, `research/deep-research-report.md`) before proposing or building anything.
 - **Follow the engineering doctrine** (`docs/engineering-doctrine.md`) — it is binding for every ML pillar: consume capabilities through a **port** (never import a model in app code), keep a **research vs production lane** with a **CI license gate** so nothing non-commercial is served, prefer **clean foundation + our-data adapter** over non-commercial task weights, and **promote only through evaluation**. The five invariants are non-negotiable.
 - **Plan before code.** Surface a plan; do not implement until it's agreed.

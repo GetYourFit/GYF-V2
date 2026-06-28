@@ -16,6 +16,9 @@
 >   missing eval gates, calibrated confidence, the real-data flywheel, human-eval + LLM-judge,
 >   the North-Star/"matures-like-fine-wine" curve, and the L1–L6 improvement loops). Also
 >   parallel; its DoD upgrade (calibrated + evidence-bound + rubric-passing) is binding.
+> - *How we make it real-data, premium, and clean* → `plans/gyf-elevation-program.md` (the
+>   **Elevation track**: real affiliate catalog, full art-directed surface, and the targeted
+>   codebase refactor — also parallel, each workstream a gated loop).
 > - *How we work* → **standing engineering directive (§ below): operate like a principal
 >   engineer; use subagents and loop engineering as aggressively as possible; never trade
 >   quality for cost.**
