@@ -1,7 +1,10 @@
 # M3 — Body-type estimation: RTMW + BiRefNet (commercial-clean, ZeroGPU)
 
-> **Status:** decided 2026-06-28, not yet implemented. Skin-tone + undertone already
-> work live on the Space (Render logs: `skin_ran=True`). Body-type is the only gap.
+> **Status:** v1 **deployed** 2026-06-28 — BiRefNet silhouette lane is live on the HF
+> Space (`GetYourFit/gyf-gpu`); `estimate_body` returns the silhouette boundary as
+> `(x,y,0)` vertices and the existing `usermodel.body` geometry classifies it unchanged.
+> RTMW keypoint-anchoring (below) is the **v2 accuracy upgrade**, not yet built.
+> Skin-tone + undertone already work live (Render: `skin_ran=True`).
 
 ## Decision (researched)
 
