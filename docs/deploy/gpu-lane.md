@@ -2,7 +2,7 @@
 
 > **Doctrine:** D1 (capability port — app code never imports a model, it calls the port),
 > D7 (free-tier GPU serving), D5 (eval-gated promotion). **Source:** `ml/perception/`,
-> `spaces/gyf-gpu/`, `notebooks/m2_bakeoff_colab.ipynb`.
+> `spaces/gyf-gpu/`.
 
 ## One model, two backends
 
@@ -12,7 +12,7 @@ pick the backend from one env var:
 
 | `GYF_ENCODER_REMOTE_URL` | Backend | When |
 | --- | --- | --- |
-| **unset** (default) | `SiglipEncoder` — local CPU or local CUDA | laptop dev, **Colab** (uses Colab's GPU locally), CI |
+| **unset** (default) | `SiglipEncoder` — local CPU or local CUDA | laptop dev, CI |
 | set to a Gradio URL | `RemoteEncoder` — calls a remote GPU endpoint | a hosted GPU: HF Space, RunPod/Modal Gradio, etc. |
 
 That's the whole design: the local encoder is the always-present baseline (invariant #5);
@@ -20,18 +20,16 @@ the remote one is an optional swap, never a requirement.
 
 ---
 
-## ▶ Free path (recommended) — run M2 on Colab's free T4
+## ▶ Free path (recommended) — dockerized bake-off
 
-No subscription, no remote URL. The notebook regenerates the catalog from a public dataset
-and runs the bake-off on Colab's GPU with the **local** encoder.
+No subscription, no remote URL. `make m2-bakeoff` runs the whole bake-off in a container
+(weights cached in the `gyf-hf-cache` named volume) with the **local** encoder — on a CUDA
+host it uses the GPU, on a laptop it falls back to CPU. It regenerates the catalog from a
+public dataset, prints the leaderboard, and writes the `EvalReport`s to
+`eval-reports/bakeoffs/` as the M2 evidence. `make m2-clean` reclaims the image + weights.
 
-1. Open **colab.research.google.com** → upload `notebooks/m2_bakeoff_colab.ipynb`.
-2. `Runtime → Change runtime type → T4 GPU`.
-3. `Runtime → Run all`; paste a GitHub read token when prompted.
-4. It prints the leaderboard and downloads the `EvalReport`s → commit them to
-   `eval-reports/bakeoffs/` as the M2 evidence.
-
-Kaggle (≈30 GPU-hrs/week) works the same way if you prefer.
+For a hosted GPU instead, deploy the HF ZeroGPU Space (below) and point
+`GYF_ENCODER_REMOTE_URL` at it.
 
 ---
 

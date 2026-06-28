@@ -31,4 +31,4 @@ app/  ── api-client.ts ──► services/api (FastAPI)
 eval-gated promotion · no non-commercial in serving path (CI license gate) · confidence+reason on
 every output · consent+erasure · baseline behind every port.
 
-See: `backend.md`, `frontend.md`, `data.md`, and `docs/plans/launch-backlog.md`.
+See: `backend.md`, `frontend.md`, `data.md`, and `docs/plans/gyf-v2-launch-program.md`.

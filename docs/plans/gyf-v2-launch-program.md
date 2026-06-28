@@ -2,9 +2,8 @@
 
 > **Status:** active execution plan (2026-06-27). Created from `docs/feedbacks/gyf-feedback-v2.md`
 > + two grounded audits (frontend reality, dead-code/structure) + verified live-stack state.
-> **This is the single source of execution truth for the v2 push.** It supersedes the *sequencing*
-> in `launch-loop-engineering.md` and the *design direction* in `frontend-rebuild.md` (those remain
-> as reference). Vision/law/tech precedence is unchanged: `ideas-complete.md` → `engineering-doctrine.md`
+> **This is the single source of execution truth for the v2 push** (it absorbed and replaced the
+> earlier launch-era plan drafts). Vision/law/tech precedence is unchanged: `ideas-complete.md` → `engineering-doctrine.md`
 > → `tech-stack.md` → `roadmap.md`. **DRY:** scope/DoD/model-per-pillar live in those docs; this file is
 > *the method, the order, and the verification gates* for shipping the full surface to launch quality.
 
@@ -54,7 +53,7 @@ rubric → generate → evaluate (auto + visual + adversarial) → review (speci
 - **Frontend↔backend wiring gap:** Saved & Wardrobe are **local-only Zustand** (never call the existing `/collections`, `/wardrobe/items` endpoints). Social is **fully mocked** (`MOCK_POSTS`; "Create post" persists nowhere; no `/social` wiring on the client even though `POST /social/posts` exists).
 - **Missing surfaces:** `/profile` route **404s** (bottom-nav links to it); no account/settings page; no try-on UI.
 - **Polish:** plain components, few modals/empty-states/skeletons; design judged "cheap" → full redesign (D-C).
-- **Codebase:** actually fairly clean — only **one** genuinely dead file (`notebooks/m2_bakeoff_colab.ipynb`). "Garbage" feeling ≈ in-progress UI + legit audit artifacts. Cleanup is light.
+- **Codebase:** actually fairly clean — the one genuinely dead file (the M2 bake-off Colab notebook) has been removed. "Garbage" feeling ≈ in-progress UI + legit audit artifacts. Cleanup is light.
 
 ---
 
@@ -63,7 +62,7 @@ rubric → generate → evaluate (auto + visual + adversarial) → review (speci
 > Goal: every page real, wired, redesigned, polished, verified against the live stack. No mocks, no local-only persistence, no 404s.
 
 ### S0 — Repo hygiene & structure (small, do first)
-- Delete `notebooks/m2_bakeoff_colab.ipynb` (dead; `make m2-bakeoff` replaces it). Verify no references.
+- ✅ Deleted `notebooks/m2_bakeoff_colab.ipynb` (dead; `make m2-bakeoff` replaces it); dead Cloudflare references purged.
 - Confirm `.gitignore` covers caches/build artifacts/logs; ensure `tsconfig.tsbuildinfo`, `logs/` not tracked.
 - Add `docs/vision/README.md` (draft→complete evolution) to de-confuse doc sprawl.
 - **DoD:** `git status` clean of artifacts; `make ci` green. **Gate:** review diff.
