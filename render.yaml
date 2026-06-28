@@ -38,11 +38,22 @@ services:
       # fairness eval passes.
       - key: GYF_SKIN_TONE_ENABLED
         value: "true"
-      # Body-type mesh fit runs on a remote HF ZeroGPU Space (spaces/gyf-gpu). Set
-      # the live Space URL in the dashboard (sync:false) once it's deployed AND
-      # within quota — pointing at a dead/cold Space makes onboarding hang, so it
-      # stays unset (module abstains → manual fallback) until confirmed live.
+      # Photo onboarding runs the skin-tone + body-type modules on the remote HF
+      # ZeroGPU Space (spaces/gyf-gpu) — the API host has no torch/pyfacer/SAM, so
+      # WITHOUT these the modules abstain on every upload and onboarding shows
+      # "couldn't read your features". Set all three in the dashboard (sync:false)
+      # once the Space is deployed AND within quota (HF Pro). Value forms accepted:
+      # a full https URL ("https://<owner>-gyf-gpu.hf.space") or the "owner/gyf-gpu"
+      # Space id. A dead/cold Space makes the first call hang ~10s then abstain.
+      #
+      #   GYF_SKINTONE_REMOTE_URL = <Space url or owner/gyf-gpu>
+      #   GYF_BODY_REMOTE_URL     = <same Space url or owner/gyf-gpu>
+      #   GYF_HF_TOKEN            = <HF access token: gated SAM checkpoint + ZeroGPU quota>
+      - key: GYF_SKINTONE_REMOTE_URL
+        sync: false
       - key: GYF_BODY_REMOTE_URL
+        sync: false
+      - key: GYF_HF_TOKEN
         sync: false
       # --- Secrets: set in dashboard / `render` CLI, not committed ---
       # The entrypoint runs `alembic upgrade head` on boot. DDL must NOT go through
