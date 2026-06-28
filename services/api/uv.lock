@@ -474,9 +474,12 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "einops", marker = "extra == 'bodyshape'", specifier = ">=0.8.0" },
     { name = "gradio-client", marker = "extra == 'remote'", specifier = ">=2.0.0" },
     { name = "gyf-contracts", editable = "../../packages/contracts" },
+    { name = "kornia", marker = "extra == 'bodyshape'", specifier = ">=0.7.0" },
     { name = "numpy", specifier = ">=1.26" },
+    { name = "onnxruntime", marker = "extra == 'bodyshape'", specifier = ">=1.17.0" },
     { name = "open-clip-torch", marker = "extra == 'perception'", specifier = ">=2.24.0" },
     { name = "pillow", specifier = ">=10.0" },
     { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'postgres'", specifier = ">=3.2.0" },
@@ -484,10 +487,14 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.5.0" },
     { name = "pyfacer", marker = "extra == 'skintone'", specifier = ">=0.0.5" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
+    { name = "rtmlib", marker = "extra == 'bodyshape'", specifier = ">=0.0.13" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6.0" },
+    { name = "timm", marker = "extra == 'bodyshape'", specifier = ">=1.0.0" },
     { name = "torch", marker = "extra == 'bodyshape'", specifier = ">=2.2.0" },
     { name = "torch", marker = "extra == 'perception'", specifier = ">=2.2.0" },
     { name = "torch", marker = "extra == 'skintone'", specifier = ">=2.2.0" },
+    { name = "torchvision", marker = "extra == 'bodyshape'", specifier = ">=0.17.0" },
+    { name = "transformers", marker = "extra == 'bodyshape'", specifier = ">=4.40.0" },
     { name = "transformers", marker = "extra == 'perception'", specifier = ">=4.40.0" },
 ]
 provides-extras = ["perception", "postgres", "remote", "skintone", "bodyshape", "dev"]

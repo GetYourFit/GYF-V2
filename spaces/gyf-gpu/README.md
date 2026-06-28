@@ -21,9 +21,16 @@ scoring, ranking, and the M2 bake-off stay on the caller's CPU.
 | --- | --- | --- |
 | `/embed_images` | `model_id: str`, `images_b64: list[str]` (base64 PNG) | `{"embeddings": [[...]], "dim": int}` |
 | `/embed_texts` | `model_id: str`, `texts: list[str]` | `{"embeddings": [[...]], "dim": int}` |
+| `/estimate_skin_tone` | `image_b64: str` (base64 PNG) | `{"skin_tone": "mstN", "undertone": str, "field_confidence": {...}, "model_version": str}` |
+| `/estimate_body` | `image_b64: str` (base64 PNG) | `{"measurements": {...}, "region_quality": {...}, "model_confidence": float, "model_version": str}` |
 
-Embeddings are L2-normalized. Only Apache-2.0 `encoder` models in `ALLOWED_MODELS`
-are served (keep in sync with `models.registry.json`).
+Embeddings are L2-normalized; only Apache-2.0 `encoder` models in `ALLOWED_MODELS`
+are served (keep in sync with `models.registry.json`). `/estimate_body` runs BiRefNet
+(MIT silhouette) + RTMW (Apache-2.0 whole-body keypoints) and returns
+height-normalized torso widths anchored to the shoulder/hip landmarks — the
+`bodyshape` measurement geometry is vendored from `ml/usermodel/body/measurements.py`
+(keep in sync). Both photo lanes abstain (`unknown` / `model_confidence: 0`) when no
+plausible subject is found.
 
 ## Deploy
 

@@ -87,13 +87,13 @@ class FaceParsingSkinToneAdapter:
         )
 
 
-class Sam3DBodyAdapter:
-    """Bridge to ``usermodel.body`` (SAM 3D Body → MHR measurements).
+class SilhouetteBodyAdapter:
+    """Bridge to ``usermodel.body`` (BiRefNet silhouette + RTMW keypoints → widths).
 
-    The mesh estimator is selected by :func:`usermodel.body.body_estimator_for`:
-    the remote ZeroGPU lane when ``remote_url`` is set (the API host needs no SAM
-    3D Body / PyTorch3D), else the local baseline. The mesh→measurements→silhouette
-    taxonomy always runs in-process.
+    The shape estimator is selected by :func:`usermodel.body.body_estimator_for`:
+    the remote ZeroGPU lane when ``remote_url`` is set (the API host needs no
+    BiRefNet / RTMW / GPU), else the CPU-capable local baseline. The
+    widths→ratios→silhouette-class taxonomy always runs in-process.
     """
 
     def __init__(self, *, remote_url: str = "", hf_token: str | None = None) -> None:
@@ -123,15 +123,15 @@ def cached_skin_adapter() -> FaceParsingSkinToneAdapter:
 
 
 @lru_cache(maxsize=1)
-def cached_body_adapter() -> Sam3DBodyAdapter:
-    """Process-wide singleton so the mesh model loads once.
+def cached_body_adapter() -> SilhouetteBodyAdapter:
+    """Process-wide singleton so the models load once.
 
-    Reads the GPU-lane config: ``GYF_BODY_REMOTE_URL`` routes the mesh fit to the
-    ZeroGPU Space, ``GYF_HF_TOKEN`` authenticates the gated checkpoint / quota.
+    Reads the GPU-lane config: ``GYF_BODY_REMOTE_URL`` routes segmentation + pose to
+    the ZeroGPU Space, ``GYF_HF_TOKEN`` authenticates the Space quota.
     """
     from ..config import settings
 
-    return Sam3DBodyAdapter(
+    return SilhouetteBodyAdapter(
         remote_url=settings.body_remote_url, hf_token=settings.hf_token or None
     )
 

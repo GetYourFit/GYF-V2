@@ -1,17 +1,22 @@
-"""The body-mesh estimator behind the body-type module (production, GPU-gated).
+"""The body-shape estimator behind the body-type module (commercial-clean, deployable).
 
 :class:`BodyEstimator` is the abstraction the orchestration depends on; it turns a
-photo into a :class:`MeshEstimate` (MHR mesh vertices + per-region quality + raw
-model confidence). :class:`Sam3DBodyEstimator` is the **production** implementation:
-single-photo → full-body mesh + pose + shape via **SAM 3D Body (3DB)** decoding into
-the **MHR** parametric body (Apache-2.0, SMPL-free), optionally accelerated by the
-training-free **Fast SAM 3D Body** path.
+photo into a :class:`BodyShapeEstimate` (height-normalized torso widths + per-region
+quality + a model confidence). :class:`SilhouetteBodyEstimator` is the reference
+implementation: it segments the body with **BiRefNet** (MIT, SOTA high-res matting)
+and locates the shoulder/hip landmarks with **RTMW** whole-body 2D keypoints
+(Apache-2.0, via ``rtmlib`` ONNX — no mmpose/mmcv), then derives the widths with the
+pure, pose-robust :func:`silhouette_measurements`.
 
-Heavy deps (``torch``, ``sam-3d-body``) import lazily inside ``_load`` so this
-module — and the whole body-type path under an injected fake — imports and
-unit-tests with no weights. The real model needs a GPU and the **SAM License**
-accepted before it is enabled in production; on a CPU box the API adapter reports
-it unavailable and onboarding falls back to the always-available manual path.
+This stack is deliberately chosen over SAM 3D Body / SMPL / Sapiens: those are
+non-commercial or not pip-deployable on a free-tier Space (see
+``docs/plans/m3-body-type-rtmw-birefnet.md``). Both models are CPU-capable, so this
+class doubles as the always-available local baseline (invariant #5); the GPU Space
+runs the *same* pipeline behind :class:`RemoteBodyEstimator` for speed.
+
+Heavy deps (``torch``, ``transformers``, ``rtmlib``) import lazily inside ``_load``
+so this module — and the whole body-type path under an injected fake — imports and
+unit-tests with no weights.
 """
 
 from __future__ import annotations
@@ -22,55 +27,33 @@ from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
 
+from .measurements import silhouette_measurements
+
 if TYPE_CHECKING:
     from PIL.Image import Image
 
-DEFAULT_MODEL_VERSION = "sam3dbody-mhr-v1"
-# Gated HF checkpoint the production estimator loads (request access + SAM License).
-DEFAULT_HF_REPO = "facebook/sam-3d-body-dinov3"
+DEFAULT_MODEL_VERSION = "rtmw-birefnet-v1"
+_BIREFNET_REPO = "ZhengPeng7/BiRefNet"
+_BIREFNET_SIZE = 1024
+# Below this fraction of image height the keypoints don't describe a standing body
+# (a head-and-shoulders selfie) — the torso landmarks are unreliable, so abstain.
+_MIN_BODY_HEIGHT_FRAC = 0.35
 
 
 @dataclass(frozen=True)
-class MeshEstimate:
-    """A posed body mesh plus the quality signals that weight downstream confidence."""
+class BodyShapeEstimate:
+    """Height-normalized torso widths plus the quality signals weighting confidence."""
 
-    vertices: np.ndarray  # (N, 3) MHR mesh vertices in a roughly upright frame
-    region_quality: dict[str, float] = field(default_factory=dict)  # per-measurement visibility
-    model_confidence: float = 0.0  # raw detector/fit confidence, 0.0 if no body found
+    measurements: dict[str, float] = field(default_factory=dict)  # canonical MEASUREMENT_KEYS
+    region_quality: dict[str, float] = field(default_factory=dict)  # per-measurement reliability
+    model_confidence: float = 0.0  # overall landmark confidence, 0.0 if no body found
     model_version: str = DEFAULT_MODEL_VERSION
 
 
 class BodyEstimator(Protocol):
-    """Turns a PIL image into a :class:`MeshEstimate`."""
+    """Turns a PIL image into a :class:`BodyShapeEstimate`."""
 
-    def estimate(self, image: Image) -> MeshEstimate: ...
-
-
-def _detection_score(person: dict) -> float:
-    """A 0–1 confidence for a SAM 3D Body detection.
-
-    SAM 3D Body's per-person output has no single scalar confidence, so we use an
-    explicit ``score``/``confidence`` field if the build provides one, else treat a
-    returned detection as confident (1.0). Conservative and honest: downstream
-    per-measurement confidence is further scaled by region visibility, so an
-    over-stated 1.0 here cannot by itself feign certainty about a measurement.
-    """
-    for key in ("score", "confidence", "det_score"):
-        value = person.get(key)
-        if isinstance(value, (int, float)):
-            return max(0.0, min(1.0, float(value)))
-    return 1.0
-
-
-def _region_quality(person: dict) -> dict[str, float]:
-    """Per-measurement visibility derived from the 2D keypoints, when available.
-
-    TODO(M3 live-calibration): map ``pred_keypoints_2d`` (whose joint layout is
-    only knowable against the live checkpoint) to GYF measurement regions
-    (shoulder/bust/waist/hip). Until that is validated end-to-end we return ``{}``,
-    which the orchestration treats as uniform visibility — never a fabricated value.
-    """
-    return {}
+    def estimate(self, image: Image) -> BodyShapeEstimate: ...
 
 
 def _select_device() -> str:
@@ -84,42 +67,77 @@ def _select_device() -> str:
     return "cpu"
 
 
-class Sam3DBodyEstimator:
-    """Production estimator: SAM 3D Body → MHR mesh. Lazy, GPU/SAM-License-gated."""
+class SilhouetteBodyEstimator:
+    """Reference estimator: BiRefNet silhouette + RTMW keypoints → torso widths.
 
-    def __init__(self, model_id: str = DEFAULT_HF_REPO, device: str | None = None) -> None:
-        self._model_id = model_id
+    Lazy + CPU-capable, so it is both the local baseline and the pipeline the GPU
+    Space runs. ``GYF_BODY_DEVICE`` pins the device; otherwise the most capable
+    non-MPS accelerator is selected.
+    """
+
+    def __init__(self, device: str | None = None) -> None:
         self._device = device or os.environ.get("GYF_BODY_DEVICE") or None
-        self._model: object | None = None
+        self._seg: object | None = None
+        self._pose: object | None = None
 
     def _load(self) -> None:
-        if self._model is not None:
+        if self._seg is not None:
             return
-        # Real SAM 3D Body inference API (facebook/sam-3d-body-dinov3): the package
-        # is installed from facebookresearch/sam-3d-body (needs PyTorch3D + hydra),
-        # the checkpoint is gated (request access + accept the SAM License), and
-        # `setup_sam_3d_body` returns an estimator with `.process_one_image`.
-        from notebook.utils import setup_sam_3d_body  # type: ignore[import-not-found]
+        import torch
+        from rtmlib import Wholebody  # ONNX RTMW; downloads weights on first use
+        from transformers import AutoModelForImageSegmentation
 
         if self._device is None:
             self._device = _select_device()
-        self._model = setup_sam_3d_body(hf_repo_id=self._model_id)
+        seg = AutoModelForImageSegmentation.from_pretrained(_BIREFNET_REPO, trust_remote_code=True)
+        # BiRefNet ships half-precision weights; pin float32 so it matches our float
+        # input on every device (CPU has no half kernels; avoids a dtype mismatch).
+        self._seg = seg.to(self._device).float().eval()
+        self._torch = torch
+        backend_device = "cuda" if self._device == "cuda" else "cpu"
+        self._pose = Wholebody(mode="performance", backend="onnxruntime", device=backend_device)
 
-    def estimate(self, image: Image) -> MeshEstimate:
+    def _silhouette(self, image: Image) -> np.ndarray:
+        from torchvision import transforms
+
+        tfm = transforms.Compose(
+            [
+                transforms.Resize((_BIREFNET_SIZE, _BIREFNET_SIZE)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
+        from PIL import Image as PILImage
+
+        x = tfm(image).unsqueeze(0).to(self._device)
+        with self._torch.no_grad():
+            pred = self._seg(x)[-1].sigmoid().cpu()[0, 0]  # (size, size) in [0,1]
+        mask = PILImage.fromarray((pred.numpy() * 255).astype("uint8")).resize(image.size)
+        return np.asarray(mask) > 127  # bool H×W at original resolution
+
+    def estimate(self, image: Image) -> BodyShapeEstimate:
         self._load()
         rgb = np.ascontiguousarray(np.asarray(image.convert("RGB")))
-        # `process_one_image` returns a list of per-person dicts; empty = no body found.
-        people = self._model.process_one_image(rgb)  # type: ignore[union-attr]
-        if not people:
-            return MeshEstimate(vertices=np.empty((0, 3)), model_confidence=0.0)
-        # The largest detection is the subject; MHR mesh vertices are `pred_vertices`.
-        person = max(people, key=lambda p: _detection_score(p))
-        verts = np.asarray(person.get("pred_vertices"), dtype=np.float64)
-        if verts.ndim != 2 or verts.shape[0] == 0:
-            return MeshEstimate(vertices=np.empty((0, 3)), model_confidence=0.0)
-        return MeshEstimate(
-            vertices=verts,
-            region_quality=_region_quality(person),
-            model_confidence=_detection_score(person),
+        keypoints, scores = self._pose(rgb)  # type: ignore[misc]  → (P,K,2),(P,K)
+        if keypoints is None or len(keypoints) == 0:
+            return BodyShapeEstimate(model_confidence=0.0)
+        # Largest detection (mean keypoint score × spread) is the subject.
+        subject = int(np.argmax([s.mean() for s in scores]))
+        kp, sc = keypoints[subject], scores[subject]
+
+        mask = self._silhouette(image)
+        rows = np.where(mask.any(axis=1))[0]
+        if rows.size == 0:
+            return BodyShapeEstimate(model_confidence=0.0)
+        if float(rows[-1] - rows[0] + 1) / float(mask.shape[0]) < _MIN_BODY_HEIGHT_FRAC:
+            return BodyShapeEstimate(model_confidence=0.0)
+
+        measurements, region_quality, confidence = silhouette_measurements(mask, kp, sc)
+        if not measurements or confidence <= 0.0:
+            return BodyShapeEstimate(model_confidence=0.0)
+        return BodyShapeEstimate(
+            measurements=measurements,
+            region_quality=region_quality,
+            model_confidence=confidence,
             model_version=DEFAULT_MODEL_VERSION,
         )

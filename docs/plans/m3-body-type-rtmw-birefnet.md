@@ -1,10 +1,19 @@
 # M3 — Body-type estimation: RTMW + BiRefNet (commercial-clean, ZeroGPU)
 
-> **Status:** v1 **deployed** 2026-06-28 — BiRefNet silhouette lane is live on the HF
-> Space (`GetYourFit/gyf-gpu`); `estimate_body` returns the silhouette boundary as
-> `(x,y,0)` vertices and the existing `usermodel.body` geometry classifies it unchanged.
-> RTMW keypoint-anchoring (below) is the **v2 accuracy upgrade**, not yet built.
-> Skin-tone + undertone already work live (Render: `skin_ran=True`).
+> **Status:** v2 **built + locally verified** 2026-06-29 — RTMW keypoint-anchoring is
+> implemented and the pipeline runs end-to-end on real photos (CPU), producing
+> calibration-consistent body types with confidence in `[0, 1]`. Deploy to the HF
+> Space (`GetYourFit/gyf-gpu`) + Render verification is the remaining owner step
+> (`scripts/deploy_gpu_space.sh`). Skin-tone + undertone already work live.
+>
+> **Why v1 was unreliable (fixed in v2):** v1 read the silhouette's raw min→max extent
+> at *fixed image fractions*, so it counted arms-at-the-sides as torso and shifted
+> with crop/stance/clothing. v2 uses RTMW keypoints to *anchor the measurement
+> heights* to the real shoulder/hip joints and takes the **arm-robust contiguous
+> torso run** (detached arms excluded) at each — plus the waist as the narrowest
+> cross-section. RTMW/SimCC scores are clamped to `[0, 1]` for honest confidence.
+> Because it reads a binary silhouette + keypoints (never pixel colour), it is
+> inherently invariant to lighting and skin tone.
 
 ## Decision (researched)
 

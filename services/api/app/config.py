@@ -61,10 +61,10 @@ class Settings(BaseSettings):
     # before decode so an oversized image can't exhaust memory. Default 10 MiB.
     max_photo_bytes: int = 10 * 1024 * 1024
     # Body-type GPU lane (M3, doctrine D7). When set, the body-type module runs the
-    # SAM 3D Body mesh fit on a remote HF ZeroGPU Space (see spaces/gyf-gpu) instead
-    # of needing SAM 3D Body / PyTorch3D on the API host; the mesh→measurements→
-    # silhouette taxonomy still runs here. Unset = local Sam3DBodyEstimator baseline
-    # (invariant #5), which abstains on a CPU box without the weights.
+    # BiRefNet silhouette + RTMW keypoint pipeline on a remote HF ZeroGPU Space (see
+    # spaces/gyf-gpu) instead of needing those models / a GPU on the API host; the
+    # widths→ratios→silhouette taxonomy still runs here. Unset = local CPU-capable
+    # SilhouetteBodyEstimator baseline (invariant #5).
     body_remote_url: str = ""
     # Skin-tone GPU lane (M4, doctrine D7). When set, the CIELAB→MST pipeline runs on
     # the ZeroGPU Space (the API host needs no pyfacer/torch); unset = local in-process.

@@ -107,19 +107,28 @@ def estimate_skin_tone(image_b64: str) -> dict:
     }
 
 
-# --- Body-type lane (M3): BiRefNet silhouette → boundary point-cloud ---------
+# --- Body-type lane (M3): BiRefNet silhouette + RTMW keypoints → torso widths ----
 # Commercial-clean + ZeroGPU-deployable (SAM 3D Body needs detectron2/pyrender/
 # pytorch3d/conda — not pip-installable on a Space; Sapiens is CC-BY-NC). We segment
-# the body silhouette with BiRefNet (MIT, SOTA high-res matting) and return its
-# left/right boundary as (x, y, 0) "vertices". The caller's CPU runs the SAME tested
-# geometry (usermodel.body.measurements reads horizontal X-extent at stature
-# fractions, normalized by height), so no body-module code changes — only the vertex
-# *source* swaps from a 3D mesh to a 2D silhouette. See docs/plans/m3-body-type-rtmw-birefnet.md.
+# the body silhouette with BiRefNet (MIT, SOTA high-res matting) and locate the
+# shoulder/hip landmarks with RTMW whole-body 2D keypoints (Apache-2.0, rtmlib ONNX).
+# The vendored pure geometry (bodyshape.silhouette_measurements) reads the *arm-robust
+# torso width* at each keypoint-anchored height — pose-, crop-, and lighting-invariant,
+# unlike the v1 raw-extent silhouette. The caller's CPU classifies the widths
+# unchanged. See docs/plans/m3-body-type-rtmw-birefnet.md.
 _BODY_MODEL = "ZhengPeng7/BiRefNet"
 _BIREFNET_SIZE = 1024
+_BODY_MODEL_VERSION = "rtmw-birefnet-v1"
 # Below this fraction of image height the foreground isn't a full standing body
 # (a face/upper-body selfie) — abstain rather than fabricate a silhouette class.
-_MIN_BODY_HEIGHT_FRAC = 0.45
+_MIN_BODY_HEIGHT_FRAC = 0.35
+
+_BODY_ABSTAIN = {
+    "measurements": {},
+    "region_quality": {},
+    "model_confidence": 0.0,
+    "model_version": _BODY_MODEL_VERSION,
+}
 
 
 @lru_cache(maxsize=1)
@@ -128,7 +137,16 @@ def _load_body():
     from transformers import AutoModelForImageSegmentation
 
     model = AutoModelForImageSegmentation.from_pretrained(_BODY_MODEL, trust_remote_code=True)
-    return model.eval()
+    # BiRefNet ships half-precision weights; pin float32 so it matches our float input.
+    return model.float().eval()
+
+
+@lru_cache(maxsize=1)
+def _load_pose():
+    """Load the RTMW whole-body keypoint detector once (ONNX, GPU-backed)."""
+    from rtmlib import Wholebody
+
+    return Wholebody(mode="performance", backend="onnxruntime", device="cuda")
 
 
 def _silhouette_mask(image: Image.Image) -> np.ndarray:
@@ -152,44 +170,42 @@ def _silhouette_mask(image: Image.Image) -> np.ndarray:
 
 @spaces.GPU
 def estimate_body(image_b64: str) -> dict:
-    """One photo → body silhouette boundary as ``vertices`` for the taxonomy.
+    """One photo → height-normalized torso widths for the body-type taxonomy.
 
-    Returns ``{'vertices': [[x,y,0],...], 'region_quality': {}, 'model_confidence':
-    float, 'model_version': str}``. Image rows are flipped so +Y is up (feet→crown),
-    matching the body module's stature-fraction convention. Abstains (confidence 0,
-    empty vertices) when no plausible full-body silhouette is found — the caller
-    turns that into ``unknown`` body type and the manual field is the fallback.
+    Returns ``{'measurements': {...}, 'region_quality': {...}, 'model_confidence':
+    float, 'model_version': str}``. RTMW gives the shoulder/hip landmark heights;
+    BiRefNet gives the silhouette; the vendored ``silhouette_measurements`` reads the
+    arm-robust torso width at each landmark. Abstains (confidence 0, empty
+    measurements) when no plausible full-body / front-facing subject is found — the
+    caller turns that into ``unknown`` body type and the manual field is the fallback.
     """
+    from bodyshape import silhouette_measurements
+
     image = _decode_image(image_b64)
-    width, height = image.size
+    rgb = np.ascontiguousarray(np.asarray(image))
+
+    keypoints, scores = _load_pose()(rgb)  # (P,K,2), (P,K)
+    if keypoints is None or len(keypoints) == 0:
+        return dict(_BODY_ABSTAIN)
+    subject = int(np.argmax([s.mean() for s in scores]))
+    kp, sc = keypoints[subject], scores[subject]
+
     mask = _silhouette_mask(image)
     rows = np.where(mask.any(axis=1))[0]
     if rows.size == 0:
-        return {"vertices": [], "region_quality": {}, "model_confidence": 0.0,
-                "model_version": "birefnet-silhouette-v1"}
+        return dict(_BODY_ABSTAIN)
+    if float(rows[-1] - rows[0] + 1) / float(mask.shape[0]) < _MIN_BODY_HEIGHT_FRAC:
+        return dict(_BODY_ABSTAIN)
 
-    # Plausibility: the subject must span a real fraction of the frame (else it's a
-    # face/upper-body selfie — the stature fractions would be meaningless).
-    height_frac = float(rows[-1] - rows[0] + 1) / float(height)
-    if height_frac < _MIN_BODY_HEIGHT_FRAC:
-        return {"vertices": [], "region_quality": {}, "model_confidence": 0.0,
-                "model_version": "birefnet-silhouette-v1"}
-
-    # Two boundary points per foreground row (left/right extent) — a compact outline
-    # that preserves the exact horizontal width at every height. Flip Y so feet=min,
-    # crown=max (the +Y-up frame the measurements module assumes).
-    verts: list[list[float]] = []
-    for r in rows:
-        cols = np.where(mask[r])[0]
-        y = float(height - r)
-        verts.append([float(cols[0]), y, 0.0])
-        verts.append([float(cols[-1]), y, 0.0])
+    measurements, region_quality, confidence = silhouette_measurements(mask, kp, sc)
+    if not measurements or confidence <= 0.0:
+        return dict(_BODY_ABSTAIN)
 
     return {
-        "vertices": verts,
-        "region_quality": {},
-        "model_confidence": round(min(1.0, height_frac), 4),
-        "model_version": "birefnet-silhouette-v1",
+        "measurements": {k: round(float(v), 6) for k, v in measurements.items()},
+        "region_quality": {k: round(float(v), 4) for k, v in region_quality.items()},
+        "model_confidence": round(float(confidence), 4),
+        "model_version": _BODY_MODEL_VERSION,
     }
 
 
