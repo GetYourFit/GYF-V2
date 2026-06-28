@@ -13,10 +13,11 @@ unit-tested with an in-memory cosine repo and a fake embedder.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Protocol
 
 from ..media import image_url_from_refs
+from .directory import ItemDirectory
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,12 @@ class SearchResult:
     title: str
     score: float  # cosine similarity in [-1, 1] (1 = identical)
     image_url: str | None = None  # served ``/media/<file>`` URL, or None
+    # Commerce fields — populated by ``enrich_results`` from the item directory so
+    # Explore can show real prices and shop-the-look links (never a score proxy).
+    price: float | None = None
+    currency: str | None = None
+    color: str | None = None
+    buy_url: str | None = None
 
 
 def _pgvector(embedding: list[float]) -> str:
@@ -39,11 +46,11 @@ class TextEmbedder(Protocol):
 
 class VectorSearchRepository(Protocol):
     def similar_to_item(
-        self, item_id: str, k: int, region: str | None
+        self, item_id: str, k: int, region: str | None, offset: int = 0
     ) -> list[SearchResult]: ...
 
     def search_by_vector(
-        self, embedding: list[float], k: int, region: str | None
+        self, embedding: list[float], k: int, region: str | None, offset: int = 0
     ) -> list[SearchResult]: ...
 
 
@@ -58,7 +65,7 @@ JOIN items i ON i.id = e.item_id
 CROSS JOIN (SELECT embedding FROM item_embeddings WHERE item_id = %s) q
 WHERE e.item_id <> %s {region}
 ORDER BY e.embedding <=> q.embedding
-LIMIT %s
+LIMIT %s OFFSET %s
 """
 _SEARCH = """
 SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs
@@ -66,7 +73,7 @@ FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 WHERE TRUE {region}
 ORDER BY e.embedding <=> %s::vector
-LIMIT %s
+LIMIT %s OFFSET %s
 """
 
 
@@ -80,17 +87,23 @@ class PostgresVectorSearchRepository:
             pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
         self._pool = pool
 
-    def similar_to_item(self, item_id: str, k: int, region: str | None) -> list[SearchResult]:
+    def similar_to_item(
+        self, item_id: str, k: int, region: str | None, offset: int = 0
+    ) -> list[SearchResult]:
         sql = _SIMILAR.format(region=_REGION_FILTER if region else "")
-        params = (item_id, item_id, region, k) if region else (item_id, item_id, k)
+        params = (
+            (item_id, item_id, region, k, offset)
+            if region
+            else (item_id, item_id, k, offset)
+        )
         return self._run(sql, params)
 
     def search_by_vector(
-        self, embedding: list[float], k: int, region: str | None
+        self, embedding: list[float], k: int, region: str | None, offset: int = 0
     ) -> list[SearchResult]:
         vec = _pgvector(embedding)
         sql = _SEARCH.format(region=_REGION_FILTER if region else "")
-        params = (vec, region, vec, k) if region else (vec, vec, k)
+        params = (vec, region, vec, k, offset) if region else (vec, vec, k, offset)
         return self._run(sql, params)
 
     def _run(self, sql: str, params: tuple) -> list[SearchResult]:
@@ -107,7 +120,44 @@ class PostgresVectorSearchRepository:
 
 
 def search_text(
-    repo: VectorSearchRepository, embedder: TextEmbedder, query: str, k: int, region: str | None
+    repo: VectorSearchRepository,
+    embedder: TextEmbedder,
+    query: str,
+    k: int,
+    region: str | None,
+    offset: int = 0,
 ) -> list[SearchResult]:
     """Embed a text query and return the nearest items."""
-    return repo.search_by_vector(embedder.embed_query(query), k, region)
+    return repo.search_by_vector(embedder.embed_query(query), k, region, offset)
+
+
+def enrich_results(
+    results: list[SearchResult], directory: ItemDirectory
+) -> list[SearchResult]:
+    """Attach real commerce fields (price/currency/colour/buy_url) to search hits.
+
+    The vector SQL stays lean (id/title/score/image); shop-the-look data comes from
+    the single source of truth — the item directory — so Explore shows real prices
+    instead of a score proxy. Unknown ids keep their None defaults.
+    """
+    if not results:
+        return results
+    details = directory.lookup([r.item_id for r in results])
+    enriched: list[SearchResult] = []
+    for r in results:
+        d = details.get(r.item_id)
+        if d is None:
+            enriched.append(r)
+            continue
+        enriched.append(
+            replace(
+                r,
+                price=d.price,
+                currency=d.currency,
+                color=d.color,
+                buy_url=d.buy_url,
+                # Prefer the directory image when search didn't resolve one.
+                image_url=r.image_url or d.image_url,
+            )
+        )
+    return enriched

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from app.catalog.directory import InMemoryItemDirectory
 from app.catalog.retrieval import (
     PostgresVectorSearchRepository,
     SearchResult,
     search_text,
 )
-from app.main import app, get_search_repo, get_text_embedder
+from app.main import app, get_item_directory, get_search_repo, get_text_embedder
 
 
 class FakePool:
@@ -44,7 +45,8 @@ def test_similar_sql_excludes_self_and_orders_by_distance():
     sql, params = pool.calls[0]
     assert "e.item_id <> %s" in sql
     assert "ORDER BY e.embedding <=> q.embedding" in sql
-    assert params == ("11111111", "11111111", 5)
+    assert "LIMIT %s OFFSET %s" in sql
+    assert params == ("11111111", "11111111", 5, 0)
     assert results == [
         SearchResult("22222222", "Other Tee", 0.91, image_url="/media/22222222.jpg")
     ]
@@ -57,18 +59,50 @@ def test_region_filter_added_only_when_region_given():
     sql, params = pool.calls[0]
     assert "ANY(i.region_tags)" in sql
     assert "IN" in params
-    assert params[-1] == 3  # limit last
+    assert params[-2] == 3  # limit
+    assert params[-1] == 0  # offset
+
+
+def test_enrich_results_attaches_real_commerce_fields():
+    from app.catalog.directory import ItemDetail
+    from app.catalog.retrieval import enrich_results
+
+    directory = InMemoryItemDirectory(
+        [
+            ItemDetail(
+                item_id="hit",
+                title="Linen Shirt",
+                category="top",
+                slot="top",
+                price=49.0,
+                currency="USD",
+                color="cream",
+                buy_url="https://shop.example/hit",
+                image_url="/media/hit.jpg",
+            )
+        ]
+    )
+    hits = [SearchResult("hit", "Linen Shirt", 0.77), SearchResult("ghost", "Unknown", 0.5)]
+    out = enrich_results(hits, directory)
+
+    assert out[0].price == 49.0
+    assert out[0].currency == "USD"
+    assert out[0].buy_url == "https://shop.example/hit"
+    assert out[0].image_url == "/media/hit.jpg"
+    # An id the directory doesn't know keeps its None defaults — never fabricated.
+    assert out[1].price is None and out[1].buy_url is None
 
 
 def test_search_text_embeds_query_then_searches():
     captured = {}
 
     class FakeRepo:
-        def search_by_vector(self, embedding, k, region):
+        def search_by_vector(self, embedding, k, region, offset=0):
             captured["embedding"] = embedding
+            captured["offset"] = offset
             return [SearchResult("x", "X", 1.0)]
 
-        def similar_to_item(self, item_id, k, region):  # pragma: no cover
+        def similar_to_item(self, item_id, k, region, offset=0):  # pragma: no cover
             return []
 
     class FakeEmbedder:
@@ -84,10 +118,10 @@ def test_search_text_embeds_query_then_searches():
 
 
 class StubRepo:
-    def similar_to_item(self, item_id, k, region):
+    def similar_to_item(self, item_id, k, region, offset=0):
         return [SearchResult("sibling", "Sibling Item", 0.88)]
 
-    def search_by_vector(self, embedding, k, region):
+    def search_by_vector(self, embedding, k, region, offset=0):
         return [SearchResult("hit", "Search Hit", 0.77)]
 
 
@@ -99,6 +133,9 @@ class StubEmbedder:
 def _client() -> TestClient:
     app.dependency_overrides[get_search_repo] = lambda: StubRepo()
     app.dependency_overrides[get_text_embedder] = lambda: StubEmbedder()
+    # Empty directory: enrichment is a no-op, so results pass through unchanged
+    # (no real DB touched). Commerce-field enrichment is covered separately.
+    app.dependency_overrides[get_item_directory] = lambda: InMemoryItemDirectory([])
     return TestClient(app)
 
 

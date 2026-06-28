@@ -946,6 +946,14 @@ export interface components {
             score: number;
             /** Image Url */
             image_url?: string | null;
+            /** Price */
+            price?: number | null;
+            /** Currency */
+            currency?: string | null;
+            /** Color */
+            color?: string | null;
+            /** Buy Url */
+            buy_url?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1089,6 +1097,7 @@ export interface operations {
         parameters: {
             query?: {
                 k?: number;
+                offset?: number;
                 region?: string | null;
             };
             header?: never;
@@ -1126,6 +1135,7 @@ export interface operations {
             query: {
                 q: string;
                 k?: number;
+                offset?: number;
                 region?: string | null;
             };
             header?: never;

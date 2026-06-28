@@ -23,6 +23,7 @@ from .catalog.retrieval import (
     SearchResult,
     TextEmbedder,
     VectorSearchRepository,
+    enrich_results,
     search_text,
 )
 from .collections import (
@@ -254,15 +255,26 @@ def get_text_embedder() -> TextEmbedder:
         raise HTTPException(status_code=503, detail="text search unavailable") from exc
 
 
+def get_item_directory() -> ItemDirectory:
+    """The Postgres-backed item directory used to enrich saved/wardrobe/social ids
+    and to attach real commerce fields (price/buy_url) to catalog search hits."""
+    from .catalog.directory import PostgresItemDirectory
+
+    return PostgresItemDirectory(settings.database_url)
+
+
 @app.get("/items/{item_id}/similar", tags=["catalog"])
 def similar_items(
     item_id: str,
     k: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0),
     region: str | None = None,
     repo: VectorSearchRepository = Depends(get_search_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
 ) -> dict[str, list[SearchResult]]:
     """Visually-similar items (nearest neighbours of the item's embedding)."""
-    return {"results": repo.similar_to_item(item_id, k, region)}
+    hits = repo.similar_to_item(item_id, k, region, offset)
+    return {"results": enrich_results(hits, directory)}
 
 
 @app.get(
@@ -273,9 +285,11 @@ def similar_items(
 def search_items(
     q: str = Query(..., min_length=1),
     k: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0),
     region: str | None = None,
     repo: VectorSearchRepository = Depends(get_search_repo),
     embedder: TextEmbedder = Depends(get_text_embedder),
+    directory: ItemDirectory = Depends(get_item_directory),
 ) -> dict[str, list[SearchResult]]:
     """Text->image search over the catalog (e.g. 'red floral summer dress').
 
@@ -285,7 +299,8 @@ def search_items(
     construction-time path returns, never a 500 that pretends the search broke.
     """
     try:
-        return {"results": search_text(repo, embedder, q, k, region)}
+        hits = search_text(repo, embedder, q, k, region, offset)
+        return {"results": enrich_results(hits, directory)}
     except ImportError as exc:  # encoder backend not installed in this runtime
         raise HTTPException(status_code=503, detail="text search unavailable") from exc
 
@@ -656,13 +671,6 @@ def ingest_feedback(
 # --- Stage-2 surfaces (W4): saved collections, wardrobe, social, profile summary ---
 # Each persists what its web page previously mocked. Dependencies are injectable so
 # the routes are tested with in-memory repos (mirrors the recsys/profile pattern).
-
-
-def get_item_directory() -> ItemDirectory:
-    """The Postgres-backed item directory used to enrich saved/wardrobe/social ids."""
-    from .catalog.directory import PostgresItemDirectory
-
-    return PostgresItemDirectory(settings.database_url)
 
 
 def get_collection_repo() -> CollectionRepository:
