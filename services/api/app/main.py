@@ -450,6 +450,12 @@ async def upsert_profile_from_photo(
     if not raw:
         raise HTTPException(status_code=422, detail="empty upload")
 
+    # Defence in depth: the client-supplied content_type is spoofable, so verify the
+    # actual leading bytes are a real JPEG/PNG/WebP before PIL ever parses them — a
+    # crafted file with an image MIME header must not reach the decoder (M-4).
+    if not _is_supported_image(raw):
+        raise HTTPException(status_code=415, detail="unsupported image type (use jpeg, png, webp)")
+
     image = _decode_photo(raw)
 
     # Each module abstains on ANY runtime failure (remote Space down, weights/runtime
@@ -509,6 +515,23 @@ def _estimate_or_abstain(adapter: object | None, image: object, label: str) -> o
 # to gigapixels and exhausts memory. `Image.open` reads the dimensions from the
 # header without decoding pixels, so we reject BEFORE `load()` does the work.
 _MAX_IMAGE_PIXELS = 40_000_000
+
+
+def _is_supported_image(raw: bytes) -> bool:
+    """True iff the leading bytes are a real JPEG, PNG, or WebP signature.
+
+    Magic-byte sniff, independent of the (spoofable) declared content type. WebP is
+    a RIFF container: ``RIFF`` at 0 and ``WEBP`` at 8.
+    """
+    if len(raw) < 12:
+        return False
+    if raw[:3] == b"\xff\xd8\xff":  # JPEG
+        return True
+    if raw[:8] == b"\x89PNG\r\n\x1a\n":  # PNG
+        return True
+    if raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":  # WebP
+        return True
+    return False
 
 
 def _decode_photo(raw: bytes) -> object:

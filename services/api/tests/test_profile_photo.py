@@ -152,6 +152,17 @@ def test_unsupported_content_type():
     assert res.status_code == 415
 
 
+def test_spoofed_content_type_rejected_by_magic_bytes():
+    # A non-image payload wearing an image/png content_type must still be rejected
+    # before PIL parses it — the magic-byte sniff, not the spoofable MIME header (M-4).
+    client = _client(skin=_FakeSkin(SKIN), body=_FakeBody(BODY))
+    res = client.post(
+        "/profile/photo",
+        files={"photo": ("evil.png", b"<?php echo 'pwn'; ?>\x00\x00\x00\x00", "image/png")},
+    )
+    assert res.status_code == 415
+
+
 def test_both_modules_absent_is_503():
     client = _client(skin=None, body=None)
     assert _upload(client).status_code == 503
@@ -167,6 +178,9 @@ def test_one_module_absent_still_succeeds(monkeypatch):
 
 
 def test_undecodable_upload_is_422():
+    # Valid PNG magic so it passes the byte sniff, but a corrupt body PIL can't
+    # decode — exercises the decode-failure path (415 is for non-image signatures).
     client = _client(skin=_FakeSkin(SKIN), body=_FakeBody(BODY))
-    res = client.post("/profile/photo", files={"photo": ("x.png", b"not-an-image", "image/png")})
+    corrupt_png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+    res = client.post("/profile/photo", files={"photo": ("x.png", corrupt_png, "image/png")})
     assert res.status_code == 422
