@@ -40,11 +40,20 @@ def test_manual_confidence_only_for_supplied_fields():
 
 
 def test_style_intent_envelope_round_trips_occasion():
-    intents, occasion = _style_intent_out({"intents": ["classic"], "occasion": "formal"})
+    intents, occasion, gender = _style_intent_out(
+        {"intents": ["classic"], "occasion": "formal", "gender": "women"}
+    )
     assert intents == ["classic"]
     assert occasion == "formal"
-    # legacy plain-list shape still decodes (occasion absent)
-    assert _style_intent_out(["edgy"]) == (["edgy"], None)
+    assert gender == "women"
+    # legacy envelope without gender decodes gender as None
+    assert _style_intent_out({"intents": ["classic"], "occasion": "formal"}) == (
+        ["classic"],
+        "formal",
+        None,
+    )
+    # legacy plain-list shape still decodes (occasion + gender absent)
+    assert _style_intent_out(["edgy"]) == (["edgy"], None, None)
 
 
 # --- Endpoints (DI-overridden in-memory repos) -----------------------------
@@ -223,7 +232,9 @@ def test_postgres_profile_upsert_binds_all_columns_and_envelopes_occasion():
 
     repo = PostgresProfileRepository("postgresql://unused", pool=FakePool())
     profile = profile_from_manual(
-        ProfileInput(body_type="hourglass", style_intent=["classic"], occasion="formal")
+        ProfileInput(
+            body_type="hourglass", style_intent=["classic"], occasion="formal", gender="women"
+        )
     )
     repo.upsert(DEV_USER, profile)
 
@@ -232,5 +243,14 @@ def test_postgres_profile_upsert_binds_all_columns_and_envelopes_occasion():
     assert params[0] == DEV_USER
     assert params[3] == "hourglass"  # body_type
     # occasion is packed into the style_intent JSONB envelope (no dedicated column)
-    assert json.loads(params[5]) == {"intents": ["classic"], "occasion": "formal"}
-    assert json.loads(params[8]) == {"body_type": 1.0, "style_intent": 1.0, "occasion": 1.0}
+    assert json.loads(params[5]) == {
+        "intents": ["classic"],
+        "occasion": "formal",
+        "gender": "women",
+    }
+    assert json.loads(params[8]) == {
+        "body_type": 1.0,
+        "style_intent": 1.0,
+        "occasion": 1.0,
+        "gender": 1.0,
+    }

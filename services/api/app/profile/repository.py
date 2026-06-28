@@ -43,24 +43,30 @@ _DELETE_PROFILE = "DELETE FROM profiles WHERE user_id = %s"
 
 
 def _occasion_into(profile: Profile) -> dict[str, object]:
-    """Pack the occasion into ``style_intent`` JSONB envelope.
+    """Pack occasion + gender into the ``style_intent`` JSONB envelope.
 
-    The baseline ``profiles`` schema has no dedicated ``occasion`` column; rather
-    than a migration in Cycle 1, occasion rides inside the ``style_intent`` JSONB
-    as ``{"intents": [...], "occasion": "..."}`` so it round-trips losslessly.
+    The baseline ``profiles`` schema has no dedicated ``occasion`` or ``gender``
+    column; rather than a migration, both ride inside the ``style_intent`` JSONB
+    as ``{"intents": [...], "occasion": "...", "gender": "..."}`` so they
+    round-trip losslessly. Older rows without ``gender`` simply read back ``None``.
     """
-    return {"intents": profile.style_intent, "occasion": profile.occasion}
+    return {
+        "intents": profile.style_intent,
+        "occasion": profile.occasion,
+        "gender": profile.gender,
+    }
 
 
-def _style_intent_out(raw: object) -> tuple[list[str], str | None]:
-    """Unpack the ``style_intent`` JSONB envelope into (intents, occasion)."""
+def _style_intent_out(raw: object) -> tuple[list[str], str | None, str | None]:
+    """Unpack the ``style_intent`` JSONB envelope into (intents, occasion, gender)."""
     if isinstance(raw, dict):
         intents = raw.get("intents", [])
         occasion = raw.get("occasion")
-        return (list(intents) if isinstance(intents, list) else [], occasion)
+        gender = raw.get("gender")
+        return (list(intents) if isinstance(intents, list) else [], occasion, gender)
     if isinstance(raw, list):  # legacy/plain list of intents
-        return (list(raw), None)
-    return ([], None)
+        return (list(raw), None, None)
+    return ([], None, None)
 
 
 class ProfileRepository(Protocol):
@@ -132,11 +138,12 @@ def _row_to_profile(row: tuple) -> Profile:
         field_confidence,
         model_version,
     ) = row
-    intents, occasion = _style_intent_out(style_intent_raw)
+    intents, occasion, gender = _style_intent_out(style_intent_raw)
     return Profile(
         skin_tone=skin_tone,
         undertone=undertone,
         body_type=body_type,
+        gender=gender,
         measurements=measurements or {},
         style_intent=intents,
         budget_range=BudgetRange(**budget_raw) if budget_raw else None,

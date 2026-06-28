@@ -49,6 +49,20 @@ SKIN_TONES: frozenset[str] = frozenset({f"mst{n}" for n in range(1, 11)} | {UNKN
 UNKNOWN_UNDERTONE = "unknown"
 UNDERTONES: frozenset[str] = frozenset({"warm", "cool", "neutral", "olive", UNKNOWN_UNDERTONE})
 
+# --- Gender / dressing preference (catalog conditioning) --------------------
+#
+# This is a *styling* axis, not an identity claim: it conditions which slice of
+# the gendered catalog the recommender draws from (most product feeds — and our
+# seed dataset — tag garments Men/Women/Unisex). ``nonbinary`` is a respected,
+# first-class option that maps onto the unisex + both-gendered catalog at
+# recommendation time (see ``catalog_genders_for``); it is never coerced away.
+# Unknown / unprovided maps to the sentinel so a partial profile is accepted.
+UNKNOWN_GENDER = "unknown"
+GENDERS: frozenset[str] = frozenset({"women", "men", "unisex", "nonbinary", UNKNOWN_GENDER})
+
+# The catalog ``gender`` facet a garment may carry (what feeds actually tag).
+CATALOG_GENDERS: frozenset[str] = frozenset({"women", "men", "unisex"})
+
 # --- Body measurements (shared sizing vocabulary) --------------------------
 #
 # The canonical anthropometric keys the body-type module derives from a photo
@@ -145,6 +159,28 @@ def canonical_skin_tone(value: str | None) -> str:
 def canonical_undertone(value: str | None) -> str:
     """Canonical undertone, or ``UNKNOWN_UNDERTONE`` if unrecognized."""
     return _canonical(value, UNDERTONES, UNKNOWN_UNDERTONE)
+
+
+def canonical_gender(value: str | None) -> str:
+    """Canonical styling gender, or ``UNKNOWN_GENDER`` if unrecognized."""
+    return _canonical(value, GENDERS, UNKNOWN_GENDER)
+
+
+def catalog_genders_for(value: str | None) -> frozenset[str]:
+    """Catalog gender facets a user's stated gender should draw garments from.
+
+    Maps the user's styling gender onto the set of catalog ``gender`` tags the
+    recommender may surface. ``women``/``men`` see their slice plus ``unisex``;
+    ``nonbinary`` (and unknown) see the full gendered catalog — never narrowed
+    away. This keeps gender a *soft* conditioning signal, not a hard wall.
+    """
+    canonical = canonical_gender(value)
+    if canonical == "women":
+        return frozenset({"women", "unisex"})
+    if canonical == "men":
+        return frozenset({"men", "unisex"})
+    # nonbinary / unisex / unknown → everything.
+    return CATALOG_GENDERS
 
 
 def is_occasion(value: str) -> bool:

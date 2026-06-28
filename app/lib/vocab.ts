@@ -17,6 +17,15 @@ export const BODY_TYPES: Option[] = [
   { value: "oval", label: "Oval (apple) — fuller midsection" },
 ];
 
+// Styling gender — conditions which slice of the gendered catalog is shown.
+// Mirrors GENDERS in packages/contracts/gyf_contracts/usermodel.py.
+export const GENDERS: Option[] = [
+  { value: "women", label: "Womenswear" },
+  { value: "men", label: "Menswear" },
+  { value: "unisex", label: "Unisex" },
+  { value: "nonbinary", label: "Non-binary — show me everything" },
+];
+
 export const UNDERTONES: Option[] = [
   { value: "warm", label: "Warm" },
   { value: "cool", label: "Cool" },

@@ -20,6 +20,7 @@ from typing import Annotated
 
 from gyf_contracts.usermodel import (
     canonical_body_type,
+    canonical_gender,
     canonical_skin_tone,
     canonical_undertone,
     is_occasion,
@@ -100,6 +101,7 @@ class ProfileInput(BaseModel):
     skin_tone: str | None = None
     undertone: str | None = None
     body_type: str | None = None
+    gender: str | None = None
     measurements: dict[str, float] = Field(default_factory=dict)
     style_intent: list[str] = Field(default_factory=list)
     budget_range: BudgetRange | None = None
@@ -109,6 +111,11 @@ class ProfileInput(BaseModel):
     @classmethod
     def _canon_skin_tone(cls, v: str | None) -> str | None:
         return canonical_skin_tone(v) if v is not None else None
+
+    @field_validator("gender")
+    @classmethod
+    def _canon_gender(cls, v: str | None) -> str | None:
+        return canonical_gender(v) if v is not None else None
 
     @field_validator("undertone")
     @classmethod
@@ -149,6 +156,7 @@ class Profile(BaseModel):
     skin_tone: str | None = None
     undertone: str | None = None
     body_type: str | None = None
+    gender: str | None = None
     measurements: dict[str, float] = Field(default_factory=dict)
     style_intent: list[str] = Field(default_factory=list)
     budget_range: BudgetRange | None = None
@@ -166,7 +174,7 @@ def profile_from_manual(payload: ProfileInput) -> Profile:
     the recommender can tell "stated unknown" from "not asked".
     """
     confidence: dict[str, float] = {}
-    for field_name in ("skin_tone", "undertone", "body_type", "occasion"):
+    for field_name in ("skin_tone", "undertone", "body_type", "gender", "occasion"):
         if getattr(payload, field_name) is not None:
             confidence[field_name] = MANUAL_CONFIDENCE
     if payload.measurements:
@@ -180,6 +188,7 @@ def profile_from_manual(payload: ProfileInput) -> Profile:
         skin_tone=payload.skin_tone,
         undertone=payload.undertone,
         body_type=payload.body_type,
+        gender=payload.gender,
         measurements=payload.measurements,
         style_intent=payload.style_intent,
         budget_range=payload.budget_range,

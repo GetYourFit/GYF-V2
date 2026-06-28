@@ -17,6 +17,7 @@ import {
   BODY_TYPES,
   CONSENT_OPTIONS,
   CURRENCIES,
+  GENDERS,
   OCCASIONS,
   SKIN_TONES,
   STYLE_INTENTS,
@@ -30,6 +31,7 @@ const EMPTY: ProfileInput = {
   skin_tone: "",
   undertone: "",
   body_type: "",
+  gender: "",
   style_intent: [],
   occasion: "",
   budget_range: { min: 0, max: null, currency: "USD" },
@@ -73,6 +75,7 @@ export function OnboardingWizard() {
             skin_tone: profile.skin_tone ?? "",
             undertone: profile.undertone ?? "",
             body_type: profile.body_type ?? "",
+            gender: profile.gender ?? "",
             style_intent: profile.style_intent ?? [],
             occasion: profile.occasion ?? "",
             budget_range: profile.budget_range ?? { min: 0, max: null, currency: "USD" },
@@ -255,6 +258,17 @@ function StepYou({
         hint="Helps GYF choose flattering colours and cuts. Everything is optional."
       />
       <PhotoUpload onEstimated={applyEstimated} />
+      <Field label="I'm shopping for" hint="Sets which part of the catalogue we style you from.">
+        {(p) => (
+          <Select
+            {...p}
+            options={GENDERS}
+            placeholder="No preference"
+            value={form.gender ?? ""}
+            onChange={(e) => set("gender", e.target.value)}
+          />
+        )}
+      </Field>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Field label="Skin tone">
           {(p) => (

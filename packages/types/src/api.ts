@@ -735,6 +735,8 @@ export interface components {
             undertone?: string | null;
             /** Body Type */
             body_type?: string | null;
+            /** Gender */
+            gender?: string | null;
             /** Measurements */
             measurements?: {
                 [key: string]: number;
@@ -784,6 +786,8 @@ export interface components {
             undertone?: string | null;
             /** Body Type */
             body_type?: string | null;
+            /** Gender */
+            gender?: string | null;
             /** Measurements */
             measurements?: {
                 [key: string]: number;
