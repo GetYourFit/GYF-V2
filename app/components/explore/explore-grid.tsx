@@ -14,11 +14,14 @@ function applyClientFilters(items: SearchResult[], f: ExploreFilters): SearchRes
   let out = items;
   if (f.maxPrice) {
     const max = Number(f.maxPrice);
-    // score used as proxy for relative price until price field is in API
-    if (!Number.isNaN(max)) out = out.filter((i) => i.score * 500 <= max);
+    // Real catalog price from the search contract. Items without a price (open-seed
+    // rows with no feed price yet) are kept rather than hidden by a missing value.
+    if (!Number.isNaN(max)) out = out.filter((i) => i.price == null || i.price <= max);
   }
-  if (f.sort === "price_asc") out = [...out].sort((a, b) => a.score - b.score);
-  if (f.sort === "price_desc") out = [...out].sort((a, b) => b.score - a.score);
+  if (f.sort === "price_asc")
+    out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+  if (f.sort === "price_desc")
+    out = [...out].sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity));
   return out;
 }
 
@@ -55,7 +58,10 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
       setError(null);
       try {
         const api = browserApi();
-        const results = await api.search(query, { k: PAGE_SIZE });
+        const results = await api.search(query, {
+          k: PAGE_SIZE,
+          offset: pageNum * PAGE_SIZE,
+        });
         const filtered = applyClientFilters(results, filters);
         if (reset) {
           setItems(filtered);

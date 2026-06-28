@@ -12,7 +12,21 @@ interface ExploreCardProps {
   onSave: (item: SearchResult) => void;
 }
 
+function formatPrice(price?: number | null, currency?: string | null): string | null {
+  if (price == null) return null;
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency ?? "USD",
+      maximumFractionDigits: 0,
+    }).format(price);
+  } catch {
+    return `${currency ?? "$"}${Math.round(price)}`;
+  }
+}
+
 export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
+  const price = formatPrice(item.price, item.currency);
   return (
     <motion.article
       layout
@@ -59,14 +73,29 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
 
       {/* Meta */}
       <div className="flex items-start justify-between gap-2 p-3">
-        <p className="t-label line-clamp-2 flex-1 text-[var(--text)]">{item.title}</p>
-        <a
-          href={`/items/${item.item_id}`}
-          aria-label={`View ${item.title}`}
-          className="mt-0.5 shrink-0 text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
-        >
-          <ExternalLink size={13} />
-        </a>
+        <div className="min-w-0 flex-1">
+          <p className="t-label line-clamp-2 text-[var(--text)]">{item.title}</p>
+          {price && <p className="mt-1 t-mono text-[11px] text-[var(--text-mid)]">{price}</p>}
+        </div>
+        {item.buy_url ? (
+          <a
+            href={item.buy_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Shop ${item.title}`}
+            className="mt-0.5 shrink-0 text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
+          >
+            <ExternalLink size={13} />
+          </a>
+        ) : (
+          <a
+            href={`/items/${item.item_id}`}
+            aria-label={`View ${item.title}`}
+            className="mt-0.5 shrink-0 text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
+          >
+            <ExternalLink size={13} />
+          </a>
+        )}
       </div>
     </motion.article>
   );

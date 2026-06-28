@@ -72,6 +72,7 @@ export interface RecommendParams {
 
 export interface SearchParams {
   k?: number;
+  offset?: number;
   region?: string;
 }
 
