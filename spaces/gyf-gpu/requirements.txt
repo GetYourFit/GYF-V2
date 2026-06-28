@@ -14,14 +14,12 @@ protobuf
 pyfacer>=0.0.5
 # Body-type lane (M3): commercial-clean, ZeroGPU-deployable silhouette pipeline
 # (replaces SAM 3D Body — that stack needs detectron2+pyrender+pytorch3d+conda and
-# is NOT pip-deployable on a Space; see docs/plans/m3-body-type-rtmw-birefnet.md).
-#   - rtmlib: RTMW whole-body keypoints as plain ONNX (Apache-2.0, no mmcv/mmpose/mmdet)
-#   - BiRefNet: SOTA high-res body silhouette mask (MIT)
-# Mask widths at keypoint-anchored shoulder/waist/hip lines → ratios → silhouette taxonomy.
-# NOTE: app.py estimate_body + ml/usermodel/body still need the matching rewrite before
-# GYF_BODY_REMOTE_URL is pointed here — until then keep body unset (skin-tone unaffected).
-rtmlib>=0.0.13
-onnxruntime-gpu
-# BiRefNet is loaded from HF (ZhengPeng7/BiRefNet) via transformers AutoModel + timm/kornia.
+# is NOT pip-deployable on a Space; Sapiens is CC-BY-NC). app.py segments the body
+# with BiRefNet (MIT) and returns the silhouette boundary as (x,y,0) vertices; the
+# caller's existing usermodel.body geometry classifies the silhouette unchanged.
+# BiRefNet loads from HF (ZhengPeng7/BiRefNet) via transformers AutoModel
+# (trust_remote_code) and needs timm/kornia/einops; torchvision for preprocessing.
+torchvision
 timm
 kornia
+einops

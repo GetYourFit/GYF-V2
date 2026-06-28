@@ -107,47 +107,89 @@ def estimate_skin_tone(image_b64: str) -> dict:
     }
 
 
-# --- Body-type lane (M3): SAM 3D Body → MHR mesh, GPU-only -------------------
-# Gated (request access to facebook/sam-3d-body-dinov3 + accept the SAM License)
-# and heavy (PyTorch3D + hydra, installed from facebookresearch/sam-3d-body). The
-# Space does only the GPU mesh fit; the caller's CPU runs the mesh→measurements→
-# silhouette taxonomy (usermodel.body.estimate), so no SAM deps touch the API host.
-_BODY_HF_REPO = "facebook/sam-3d-body-dinov3"
+# --- Body-type lane (M3): BiRefNet silhouette → boundary point-cloud ---------
+# Commercial-clean + ZeroGPU-deployable (SAM 3D Body needs detectron2/pyrender/
+# pytorch3d/conda — not pip-installable on a Space; Sapiens is CC-BY-NC). We segment
+# the body silhouette with BiRefNet (MIT, SOTA high-res matting) and return its
+# left/right boundary as (x, y, 0) "vertices". The caller's CPU runs the SAME tested
+# geometry (usermodel.body.measurements reads horizontal X-extent at stature
+# fractions, normalized by height), so no body-module code changes — only the vertex
+# *source* swaps from a 3D mesh to a 2D silhouette. See docs/plans/m3-body-type-rtmw-birefnet.md.
+_BODY_MODEL = "ZhengPeng7/BiRefNet"
+_BIREFNET_SIZE = 1024
+# Below this fraction of image height the foreground isn't a full standing body
+# (a face/upper-body selfie) — abstain rather than fabricate a silhouette class.
+_MIN_BODY_HEIGHT_FRAC = 0.45
 
 
 @lru_cache(maxsize=1)
 def _load_body():
-    """Set up the SAM 3D Body estimator once (checkpoints downloaded on first call)."""
-    from notebook.utils import setup_sam_3d_body  # provided by the sam-3d-body repo
+    """Load BiRefNet once on CPU (moved to GPU inside the @spaces.GPU call)."""
+    from transformers import AutoModelForImageSegmentation
 
-    return setup_sam_3d_body(hf_repo_id=_BODY_HF_REPO)
+    model = AutoModelForImageSegmentation.from_pretrained(_BODY_MODEL, trust_remote_code=True)
+    return model.eval()
+
+
+def _silhouette_mask(image: Image.Image) -> np.ndarray:
+    """BiRefNet foreground mask (bool, original H×W) for the largest subject."""
+    from torchvision import transforms
+
+    tfm = transforms.Compose(
+        [
+            transforms.Resize((_BIREFNET_SIZE, _BIREFNET_SIZE)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
+    model = _load_body().to("cuda")
+    x = tfm(image).unsqueeze(0).to("cuda")
+    with torch.no_grad():
+        pred = model(x)[-1].sigmoid().cpu()[0, 0]  # (size, size) in [0,1]
+    mask = Image.fromarray((pred.numpy() * 255).astype("uint8")).resize(image.size)
+    return np.asarray(mask) > 127  # bool H×W
 
 
 @spaces.GPU
 def estimate_body(image_b64: str) -> dict:
-    """One photo → MHR mesh of the largest detected person.
+    """One photo → body silhouette boundary as ``vertices`` for the taxonomy.
 
-    Returns ``{'vertices': [[x,y,z],...], 'region_quality': {}, 'model_confidence':
-    float, 'model_version': str}``. An empty/zero-confidence result is an honest
-    "no body found" the caller turns into an abstention (unknown body type).
+    Returns ``{'vertices': [[x,y,0],...], 'region_quality': {}, 'model_confidence':
+    float, 'model_version': str}``. Image rows are flipped so +Y is up (feet→crown),
+    matching the body module's stature-fraction convention. Abstains (confidence 0,
+    empty vertices) when no plausible full-body silhouette is found — the caller
+    turns that into ``unknown`` body type and the manual field is the fallback.
     """
     image = _decode_image(image_b64)
-    rgb = np.ascontiguousarray(np.asarray(image))
-    people = _load_body().process_one_image(rgb)
-    if not people:
+    width, height = image.size
+    mask = _silhouette_mask(image)
+    rows = np.where(mask.any(axis=1))[0]
+    if rows.size == 0:
         return {"vertices": [], "region_quality": {}, "model_confidence": 0.0,
-                "model_version": "sam3dbody-mhr-v1"}
-    person = max(people, key=lambda p: float(p.get("score", p.get("confidence", 1.0)) or 0.0))
-    verts = np.asarray(person.get("pred_vertices"), dtype=np.float32)
-    if verts.ndim != 2 or verts.shape[0] == 0:
+                "model_version": "birefnet-silhouette-v1"}
+
+    # Plausibility: the subject must span a real fraction of the frame (else it's a
+    # face/upper-body selfie — the stature fractions would be meaningless).
+    height_frac = float(rows[-1] - rows[0] + 1) / float(height)
+    if height_frac < _MIN_BODY_HEIGHT_FRAC:
         return {"vertices": [], "region_quality": {}, "model_confidence": 0.0,
-                "model_version": "sam3dbody-mhr-v1"}
-    score = float(person.get("score", person.get("confidence", 1.0)) or 1.0)
+                "model_version": "birefnet-silhouette-v1"}
+
+    # Two boundary points per foreground row (left/right extent) — a compact outline
+    # that preserves the exact horizontal width at every height. Flip Y so feet=min,
+    # crown=max (the +Y-up frame the measurements module assumes).
+    verts: list[list[float]] = []
+    for r in rows:
+        cols = np.where(mask[r])[0]
+        y = float(height - r)
+        verts.append([float(cols[0]), y, 0.0])
+        verts.append([float(cols[-1]), y, 0.0])
+
     return {
-        "vertices": verts.tolist(),
+        "vertices": verts,
         "region_quality": {},
-        "model_confidence": max(0.0, min(1.0, score)),
-        "model_version": "sam3dbody-mhr-v1",
+        "model_confidence": round(min(1.0, height_frac), 4),
+        "model_version": "birefnet-silhouette-v1",
     }
 
 
