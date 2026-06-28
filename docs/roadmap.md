@@ -11,6 +11,14 @@
 >   module observability/alerting, remote-lane resilience, accuracy+fairness eval gates).
 >   It runs **in parallel** with the feature milestones below — a standing quality system,
 >   not a phase to finish first. Its DoD upgrade is binding on every milestone from now.
+> - *How we make the intelligence provably accurate & trustworthy* →
+>   `plans/accuracy-precision-trust.md` (the **Accuracy & Trust track**: measured accuracy +
+>   missing eval gates, calibrated confidence, the real-data flywheel, human-eval + LLM-judge,
+>   the North-Star/"matures-like-fine-wine" curve, and the L1–L6 improvement loops). Also
+>   parallel; its DoD upgrade (calibrated + evidence-bound + rubric-passing) is binding.
+> - *How we work* → **standing engineering directive (§ below): operate like a principal
+>   engineer; use subagents and loop engineering as aggressively as possible; never trade
+>   quality for cost.**
 > - **This file = the *order*.** The single, dependency-correct sequence of buildable
 >   increments from today to the full platform. Each milestone references the others; it does
 >   not restate them.

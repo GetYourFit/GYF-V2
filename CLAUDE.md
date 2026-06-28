@@ -320,6 +320,15 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 
 ## 8. Working Agreement for Agents
 
+- **Operate like a principal software engineer (standing directive).** Hold a
+  million-dollar-startup quality bar on everything — code, ML, *and* product/UX. Research
+  the state of the art before choosing; pick the highest-IQ, long-term-correct path; never
+  ship "college-project" work. **Use subagents and loop engineering as aggressively as
+  possible** — parallelize deep-dives across specialized agents, gate every workstream with
+  eval/verification loops, and prefer continuous closed loops over one-shot fixes.
+  **Never trade quality for session cost** — cost is not a constraint on doing it right.
+  This governs how every milestone below is executed (see `plans/accuracy-precision-trust.md`
+  §5 for the L1–L6 loop catalog and `plans/reliability-trustworthiness.md` for the gates).
 - **Read the source docs first** (`ideas-complete.md`, `tech-stack.md`, `research/deep-research-report.md`) before proposing or building anything.
 - **Follow the engineering doctrine** (`docs/engineering-doctrine.md`) — it is binding for every ML pillar: consume capabilities through a **port** (never import a model in app code), keep a **research vs production lane** with a **CI license gate** so nothing non-commercial is served, prefer **clean foundation + our-data adapter** over non-commercial task weights, and **promote only through evaluation**. The five invariants are non-negotiable.
 - **Plan before code.** Surface a plan; do not implement until it's agreed.
