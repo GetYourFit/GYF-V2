@@ -11,10 +11,12 @@ export interface FieldProps {
   }) => ReactNode;
   error?: string;
   hint?: string;
+  /** Optional adornment rendered to the right of the label (e.g. an "Estimated" badge). */
+  badge?: ReactNode;
   className?: string;
 }
 
-export function Field({ label, children, error, hint, className }: FieldProps) {
+export function Field({ label, children, error, hint, badge, className }: FieldProps) {
   const id = useId();
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
@@ -23,9 +25,12 @@ export function Field({ label, children, error, hint, className }: FieldProps) {
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={id} className="t-label text-[var(--text-faint)]">
-        {label}
-      </label>
+      <div className="flex items-center justify-between gap-2">
+        <label htmlFor={id} className="t-label text-[var(--text-faint)]">
+          {label}
+        </label>
+        {badge}
+      </div>
       {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
       {hint && !error && (
         <p id={hintId} className="text-xs text-[var(--text-faint)]">

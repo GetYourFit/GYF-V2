@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Sparkles } from "lucide-react";
 
 import { PhotoUpload } from "@/components/onboarding/photo-upload";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,10 @@ import {
 import type { BudgetRange, Profile, ProfileInput } from "@gyf/types";
 
 type ConsentState = Record<string, boolean>;
+
+/** The dropdown fields the photo estimate can fill (and badge). */
+type EstimatedKey = "skin_tone" | "undertone" | "body_type";
+const ESTIMATED_KEYS: EstimatedKey[] = ["skin_tone", "undertone", "body_type"];
 
 const EMPTY: ProfileInput = {
   skin_tone: "",
@@ -59,6 +63,9 @@ export function OnboardingWizard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Fields the photo estimate auto-filled — drives the "Estimated" badge and clears
+  // the moment the user edits that field (the estimate was only ever a suggestion).
+  const [estimated, setEstimated] = useState<Set<EstimatedKey>>(new Set());
 
   useEffect(() => {
     const api = browserApi();
@@ -91,6 +98,13 @@ export function OnboardingWizard() {
 
   function set<K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+    // A user edit overrides the photo estimate — drop the "Estimated" badge.
+    setEstimated((prev) => {
+      if (!prev.has(key as EstimatedKey)) return prev;
+      const next = new Set(prev);
+      next.delete(key as EstimatedKey);
+      return next;
+    });
   }
 
   function toggleStyle(value: string) {
@@ -104,6 +118,10 @@ export function OnboardingWizard() {
   function applyEstimated(profile: Profile): string[] {
     const { patch, applied } = mergeEstimated(profile);
     setForm((f) => ({ ...f, ...patch }));
+    // Mark exactly the dropdown fields that got a value, so each shows an
+    // "Estimated" badge until the user confirms or changes it.
+    const filled = ESTIMATED_KEYS.filter((k) => patch[k] != null);
+    setEstimated(new Set(filled));
     return applied;
   }
 
@@ -192,7 +210,12 @@ export function OnboardingWizard() {
             className="flex flex-col gap-6"
           >
             {currentStepId === "you" && (
-              <StepYou form={form} set={set} applyEstimated={applyEstimated} />
+              <StepYou
+                form={form}
+                set={set}
+                applyEstimated={applyEstimated}
+                estimated={estimated}
+              />
             )}
             {currentStepId === "style" && (
               <StepStyle form={form} set={set} toggleStyle={toggleStyle} />
@@ -242,14 +265,30 @@ export function OnboardingWizard() {
 
 /* ─── Step panels ─────────────────────────────────────────────────────────── */
 
+function EstimatedBadge() {
+  return (
+    <motion.span
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.25, ease: lux }}
+      className="inline-flex items-center gap-1 border border-[var(--accent-warm)] px-1.5 py-0.5 t-mono text-[9px] uppercase tracking-[0.12em] text-[var(--accent-warm)]"
+    >
+      <Sparkles className="h-2.5 w-2.5" aria-hidden />
+      Estimated
+    </motion.span>
+  );
+}
+
 function StepYou({
   form,
   set,
   applyEstimated,
+  estimated,
 }: {
   form: ProfileInput;
   set: <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) => void;
   applyEstimated: (profile: Profile) => string[];
+  estimated: Set<EstimatedKey>;
 }) {
   return (
     <>
@@ -270,7 +309,7 @@ function StepYou({
         )}
       </Field>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label="Skin tone">
+        <Field label="Skin tone" badge={estimated.has("skin_tone") ? <EstimatedBadge /> : null}>
           {(p) => (
             <Select
               {...p}
@@ -280,7 +319,7 @@ function StepYou({
             />
           )}
         </Field>
-        <Field label="Undertone">
+        <Field label="Undertone" badge={estimated.has("undertone") ? <EstimatedBadge /> : null}>
           {(p) => (
             <Select
               {...p}
@@ -290,7 +329,7 @@ function StepYou({
             />
           )}
         </Field>
-        <Field label="Body type">
+        <Field label="Body type" badge={estimated.has("body_type") ? <EstimatedBadge /> : null}>
           {(p) => (
             <Select
               {...p}
