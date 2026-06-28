@@ -1,37 +1,60 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Share2, Shirt } from "lucide-react";
+import { Heart, Share2, Shirt } from "lucide-react";
 import { useState } from "react";
 
-export interface SocialPost {
-  id: string;
-  author: { name: string; handle: string; avatarInitial: string };
-  caption: string;
-  imageUrl?: string;
-  outfit?: { items: string[]; occasion?: string };
-  likes: number;
-  comments: number;
-  createdAt: string;
-}
+import type { Post } from "@gyf/types";
 
 interface PostCardProps {
-  post: SocialPost;
-  onDressLikeMe?: (post: SocialPost) => void;
+  post: Post;
+  /** React once per (post, user). Returns the persisted reacted state. */
+  onReact?: (postId: string) => Promise<boolean>;
+  /** Re-render this look for the current user ("dress like me"). */
+  onDressLikeMe?: (post: Post) => void;
 }
 
-export function PostCard({ post, onDressLikeMe }: PostCardProps) {
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes);
+/** A short, stable author handle derived from the opaque user id — the API does
+ *  not expose display names yet (v1.x fast-follow), so we show an honest short id. */
+function authorOf(userId: string): { handle: string; initial: string } {
+  const handle = userId.replace(/-/g, "").slice(0, 8);
+  return { handle, initial: (handle[0] ?? "?").toUpperCase() };
+}
 
-  function toggleLike() {
-    setLiked((v) => !v);
-    setLikeCount((n) => (liked ? n - 1 : n + 1));
+export function PostCard({ post, onReact, onDressLikeMe }: PostCardProps) {
+  const author = authorOf(post.user_id);
+  const [reacted, setReacted] = useState(false);
+  const [count, setCount] = useState(post.reaction_count);
+  const [pending, setPending] = useState(false);
+
+  const heroImage = post.items.find((i) => i.image_url)?.image_url ?? null;
+
+  async function react() {
+    if (pending || reacted) return; // one reaction per (post, user) — server-enforced
+    setPending(true);
+    // optimistic
+    setReacted(true);
+    setCount((n) => n + 1);
+    try {
+      const ok = onReact ? await onReact(post.id) : true;
+      if (!ok) {
+        setReacted(false);
+        setCount((n) => Math.max(0, n - 1));
+      }
+    } catch {
+      setReacted(false);
+      setCount((n) => Math.max(0, n - 1));
+    } finally {
+      setPending(false);
+    }
   }
 
   function share() {
     if (navigator.share) {
-      navigator.share({ title: `${post.author.name}'s outfit on GYF`, text: post.caption });
+      void navigator.share({
+        title: "An outfit on GYF",
+        text: post.caption ?? "Styled with GYF",
+      });
     }
   }
 
@@ -45,46 +68,50 @@ export function PostCard({ post, onDressLikeMe }: PostCardProps) {
       {/* Author row */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-[var(--surface-2)] border border-[var(--border-mid)]">
-          <span className="t-label text-[var(--text)]">{post.author.avatarInitial}</span>
+          <span className="t-label text-[var(--text)]">{author.initial}</span>
         </div>
         <div className="min-w-0">
-          <p className="t-label text-[var(--text)] truncate">{post.author.name}</p>
-          <p className="t-mono text-[10px] text-[var(--text-faint)]">@{post.author.handle}</p>
+          <p className="t-mono text-[11px] text-[var(--text)] truncate">@{author.handle}</p>
+          {post.region && (
+            <p className="t-mono text-[10px] text-[var(--text-faint)] uppercase">{post.region}</p>
+          )}
         </div>
-        {post.outfit?.occasion && (
+        {post.occasion && (
           <span className="ml-auto t-mono text-[9px] border border-[var(--border-mid)] px-2 py-0.5 text-[var(--text-faint)] shrink-0">
-            {post.outfit.occasion}
+            {post.occasion}
           </span>
         )}
       </div>
 
-      {/* Image */}
-      {post.imageUrl && (
+      {/* Hero image — first garment image of the look */}
+      {heroImage && (
         <div className="aspect-square w-full overflow-hidden bg-[var(--surface-2)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={post.imageUrl}
-            alt={`Outfit by ${post.author.name}`}
+            src={heroImage}
+            alt={post.caption ?? "Outfit"}
             className="h-full w-full object-cover"
             loading="lazy"
           />
         </div>
       )}
 
-      {/* Caption */}
+      {/* Caption + item chips */}
       <div className="px-4 pt-3">
-        <p className="t-body text-[var(--text)]">
-          <span className="t-label mr-1">{post.author.handle}</span>
-          {post.caption}
-        </p>
-        {post.outfit?.items && post.outfit.items.length > 0 && (
+        {post.caption && (
+          <p className="t-body text-[var(--text)]">
+            <span className="t-label mr-1">@{author.handle}</span>
+            {post.caption}
+          </p>
+        )}
+        {post.items.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {post.outfit.items.map((item, i) => (
+            {post.items.map((item) => (
               <span
-                key={i}
+                key={item.item_id}
                 className="t-mono text-[9px] border border-[var(--border)] px-2 py-0.5 text-[var(--text-faint)]"
               >
-                {item}
+                {item.title}
               </span>
             ))}
           </div>
@@ -95,26 +122,19 @@ export function PostCard({ post, onDressLikeMe }: PostCardProps) {
       <div className="flex items-center gap-1 px-3 py-3">
         <button
           type="button"
-          aria-label={liked ? "Unlike" : "Like"}
-          onClick={toggleLike}
-          className="flex items-center gap-1.5 px-2 py-2 transition-colors active:opacity-60"
+          aria-label={reacted ? "Reacted" : "React"}
+          aria-pressed={reacted}
+          onClick={react}
+          disabled={pending}
+          className="flex items-center gap-1.5 px-2 py-2 transition-colors active:opacity-60 disabled:opacity-50"
         >
           <Heart
             size={20}
             className={
-              liked ? "fill-[var(--error)] text-[var(--error)]" : "text-[var(--text-faint)]"
+              reacted ? "fill-[var(--error)] text-[var(--error)]" : "text-[var(--text-faint)]"
             }
           />
-          <span className="t-mono text-[11px] text-[var(--text-faint)]">{likeCount}</span>
-        </button>
-
-        <button
-          type="button"
-          aria-label="Comments"
-          className="flex items-center gap-1.5 px-2 py-2 text-[var(--text-faint)] transition-colors active:opacity-60"
-        >
-          <MessageCircle size={20} />
-          <span className="t-mono text-[11px]">{post.comments}</span>
+          <span className="t-mono text-[11px] text-[var(--text-faint)]">{count}</span>
         </button>
 
         <button
@@ -137,10 +157,6 @@ export function PostCard({ post, onDressLikeMe }: PostCardProps) {
           </button>
         )}
       </div>
-
-      <p className="px-4 pb-4 t-mono text-[9px] text-[var(--text-faint)]">
-        {new Date(post.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-      </p>
     </motion.article>
   );
 }
