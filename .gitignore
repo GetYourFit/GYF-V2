@@ -31,11 +31,6 @@ coverage/
 *.tsbuildinfo
 *.log
 
-# Cloudflare Workers / wrangler (build output + redirected config dir)
-.open-next/
-.wrangler/
-.wrangler-home/
-
 # Python
 __pycache__/
 *.py[cod]

@@ -5,7 +5,7 @@ import { type ChangeEvent } from "react";
 
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 
-export type SortKey = "relevance" | "price_asc" | "price_desc";
+type SortKey = "relevance" | "price_asc" | "price_desc";
 
 export interface ExploreFilters {
   q: string;
