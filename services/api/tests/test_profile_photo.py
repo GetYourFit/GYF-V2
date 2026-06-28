@@ -108,7 +108,11 @@ def test_skin_tone_surfaced_when_enabled(monkeypatch):
     assert body["field_confidence"]["skin_tone"] == 0.7
 
 
-def test_manual_field_precedence(monkeypatch):
+def test_photo_estimate_fills_field_over_prior_value(monkeypatch):
+    # Uploading a photo is an explicit re-estimate request, so a real estimate fills
+    # the field even when a prior value exists — the user sees it, badged "Estimated",
+    # and can correct it before saving (which re-stamps it manual). This is the
+    # behaviour users expect from clicking "Estimate from photo".
     monkeypatch.setattr(main.settings, "skin_tone_enabled", True)
     existing = InMemoryProfileRepository()
     existing.upsert(
@@ -117,9 +121,9 @@ def test_manual_field_precedence(monkeypatch):
     )
     client = _client(skin=_FakeSkin(SKIN), body=_FakeBody(BODY), profiles=existing)
     body = _upload(client).json()
-    # Manual tone (confidence 1.0) is never overwritten by the photo guess (0.7).
-    assert body["skin_tone"] == "mst3"
-    assert body["body_type"] == "hourglass"  # but the un-stated body_type is adopted
+    assert body["skin_tone"] == "mst7"  # photo estimate now fills the field
+    assert body["field_confidence"]["skin_tone"] == 0.7
+    assert body["body_type"] == "hourglass"
 
 
 def test_zero_confidence_undertone_guess_is_not_surfaced(monkeypatch):

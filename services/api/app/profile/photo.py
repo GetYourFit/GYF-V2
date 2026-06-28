@@ -144,23 +144,20 @@ def _adopt(
     *,
     unknown: str | None,
 ) -> bool:
-    """Write ``value`` onto ``profile.field_name`` iff it beats what's already there.
+    """Write a real photo ``value`` onto ``profile.field_name`` (explicit re-estimate).
 
-    Skips empty / abstained values (``unknown`` sentinel or falsy) and never
-    overwrites an existing field whose recorded confidence is >= this one (manual
-    input is 1.0, so it always wins). Returns whether the field was adopted.
+    Skips only genuine abstains: empty / ``unknown`` sentinel values, or a
+    zero-confidence guess (D6 honesty — a module that emits a sentinel-free fallback
+    label whose quality collapsed to 0.0 must not surface). Otherwise the estimate
+    **wins and fills the field**: uploading a photo is an explicit user request to
+    (re)estimate, so it overwrites a prior value rather than being silently
+    suppressed — the value stays editable and is badged "Estimated" in the UI, so
+    the user can correct it before saving (which re-stamps it as manual, conf 1.0).
+    Returns whether the field was adopted.
     """
     if value is None or value == "" or (unknown is not None and value == unknown):
         return False
-    # A zero-confidence estimate is, by definition, an abstain — never surface a guess
-    # (D6 honesty). This catches modules that emit a sentinel-free fallback label (e.g.
-    # the undertone classifier defaults to "neutral") whose quality collapsed to 0.0.
-    # Without this, a first-time user (no prior confidence to gate against) would adopt
-    # the guess, showing "Estimated …" while the real fields stay blank.
     if confidence <= 0.0:
-        return False
-    existing = profile.field_confidence.get(field_name)
-    if existing is not None and existing >= confidence:
         return False
     setattr(profile, field_name, value)
     profile.field_confidence[field_name] = round(confidence, 4)
