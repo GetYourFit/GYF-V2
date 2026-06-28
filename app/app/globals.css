@@ -1,21 +1,24 @@
 @import "tailwindcss";
 
-/* ─── Design tokens: black/white industrial ─────────────────────────────── */
+/* ─── Design tokens: light editorial gallery ────────────────────────────── */
+/* White/off-white canvas, sharp black ink, hairline rules — clothing reads   */
+/* as gallery pieces (SSENSE / COS / Net-a-Porter). Warm gold reserved for     */
+/* confidence/editorial callouts only.                                         */
 @theme {
-  --color-bg:          #0A0A0A;
-  --color-surface:     #111111;
-  --color-surface-2:   #1A1A1A;
-  --color-surface-3:   #252525;
-  --color-border:      rgba(255, 255, 255, 0.06);
-  --color-border-mid:  rgba(255, 255, 255, 0.12);
-  --color-border-hi:   rgba(255, 255, 255, 0.24);
-  --color-text:        #F0F0F0;
-  --color-text-mid:    #999999;
-  --color-text-faint:  #505050;
-  --color-accent:      #FFFFFF;
-  --color-accent-warm: #C8A96E;
-  --color-rule:        rgba(255, 255, 255, 0.07);
-  --color-error:       #E05252;
+  --color-bg:          #FAFAF8;   /* warm off-white page canvas */
+  --color-surface:     #FFFFFF;   /* card / panel surface */
+  --color-surface-2:   #F4F3EF;   /* elevated surface (modals, dropdowns) */
+  --color-surface-3:   #ECEAE3;   /* hover state on surfaces */
+  --color-border:      rgba(17, 17, 17, 0.08);   /* subtle structural border */
+  --color-border-mid:  rgba(17, 17, 17, 0.14);   /* medium border */
+  --color-border-hi:   rgba(17, 17, 17, 0.30);   /* high-contrast border */
+  --color-text:        #111111;   /* primary ink */
+  --color-text-mid:    #6B6B6B;   /* secondary / muted */
+  --color-text-faint:  #A0A0A0;   /* placeholder / disabled */
+  --color-accent:      #111111;   /* near-black — CTA, active states */
+  --color-accent-warm: #9A7B3F;   /* gold — confidence / editorial callouts */
+  --color-rule:        rgba(17, 17, 17, 0.08);   /* dividers */
+  --color-error:       #C0392B;
 
   --font-display: var(--font-playfair), Georgia, serif;
   --font-body:    var(--font-inter), system-ui, sans-serif;
@@ -24,20 +27,20 @@
 
 /* Raw CSS vars — used for arbitrary-value classes (bg-[var(--bg)]) and JS */
 :root {
-  --bg:          #0A0A0A;
-  --surface:     #111111;
-  --surface-2:   #1A1A1A;
-  --surface-3:   #252525;
-  --border:      rgba(255, 255, 255, 0.06);
-  --border-mid:  rgba(255, 255, 255, 0.12);
-  --border-hi:   rgba(255, 255, 255, 0.24);
-  --text:        #F0F0F0;
-  --text-mid:    #999999;
-  --text-faint:  #505050;
-  --accent:      #FFFFFF;
-  --accent-warm: #C8A96E;
-  --rule:        rgba(255, 255, 255, 0.07);
-  --error:       #E05252;
+  --bg:          #FAFAF8;
+  --surface:     #FFFFFF;
+  --surface-2:   #F4F3EF;
+  --surface-3:   #ECEAE3;
+  --border:      rgba(17, 17, 17, 0.08);
+  --border-mid:  rgba(17, 17, 17, 0.14);
+  --border-hi:   rgba(17, 17, 17, 0.30);
+  --text:        #111111;
+  --text-mid:    #6B6B6B;
+  --text-faint:  #A0A0A0;
+  --accent:      #111111;
+  --accent-warm: #9A7B3F;
+  --rule:        rgba(17, 17, 17, 0.08);
+  --error:       #C0392B;
   --lux:         cubic-bezier(0.16, 1, 0.3, 1);
 }
 
