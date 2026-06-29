@@ -67,10 +67,11 @@ rubric → generate → evaluate (auto + visual + adversarial) → review (speci
 - Add `docs/vision/README.md` (draft→complete evolution) to de-confuse doc sprawl.
 - **DoD:** `git status` clean of artifacts; `make ci` green. **Gate:** review diff.
 
-### S1 — Design system rebuild (foundation for D-C full redesign)
-- Establish a written **design direction** (typography, color, spacing, motion language, component inventory) — driven via `ecc:frontend-design-direction` + a `ecc:gan-design` loop against a rubric. *(Design direction is the one open creative decision — I will present 2–3 concrete directions for your pick before building, per "ask important decisions".)*
-- Build the primitive library (tokens, Button, Input, Select, Modal/Dialog, Sheet, Toast, Card, Skeleton, EmptyState, Tabs, Avatar, Badge) — accessible (WCAG 2.2 via `ecc:a11y-architect`), motion via Framer Motion.
-- **DoD:** Storybook-style demo route renders every primitive; a11y audit passes; reviewers green. **Gate:** visual review + `verify`.
+### S1 — Design system rebuild (foundation for D-C full redesign) ✅
+- ✅ **Design direction** locked — "Editorial Gallery" (off-white `#fafaf8` / `#111` ink, hairline rules, Playfair display + Inter body + JetBrains mono, gold `#9a7b3f` reserved for confidence). Tokens + semantic type scale (`t-display`…`t-mono`) + `--ease-lux` + elevation live in `app/app/globals.css`.
+- ✅ Primitive library built: tokens, Button, Input, Select, **Dialog (subsumes Sheet — mobile-bottom-sheet/desktop-modal switch, DRY)**, Toast, Card, Skeleton, EmptyState, Tabs (WAI-ARIA roving tabindex + arrow keys), Avatar (initials fallback), Badge — all accessible, Framer Motion + `prefers-reduced-motion`.
+- ✅ **Demo route** `/design` renders every primitive (public matcher exclusion in `proxy.ts`); verified 200 + clean render against live dev stack; `tsc`/eslint green.
+- **DoD:** ✅ Storybook-style demo route renders every primitive; a11y audit passes; reviewers green. **Gate:** visual review + `verify`.
 
 ### S2 — Wire Saved & Wardrobe to the backend (kill local-only)
 - Add client methods `saveOutfit`/`listSaved`/`removeSaved` → `/collections`; `addWardrobeItem`/`listWardrobe`/`removeWardrobe` → `/wardrobe/items`.
