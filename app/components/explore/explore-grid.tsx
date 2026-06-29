@@ -15,21 +15,6 @@ const PAGE_SIZE = 24;
 
 const GRID_COLS = "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5";
 
-function applyClientFilters(items: SearchResult[], f: ExploreFilters): SearchResult[] {
-  let out = items;
-  if (f.maxPrice) {
-    const max = Number(f.maxPrice);
-    // Real catalog price from the search contract. Items without a price (open-seed
-    // rows with no feed price yet) are kept rather than hidden by a missing value.
-    if (!Number.isNaN(max)) out = out.filter((i) => i.price == null || i.price <= max);
-  }
-  if (f.sort === "price_asc")
-    out = [...out].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
-  if (f.sort === "price_desc")
-    out = [...out].sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity));
-  return out;
-}
-
 function CardSkeleton() {
   return (
     <div className="flex flex-col border border-border bg-surface">
@@ -80,15 +65,20 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
       setError(null);
       try {
         const api = browserApi();
+        // Price filter + sort run server-side so pagination stays correct: every
+        // page is a full window of in-budget items in the chosen order (a client
+        // per-page sort would only order each chunk, not the cumulative list).
+        const maxPrice = filters.maxPrice ? Number(filters.maxPrice) : undefined;
         const results = await api.search(query, {
           k: PAGE_SIZE,
           offset: pageNum * PAGE_SIZE,
+          ...(maxPrice != null && !Number.isNaN(maxPrice) ? { max_price: maxPrice } : {}),
+          sort: filters.sort,
         });
-        const filtered = applyClientFilters(results, filters);
         if (reset) {
-          setItems(filtered);
+          setItems(results);
         } else {
-          setItems((prev) => [...prev, ...filtered]);
+          setItems((prev) => [...prev, ...results]);
         }
         setPage(pageNum);
         setHasMore(results.length === PAGE_SIZE);

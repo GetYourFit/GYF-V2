@@ -63,6 +63,29 @@ def test_region_filter_added_only_when_region_given():
     assert params[-1] == 0  # offset
 
 
+def test_price_sort_orders_by_price_not_distance():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo.search_by_vector([0.1, 0.2], k=24, region=None, sort="price_asc")
+    sql, params = pool.calls[0]
+    assert "ORDER BY i.price ASC NULLS LAST" in sql
+    assert "embedding" not in sql.split("ORDER BY")[1]  # ordered by price, not distance
+    # score expression keeps the query vector; no second vector bind for ordering.
+    assert params[-2] == 24  # limit
+    assert params[-1] == 0  # offset
+
+
+def test_max_price_adds_server_side_filter():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo.search_by_vector([0.1, 0.2], k=10, region="IN", offset=10, max_price=80.0)
+    sql, params = pool.calls[0]
+    assert "i.price IS NOT NULL AND i.price <= %s" in sql
+    assert 80.0 in params
+    assert "ANY(i.region_tags)" in sql
+    assert params[-2:] == (10, 10)  # limit, offset
+
+
 def test_enrich_results_attaches_real_commerce_fields():
     from app.catalog.directory import ItemDetail
     from app.catalog.retrieval import enrich_results
@@ -97,7 +120,9 @@ def test_search_text_embeds_query_then_searches():
     captured = {}
 
     class FakeRepo:
-        def search_by_vector(self, embedding, k, region, offset=0):
+        def search_by_vector(
+            self, embedding, k, region, offset=0, max_price=None, sort="relevance"
+        ):
             captured["embedding"] = embedding
             captured["offset"] = offset
             return [SearchResult("x", "X", 1.0)]
@@ -121,7 +146,9 @@ class StubRepo:
     def similar_to_item(self, item_id, k, region, offset=0):
         return [SearchResult("sibling", "Sibling Item", 0.88)]
 
-    def search_by_vector(self, embedding, k, region, offset=0):
+    def search_by_vector(
+        self, embedding, k, region, offset=0, max_price=None, sort="relevance"
+    ):
         return [SearchResult("hit", "Search Hit", 0.77)]
 
 

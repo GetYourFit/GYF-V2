@@ -74,6 +74,10 @@ export interface SearchParams {
   k?: number;
   offset?: number;
   region?: string;
+  /** Server-side budget filter — only items at or below this price are returned. */
+  max_price?: number;
+  /** Result ordering: relevance (default), or price ascending/descending. */
+  sort?: "relevance" | "price_asc" | "price_desc";
 }
 
 interface SearchResults {

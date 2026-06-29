@@ -38,6 +38,8 @@ def search_items(
     k: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
     region: str | None = None,
+    max_price: float | None = Query(None, ge=0),
+    sort: str = Query("relevance", pattern="^(relevance|price_asc|price_desc)$"),
     repo: VectorSearchRepository = Depends(get_search_repo),
     embedder: TextEmbedder = Depends(get_text_embedder),
     directory: ItemDirectory = Depends(get_item_directory),
@@ -50,7 +52,7 @@ def search_items(
     construction-time path returns, never a 500 that pretends the search broke.
     """
     try:
-        hits = search_text(repo, embedder, q, k, region, offset)
+        hits = search_text(repo, embedder, q, k, region, offset, max_price, sort)
         return {"results": enrich_results(hits, directory)}
     except ImportError as exc:  # encoder backend not installed in this runtime
         raise HTTPException(status_code=503, detail="text search unavailable") from exc

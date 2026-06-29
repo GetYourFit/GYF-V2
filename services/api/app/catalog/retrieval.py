@@ -50,7 +50,13 @@ class VectorSearchRepository(Protocol):
     ) -> list[SearchResult]: ...
 
     def search_by_vector(
-        self, embedding: list[float], k: int, region: str | None, offset: int = 0
+        self,
+        embedding: list[float],
+        k: int,
+        region: str | None,
+        offset: int = 0,
+        max_price: float | None = None,
+        sort: str = "relevance",
     ) -> list[SearchResult]: ...
 
 
@@ -67,14 +73,13 @@ WHERE e.item_id <> %s {region}
 ORDER BY e.embedding <=> q.embedding
 LIMIT %s OFFSET %s
 """
-_SEARCH = """
-SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs
-FROM item_embeddings e
-JOIN items i ON i.id = e.item_id
-WHERE TRUE {region}
-ORDER BY e.embedding <=> %s::vector
-LIMIT %s OFFSET %s
-"""
+
+# Price ordering keeps priceless rows last in both directions so open-seed items
+# without a feed price never crowd the top of a price-sorted page.
+_SORT_CLAUSES = {
+    "price_asc": "ORDER BY i.price ASC NULLS LAST",
+    "price_desc": "ORDER BY i.price DESC NULLS LAST",
+}
 
 
 class PostgresVectorSearchRepository:
@@ -99,12 +104,40 @@ class PostgresVectorSearchRepository:
         return self._run(sql, params)
 
     def search_by_vector(
-        self, embedding: list[float], k: int, region: str | None, offset: int = 0
+        self,
+        embedding: list[float],
+        k: int,
+        region: str | None,
+        offset: int = 0,
+        max_price: float | None = None,
+        sort: str = "relevance",
     ) -> list[SearchResult]:
         vec = _pgvector(embedding)
-        sql = _SEARCH.format(region=_REGION_FILTER if region else "")
-        params = (vec, region, vec, k, offset) if region else (vec, vec, k, offset)
-        return self._run(sql, params)
+        # The score column always reflects relevance to the query; `sort` only
+        # changes the ORDER BY, so a price-sorted page still carries honest
+        # confidence. Params are assembled in clause order to stay positional.
+        params: list[object] = [vec]  # score expression
+        where = "WHERE TRUE"
+        if region:
+            where += " " + _REGION_FILTER
+            params.append(region)
+        if max_price is not None:
+            where += " AND i.price IS NOT NULL AND i.price <= %s"
+            params.append(max_price)
+        order = _SORT_CLAUSES.get(sort)
+        if order is None:  # relevance (default): nearest-neighbour by cosine distance
+            order = "ORDER BY e.embedding <=> %s::vector"
+            params.append(vec)
+        params.extend([k, offset])
+        sql = f"""
+        SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs
+        FROM item_embeddings e
+        JOIN items i ON i.id = e.item_id
+        {where}
+        {order}
+        LIMIT %s OFFSET %s
+        """
+        return self._run(sql, tuple(params))
 
     def _run(self, sql: str, params: tuple) -> list[SearchResult]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
@@ -126,9 +159,13 @@ def search_text(
     k: int,
     region: str | None,
     offset: int = 0,
+    max_price: float | None = None,
+    sort: str = "relevance",
 ) -> list[SearchResult]:
-    """Embed a text query and return the nearest items."""
-    return repo.search_by_vector(embedder.embed_query(query), k, region, offset)
+    """Embed a text query and return the matching items (relevance- or price-ordered)."""
+    return repo.search_by_vector(
+        embedder.embed_query(query), k, region, offset, max_price=max_price, sort=sort
+    )
 
 
 def enrich_results(
