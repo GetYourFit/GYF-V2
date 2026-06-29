@@ -54,10 +54,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 
   if (asChild && isValidElement(children)) {
     const child = children as ReactElement<{ className?: string }>;
+    // `type` is button-only; never forward it (or `ref`'s button typing) onto an
+    // anchor/Link child. Disabled links are expressed via aria, not the attribute.
+    const { disabled, ...rest } = props;
     return cloneElement(child, {
+      ...rest,
+      ref,
+      "aria-disabled": disabled || undefined,
       className: cn(classes, child.props.className),
-      ...props,
-    });
+    } as Partial<typeof child.props> & { ref: typeof ref });
   }
 
   return (

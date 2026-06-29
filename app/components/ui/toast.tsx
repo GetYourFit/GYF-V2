@@ -10,6 +10,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -56,32 +57,73 @@ const ACCENT: Record<ToastVariant, string> = {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const idRef = useRef(0);
+  const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   const dismiss = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    const t = timers.current.get(id);
+    if (t) {
+      clearTimeout(t);
+      timers.current.delete(id);
+    }
+    setToasts((prev) => prev.filter((x) => x.id !== id));
   }, []);
+
+  const schedule = useCallback(
+    (id: number, duration: number) => {
+      if (duration <= 0) return;
+      const handle = setTimeout(() => dismiss(id), duration);
+      timers.current.set(id, handle);
+    },
+    [dismiss],
+  );
+
+  // Pause auto-dismiss while a toast is hovered/focused (SC 2.2.1); resume on leave.
+  const pause = useCallback((id: number) => {
+    const t = timers.current.get(id);
+    if (t) {
+      clearTimeout(t);
+      timers.current.delete(id);
+    }
+  }, []);
+
+  const resume = useCallback(
+    (id: number, duration: number) => {
+      if (!timers.current.has(id)) schedule(id, duration);
+    },
+    [schedule],
+  );
 
   const toast = useCallback(
     ({ title, description, variant = "info", duration = 4000 }: ToastOptions) => {
       const id = ++idRef.current;
       setToasts((prev) => [...prev, { id, title, description, variant, duration }]);
-      if (duration > 0) {
-        setTimeout(() => dismiss(id), duration);
-      }
+      schedule(id, duration);
     },
-    [dismiss],
+    [schedule],
   );
+
+  // Clear every outstanding timer if the provider unmounts (e.g. navigation).
+  useEffect(() => {
+    const map = timers.current;
+    return () => {
+      map.forEach(clearTimeout);
+      map.clear();
+    };
+  }, []);
 
   const value = useMemo(() => ({ toast, dismiss }), [toast, dismiss]);
 
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div
-        aria-live="polite"
-        aria-relevant="additions"
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:items-end sm:px-6"
-      >
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:items-end sm:px-6">
+        {/* Errors announce assertively; success/info politely (SC 4.1.3). */}
+        <span aria-live="assertive" className="sr-only">
+          {toasts.filter((t) => t.variant === "error").map((t) => t.title).join(". ")}
+        </span>
+        <span aria-live="polite" className="sr-only">
+          {toasts.filter((t) => t.variant !== "error").map((t) => t.title).join(". ")}
+        </span>
         <AnimatePresence initial={false}>
           {toasts.map((t) => {
             const Icon = ICONS[t.variant];
@@ -94,6 +136,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 exit={{ opacity: 0, y: 8, scale: 0.98 }}
                 transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
                 role="status"
+                onMouseEnter={() => pause(t.id)}
+                onMouseLeave={() => resume(t.id, t.duration)}
+                onFocusCapture={() => pause(t.id)}
+                onBlurCapture={() => resume(t.id, t.duration)}
                 className={cn(
                   "pointer-events-auto flex w-full max-w-sm items-start gap-3",
                   "border border-border-mid bg-surface px-4 py-3 shadow-card",
@@ -110,9 +156,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   type="button"
                   aria-label="Dismiss notification"
                   onClick={() => dismiss(t.id)}
-                  className="-mr-1 -mt-1 shrink-0 p-1 text-text-faint transition-colors hover:text-text"
+                  className="-mr-1.5 -mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center text-text-faint transition-colors hover:text-text focus-visible:text-text focus-visible:outline-none"
                 >
-                  <X size={14} />
+                  <X size={14} aria-hidden />
                 </button>
               </motion.div>
             );
