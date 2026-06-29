@@ -84,6 +84,17 @@ interface SearchResults {
   results: SearchResult[];
 }
 
+/** Real, server-computed filter ranges for the (region-scoped) catalog. Lets the
+ *  client offer only filters the data can satisfy — `priced === 0` means no item
+ *  has a price, so Explore hides the price control instead of showing a slider
+ *  that empties the grid. */
+export interface CatalogFacets {
+  total: number;
+  priced: number;
+  price_min: number | null;
+  price_max: number | null;
+}
+
 interface FeedbackAck {
   status: string;
   action: string;
@@ -155,6 +166,13 @@ export class GyfApi {
   search(q: string, params: SearchParams = {}): Promise<SearchResult[]> {
     const query = toQuery({ q, ...params });
     return this.request<SearchResults>("GET", `/items/search${query}`).then((r) => r.results);
+  }
+
+  /** Available catalog filter ranges (price coverage + min/max) for the optional
+   *  region. Drives which filters Explore renders. */
+  facets(region?: string): Promise<CatalogFacets> {
+    const query = toQuery(region ? { region } : {});
+    return this.request<CatalogFacets>("GET", `/items/facets${query}`);
   }
 
   similar(itemId: string, params: SearchParams = {}): Promise<SearchResult[]> {

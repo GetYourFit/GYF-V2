@@ -1,9 +1,11 @@
 "use client";
 
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { type ChangeEvent } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 
 import { Select } from "@/components/ui/select";
+import type { CatalogFacets } from "@/lib/api";
+import { browserApi } from "@/lib/api-client";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 
 type SortKey = "relevance" | "price_asc" | "price_desc";
@@ -21,8 +23,10 @@ interface FilterBarProps {
   onChange: (f: ExploreFilters) => void;
 }
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+const RELEVANCE_ONLY: { value: SortKey; label: string }[] = [
   { value: "relevance", label: "Relevance" },
+];
+const PRICE_SORTS: { value: SortKey; label: string }[] = [
   { value: "price_asc", label: "Price ↑" },
   { value: "price_desc", label: "Price ↓" },
 ];
@@ -30,6 +34,34 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 const EMPTY: ExploreFilters = { q: "", occasion: "", style: "", maxPrice: "", sort: "relevance" };
 
 export function FilterBar({ filters, onChange }: FilterBarProps) {
+  // Real catalog facets decide which controls are useful: with no priced items
+  // (the academic seed has none), price filter + price sorts would only empty the
+  // grid, so we hide them until the catalog actually carries prices.
+  const [facets, setFacets] = useState<CatalogFacets | null>(null);
+  useEffect(() => {
+    let active = true;
+    browserApi()
+      .facets()
+      .then((f) => {
+        if (!active) return;
+        setFacets(f);
+        // Defend against a price filter/sort that the data can't honour (e.g.
+        // seeded state): with no priced items it would only empty the grid, so
+        // coerce it back to a working default the moment we learn coverage is 0.
+        if (f.priced === 0 && (filters.maxPrice || filters.sort !== "relevance")) {
+          onChange({ ...filters, maxPrice: "", sort: "relevance" });
+        }
+      })
+      .catch(() => {}); // best-effort; price controls simply stay hidden
+    return () => {
+      active = false;
+    };
+    // Run once on mount; `filters`/`onChange` are read fresh inside, not deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const priceEnabled = (facets?.priced ?? 0) > 0;
+  const sortOptions = priceEnabled ? [...RELEVANCE_ONLY, ...PRICE_SORTS] : RELEVANCE_ONLY;
+
   function set<K extends keyof ExploreFilters>(key: K, value: ExploreFilters[K]) {
     onChange({ ...filters, [key]: value });
   }
@@ -93,23 +125,26 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             options={STYLE_INTENTS}
             placeholder="All styles"
           />
-          <input
-            type="number"
-            inputMode="numeric"
-            aria-label="Maximum price"
-            placeholder="Max price"
-            min={0}
-            value={filters.maxPrice}
-            onChange={(e) => set("maxPrice", e.target.value)}
-            className="w-28 border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-          />
+          {priceEnabled && (
+            <input
+              type="number"
+              inputMode="numeric"
+              aria-label="Maximum price"
+              placeholder={facets?.price_max ? `Max ${Math.ceil(facets.price_max)}` : "Max price"}
+              min={0}
+              max={facets?.price_max ?? undefined}
+              value={filters.maxPrice}
+              onChange={(e) => set("maxPrice", e.target.value)}
+              className="w-28 border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          )}
           <Select
             compact
             hidePlaceholder
             aria-label="Sort results"
             value={filters.sort}
             onChange={(e) => set("sort", e.target.value as SortKey)}
-            options={SORT_OPTIONS}
+            options={sortOptions}
           />
           {hasActive && (
             <button

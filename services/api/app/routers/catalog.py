@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..catalog.directory import ItemDirectory
 from ..catalog.retrieval import (
+    CatalogFacets,
     SearchResult,
     TextEmbedder,
     VectorSearchRepository,
@@ -32,6 +33,17 @@ def similar_items(
     """Visually-similar items (nearest neighbours of the item's embedding)."""
     hits = repo.similar_to_item(item_id, k, region, offset)
     return {"results": enrich_results(hits, directory)}
+
+
+@router.get("/items/facets")
+def catalog_facets(
+    region: str | None = None,
+    repo: VectorSearchRepository = Depends(get_search_repo),
+) -> CatalogFacets:
+    """Real filter ranges for the (region-scoped) catalog so the client only
+    offers filters the data can satisfy — e.g. ``priced == 0`` tells Explore to
+    hide the price control rather than present a slider that empties the grid."""
+    return repo.catalog_facets(region)
 
 
 @router.get("/items/search", dependencies=[Depends(rate_limit("search", "rate_limit_search"))])

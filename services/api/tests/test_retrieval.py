@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.catalog.directory import InMemoryItemDirectory
 from app.catalog.retrieval import (
+    CatalogFacets,
     PostgresVectorSearchRepository,
     SearchResult,
     search_text,
@@ -84,6 +85,56 @@ def test_max_price_adds_server_side_filter():
     assert 80.0 in params
     assert "ANY(i.region_tags)" in sql
     assert params[-2:] == (10, 10)  # limit, offset
+
+
+class _FacetsPool:
+    """Pool whose cursor supports fetchone(), for the aggregate facets query."""
+
+    def __init__(self, row):
+        self.row = row
+        self.calls = []
+
+    def connection(self):
+        pool = self
+
+        class _Conn:
+            def execute(self, sql, params):
+                pool.calls.append((sql, params))
+
+                class _Cur:
+                    def fetchone(self):
+                        return pool.row
+
+                return _Cur()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+        return _Conn()
+
+
+def test_catalog_facets_reports_price_coverage_and_range():
+    pool = _FacetsPool((1200, 340, 9.99, 499.0))
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    facets = repo.catalog_facets(region=None)
+    assert facets == CatalogFacets(total=1200, priced=340, price_min=9.99, price_max=499.0)
+    sql, params = pool.calls[0]
+    assert "COUNT(*)" in sql and "COUNT(i.price)" in sql
+    assert params == ()  # no region bind
+
+
+def test_catalog_facets_priced_zero_yields_null_range_and_region_bind():
+    # All-NULL prices (the current academic seed) => priced 0, no min/max.
+    pool = _FacetsPool((900, 0, None, None))
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    facets = repo.catalog_facets(region="IN")
+    assert facets == CatalogFacets(total=900, priced=0, price_min=None, price_max=None)
+    sql, params = pool.calls[0]
+    assert "ANY(i.region_tags)" in sql  # region filter applied
+    assert params == ("IN",)
 
 
 def test_enrich_results_attaches_real_commerce_fields():
@@ -183,6 +234,25 @@ def test_search_endpoint_requires_query_and_returns_results():
         resp = client.get("/items/search?q=red+floral+dress&region=IN")
         assert resp.status_code == 200
         assert resp.json()["results"][0]["item_id"] == "hit"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_facets_endpoint_returns_coverage():
+    class FacetsRepo:
+        def catalog_facets(self, region):
+            return CatalogFacets(total=900, priced=0, price_min=None, price_max=None)
+
+    app.dependency_overrides[get_search_repo] = lambda: FacetsRepo()
+    try:
+        resp = TestClient(app).get("/items/facets")
+        assert resp.status_code == 200
+        assert resp.json() == {
+            "total": 900,
+            "priced": 0,
+            "price_min": None,
+            "price_max": None,
+        }
     finally:
         app.dependency_overrides.clear()
 

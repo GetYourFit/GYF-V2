@@ -34,6 +34,18 @@ class SearchResult:
     buy_url: str | None = None
 
 
+@dataclass(frozen=True)
+class CatalogFacets:
+    """Real, server-computed filter ranges for the in-scope (region-filtered)
+    catalog so the client offers only filters the data can actually satisfy —
+    never a price control that empties the grid because no item is priced."""
+
+    total: int  # items in scope
+    priced: int  # items with a non-null price (0 => hide the price filter)
+    price_min: float | None  # cheapest priced item, or None when priced == 0
+    price_max: float | None  # dearest priced item, or None when priced == 0
+
+
 def _pgvector(embedding: list[float]) -> str:
     return "[" + ",".join(repr(float(x)) for x in embedding) + "]"
 
@@ -58,6 +70,8 @@ class VectorSearchRepository(Protocol):
         max_price: float | None = None,
         sort: str = "relevance",
     ) -> list[SearchResult]: ...
+
+    def catalog_facets(self, region: str | None) -> CatalogFacets: ...
 
 
 # pgvector cosine distance (`<=>`) in [0, 2]; similarity = 1 - distance. A region
@@ -141,6 +155,29 @@ class PostgresVectorSearchRepository:
         LIMIT %s OFFSET %s
         """
         return self._run(sql, tuple(params))
+
+    def catalog_facets(self, region: str | None) -> CatalogFacets:
+        # COUNT(i.price) counts only non-null prices, so `priced == 0` is the
+        # honest "no price data" signal. The region filter is the same one search
+        # uses, so facets describe exactly the set the user will be filtering.
+        where = "WHERE TRUE"
+        params: list[object] = []
+        if region:
+            where += " " + _REGION_FILTER
+            params.append(region)
+        sql = f"""
+        SELECT COUNT(*), COUNT(i.price), MIN(i.price), MAX(i.price)
+        FROM items i
+        {where}
+        """
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            row = conn.execute(sql, tuple(params)).fetchone()
+        return CatalogFacets(
+            total=int(row[0]),
+            priced=int(row[1]),
+            price_min=float(row[2]) if row[2] is not None else None,
+            price_max=float(row[3]) if row[3] is not None else None,
+        )
 
     def _run(self, sql: str, params: tuple) -> list[SearchResult]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
