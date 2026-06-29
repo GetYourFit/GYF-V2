@@ -96,7 +96,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 role="status"
                 className={cn(
                   "pointer-events-auto flex w-full max-w-sm items-start gap-3",
-                  "border border-border-mid bg-surface px-4 py-3 shadow-[0_8px_30px_rgba(17,17,17,0.08)]",
+                  "border border-border-mid bg-surface px-4 py-3 shadow-card",
                 )}
               >
                 <Icon size={16} className={cn("mt-0.5 shrink-0", ACCENT[t.variant])} aria-hidden />

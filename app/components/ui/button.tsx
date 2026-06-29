@@ -1,4 +1,10 @@
-import { forwardRef, type ButtonHTMLAttributes } from "react";
+import {
+  cloneElement,
+  forwardRef,
+  isValidElement,
+  type ButtonHTMLAttributes,
+  type ReactElement,
+} from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -24,26 +30,39 @@ const SIZES: Record<Size, string> = {
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
+  /**
+   * Render the button's styles onto the single child element instead of a
+   * <button> — for link-style CTAs (`<Button asChild><Link …>…</Link></Button>`)
+   * so middle-click / new-tab / crawlability keep working with the anchor.
+   */
+  asChild?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, variant = "primary", size = "md", type = "button", ...props },
+  { className, variant = "primary", size = "md", type = "button", asChild = false, children, ...props },
   ref,
 ) {
+  const classes = cn(
+    "inline-flex items-center justify-center gap-2 py-2.5",
+    "font-[family-name:var(--font-body)] font-medium uppercase",
+    "transition-all duration-200 ease-lux focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+    "disabled:pointer-events-none disabled:opacity-40",
+    VARIANTS[variant],
+    SIZES[size],
+    className,
+  );
+
+  if (asChild && isValidElement(children)) {
+    const child = children as ReactElement<{ className?: string }>;
+    return cloneElement(child, {
+      className: cn(classes, child.props.className),
+      ...props,
+    });
+  }
+
   return (
-    <button
-      ref={ref}
-      type={type}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 py-2.5",
-        "font-[family-name:var(--font-body)] font-medium uppercase",
-        "transition-all duration-[180ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-        "disabled:pointer-events-none disabled:opacity-40",
-        VARIANTS[variant],
-        SIZES[size],
-        className,
-      )}
-      {...props}
-    />
+    <button ref={ref} type={type} className={classes} {...props}>
+      {children}
+    </button>
   );
 });
