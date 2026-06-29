@@ -30,7 +30,6 @@ const LUX = [0.16, 1, 0.3, 1] as const;
 export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
   const reduce = useReducedMotion();
   const price = formatPrice(item.price, item.currency);
-  const confidence = Math.round(item.score * 100);
   const external = Boolean(item.buy_url);
   const href = item.buy_url ?? `/items/${item.item_id}`;
 
@@ -67,12 +66,6 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-text/15 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         />
-
-        {/* Confidence — gold, editorial */}
-        <div className="absolute bottom-2 left-2 flex items-center gap-1.5 border border-border bg-bg/90 px-2 py-1 backdrop-blur-sm">
-          <span className="h-1 w-1 rounded-full bg-accent-warm" aria-hidden />
-          <span className="t-mono text-accent-warm">{confidence}% match</span>
-        </div>
 
         {/* Save — revealed on hover/focus, never focusable-while-invisible (WCAG 2.4.7) */}
         <button
