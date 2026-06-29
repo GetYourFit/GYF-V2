@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="fixed inset-y-0 left-0 hidden w-[46%] flex-col justify-between border-r border-rule px-14 py-14 lg:flex">
         <Link
           href="/"
-          className="font-[family-name:var(--font-display)] text-[2.2rem] font-400 tracking-[-0.04em] text-text transition-opacity hover:opacity-60"
+          className="t-wordmark text-4xl text-text transition-opacity hover:opacity-60"
         >
           GYF
         </Link>
@@ -33,7 +33,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         {/* Mobile wordmark */}
         <Link
           href="/"
-          className="mb-10 block text-center font-[family-name:var(--font-display)] text-3xl tracking-[-0.04em] text-text lg:hidden"
+          className="t-wordmark mb-10 block text-center text-3xl text-text lg:hidden"
         >
           GYF
         </Link>

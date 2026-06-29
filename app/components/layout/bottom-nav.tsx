@@ -41,7 +41,7 @@ export function BottomNav() {
             {active && (
               <motion.span
                 layoutId={reduce ? undefined : "bottom-nav-indicator"}
-                className="absolute top-0 left-1/2 h-px w-8 -translate-x-1/2 bg-accent"
+                className="absolute top-0 left-1/2 h-px w-8 -translate-x-1/2 bg-text"
                 transition={{ type: "spring", stiffness: 520, damping: 40 }}
                 aria-hidden
               />

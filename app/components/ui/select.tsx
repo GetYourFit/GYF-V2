@@ -13,9 +13,9 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   compact?: boolean;
 }
 
-// Chevron tinted with --text-mid (#6B6B6B → %236B6B6B) to match the token system.
+// Chevron tinted with --text-mid (#a8a29a → %23a8a29a) to match the Noir token system.
 const CHEVRON =
-  "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6B6B' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")] bg-no-repeat";
+  "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a8a29a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")] bg-no-repeat";
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
   {

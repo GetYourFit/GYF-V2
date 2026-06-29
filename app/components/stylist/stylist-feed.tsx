@@ -180,10 +180,15 @@ export function StylistFeed() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: lux }}
-        className="flex flex-col gap-2"
+        className="flex flex-col gap-4 pt-2"
       >
-        <p className="t-label text-text-faint">Your stylist</p>
-        <h1 className="t-headline text-text">Complete looks, made for you</h1>
+        <div className="flex items-center gap-3">
+          <span className="h-px w-10 bg-accent-warm" aria-hidden />
+          <p className="t-label text-accent-warm">Your stylist</p>
+        </div>
+        <h1 className="t-display max-w-[14ch] text-text">
+          Complete looks, <em className="italic">made for you</em>
+        </h1>
         {data && <StatusLine data={data} />}
       </motion.header>
 

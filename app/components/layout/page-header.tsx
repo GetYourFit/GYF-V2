@@ -19,16 +19,21 @@ interface PageHeaderProps {
  */
 export function PageHeader({ eyebrow, title, description, action, className }: PageHeaderProps) {
   return (
-    <header className={cn("mb-8 flex flex-col gap-2", className)}>
+    <header className={cn("mb-10 flex flex-col gap-3", className)}>
       <div className="flex items-end justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          {eyebrow ? <p className="t-label text-text-faint">{eyebrow}</p> : null}
-          <h1 className="t-headline text-text">{title}</h1>
+        <div className="flex flex-col gap-3">
+          {eyebrow ? (
+            <div className="flex items-center gap-3">
+              <span className="h-px w-10 bg-accent-warm" aria-hidden />
+              <p className="t-label text-accent-warm">{eyebrow}</p>
+            </div>
+          ) : null}
+          <h1 className="t-display text-text">{title}</h1>
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
       {description ? (
-        <p className="t-caption max-w-prose text-text-mid">{description}</p>
+        <p className="t-body max-w-prose text-text-mid">{description}</p>
       ) : null}
     </header>
   );

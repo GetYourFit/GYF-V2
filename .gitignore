@@ -77,3 +77,6 @@ packages/types/openapi.json
 .uv-cache/
 .uv-python/
 .vercel
+
+# GAN design/build harness scratch (specs, eval reports, dev logs)
+gan-harness/

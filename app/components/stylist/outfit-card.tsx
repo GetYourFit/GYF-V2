@@ -34,7 +34,7 @@ export function OutfitCard({
   return (
     <article className="group flex h-full flex-col border border-border bg-surface transition-all duration-300 motion-reduce:transition-none hover:border-border-hi hover:-translate-y-0.5">
       {/* Garment images — 1px hairlines via the card border showing through */}
-      <div className="flex gap-px bg-border">
+      <div className="relative flex gap-px bg-border">
         {outfit.items.map((item) => {
           const src = mediaUrl(item.image_url);
           return (
@@ -61,12 +61,14 @@ export function OutfitCard({
             </div>
           );
         })}
+        {/* Edition numeral — editorial signature, top-right of the spread */}
+        <span className="pointer-events-none absolute right-2 top-2 bg-bg/80 px-2 py-0.5 t-mono text-accent-warm backdrop-blur-sm">
+          N°{String(index + 1).padStart(2, "0")}
+        </span>
       </div>
 
       <div className="flex flex-1 flex-col gap-4 p-5">
-        <p className="font-[family-name:var(--font-display)] text-lg italic leading-snug text-text">
-          {outfit.explanation}
-        </p>
+        <p className="t-editorial text-text">{outfit.explanation}</p>
 
         <ConfidenceMeter value={outfit.confidence} />
 

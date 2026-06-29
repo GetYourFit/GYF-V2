@@ -109,9 +109,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
-      <div>
-        <h1 className="t-headline text-text">{copy.title}</h1>
-        <p className="mt-1 t-caption">{copy.subtitle}</p>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <span className="h-px w-10 bg-accent-warm" aria-hidden />
+          <p className="t-label text-accent-warm">{mode === "login" ? "Sign in" : "Join GYF"}</p>
+        </div>
+        <h1 className="t-display text-text">{copy.title}</h1>
+        <p className="t-body text-text-mid">{copy.subtitle}</p>
       </div>
 
       <div className="flex flex-col gap-4">
