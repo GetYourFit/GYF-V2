@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..catalog.directory import ItemDirectory
@@ -38,8 +40,18 @@ def search_items(
     k: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
     region: str | None = None,
-    max_price: float | None = Query(None, ge=0),
-    sort: str = Query("relevance", pattern="^(relevance|price_asc|price_desc)$"),
+    max_price: float | None = Query(
+        None,
+        ge=0,
+        le=100_000,
+        description="Upper price bound (inclusive, in the item's catalog currency). "
+        "Null means no price filter.",
+    ),
+    sort: Literal["relevance", "price_asc", "price_desc"] = Query(
+        "relevance",
+        description="Result ordering: relevance (cosine similarity), price_asc, or "
+        "price_desc. Price-sorted pages still carry honest relevance scores.",
+    ),
     repo: VectorSearchRepository = Depends(get_search_repo),
     embedder: TextEmbedder = Depends(get_text_embedder),
     directory: ItemDirectory = Depends(get_item_directory),
@@ -52,7 +64,9 @@ def search_items(
     construction-time path returns, never a 500 that pretends the search broke.
     """
     try:
-        hits = search_text(repo, embedder, q, k, region, offset, max_price, sort)
+        hits = search_text(
+            repo, embedder, q, k, region, offset, max_price=max_price, sort=sort
+        )
         return {"results": enrich_results(hits, directory)}
     except ImportError as exc:  # encoder backend not installed in this runtime
         raise HTTPException(status_code=503, detail="text search unavailable") from exc

@@ -68,7 +68,7 @@ def test_price_sort_orders_by_price_not_distance():
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     repo.search_by_vector([0.1, 0.2], k=24, region=None, sort="price_asc")
     sql, params = pool.calls[0]
-    assert "ORDER BY i.price ASC NULLS LAST" in sql
+    assert "ORDER BY i.price ASC NULLS LAST, i.id ASC" in sql  # deterministic tiebreaker
     assert "embedding" not in sql.split("ORDER BY")[1]  # ordered by price, not distance
     # score expression keeps the query vector; no second vector bind for ordering.
     assert params[-2] == 24  # limit
@@ -183,6 +183,35 @@ def test_search_endpoint_requires_query_and_returns_results():
         resp = client.get("/items/search?q=red+floral+dress&region=IN")
         assert resp.status_code == 200
         assert resp.json()["results"][0]["item_id"] == "hit"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_search_endpoint_validates_and_forwards_price_and_sort():
+    captured: dict[str, object] = {}
+
+    class CapturingRepo:
+        def search_by_vector(
+            self, embedding, k, region, offset=0, max_price=None, sort="relevance"
+        ):
+            captured["max_price"] = max_price
+            captured["sort"] = sort
+            return [SearchResult("hit", "Search Hit", 0.77)]
+
+    app.dependency_overrides[get_search_repo] = lambda: CapturingRepo()
+    app.dependency_overrides[get_text_embedder] = lambda: StubEmbedder()
+    app.dependency_overrides[get_item_directory] = lambda: InMemoryItemDirectory([])
+    try:
+        client = TestClient(app)
+        # valid combined filter + sort is accepted and reaches the repo
+        resp = client.get("/items/search?q=dress&max_price=80&sort=price_asc")
+        assert resp.status_code == 200
+        assert captured == {"max_price": 80.0, "sort": "price_asc"}
+        # invalid sort token is rejected before the handler runs
+        assert client.get("/items/search?q=dress&sort=random").status_code == 422
+        # out-of-range prices are rejected by the Query bounds
+        assert client.get("/items/search?q=dress&max_price=-1").status_code == 422
+        assert client.get("/items/search?q=dress&max_price=999999").status_code == 422
     finally:
         app.dependency_overrides.clear()
 

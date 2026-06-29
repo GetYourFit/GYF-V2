@@ -75,10 +75,13 @@ LIMIT %s OFFSET %s
 """
 
 # Price ordering keeps priceless rows last in both directions so open-seed items
-# without a feed price never crowd the top of a price-sorted page.
+# without a feed price never crowd the top of a price-sorted page. `i.id` is a
+# deterministic tiebreaker: prices tie heavily (many items share a price, and
+# every NULL-priced row sorts together at NULLS LAST), and without a stable
+# tiebreaker OFFSET pages could overlap or skip rows among the ties.
 _SORT_CLAUSES = {
-    "price_asc": "ORDER BY i.price ASC NULLS LAST",
-    "price_desc": "ORDER BY i.price DESC NULLS LAST",
+    "price_asc": "ORDER BY i.price ASC NULLS LAST, i.id ASC",
+    "price_desc": "ORDER BY i.price DESC NULLS LAST, i.id ASC",
 }
 
 
