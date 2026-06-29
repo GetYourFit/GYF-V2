@@ -1,8 +1,10 @@
 "use client";
 
-import { Bookmark, ExternalLink, X } from "lucide-react";
+import { Bookmark, ExternalLink, Maximize2, X } from "lucide-react";
+import { useState } from "react";
 
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
+import { OutfitDetail } from "@/components/stylist/outfit-detail";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { mediaUrl } from "@/lib/media";
@@ -30,11 +32,26 @@ export function OutfitCard({
   onShopCart: (itemId: string) => void;
 }) {
   const shopItem = outfit.items.find((i) => i.affiliate_url);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   return (
+    <>
     <article className="group flex h-full flex-col border border-border bg-surface transition-all duration-300 motion-reduce:transition-none hover:border-border-hi hover:-translate-y-0.5">
       {/* Garment images — 1px hairlines via the card border showing through */}
       <div className="relative flex gap-px bg-border">
+        {/* View-details affordance over the spread — opens the full look */}
+        <button
+          type="button"
+          onClick={() => setDetailOpen(true)}
+          aria-label={`View look ${index + 1} in detail`}
+          aria-haspopup="dialog"
+          className="absolute inset-0 z-10 flex items-end justify-center p-3 opacity-0 transition-opacity duration-300 focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100 motion-reduce:transition-none"
+        >
+          <span className="t-label inline-flex items-center gap-2 border border-text/20 bg-bg/80 px-4 py-2 text-text backdrop-blur-sm">
+            <Maximize2 className="h-3 w-3" aria-hidden />
+            View look
+          </span>
+        </button>
         {outfit.items.map((item) => {
           const src = mediaUrl(item.image_url);
           return (
@@ -130,5 +147,15 @@ export function OutfitCard({
         </div>
       </div>
     </article>
+    <OutfitDetail
+      outfit={outfit}
+      index={index}
+      open={detailOpen}
+      saved={saved}
+      onClose={() => setDetailOpen(false)}
+      onSave={onSave}
+      onShopCart={onShopCart}
+    />
+    </>
   );
 }

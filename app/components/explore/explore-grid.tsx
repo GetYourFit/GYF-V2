@@ -132,21 +132,57 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
     return () => obs.disconnect();
   }, [onIntersect]);
 
+  // Hydrate the saved set from the server so items the user already saved render
+  // in their true state (not as un-saved) when Explore mounts. Best-effort.
+  useEffect(() => {
+    let active = true;
+    browserApi()
+      .listSaved()
+      .then((rows) => {
+        if (active) setSaved(new Set(rows.map((r) => r.item_id)));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Persist saves/un-saves to the shortlist so the Saved page reflects them.
+  // Optimistic: flip immediately, roll back + warn if the write fails — never a
+  // success toast for a save that didn't actually persist.
   const toggleSave = useCallback(
     (item: SearchResult) => {
+      const wasSaved = saved.has(item.item_id);
       setSaved((prev) => {
         const next = new Set(prev);
-        if (next.has(item.item_id)) {
-          next.delete(item.item_id);
-          toast({ title: "Removed from saved", variant: "info" });
-        } else {
-          next.add(item.item_id);
-          toast({ title: "Saved", description: item.title, variant: "success" });
-        }
+        if (wasSaved) next.delete(item.item_id);
+        else next.add(item.item_id);
         return next;
       });
+      const api = browserApi();
+      const op = wasSaved ? api.unsaveItem(item.item_id) : api.saveItem(item.item_id);
+      op.then(() => {
+        toast(
+          wasSaved
+            ? { title: "Removed from saved", variant: "info" }
+            : { title: "Saved", description: item.title, variant: "success" },
+        );
+      }).catch(() => {
+        // roll back to the real (pre-toggle) state
+        setSaved((prev) => {
+          const next = new Set(prev);
+          if (wasSaved) next.add(item.item_id);
+          else next.delete(item.item_id);
+          return next;
+        });
+        toast({
+          title: wasSaved ? "Couldn't remove that" : "Couldn't save that",
+          description: "Please try again.",
+          variant: "error",
+        });
+      });
     },
-    [toast],
+    [saved, toast],
   );
 
   // First load — full-bleed skeleton grid that mirrors the card shape.
