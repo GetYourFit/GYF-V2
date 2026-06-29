@@ -110,7 +110,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
       <div>
-        <h1 className="t-headline text-[var(--text)]">{copy.title}</h1>
+        <h1 className="t-headline text-text">{copy.title}</h1>
         <p className="mt-1 t-caption">{copy.subtitle}</p>
       </div>
 
@@ -147,12 +147,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
       </div>
 
       {error && (
-        <p role="alert" className="t-caption text-[var(--error)]">
+        <p role="alert" className="t-caption text-error">
           {error}
         </p>
       )}
       {notice && (
-        <p role="status" className="t-caption text-[var(--accent-warm)]">
+        <p role="status" className="t-caption text-accent-warm">
           {notice}
         </p>
       )}
@@ -165,7 +165,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {copy.altPrompt}{" "}
         <Link
           href={copy.altHref}
-          className="text-[var(--text)] underline underline-offset-4 hover:no-underline"
+          className="text-text underline underline-offset-4 hover:no-underline"
         >
           {copy.altLabel}
         </Link>

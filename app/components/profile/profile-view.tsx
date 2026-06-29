@@ -103,25 +103,25 @@ function Stats({ summary }: { summary: ProfileSummary }) {
   return (
     <section
       aria-label="Profile statistics"
-      className="grid grid-cols-3 gap-px border border-[var(--border)] bg-[var(--border)] sm:grid-cols-5"
+      className="grid grid-cols-3 gap-px border border-border bg-border sm:grid-cols-5"
     >
       {items.map(({ label, value, href }) => {
         const inner = (
           <>
-            <span className="t-display text-[var(--text)]">{value}</span>
-            <span className="t-label text-[var(--text-faint)]">{label}</span>
+            <span className="t-display text-text">{value}</span>
+            <span className="t-label text-text-faint">{label}</span>
           </>
         );
         return href ? (
           <Link
             key={label}
             href={href}
-            className="flex flex-col gap-1 bg-[var(--surface)] p-5 transition-colors hover:bg-[var(--surface-2)]"
+            className="flex flex-col gap-1 bg-surface p-5 transition-colors hover:bg-surface-2"
           >
             {inner}
           </Link>
         ) : (
-          <div key={label} className="flex flex-col gap-1 bg-[var(--surface)] p-5">
+          <div key={label} className="flex flex-col gap-1 bg-surface p-5">
             {inner}
           </div>
         );
@@ -133,12 +133,12 @@ function Stats({ summary }: { summary: ProfileSummary }) {
 function Badges({ badges }: { badges: string[] }) {
   return (
     <section className="flex flex-col gap-3">
-      <p className="t-label text-[var(--text-faint)]">Badges earned</p>
+      <p className="t-label text-text-faint">Badges earned</p>
       <div className="flex flex-wrap gap-3">
         {badges.map((b) => (
           <span
             key={b}
-            className="inline-flex items-center border border-[var(--border-hi)] px-4 py-2 t-label text-[var(--text)]"
+            className="inline-flex items-center border border-border-hi px-4 py-2 t-label text-text"
           >
             {b}
           </span>
@@ -151,9 +151,9 @@ function Badges({ badges }: { badges: string[] }) {
 function StyleProfile({ profile }: { profile: Profile | null }) {
   if (!profile) {
     return (
-      <section className="flex flex-col items-start gap-4 border border-[var(--border)] bg-[var(--surface)] p-6">
+      <section className="flex flex-col items-start gap-4 border border-border bg-surface p-6">
         <div>
-          <p className="t-headline text-[var(--text)]">No style profile yet</p>
+          <p className="t-headline text-text">No style profile yet</p>
           <p className="mt-2 t-caption max-w-[320px]">
             Tell GYF about your skin tone, body type, and the looks you love — it sharpens every
             recommendation.
@@ -161,7 +161,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
         </div>
         <Link
           href="/onboarding"
-          className="inline-flex min-h-11 items-center bg-[var(--accent)] px-8 t-label text-[var(--bg)] hover:bg-[var(--text-mid)] transition-colors duration-[180ms]"
+          className="inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg hover:bg-text-mid transition-colors duration-[180ms]"
         >
           Set up my profile
         </Link>
@@ -192,19 +192,19 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between">
-        <p className="t-label text-[var(--text-faint)]">Style profile</p>
+        <p className="t-label text-text-faint">Style profile</p>
         <Link
           href="/onboarding"
-          className="t-label text-[var(--text-mid)] underline-offset-4 hover:text-[var(--text)] hover:underline"
+          className="t-label text-text-mid underline-offset-4 hover:text-text hover:underline"
         >
           Edit
         </Link>
       </div>
-      <dl className="grid grid-cols-1 gap-px border border-[var(--border)] bg-[var(--border)] sm:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-px border border-border bg-border sm:grid-cols-2">
         {rows.map(([label, value]) => (
-          <div key={label} className="flex flex-col gap-1 bg-[var(--surface)] p-4">
-            <dt className="t-label text-[var(--text-faint)]">{label}</dt>
-            <dd className="t-body text-[var(--text)]">{value}</dd>
+          <div key={label} className="flex flex-col gap-1 bg-surface p-4">
+            <dt className="t-label text-text-faint">{label}</dt>
+            <dd className="t-body text-text">{value}</dd>
           </div>
         ))}
       </dl>
@@ -244,14 +244,14 @@ function AccountControls() {
   }, [router]);
 
   return (
-    <section className="flex flex-col gap-4 border-t border-[var(--border)] pt-8">
-      <p className="t-label text-[var(--text-faint)]">Account</p>
+    <section className="flex flex-col gap-4 border-t border-border pt-8">
+      <p className="t-label text-text-faint">Account</p>
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
           onClick={signOut}
           disabled={busy}
-          className="inline-flex min-h-11 items-center border border-[var(--border-hi)] px-6 t-label text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-[180ms] disabled:opacity-50"
+          className="inline-flex min-h-11 items-center border border-border-hi px-6 t-label text-text hover:bg-surface-2 transition-colors duration-[180ms] disabled:opacity-50"
         >
           Sign out
         </button>
@@ -260,13 +260,13 @@ function AccountControls() {
             type="button"
             onClick={() => setConfirming(true)}
             disabled={busy}
-            className="inline-flex min-h-11 items-center border border-[var(--border-hi)] px-6 t-label text-[var(--danger,#c0392b)] hover:bg-[var(--surface-2)] transition-colors duration-[180ms] disabled:opacity-50"
+            className="inline-flex min-h-11 items-center border border-border-hi px-6 t-label text-[var(--danger,#c0392b)] hover:bg-surface-2 transition-colors duration-[180ms] disabled:opacity-50"
           >
             Delete my data
           </button>
         ) : (
           <div className="flex items-center gap-3">
-            <span className="t-caption text-[var(--text-mid)]">Delete everything? This can&apos;t be undone.</span>
+            <span className="t-caption text-text-mid">Delete everything? This can&apos;t be undone.</span>
             <button
               type="button"
               onClick={deleteAccount}
@@ -279,7 +279,7 @@ function AccountControls() {
               type="button"
               onClick={() => setConfirming(false)}
               disabled={busy}
-              className="t-label text-[var(--text-mid)] hover:text-[var(--text)]"
+              className="t-label text-text-mid hover:text-text"
             >
               Cancel
             </button>
@@ -291,7 +291,7 @@ function AccountControls() {
           {error}
         </p>
       )}
-      <p className="t-caption text-[var(--text-faint)] max-w-[420px]">
+      <p className="t-caption text-text-faint max-w-[420px]">
         Deleting erases your profile, saved looks, wardrobe, and posts. Your data is yours — GYF
         removes it on request.
       </p>
@@ -314,14 +314,14 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       transition={{ duration: 0.4, ease: lux }}
       className="mx-auto max-w-sm py-20 text-center"
     >
-      <p className="t-headline text-[var(--text)]">Couldn&apos;t load your profile</p>
+      <p className="t-headline text-text">Couldn&apos;t load your profile</p>
       <p className="mt-3 t-caption max-w-[260px] mx-auto">
         Something went wrong reaching the stylist. Your data is safe — try again.
       </p>
       <button
         type="button"
         onClick={onRetry}
-        className="mt-8 inline-flex min-h-11 items-center border border-[var(--border-hi)] px-8 t-label text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-[180ms]"
+        className="mt-8 inline-flex min-h-11 items-center border border-border-hi px-8 t-label text-text hover:bg-surface-2 transition-colors duration-[180ms]"
       >
         Retry
       </button>

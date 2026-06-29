@@ -127,12 +127,12 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
     return (
       <div className="flex flex-col items-center justify-center gap-6 py-24">
         <div className="relative flex h-24 w-24 items-center justify-center">
-          <div className="absolute inset-0 border border-[var(--border)]" />
-          <div className="absolute inset-3 border border-[var(--border-mid)]" />
-          <div className="absolute inset-6 border border-[var(--border-hi)]" />
+          <div className="absolute inset-0 border border-border" />
+          <div className="absolute inset-3 border border-border-mid" />
+          <div className="absolute inset-6 border border-border-hi" />
         </div>
-        <p className="t-title text-[var(--text)]">No items found</p>
-        <p className="t-caption text-[var(--text-faint)]">
+        <p className="t-title text-text">No items found</p>
+        <p className="t-caption text-text-faint">
           Try a different search or adjust your filters.
         </p>
       </div>
@@ -159,13 +159,13 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
       {loading && (
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="aspect-[3/4] animate-pulse bg-[var(--surface-2)]" />
+            <div key={i} className="aspect-[3/4] animate-pulse bg-surface-2" />
           ))}
         </div>
       )}
 
       {error && (
-        <p role="alert" className="mt-6 t-caption text-[var(--error)] text-center">
+        <p role="alert" className="mt-6 t-caption text-error text-center">
           {error}
         </p>
       )}

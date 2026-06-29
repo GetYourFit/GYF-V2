@@ -3,17 +3,17 @@ import { Suspense, type ReactNode } from "react";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-4 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-bg px-4 py-12">
       {/* Left brand panel — hidden on small screens */}
-      <div className="fixed inset-y-0 left-0 hidden w-[46%] flex-col justify-between border-r border-[var(--rule)] px-14 py-14 lg:flex">
+      <div className="fixed inset-y-0 left-0 hidden w-[46%] flex-col justify-between border-r border-rule px-14 py-14 lg:flex">
         <Link
           href="/"
-          className="font-[family-name:var(--font-display)] text-[2.2rem] font-400 tracking-[-0.04em] text-[var(--text)] transition-opacity hover:opacity-60"
+          className="font-[family-name:var(--font-display)] text-[2.2rem] font-400 tracking-[-0.04em] text-text transition-opacity hover:opacity-60"
         >
           GYF
         </Link>
         <div>
-          <p className="t-display text-[clamp(2rem,4vw,3.5rem)] text-[var(--text)] leading-[1.05]">
+          <p className="t-display text-[clamp(2rem,4vw,3.5rem)] text-text leading-[1.05]">
             Your style,
             <br />
             <em>finally</em>
@@ -25,7 +25,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             coordinated outfits you can trust.
           </p>
         </div>
-        <p className="t-mono text-[var(--text-faint)]">© GYF {new Date().getFullYear()}</p>
+        <p className="t-mono text-text-faint">© GYF {new Date().getFullYear()}</p>
       </div>
 
       {/* Right form panel */}
@@ -33,7 +33,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         {/* Mobile wordmark */}
         <Link
           href="/"
-          className="mb-10 block text-center font-[family-name:var(--font-display)] text-3xl tracking-[-0.04em] text-[var(--text)] lg:hidden"
+          className="mb-10 block text-center font-[family-name:var(--font-display)] text-3xl tracking-[-0.04em] text-text lg:hidden"
         >
           GYF
         </Link>

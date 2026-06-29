@@ -129,25 +129,25 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
             onKeyDown={(e) => {
               if (e.key === "Escape") handleClose();
             }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col border-l border-[var(--border-mid)] bg-[var(--surface)]"
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col border-l border-border-mid bg-surface"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5">
-              <p id={titleId} className="t-title text-[var(--text)]">
+            <div className="flex items-center justify-between border-b border-border px-6 py-5">
+              <p id={titleId} className="t-title text-text">
                 Add to wardrobe
               </p>
               <button
                 type="button"
                 aria-label="Close"
                 onClick={handleClose}
-                className="flex h-8 w-8 items-center justify-center text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
+                className="flex h-8 w-8 items-center justify-center text-text-faint transition-colors hover:text-text"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Mode toggle */}
-            <div className="flex gap-2 border-b border-[var(--border)] px-6 py-3">
+            <div className="flex gap-2 border-b border-border px-6 py-3">
               {(["catalog", "custom"] as Mode[]).map((m) => (
                 <button
                   key={m}
@@ -160,8 +160,8 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                   className={[
                     "t-caption border px-3 py-1 capitalize transition-colors duration-150",
                     mode === m
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--bg)]"
-                      : "border-[var(--border-mid)] text-[var(--text-mid)] hover:text-[var(--text)]",
+                      ? "border-accent bg-accent text-bg"
+                      : "border-border-mid text-text-mid hover:text-text",
                   ].join(" ")}
                 >
                   {m === "catalog" ? "From catalog" : "Custom"}
@@ -184,12 +184,12 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                 </form>
 
                 {error && (
-                  <p role="alert" className="px-6 t-caption text-[var(--error)]">
+                  <p role="alert" className="px-6 t-caption text-error">
                     {error}
                   </p>
                 )}
 
-                <div className="grid flex-1 grid-cols-3 gap-[1px] overflow-y-auto bg-[var(--border)] px-6 py-2">
+                <div className="grid flex-1 grid-cols-3 gap-[1px] overflow-y-auto bg-border px-6 py-2">
                   {results.map((r) => {
                     const src = mediaUrl(r.image_url);
                     return (
@@ -199,7 +199,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         disabled={busy}
                         onClick={() => void addCatalog(r)}
                         title={r.title}
-                        className="group relative aspect-[3/4] overflow-hidden bg-[var(--surface-2)] disabled:opacity-50"
+                        className="group relative aspect-[3/4] overflow-hidden bg-surface-2 disabled:opacity-50"
                       >
                         {src ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -210,7 +210,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         ) : (
-                          <span className="flex h-full items-center justify-center t-mono text-[var(--text-faint)]">
+                          <span className="flex h-full items-center justify-center t-mono text-text-faint">
                             +
                           </span>
                         )}
@@ -248,7 +248,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                 </Field>
 
                 {error && (
-                  <p role="alert" className="t-caption text-[var(--error)]">
+                  <p role="alert" className="t-caption text-error">
                     {error}
                   </p>
                 )}

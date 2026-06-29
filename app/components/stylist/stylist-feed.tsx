@@ -137,13 +137,13 @@ export function StylistFeed() {
           transition={{ duration: 0.5, ease: lux }}
           className="flex flex-col items-center"
         >
-          <p className="t-headline text-[var(--text)]">First, tell GYF about you</p>
+          <p className="t-headline text-text">First, tell GYF about you</p>
           <p className="mt-3 t-caption max-w-xs">
             A few quick preferences and your stylist gets to work.
           </p>
           <Link
             href="/onboarding"
-            className="mt-8 inline-flex min-h-11 items-center bg-[var(--accent)] px-8 t-label text-[var(--bg)] hover:bg-[var(--text-mid)] transition-colors duration-[180ms]"
+            className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg hover:bg-text-mid transition-colors duration-[180ms]"
           >
             Set up my profile
           </Link>
@@ -161,8 +161,8 @@ export function StylistFeed() {
         transition={{ duration: 0.45, ease: lux }}
         className="flex flex-col gap-2"
       >
-        <p className="t-label text-[var(--text-faint)]">Your stylist</p>
-        <h1 className="t-headline text-[var(--text)]">Complete looks, made for you</h1>
+        <p className="t-label text-text-faint">Your stylist</p>
+        <h1 className="t-headline text-text">Complete looks, made for you</h1>
         {data && <StatusLine data={data} />}
       </motion.header>
 
@@ -185,7 +185,7 @@ export function StylistFeed() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
-            className="border border-[var(--error)]/30 bg-[var(--error)]/5 px-4 py-3 t-caption text-[var(--error)]"
+            className="border border-error/30 bg-error/5 px-4 py-3 t-caption text-error"
           >
             {error}
           </motion.p>
@@ -203,7 +203,7 @@ export function StylistFeed() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: lux }}
           >
-            <p className="t-title text-[var(--text)]">No complete looks for this just yet</p>
+            <p className="t-title text-text">No complete looks for this just yet</p>
             <p className="mt-3 t-caption">
               The catalog couldn&apos;t fill a full outfit for these settings — try a different
               occasion or clear your goal.
@@ -268,11 +268,11 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
   }
   return (
     <div className="flex flex-wrap items-center gap-2 mt-1">
-      <span className="t-mono text-[var(--text-faint)]">{parts.join(" · ")}</span>
+      <span className="t-mono text-text-faint">{parts.join(" · ")}</span>
       {data.applied_goals.map((g) => (
         <span
           key={g}
-          className="border border-[var(--border-mid)] px-2 py-0.5 t-mono text-[var(--text-mid)]"
+          className="border border-border-mid px-2 py-0.5 t-mono text-text-mid"
         >
           {g}
         </span>
@@ -283,12 +283,12 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
 
 function UndoStrip({ index, onUndo }: { index: number; onUndo: () => void }) {
   return (
-    <div className="flex items-center justify-between border border-dashed border-[var(--border-mid)] bg-[var(--surface)]/40 px-4 py-6 h-full min-h-[80px]">
-      <span className="t-caption text-[var(--text-faint)]">Removed look {index + 1}</span>
+    <div className="flex items-center justify-between border border-dashed border-border-mid bg-surface/40 px-4 py-6 h-full min-h-[80px]">
+      <span className="t-caption text-text-faint">Removed look {index + 1}</span>
       <button
         type="button"
         onClick={onUndo}
-        className="t-label text-[10px] text-[var(--text-mid)] hover:text-[var(--text)] underline underline-offset-4 hover:no-underline transition-colors"
+        className="t-label text-[10px] text-text-mid hover:text-text underline underline-offset-4 hover:no-underline transition-colors"
       >
         Undo
       </button>
@@ -309,7 +309,7 @@ function SkeletonGrid() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: i * 0.04 }}
-          className="flex flex-col border border-[var(--border)] bg-[var(--surface)]"
+          className="flex flex-col border border-border bg-surface"
         >
           <div className="aspect-[3/4] skeleton" />
           <div className="flex flex-col gap-3 p-5">

@@ -63,21 +63,21 @@ export function PostCard({ post, onReact, onDressLikeMe }: PostCardProps) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="flex flex-col border-b border-[var(--border)] bg-[var(--bg)]"
+      className="flex flex-col border-b border-border bg-bg"
     >
       {/* Author row */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-[var(--surface-2)] border border-[var(--border-mid)]">
-          <span className="t-label text-[var(--text)]">{author.initial}</span>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-surface-2 border border-border-mid">
+          <span className="t-label text-text">{author.initial}</span>
         </div>
         <div className="min-w-0">
-          <p className="t-mono text-[11px] text-[var(--text)] truncate">@{author.handle}</p>
+          <p className="t-mono text-[11px] text-text truncate">@{author.handle}</p>
           {post.region && (
-            <p className="t-mono text-[10px] text-[var(--text-faint)] uppercase">{post.region}</p>
+            <p className="t-mono text-[10px] text-text-faint uppercase">{post.region}</p>
           )}
         </div>
         {post.occasion && (
-          <span className="ml-auto t-mono text-[9px] border border-[var(--border-mid)] px-2 py-0.5 text-[var(--text-faint)] shrink-0">
+          <span className="ml-auto t-mono text-[9px] border border-border-mid px-2 py-0.5 text-text-faint shrink-0">
             {post.occasion}
           </span>
         )}
@@ -85,7 +85,7 @@ export function PostCard({ post, onReact, onDressLikeMe }: PostCardProps) {
 
       {/* Hero image — first garment image of the look */}
       {heroImage && (
-        <div className="aspect-square w-full overflow-hidden bg-[var(--surface-2)]">
+        <div className="aspect-square w-full overflow-hidden bg-surface-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={heroImage}
@@ -99,7 +99,7 @@ export function PostCard({ post, onReact, onDressLikeMe }: PostCardProps) {
       {/* Caption + item chips */}
       <div className="px-4 pt-3">
         {post.caption && (
-          <p className="t-body text-[var(--text)]">
+          <p className="t-body text-text">
             <span className="t-label mr-1">@{author.handle}</span>
             {post.caption}
           </p>
@@ -109,7 +109,7 @@ export function PostCard({ post, onReact, onDressLikeMe }: PostCardProps) {
             {post.items.map((item) => (
               <span
                 key={item.item_id}
-                className="t-mono text-[9px] border border-[var(--border)] px-2 py-0.5 text-[var(--text-faint)]"
+                className="t-mono text-[9px] border border-border px-2 py-0.5 text-text-faint"
               >
                 {item.title}
               </span>
@@ -131,17 +131,17 @@ export function PostCard({ post, onReact, onDressLikeMe }: PostCardProps) {
           <Heart
             size={20}
             className={
-              reacted ? "fill-[var(--error)] text-[var(--error)]" : "text-[var(--text-faint)]"
+              reacted ? "fill-error text-error" : "text-text-faint"
             }
           />
-          <span className="t-mono text-[11px] text-[var(--text-faint)]">{count}</span>
+          <span className="t-mono text-[11px] text-text-faint">{count}</span>
         </button>
 
         <button
           type="button"
           aria-label="Share"
           onClick={share}
-          className="flex items-center gap-1.5 px-2 py-2 text-[var(--text-faint)] transition-colors active:opacity-60"
+          className="flex items-center gap-1.5 px-2 py-2 text-text-faint transition-colors active:opacity-60"
         >
           <Share2 size={20} />
         </button>
@@ -150,7 +150,7 @@ export function PostCard({ post, onReact, onDressLikeMe }: PostCardProps) {
           <button
             type="button"
             onClick={() => onDressLikeMe(post)}
-            className="ml-auto flex items-center gap-1.5 border border-[var(--border-mid)] px-3 py-1.5 t-label text-[10px] text-[var(--text)] transition-colors active:bg-[var(--surface)]"
+            className="ml-auto flex items-center gap-1.5 border border-border-mid px-3 py-1.5 t-label text-[10px] text-text transition-colors active:bg-surface"
           >
             <Shirt size={13} />
             Dress like me

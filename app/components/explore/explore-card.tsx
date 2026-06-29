@@ -33,10 +33,10 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, delay: Math.min(index * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
-      className="group relative flex flex-col border border-[var(--border)] bg-[var(--surface)] transition-colors duration-200 hover:border-[var(--border-mid)]"
+      className="group relative flex flex-col border border-border bg-surface transition-colors duration-200 hover:border-border-mid"
     >
       {/* Image */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-[var(--surface-2)]">
+      <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
         {item.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -47,7 +47,7 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <span className="t-mono text-[var(--text-faint)] text-[10px]">No image</span>
+            <span className="t-mono text-text-faint text-[10px]">No image</span>
           </div>
         )}
 
@@ -58,15 +58,15 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
             type="button"
             aria-label={saved ? "Saved" : "Save item"}
             onClick={() => onSave(item)}
-            className="flex h-7 w-7 items-center justify-center border border-[var(--border-mid)] bg-[var(--bg)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            className="flex h-7 w-7 items-center justify-center border border-border-mid bg-bg transition-colors hover:border-accent hover:text-accent"
           >
             {saved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
           </button>
         </div>
 
         {/* Score badge */}
-        <div className="absolute bottom-2 left-2 border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5">
-          <span className="t-mono text-[9px] text-[var(--text-faint)]">
+        <div className="absolute bottom-2 left-2 border border-border bg-bg px-1.5 py-0.5">
+          <span className="t-mono text-[9px] text-text-faint">
             {Math.round(item.score * 100)}%
           </span>
         </div>
@@ -75,8 +75,8 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
       {/* Meta */}
       <div className="flex items-start justify-between gap-2 p-3">
         <div className="min-w-0 flex-1">
-          <p className="t-label line-clamp-2 text-[var(--text)]">{item.title}</p>
-          {price && <p className="mt-1 t-mono text-[11px] text-[var(--text-mid)]">{price}</p>}
+          <p className="t-label line-clamp-2 text-text">{item.title}</p>
+          {price && <p className="mt-1 t-mono text-[11px] text-text-mid">{price}</p>}
         </div>
         {item.buy_url ? (
           <a
@@ -84,7 +84,7 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Shop ${item.title}`}
-            className="mt-0.5 shrink-0 text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
+            className="mt-0.5 shrink-0 text-text-faint transition-colors hover:text-text"
           >
             <ExternalLink size={13} />
           </a>
@@ -92,7 +92,7 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
           <a
             href={`/items/${item.item_id}`}
             aria-label={`View ${item.title}`}
-            className="mt-0.5 shrink-0 text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
+            className="mt-0.5 shrink-0 text-text-faint transition-colors hover:text-text"
           >
             <ExternalLink size={13} />
           </a>

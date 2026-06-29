@@ -18,7 +18,7 @@ function Skeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-hidden>
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="aspect-[3/4] bg-[var(--surface-2)] animate-pulse" />
+        <div key={i} className="aspect-[3/4] bg-surface-2 animate-pulse" />
       ))}
     </div>
   );
@@ -85,7 +85,7 @@ export function WardrobeGrid() {
   if (status === "error") {
     return (
       <div className="flex flex-col items-center justify-center gap-5 py-24 text-center">
-        <p className="t-title text-[var(--text)]">Couldn&apos;t load your wardrobe</p>
+        <p className="t-title text-text">Couldn&apos;t load your wardrobe</p>
         <Button variant="primary" size="md" onClick={() => void load()}>
           Retry
         </Button>
@@ -106,8 +106,8 @@ export function WardrobeGrid() {
               className={[
                 "t-caption border px-3 py-1 capitalize transition-colors duration-150",
                 filter === value
-                  ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--bg)]"
-                  : "border-[var(--border-mid)] text-[var(--text-mid)] hover:border-[var(--border-hi)] hover:text-[var(--text)]",
+                  ? "border-accent bg-accent text-bg"
+                  : "border-border-mid text-text-mid hover:border-border-hi hover:text-text",
               ].join(" ")}
             >
               {value === ALL ? "All" : value}
@@ -140,15 +140,15 @@ export function WardrobeGrid() {
           className="flex flex-col items-center justify-center gap-6 py-24"
         >
           <div className="relative flex h-24 w-24 items-center justify-center">
-            <div className="absolute inset-0 border border-[var(--border)]" />
-            <div className="absolute inset-3 border border-[var(--border-mid)]" />
-            <div className="absolute inset-6 border border-[var(--border-hi)]" />
+            <div className="absolute inset-0 border border-border" />
+            <div className="absolute inset-3 border border-border-mid" />
+            <div className="absolute inset-6 border border-border-hi" />
           </div>
           <div className="text-center">
-            <p className="t-title text-[var(--text)]">
+            <p className="t-title text-text">
               {filter === ALL ? "Your wardrobe is empty" : `No ${filter} yet`}
             </p>
-            <p className="t-caption mt-1 text-[var(--text-faint)]">
+            <p className="t-caption mt-1 text-text-faint">
               Add garments you own — GYF styles around your real closet.
             </p>
           </div>

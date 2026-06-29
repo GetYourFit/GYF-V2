@@ -26,19 +26,19 @@ export function Field({ label, children, error, hint, badge, className }: FieldP
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={id} className="t-label text-[var(--text-faint)]">
+        <label htmlFor={id} className="t-label text-text-faint">
           {label}
         </label>
         {badge}
       </div>
       {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
       {hint && !error && (
-        <p id={hintId} className="text-xs text-[var(--text-faint)]">
+        <p id={hintId} className="text-xs text-text-faint">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} role="alert" className="text-xs text-[var(--error)]">
+        <p id={errorId} role="alert" className="text-xs text-error">
           {error}
         </p>
       )}

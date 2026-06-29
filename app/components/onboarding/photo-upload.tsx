@@ -83,9 +83,9 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4 border border-dashed border-[var(--border-mid)] bg-[var(--surface-2)] p-5">
+    <div className="flex flex-col gap-4 border border-dashed border-border-mid bg-surface-2 p-5">
       <div>
-        <p className="t-label text-[var(--text)]">Estimate from a photo</p>
+        <p className="t-label text-text">Estimate from a photo</p>
         <p className="t-caption mt-1">
           Upload one clear, well-lit photo and GYF will estimate your skin tone and body type — you
           can edit anything it gets wrong. The image is processed privately and not stored.
@@ -99,14 +99,14 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           e.preventDefault();
           selectFile(e.dataTransfer.files?.[0] ?? null);
         }}
-        className="flex cursor-pointer flex-col items-center gap-3 border border-[var(--border-mid)] bg-[var(--surface)] px-4 py-8 text-center transition-colors duration-[180ms] hover:border-[var(--border-hi)]"
+        className="flex cursor-pointer flex-col items-center gap-3 border border-border-mid bg-surface px-4 py-8 text-center transition-colors duration-[180ms] hover:border-border-hi"
       >
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={previewUrl} alt="Selected photo preview" className="max-h-48 object-contain" />
         ) : (
-          <span className="t-body text-[var(--text-faint)]">
-            <span className="text-[var(--text)]">Choose a photo</span> or drag it here
+          <span className="t-body text-text-faint">
+            <span className="text-text">Choose a photo</span> or drag it here
           </span>
         )}
         <input
@@ -121,17 +121,17 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       </label>
 
       {error && (
-        <p role="alert" className="t-caption text-[var(--error)]">
+        <p role="alert" className="t-caption text-error">
           {error}
         </p>
       )}
       {done && !missed && (
-        <p role="status" className="t-caption text-[var(--accent-warm)]">
+        <p role="status" className="t-caption text-accent-warm">
           Estimated {estimated.join(" & ")} — review and edit below, then save.
         </p>
       )}
       {done && missed && (
-        <p role="status" className="t-caption text-[var(--text-mid)]">
+        <p role="status" className="t-caption text-text-mid">
           Couldn&apos;t read your features from this photo — try a clearer, well-lit, front-facing
           photo, or just set the fields below manually.
         </p>
@@ -151,7 +151,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
         {file && (
           <button
             type="button"
-            className="t-caption text-[var(--text-faint)] underline underline-offset-4 hover:text-[var(--text)] hover:no-underline transition-colors"
+            className="t-caption text-text-faint underline underline-offset-4 hover:text-text hover:no-underline transition-colors"
             onClick={() => selectFile(null)}
           >
             Remove

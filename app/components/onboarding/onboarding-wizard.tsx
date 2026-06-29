@@ -150,8 +150,8 @@ export function OnboardingWizard() {
   if (loading) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="h-1 w-full bg-[var(--surface-2)]" />
-        <p className="t-caption text-[var(--text-faint)]">Loading your profile…</p>
+        <div className="h-1 w-full bg-surface-2" />
+        <p className="t-caption text-text-faint">Loading your profile…</p>
       </div>
     );
   }
@@ -181,12 +181,12 @@ export function OnboardingWizard() {
             >
               <div
                 className={`h-[2px] w-full transition-colors duration-300 ${
-                  i <= step ? "bg-[var(--accent)]" : "bg-[var(--surface-3)]"
+                  i <= step ? "bg-accent" : "bg-surface-3"
                 }`}
               />
               <span
                 className={`t-mono transition-colors duration-200 ${
-                  i === step ? "text-[var(--text)]" : "text-[var(--text-faint)]"
+                  i === step ? "text-text" : "text-text-faint"
                 }`}
               >
                 {s.label}
@@ -230,13 +230,13 @@ export function OnboardingWizard() {
 
       {/* Error */}
       {error && (
-        <p role="alert" className="t-caption text-[var(--error)]">
+        <p role="alert" className="t-caption text-error">
           {error}
         </p>
       )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 border-t border-[var(--rule)] pt-6">
+      <div className="flex items-center justify-between gap-3 border-t border-rule pt-6">
         <div className="flex gap-3">
           {step > 0 && (
             <Button type="button" variant="ghost" size="sm" onClick={() => goTo(step - 1)}>
@@ -271,7 +271,7 @@ function EstimatedBadge() {
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.25, ease: lux }}
-      className="inline-flex items-center gap-1 border border-[var(--accent-warm)] px-1.5 py-0.5 t-mono text-[9px] uppercase tracking-[0.12em] text-[var(--accent-warm)]"
+      className="inline-flex items-center gap-1 border border-accent-warm px-1.5 py-0.5 t-mono text-[9px] uppercase tracking-[0.12em] text-accent-warm"
     >
       <Sparkles className="h-2.5 w-2.5" aria-hidden />
       Estimated
@@ -360,7 +360,7 @@ function StepStyle({
         hint="Pick the aesthetics you lean toward and the occasions you dress for most."
       />
       <fieldset>
-        <legend className="t-label mb-4 text-[var(--text-faint)]">Style intent</legend>
+        <legend className="t-label mb-4 text-text-faint">Style intent</legend>
         <div className="flex flex-wrap gap-2">
           {STYLE_INTENTS.map((s) => {
             const active = (form.style_intent ?? []).includes(s.value);
@@ -373,8 +373,8 @@ function StepStyle({
                 className={
                   "min-h-9 border px-3 py-1 t-label text-[10px] tracking-[0.14em] transition-all duration-[180ms] " +
                   (active
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--bg)]"
-                    : "border-[var(--border-mid)] text-[var(--text-faint)] hover:border-[var(--border-hi)] hover:text-[var(--text)]")
+                    ? "border-accent bg-accent text-bg"
+                    : "border-border-mid text-text-faint hover:border-border-hi hover:text-text")
                 }
               >
                 {s.label}
@@ -473,15 +473,15 @@ function StepPrivacy({
             <input
               id={`consent-${c.value}`}
               type="checkbox"
-              className="mt-1 h-4 w-4 shrink-0 border-[var(--border-mid)] bg-[var(--surface)] accent-[var(--accent)]"
+              className="mt-1 h-4 w-4 shrink-0 border-border-mid bg-surface accent-accent"
               checked={consent[c.value] ?? false}
               disabled={c.required}
               onChange={(e) => setConsent((s) => ({ ...s, [c.value]: e.target.checked }))}
             />
             <label htmlFor={`consent-${c.value}`}>
-              <span className="t-body font-medium text-[var(--text)]">{c.label}</span>
+              <span className="t-body font-medium text-text">{c.label}</span>
               {c.required && (
-                <span className="ml-2 t-mono text-[var(--text-faint)]">(required)</span>
+                <span className="ml-2 t-mono text-text-faint">(required)</span>
               )}
               <span className="block t-caption mt-0.5">{c.description}</span>
             </label>
@@ -495,7 +495,7 @@ function StepPrivacy({
 function StepHeader({ title, hint }: { title: string; hint?: string }) {
   return (
     <div>
-      <h2 className="t-title text-[var(--text)]">{title}</h2>
+      <h2 className="t-title text-text">{title}</h2>
       {hint && <p className="mt-1 t-caption">{hint}</p>}
     </div>
   );
@@ -521,7 +521,7 @@ function DeleteAccount() {
       type="button"
       variant="ghost"
       size="sm"
-      className="text-[var(--error)] hover:text-[var(--error)]"
+      className="text-error hover:text-error"
       disabled={busy}
       onClick={onDelete}
     >

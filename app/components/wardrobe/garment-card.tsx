@@ -32,10 +32,10 @@ export function GarmentCard({ item, onRemove }: GarmentCardProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative flex flex-col border border-[var(--border)] bg-[var(--surface)] transition-colors duration-200 hover:border-[var(--border-mid)]"
+      className="group relative flex flex-col border border-border bg-surface transition-colors duration-200 hover:border-border-mid"
     >
       {/* Image / placeholder */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-[var(--surface-2)]">
+      <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -55,7 +55,7 @@ export function GarmentCard({ item, onRemove }: GarmentCardProps) {
           type="button"
           aria-label={`Remove ${item.title}`}
           onClick={() => onRemove(item.id)}
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center border border-[var(--border-mid)] bg-[var(--bg)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:border-[var(--error)] hover:text-[var(--error)]"
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center border border-border-mid bg-bg opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:border-error hover:text-error"
         >
           <Trash2 size={13} />
         </button>
@@ -72,10 +72,10 @@ export function GarmentCard({ item, onRemove }: GarmentCardProps) {
 
       {/* Meta */}
       <div className="flex flex-col gap-1 p-3">
-        <p className="t-label truncate text-[var(--text)]">{item.title}</p>
+        <p className="t-label truncate text-text">{item.title}</p>
         <div className="flex items-center justify-between">
-          <span className="t-caption capitalize text-[var(--text-faint)]">{item.category}</span>
-          <span className="t-mono text-[var(--text-faint)] text-[10px] capitalize">{item.slot}</span>
+          <span className="t-caption capitalize text-text-faint">{item.category}</span>
+          <span className="t-mono text-text-faint text-[10px] capitalize">{item.slot}</span>
         </div>
       </div>
     </motion.article>

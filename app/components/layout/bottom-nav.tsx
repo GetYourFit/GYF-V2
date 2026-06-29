@@ -21,7 +21,7 @@ export function BottomNav() {
     <nav
       aria-label="Primary"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-[var(--rule)] bg-[var(--bg)]/95 backdrop-blur-xl"
+      className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-rule bg-bg/95 backdrop-blur-xl"
     >
       {TAB_ITEMS.map(({ href, icon: Icon, label }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -32,12 +32,12 @@ export function BottomNav() {
             aria-current={active ? "page" : undefined}
             className={cn(
               "relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 transition-colors duration-150 active:opacity-70",
-              active ? "text-[var(--text)]" : "text-[var(--text-faint)]",
+              active ? "text-text" : "text-text-faint",
             )}
           >
             {active && (
               <span
-                className="absolute top-0 left-1/2 h-[1px] w-8 -translate-x-1/2 bg-[var(--accent)]"
+                className="absolute top-0 left-1/2 h-[1px] w-8 -translate-x-1/2 bg-accent"
                 aria-hidden
               />
             )}

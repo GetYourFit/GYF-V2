@@ -132,17 +132,17 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
             onKeyDown={(e) => {
               if (e.key === "Escape") handleClose();
             }}
-            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col border-t border-[var(--border-mid)] bg-[var(--surface)]"
+            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col border-t border-border-mid bg-surface"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
-              <div className="h-1 w-10 bg-[var(--border-hi)]" />
+              <div className="h-1 w-10 bg-border-hi" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)]">
-              <p id={titleId} className="t-title text-[var(--text)]">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+              <p id={titleId} className="t-title text-text">
                 Share a look
               </p>
               <button
@@ -150,7 +150,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                 type="button"
                 aria-label="Close"
                 onClick={handleClose}
-                className="text-[var(--text-faint)] hover:text-[var(--text)]"
+                className="text-text-faint hover:text-text"
               >
                 <X size={20} />
               </button>
@@ -160,7 +160,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
               onSubmit={handleSubmit}
               className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5"
             >
-              <p className="t-label text-[var(--text-faint)]">Choose a saved look</p>
+              <p className="t-label text-text-faint">Choose a saved look</p>
 
               {loadingLooks && (
                 <div className="grid grid-cols-3 gap-2">
@@ -171,7 +171,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
               )}
 
               {!loadingLooks && looks.length === 0 && (
-                <p className="t-body text-[var(--text-mid)]">
+                <p className="t-body text-text-mid">
                   Save a look from your stylist feed first, then share it here.
                 </p>
               )}
@@ -197,15 +197,15 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                         aria-checked={active}
                         tabIndex={active ? 0 : -1}
                         onClick={() => setSelected(look.id)}
-                        className={`aspect-square w-full overflow-hidden border bg-[var(--surface-2)] transition-colors ${
-                          active ? "border-[var(--accent)]" : "border-[var(--border)]"
+                        className={`aspect-square w-full overflow-hidden border bg-surface-2 transition-colors ${
+                          active ? "border-accent" : "border-border"
                         }`}
                       >
                         {img ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={img} alt="" className="h-full w-full object-cover" />
                         ) : (
-                          <span className="flex h-full items-center justify-center t-mono text-[9px] text-[var(--text-faint)]">
+                          <span className="flex h-full items-center justify-center t-mono text-[9px] text-text-faint">
                             {look.occasion ?? "look"}
                           </span>
                         )}
@@ -217,7 +217,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
 
               {/* Caption */}
               <div className="flex flex-col gap-2">
-                <label htmlFor={captionId} className="t-label text-[var(--text-faint)]">
+                <label htmlFor={captionId} className="t-label text-text-faint">
                   Caption (optional)
                 </label>
                 <textarea
@@ -229,12 +229,12 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                     setCaption(e.target.value);
                     setError(null);
                   }}
-                  className="w-full resize-none border border-[var(--border-mid)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors"
+                  className="w-full resize-none border border-border-mid bg-surface px-4 py-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
                 />
               </div>
 
               {error && (
-                <p role="alert" className="t-caption text-[var(--error)]">
+                <p role="alert" className="t-caption text-error">
                   {error}
                 </p>
               )}

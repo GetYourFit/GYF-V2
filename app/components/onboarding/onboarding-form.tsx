@@ -109,7 +109,7 @@ export function OnboardingForm() {
   }
 
   if (loading) {
-    return <p className="t-caption text-[var(--text-faint)]">Loading your profile…</p>;
+    return <p className="t-caption text-text-faint">Loading your profile…</p>;
   }
 
   const budget = form.budget_range ?? { min: 0, max: null, currency: "USD" };
@@ -117,7 +117,7 @@ export function OnboardingForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <header>
-        <h1 className="t-headline text-[var(--text)]">Your style profile</h1>
+        <h1 className="t-headline text-text">Your style profile</h1>
         <p className="mt-2 t-caption">
           Everything is optional and editable anytime — GYF sharpens as you use it.
         </p>
@@ -162,7 +162,7 @@ export function OnboardingForm() {
         hint="Pick any aesthetics you lean toward, and what you dress for most."
       >
         <fieldset>
-          <legend className="t-label mb-3 text-[var(--text-faint)]">Style intent</legend>
+          <legend className="t-label mb-3 text-text-faint">Style intent</legend>
           <div className="flex flex-wrap gap-2">
             {STYLE_INTENTS.map((s) => {
               const active = (form.style_intent ?? []).includes(s.value);
@@ -175,8 +175,8 @@ export function OnboardingForm() {
                   className={
                     "min-h-9 border px-3 py-1 t-label text-[10px] tracking-[0.14em] transition-all duration-[180ms] " +
                     (active
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--bg)]"
-                      : "border-[var(--border-mid)] text-[var(--text-faint)] hover:border-[var(--border-hi)] hover:text-[var(--text)]")
+                      ? "border-accent bg-accent text-bg"
+                      : "border-border-mid text-text-faint hover:border-border-hi hover:text-text")
                   }
                 >
                   {s.label}
@@ -250,15 +250,15 @@ export function OnboardingForm() {
               <input
                 id={`consent-${c.value}`}
                 type="checkbox"
-                className="mt-1 h-4 w-4 border-[var(--border-mid)] bg-[var(--surface)] accent-[var(--accent)]"
+                className="mt-1 h-4 w-4 border-border-mid bg-surface accent-accent"
                 checked={consent[c.value] ?? false}
                 disabled={c.required}
                 onChange={(e) => setConsent((s) => ({ ...s, [c.value]: e.target.checked }))}
               />
               <label htmlFor={`consent-${c.value}`} className="t-body text-[0.875rem]">
-                <span className="font-medium text-[var(--text)]">{c.label}</span>
+                <span className="font-medium text-text">{c.label}</span>
                 {c.required && (
-                  <span className="ml-2 t-mono text-[var(--text-faint)]">(required)</span>
+                  <span className="ml-2 t-mono text-text-faint">(required)</span>
                 )}
                 <span className="block t-caption mt-0.5">{c.description}</span>
               </label>
@@ -268,12 +268,12 @@ export function OnboardingForm() {
       </Section>
 
       {error && (
-        <p role="alert" className="t-caption text-[var(--error)]">
+        <p role="alert" className="t-caption text-error">
           {error}
         </p>
       )}
       {saved && (
-        <p role="status" className="t-caption text-[var(--accent-warm)]">
+        <p role="status" className="t-caption text-accent-warm">
           Saved.
         </p>
       )}
@@ -298,9 +298,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-4 border border-[var(--border)] bg-[var(--surface)] p-6">
+    <section className="flex flex-col gap-4 border border-border bg-surface p-6">
       <div>
-        <h2 className="t-title text-[var(--text)]">{title}</h2>
+        <h2 className="t-title text-text">{title}</h2>
         {hint && <p className="t-caption mt-1">{hint}</p>}
       </div>
       {children}
@@ -327,7 +327,7 @@ function DeleteAccount() {
     <Button
       type="button"
       variant="ghost"
-      className="text-[var(--error)] hover:text-[var(--error)]"
+      className="text-error hover:text-error"
       disabled={busy}
       onClick={onDelete}
     >

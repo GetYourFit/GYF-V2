@@ -73,7 +73,7 @@ export function SavedGrid() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: lux }}
     >
-      <p className="t-mono text-[var(--text-faint)] mb-6">
+      <p className="t-mono text-text-faint mb-6">
         {looks.length} saved {looks.length === 1 ? "look" : "looks"}
       </p>
 
@@ -105,18 +105,18 @@ function EmptyState() {
       transition={{ duration: 0.4, ease: lux }}
       className="mx-auto max-w-sm py-20 text-center"
     >
-      <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center border border-[var(--border-mid)]">
-        <div className="h-12 w-12 border border-dashed border-[var(--border-hi)]" />
+      <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center border border-border-mid">
+        <div className="h-12 w-12 border border-dashed border-border-hi" />
       </div>
 
-      <p className="t-headline text-[var(--text)]">No saved looks yet</p>
+      <p className="t-headline text-text">No saved looks yet</p>
       <p className="mt-3 t-caption max-w-[260px] mx-auto">
         When you find an outfit you love, tap{" "}
-        <strong className="text-[var(--text)]">Save look</strong> — it gathers here.
+        <strong className="text-text">Save look</strong> — it gathers here.
       </p>
       <Link
         href="/"
-        className="mt-8 inline-flex min-h-11 items-center bg-[var(--accent)] px-8 t-label text-[var(--bg)] hover:bg-[var(--text-mid)] transition-colors duration-[180ms]"
+        className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg hover:bg-text-mid transition-colors duration-[180ms]"
       >
         See my outfits
       </Link>
@@ -132,14 +132,14 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       transition={{ duration: 0.4, ease: lux }}
       className="mx-auto max-w-sm py-20 text-center"
     >
-      <p className="t-headline text-[var(--text)]">Couldn&apos;t load your saved looks</p>
+      <p className="t-headline text-text">Couldn&apos;t load your saved looks</p>
       <p className="mt-3 t-caption max-w-[260px] mx-auto">
         Something went wrong reaching the stylist. Your looks are safe — try again.
       </p>
       <button
         type="button"
         onClick={onRetry}
-        className="mt-8 inline-flex min-h-11 items-center border border-[var(--border-hi)] px-8 t-label text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-[180ms]"
+        className="mt-8 inline-flex min-h-11 items-center border border-border-hi px-8 t-label text-text hover:bg-surface-2 transition-colors duration-[180ms]"
       >
         Retry
       </button>
@@ -151,7 +151,7 @@ function SkeletonGrid() {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-hidden>
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="flex flex-col border border-[var(--border)] bg-[var(--surface)]">
+        <div key={i} className="flex flex-col border border-border bg-surface">
           <div className="aspect-[3/4] skeleton" />
           <div className="flex flex-col gap-3 p-5">
             <div className="h-4 w-3/4 skeleton" />

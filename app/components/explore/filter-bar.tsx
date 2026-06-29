@@ -43,7 +43,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       <div className="relative">
         <Search
           size={15}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-faint)]"
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-text-faint"
           aria-hidden
         />
         <input
@@ -51,14 +51,14 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           placeholder="Search garments…"
           value={filters.q}
           onChange={handleSearch}
-          className="w-full border border-[var(--border-mid)] bg-[var(--surface)] py-2.5 pl-11 pr-4 text-sm text-[var(--text)] placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors"
+          className="w-full border border-border-mid bg-surface py-2.5 pl-11 pr-4 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
         />
         {filters.q && (
           <button
             type="button"
             aria-label="Clear search"
             onClick={() => set("q", "")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-faint)] hover:text-[var(--text)]"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-faint hover:text-text"
           >
             <X size={14} />
           </button>
@@ -72,7 +72,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           aria-label="Occasion"
           value={filters.occasion}
           onChange={(e) => set("occasion", e.target.value)}
-          className="border border-[var(--border-mid)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--text-mid)] focus:border-[var(--accent)] focus:outline-none transition-colors appearance-none"
+          className="border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid focus:border-accent focus:outline-none transition-colors appearance-none"
         >
           <option value="">All occasions</option>
           {OCCASIONS.map((o) => (
@@ -87,7 +87,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           aria-label="Style"
           value={filters.style}
           onChange={(e) => set("style", e.target.value)}
-          className="border border-[var(--border-mid)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--text-mid)] focus:border-[var(--accent)] focus:outline-none transition-colors appearance-none"
+          className="border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid focus:border-accent focus:outline-none transition-colors appearance-none"
         >
           <option value="">All styles</option>
           {STYLE_INTENTS.map((s) => (
@@ -105,7 +105,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           min={0}
           value={filters.maxPrice}
           onChange={(e) => set("maxPrice", e.target.value)}
-          className="w-28 border border-[var(--border-mid)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--text-mid)] placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] focus:outline-none transition-colors"
+          className="w-28 border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid placeholder:text-text-faint focus:border-accent focus:outline-none transition-colors"
         />
 
         {/* Sort */}
@@ -113,7 +113,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           aria-label="Sort"
           value={filters.sort}
           onChange={(e) => set("sort", e.target.value as SortKey)}
-          className="border border-[var(--border-mid)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--text-mid)] focus:border-[var(--accent)] focus:outline-none transition-colors appearance-none"
+          className="border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid focus:border-accent focus:outline-none transition-colors appearance-none"
         >
           {SORT_OPTIONS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -129,7 +129,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             onClick={() =>
               onChange({ q: "", occasion: "", style: "", maxPrice: "", sort: "relevance" })
             }
-            className="t-caption text-[var(--text-faint)] underline underline-offset-4 hover:text-[var(--text)] transition-colors"
+            className="t-caption text-text-faint underline underline-offset-4 hover:text-text transition-colors"
           >
             Clear
           </button>

@@ -7,12 +7,12 @@ type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "bg-[var(--accent)] text-[var(--bg)] hover:bg-[var(--text-mid)] focus-visible:ring-[var(--accent)]",
+    "bg-accent text-bg hover:bg-text-mid focus-visible:ring-accent",
   secondary:
-    "border border-[var(--border-mid)] bg-transparent text-[var(--text)] hover:border-[var(--border-hi)] hover:bg-[var(--surface-2)] focus-visible:ring-[var(--border-hi)]",
+    "border border-border-mid bg-transparent text-text hover:border-border-hi hover:bg-surface-2 focus-visible:ring-border-hi",
   ghost:
-    "text-[var(--text-mid)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] focus-visible:ring-[var(--border-mid)]",
-  danger: "bg-[var(--error)] text-white hover:opacity-90 focus-visible:ring-[var(--error)]",
+    "text-text-mid hover:text-text hover:bg-surface-2 focus-visible:ring-border-mid",
+  danger: "bg-error text-white hover:opacity-90 focus-visible:ring-error",
 };
 
 const SIZES: Record<Size, string> = {
@@ -37,7 +37,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cn(
         "inline-flex items-center justify-center gap-2 py-2.5",
         "font-[family-name:var(--font-body)] font-medium uppercase",
-        "transition-all duration-[180ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]",
+        "transition-all duration-[180ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         "disabled:pointer-events-none disabled:opacity-40",
         VARIANTS[variant],
         SIZES[size],
