@@ -1,19 +1,24 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import type { SavedOutfit } from "@gyf/types";
 
 import { SavedCard } from "@/components/saved/saved-card";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
 
 const lux = [0.16, 1, 0.3, 1] as const;
+const GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3";
 
 type Status = "loading" | "ready" | "error";
 
 export function SavedGrid() {
+  const { toast } = useToast();
+  const reduce = useReducedMotion();
   const [looks, setLooks] = useState<SavedOutfit[]>([]);
   const [status, setStatus] = useState<Status>("loading");
 
@@ -44,24 +49,31 @@ export function SavedGrid() {
     };
   }, []);
 
-  const remove = useCallback((look: SavedOutfit) => {
-    // Optimistic removal; restore on failure so the UI never lies about state.
-    setLooks((cur) => cur.filter((l) => l.id !== look.id));
-    void browserApi()
-      .removeSavedOutfit(look.id)
-      .catch(() => setLooks((cur) => [look, ...cur]));
-    // Behavioral signal: this look was removed from the collection (best-effort).
-    if (look.recommendation_id) {
+  const remove = useCallback(
+    (look: SavedOutfit) => {
+      // Optimistic removal; restore on failure so the UI never lies about state.
+      setLooks((cur) => cur.filter((l) => l.id !== look.id));
       void browserApi()
-        .feedback({
-          target_type: "outfit",
-          target_id: look.recommendation_id,
-          action: "skip",
-          context: { source: "saved_remove" },
-        })
-        .catch(() => {});
-    }
-  }, []);
+        .removeSavedOutfit(look.id)
+        .then(() => toast({ title: "Look removed", variant: "success" }))
+        .catch(() => {
+          setLooks((cur) => [look, ...cur]);
+          toast({ title: "Couldn't remove that look", variant: "error" });
+        });
+      // Behavioral signal: this look was removed from the collection (best-effort).
+      if (look.recommendation_id) {
+        void browserApi()
+          .feedback({
+            target_type: "outfit",
+            target_id: look.recommendation_id,
+            action: "skip",
+            context: { source: "saved_remove" },
+          })
+          .catch(() => {});
+      }
+    },
+    [toast],
+  );
 
   if (status === "loading") return <SkeletonGrid />;
   if (status === "error") return <ErrorState onRetry={load} />;
@@ -77,16 +89,16 @@ export function SavedGrid() {
         {looks.length} saved {looks.length === 1 ? "look" : "looks"}
       </p>
 
-      <motion.div layout className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <motion.div layout className={GRID}>
         <AnimatePresence mode="popLayout">
           {looks.map((look, i) => (
             <motion.div
               key={look.id}
               layout
-              initial={{ opacity: 0, y: 16 }}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.38, delay: i * 0.05, ease: lux }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.38, delay: Math.min(i, 11) * 0.05, ease: lux }}
             >
               <SavedCard look={look} onRemove={() => remove(look)} />
             </motion.div>
@@ -105,18 +117,21 @@ function EmptyState() {
       transition={{ duration: 0.4, ease: lux }}
       className="mx-auto max-w-sm py-20 text-center"
     >
-      <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center border border-border-mid">
+      <div
+        className="mx-auto mb-8 flex h-24 w-24 items-center justify-center border border-border-mid"
+        aria-hidden
+      >
         <div className="h-12 w-12 border border-dashed border-border-hi" />
       </div>
 
       <p className="t-headline text-text">No saved looks yet</p>
-      <p className="mt-3 t-caption max-w-[260px] mx-auto">
+      <p className="mt-3 t-caption mx-auto max-w-xs">
         When you find an outfit you love, tap{" "}
         <strong className="text-text">Save look</strong> — it gathers here.
       </p>
       <Link
         href="/"
-        className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg hover:bg-text-mid transition-colors duration-[180ms]"
+        className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg transition-colors duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       >
         See my outfits
       </Link>
@@ -133,23 +148,21 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       className="mx-auto max-w-sm py-20 text-center"
     >
       <p className="t-headline text-text">Couldn&apos;t load your saved looks</p>
-      <p className="mt-3 t-caption max-w-[260px] mx-auto">
+      <p className="mt-3 t-caption mx-auto max-w-xs">
         Something went wrong reaching the stylist. Your looks are safe — try again.
       </p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="mt-8 inline-flex min-h-11 items-center border border-border-hi px-8 t-label text-text hover:bg-surface-2 transition-colors duration-[180ms]"
-      >
-        Retry
-      </button>
+      <div className="mt-8 flex justify-center">
+        <Button variant="secondary" size="md" onClick={onRetry}>
+          Retry
+        </Button>
+      </div>
     </motion.div>
   );
 }
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-hidden>
+    <div className={GRID} aria-hidden>
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="flex flex-col border border-border bg-surface">
           <div className="aspect-[3/4] skeleton" />

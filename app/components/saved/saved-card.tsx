@@ -23,10 +23,10 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
       layout
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.22 }}
-      className="group flex flex-col border border-border bg-surface transition-all duration-300 hover:border-border-hi hover:shadow-[0_0_0_1px_var(--border-hi)]"
+      className="group flex flex-col border border-border bg-surface transition-colors duration-300 hover:border-border-hi hover:ring-1 hover:ring-border-hi"
     >
       {/* Garment image strip */}
-      <div className="flex gap-[1px] bg-border">
+      <div className="flex gap-px bg-border">
         {look.items.map((item) => {
           const src = mediaUrl(item.image_url);
           return (
@@ -40,7 +40,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
                   src={src}
                   alt={item.title}
                   loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center t-mono text-text-faint">
@@ -94,7 +94,8 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
                 href={shopItem.buy_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-9 items-center justify-center gap-1.5 border border-border-mid px-3 t-label text-[10px] text-text-faint transition-all duration-[180ms] hover:border-border-hi hover:text-text"
+                aria-label="Shop this look at the retailer"
+                className="inline-flex h-9 items-center justify-center gap-1.5 border border-border-mid px-3 t-label text-text-faint transition-colors duration-200 hover:border-border-hi hover:text-text"
               >
                 <ExternalLink className="h-3 w-3" aria-hidden />
                 Shop
@@ -104,7 +105,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
               type="button"
               onClick={onRemove}
               aria-label="Remove saved look"
-              className="inline-flex h-9 w-9 items-center justify-center border border-border-mid text-text-faint transition-all duration-[180ms] hover:border-error/50 hover:text-error"
+              className="inline-flex h-9 w-9 items-center justify-center border border-border-mid text-text-faint transition-colors duration-200 hover:border-error hover:text-error"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden />
             </button>

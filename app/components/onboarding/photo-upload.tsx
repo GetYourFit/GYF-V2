@@ -26,6 +26,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
   const [done, setDone] = useState(false);
   const [estimated, setEstimated] = useState<string[]>([]);
   const [missed, setMissed] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   function selectFile(next: File | null) {
     setError(null);
@@ -94,12 +95,20 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
 
       <label
         htmlFor={inputId}
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }}
+        onDragLeave={() => setDragActive(false)}
         onDrop={(e) => {
           e.preventDefault();
+          setDragActive(false);
           selectFile(e.dataTransfer.files?.[0] ?? null);
         }}
-        className="flex cursor-pointer flex-col items-center gap-3 border border-border-mid bg-surface px-4 py-8 text-center transition-colors duration-[180ms] hover:border-border-hi"
+        className={
+          "flex cursor-pointer flex-col items-center gap-3 border bg-surface px-4 py-8 text-center transition-colors duration-200 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent hover:border-border-hi " +
+          (dragActive ? "border-accent ring-1 ring-accent" : "border-border-mid")
+        }
       >
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -151,7 +160,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
         {file && (
           <button
             type="button"
-            className="t-caption text-text-faint underline underline-offset-4 hover:text-text hover:no-underline transition-colors"
+            className="t-caption text-text-faint underline underline-offset-4 transition-colors hover:text-text hover:no-underline focus-visible:outline-none focus-visible:text-text"
             onClick={() => selectFile(null)}
           >
             Remove

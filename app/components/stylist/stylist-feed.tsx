@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 
 import { OutfitCard } from "@/components/stylist/outfit-card";
 import { StylistControls, type StylistQuery } from "@/components/stylist/stylist-controls";
+import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import type { InteractionAction } from "@gyf/types";
@@ -15,6 +16,8 @@ const EMPTY_QUERY: StylistQuery = { goal: "", occasion: "" };
 const lux = [0.16, 1, 0.3, 1] as const;
 
 export function StylistFeed() {
+  const { toast } = useToast();
+  const reduceMotion = useReducedMotion();
   const [query, setQuery] = useState<StylistQuery>(EMPTY_QUERY);
   const [data, setData] = useState<OutfitRecommendation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +74,7 @@ export function StylistFeed() {
 
   function onShopCart(itemId: string) {
     if (!data) return;
+    toast({ title: "Opening retailer", description: "Taking you to the product page.", variant: "info" });
     void browserApi()
       .feedback({
         target_type: "item",
@@ -98,19 +102,36 @@ export function StylistFeed() {
         score: outfit.score,
         confidence: outfit.confidence,
       })
-      .catch(() =>
+      .then(() =>
+        toast({
+          title: "Saved to your looks",
+          description: "Find it any time on your Saved page.",
+          variant: "success",
+        }),
+      )
+      .catch(() => {
         setSaved((s) => {
           const next = new Set(s);
           next.delete(index);
           return next;
-        }),
-      );
+        });
+        toast({
+          title: "Couldn't save that look",
+          description: "Something went wrong — please try again.",
+          variant: "error",
+        });
+      });
     // Behavioral signal for the ranker; best-effort, never blocks the save.
     void sendFeedback(index, "save").catch(() => {});
   }
 
   function onDismiss(index: number) {
     setDismissed((d) => new Set(d).add(index));
+    toast({
+      title: "Look removed",
+      description: "We'll show you fewer like it. Undo it from the card.",
+      variant: "info",
+    });
     void sendFeedback(index, "skip").catch(() =>
       setDismissed((d) => {
         const next = new Set(d);
@@ -143,7 +164,7 @@ export function StylistFeed() {
           </p>
           <Link
             href="/onboarding"
-            className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg hover:bg-text-mid transition-colors duration-[180ms]"
+            className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg hover:bg-text-mid transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:transition-none"
           >
             Set up my profile
           </Link>
@@ -233,12 +254,12 @@ export function StylistFeed() {
               ) : (
                 <motion.div
                   key={`outfit-${i}`}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{
-                    duration: 0.45,
-                    delay: i * 0.06,
+                    duration: reduceMotion ? 0.2 : 0.45,
+                    delay: reduceMotion ? 0 : i * 0.06,
                     ease: lux,
                   }}
                 >
@@ -283,12 +304,12 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
 
 function UndoStrip({ index, onUndo }: { index: number; onUndo: () => void }) {
   return (
-    <div className="flex items-center justify-between border border-dashed border-border-mid bg-surface/40 px-4 py-6 h-full min-h-[80px]">
+    <div className="flex h-full min-h-20 items-center justify-between border border-dashed border-border-mid bg-surface/40 px-4 py-6">
       <span className="t-caption text-text-faint">Removed look {index + 1}</span>
       <button
         type="button"
         onClick={onUndo}
-        className="t-label text-[10px] text-text-mid hover:text-text underline underline-offset-4 hover:no-underline transition-colors"
+        className="t-label text-text-mid underline underline-offset-4 transition-colors hover:text-text hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-hi focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:transition-none"
       >
         Undo
       </button>

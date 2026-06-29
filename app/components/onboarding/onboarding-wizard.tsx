@@ -1,8 +1,8 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ChevronLeft, ChevronRight, Check, Sparkles } from "lucide-react";
 
 import { PhotoUpload } from "@/components/onboarding/photo-upload";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import { mergeEstimated } from "@/lib/estimate";
@@ -56,6 +57,9 @@ const lux = [0.16, 1, 0.3, 1] as const;
  *  presented one section at a time with Framer Motion slide transitions. */
 export function OnboardingWizard() {
   const router = useRouter();
+  const { toast } = useToast();
+  const reduceMotion = useReducedMotion();
+  const panelRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<number>(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [form, setForm] = useState<ProfileInput>(EMPTY);
@@ -130,6 +134,18 @@ export function OnboardingWizard() {
     setStep(next);
   }
 
+  // Move focus to the new step's panel so keyboard + screen-reader users land on
+  // the freshly revealed content (and not stranded on the now-hidden control).
+  // Skips the initial mount so we don't yank focus away from the page header.
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    panelRef.current?.focus();
+  }, [step]);
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -138,10 +154,17 @@ export function OnboardingWizard() {
       const api = browserApi();
       await api.putProfile(form);
       await api.putConsent({ flags: consent });
+      toast({
+        variant: "success",
+        title: "Profile saved",
+        description: "Your stylist is composing looks for you.",
+      });
       router.push("/");
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save your profile.");
+      const message = e instanceof Error ? e.message : "Could not save your profile.";
+      setError(message);
+      toast({ variant: "error", title: "Couldn’t save your profile", description: message });
     } finally {
       setSaving(false);
     }
@@ -160,54 +183,69 @@ export function OnboardingWizard() {
   const isLast = step === STEPS.length - 1;
   const currentStepId: StepId = STEPS[step]!.id;
 
+  const offset = reduceMotion ? 0 : 40;
   const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
+    enter: (dir: number) => ({ x: dir > 0 ? offset : -offset, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0 }),
+    exit: (dir: number) => ({ x: dir > 0 ? -offset : offset, opacity: 0 }),
   };
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-8">
       {/* Progress bar + step labels */}
       <div className="flex flex-col gap-3">
-        <div className="flex gap-1">
-          {STEPS.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => goTo(i)}
-              className="group flex flex-1 flex-col gap-1.5"
-              aria-current={i === step ? "step" : undefined}
-            >
-              <div
-                className={`h-[2px] w-full transition-colors duration-300 ${
-                  i <= step ? "bg-accent" : "bg-surface-3"
-                }`}
-              />
-              <span
-                className={`t-mono transition-colors duration-200 ${
-                  i === step ? "text-text" : "text-text-faint"
-                }`}
-              >
-                {s.label}
-              </span>
-            </button>
-          ))}
-        </div>
+        <p className="t-mono text-text-faint">
+          Step {step + 1} of {STEPS.length}
+        </p>
+        <ol className="flex gap-1.5" aria-label="Onboarding progress">
+          {STEPS.map((s, i) => {
+            const state = i === step ? "current" : i < step ? "done" : "upcoming";
+            return (
+              <li key={s.id} className="flex flex-1 flex-col">
+                <button
+                  type="button"
+                  onClick={() => goTo(i)}
+                  className="group flex w-full flex-col gap-1.5 focus-visible:outline-none"
+                  aria-current={state === "current" ? "step" : undefined}
+                  aria-label={`Step ${i + 1}: ${s.label}${
+                    state === "done" ? " (completed)" : state === "current" ? " (current)" : ""
+                  }`}
+                >
+                  <span
+                    className={`h-0.5 w-full transition-colors duration-300 group-focus-visible:ring-2 group-focus-visible:ring-accent ${
+                      i <= step ? "bg-accent" : "bg-surface-3"
+                    }`}
+                  />
+                  <span
+                    className={`t-mono text-left transition-colors duration-200 ${
+                      state === "current" ? "text-text" : "text-text-faint"
+                    }`}
+                  >
+                    {s.label}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
       {/* Animated step panel */}
-      <div className="relative min-h-[320px] overflow-hidden">
+      <div className="relative min-h-80 overflow-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentStepId}
+            ref={panelRef}
+            tabIndex={-1}
+            role="group"
+            aria-label={`${STEPS[step]!.label} — step ${step + 1} of ${STEPS.length}`}
             custom={direction}
             variants={variants}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.3, ease: lux }}
-            className="flex flex-col gap-6"
+            transition={{ duration: reduceMotion ? 0.15 : 0.3, ease: lux }}
+            className="flex flex-col gap-6 focus-visible:outline-none"
           >
             {currentStepId === "you" && (
               <StepYou
@@ -271,7 +309,7 @@ function EstimatedBadge() {
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.25, ease: lux }}
-      className="inline-flex items-center gap-1 border border-accent-warm px-1.5 py-0.5 t-mono text-[9px] uppercase tracking-[0.12em] text-accent-warm"
+      className="inline-flex items-center gap-1 border border-accent-warm px-1.5 py-0.5 t-mono uppercase text-accent-warm"
     >
       <Sparkles className="h-2.5 w-2.5" aria-hidden />
       Estimated
@@ -371,7 +409,7 @@ function StepStyle({
                 aria-pressed={active}
                 onClick={() => toggleStyle(s.value)}
                 className={
-                  "min-h-9 border px-3 py-1 t-label text-[10px] tracking-[0.14em] transition-all duration-[180ms] " +
+                  "min-h-9 border px-3 py-1 t-label transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
                   (active
                     ? "border-accent bg-accent text-bg"
                     : "border-border-mid text-text-faint hover:border-border-hi hover:text-text")
@@ -408,7 +446,7 @@ function StepBudget({
   return (
     <>
       <StepHeader title="Budget" hint="Per garment, not per outfit." />
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         <Field label="Min">
           {(p) => (
             <Input

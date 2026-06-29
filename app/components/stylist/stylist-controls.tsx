@@ -43,7 +43,7 @@ export function StylistControls({
           onChange={(e) => setGoal(e.target.value)}
           maxLength={200}
           placeholder="I want to look taller and slimmer…"
-          className="min-h-11 w-full border-b border-border-mid bg-transparent pb-2 font-[family-name:var(--font-display)] text-lg italic text-text placeholder:text-text-faint placeholder:not-italic focus:border-accent focus:outline-none transition-colors duration-[180ms]"
+          className="min-h-11 w-full border-b border-border-mid bg-transparent pb-2 font-[family-name:var(--font-display)] text-lg italic text-text placeholder:text-text-faint placeholder:not-italic focus:border-accent focus:outline-none transition-colors duration-200 motion-reduce:transition-none"
         />
       </div>
       <div className="sm:w-48">

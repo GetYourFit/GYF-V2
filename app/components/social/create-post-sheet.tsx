@@ -1,13 +1,16 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import type { Post, SavedOutfit } from "@gyf/types";
+
+const LUX = [0.16, 1, 0.3, 1] as const;
 
 interface CreatePostSheetProps {
   open: boolean;
@@ -20,6 +23,8 @@ interface CreatePostSheetProps {
  *  re-renders the look per viewer, so a post is grounded in real catalog items,
  *  never a free-floating uploaded photo. */
 export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetProps) {
+  const reduceMotion = useReducedMotion();
+  const { toast } = useToast();
   const captionId = useId();
   const titleId = useId();
   const closeBtnRef = useRef<HTMLButtonElement>(null);
@@ -29,21 +34,27 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
   const [selected, setSelected] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /** Inline field-level validation only — request failures go to a toast. */
+  const [fieldError, setFieldError] = useState<string | null>(null);
 
   const loadLooks = useCallback(async () => {
     setLoadingLooks(true);
-    setError(null);
+    setFieldError(null);
     try {
       const res = await browserApi().listSavedOutfits();
       setLooks(res);
       setSelected(res[0]?.id ?? null);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not load your saved looks.");
+      toast({
+        variant: "error",
+        title: "Couldn't load your looks",
+        description:
+          e instanceof ApiError ? e.message : "Please try reopening this panel.",
+      });
     } finally {
       setLoadingLooks(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (open) void Promise.resolve().then(() => loadLooks());
@@ -75,7 +86,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
   function reset() {
     setCaption("");
     setSelected(null);
-    setError(null);
+    setFieldError(null);
   }
 
   function handleClose() {
@@ -87,11 +98,11 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
     e.preventDefault();
     const look = looks.find((l) => l.id === selected);
     if (!look) {
-      setError("Select a look to share.");
+      setFieldError("Select a look to share.");
       return;
     }
     setSubmitting(true);
-    setError(null);
+    setFieldError(null);
     try {
       const post = await browserApi().createPost({
         item_ids: look.items.map((i) => i.item_id),
@@ -101,8 +112,13 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
       reset();
       onCreated(post);
       onClose();
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not share your look.");
+    } catch (err) {
+      toast({
+        variant: "error",
+        title: "Couldn't share your look",
+        description:
+          err instanceof ApiError ? err.message : "Please try again in a moment.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -111,37 +127,38 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
   return (
     <AnimatePresence>
       {open && (
-        <>
+        <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
           <motion.div
             key="bd"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/40"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={handleClose}
+            aria-hidden
           />
           <motion.aside
             key="sheet"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            initial={reduceMotion ? { opacity: 0 } : { y: "100%" }}
+            animate={reduceMotion ? { opacity: 1 } : { y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { y: "100%" }}
+            transition={{ duration: 0.3, ease: LUX }}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
             onKeyDown={(e) => {
               if (e.key === "Escape") handleClose();
             }}
-            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col border-t border-border-mid bg-surface"
+            className="relative z-50 flex max-h-[92dvh] w-full flex-col border-t border-border-mid bg-surface sm:max-h-[88dvh] sm:max-w-lg sm:border"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-1">
+            {/* Grab handle (mobile sheet affordance) */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden">
               <div className="h-1 w-10 bg-border-hi" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
               <p id={titleId} className="t-title text-text">
                 Share a look
               </p>
@@ -150,9 +167,9 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                 type="button"
                 aria-label="Close"
                 onClick={handleClose}
-                className="text-text-faint hover:text-text"
+                className="-mr-1 p-1 text-text-faint transition-colors hover:text-text"
               >
-                <X size={20} />
+                <X size={20} aria-hidden />
               </button>
             </div>
 
@@ -163,7 +180,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
               <p className="t-label text-text-faint">Choose a saved look</p>
 
               {loadingLooks && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2" aria-hidden>
                   {[0, 1, 2].map((i) => (
                     <div key={i} className="skeleton aspect-square w-full" />
                   ))}
@@ -184,7 +201,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   onKeyDown={onRadioKeyDown}
                 >
                   {looks.map((look, i) => {
-                    const img = look.items.find((i) => i.image_url)?.image_url ?? null;
+                    const img = look.items.find((it) => it.image_url)?.image_url ?? null;
                     const active = selected === look.id;
                     return (
                       <button
@@ -195,19 +212,23 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                         type="button"
                         role="radio"
                         aria-checked={active}
+                        aria-label={look.occasion ?? `Saved look ${i + 1}`}
                         tabIndex={active ? 0 : -1}
                         onClick={() => setSelected(look.id)}
-                        className={`aspect-square w-full overflow-hidden border bg-surface-2 transition-colors ${
-                          active ? "border-accent" : "border-border"
+                        className={`relative aspect-square w-full overflow-hidden border bg-surface-2 transition-colors ${
+                          active ? "border-accent" : "border-border hover:border-border-mid"
                         }`}
                       >
                         {img ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={img} alt="" className="h-full w-full object-cover" />
                         ) : (
-                          <span className="flex h-full items-center justify-center t-mono text-[9px] text-text-faint">
+                          <span className="t-mono flex h-full items-center justify-center text-text-faint">
                             {look.occasion ?? "look"}
                           </span>
+                        )}
+                        {active && (
+                          <span className="absolute inset-0 ring-2 ring-inset ring-accent" aria-hidden />
                         )}
                       </button>
                     );
@@ -227,15 +248,15 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   value={caption}
                   onChange={(e) => {
                     setCaption(e.target.value);
-                    setError(null);
+                    setFieldError(null);
                   }}
-                  className="w-full resize-none border border-border-mid bg-surface px-4 py-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
+                  className="t-body w-full resize-none border border-border-mid bg-surface px-4 py-3 text-text transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
 
-              {error && (
+              {fieldError && (
                 <p role="alert" className="t-caption text-error">
-                  {error}
+                  {fieldError}
                 </p>
               )}
 
@@ -243,14 +264,14 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                 type="submit"
                 variant="primary"
                 size="lg"
-                className="w-full mt-auto"
+                className="mt-auto w-full"
                 disabled={submitting || !selected}
               >
                 {submitting ? "Sharing…" : "Share look"}
               </Button>
             </form>
           </motion.aside>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );

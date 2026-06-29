@@ -7,6 +7,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { Profile, ProfileSummary } from "@gyf/types";
 
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
 import { ApiError } from "@/lib/api";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -154,14 +156,14 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
       <section className="flex flex-col items-start gap-4 border border-border bg-surface p-6">
         <div>
           <p className="t-headline text-text">No style profile yet</p>
-          <p className="mt-2 t-caption max-w-[320px]">
+          <p className="mt-2 t-caption max-w-xs">
             Tell GYF about your skin tone, body type, and the looks you love — it sharpens every
             recommendation.
           </p>
         </div>
         <Link
           href="/onboarding"
-          className="inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg hover:bg-text-mid transition-colors duration-[180ms]"
+          className="inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg transition-colors duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         >
           Set up my profile
         </Link>
@@ -214,6 +216,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
 
 function AccountControls() {
   const router = useRouter();
+  const { toast } = useToast();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -226,8 +229,9 @@ function AccountControls() {
       router.refresh();
     } catch {
       setBusy(false);
+      toast({ variant: "error", title: "Couldn’t sign out", description: "Please try again." });
     }
-  }, [router]);
+  }, [router, toast]);
 
   const deleteAccount = useCallback(async () => {
     setBusy(true);
@@ -235,63 +239,64 @@ function AccountControls() {
     try {
       await browserApi().deleteAccount();
       await createSupabaseBrowserClient().auth.signOut();
+      toast({ variant: "success", title: "Account deleted", description: "Your data has been erased." });
       router.push("/login");
       router.refresh();
     } catch {
-      setError("Couldn't delete your account. Please try again.");
+      const message = "Couldn't delete your account. Please try again.";
+      setError(message);
       setBusy(false);
+      toast({ variant: "error", title: "Deletion failed", description: message });
     }
-  }, [router]);
+  }, [router, toast]);
 
   return (
     <section className="flex flex-col gap-4 border-t border-border pt-8">
       <p className="t-label text-text-faint">Account</p>
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={signOut}
-          disabled={busy}
-          className="inline-flex min-h-11 items-center border border-border-hi px-6 t-label text-text hover:bg-surface-2 transition-colors duration-[180ms] disabled:opacity-50"
-        >
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="secondary" onClick={signOut} disabled={busy}>
           Sign out
-        </button>
+        </Button>
         {!confirming ? (
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            className="text-error hover:text-error"
             onClick={() => setConfirming(true)}
             disabled={busy}
-            className="inline-flex min-h-11 items-center border border-border-hi px-6 t-label text-[var(--danger,#c0392b)] hover:bg-surface-2 transition-colors duration-[180ms] disabled:opacity-50"
           >
             Delete my data
-          </button>
+          </Button>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="t-caption text-text-mid">Delete everything? This can&apos;t be undone.</span>
-            <button
+            <Button
               type="button"
+              variant="danger"
               onClick={deleteAccount}
               disabled={busy}
-              className="inline-flex min-h-11 items-center bg-[var(--danger,#c0392b)] px-6 t-label text-white transition-opacity duration-[180ms] hover:opacity-90 disabled:opacity-50"
+              aria-busy={busy}
             >
               {busy ? "Deleting…" : "Confirm delete"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setConfirming(false)}
               disabled={busy}
-              className="t-label text-text-mid hover:text-text"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         )}
       </div>
       {error && (
-        <p role="alert" className="t-caption text-[var(--danger,#c0392b)]">
+        <p role="alert" className="t-caption text-error">
           {error}
         </p>
       )}
-      <p className="t-caption text-text-faint max-w-[420px]">
+      <p className="t-caption text-text-faint max-w-sm">
         Deleting erases your profile, saved looks, wardrobe, and posts. Your data is yours — GYF
         removes it on request.
       </p>
@@ -315,16 +320,12 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       className="mx-auto max-w-sm py-20 text-center"
     >
       <p className="t-headline text-text">Couldn&apos;t load your profile</p>
-      <p className="mt-3 t-caption max-w-[260px] mx-auto">
+      <p className="mt-3 t-caption mx-auto max-w-xs">
         Something went wrong reaching the stylist. Your data is safe — try again.
       </p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="mt-8 inline-flex min-h-11 items-center border border-border-hi px-8 t-label text-text hover:bg-surface-2 transition-colors duration-[180ms]"
-      >
+      <Button type="button" variant="secondary" onClick={onRetry} className="mt-8">
         Retry
-      </button>
+      </Button>
     </motion.div>
   );
 }

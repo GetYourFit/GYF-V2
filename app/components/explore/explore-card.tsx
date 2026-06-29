@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { ArrowUpRight, Bookmark, BookmarkCheck } from "lucide-react";
 
 import type { SearchResult } from "@gyf/types";
 
@@ -25,15 +25,26 @@ function formatPrice(price?: number | null, currency?: string | null): string | 
   }
 }
 
+const LUX = [0.16, 1, 0.3, 1] as const;
+
 export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
+  const reduce = useReducedMotion();
   const price = formatPrice(item.price, item.currency);
+  const confidence = Math.round(item.score * 100);
+  const external = Boolean(item.buy_url);
+  const href = item.buy_url ?? `/items/${item.item_id}`;
+
   return (
     <motion.article
       layout
-      initial={{ opacity: 0, y: 20 }}
+      initial={reduce ? false : { opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, delay: Math.min(index * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
-      className="group relative flex flex-col border border-border bg-surface transition-colors duration-200 hover:border-border-mid"
+      transition={{
+        duration: 0.5,
+        delay: reduce ? 0 : Math.min(index * 0.035, 0.45),
+        ease: LUX,
+      }}
+      className="group relative flex flex-col border border-border bg-surface transition-colors duration-300 hover:border-border-hi focus-within:border-border-hi"
     >
       {/* Image */}
       <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
@@ -43,60 +54,59 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
             src={item.image_url}
             alt={item.title}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <span className="t-mono text-text-faint text-[10px]">No image</span>
+            <span className="t-mono text-text-faint">No image</span>
           </div>
         )}
 
-        {/* Actions overlay — also revealed on keyboard focus so the control is
-            never focusable-while-invisible (WCAG 2.4.7). */}
-        <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-          <button
-            type="button"
-            aria-label={saved ? "Saved" : "Save item"}
-            onClick={() => onSave(item)}
-            className="flex h-7 w-7 items-center justify-center border border-border-mid bg-bg transition-colors hover:border-accent hover:text-accent"
-          >
-            {saved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
-          </button>
+        {/* Hover scrim — lifts the meta affordance, never obscures the garment */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-text/15 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        />
+
+        {/* Confidence — gold, editorial */}
+        <div className="absolute bottom-2 left-2 flex items-center gap-1.5 border border-border bg-bg/90 px-2 py-1 backdrop-blur-sm">
+          <span className="h-1 w-1 rounded-full bg-accent-warm" aria-hidden />
+          <span className="t-mono text-accent-warm">{confidence}% match</span>
         </div>
 
-        {/* Score badge */}
-        <div className="absolute bottom-2 left-2 border border-border bg-bg px-1.5 py-0.5">
-          <span className="t-mono text-[9px] text-text-faint">
-            {Math.round(item.score * 100)}%
-          </span>
-        </div>
+        {/* Save — revealed on hover/focus, never focusable-while-invisible (WCAG 2.4.7) */}
+        <button
+          type="button"
+          aria-label={saved ? "Remove from saved" : "Save item"}
+          aria-pressed={saved}
+          onClick={() => onSave(item)}
+          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-border-mid bg-bg/90 text-text-mid opacity-0 backdrop-blur-sm transition-all duration-200 hover:border-accent hover:text-accent focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg group-hover:opacity-100 group-focus-within:opacity-100 aria-pressed:opacity-100 aria-pressed:border-accent aria-pressed:text-accent"
+        >
+          {saved ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+        </button>
       </div>
 
       {/* Meta */}
-      <div className="flex items-start justify-between gap-2 p-3">
+      <div className="flex items-start justify-between gap-3 p-3 sm:p-4">
         <div className="min-w-0 flex-1">
-          <p className="t-label line-clamp-2 text-text">{item.title}</p>
-          {price && <p className="mt-1 t-mono text-[11px] text-text-mid">{price}</p>}
+          {/* Stretched link makes the whole card actionable while the save
+              button (z-10) stays independently clickable. */}
+          <a
+            href={href}
+            target={external ? "_blank" : undefined}
+            rel={external ? "noopener noreferrer" : undefined}
+            aria-label={external ? `Shop ${item.title}` : `View ${item.title}`}
+            className="t-caption line-clamp-2 text-text after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent"
+          >
+            {item.title}
+          </a>
+          {price && <p className="t-mono mt-2 text-text-mid">{price}</p>}
         </div>
-        {item.buy_url ? (
-          <a
-            href={item.buy_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`Shop ${item.title}`}
-            className="mt-0.5 shrink-0 text-text-faint transition-colors hover:text-text"
-          >
-            <ExternalLink size={13} />
-          </a>
-        ) : (
-          <a
-            href={`/items/${item.item_id}`}
-            aria-label={`View ${item.title}`}
-            className="mt-0.5 shrink-0 text-text-faint transition-colors hover:text-text"
-          >
-            <ExternalLink size={13} />
-          </a>
-        )}
+        <ArrowUpRight
+          size={16}
+          aria-hidden
+          className="mt-0.5 shrink-0 text-text-faint transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-text"
+        />
       </div>
     </motion.article>
   );

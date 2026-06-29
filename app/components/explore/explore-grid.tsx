@@ -1,14 +1,19 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
+import { ImageOff, SearchX } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
 import type { SearchResult } from "@gyf/types";
 import { ExploreCard } from "./explore-card";
 import type { ExploreFilters } from "./filter-bar";
 
 const PAGE_SIZE = 24;
+
+const GRID_COLS = "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5";
 
 function applyClientFilters(items: SearchResult[], f: ExploreFilters): SearchResult[] {
   let out = items;
@@ -25,11 +30,24 @@ function applyClientFilters(items: SearchResult[], f: ExploreFilters): SearchRes
   return out;
 }
 
+function CardSkeleton() {
+  return (
+    <div className="flex flex-col border border-border bg-surface">
+      <div className="aspect-[3/4] animate-pulse bg-surface-2" />
+      <div className="flex flex-col gap-2 p-3 sm:p-4">
+        <div className="h-3 w-4/5 animate-pulse bg-surface-2" />
+        <div className="h-3 w-1/3 animate-pulse bg-surface-2" />
+      </div>
+    </div>
+  );
+}
+
 interface ExploreGridProps {
   filters: ExploreFilters;
 }
 
 export function ExploreGrid({ filters }: ExploreGridProps) {
+  const { toast } = useToast();
   const [items, setItems] = useState<SearchResult[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -114,34 +132,75 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
     return () => obs.disconnect();
   }, [onIntersect]);
 
-  function toggleSave(item: SearchResult) {
-    setSaved((prev) => {
-      const next = new Set(prev);
-      if (next.has(item.item_id)) next.delete(item.item_id);
-      else next.add(item.item_id);
-      return next;
-    });
+  const toggleSave = useCallback(
+    (item: SearchResult) => {
+      setSaved((prev) => {
+        const next = new Set(prev);
+        if (next.has(item.item_id)) {
+          next.delete(item.item_id);
+          toast({ title: "Removed from saved", variant: "info" });
+        } else {
+          next.add(item.item_id);
+          toast({ title: "Saved", description: item.title, variant: "success" });
+        }
+        return next;
+      });
+    },
+    [toast],
+  );
+
+  // First load — full-bleed skeleton grid that mirrors the card shape.
+  if (loading && items.length === 0 && !error) {
+    return (
+      <div className={GRID_COLS} aria-busy aria-label="Loading items">
+        {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+          <CardSkeleton key={i} />
+        ))}
+      </div>
+    );
   }
 
+  // Error — editorial, with retry.
+  if (error && items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-5 border border-border bg-surface px-6 py-24 text-center">
+        <ImageOff size={28} className="text-text-faint" aria-hidden />
+        <div className="flex flex-col gap-1">
+          <p className="t-title text-text">Something interrupted the catalog</p>
+          <p role="alert" className="t-caption text-text-mid">
+            {error}
+          </p>
+        </div>
+        <Button variant="secondary" size="sm" onClick={() => loadPage(0, true)}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  // Empty — art-directed concentric frame.
   if (!loading && items.length === 0 && !error) {
     return (
-      <div className="flex flex-col items-center justify-center gap-6 py-24">
+      <div className="flex flex-col items-center justify-center gap-6 border border-border bg-surface px-6 py-24 text-center">
         <div className="relative flex h-24 w-24 items-center justify-center">
           <div className="absolute inset-0 border border-border" />
           <div className="absolute inset-3 border border-border-mid" />
           <div className="absolute inset-6 border border-border-hi" />
+          <SearchX size={22} className="text-text-faint" aria-hidden />
         </div>
-        <p className="t-title text-text">No items found</p>
-        <p className="t-caption text-text-faint">
-          Try a different search or adjust your filters.
-        </p>
+        <div className="flex flex-col gap-1.5">
+          <p className="t-title text-text">Nothing matches yet</p>
+          <p className="t-caption text-text-faint">
+            Try a different search or loosen your filters.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className={GRID_COLS}>
         <AnimatePresence mode="popLayout">
           {items.map((item, i) => (
             <ExploreCard
@@ -155,19 +214,25 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
         </AnimatePresence>
       </div>
 
-      {/* Skeleton rows while loading */}
-      {loading && (
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="aspect-[3/4] animate-pulse bg-surface-2" />
+      {/* Skeleton rows while appending the next page */}
+      {loading && items.length > 0 && (
+        <div className={`mt-4 ${GRID_COLS}`} aria-busy aria-label="Loading more items">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <CardSkeleton key={i} />
           ))}
         </div>
       )}
 
-      {error && (
-        <p role="alert" className="mt-6 t-caption text-error text-center">
+      {/* Inline error when a later page fails but content is already shown */}
+      {error && items.length > 0 && (
+        <p role="alert" className="t-caption mt-6 text-center text-error">
           {error}
         </p>
+      )}
+
+      {/* End-of-results marker */}
+      {!hasMore && !loading && items.length > 0 && (
+        <p className="t-label mt-10 text-center text-text-faint">End of results</p>
       )}
 
       {/* Infinite scroll sentinel */}

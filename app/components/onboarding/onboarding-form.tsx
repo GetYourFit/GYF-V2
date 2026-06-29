@@ -173,7 +173,7 @@ export function OnboardingForm() {
                   aria-pressed={active}
                   onClick={() => toggleStyle(s.value)}
                   className={
-                    "min-h-9 border px-3 py-1 t-label text-[10px] tracking-[0.14em] transition-all duration-[180ms] " +
+                    "min-h-9 border px-3 py-1 t-label transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
                     (active
                       ? "border-accent bg-accent text-bg"
                       : "border-border-mid text-text-faint hover:border-border-hi hover:text-text")
@@ -199,7 +199,7 @@ export function OnboardingForm() {
       </Section>
 
       <Section title="Budget" hint="Per garment, not per outfit.">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Field label="Min">
             {(p) => (
               <Input
@@ -255,7 +255,7 @@ export function OnboardingForm() {
                 disabled={c.required}
                 onChange={(e) => setConsent((s) => ({ ...s, [c.value]: e.target.checked }))}
               />
-              <label htmlFor={`consent-${c.value}`} className="t-body text-[0.875rem]">
+              <label htmlFor={`consent-${c.value}`} className="t-body">
                 <span className="font-medium text-text">{c.label}</span>
                 {c.required && (
                   <span className="ml-2 t-mono text-text-faint">(required)</span>

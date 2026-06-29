@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useCallback, useId, useState } from "react";
 
@@ -13,6 +13,8 @@ import { Select } from "@/components/ui/select";
 import { browserApi } from "@/lib/api-client";
 import { mediaUrl } from "@/lib/media";
 
+const lux = [0.16, 1, 0.3, 1] as const;
+
 interface AddGarmentSheetProps {
   open: boolean;
   onClose: () => void;
@@ -21,6 +23,7 @@ interface AddGarmentSheetProps {
 }
 
 type Mode = "catalog" | "custom";
+type SearchPhase = "idle" | "searching" | "done";
 
 const CATEGORY_OPTIONS = [
   { value: "top", label: "Top" },
@@ -33,11 +36,13 @@ const CATEGORY_OPTIONS = [
 
 export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) {
   const titleId = useId();
+  const searchId = useId();
+  const reduce = useReducedMotion();
   const [mode, setMode] = useState<Mode>("catalog");
   // Catalog search
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [phase, setPhase] = useState<SearchPhase>("idle");
   // Custom freeform
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("top");
@@ -48,7 +53,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
     setMode("catalog");
     setQuery("");
     setResults([]);
-    setSearching(false);
+    setPhase("idle");
     setTitle("");
     setCategory("top");
     setBusy(false);
@@ -63,14 +68,15 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
   async function runSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim()) return;
-    setSearching(true);
+    setPhase("searching");
     setError(null);
     try {
       setResults(await browserApi().search(query.trim(), { k: 24 }));
     } catch {
       setError("Search is unavailable right now. Try a custom entry instead.");
+      setResults([]);
     } finally {
-      setSearching(false);
+      setPhase("done");
     }
   }
 
@@ -106,30 +112,33 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
   return (
     <AnimatePresence>
       {open && (
-        <>
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") handleClose();
+          }}
+        >
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/60"
+            className="absolute inset-0 bg-black/60"
             onClick={handleClose}
+            aria-hidden
           />
 
-          <motion.aside
-            key="sheet"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+          <motion.div
+            key="panel"
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 28 }}
+            transition={{ duration: 0.34, ease: lux }}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") handleClose();
-            }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col border-l border-border-mid bg-surface"
+            className="relative flex max-h-[92vh] w-full flex-col border border-border-mid bg-surface shadow-[0_-8px_40px_rgba(17,17,17,0.12)] sm:max-h-[80vh] sm:max-w-lg sm:shadow-[0_24px_60px_rgba(17,17,17,0.18)]"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-6 py-5">
@@ -140,28 +149,29 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                 type="button"
                 aria-label="Close"
                 onClick={handleClose}
-                className="flex h-8 w-8 items-center justify-center text-text-faint transition-colors hover:text-text"
+                className="-mr-2 flex h-9 w-9 items-center justify-center text-text-faint transition-colors duration-200 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               >
-                <X size={18} />
+                <X size={18} aria-hidden />
               </button>
             </div>
 
             {/* Mode toggle */}
-            <div className="flex gap-2 border-b border-border px-6 py-3">
+            <div className="flex gap-2 border-b border-border px-6 py-3" role="tablist">
               {(["catalog", "custom"] as Mode[]).map((m) => (
                 <button
                   key={m}
                   type="button"
-                  aria-pressed={mode === m}
+                  role="tab"
+                  aria-selected={mode === m}
                   onClick={() => {
                     setMode(m);
                     setError(null);
                   }}
                   className={[
-                    "t-caption border px-3 py-1 capitalize transition-colors duration-150",
+                    "t-caption border px-3 py-1.5 capitalize transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
                     mode === m
                       ? "border-accent bg-accent text-bg"
-                      : "border-border-mid text-text-mid hover:text-text",
+                      : "border-border-mid text-text-mid hover:border-border-hi hover:text-text",
                   ].join(" ")}
                 >
                   {m === "catalog" ? "From catalog" : "Custom"}
@@ -172,55 +182,87 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
             {mode === "catalog" ? (
               <div className="flex flex-1 flex-col overflow-hidden">
                 <form onSubmit={runSearch} className="flex gap-2 px-6 py-4">
+                  <label htmlFor={searchId} className="sr-only">
+                    Search garments to add
+                  </label>
                   <Input
+                    id={searchId}
                     placeholder="Search garments you own…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     autoFocus
                   />
-                  <Button type="submit" variant="primary" size="md" disabled={searching}>
-                    <Search size={15} />
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    disabled={phase === "searching"}
+                    aria-label="Search"
+                  >
+                    <Search size={15} aria-hidden />
                   </Button>
                 </form>
 
                 {error && (
-                  <p role="alert" className="px-6 t-caption text-error">
+                  <p role="alert" className="px-6 pb-2 t-caption text-error">
                     {error}
                   </p>
                 )}
 
-                <div className="grid flex-1 grid-cols-3 gap-[1px] overflow-y-auto bg-border px-6 py-2">
-                  {results.map((r) => {
-                    const src = mediaUrl(r.image_url);
-                    return (
-                      <button
-                        key={r.item_id}
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void addCatalog(r)}
-                        title={r.title}
-                        className="group relative aspect-[3/4] overflow-hidden bg-surface-2 disabled:opacity-50"
-                      >
-                        {src ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={src}
-                            alt={r.title}
-                            loading="lazy"
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <span className="flex h-full items-center justify-center t-mono text-text-faint">
-                            +
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                <div className="flex-1 overflow-y-auto px-6 py-2">
+                  {phase === "searching" ? (
+                    <div className="grid grid-cols-3 gap-px bg-border" aria-hidden>
+                      {Array.from({ length: 9 }).map((_, i) => (
+                        <div key={i} className="aspect-[3/4] skeleton" />
+                      ))}
+                    </div>
+                  ) : results.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-px bg-border">
+                      {results.map((r) => {
+                        const src = mediaUrl(r.image_url);
+                        return (
+                          <button
+                            key={r.item_id}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void addCatalog(r)}
+                            title={r.title}
+                            aria-label={`Add ${r.title}`}
+                            className="group relative aspect-[3/4] overflow-hidden bg-surface-2 transition-opacity disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
+                          >
+                            {src ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={src}
+                                alt={r.title}
+                                loading="lazy"
+                                className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                              />
+                            ) : (
+                              <span className="flex h-full items-center justify-center t-mono text-text-faint">
+                                +
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+                      <p className="t-caption text-text-faint">
+                        {phase === "done"
+                          ? "No matches found. Try another search or add a custom entry."
+                          : "Search the catalog to add garments you already own."}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
-              <form onSubmit={addCustom} className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-6">
+              <form
+                onSubmit={addCustom}
+                className="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-6"
+              >
                 <Field label="Name *">
                   {(p) => (
                     <Input
@@ -241,6 +283,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                     <Select
                       {...p}
                       options={CATEGORY_OPTIONS}
+                      hidePlaceholder
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                     />
@@ -254,7 +297,13 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                 )}
 
                 <div className="mt-auto flex gap-3 pt-4">
-                  <Button type="submit" variant="primary" size="md" className="flex-1" disabled={busy}>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    className="flex-1"
+                    disabled={busy}
+                  >
                     {busy ? "Adding…" : "Add garment"}
                   </Button>
                   <Button type="button" variant="secondary" size="md" onClick={handleClose}>
@@ -263,8 +312,8 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                 </div>
               </form>
             )}
-          </motion.aside>
-        </>
+          </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );
