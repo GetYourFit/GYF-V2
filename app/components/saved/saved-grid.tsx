@@ -1,18 +1,21 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ExternalLink, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-import type { SavedOutfit } from "@gyf/types";
+import type { SavedItem, SavedOutfit } from "@gyf/types";
 
 import { SavedCard } from "@/components/saved/saved-card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
+import { mediaUrl } from "@/lib/media";
 
 const lux = [0.16, 1, 0.3, 1] as const;
 const GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3";
+const ITEM_GRID = "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5";
 
 type Status = "loading" | "ready" | "error";
 
@@ -20,25 +23,33 @@ export function SavedGrid() {
   const { toast } = useToast();
   const reduce = useReducedMotion();
   const [looks, setLooks] = useState<SavedOutfit[]>([]);
+  const [items, setItems] = useState<SavedItem[]>([]);
   const [status, setStatus] = useState<Status>("loading");
+
+  const fetchAll = useCallback(
+    () => Promise.all([browserApi().listSavedOutfits(), browserApi().listSaved()]),
+    [],
+  );
 
   const load = useCallback(async () => {
     setStatus("loading");
     try {
-      setLooks(await browserApi().listSavedOutfits());
+      const [savedLooks, savedItems] = await fetchAll();
+      setLooks(savedLooks);
+      setItems(savedItems);
       setStatus("ready");
     } catch {
       setStatus("error");
     }
-  }, []);
+  }, [fetchAll]);
 
   useEffect(() => {
     let active = true;
-    browserApi()
-      .listSavedOutfits()
-      .then((data) => {
+    fetchAll()
+      .then(([savedLooks, savedItems]) => {
         if (!active) return;
-        setLooks(data);
+        setLooks(savedLooks);
+        setItems(savedItems);
         setStatus("ready");
       })
       .catch(() => {
@@ -47,7 +58,21 @@ export function SavedGrid() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchAll]);
+
+  const removeItem = useCallback(
+    (item: SavedItem) => {
+      setItems((cur) => cur.filter((i) => i.item_id !== item.item_id));
+      void browserApi()
+        .unsaveItem(item.item_id)
+        .then(() => toast({ title: "Removed from saved", variant: "info" }))
+        .catch(() => {
+          setItems((cur) => [item, ...cur]);
+          toast({ title: "Couldn't remove that", variant: "error" });
+        });
+    },
+    [toast],
+  );
 
   const remove = useCallback(
     (look: SavedOutfit) => {
@@ -77,35 +102,128 @@ export function SavedGrid() {
 
   if (status === "loading") return <SkeletonGrid />;
   if (status === "error") return <ErrorState onRetry={load} />;
-  if (looks.length === 0) return <EmptyState />;
+  if (looks.length === 0 && items.length === 0) return <EmptyState />;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: lux }}
+      className="flex flex-col gap-14"
     >
-      <p className="t-mono text-text-faint mb-6">
-        {looks.length} saved {looks.length === 1 ? "look" : "looks"}
-      </p>
+      {looks.length > 0 && (
+        <section className="flex flex-col gap-6">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="t-label text-text-faint">Saved looks</h2>
+            <span className="t-mono text-text-faint">{looks.length}</span>
+          </div>
+          <motion.div layout className={GRID}>
+            <AnimatePresence mode="popLayout">
+              {looks.map((look, i) => (
+                <motion.div
+                  key={look.id}
+                  layout
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.38, delay: Math.min(i, 11) * 0.05, ease: lux }}
+                >
+                  <SavedCard look={look} onRemove={() => remove(look)} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        </section>
+      )}
 
-      <motion.div layout className={GRID}>
-        <AnimatePresence mode="popLayout">
-          {looks.map((look, i) => (
-            <motion.div
-              key={look.id}
-              layout
-              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.38, delay: Math.min(i, 11) * 0.05, ease: lux }}
-            >
-              <SavedCard look={look} onRemove={() => remove(look)} />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </motion.div>
+      {items.length > 0 && (
+        <section className="flex flex-col gap-6">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="t-label text-text-faint">Saved items</h2>
+            <span className="t-mono text-text-faint">{items.length}</span>
+          </div>
+          <motion.div layout className={ITEM_GRID}>
+            <AnimatePresence mode="popLayout">
+              {items.map((item, i) => (
+                <motion.div
+                  key={item.item_id}
+                  layout
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.35, delay: Math.min(i, 11) * 0.04, ease: lux }}
+                >
+                  <SavedItemCard item={item} onRemove={() => removeItem(item)} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        </section>
+      )}
     </motion.div>
+  );
+}
+
+function itemPrice(item: SavedItem): string | null {
+  if (item.price == null) return null;
+  const symbol = { USD: "$", EUR: "€", GBP: "£", INR: "₹" }[item.currency ?? "USD"] ?? "";
+  return `${symbol}${Math.round(item.price)}`;
+}
+
+function SavedItemCard({ item, onRemove }: { item: SavedItem; onRemove: () => void }) {
+  const src = mediaUrl(item.image_url);
+  const price = itemPrice(item);
+  return (
+    <article className="group relative flex flex-col border border-border bg-surface transition-colors duration-300 hover:border-border-hi">
+      <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={src}
+            alt={item.title}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center t-mono text-text-faint">
+            {item.category.replace(/_/g, " ")}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Remove ${item.title} from saved`}
+          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-border-mid bg-bg/90 text-text-mid opacity-0 backdrop-blur-sm transition-all duration-200 hover:border-error hover:text-error focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg group-hover:opacity-100"
+        >
+          <X size={15} aria-hidden />
+        </button>
+      </div>
+      <div className="flex items-start justify-between gap-3 p-3 sm:p-4">
+        <div className="min-w-0 flex-1">
+          {item.buy_url ? (
+            <a
+              href={item.buy_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Shop ${item.title}`}
+              className="t-caption line-clamp-2 text-text after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent"
+            >
+              {item.title}
+            </a>
+          ) : (
+            <span className="t-caption line-clamp-2 text-text">{item.title}</span>
+          )}
+          {price && <p className="t-mono mt-2 text-text-mid">{price}</p>}
+        </div>
+        {item.buy_url && (
+          <ExternalLink
+            size={15}
+            aria-hidden
+            className="mt-0.5 shrink-0 text-text-faint transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-text"
+          />
+        )}
+      </div>
+    </article>
   );
 }
 
