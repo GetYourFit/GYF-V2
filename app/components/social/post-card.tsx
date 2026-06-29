@@ -27,13 +27,7 @@ function authorOf(userId: string): { handle: string; initial: string } {
   return { handle, initial: (handle[0] ?? "?").toUpperCase() };
 }
 
-export function PostCard({
-  post,
-  index = 0,
-  onReact,
-  onShared,
-  onDressLikeMe,
-}: PostCardProps) {
+export function PostCard({ post, index = 0, onReact, onShared, onDressLikeMe }: PostCardProps) {
   const reduceMotion = useReducedMotion();
   const author = authorOf(post.user_id);
   const [reacted, setReacted] = useState(false);
@@ -99,9 +93,7 @@ export function PostCard({
         </div>
         <div className="min-w-0">
           <p className="t-mono truncate text-text">@{author.handle}</p>
-          {post.region && (
-            <p className="t-mono mt-1 uppercase text-text-faint">{post.region}</p>
-          )}
+          {post.region && <p className="t-mono mt-1 uppercase text-text-faint">{post.region}</p>}
         </div>
         {post.occasion && (
           <span className="t-mono ml-auto shrink-0 border border-border-mid px-2 py-1 uppercase text-text-faint">

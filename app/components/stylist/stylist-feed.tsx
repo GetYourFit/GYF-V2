@@ -74,7 +74,11 @@ export function StylistFeed() {
 
   function onShopCart(itemId: string) {
     if (!data) return;
-    toast({ title: "Opening retailer", description: "Taking you to the product page.", variant: "info" });
+    toast({
+      title: "Opening retailer",
+      description: "Taking you to the product page.",
+      variant: "info",
+    });
     void browserApi()
       .feedback({
         target_type: "item",
@@ -296,10 +300,7 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
     <div className="flex flex-wrap items-center gap-2 mt-1">
       <span className="t-mono text-text-faint">{parts.join(" · ")}</span>
       {data.applied_goals.map((g) => (
-        <span
-          key={g}
-          className="border border-border-mid px-2 py-0.5 t-mono text-text-mid"
-        >
+        <span key={g} className="border border-border-mid px-2 py-0.5 t-mono text-text-mid">
           {g}
         </span>
       ))}

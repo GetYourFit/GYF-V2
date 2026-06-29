@@ -31,10 +31,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       {/* Right form panel */}
       <div className="w-full max-w-[420px] lg:ml-[46%]">
         {/* Mobile wordmark */}
-        <Link
-          href="/"
-          className="t-wordmark mb-10 block text-center text-3xl text-text lg:hidden"
-        >
+        <Link href="/" className="t-wordmark mb-10 block text-center text-3xl text-text lg:hidden">
           GYF
         </Link>
         <Suspense fallback={null}>{children}</Suspense>

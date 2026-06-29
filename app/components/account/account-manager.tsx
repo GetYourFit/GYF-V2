@@ -106,7 +106,11 @@ export function AccountManager() {
       const merged = await browserApi().putConsent({ flags });
       setSaved(merged);
       setDraft(merged);
-      toast({ variant: "success", title: "Preferences saved", description: "Your choices are in effect." });
+      toast({
+        variant: "success",
+        title: "Preferences saved",
+        description: "Your choices are in effect.",
+      });
     } catch {
       toast({ variant: "error", title: "Couldn't save", description: "Please try again." });
     } finally {
@@ -145,7 +149,11 @@ export function AccountManager() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast({ variant: "success", title: "Export ready", description: "Your data is downloading." });
+      toast({
+        variant: "success",
+        title: "Export ready",
+        description: "Your data is downloading.",
+      });
     } catch {
       toast({ variant: "error", title: "Export failed", description: "Please try again." });
     } finally {
@@ -168,7 +176,11 @@ export function AccountManager() {
     try {
       await browserApi().deleteAccount();
       await createSupabaseBrowserClient().auth.signOut();
-      toast({ variant: "success", title: "Account deleted", description: "Your data has been erased." });
+      toast({
+        variant: "success",
+        title: "Account deleted",
+        description: "Your data has been erased.",
+      });
       router.push("/login");
       router.refresh();
     } catch {
@@ -208,7 +220,12 @@ export function AccountManager() {
           ))}
         </ul>
         <div className="flex items-center gap-4">
-          <Button type="button" onClick={saveConsent} disabled={!dirty || saving} aria-busy={saving}>
+          <Button
+            type="button"
+            onClick={saveConsent}
+            disabled={!dirty || saving}
+            aria-busy={saving}
+          >
             {saving ? "Saving…" : "Save preferences"}
           </Button>
           <span role="status" className="t-caption text-text-faint">
@@ -227,7 +244,13 @@ export function AccountManager() {
           </p>
         </div>
         <div>
-          <Button type="button" variant="secondary" onClick={exportData} disabled={exporting} aria-busy={exporting}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={exportData}
+            disabled={exporting}
+            aria-busy={exporting}
+          >
             {exporting ? "Preparing…" : "Download my data"}
           </Button>
         </div>
@@ -251,10 +274,7 @@ export function AccountManager() {
             </Button>
           </div>
         ) : (
-          <div
-            role="alert"
-            className="flex flex-col gap-4 border border-error/40 bg-error/5 p-5"
-          >
+          <div role="alert" className="flex flex-col gap-4 border border-error/40 bg-error/5 p-5">
             <p className="t-caption text-text">
               This permanently erases your profile, saved looks, wardrobe, and posts. It can&apos;t
               be undone. Type <span className="t-mono text-text">DELETE</span> to confirm.
@@ -317,7 +337,9 @@ function ConsentRow({
   const labelId = useId();
   const descId = useId();
   return (
-    <li className={`flex items-start justify-between gap-5 p-5 ${first ? "" : "border-t border-rule"}`}>
+    <li
+      className={`flex items-start justify-between gap-5 p-5 ${first ? "" : "border-t border-rule"}`}
+    >
       <div className="flex flex-col gap-1.5">
         <span id={labelId} className="t-title text-text">
           {title}

@@ -52,9 +52,7 @@ export function SocialFeed() {
       const res = await browserApi().socialFeed({ limit: 30 });
       setPosts(res);
     } catch (e) {
-      setError(
-        e instanceof ApiError ? e.message : "Could not load the feed. Tap retry.",
-      );
+      setError(e instanceof ApiError ? e.message : "Could not load the feed. Tap retry.");
     } finally {
       setLoading(false);
     }
@@ -73,8 +71,7 @@ export function SocialFeed() {
         toast({
           variant: "error",
           title: "Reaction failed",
-          description:
-            e instanceof ApiError ? e.message : "Please try again in a moment.",
+          description: e instanceof ApiError ? e.message : "Please try again in a moment.",
         });
         throw e;
       }
@@ -107,10 +104,7 @@ export function SocialFeed() {
         {loading && (
           <div className="flex flex-col gap-6" aria-hidden>
             {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="flex flex-col border border-border bg-surface"
-              >
+              <div key={i} className="flex flex-col border border-border bg-surface">
                 <div className="flex items-center gap-3 px-4 py-4">
                   <div className="skeleton h-9 w-9" />
                   <div className="flex flex-col gap-2">
@@ -152,8 +146,8 @@ export function SocialFeed() {
             <div className="flex flex-col gap-2">
               <p className="t-headline text-text">No looks yet</p>
               <p className="t-body mx-auto max-w-xs text-text-mid">
-                Be the first to share a styled look — every post is re-rendered for
-                whoever views it.
+                Be the first to share a styled look — every post is re-rendered for whoever views
+                it.
               </p>
             </div>
             <button

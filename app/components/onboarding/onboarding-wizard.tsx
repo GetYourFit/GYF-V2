@@ -518,9 +518,7 @@ function StepPrivacy({
             />
             <label htmlFor={`consent-${c.value}`}>
               <span className="t-body font-medium text-text">{c.label}</span>
-              {c.required && (
-                <span className="ml-2 t-mono text-text-faint">(required)</span>
-              )}
+              {c.required && <span className="ml-2 t-mono text-text-faint">(required)</span>}
               <span className="block t-caption mt-0.5">{c.description}</span>
             </label>
           </li>

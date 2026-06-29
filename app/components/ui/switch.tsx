@@ -20,13 +20,7 @@ interface SwitchProps {
  * a hairline-framed dark track when off. Keyboard- and reduced-motion-safe; the
  * native button gives Space/Enter activation and focus-visible for free.
  */
-export function Switch({
-  checked,
-  onChange,
-  disabled,
-  className,
-  ...aria
-}: SwitchProps) {
+export function Switch({ checked, onChange, disabled, className, ...aria }: SwitchProps) {
   return (
     <button
       type="button"

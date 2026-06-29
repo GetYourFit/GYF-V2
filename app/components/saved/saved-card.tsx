@@ -74,9 +74,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
             return (
               <li key={item.item_id} className="flex items-baseline justify-between gap-3">
                 <span className="truncate t-caption text-text-mid">{item.title}</span>
-                {priceStr && (
-                  <span className="t-mono text-text-faint shrink-0">{priceStr}</span>
-                )}
+                {priceStr && <span className="t-mono text-text-faint shrink-0">{priceStr}</span>}
               </li>
             );
           })}
@@ -84,9 +82,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
 
         {/* Footer: occasion + actions */}
         <div className="mt-auto flex items-center justify-between gap-3 pt-1 border-t border-rule">
-          <span className="t-mono text-text-faint capitalize">
-            {look.occasion ?? "saved look"}
-          </span>
+          <span className="t-mono text-text-faint capitalize">{look.occasion ?? "saved look"}</span>
 
           <div className="flex items-center gap-2">
             {shopItem?.buy_url && (

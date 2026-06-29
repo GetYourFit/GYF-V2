@@ -244,8 +244,8 @@ function EmptyState() {
 
       <p className="t-headline text-text">No saved looks yet</p>
       <p className="mt-3 t-caption mx-auto max-w-xs">
-        When you find an outfit you love, tap{" "}
-        <strong className="text-text">Save look</strong> — it gathers here.
+        When you find an outfit you love, tap <strong className="text-text">Save look</strong> — it
+        gathers here.
       </p>
       <Link
         href="/"

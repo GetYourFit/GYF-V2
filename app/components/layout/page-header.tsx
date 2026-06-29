@@ -32,9 +32,7 @@ export function PageHeader({ eyebrow, title, description, action, className }: P
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      {description ? (
-        <p className="t-body max-w-prose text-text-mid">{description}</p>
-      ) : null}
+      {description ? <p className="t-body max-w-prose text-text-mid">{description}</p> : null}
     </header>
   );
 }

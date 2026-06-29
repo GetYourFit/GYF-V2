@@ -245,9 +245,7 @@ function AccountLink() {
 
 function titleCase(value: string | null | undefined): string {
   if (!value) return "—";
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {

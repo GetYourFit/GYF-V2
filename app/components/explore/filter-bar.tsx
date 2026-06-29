@@ -76,11 +76,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
         {/* Filter row — wraps on mobile, inlines on desktop */}
         <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-          <SlidersHorizontal
-            size={14}
-            className="hidden text-text-faint sm:block"
-            aria-hidden
-          />
+          <SlidersHorizontal size={14} className="hidden text-text-faint sm:block" aria-hidden />
           <Select
             compact
             aria-label="Filter by occasion"

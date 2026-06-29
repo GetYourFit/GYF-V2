@@ -180,7 +180,9 @@ function Gallery() {
           <Button onClick={() => setDialogOpen(true)}>Open dialog</Button>
           <Button
             variant="secondary"
-            onClick={() => toast({ title: "Saved", description: "Added to your looks.", variant: "success" })}
+            onClick={() =>
+              toast({ title: "Saved", description: "Added to your looks.", variant: "success" })
+            }
           >
             Success toast
           </Button>

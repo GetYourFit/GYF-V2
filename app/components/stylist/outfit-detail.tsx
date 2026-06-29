@@ -64,7 +64,10 @@ export function OutfitDetail({
         {outfit.items.map((item) => {
           const src = mediaUrl(item.image_url);
           return (
-            <div key={item.item_id} className="relative aspect-[3/4] flex-1 overflow-hidden bg-surface-2">
+            <div
+              key={item.item_id}
+              className="relative aspect-[3/4] flex-1 overflow-hidden bg-surface-2"
+            >
               {src ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

@@ -12,12 +12,10 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    "bg-accent text-bg hover:bg-text-mid focus-visible:ring-accent",
+  primary: "bg-accent text-bg hover:bg-text-mid focus-visible:ring-accent",
   secondary:
     "border border-border-mid bg-transparent text-text hover:border-border-hi hover:bg-surface-2 focus-visible:ring-border-hi",
-  ghost:
-    "text-text-mid hover:text-text hover:bg-surface-2 focus-visible:ring-border-mid",
+  ghost: "text-text-mid hover:text-text hover:bg-surface-2 focus-visible:ring-border-mid",
   danger: "bg-error text-white hover:opacity-90 focus-visible:ring-error",
 };
 
@@ -39,7 +37,15 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, variant = "primary", size = "md", type = "button", asChild = false, children, ...props },
+  {
+    className,
+    variant = "primary",
+    size = "md",
+    type = "button",
+    asChild = false,
+    children,
+    ...props
+  },
   ref,
 ) {
   const classes = cn(

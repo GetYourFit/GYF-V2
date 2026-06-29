@@ -6,11 +6,7 @@ export function ConfidenceMeter({ value }: { value: number }) {
   const high = pct >= 75;
   const moderate = pct >= 50 && !high;
   const label = high ? "High" : moderate ? "Moderate" : "Exploring";
-  const barColor = high
-    ? "bg-accent-warm"
-    : moderate
-      ? "bg-text-mid"
-      : "bg-text-faint";
+  const barColor = high ? "bg-accent-warm" : moderate ? "bg-text-mid" : "bg-text-faint";
 
   return (
     <div className="flex items-center gap-3" title={`Confidence: ${pct}%`}>
@@ -27,9 +23,7 @@ export function ConfidenceMeter({ value }: { value: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span
-        className={`t-mono ${high ? "text-accent-warm" : "text-text-faint"}`}
-      >
+      <span className={`t-mono ${high ? "text-accent-warm" : "text-text-faint"}`}>
         {label} · {pct}%
       </span>
     </div>

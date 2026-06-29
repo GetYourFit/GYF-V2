@@ -36,11 +36,7 @@ export function PageContainer({ children, width = "default", className }: PageCo
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className={cn(
-        "mx-auto w-full px-5 py-7 sm:px-6 sm:py-9 lg:px-8",
-        WIDTH[width],
-        className,
-      )}
+      className={cn("mx-auto w-full px-5 py-7 sm:px-6 sm:py-9 lg:px-8", WIDTH[width], className)}
     >
       {children}
     </motion.div>
