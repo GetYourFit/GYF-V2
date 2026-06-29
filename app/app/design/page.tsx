@@ -17,6 +17,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Skeleton, SkeletonGrid } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/tabs";
 import { ToastProvider, useToast } from "@/components/ui/toast";
 
@@ -43,6 +44,7 @@ function Gallery() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [tab, setTab] = useState("upload");
+  const [switchOn, setSwitchOn] = useState(true);
 
   return (
     <div className="mx-auto w-full max-w-screen-md px-5 py-12 sm:px-6 lg:px-8">
@@ -120,6 +122,10 @@ function Gallery() {
           <Field label="Occasion">
             {(p) => <Select options={SELECT_OPTIONS} placeholder="Choose one" {...p} />}
           </Field>
+          <div className="flex items-center justify-between gap-4">
+            <span className="t-body text-text">Learn from my activity</span>
+            <Switch checked={switchOn} onChange={setSwitchOn} aria-label="Learn from my activity" />
+          </div>
         </div>
       </Section>
 

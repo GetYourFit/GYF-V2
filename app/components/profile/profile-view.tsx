@@ -1,17 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { Profile, ProfileSummary } from "@gyf/types";
 
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
 import { ApiError } from "@/lib/api";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const lux = [0.16, 1, 0.3, 1] as const;
 
@@ -49,31 +47,38 @@ export function ProfileView() {
     return { profile, summary };
   }, []);
 
-  // Retry handler (invoked from a click, not an effect — setState here is fine).
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  // Retry handler (invoked from a click). Guarded so a fetch that resolves after
+  // the user navigates away never writes to an unmounted component.
   const load = useCallback(async () => {
     setStatus("loading");
     try {
-      setData(await fetchData());
+      const d = await fetchData();
+      if (!mounted.current) return;
+      setData(d);
       setStatus("ready");
     } catch {
-      setStatus("error");
+      if (mounted.current) setStatus("error");
     }
   }, [fetchData]);
 
   useEffect(() => {
-    let active = true;
     fetchData()
       .then((d) => {
-        if (!active) return;
+        if (!mounted.current) return;
         setData(d);
         setStatus("ready");
       })
       .catch(() => {
-        if (active) setStatus("error");
+        if (mounted.current) setStatus("error");
       });
-    return () => {
-      active = false;
-    };
   }, [fetchData]);
 
   if (status === "loading") return <ProfileSkeleton />;
@@ -89,7 +94,7 @@ export function ProfileView() {
       <Stats summary={data.summary} />
       {data.summary.badges.length > 0 && <Badges badges={data.summary.badges} />}
       <StyleProfile profile={data.profile} />
-      <AccountControls />
+      <AccountLink />
     </motion.div>
   );
 }
@@ -214,92 +219,26 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
   );
 }
 
-function AccountControls() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const signOut = useCallback(async () => {
-    setBusy(true);
-    try {
-      await createSupabaseBrowserClient().auth.signOut();
-      router.push("/login");
-      router.refresh();
-    } catch {
-      setBusy(false);
-      toast({ variant: "error", title: "Couldn’t sign out", description: "Please try again." });
-    }
-  }, [router, toast]);
-
-  const deleteAccount = useCallback(async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      await browserApi().deleteAccount();
-      await createSupabaseBrowserClient().auth.signOut();
-      toast({ variant: "success", title: "Account deleted", description: "Your data has been erased." });
-      router.push("/login");
-      router.refresh();
-    } catch {
-      const message = "Couldn't delete your account. Please try again.";
-      setError(message);
-      setBusy(false);
-      toast({ variant: "error", title: "Deletion failed", description: message });
-    }
-  }, [router, toast]);
-
+function AccountLink() {
   return (
     <section className="flex flex-col gap-4 border-t border-border pt-8">
       <p className="t-label text-text-faint">Account</p>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="secondary" onClick={signOut} disabled={busy}>
-          Sign out
-        </Button>
-        {!confirming ? (
-          <Button
-            type="button"
-            variant="secondary"
-            className="text-error hover:text-error"
-            onClick={() => setConfirming(true)}
-            disabled={busy}
-          >
-            Delete my data
-          </Button>
-        ) : (
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="t-caption text-text-mid">Delete everything? This can&apos;t be undone.</span>
-            <Button
-              type="button"
-              variant="danger"
-              onClick={deleteAccount}
-              disabled={busy}
-              aria-busy={busy}
-            >
-              {busy ? "Deleting…" : "Confirm delete"}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setConfirming(false)}
-              disabled={busy}
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
-      </div>
-      {error && (
-        <p role="alert" className="t-caption text-error">
-          {error}
-        </p>
-      )}
-      <p className="t-caption text-text-faint max-w-sm">
-        Deleting erases your profile, saved looks, wardrobe, and posts. Your data is yours — GYF
-        removes it on request.
-      </p>
+      <Link
+        href="/account"
+        className="group flex items-center justify-between gap-4 border border-border bg-surface p-5 transition-colors hover:border-border-hi hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+      >
+        <span className="flex flex-col gap-1">
+          <span className="t-title text-text">Privacy & data</span>
+          <span className="t-caption max-w-prose">
+            Manage consent, download your data, sign out, or delete your account.
+          </span>
+        </span>
+        <ChevronRight
+          size={18}
+          aria-hidden
+          className="shrink-0 text-text-faint transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-text"
+        />
+      </Link>
     </section>
   );
 }
@@ -335,12 +274,12 @@ function ProfileSkeleton() {
     <div className="flex flex-col gap-10" aria-hidden>
       <div className="grid grid-cols-3 gap-px sm:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-20 skeleton" />
+          <div key={`stat-${i}`} className="h-20 skeleton" />
         ))}
       </div>
       <div className="grid grid-cols-1 gap-px sm:grid-cols-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-16 skeleton" />
+          <div key={`row-${i}`} className="h-16 skeleton" />
         ))}
       </div>
     </div>
