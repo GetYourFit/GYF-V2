@@ -157,9 +157,11 @@ class PostgresVectorSearchRepository:
         return self._run(sql, tuple(params))
 
     def catalog_facets(self, region: str | None) -> CatalogFacets:
-        # COUNT(i.price) counts only non-null prices, so `priced == 0` is the
-        # honest "no price data" signal. The region filter is the same one search
-        # uses, so facets describe exactly the set the user will be filtering.
+        # Facets MUST describe the *searchable* set, so this joins item_embeddings
+        # exactly like search does: an item with a price but no embedding can never
+        # appear in results, so counting it as `priced` would make the UI offer a
+        # price filter that still empties the grid. COUNT(i.price) counts only
+        # non-null prices, so `priced == 0` is the honest "no usable price" signal.
         where = "WHERE TRUE"
         params: list[object] = []
         if region:
@@ -167,7 +169,8 @@ class PostgresVectorSearchRepository:
             params.append(region)
         sql = f"""
         SELECT COUNT(*), COUNT(i.price), MIN(i.price), MAX(i.price)
-        FROM items i
+        FROM item_embeddings e
+        JOIN items i ON i.id = e.item_id
         {where}
         """
         with self._pool.connection() as conn:  # type: ignore[attr-defined]

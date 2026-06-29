@@ -123,6 +123,9 @@ def test_catalog_facets_reports_price_coverage_and_range():
     assert facets == CatalogFacets(total=1200, priced=340, price_min=9.99, price_max=499.0)
     sql, params = pool.calls[0]
     assert "COUNT(*)" in sql and "COUNT(i.price)" in sql
+    # Must join embeddings so facets describe only the searchable set (an item
+    # with a price but no embedding can never appear in results).
+    assert "JOIN items i ON i.id = e.item_id" in sql
     assert params == ()  # no region bind
 
 

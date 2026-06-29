@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { type ChangeEvent, useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 
 import { Select } from "@/components/ui/select";
 import type { CatalogFacets } from "@/lib/api";
@@ -38,6 +38,15 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   // (the academic seed has none), price filter + price sorts would only empty the
   // grid, so we hide them until the catalog actually carries prices.
   const [facets, setFacets] = useState<CatalogFacets | null>(null);
+  // Keep the latest filters/onChange in refs so the one-shot facets fetch can
+  // coerce against *current* state, never a stale mount-time snapshot (which
+  // could clobber input the user made while the request was in flight).
+  const filtersRef = useRef(filters);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    filtersRef.current = filters;
+    onChangeRef.current = onChange;
+  });
   useEffect(() => {
     let active = true;
     browserApi()
@@ -48,19 +57,26 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         // Defend against a price filter/sort that the data can't honour (e.g.
         // seeded state): with no priced items it would only empty the grid, so
         // coerce it back to a working default the moment we learn coverage is 0.
-        if (f.priced === 0 && (filters.maxPrice || filters.sort !== "relevance")) {
-          onChange({ ...filters, maxPrice: "", sort: "relevance" });
+        const cur = filtersRef.current;
+        if (f.priced === 0 && (cur.maxPrice || cur.sort !== "relevance")) {
+          onChangeRef.current({ ...cur, maxPrice: "", sort: "relevance" });
         }
       })
-      .catch(() => {}); // best-effort; price controls simply stay hidden
+      .catch((err) => {
+        // Best-effort: price controls simply stay hidden. Surface for observability.
+        console.error("[FilterBar] facets fetch failed", err);
+      });
     return () => {
       active = false;
     };
-    // Run once on mount; `filters`/`onChange` are read fresh inside, not deps.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentional one-shot: facets don't change during a session. Current
+    // filters/onChange are read via refs above, so no deps are needed.
   }, []);
   const priceEnabled = (facets?.priced ?? 0) > 0;
   const sortOptions = priceEnabled ? [...RELEVANCE_ONLY, ...PRICE_SORTS] : RELEVANCE_ONLY;
+  // While facets load (or with no priced items), price sorts aren't offered;
+  // keep the Select's value in its option set so it never renders blank.
+  const safeSort: SortKey = priceEnabled ? filters.sort : "relevance";
 
   function set<K extends keyof ExploreFilters>(key: K, value: ExploreFilters[K]) {
     onChange({ ...filters, [key]: value });
@@ -73,7 +89,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   const activeCount =
     (filters.occasion ? 1 : 0) +
     (filters.style ? 1 : 0) +
-    (filters.maxPrice ? 1 : 0) +
+    (priceEnabled && filters.maxPrice ? 1 : 0) +
     (filters.q ? 1 : 0);
   const hasActive = activeCount > 0;
 
@@ -142,7 +158,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             compact
             hidePlaceholder
             aria-label="Sort results"
-            value={filters.sort}
+            value={safeSort}
             onChange={(e) => set("sort", e.target.value as SortKey)}
             options={sortOptions}
           />
