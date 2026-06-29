@@ -99,14 +99,15 @@ one is end-to-end built **and** verified (happy + failure paths).
   `wardrobe-grid`, `social-feed`, `create-post-sheet` all call `browserApi()` (`/collections/
   outfits`, `/wardrobe/items`, `/social/*`) with optimistic UI; **no local-only stores, no
   MOCK_POSTS**. (Re-confirm under the new design if touched.)
-- **➡️ NEXT = S4 — build `/account`** (the genuine open Phase-1 gap; nav has no `/account` route).
-  Backend already exists: `GET/PUT /profile/consent`, `DELETE /profile/account`; client has
-  `getConsent`/`updateConsent`/`deleteAccount` in `app/lib/api.ts`. Build the page: privacy
-  consents view/edit, data export, **right-to-erasure** (invariant #4 — move delete-account out
-  of onboarding). **DoD:** nav→/account works, consent persists, erasure verified end-to-end
-  (tombstones account). **Gate:** `ecc:security-reviewer` (erasure/consent authz) +
-  `ecc:react-reviewer` + `ecc:typescript-reviewer` + `verify`, then commit + push.
-- Then **S5 polish** (outfit detail modal with reason+confidence, faceted Explore real price
+- ✅ **S4 — `/account` DONE & verified on prod** (commit `48728a9`). Consent toggles persist
+  (`PUT /consent`), client-side data export (JSON from token-scoped GETs), type-DELETE erasure →
+  `DELETE /account` 204 + tombstone confirmed (re-login `GET /consent` → 403). New accessible
+  `Switch` primitive; Profile links to `/account`. Reviewed by security/react/a11y agents; all
+  findings fixed; tsc+lint+24 tests green. Also: fixed the **unlayered-reset CSS bug** that was the
+  real "looks cheap" cause — an unlayered `*{padding:0}` was nuking every Tailwind padding/margin
+  utility to 0 app-wide; moved into `@layer base` (commit `7a52b15`). Dropped the misleading uniform
+  "11% match" badge from Explore (`11e1590`).
+- **➡️ NEXT = S5 polish** (outfit detail modal with reason+confidence, faceted Explore real price
   facet, all loading/empty/error states, micro-interactions, Lighthouse green) → **Phase-1 exit
   gate** (every nav works, actions persist to prod, real photos render, no console errors).
   **Do NOT start Phase 2 (ML pillars) until the Phase-1 exit gate passes.**
