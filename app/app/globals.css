@@ -5,27 +5,27 @@
 /* as gallery pieces (SSENSE / COS / Net-a-Porter). Warm gold reserved for     */
 /* confidence/editorial callouts only.                                         */
 @theme {
-  --color-bg:          #FAFAF8;   /* warm off-white page canvas */
-  --color-surface:     #FFFFFF;   /* card / panel surface */
-  --color-surface-2:   #F4F3EF;   /* elevated surface (modals, dropdowns) */
-  --color-surface-3:   #ECEAE3;   /* hover state on surfaces */
-  --color-border:      rgba(17, 17, 17, 0.08);   /* subtle structural border */
-  --color-border-mid:  rgba(17, 17, 17, 0.14);   /* medium border */
-  --color-border-hi:   rgba(17, 17, 17, 0.30);   /* high-contrast border */
-  --color-text:        #111111;   /* primary ink */
-  --color-text-mid:    #6B6B6B;   /* secondary / muted */
-  --color-text-faint:  #767676;   /* muted labels — WCAG-AA 4.5:1 on bg + surface */
-  --color-accent:      #111111;   /* near-black — CTA, active states */
-  --color-accent-warm: #9A7B3F;   /* gold — confidence / editorial callouts */
-  --color-rule:        rgba(17, 17, 17, 0.08);   /* dividers */
-  --color-error:       #C0392B;
+  --color-bg: #fafaf8; /* warm off-white page canvas */
+  --color-surface: #ffffff; /* card / panel surface */
+  --color-surface-2: #f4f3ef; /* elevated surface (modals, dropdowns) */
+  --color-surface-3: #eceae3; /* hover state on surfaces */
+  --color-border: rgba(17, 17, 17, 0.08); /* subtle structural border */
+  --color-border-mid: rgba(17, 17, 17, 0.14); /* medium border */
+  --color-border-hi: rgba(17, 17, 17, 0.3); /* high-contrast border */
+  --color-text: #111111; /* primary ink */
+  --color-text-mid: #6b6b6b; /* secondary / muted */
+  --color-text-faint: #767676; /* muted labels — WCAG-AA 4.5:1 on bg + surface */
+  --color-accent: #111111; /* near-black — CTA, active states */
+  --color-accent-warm: #9a7b3f; /* gold — confidence / editorial callouts */
+  --color-rule: rgba(17, 17, 17, 0.08); /* dividers */
+  --color-error: #c0392b;
 
   --font-display: var(--font-playfair), Georgia, serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Courier New", monospace;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "Courier New", monospace;
 
   /* Elevation — card rests on the canvas, overlay floats sheets/modals/toasts. */
-  --shadow-card:    0 8px 30px rgba(17, 17, 17, 0.08);
+  --shadow-card: 0 8px 30px rgba(17, 17, 17, 0.08);
   --shadow-overlay: 0 -8px 40px rgba(17, 17, 17, 0.12);
 
   /* Brand easing — the single "lux" curve, usable as the ease-lux utility. */
@@ -34,25 +34,27 @@
 
 /* Raw CSS vars — used for arbitrary-value classes (bg-[var(--bg)]) and JS */
 :root {
-  --bg:          #FAFAF8;
-  --surface:     #FFFFFF;
-  --surface-2:   #F4F3EF;
-  --surface-3:   #ECEAE3;
-  --border:      rgba(17, 17, 17, 0.08);
-  --border-mid:  rgba(17, 17, 17, 0.14);
-  --border-hi:   rgba(17, 17, 17, 0.30);
-  --text:        #111111;
-  --text-mid:    #6B6B6B;
-  --text-faint:  #767676;
-  --accent:      #111111;
-  --accent-warm: #9A7B3F;
-  --rule:        rgba(17, 17, 17, 0.08);
-  --error:       #C0392B;
-  --lux:         cubic-bezier(0.16, 1, 0.3, 1);
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --surface-2: #f4f3ef;
+  --surface-3: #eceae3;
+  --border: rgba(17, 17, 17, 0.08);
+  --border-mid: rgba(17, 17, 17, 0.14);
+  --border-hi: rgba(17, 17, 17, 0.3);
+  --text: #111111;
+  --text-mid: #6b6b6b;
+  --text-faint: #767676;
+  --accent: #111111;
+  --accent-warm: #9a7b3f;
+  --rule: rgba(17, 17, 17, 0.08);
+  --error: #c0392b;
+  --lux: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ─── Reset ─────────────────────────────────────────────────────────────── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -70,9 +72,17 @@ html {
   padding-top: env(safe-area-inset-top);
 }
 
-::-webkit-scrollbar       { width: 3px; height: 3px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 0; }
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-mid);
+  border-radius: 0;
+}
 
 body {
   background: var(--bg);
@@ -158,14 +168,27 @@ body {
 
 /* ─── Intro animation keyframes ──────────────────────────────────────────── */
 @keyframes shimmer {
-  from { background-position: -200% center; }
-  to   { background-position:  200% center; }
+  from {
+    background-position: -200% center;
+  }
+  to {
+    background-position: 200% center;
+  }
 }
 
 @keyframes scan-line {
-  0%   { top: 0%; opacity: 1; }
-  95%  { top: 100%; opacity: 1; }
-  100% { top: 100%; opacity: 0; }
+  0% {
+    top: 0%;
+    opacity: 1;
+  }
+  95% {
+    top: 100%;
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
 }
 
 /* ─── Skeleton shimmer ───────────────────────────────────────────────────── */
@@ -179,5 +202,13 @@ body {
     );
     background-size: 200% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* Respect reduced-motion: hold a static elevated tone, no shimmer. */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      animation: none;
+      background: var(--surface-2);
+    }
   }
 }

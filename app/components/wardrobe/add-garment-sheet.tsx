@@ -7,9 +7,11 @@ import type { SearchResult, WardrobeItemInput } from "@gyf/types";
 
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { SkeletonGrid } from "@/components/ui/skeleton";
 import { browserApi } from "@/lib/api-client";
 import { mediaUrl } from "@/lib/media";
 
@@ -179,11 +181,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
 
           <div className="flex-1 overflow-y-auto px-6 py-2">
             {phase === "searching" ? (
-              <div className="grid grid-cols-3 gap-px bg-border" aria-hidden>
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <div key={i} className="aspect-[3/4] skeleton" />
-                ))}
-              </div>
+              <SkeletonGrid label="Searching garments" />
             ) : results.length > 0 ? (
               <div className="grid grid-cols-3 gap-px bg-border">
                 {results.map((r) => {
@@ -216,13 +214,14 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                <p className="t-caption text-text-faint">
-                  {phase === "done"
-                    ? "No matches found. Try another search or add a custom entry."
-                    : "Search the catalog to add garments you already own."}
-                </p>
-              </div>
+              <EmptyState
+                title={phase === "done" ? "No matches found" : "Search your catalog"}
+                description={
+                  phase === "done"
+                    ? "Try another search or add a custom entry instead."
+                    : "Search the catalog to add garments you already own."
+                }
+              />
             )}
           </div>
         </div>
