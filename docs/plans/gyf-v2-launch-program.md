@@ -68,17 +68,22 @@ rubric → generate → evaluate (auto + visual + adversarial) → review (speci
 - **DoD:** `git status` clean of artifacts; `make ci` green. **Gate:** review diff.
 
 ### S1 — Design system rebuild (foundation for D-C full redesign) ✅
-- ✅ **Design direction** locked — "Editorial Gallery" (off-white `#fafaf8` / `#111` ink, hairline rules, Playfair display + Inter body + JetBrains mono, gold `#9a7b3f` reserved for confidence). Tokens + semantic type scale (`t-display`…`t-mono`) + `--ease-lux` + elevation live in `app/app/globals.css`.
+- ✅ **Design direction** locked → **"Editorial Noir"** (user pick 2026-06-29; superseded the initial light "Editorial Gallery"): near-black `#0a0a0a` / ivory `#f4f1ea` ink, antique-gold `#c9a86a` reserved for confidence, Playfair display + Inter body + JetBrains mono. Tokens + semantic type scale (`t-display`…`t-mono`, `t-wordmark`, `t-editorial`) + `--ease-lux` live in `app/app/globals.css`. Full Noir redesign shipped in `8611f7e` (gan-design 8.13/10). See `[[CONTINUE-HANDOFF]]` §4 for the full spec.
 - ✅ Primitive library built: tokens, Button, Input, Select, **Dialog (subsumes Sheet — mobile-bottom-sheet/desktop-modal switch, DRY)**, Toast, Card, Skeleton, EmptyState, Tabs (WAI-ARIA roving tabindex + arrow keys), Avatar (initials fallback), Badge — all accessible, Framer Motion + `prefers-reduced-motion`.
 - ✅ **Demo route** `/design` renders every primitive (public matcher exclusion in `proxy.ts`); verified 200 + clean render against live dev stack; `tsc`/eslint green.
 - **DoD:** ✅ Storybook-style demo route renders every primitive; a11y audit passes; reviewers green. **Gate:** visual review + `verify`.
 
-### S2 — Wire Saved & Wardrobe to the backend (kill local-only)
+### S2 — Wire Saved & Wardrobe to the backend (kill local-only) ✅
+> Verified 2026-06-29 already implemented: `saved-grid`/`wardrobe-grid` call `browserApi()`
+> (`/collections/outfits`, `/wardrobe/items`) with optimistic UI + reconcile; no local-only stores.
 - Add client methods `saveOutfit`/`listSaved`/`removeSaved` → `/collections`; `addWardrobeItem`/`listWardrobe`/`removeWardrobe` → `/wardrobe/items`.
 - Replace `savedStore`/`wardrobeStore` writes with server calls (keep optimistic UI, reconcile on response).
 - **DoD:** create→reload→still there→cross-device; verified against live API. **Gate:** `verify` E2E + reviewers.
 
-### S3 — Social, for real (replace `MOCK_POSTS`)
+### S3 — Social, for real (replace `MOCK_POSTS`) ✅ (core)
+> Verified 2026-06-29: `social-feed`/`create-post-sheet` call `browserApi().socialFeed/createPost/
+> reactToPost`; no `MOCK_POSTS`. ⏳ remaining: follower-rerendered shares (re-render to follower's
+> region/taste) — revisit in S5/Phase-2.
 - Wire `SocialFeed` to `GET /social/posts`; `create-post-sheet` to `POST /social/posts`; reactions to `/social/posts/.../reactions` (build endpoint if missing).
 - Re-render shared styles to the **follower's** region/taste via the recommendation path (vision requirement), not blind copy.
 - **DoD:** post persists across reload + appears in another user's feed; reactions persist. **Gate:** `verify` + security-review (authz on post ownership).
