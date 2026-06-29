@@ -3,6 +3,7 @@
 import { Search, X } from "lucide-react";
 import { type ChangeEvent } from "react";
 
+import { Select } from "@/components/ui/select";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 
 type SortKey = "relevance" | "price_asc" | "price_desc";
@@ -68,34 +69,24 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       {/* Filter row */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Occasion */}
-        <select
+        <Select
+          compact
           aria-label="Occasion"
           value={filters.occasion}
           onChange={(e) => set("occasion", e.target.value)}
-          className="border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid focus:border-accent focus:outline-none transition-colors appearance-none"
-        >
-          <option value="">All occasions</option>
-          {OCCASIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          options={OCCASIONS}
+          placeholder="All occasions"
+        />
 
         {/* Style */}
-        <select
+        <Select
+          compact
           aria-label="Style"
           value={filters.style}
           onChange={(e) => set("style", e.target.value)}
-          className="border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid focus:border-accent focus:outline-none transition-colors appearance-none"
-        >
-          <option value="">All styles</option>
-          {STYLE_INTENTS.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+          options={STYLE_INTENTS}
+          placeholder="All styles"
+        />
 
         {/* Max price */}
         <input
@@ -109,18 +100,14 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         />
 
         {/* Sort */}
-        <select
+        <Select
+          compact
+          hidePlaceholder
           aria-label="Sort"
           value={filters.sort}
           onChange={(e) => set("sort", e.target.value as SortKey)}
-          className="border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid focus:border-accent focus:outline-none transition-colors appearance-none"
-        >
-          {SORT_OPTIONS.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+          options={SORT_OPTIONS}
+        />
 
         {/* Clear all */}
         {hasActive && (
