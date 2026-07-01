@@ -11,7 +11,7 @@ export function AppIntro() {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => setVisible(false), reduce ? 1200 : 2600);
+    const t = setTimeout(() => setVisible(false), reduce ? 1000 : 2200);
     return () => clearTimeout(t);
   }, [reduce]);
 
@@ -23,69 +23,50 @@ export function AppIntro() {
           aria-hidden
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: LUX }}
+          transition={{ duration: 0.45, ease: LUX }}
           style={{
             position: "fixed",
             inset: 0,
             zIndex: 9999,
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
             background: "#f4f3f0",
           }}
         >
           <motion.div
-            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.82 }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.88 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={
               reduce
-                ? { duration: 0.4, ease: LUX }
-                : { duration: 0.65, delay: 0.1, ease: LUX }
+                ? { duration: 0.35, ease: LUX }
+                : { duration: 0.6, delay: 0.08, ease: LUX }
             }
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}
           >
             <Image
               src="/assets/logo.png"
               alt="GYF"
-              width={96}
-              height={96}
+              width={600}
+              height={600}
               priority
               style={{
-                width: "clamp(64px, 14vw, 96px)",
+                width: "clamp(180px, 40vw, 240px)",
                 height: "auto",
                 objectFit: "contain",
+                display: "block",
               }}
             />
-
-            {!reduce && (
-              <motion.p
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.5, ease: LUX }}
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "0.6875rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.26em",
-                  textTransform: "uppercase",
-                  color: "#6a7282",
-                }}
-              >
-                Get Your Fit
-              </motion.p>
-            )}
           </motion.div>
 
           {!reduce && (
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
-              transition={{ duration: 0.6, delay: 0.7, ease: LUX }}
+              transition={{ duration: 0.5, delay: 0.55, ease: LUX }}
               style={{
                 position: "absolute",
                 bottom: 48,
-                width: 40,
+                width: 32,
                 height: 1,
                 background: "#d4cfc6",
                 transformOrigin: "center",

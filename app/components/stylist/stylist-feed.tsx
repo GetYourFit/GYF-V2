@@ -178,19 +178,19 @@ export function StylistFeed() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="px-4 py-5 sm:px-6 sm:py-7 flex flex-col gap-6">
       {/* Page header */}
       <motion.header
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: lux }}
-        className="flex flex-col gap-4 pt-2"
+        className="flex flex-col gap-3"
       >
-        <div className="flex items-center gap-3">
-          <span className="h-px w-10 bg-accent" aria-hidden />
-          <p className="t-label text-accent">Your stylist</p>
-        </div>
-        <h1 className="t-display max-w-[14ch] text-text">
+        <p className="t-label text-accent">Your stylist</p>
+        <h1
+          className="t-display text-text"
+          style={{ fontSize: "clamp(1.75rem, 5vw, 3rem)" }}
+        >
           Complete looks, <em className="italic">made for you</em>
         </h1>
         {data && <StatusLine data={data} />}
@@ -246,7 +246,7 @@ export function StylistFeed() {
       {!loading && data && data.outfits.length > 0 && (
         <motion.div
           key={data.recommendation_id}
-          className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           <AnimatePresence mode="popLayout">
             {data.outfits.map((outfit, i) =>
@@ -326,7 +326,7 @@ function UndoStrip({ index, onUndo }: { index: number; onUndo: () => void }) {
 function SkeletonGrid() {
   return (
     <div
-      className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
       aria-hidden
       aria-label="Loading outfits"
     >

@@ -7,13 +7,14 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <main className="flex min-h-screen items-center justify-center bg-bg px-4 py-12 sm:py-16">
       {/* Left brand panel — desktop only */}
       <div className="fixed inset-y-0 left-0 hidden w-[46%] flex-col justify-between border-r border-border bg-surface px-14 py-14 lg:flex">
-        <Link href="/" className="inline-flex items-center gap-3 group" aria-label="GYF home">
+        <Link href="/" className="inline-flex items-center gap-2 group" aria-label="GYF home">
           <Image
             src="/assets/logo.png"
             alt="GYF"
-            width={36}
-            height={36}
-            className="opacity-90 group-hover:opacity-60 transition-opacity duration-200"
+            width={300}
+            height={300}
+            className="transition-opacity duration-200 group-hover:opacity-60"
+            style={{ width: 80, height: "auto" }}
           />
           <span className="t-wordmark text-xl text-text opacity-90 group-hover:opacity-60 transition-opacity duration-200">
             GYF
@@ -38,13 +39,14 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       {/* Right form panel */}
       <div className="w-full max-w-[420px] lg:ml-[46%]">
         {/* Mobile logo */}
-        <Link href="/" className="mb-10 flex flex-col items-center gap-2 lg:hidden group" aria-label="GYF home">
+        <Link href="/" className="mb-10 flex flex-col items-center gap-1 lg:hidden group" aria-label="GYF home">
           <Image
             src="/assets/logo.png"
             alt=""
-            width={44}
-            height={44}
-            className="group-hover:opacity-70 transition-opacity duration-200"
+            width={300}
+            height={300}
+            className="transition-opacity duration-200 group-hover:opacity-70"
+            style={{ width: 72, height: "auto" }}
             aria-hidden
           />
           <span className="t-wordmark text-2xl text-text">GYF</span>

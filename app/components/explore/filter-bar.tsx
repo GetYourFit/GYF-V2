@@ -94,7 +94,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   const hasActive = activeCount > 0;
 
   return (
-    <div className="sticky top-0 z-20 -mx-5 border-b border-border bg-surface/85 px-5 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+    <div className="sticky top-0 z-20 -mx-5 border-b border-border bg-surface/90 px-5 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         {/* Search input */}
         <div className="relative w-full lg:max-w-sm">
