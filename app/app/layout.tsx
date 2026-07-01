@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { playfair, jakarta, fragmentMono } from "@/lib/fonts";
-import { AppIntro } from "@/components/intro/app-intro";
+import { jakarta, jetbrainsMono } from "@/lib/fonts";
+import { SplashScreen } from "@/components/brand/SplashScreen";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,14 +26,17 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#ffffff",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${jakarta.variable} ${fragmentMono.variable}`}>
+    <html
+      lang="en"
+      className={`${jakarta.variable} ${jetbrainsMono.variable}`}
+    >
       <body>
-        <AppIntro />
+        <SplashScreen />
         {children}
       </body>
     </html>

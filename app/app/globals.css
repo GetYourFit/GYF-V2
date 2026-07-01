@@ -1,69 +1,78 @@
 @import "tailwindcss";
 
-/* ─── Design tokens — GYF Luxury White (New_Update.md spec) ───────────────── */
-/* Pure white canvas · black accent · Playfair Display + Plus Jakarta Sans     */
+/* ─── Design tokens — GYF Industrial Intelligence (dark) ─────────────────── */
 @theme {
-  /* Canvas & surfaces */
-  --color-bg: #ffffff;
-  --color-surface: #f8f8f8;
-  --color-surface-2: #f8f8f8;
-  --color-surface-3: #f0f0f0;
+  /* Surfaces */
+  --color-bg:               #000000;
+  --color-surface:          #111318;
+  --color-surface-2:        #1a1b21;
+  --color-surface-3:        #1e2025;
+  --color-surface-high:     #282a2f;
+  --color-surface-highest:  #33353a;
 
-  /* Borders — lighter, less heavy */
-  --color-border: #e8e8e8;
-  --color-border-mid: #d8d8d8;
-  --color-border-hi: #111111;
-  --color-rule: #efefef;
+  /* Borders */
+  --color-border:           #444748;
+  --color-border-mid:       #5a5a65;
+  --color-border-hi:        #ffffff;
+  --color-rule:             #33353a;
 
   /* Text */
-  --color-text: #111111;
-  --color-text-mid: #767676;
-  --color-text-faint: #9e9e9e;
+  --color-text:             #e2e2e9;
+  --color-text-mid:         #c4c7c8;
+  --color-text-faint:       #8e9192;
 
-  /* Accent — classic luxury black */
-  --color-accent: #000000;
-  --color-accent-press: #333333;
+  /* Brand */
+  --color-primary:          #ffffff;
+  --color-secondary:        #f0bd8f;
+  --color-accent:           #ffffff;
+  --color-accent-press:     #e2e2e2;
 
-  /* Semantic */
-  --color-error: #e53935;
-  --color-success: #43a047;
+  /* Functional */
+  --color-success:          #10B981;
+  --color-warning:          #F59E0B;
+  --color-error:            #ffb4ab;
 
   /* Fonts */
-  --font-display: var(--font-display), "Georgia", serif;
-  --font-body: var(--font-body), system-ui, sans-serif;
-  --font-mono: var(--font-mono), "Courier New", monospace;
-
-  /* Shadows — clean, minimal */
-  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
-  --shadow-overlay: 0 -4px 24px rgba(0, 0, 0, 0.06);
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.10);
+  --font-display: var(--font-display), "Plus Jakarta Sans", sans-serif;
+  --font-body:    var(--font-body),    "Plus Jakarta Sans", sans-serif;
+  --font-mono:    var(--font-mono),    "JetBrains Mono",   monospace;
 
   /* Easing */
-  --ease-lux: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-lux:    cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Shadows — light-based, no drop shadows */
+  --shadow-card:    0 0 0 1px rgba(255,255,255,0.06);
+  --shadow-overlay: 0 -4px 24px rgba(0,0,0,0.6);
+  --shadow-glass:   inset 0 0 0 1px rgba(255,255,255,0.08);
 }
 
 :root {
-  color-scheme: light;
-  --bg: #ffffff;
-  --surface: #f8f8f8;
-  --surface-2: #f8f8f8;
-  --surface-3: #f0f0f0;
-  --border: #e8e8e8;
-  --border-mid: #d8d8d8;
-  --border-hi: #111111;
-  --rule: #efefef;
-  --text: #111111;
-  --text-mid: #767676;
-  --text-faint: #9e9e9e;
-  --accent: #000000;
-  --accent-press: #333333;
-  --error: #e53935;
-  --success: #43a047;
-  --shimmer-base: #f0f0f0;
-  --shimmer-sweep: #f8f8f8;
-  --lux: cubic-bezier(0.16, 1, 0.3, 1);
-  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  color-scheme: dark;
+  --bg:              #000000;
+  --surface:         #111318;
+  --surface-2:       #1a1b21;
+  --surface-3:       #1e2025;
+  --surface-high:    #282a2f;
+  --surface-highest: #33353a;
+  --border:          #444748;
+  --border-mid:      #5a5a65;
+  --border-hi:       #ffffff;
+  --rule:            #33353a;
+  --text:            #e2e2e9;
+  --text-mid:        #c4c7c8;
+  --text-faint:      #8e9192;
+  --primary:         #ffffff;
+  --secondary:       #f0bd8f;
+  --accent:          #ffffff;
+  --accent-press:    #e2e2e2;
+  --success:         #10B981;
+  --warning:         #F59E0B;
+  --error:           #ffb4ab;
+  --lux:             cubic-bezier(0.22, 1, 0.36, 1);
+  --spring:          cubic-bezier(0.34, 1.56, 0.64, 1);
+  --shimmer-base:    #1e2025;
+  --shimmer-sweep:   #282a2f;
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
@@ -86,7 +95,7 @@
 
   ::-webkit-scrollbar { width: 3px; height: 3px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 0; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 0; }
 
   body {
     background: var(--bg);
@@ -100,27 +109,27 @@
   }
 }
 
-/* ─── Type scale — Playfair Display + Plus Jakarta Sans ─────────────────── */
+/* ─── Type scale — Plus Jakarta Sans + JetBrains Mono ────────────────────── */
 @layer components {
+  /* Hero display — 48px mobile cap, 72px desktop */
   .t-display {
-    font-family: var(--font-display);
-    font-size: clamp(2.25rem, 5.5vw, 4rem);
-    font-weight: 700;
+    font-family: var(--font-body);
+    font-size: clamp(2.5rem, 10vw, 4.5rem);
+    font-weight: 800;
     line-height: 1.05;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.04em;
   }
   .t-headline {
-    font-family: var(--font-display);
-    font-size: clamp(1.5rem, 4vw, 2.25rem);
-    font-weight: 600;
-    line-height: 1.1;
-    letter-spacing: -0.01em;
+    font-family: var(--font-body);
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    font-weight: 700;
+    line-height: 1.2;
   }
   .t-title {
     font-family: var(--font-body);
-    font-size: 1.0625rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.4;
   }
   .t-body {
     font-family: var(--font-body);
@@ -128,48 +137,66 @@
     font-weight: 400;
     line-height: 1.6;
   }
+  .t-body-sm {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+  }
   .t-caption {
     font-family: var(--font-body);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     font-weight: 400;
-    line-height: 1.25rem;
+    line-height: 1.5;
     color: var(--text-mid);
+  }
+  /* JetBrains Mono — AI metadata, version labels, stats */
+  .t-mono {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
   .t-label {
     font-family: var(--font-body);
-    font-size: 0.70rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     line-height: 1;
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
-  .t-mono {
-    font-family: var(--font-mono);
-    font-size: 0.70rem;
-    font-weight: 400;
-    line-height: 1;
-    letter-spacing: 0.06em;
-  }
+  /* Wordmark — for GYF logo text treatment */
   .t-wordmark {
-    font-family: var(--font-display);
-    font-weight: 700;
+    font-family: var(--font-body);
+    font-weight: 800;
     letter-spacing: -0.04em;
     line-height: 1;
   }
-  /* Playfair italic — for stylist explanations, editorial pull-quotes */
-  .t-editorial {
-    font-family: var(--font-display);
-    font-style: italic;
-    font-size: 1rem;
-    font-weight: 400;
-    line-height: 1.6;
+}
+
+/* ─── Glassmorphism card ─────────────────────────────────────────────────── */
+@layer components {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .glass-card-active {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   }
 }
 
 /* ─── Focus ring ─────────────────────────────────────────────────────────── */
 @layer base {
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--primary);
     outline-offset: 3px;
   }
 }
@@ -183,23 +210,50 @@
   }
 }
 
-/* ─── Shimmer button sweep ───────────────────────────────────────────────── */
+/* ─── Industrial input ───────────────────────────────────────────────────── */
 @layer components {
-  .btn-shimmer { position: relative; overflow: hidden; }
-  .btn-shimmer::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%);
-    transform: translateX(-100%);
-    transition: transform 0s;
+  .input-industrial {
+    background: transparent;
+    color: var(--text);
+    border: none;
+    border-bottom: 1px solid var(--border-mid);
+    border-radius: 0;
+    padding: 0.75rem 0;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s var(--lux);
   }
-  .btn-shimmer:hover::after {
-    transform: translateX(100%);
-    transition: transform 0.55s var(--lux);
+  .input-industrial::placeholder { color: var(--text-faint); }
+  .input-industrial:focus { border-bottom-color: var(--primary); }
+}
+
+/* ─── Occasion chip ──────────────────────────────────────────────────────── */
+@layer components {
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-mid);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s var(--lux);
+    white-space: nowrap;
+    min-height: 44px;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .btn-shimmer::after { display: none; }
+  .chip:hover { border-color: var(--text-mid); color: var(--text); }
+  .chip-active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #000000;
   }
 }
 
@@ -215,19 +269,38 @@
   }
 }
 
-/* ─── Keyframes ──────────────────────────────────────────────────────────── */
-/* ─── Scrollbar hide utility ─────────────────────────────────────────────── */
-@layer utilities {
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+/* ─── Progress bar — secondary (ochre) sweep ────────────────────────────── */
+@layer components {
+  .progress-sweep {
+    height: 1px;
+    background: var(--secondary);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
 }
 
+/* ─── Keyframes ──────────────────────────────────────────────────────────── */
 @keyframes shimmer {
   from { background-position: -200% center; }
   to   { background-position:  200% center; }
 }
-@keyframes scan-line {
-  0%   { top: 0%;   opacity: 1; }
-  95%  { top: 100%; opacity: 1; }
-  100% { top: 100%; opacity: 0; }
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+@keyframes sweep-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(0.85); }
+}
+@keyframes logo-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0% 0 0); }
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────────────── */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-top    { padding-top:    env(safe-area-inset-top); }
 }

@@ -1,7 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-
+import { GYFLogo } from "@/components/brand/GYFLogo";
 import { BottomNav } from "@/components/layout/bottom-nav";
 
 interface AppShellProps {
@@ -10,28 +9,64 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-bg text-text">
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100dvh",
+        flexDirection: "column",
+        background: "#000000",
+        color: "#e2e2e9",
+      }}
+    >
       {/* Top brand header */}
-      <div style={{ paddingTop: "env(safe-area-inset-top)" }} className="sticky top-0 z-30 bg-surface/95 backdrop-blur-xl border-b border-border">
-        <header className="flex h-14 items-center justify-between px-4 sm:px-6">
-          <Link href="/" aria-label="GYF home" className="group">
-            <Image
-              src="/assets/logo.png"
-              alt="GYF"
-              width={160}
-              height={160}
-              priority
-              style={{ width: 56, height: "auto", mixBlendMode: "multiply" }}
-              className="transition-opacity duration-150 group-hover:opacity-70"
+      <div
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
+          position: "sticky",
+          top: 0,
+          zIndex: 30,
+          background: "rgba(0,0,0,0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <header
+          style={{
+            display: "flex",
+            height: "56px",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 1rem",
+            maxWidth: "390px",
+            margin: "0 auto",
+            width: "100%",
+          }}
+        >
+          <Link href="/" aria-label="GYF home">
+            <GYFLogo
+              width={80}
+              style={{ filter: "brightness(0) invert(1)" }}
             />
           </Link>
-          <div className="w-14" aria-hidden />
+          {/* Right slot — reserved for future notifications icon */}
+          <div style={{ width: 44 }} aria-hidden />
         </header>
       </div>
 
-      <main className="flex-1 overflow-y-auto pb-[calc(64px+env(safe-area-inset-bottom))]">
+      <main
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          paddingBottom: "calc(64px + env(safe-area-inset-bottom))",
+          maxWidth: "390px",
+          margin: "0 auto",
+          width: "100%",
+        }}
+      >
         {children}
       </main>
+
       <BottomNav />
     </div>
   );

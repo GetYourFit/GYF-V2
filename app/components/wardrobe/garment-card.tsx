@@ -1,34 +1,32 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Trash2 } from "lucide-react";
+import { Trash2, Shirt, Scissors, Wind, Footprints, Watch, Layers } from "lucide-react";
 
 import type { WardrobeItem } from "@gyf/types";
-
 import { mediaUrl } from "@/lib/media";
 
-const lux = [0.16, 1, 0.3, 1] as const;
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface GarmentCardProps {
   item: WardrobeItem;
-  /** Position in the visible grid — drives the staggered entrance. */
   index?: number;
   onRemove: (id: string) => void;
 }
 
-const SLOT_ICONS: Record<string, string> = {
-  top: "👕",
-  bottom: "👖",
-  outerwear: "🧥",
-  footwear: "👟",
-  accessory: "🎒",
-  dress: "👗",
+const SLOT_ICONS: Record<string, React.ElementType> = {
+  top:       Shirt,
+  bottom:    Scissors,
+  outerwear: Wind,
+  footwear:  Footprints,
+  accessory: Watch,
+  dress:     Layers,
 };
 
 export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
   const reduce = useReducedMotion();
   const src = mediaUrl(item.image_url);
-  const icon = SLOT_ICONS[item.slot] ?? "🪡";
+  const SlotIcon = SLOT_ICONS[item.slot] ?? Layers;
 
   return (
     <motion.article
@@ -36,42 +34,77 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
       initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.32, delay: Math.min(index, 11) * 0.04, ease: lux }}
-      className="group relative flex flex-col border border-border bg-surface transition-colors duration-200 hover:border-border-mid focus-within:border-border-mid"
+      transition={{ duration: 0.32, delay: Math.min(index, 11) * 0.04, ease: EASE }}
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        borderRadius: "4px",
+        overflow: "hidden",
+      }}
     >
       {/* Image / placeholder */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
+      <div style={{ position: "relative", aspectRatio: "3/4", overflow: "hidden", background: "#111318" }}>
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={src}
             alt={item.title}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <span className="text-4xl opacity-40 select-none" aria-hidden>
-              {icon}
-            </span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              color: "#444748",
+            }}
+          >
+            <SlotIcon size={28} aria-hidden strokeWidth={1} />
           </div>
         )}
 
-        {/* Remove button — always visible on touch, hover/focus reveal on pointer devices */}
+        {/* Remove button */}
         <button
           type="button"
           aria-label={`Remove ${item.title} from wardrobe`}
           onClick={() => onRemove(item.id)}
-          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center border border-border-mid bg-bg text-text-mid opacity-100 transition-all duration-200 hover:border-error hover:text-error focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+          style={{
+            position: "absolute",
+            right: "0.5rem",
+            top: "0.5rem",
+            width: "32px",
+            height: "32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.7)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "4px",
+            color: "#8e9192",
+            cursor: "pointer",
+          }}
         >
-          <Trash2 size={14} />
+          <Trash2 size={13} aria-hidden />
         </button>
 
         {/* Color swatch */}
         {item.color && (
           <div
-            className="absolute bottom-2 left-2 h-4 w-4 border border-border-hi shadow-sm"
-            style={{ backgroundColor: item.color }}
+            style={{
+              position: "absolute",
+              bottom: "0.5rem",
+              left: "0.5rem",
+              width: "14px",
+              height: "14px",
+              background: item.color,
+              border: "1px solid rgba(255,255,255,0.2)",
+            }}
             title={item.color}
             aria-hidden
           />
@@ -79,11 +112,43 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
       </div>
 
       {/* Meta */}
-      <div className="flex flex-col gap-1.5 p-3">
-        <p className="t-label normal-case tracking-normal truncate text-text">{item.title}</p>
-        <div className="flex items-center justify-between gap-2">
-          <span className="t-caption capitalize text-text-faint">{item.category}</span>
-          <span className="t-mono capitalize text-text-faint">{item.slot}</span>
+      <div style={{ padding: "0.625rem 0.75rem", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.8125rem",
+            fontWeight: 500,
+            color: "#e2e2e9",
+            margin: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {item.title}
+        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.75rem",
+              color: "#5a5a65",
+              textTransform: "capitalize",
+            }}
+          >
+            {item.category}
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.55rem",
+              color: "#444748",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+            }}
+          >
+            {item.slot}
+          </span>
         </div>
       </div>
     </motion.article>
