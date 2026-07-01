@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 
 import { OutfitCard } from "@/components/stylist/outfit-card";
 import { StylistControls, type StylistQuery } from "@/components/stylist/stylist-controls";
@@ -13,11 +14,11 @@ import type { InteractionAction } from "@gyf/types";
 import type { OutfitRecommendation } from "@gyf/types";
 
 const EMPTY_QUERY: StylistQuery = { goal: "", occasion: "" };
-const lux = [0.16, 1, 0.3, 1] as const;
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export function StylistFeed() {
   const { toast } = useToast();
-  const reduceMotion = useReducedMotion();
+  const reduce = useReducedMotion();
   const [query, setQuery] = useState<StylistQuery>(EMPTY_QUERY);
   const [data, setData] = useState<OutfitRecommendation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,14 +60,13 @@ export function StylistFeed() {
     if (!data) return;
     const outfit = data.outfits[index];
     if (!outfit) return;
-    const recommendation_id = data.recommendation_id;
     await Promise.all(
       outfit.items.map((item) =>
         browserApi().feedback({
           target_type: "item",
           target_id: item.item_id,
           action,
-          context: { recommendation_id },
+          context: { recommendation_id: data.recommendation_id },
         }),
       ),
     );
@@ -74,11 +74,6 @@ export function StylistFeed() {
 
   function onShopCart(itemId: string) {
     if (!data) return;
-    toast({
-      title: "Opening retailer",
-      description: "Taking you to the product page.",
-      variant: "info",
-    });
     void browserApi()
       .feedback({
         target_type: "item",
@@ -94,8 +89,6 @@ export function StylistFeed() {
     const outfit = data.outfits[index];
     if (!outfit) return;
     setSaved((s) => new Set(s).add(index));
-    // Persist the whole look server-side so Saved survives across devices/sessions
-    // (the Saved page reads `/collections/outfits`). Optimistic: roll back on failure.
     void browserApi()
       .saveOutfit({
         outfit_key: `${data.recommendation_id}:${index}`,
@@ -106,147 +99,221 @@ export function StylistFeed() {
         score: outfit.score,
         confidence: outfit.confidence,
       })
-      .then(() =>
-        toast({
-          title: "Saved to your looks",
-          description: "Find it any time on your Saved page.",
-          variant: "success",
-        }),
-      )
+      .then(() => toast({ title: "Saved to your looks", description: "Find it on your Saved page.", variant: "success" }))
       .catch(() => {
-        setSaved((s) => {
-          const next = new Set(s);
-          next.delete(index);
-          return next;
-        });
-        toast({
-          title: "Couldn't save that look",
-          description: "Something went wrong — please try again.",
-          variant: "error",
-        });
+        setSaved((s) => { const n = new Set(s); n.delete(index); return n; });
+        toast({ title: "Couldn't save that look", description: "Please try again.", variant: "error" });
       });
-    // Behavioral signal for the ranker; best-effort, never blocks the save.
     void sendFeedback(index, "save").catch(() => {});
   }
 
   function onDismiss(index: number) {
     setDismissed((d) => new Set(d).add(index));
-    toast({
-      title: "Look removed",
-      description: "We'll show you fewer like it. Undo it from the card.",
-      variant: "info",
-    });
+    toast({ title: "Look removed", description: "We'll show fewer like it.", variant: "info" });
     void sendFeedback(index, "skip").catch(() =>
-      setDismissed((d) => {
-        const next = new Set(d);
-        next.delete(index);
-        return next;
-      }),
+      setDismissed((d) => { const n = new Set(d); n.delete(index); return n; }),
     );
   }
 
   function undoDismiss(index: number) {
-    setDismissed((d) => {
-      const next = new Set(d);
-      next.delete(index);
-      return next;
-    });
+    setDismissed((d) => { const n = new Set(d); n.delete(index); return n; });
   }
 
+  // ── Needs onboarding ──
   if (needsOnboarding) {
     return (
-      <Centered>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60dvh", padding: "2rem" }}>
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: lux }}
-          className="flex flex-col items-center"
+          transition={{ duration: 0.5, ease: EASE }}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", maxWidth: "280px" }}
         >
-          <p className="t-headline text-text">First, tell GYF about you</p>
-          <p className="mt-3 t-caption max-w-xs">
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.6rem",
+              color: "#f0bd8f",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              marginBottom: "1rem",
+            }}
+          >
+            Setup required
+          </p>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "1.25rem",
+              fontWeight: 700,
+              color: "#ffffff",
+              lineHeight: 1.25,
+              marginBottom: "0.75rem",
+            }}
+          >
+            First, tell GYF about you
+          </p>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#8e9192", marginBottom: "2rem" }}>
             A few quick preferences and your stylist gets to work.
           </p>
           <Link
             href="/onboarding"
-            className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-white hover:bg-text-mid transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:transition-none"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "48px",
+              padding: "0 2rem",
+              background: "#ffffff",
+              color: "#000000",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.6rem",
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+              borderRadius: "2px",
+            }}
           >
             Set up my profile
           </Link>
         </motion.div>
-      </Centered>
+      </div>
     );
   }
 
   return (
-    <div className="px-4 py-5 sm:px-6 sm:py-7 flex flex-col gap-6">
-      {/* Page header */}
+    <div style={{ padding: "1.25rem 1rem 1rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+      {/* ── Page header ── */}
       <motion.header
-        initial={{ opacity: 0, y: 10 }}
+        initial={reduce ? { opacity: 1 } : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: lux }}
-        className="flex flex-col gap-3"
+        transition={{ duration: 0.4, ease: EASE }}
+        style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
       >
-        <p className="t-label text-accent">Your stylist</p>
-        <h1
-          className="t-display text-text"
-          style={{ fontSize: "clamp(1.75rem, 5vw, 3rem)" }}
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#f0bd8f",
+          }}
         >
-          Complete looks, <em className="italic">made for you</em>
+          Your stylist
+        </span>
+        <h1
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "clamp(1.625rem, 7vw, 2.25rem)",
+            fontWeight: 800,
+            lineHeight: 1.1,
+            letterSpacing: "-0.03em",
+            color: "#ffffff",
+            margin: 0,
+          }}
+        >
+          Complete looks,{" "}
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#c4c7c8" }}>made for you</em>
         </h1>
         {data && <StatusLine data={data} />}
       </motion.header>
 
-      {/* Controls */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.08, ease: lux }}
-      >
-        <StylistControls value={query} busy={loading} onApply={apply} />
-      </motion.div>
+      {/* ── Controls ── */}
+      <StylistControls value={query} busy={loading} onApply={apply} />
 
-      {/* Error */}
+      {/* ── Error ── */}
       <AnimatePresence>
         {error && (
-          <motion.p
+          <motion.div
             key="error"
             role="alert"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
-            className="border border-error/30 bg-error/5 px-4 py-3 t-caption text-error"
+            style={{
+              padding: "0.875rem 1rem",
+              border: "1px solid rgba(255,180,171,0.2)",
+              background: "rgba(255,180,171,0.05)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "0.75rem",
+            }}
           >
-            {error}
-          </motion.p>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.8125rem",
+                color: "#ffb4ab",
+              }}
+            >
+              {error}
+            </span>
+            <button
+              type="button"
+              onClick={() => void load(query)}
+              aria-label="Retry"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem",
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "#8e9192",
+                padding: "0.375rem 0.75rem",
+                cursor: "pointer",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.55rem",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                flexShrink: 0,
+              }}
+            >
+              <RefreshCw size={12} aria-hidden />
+              Retry
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Skeleton */}
+      {/* ── Skeleton ── */}
       {loading && <SkeletonGrid />}
 
-      {/* Empty state */}
+      {/* ── Empty state ── */}
       {!loading && data && data.outfits.length === 0 && (
-        <Centered>
+        <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: lux }}
+            transition={{ duration: 0.4, ease: EASE }}
           >
-            <p className="t-title text-text">No complete looks for this just yet</p>
-            <p className="mt-3 t-caption">
-              The catalog couldn&apos;t fill a full outfit for these settings — try a different
-              occasion or clear your goal.
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "1rem",
+                fontWeight: 600,
+                color: "#ffffff",
+                marginBottom: "0.5rem",
+              }}
+            >
+              No complete looks for this just yet
+            </p>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#5a5a65" }}>
+              Try a different occasion or clear your goal.
             </p>
           </motion.div>
-        </Centered>
+        </div>
       )}
 
-      {/* Outfit grid with staggered card entrance */}
+      {/* ── Outfit cards ── */}
       {!loading && data && data.outfits.length > 0 && (
         <motion.div
           key={data.recommendation_id}
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
         >
           <AnimatePresence mode="popLayout">
             {data.outfits.map((outfit, i) =>
@@ -263,13 +330,13 @@ export function StylistFeed() {
               ) : (
                 <motion.div
                   key={`outfit-${i}`}
-                  initial={{ opacity: 0, y: reduceMotion ? 0 : 20 }}
+                  initial={{ opacity: 0, y: reduce ? 0 : 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.97 }}
+                  exit={{ opacity: 0, x: -40 }}
                   transition={{
-                    duration: reduceMotion ? 0.2 : 0.45,
-                    delay: reduceMotion ? 0 : i * 0.06,
-                    ease: lux,
+                    duration: reduce ? 0.2 : 0.4,
+                    delay: reduce ? 0 : i * 0.06,
+                    ease: EASE,
                   }}
                 >
                   <OutfitCard
@@ -297,10 +364,31 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
     parts.push(`taste ${Math.round(data.taste_strength * 100)}%`);
   }
   return (
-    <div className="flex flex-wrap items-center gap-2 mt-1">
-      <span className="t-mono text-text-faint">{parts.join(" · ")}</span>
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem", marginTop: "0.25rem" }}>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.55rem",
+          color: "#5a5a65",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+        }}
+      >
+        {parts.join(" · ")}
+      </span>
       {data.applied_goals.map((g) => (
-        <span key={g} className="border border-border-mid px-2 py-0.5 t-mono text-text-mid">
+        <span
+          key={g}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.55rem",
+            color: "#8e9192",
+            border: "1px solid rgba(255,255,255,0.1)",
+            padding: "0.125rem 0.5rem",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+          }}
+        >
           {g}
         </span>
       ))}
@@ -310,12 +398,45 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
 
 function UndoStrip({ index, onUndo }: { index: number; onUndo: () => void }) {
   return (
-    <div className="flex h-full min-h-20 items-center justify-between border border-dashed border-border-mid bg-surface/40 px-4 py-6">
-      <span className="t-caption text-text-faint">Removed look {index + 1}</span>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        minHeight: "72px",
+        padding: "1rem",
+        border: "1px dashed rgba(255,255,255,0.1)",
+        background: "rgba(255,255,255,0.02)",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.6rem",
+          color: "#5a5a65",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+        }}
+      >
+        Removed look {index + 1}
+      </span>
       <button
         type="button"
         onClick={onUndo}
-        className="t-label text-text-mid underline underline-offset-4 transition-colors hover:text-text hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-hi focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:transition-none"
+        style={{
+          background: "transparent",
+          border: "none",
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.6rem",
+          color: "#c4c7c8",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          textDecoration: "underline",
+          textUnderlineOffset: "3px",
+          cursor: "pointer",
+          minHeight: "44px",
+          padding: "0 0.5rem",
+        }}
       >
         Undo
       </button>
@@ -326,30 +447,30 @@ function UndoStrip({ index, onUndo }: { index: number; onUndo: () => void }) {
 function SkeletonGrid() {
   return (
     <div
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
       aria-hidden
       aria-label="Loading outfits"
+      style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
     >
-      {Array.from({ length: 6 }).map((_, i) => (
+      {Array.from({ length: 3 }).map((_, i) => (
         <motion.div
           key={i}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: i * 0.04 }}
-          className="flex flex-col border border-border bg-surface"
+          animate={{ opacity: [0, 0.6, 0.4] }}
+          transition={{ duration: 1.4, delay: i * 0.1, repeat: Infinity, repeatType: "reverse" }}
+          style={{
+            border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.02)",
+            borderRadius: "4px",
+            overflow: "hidden",
+          }}
         >
-          <div className="aspect-[3/4] skeleton" />
-          <div className="flex flex-col gap-3 p-5">
-            <div className="h-4 w-3/4 skeleton" />
-            <div className="h-3 w-1/2 skeleton" />
-            <div className="mt-2 h-8 w-full skeleton" />
+          <div style={{ aspectRatio: "16/9", background: "rgba(255,255,255,0.04)" }} />
+          <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div style={{ height: "10px", width: "60%", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />
+            <div style={{ height: "8px", width: "40%", background: "rgba(255,255,255,0.04)", borderRadius: "2px" }} />
           </div>
         </motion.div>
       ))}
     </div>
   );
-}
-
-function Centered({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto max-w-md py-20 text-center">{children}</div>;
 }

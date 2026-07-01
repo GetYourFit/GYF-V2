@@ -13,7 +13,7 @@ type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "btn-shimmer bg-accent text-white hover:bg-accent-press focus-visible:ring-accent active:scale-[0.96]",
+    "bg-accent text-bg hover:bg-accent-press focus-visible:ring-accent active:scale-[0.96]",
   secondary:
     "border border-border bg-surface-2 text-text hover:border-border-hi hover:bg-surface-3 focus-visible:ring-border-hi active:scale-[0.96]",
   ghost:

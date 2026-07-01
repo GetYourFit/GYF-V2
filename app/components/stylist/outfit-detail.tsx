@@ -1,11 +1,18 @@
 "use client";
 
 import { Bookmark, ExternalLink, X } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import { useEffect, useRef } from "react";
 
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
-import { Dialog } from "@/components/ui/dialog";
 import { mediaUrl } from "@/lib/media";
 import type { Outfit, OutfitItem } from "@gyf/types";
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const FOCUSABLE =
+  'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
 
 function price(item: OutfitItem): string | null {
   if (item.price == null) return null;
@@ -13,10 +20,6 @@ function price(item: OutfitItem): string | null {
   return `${symbol}${Math.round(item.price)}`;
 }
 
-/** The full look, surfaced on demand: oversized garments, the complete stylist
- *  reason in the editorial voice, calibrated confidence, the compatibility signals
- *  behind the pick, and a per-garment shop breakdown. Trust is the product — this
- *  is where the "why" gets room to breathe. */
 export function OutfitDetail({
   outfit,
   index,
@@ -34,133 +37,487 @@ export function OutfitDetail({
   onSave: () => void;
   onShopCart: (itemId: string) => void;
 }) {
+  const reduce = useReducedMotion();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const restoreRef = useRef<HTMLElement | null>(null);
   const titleId = `outfit-detail-${index}`;
   const shopItem = outfit.items.find((i) => i.affiliate_url);
   const colorHarmony = Math.round(outfit.color_harmony * 100);
   const formality = Math.round(outfit.formality_fit * 100);
 
+  useEffect(() => {
+    if (open) restoreRef.current = document.activeElement as HTMLElement | null;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
+    (first ?? panel)?.focus();
+    return () => { restoreRef.current?.focus?.(); };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") { e.stopPropagation(); onClose(); return; }
+      if (e.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const nodes = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (n) => n.offsetParent !== null,
+      );
+      if (!nodes.length) { e.preventDefault(); panel.focus(); return; }
+      const first = nodes[0]; const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === panel)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+    }
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [open, onClose]);
+
   return (
-    <Dialog open={open} onClose={onClose} titleId={titleId} className="sm:max-w-xl">
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-border bg-surface/95 px-5 py-4 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <span className="t-mono text-accent">N°{String(index + 1).padStart(2, "0")}</span>
-          <h2 id={titleId} className="t-label text-text-faint">
-            The complete look
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="flex h-9 w-9 items-center justify-center text-text-mid transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="detail-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+          }}
         >
-          <X size={18} aria-hidden />
-        </button>
-      </div>
+          {/* Backdrop */}
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={onClose}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              background: "rgba(0,0,0,0.75)",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              cursor: "default",
+              border: "none",
+            }}
+          />
 
-      {/* Garment spread */}
-      <div className="flex gap-px bg-border">
-        {outfit.items.map((item) => {
-          const src = mediaUrl(item.image_url);
-          return (
+          {/* Panel — bottom sheet, max 390px */}
+          <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: "100%" }}
+            transition={{ duration: 0.38, ease: EASE }}
+            style={{
+              position: "relative",
+              zIndex: 10,
+              width: "100%",
+              maxWidth: "390px",
+              maxHeight: "92dvh",
+              overflowY: "auto",
+              background: "#0a0b0e",
+              borderTop: "1px solid rgba(255,255,255,0.1)",
+              outline: "none",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* ── Sticky header ── */}
             <div
-              key={item.item_id}
-              className="relative aspect-[3/4] flex-1 overflow-hidden bg-surface-2"
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "1rem",
+                padding: "1rem 1.25rem",
+                background: "rgba(10,11,14,0.95)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+              }}
             >
-              {src ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={src}
-                  alt={`${item.title} — ${item.category.replace(/_/g, " ")}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center t-mono text-text-faint">
-                  {item.category.replace(/_/g, " ")}
-                </div>
-              )}
-              <span className="absolute left-2 top-2 bg-surface/80 px-2 py-0.5 t-mono text-text-mid backdrop-blur-sm">
-                {item.slot}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-col gap-6 p-5">
-        {/* The reason — editorial voice, given room */}
-        <p className="t-editorial text-lg text-text">{outfit.explanation}</p>
-
-        <ConfidenceMeter value={outfit.confidence} />
-
-        {/* Stylist signals behind the pick */}
-        <dl className="grid grid-cols-2 gap-px border border-border bg-rule">
-          <div className="flex flex-col gap-1 bg-surface p-4">
-            <dt className="t-label text-text-faint">Color harmony</dt>
-            <dd className="t-mono text-text">{colorHarmony}%</dd>
-          </div>
-          <div className="flex flex-col gap-1 bg-surface p-4">
-            <dt className="t-label text-text-faint">Occasion fit</dt>
-            <dd className="t-mono text-text">{formality}%</dd>
-          </div>
-        </dl>
-
-        {/* Per-garment breakdown */}
-        <ul className="flex flex-col gap-px border-t border-border pt-4">
-          {outfit.items.map((item) => (
-            <li key={item.item_id} className="flex items-center gap-4 py-2">
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate t-caption text-text">{item.title}</span>
-                <span className="t-mono text-text-faint">{item.slot}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.6rem",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#f0bd8f",
+                  }}
+                >
+                  N°{String(index + 1).padStart(2, "0")}
+                </span>
+                <h2
+                  id={titleId}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.6rem",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "#5a5a65",
+                    margin: 0,
+                  }}
+                >
+                  The complete look
+                </h2>
               </div>
-              {price(item) && <span className="t-mono shrink-0 text-text-mid">{price(item)}</span>}
-              {item.affiliate_url && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "44px",
+                  height: "44px",
+                  background: "transparent",
+                  border: "none",
+                  color: "#5a5a65",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={18} aria-hidden />
+              </button>
+            </div>
+
+            {/* ── Garment spread ── */}
+            <div
+              style={{
+                display: "flex",
+                gap: "1px",
+                background: "rgba(255,255,255,0.05)",
+              }}
+            >
+              {outfit.items.map((item) => {
+                const src = mediaUrl(item.image_url);
+                return (
+                  <div
+                    key={item.item_id}
+                    style={{
+                      position: "relative",
+                      flex: 1,
+                      aspectRatio: "3/4",
+                      overflow: "hidden",
+                      background: "#111318",
+                    }}
+                  >
+                    {src ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={src}
+                        alt={`${item.title} — ${item.category.replace(/_/g, " ")}`}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          height: "100%",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "0.5rem",
+                          color: "#5a5a65",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em",
+                          textAlign: "center",
+                          padding: "0.5rem",
+                        }}
+                      >
+                        {item.category.replace(/_/g, " ")}
+                      </div>
+                    )}
+                    <span
+                      style={{
+                        position: "absolute",
+                        left: "0.375rem",
+                        top: "0.375rem",
+                        background: "rgba(0,0,0,0.7)",
+                        backdropFilter: "blur(4px)",
+                        padding: "0.125rem 0.375rem",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "0.5rem",
+                        color: "#8e9192",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {item.slot}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Body ── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", padding: "1.25rem" }}>
+
+              {/* Stylist explanation */}
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "0.9375rem",
+                  lineHeight: 1.65,
+                  color: "#c4c7c8",
+                  margin: 0,
+                }}
+              >
+                {outfit.explanation}
+              </p>
+
+              {/* Confidence */}
+              <ConfidenceMeter value={outfit.confidence} />
+
+              {/* Signal grid */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "1px",
+                  background: "rgba(255,255,255,0.05)",
+                }}
+              >
+                {[
+                  { label: "Color harmony", value: `${colorHarmony}%` },
+                  { label: "Occasion fit", value: `${formality}%` },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    style={{
+                      background: "#0a0b0e",
+                      padding: "0.875rem 1rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.375rem",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "0.55rem",
+                        color: "#5a5a65",
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {label}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        color: "#e2e2e9",
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Per-garment breakdown */}
+              <ul
+                style={{
+                  listStyle: "none",
+                  margin: 0,
+                  padding: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  borderTop: "1px solid rgba(255,255,255,0.06)",
+                  paddingTop: "1rem",
+                  gap: "0",
+                }}
+              >
+                {outfit.items.map((item) => {
+                  const tag = price(item);
+                  return (
+                    <li
+                      key={item.item_id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                        padding: "0.75rem 0",
+                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+                        <span
+                          style={{
+                            fontFamily: "var(--font-body)",
+                            fontSize: "0.8125rem",
+                            color: "#e2e2e9",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {item.title}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: "0.55rem",
+                            color: "#5a5a65",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            marginTop: "2px",
+                          }}
+                        >
+                          {item.slot}
+                        </span>
+                      </div>
+                      {tag && (
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: "0.75rem",
+                            color: "#f0bd8f",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      )}
+                      {item.affiliate_url && (
+                        <a
+                          href={item.affiliate_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => onShopCart(item.item_id)}
+                          aria-label={`Shop ${item.title}`}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "36px",
+                            height: "36px",
+                            flexShrink: 0,
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            color: "#8e9192",
+                            textDecoration: "none",
+                          }}
+                        >
+                          <ExternalLink size={13} aria-hidden />
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* ── Sticky footer ── */}
+            <div
+              style={{
+                position: "sticky",
+                bottom: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                padding: "0.875rem 1.25rem calc(0.875rem + env(safe-area-inset-bottom))",
+                background: "rgba(10,11,14,0.95)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <motion.button
+                type="button"
+                onClick={onSave}
+                aria-pressed={saved}
+                whileTap={reduce ? undefined : { scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  minHeight: "48px",
+                  border: `1px solid ${saved ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.12)"}`,
+                  background: saved ? "rgba(255,255,255,0.06)" : "transparent",
+                  color: saved ? "#ffffff" : "#8e9192",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.6rem",
+                  fontWeight: 500,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  borderRadius: "2px",
+                  transition: "all 0.2s",
+                }}
+              >
+                <Bookmark
+                  size={14}
+                  aria-hidden
+                  style={{ fill: saved ? "#ffffff" : "none", transition: "fill 0.2s" }}
+                />
+                {saved ? "Saved" : "Save look"}
+              </motion.button>
+
+              {shopItem?.affiliate_url && (
                 <a
-                  href={item.affiliate_url}
+                  href={shopItem.affiliate_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => onShopCart(item.item_id)}
-                  aria-label={`Shop ${item.title}`}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center border border-border-mid text-text-faint transition-colors hover:border-border-hi hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                  onClick={() => onShopCart(shopItem.item_id)}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    minHeight: "48px",
+                    background: "#ffffff",
+                    color: "#000000",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.6rem",
+                    fontWeight: 500,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    textDecoration: "none",
+                    borderRadius: "2px",
+                  }}
                 >
-                  <ExternalLink size={13} aria-hidden />
+                  <ExternalLink size={14} aria-hidden />
+                  Shop the look
                 </a>
               )}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Sticky action footer */}
-      <div className="sticky bottom-0 flex items-center gap-2 border-t border-border bg-surface/95 px-5 py-4 backdrop-blur-sm">
-        <button
-          type="button"
-          onClick={onSave}
-          aria-pressed={saved}
-          className={`t-label inline-flex min-h-11 flex-1 items-center justify-center gap-2 border px-5 py-2.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none ${
-            saved
-              ? "border-accent bg-surface-2 text-accent focus-visible:ring-accent"
-              : "border-border-mid text-text-faint hover:border-border-hi hover:bg-surface-2 hover:text-text focus-visible:ring-border-hi"
-          }`}
-        >
-          <Bookmark className="h-3.5 w-3.5" aria-hidden />
-          {saved ? "Saved" : "Save look"}
-        </button>
-        {shopItem?.affiliate_url && (
-          <a
-            href={shopItem.affiliate_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onShopCart(shopItem.item_id)}
-            className="t-label inline-flex min-h-11 flex-1 items-center justify-center gap-2 bg-accent px-4 py-2.5 text-white transition-all duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface motion-reduce:transition-none"
-          >
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-            Shop the look
-          </a>
-        )}
-      </div>
-    </Dialog>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
