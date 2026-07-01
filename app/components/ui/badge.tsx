@@ -12,7 +12,7 @@ const VARIANTS: Record<Variant, string> = {
   default: "border border-transparent bg-surface-2 text-text-mid",
   outline: "border border-border-mid bg-transparent text-text-mid",
   // Gold — reserved for confidence / editorial callouts (design token discipline).
-  confidence: "border border-accent-warm/30 bg-transparent text-accent-warm",
+  confidence: "border border-accent/30 bg-transparent text-accent",
 };
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {

@@ -47,7 +47,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
                   {item.category.replace(/_/g, " ")}
                 </div>
               )}
-              <span className="absolute left-2 top-2 bg-bg/80 px-2 py-0.5 t-mono text-text-mid">
+              <span className="absolute left-2 top-2 bg-surface/80 px-2 py-0.5 t-mono text-text-mid">
                 {item.slot}
               </span>
             </div>
@@ -65,7 +65,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
         {look.confidence != null && <ConfidenceMeter value={look.confidence} />}
 
         {/* Item list */}
-        <ul className="flex flex-col gap-1.5 border-t border-rule pt-3">
+        <ul className="flex flex-col gap-1.5 border-t border-border pt-3">
           {look.items.map((item) => {
             const priceStr =
               item.price != null
@@ -81,7 +81,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
         </ul>
 
         {/* Footer: occasion + actions */}
-        <div className="mt-auto flex items-center justify-between gap-3 pt-1 border-t border-rule">
+        <div className="mt-auto flex items-center justify-between gap-3 pt-1 border-t border-border">
           <span className="t-mono text-text-faint capitalize">{look.occasion ?? "saved look"}</span>
 
           <div className="flex items-center gap-2">

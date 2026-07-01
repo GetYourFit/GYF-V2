@@ -111,8 +111,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
     <form onSubmit={onSubmit} className="flex flex-col gap-6" noValidate>
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <span className="h-px w-10 bg-accent-warm" aria-hidden />
-          <p className="t-label text-accent-warm">{mode === "login" ? "Sign in" : "Join GYF"}</p>
+          <span className="h-px w-10 bg-accent" aria-hidden />
+          <p className="t-label text-accent">{mode === "login" ? "Sign in" : "Join GYF"}</p>
         </div>
         <h1 className="t-display text-text">{copy.title}</h1>
         <p className="t-body text-text-mid">{copy.subtitle}</p>
@@ -156,7 +156,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </p>
       )}
       {notice && (
-        <p role="status" className="t-caption text-accent-warm">
+        <p role="status" className="t-caption text-accent">
           {notice}
         </p>
       )}

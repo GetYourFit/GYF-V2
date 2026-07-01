@@ -212,7 +212,7 @@ export function OnboardingWizard() {
                   }`}
                 >
                   <motion.span
-                    className="absolute inset-y-0 left-0 bg-accent-warm"
+                    className="absolute inset-y-0 left-0 bg-accent"
                     initial={false}
                     animate={{ width: i <= step ? "100%" : "0%" }}
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -275,7 +275,7 @@ export function OnboardingWizard() {
       )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 border-t border-rule pt-6">
+      <div className="flex items-center justify-between gap-3 border-t border-border pt-6">
         <div className="flex gap-3">
           {step > 0 && (
             <Button type="button" variant="ghost" size="sm" onClick={() => goTo(step - 1)}>
@@ -310,7 +310,7 @@ function EstimatedBadge() {
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.25, ease: lux }}
-      className="inline-flex items-center gap-1 border border-accent-warm px-1.5 py-0.5 t-mono uppercase text-accent-warm"
+      className="inline-flex items-center gap-1 border border-accent px-1.5 py-0.5 t-mono uppercase text-accent"
     >
       <Sparkles className="h-2.5 w-2.5" aria-hidden />
       Estimated
@@ -414,7 +414,7 @@ function StepStyle({
                 className={
                   "min-h-9 border px-3 py-1 t-label transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
                   (active
-                    ? "border-accent-warm bg-accent-warm/10 text-accent-warm"
+                    ? "border-accent bg-accent/10 text-accent"
                     : "border-border-mid text-text-faint hover:border-border-hi hover:text-text")
                 }
               >

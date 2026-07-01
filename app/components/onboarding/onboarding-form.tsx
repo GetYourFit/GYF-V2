@@ -175,7 +175,7 @@ export function OnboardingForm() {
                   className={
                     "min-h-9 border px-3 py-1 t-label transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
                     (active
-                      ? "border-accent bg-accent text-bg"
+                      ? "border-accent bg-accent text-white"
                       : "border-border-mid text-text-faint hover:border-border-hi hover:text-text")
                   }
                 >
@@ -271,7 +271,7 @@ export function OnboardingForm() {
         </p>
       )}
       {saved && (
-        <p role="status" className="t-caption text-accent-warm">
+        <p role="status" className="t-caption text-accent">
           Saved.
         </p>
       )}

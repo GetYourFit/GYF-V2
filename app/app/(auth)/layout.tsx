@@ -5,8 +5,8 @@ import { Suspense, type ReactNode } from "react";
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg px-4 py-12 sm:py-16">
-      {/* Left brand panel — hidden on small screens */}
-      <div className="fixed inset-y-0 left-0 hidden w-[46%] flex-col justify-between border-r border-rule px-14 py-14 lg:flex">
+      {/* Left brand panel — desktop only */}
+      <div className="fixed inset-y-0 left-0 hidden w-[46%] flex-col justify-between border-r border-border bg-surface px-14 py-14 lg:flex">
         <Link href="/" className="inline-flex items-center gap-3 group" aria-label="GYF home">
           <Image
             src="/assets/logo.png"
@@ -14,7 +14,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             width={36}
             height={36}
             className="opacity-90 group-hover:opacity-60 transition-opacity duration-200"
-            style={{ filter: "brightness(0) invert(1)" }}
           />
           <span className="t-wordmark text-xl text-text opacity-90 group-hover:opacity-60 transition-opacity duration-200">
             GYF
@@ -46,7 +45,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             width={44}
             height={44}
             className="group-hover:opacity-70 transition-opacity duration-200"
-            style={{ filter: "brightness(0) invert(1)" }}
             aria-hidden
           />
           <span className="t-wordmark text-2xl text-text">GYF</span>

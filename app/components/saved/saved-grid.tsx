@@ -193,7 +193,7 @@ function SavedItemCard({ item, onRemove }: { item: SavedItem; onRemove: () => vo
           type="button"
           onClick={onRemove}
           aria-label={`Remove ${item.title} from saved`}
-          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-border-mid bg-bg/90 text-text-mid opacity-0 backdrop-blur-sm transition-all duration-200 hover:border-error hover:text-error focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg group-hover:opacity-100"
+          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-border-mid bg-surface/90 text-text-mid opacity-0 backdrop-blur-sm transition-all duration-200 hover:border-error hover:text-error focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg group-hover:opacity-100"
         >
           <X size={15} aria-hidden />
         </button>
@@ -249,7 +249,7 @@ function EmptyState() {
       </p>
       <Link
         href="/"
-        className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg transition-colors duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-white transition-colors duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       >
         See my outfits
       </Link>

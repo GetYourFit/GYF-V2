@@ -135,7 +135,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
         </p>
       )}
       {done && !missed && (
-        <p role="status" className="t-caption text-accent-warm">
+        <p role="status" className="t-caption text-accent">
           Estimated {estimated.join(" & ")} — review and edit below, then save.
         </p>
       )}

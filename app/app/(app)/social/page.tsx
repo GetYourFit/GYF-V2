@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function SocialPage() {
   return (
     <div className="flex flex-col">
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-bg/95 px-4 py-4 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/95 px-4 py-4 backdrop-blur-xl">
         <h1 className="t-title text-text">Social</h1>
       </header>
       <SocialFeed />

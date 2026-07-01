@@ -338,7 +338,7 @@ function ConsentRow({
   const descId = useId();
   return (
     <li
-      className={`flex items-start justify-between gap-5 p-5 ${first ? "" : "border-t border-rule"}`}
+      className={`flex items-start justify-between gap-5 p-5 ${first ? "" : "border-t border-border"}`}
     >
       <div className="flex flex-col gap-1.5">
         <span id={labelId} className="t-title text-text">
@@ -380,7 +380,7 @@ function AccountSkeleton() {
         <div className="h-4 w-40 skeleton" />
         <div className="border border-border">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={`row-${i}`} className="h-24 skeleton border-t border-rule first:border-t-0" />
+            <div key={`row-${i}`} className="h-24 skeleton border-t border-border first:border-t-0" />
           ))}
         </div>
       </div>

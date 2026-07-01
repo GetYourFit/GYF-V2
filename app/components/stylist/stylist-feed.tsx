@@ -168,7 +168,7 @@ export function StylistFeed() {
           </p>
           <Link
             href="/onboarding"
-            className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg hover:bg-text-mid transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:transition-none"
+            className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-white hover:bg-text-mid transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:transition-none"
           >
             Set up my profile
           </Link>
@@ -187,8 +187,8 @@ export function StylistFeed() {
         className="flex flex-col gap-4 pt-2"
       >
         <div className="flex items-center gap-3">
-          <span className="h-px w-10 bg-accent-warm" aria-hidden />
-          <p className="t-label text-accent-warm">Your stylist</p>
+          <span className="h-px w-10 bg-accent" aria-hidden />
+          <p className="t-label text-accent">Your stylist</p>
         </div>
         <h1 className="t-display max-w-[14ch] text-text">
           Complete looks, <em className="italic">made for you</em>

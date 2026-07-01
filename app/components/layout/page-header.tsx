@@ -17,8 +17,8 @@ export function PageHeader({ eyebrow, title, description, action, className }: P
         <div className="flex flex-col gap-2.5">
           {eyebrow ? (
             <div className="flex items-center gap-2.5">
-              <span className="h-px w-8 bg-accent-warm" aria-hidden />
-              <p className="t-label text-accent-warm">{eyebrow}</p>
+              <span className="h-px w-8 bg-accent" aria-hidden />
+              <p className="t-label text-accent">{eyebrow}</p>
             </div>
           ) : null}
           <h1 className="t-display text-text">{title}</h1>

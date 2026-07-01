@@ -140,7 +140,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
       className="group flex flex-col gap-1 bg-surface p-4 sm:p-5 transition-colors duration-200 hover:bg-surface-2 active:bg-surface-3"
     >
       {inner}
-      <span className="mt-0.5 h-px w-0 bg-accent-warm transition-all duration-300 group-hover:w-full" aria-hidden />
+      <span className="mt-0.5 h-px w-0 bg-accent transition-all duration-300 group-hover:w-full" aria-hidden />
     </Link>
   ) : (
     <div className="flex flex-col gap-1 bg-surface p-4 sm:p-5">
@@ -200,7 +200,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
         </div>
         <Link
           href="/onboarding"
-          className="inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg transition-colors duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="inline-flex min-h-11 items-center bg-accent px-8 t-label text-white transition-colors duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         >
           Set up my profile
         </Link>

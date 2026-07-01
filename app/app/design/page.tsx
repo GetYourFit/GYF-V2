@@ -50,7 +50,7 @@ function Gallery() {
     <div className="mx-auto w-full max-w-screen-md px-5 py-12 sm:px-6 lg:px-8">
       <header className="mb-4 flex flex-col gap-2">
         <p className="t-label text-text-faint">Design system</p>
-        <div className="mt-1 h-px w-16 bg-accent-warm" aria-hidden />
+        <div className="mt-1 h-px w-16 bg-accent" aria-hidden />
         <h1 className="t-display text-text">Editorial Noir</h1>
         <p className="t-body max-w-prose text-text-mid">
           Every primitive, one canvas. Near-black ground, warm ivory ink, hairline rules; antique
@@ -97,7 +97,7 @@ function Gallery() {
           <Badge>Casual</Badge>
           <Badge variant="outline">Outline</Badge>
           <Badge variant="confidence">
-            <span className="h-1 w-1 rounded-full bg-accent-warm" aria-hidden /> 92% match
+            <span className="h-1 w-1 rounded-full bg-accent" aria-hidden /> 92% match
           </Badge>
         </Row>
       </Section>

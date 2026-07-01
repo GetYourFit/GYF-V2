@@ -73,7 +73,7 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
           aria-label={saved ? "Remove from saved" : "Save item"}
           aria-pressed={saved}
           onClick={() => onSave(item)}
-          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-border-mid bg-bg/90 text-text-mid opacity-0 backdrop-blur-sm transition-all duration-200 hover:border-accent hover:text-accent focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg group-hover:opacity-100 group-focus-within:opacity-100 aria-pressed:opacity-100 aria-pressed:border-accent aria-pressed:text-accent"
+          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-border-mid bg-surface/90 text-text-mid opacity-0 backdrop-blur-sm transition-all duration-200 hover:border-accent hover:text-accent focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg group-hover:opacity-100 group-focus-within:opacity-100 aria-pressed:opacity-100 aria-pressed:border-accent aria-pressed:text-accent"
         >
           {saved ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
         </button>

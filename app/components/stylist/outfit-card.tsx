@@ -47,7 +47,7 @@ export function OutfitCard({
             aria-haspopup="dialog"
             className="absolute inset-0 z-10 flex items-end justify-center p-3 opacity-100 transition-opacity duration-300 focus-visible:opacity-100 focus-visible:outline-none sm:opacity-0 sm:group-hover:opacity-100 motion-reduce:transition-none"
           >
-            <span className="t-label inline-flex items-center gap-2 border border-text/20 bg-bg/80 px-4 py-2 text-text backdrop-blur-sm">
+            <span className="t-label inline-flex items-center gap-2 border border-text/20 bg-surface/80 px-4 py-2 text-text backdrop-blur-sm">
               <Maximize2 className="h-3 w-3" aria-hidden />
               View look
             </span>
@@ -72,14 +72,14 @@ export function OutfitCard({
                     {item.category.replace(/_/g, " ")}
                   </div>
                 )}
-                <span className="absolute left-2 top-2 bg-bg/80 px-2 py-0.5 t-mono text-text-mid backdrop-blur-sm">
+                <span className="absolute left-2 top-2 bg-surface/80 px-2 py-0.5 t-mono text-text-mid backdrop-blur-sm">
                   {item.slot}
                 </span>
               </div>
             );
           })}
           {/* Edition numeral — editorial signature, top-right of the spread */}
-          <span className="pointer-events-none absolute right-2 top-2 bg-bg/80 px-2 py-0.5 t-mono text-accent-warm backdrop-blur-sm">
+          <span className="pointer-events-none absolute right-2 top-2 bg-surface/80 px-2 py-0.5 t-mono text-accent backdrop-blur-sm">
             N°{String(index + 1).padStart(2, "0")}
           </span>
         </div>
@@ -89,7 +89,7 @@ export function OutfitCard({
 
           <ConfidenceMeter value={outfit.confidence} />
 
-          <ul className="flex flex-col gap-1.5 border-t border-rule pt-3">
+          <ul className="flex flex-col gap-1.5 border-t border-border pt-3">
             {outfit.items.map((item) => (
               <li key={item.item_id} className="flex items-baseline justify-between gap-3">
                 <span className="truncate t-caption text-text-mid">{item.title}</span>
@@ -112,7 +112,7 @@ export function OutfitCard({
                 "t-label inline-flex min-h-11 flex-1 items-center justify-center gap-2 border px-5 py-2.5",
                 "transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:transition-none",
                 saved
-                  ? "border-accent-warm bg-surface-2 text-accent-warm focus-visible:ring-accent-warm"
+                  ? "border-accent bg-surface-2 text-accent focus-visible:ring-accent"
                   : "border-border-mid text-text-faint hover:border-border-hi hover:bg-surface-2 hover:text-text focus-visible:ring-border-hi",
               )}
             >
@@ -128,7 +128,7 @@ export function OutfitCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => onShopCart(shopItem.item_id)}
-                className="t-label inline-flex min-h-11 items-center justify-center gap-2 bg-accent px-4 py-2.5 text-bg transition-all duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:transition-none"
+                className="t-label inline-flex min-h-11 items-center justify-center gap-2 bg-accent px-4 py-2.5 text-white transition-all duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg motion-reduce:transition-none"
               >
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                 Shop
