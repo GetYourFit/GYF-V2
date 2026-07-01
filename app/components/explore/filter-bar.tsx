@@ -1,12 +1,12 @@
 "use client";
 
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, X, SlidersHorizontal } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 
-import { Select } from "@/components/ui/select";
+import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import type { CatalogFacets } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
-import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 
 type SortKey = "relevance" | "price_asc" | "price_desc";
 
@@ -33,20 +33,42 @@ const PRICE_SORTS: { value: SortKey; label: string }[] = [
 
 const EMPTY: ExploreFilters = { q: "", occasion: "", style: "", maxPrice: "", sort: "relevance" };
 
+const CHIP_BASE: React.CSSProperties = {
+  flexShrink: 0,
+  padding: "0.25rem 0.75rem",
+  fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+  fontSize: "0.6rem",
+  fontWeight: 500,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  borderRadius: "2px",
+  cursor: "pointer",
+  minHeight: "32px",
+  background: "transparent",
+  transition: "all 0.15s",
+};
+
+function chip(active: boolean): React.CSSProperties {
+  return {
+    ...CHIP_BASE,
+    border: active ? "1px solid #f0bd8f" : "1px solid rgba(255,255,255,0.1)",
+    background: active ? "rgba(240,189,143,0.08)" : "transparent",
+    color: active ? "#f0bd8f" : "#5a5a65",
+  };
+}
+
 export function FilterBar({ filters, onChange }: FilterBarProps) {
-  // Real catalog facets decide which controls are useful: with no priced items
-  // (the academic seed has none), price filter + price sorts would only empty the
-  // grid, so we hide them until the catalog actually carries prices.
+  const reduce = useReducedMotion();
   const [facets, setFacets] = useState<CatalogFacets | null>(null);
-  // Keep the latest filters/onChange in refs so the one-shot facets fetch can
-  // coerce against *current* state, never a stale mount-time snapshot (which
-  // could clobber input the user made while the request was in flight).
+  const [focused, setFocused] = useState(false);
   const filtersRef = useRef(filters);
   const onChangeRef = useRef(onChange);
+
   useEffect(() => {
     filtersRef.current = filters;
     onChangeRef.current = onChange;
   });
+
   useEffect(() => {
     let active = true;
     browserApi()
@@ -54,36 +76,24 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       .then((f) => {
         if (!active) return;
         setFacets(f);
-        // Defend against a price filter/sort that the data can't honour (e.g.
-        // seeded state): with no priced items it would only empty the grid, so
-        // coerce it back to a working default the moment we learn coverage is 0.
         const cur = filtersRef.current;
         if (f.priced === 0 && (cur.maxPrice || cur.sort !== "relevance")) {
           onChangeRef.current({ ...cur, maxPrice: "", sort: "relevance" });
         }
       })
       .catch((err) => {
-        // Best-effort: price controls simply stay hidden. Surface for observability.
         console.error("[FilterBar] facets fetch failed", err);
       });
-    return () => {
-      active = false;
-    };
-    // Intentional one-shot: facets don't change during a session. Current
-    // filters/onChange are read via refs above, so no deps are needed.
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const priceEnabled = (facets?.priced ?? 0) > 0;
   const sortOptions = priceEnabled ? [...RELEVANCE_ONLY, ...PRICE_SORTS] : RELEVANCE_ONLY;
-  // While facets load (or with no priced items), price sorts aren't offered;
-  // keep the Select's value in its option set so it never renders blank.
   const safeSort: SortKey = priceEnabled ? filters.sort : "relevance";
 
   function set<K extends keyof ExploreFilters>(key: K, value: ExploreFilters[K]) {
     onChange({ ...filters, [key]: value });
-  }
-
-  function handleSearch(e: ChangeEvent<HTMLInputElement>) {
-    set("q", e.target.value);
   }
 
   const activeCount =
@@ -93,92 +103,219 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
     (filters.q ? 1 : 0);
   const hasActive = activeCount > 0;
 
-  return (
-    <div className="sticky top-0 z-20 -mx-5 border-b border-border bg-surface/90 px-5 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        {/* Search input */}
-        <div className="relative w-full lg:max-w-sm">
-          <Search
-            size={15}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-faint"
-            aria-hidden
-          />
-          <input
-            type="search"
-            placeholder="Search garments…"
-            value={filters.q}
-            onChange={handleSearch}
-            className="w-full border border-border-mid bg-surface py-2.5 pl-11 pr-10 text-base text-text transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-          {filters.q && (
-            <button
-              type="button"
-              aria-label="Clear search"
-              onClick={() => set("q", "")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-text-faint transition-colors hover:text-text focus-visible:text-text focus-visible:outline-none"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
+  const allOccasions = [{ value: "", label: "All occasions" }, ...OCCASIONS];
+  const allStyles = [{ value: "", label: "All styles" }, ...STYLE_INTENTS];
 
-        {/* Filter row — wraps on mobile, inlines on desktop */}
-        <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-          <SlidersHorizontal size={14} className="hidden text-text-faint sm:block" aria-hidden />
-          <Select
-            compact
-            aria-label="Filter by occasion"
-            value={filters.occasion}
-            onChange={(e) => set("occasion", e.target.value)}
-            options={OCCASIONS}
-            placeholder="All occasions"
-          />
-          <Select
-            compact
-            aria-label="Filter by style"
-            value={filters.style}
-            onChange={(e) => set("style", e.target.value)}
-            options={STYLE_INTENTS}
-            placeholder="All styles"
-          />
-          {priceEnabled && (
-            <input
-              type="number"
-              inputMode="numeric"
-              aria-label="Maximum price"
-              placeholder={facets?.price_max ? `Max ${Math.ceil(facets.price_max)}` : "Max price"}
-              min={0}
-              max={facets?.price_max ?? undefined}
-              value={filters.maxPrice}
-              onChange={(e) => set("maxPrice", e.target.value)}
-              className="w-28 border border-border-mid bg-surface px-3 py-1.5 text-base text-text-mid transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-          )}
-          <Select
-            compact
-            hidePlaceholder
-            aria-label="Sort results"
-            value={safeSort}
-            onChange={(e) => set("sort", e.target.value as SortKey)}
-            options={sortOptions}
-          />
-          {hasActive && (
-            <button
-              type="button"
-              onClick={() => onChange(EMPTY)}
-              aria-label={`Clear ${activeCount} active ${activeCount === 1 ? "filter" : "filters"}`}
-              className="t-caption inline-flex items-center gap-1 text-text-faint underline underline-offset-4 transition-colors hover:text-text focus-visible:text-text focus-visible:outline-none"
-            >
-              Clear
-              <span aria-hidden className="text-text-mid">
-                ({activeCount})
-              </span>
-            </button>
-          )}
-        </div>
+  return (
+    <div
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 20,
+        background: "rgba(0,0,0,0.92)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        padding: "0.75rem 1rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.75rem",
+      }}
+    >
+      {/* Search input */}
+      <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        <Search
+          size={15}
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 0,
+            color: focused ? "#c4c7c8" : "#5a5a65",
+            flexShrink: 0,
+            transition: "color 0.2s",
+          }}
+        />
+        <input
+          type="search"
+          placeholder="Search garments…"
+          value={filters.q}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => set("q", e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          aria-label="Search garments"
+          style={{
+            flex: 1,
+            background: "transparent",
+            border: "none",
+            borderBottom: `1px solid ${focused ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.12)"}`,
+            outline: "none",
+            padding: "0.625rem 2rem 0.625rem 1.5rem",
+            fontFamily: "var(--font-body)",
+            fontSize: "16px",
+            color: "#e2e2e9",
+            transition: "border-color 0.2s",
+          }}
+        />
+        {filters.q && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => set("q", "")}
+            style={{
+              position: "absolute",
+              right: 0,
+              background: "none",
+              border: "none",
+              color: "#5a5a65",
+              cursor: "pointer",
+              padding: "0.25rem",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <X size={14} aria-hidden />
+          </button>
+        )}
       </div>
 
-      {/* Live region announcing the active-filter state to assistive tech */}
+      {/* Occasion chips */}
+      <div
+        aria-label="Filter by occasion"
+        style={{
+          display: "flex",
+          gap: "0.375rem",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          paddingBottom: "2px",
+        } as React.CSSProperties}
+      >
+        {allOccasions.map((occ) => {
+          const active = filters.occasion === occ.value;
+          return (
+            <motion.button
+              key={occ.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => set("occasion", occ.value)}
+              whileTap={reduce ? undefined : { scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 500, damping: 28 }}
+              style={chip(active)}
+            >
+              {occ.label}
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Style + sort row */}
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+        <SlidersHorizontal size={13} aria-hidden style={{ color: "#5a5a65", flexShrink: 0 }} />
+
+        {/* Style chips */}
+        <div
+          style={{
+            display: "flex",
+            gap: "0.375rem",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            flex: 1,
+          } as React.CSSProperties}
+        >
+          {allStyles.map((s) => {
+            const active = filters.style === s.value;
+            return (
+              <motion.button
+                key={s.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => set("style", s.value)}
+                whileTap={reduce ? undefined : { scale: 0.92 }}
+                transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                style={chip(active)}
+              >
+                {s.label}
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Sort select */}
+        <select
+          aria-label="Sort results"
+          value={safeSort}
+          onChange={(e) => set("sort", e.target.value as SortKey)}
+          style={{
+            background: "transparent",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "#8e9192",
+            padding: "0.25rem 0.5rem",
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            cursor: "pointer",
+            flexShrink: 0,
+            outline: "none",
+          }}
+        >
+          {sortOptions.map((o) => (
+            <option key={o.value} value={o.value} style={{ background: "#111318" }}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Price input */}
+        {priceEnabled && (
+          <input
+            type="number"
+            inputMode="numeric"
+            aria-label="Maximum price"
+            placeholder={facets?.price_max ? `Max ${Math.ceil(facets.price_max)}` : "Max price"}
+            min={0}
+            max={facets?.price_max ?? undefined}
+            value={filters.maxPrice}
+            onChange={(e) => set("maxPrice", e.target.value)}
+            style={{
+              width: "80px",
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "#8e9192",
+              padding: "0.25rem 0.5rem",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.6rem",
+              outline: "none",
+              flexShrink: 0,
+            }}
+          />
+        )}
+
+        {/* Clear */}
+        {hasActive && (
+          <button
+            type="button"
+            onClick={() => onChange(EMPTY)}
+            aria-label={`Clear ${activeCount} active ${activeCount === 1 ? "filter" : "filters"}`}
+            style={{
+              background: "none",
+              border: "none",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.6rem",
+              color: "#5a5a65",
+              letterSpacing: "0.06em",
+              textDecoration: "underline",
+              textUnderlineOffset: "3px",
+              cursor: "pointer",
+              flexShrink: 0,
+              padding: "0.25rem",
+            }}
+          >
+            Clear ({activeCount})
+          </button>
+        )}
+      </div>
+
       <p className="sr-only" role="status" aria-live="polite">
         {hasActive ? `${activeCount} filters active` : "No filters active"}
       </p>

@@ -1,16 +1,40 @@
 import type { Metadata } from "next";
-
-import { PageContainer } from "@/components/layout/page-container";
-import { PageHeader } from "@/components/layout/page-header";
 import { SavedGrid } from "@/components/saved/saved-grid";
 
-export const metadata: Metadata = { title: "Saved · GYF" };
+export const metadata: Metadata = { title: "Saved — GYF" };
 
 export default function SavedPage() {
   return (
-    <PageContainer>
-      <PageHeader eyebrow="Collections" title="Saved looks" />
+    <div style={{ padding: "1.25rem 1rem 1rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#f0bd8f",
+          }}
+        >
+          Saved
+        </span>
+        <h1
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "clamp(1.625rem, 7vw, 2.25rem)",
+            fontWeight: 800,
+            lineHeight: 1.1,
+            letterSpacing: "-0.03em",
+            color: "#ffffff",
+            margin: 0,
+          }}
+        >
+          Your curated{" "}
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#c4c7c8" }}>looks.</em>
+        </h1>
+      </header>
       <SavedGrid />
-    </PageContainer>
+    </div>
   );
 }

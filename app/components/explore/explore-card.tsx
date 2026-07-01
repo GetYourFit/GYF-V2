@@ -25,7 +25,7 @@ function formatPrice(price?: number | null, currency?: string | null): string | 
   }
 }
 
-const LUX = [0.16, 1, 0.3, 1] as const;
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
   const reduce = useReducedMotion();
@@ -39,66 +39,148 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
       initial={reduce ? false : { opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.5,
-        delay: reduce ? 0 : Math.min(index * 0.035, 0.45),
-        ease: LUX,
+        duration: 0.45,
+        delay: reduce ? 0 : Math.min(index * 0.03, 0.4),
+        ease: EASE,
       }}
-      className="group relative flex flex-col border border-border bg-surface transition-colors duration-300 hover:border-border-hi focus-within:border-border-hi"
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        borderRadius: "4px",
+        overflow: "hidden",
+        transition: "border-color 0.2s",
+      }}
+      whileHover={reduce ? undefined : { borderColor: "rgba(255,255,255,0.18)" }}
     >
       {/* Image */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
+      <div
+        style={{
+          position: "relative",
+          aspectRatio: "3/4",
+          overflow: "hidden",
+          background: "#111318",
+        }}
+      >
         {item.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <motion.img
             src={item.image_url}
             alt={item.title}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            whileHover={reduce ? undefined : { scale: 1.03 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <span className="t-mono text-text-faint">No image</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.55rem",
+              color: "#5a5a65",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+            }}
+          >
+            No image
           </div>
         )}
 
-        {/* Hover scrim — lifts the meta affordance, never obscures the garment */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-text/15 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        />
-
-        {/* Save — revealed on hover/focus, never focusable-while-invisible (WCAG 2.4.7) */}
+        {/* Save button */}
         <button
           type="button"
           aria-label={saved ? "Remove from saved" : "Save item"}
           aria-pressed={saved}
           onClick={() => onSave(item)}
-          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-border-mid bg-surface/90 text-text-mid opacity-0 backdrop-blur-sm transition-all duration-200 hover:border-accent hover:text-accent focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg group-hover:opacity-100 group-focus-within:opacity-100 aria-pressed:opacity-100 aria-pressed:border-accent aria-pressed:text-accent"
+          style={{
+            position: "absolute",
+            right: "0.5rem",
+            top: "0.5rem",
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "36px",
+            height: "36px",
+            background: "rgba(0,0,0,0.65)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            border: `1px solid ${saved ? "#f0bd8f" : "rgba(255,255,255,0.15)"}`,
+            color: saved ? "#f0bd8f" : "#8e9192",
+            cursor: "pointer",
+            borderRadius: "2px",
+            transition: "all 0.2s",
+          }}
         >
-          {saved ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+          {saved
+            ? <BookmarkCheck size={14} aria-hidden />
+            : <Bookmark size={14} aria-hidden />
+          }
         </button>
       </div>
 
       {/* Meta */}
-      <div className="flex items-start justify-between gap-3 p-3 sm:p-4">
-        <div className="min-w-0 flex-1">
-          {/* Stretched link makes the whole card actionable while the save
-              button (z-10) stays independently clickable. */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "0.5rem",
+          padding: "0.75rem",
+        }}
+      >
+        <div style={{ minWidth: 0, flex: 1 }}>
+          {/* Stretched link covers full card, save button (z-10) stays independently clickable */}
           <a
             href={href}
             target={external ? "_blank" : undefined}
             rel={external ? "noopener noreferrer" : undefined}
             aria-label={external ? `Shop ${item.title}` : `View ${item.title}`}
-            className="t-caption line-clamp-2 text-text after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent"
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.75rem",
+              color: "#c4c7c8",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              textDecoration: "none",
+            }}
           >
+            <span
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 1,
+              }}
+              aria-hidden
+            />
             {item.title}
           </a>
-          {price && <p className="t-mono mt-2 text-text-mid">{price}</p>}
+          {price && (
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.65rem",
+                color: "#f0bd8f",
+                letterSpacing: "0.04em",
+                marginTop: "0.375rem",
+              }}
+            >
+              {price}
+            </p>
+          )}
         </div>
         <ArrowUpRight
-          size={16}
+          size={14}
           aria-hidden
-          className="mt-0.5 shrink-0 text-text-faint transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-text"
+          style={{ color: "#5a5a65", flexShrink: 0, marginTop: "2px" }}
         />
       </div>
     </motion.article>

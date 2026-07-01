@@ -1,36 +1,38 @@
 "use client";
 
 import { X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import type { Post, SavedOutfit } from "@gyf/types";
 
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const FOCUSABLE =
+  'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
+
 interface CreatePostSheetProps {
   open: boolean;
   onClose: () => void;
-  /** Called with the persisted post returned by the API. */
   onCreated: (post: Post) => void;
 }
 
-/** Share a *styled look* (its garment ids) — the API stores item ids and
- *  re-renders the look per viewer, so a post is grounded in real catalog items,
- *  never a free-floating uploaded photo. */
 export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetProps) {
+  const reduce = useReducedMotion();
   const { toast } = useToast();
   const captionId = useId();
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const restoreRef = useRef<HTMLElement | null>(null);
   const radioRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [looks, setLooks] = useState<SavedOutfit[]>([]);
   const [loadingLooks, setLoadingLooks] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  /** Inline field-level validation only — request failures go to a toast. */
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   const loadLooks = useCallback(async () => {
@@ -55,42 +57,53 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
     if (open) void Promise.resolve().then(() => loadLooks());
   }, [open, loadLooks]);
 
-  // ARIA radio pattern: arrow keys move selection within the group and roving
-  // tabindex keeps only the active option in the tab sequence.
+  useEffect(() => {
+    if (open) restoreRef.current = document.activeElement as HTMLElement | null;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
+    setTimeout(() => (first ?? panel)?.focus(), 50);
+    return () => { restoreRef.current?.focus?.(); };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") { e.stopPropagation(); handleClose(); }
+    }
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   function onRadioKeyDown(e: React.KeyboardEvent) {
     if (looks.length === 0) return;
     const idx = looks.findIndex((l) => l.id === selected);
     let next = idx;
     if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % looks.length;
-    else if (e.key === "ArrowLeft" || e.key === "ArrowUp")
-      next = (idx - 1 + looks.length) % looks.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + looks.length) % looks.length;
     else return;
     e.preventDefault();
     const look = looks[next];
-    if (look) {
-      setSelected(look.id);
-      radioRefs.current[next]?.focus();
-    }
+    if (look) { setSelected(look.id); radioRefs.current[next]?.focus(); }
   }
 
-  function reset() {
-    setCaption("");
-    setSelected(null);
-    setFieldError(null);
-  }
-
-  function handleClose() {
-    reset();
-    onClose();
-  }
+  function reset() { setCaption(""); setSelected(null); setFieldError(null); }
+  function handleClose() { reset(); onClose(); }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const look = looks.find((l) => l.id === selected);
-    if (!look) {
-      setFieldError("Select a look to share.");
-      return;
-    }
+    if (!look) { setFieldError("Select a look to share."); return; }
     setSubmitting(true);
     setFieldError(null);
     try {
@@ -114,129 +127,311 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
   }
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      titleId={titleId}
-      className="pb-[env(safe-area-inset-bottom)]"
-    >
-      {/* Grab handle (mobile sheet affordance) */}
-      <div className="flex justify-center pt-3 pb-1 sm:hidden">
-        <div className="h-1 w-10 bg-border-hi" />
-      </div>
-
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-5 py-3">
-        <p id={titleId} className="t-title text-text">
-          Share a look
-        </p>
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={handleClose}
-          className="-mr-1 p-1 text-text-faint transition-colors hover:text-text"
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="create-post-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+          }}
         >
-          <X size={20} aria-hidden />
-        </button>
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5"
-      >
-        <p className="t-label text-text-faint">Choose a saved look</p>
-
-        {loadingLooks && (
-          <div className="grid grid-cols-3 gap-2" aria-hidden>
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="skeleton aspect-square w-full" />
-            ))}
-          </div>
-        )}
-
-        {!loadingLooks && looks.length === 0 && (
-          <p className="t-body text-text-mid">
-            Save a look from your stylist feed first, then share it here.
-          </p>
-        )}
-
-        {!loadingLooks && looks.length > 0 && (
-          <div
-            className="grid grid-cols-3 gap-2"
-            role="radiogroup"
-            aria-label="Saved looks"
-            onKeyDown={onRadioKeyDown}
-          >
-            {looks.map((look, i) => {
-              const img = look.items.find((it) => it.image_url)?.image_url ?? null;
-              const active = selected === look.id;
-              return (
-                <button
-                  key={look.id}
-                  ref={(el) => {
-                    radioRefs.current[i] = el;
-                  }}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={look.occasion ?? `Saved look ${i + 1}`}
-                  tabIndex={active ? 0 : -1}
-                  onClick={() => setSelected(look.id)}
-                  className={`relative aspect-square w-full overflow-hidden border bg-surface-2 transition-colors ${
-                    active ? "border-accent" : "border-border hover:border-border-mid"
-                  }`}
-                >
-                  {img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="t-mono flex h-full items-center justify-center text-text-faint">
-                      {look.occasion ?? "look"}
-                    </span>
-                  )}
-                  {active && (
-                    <span className="absolute inset-0 ring-2 ring-inset ring-accent" aria-hidden />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Caption */}
-        <div className="flex flex-col gap-2">
-          <label htmlFor={captionId} className="t-label text-text-faint">
-            Caption (optional)
-          </label>
-          <textarea
-            id={captionId}
-            rows={3}
-            placeholder="Why this look works…"
-            value={caption}
-            onChange={(e) => {
-              setCaption(e.target.value);
-              setFieldError(null);
+          {/* Backdrop */}
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={handleClose}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              background: "rgba(0,0,0,0.78)",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              cursor: "default",
+              border: "none",
             }}
-            className="t-body w-full resize-none border border-border-mid bg-surface px-4 py-3 text-text transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
-        </div>
 
-        {fieldError && (
-          <p role="alert" className="t-caption text-error">
-            {fieldError}
-          </p>
-        )}
+          {/* Panel */}
+          <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: "100%" }}
+            transition={{ duration: 0.38, ease: EASE }}
+            style={{
+              position: "relative",
+              zIndex: 10,
+              width: "100%",
+              maxWidth: "390px",
+              maxHeight: "88dvh",
+              background: "#0a0b0e",
+              borderTop: "1px solid rgba(255,255,255,0.1)",
+              outline: "none",
+              display: "flex",
+              flexDirection: "column",
+              paddingBottom: "env(safe-area-inset-bottom)",
+            }}
+          >
+            {/* Grab handle */}
+            <div style={{ display: "flex", justifyContent: "center", padding: "0.75rem 0 0.25rem" }}>
+              <div style={{ width: 36, height: 4, background: "rgba(255,255,255,0.15)", borderRadius: 2 }} />
+            </div>
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          className="mt-auto w-full"
-          disabled={submitting || !selected}
-        >
-          {submitting ? "Sharing…" : "Share look"}
-        </Button>
-      </form>
-    </Dialog>
+            {/* Header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.75rem 1.25rem",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <p
+                id={titleId}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.6rem",
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "#f0bd8f",
+                  margin: 0,
+                }}
+              >
+                Share a Look
+              </p>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={handleClose}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "44px",
+                  height: "44px",
+                  background: "transparent",
+                  border: "none",
+                  color: "#5a5a65",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={18} aria-hidden />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form
+              onSubmit={handleSubmit}
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "1.25rem",
+                padding: "1.25rem",
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.6rem",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#5a5a65",
+                  margin: 0,
+                }}
+              >
+                Choose a saved look
+              </p>
+
+              {/* Loading skeletons */}
+              {loadingLooks && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.5rem" }} aria-hidden>
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ opacity: [0.3, 0.6, 0.3] }}
+                      transition={{ duration: 1.4, delay: i * 0.15, repeat: Infinity }}
+                      style={{ aspectRatio: "1/1", background: "rgba(255,255,255,0.06)" }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Empty */}
+              {!loadingLooks && looks.length === 0 && (
+                <p
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.875rem",
+                    color: "#5a5a65",
+                    margin: 0,
+                  }}
+                >
+                  Save a look from your stylist feed first, then share it here.
+                </p>
+              )}
+
+              {/* Look grid */}
+              {!loadingLooks && looks.length > 0 && (
+                <div
+                  style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.5rem" }}
+                  role="radiogroup"
+                  aria-label="Saved looks"
+                  onKeyDown={onRadioKeyDown}
+                >
+                  {looks.map((look, i) => {
+                    const img = look.items.find((it) => it.image_url)?.image_url ?? null;
+                    const active = selected === look.id;
+                    return (
+                      <button
+                        key={look.id}
+                        ref={(el) => { radioRefs.current[i] = el; }}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        aria-label={look.occasion ?? `Saved look ${i + 1}`}
+                        tabIndex={active ? 0 : -1}
+                        onClick={() => setSelected(look.id)}
+                        style={{
+                          position: "relative",
+                          aspectRatio: "1/1",
+                          overflow: "hidden",
+                          background: "#1a1b21",
+                          border: `1px solid ${active ? "#f0bd8f" : "rgba(255,255,255,0.08)"}`,
+                          cursor: "pointer",
+                          padding: 0,
+                          outline: "none",
+                          transition: "border-color 0.15s",
+                        }}
+                      >
+                        {img ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        ) : (
+                          <span
+                            style={{
+                              display: "flex",
+                              height: "100%",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontFamily: "var(--font-mono)",
+                              fontSize: "0.55rem",
+                              color: "#5a5a65",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.06em",
+                            }}
+                          >
+                            {look.occasion ?? "look"}
+                          </span>
+                        )}
+                        {active && (
+                          <span
+                            aria-hidden
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              border: "2px solid #f0bd8f",
+                              pointerEvents: "none",
+                            }}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Caption */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label
+                  htmlFor={captionId}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.6rem",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "#5a5a65",
+                  }}
+                >
+                  Caption (optional)
+                </label>
+                <textarea
+                  id={captionId}
+                  rows={3}
+                  placeholder="Why this look works…"
+                  value={caption}
+                  onChange={(e) => { setCaption(e.target.value); setFieldError(null); }}
+                  style={{
+                    width: "100%",
+                    resize: "none",
+                    background: "transparent",
+                    border: "none",
+                    borderBottom: "1px solid rgba(255,255,255,0.15)",
+                    outline: "none",
+                    padding: "0.625rem 0",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.9375rem",
+                    color: "#e2e2e9",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {/* Field error */}
+              {fieldError && (
+                <p role="alert" style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#ffb4ab", margin: 0 }}>
+                  {fieldError}
+                </p>
+              )}
+
+              {/* Submit */}
+              <motion.button
+                type="submit"
+                disabled={submitting || !selected}
+                whileTap={reduce ? undefined : { scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                style={{
+                  marginTop: "auto",
+                  width: "100%",
+                  minHeight: "52px",
+                  background: submitting || !selected ? "rgba(255,255,255,0.1)" : "#ffffff",
+                  color: submitting || !selected ? "#5a5a65" : "#000000",
+                  border: "none",
+                  borderRadius: "2px",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.65rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  cursor: submitting || !selected ? "not-allowed" : "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                {submitting ? "Sharing…" : "Share Look"}
+              </motion.button>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

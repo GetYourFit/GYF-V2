@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-
-import { PageContainer } from "@/components/layout/page-container";
-import { PageHeader } from "@/components/layout/page-header";
 import { WardrobeGrid } from "@/components/wardrobe/wardrobe-grid";
 
 export const metadata: Metadata = {
@@ -11,13 +8,36 @@ export const metadata: Metadata = {
 
 export default function WardrobePage() {
   return (
-    <PageContainer width="wide">
-      <PageHeader
-        eyebrow="Your closet"
-        title="Wardrobe"
-        description="Everything you own — GYF styles around it."
-      />
+    <div style={{ padding: "1.25rem 1rem 1rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#f0bd8f",
+          }}
+        >
+          Wardrobe
+        </span>
+        <h1
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "clamp(1.625rem, 7vw, 2.25rem)",
+            fontWeight: 800,
+            lineHeight: 1.1,
+            letterSpacing: "-0.03em",
+            color: "#ffffff",
+            margin: 0,
+          }}
+        >
+          Your closet,{" "}
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#c4c7c8" }}>digitised.</em>
+        </h1>
+      </header>
       <WardrobeGrid />
-    </PageContainer>
+    </div>
   );
 }
