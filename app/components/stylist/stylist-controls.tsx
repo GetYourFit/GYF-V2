@@ -38,7 +38,7 @@ export function StylistControls({
     <div className="flex flex-col gap-3">
       {/* Occasion chips — tap to restyle instantly */}
       <div
-        className="flex gap-2 overflow-x-auto pb-0.5"
+        className="no-scrollbar flex gap-2 overflow-x-auto pb-0.5"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         aria-label="Filter by occasion"
       >

@@ -46,10 +46,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             width={300}
             height={300}
             className="transition-opacity duration-200 group-hover:opacity-70"
-            style={{ width: 72, height: "auto" }}
+            style={{ width: 88, height: "auto", mixBlendMode: "multiply" }}
             aria-hidden
           />
-          <span className="t-wordmark text-2xl text-text">GYF</span>
         </Link>
         <Suspense fallback={null}>{children}</Suspense>
       </div>

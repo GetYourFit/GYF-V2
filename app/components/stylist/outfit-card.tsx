@@ -51,7 +51,7 @@ export function OutfitCard({
         </div>
 
         {/* ── Garment image spread ── */}
-        <div className="relative mx-4 mb-4 flex gap-px overflow-hidden border border-border bg-border">
+        <div className="relative mb-4 flex gap-px overflow-hidden border-y border-border bg-border">
           {outfit.items.map((item) => {
             const src = mediaUrl(item.image_url);
             return (

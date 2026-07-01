@@ -216,6 +216,12 @@
 }
 
 /* ─── Keyframes ──────────────────────────────────────────────────────────── */
+/* ─── Scrollbar hide utility ─────────────────────────────────────────────── */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+}
+
 @keyframes shimmer {
   from { background-position: -200% center; }
   to   { background-position:  200% center; }

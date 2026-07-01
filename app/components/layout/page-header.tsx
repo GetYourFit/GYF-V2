@@ -18,7 +18,7 @@ export function PageHeader({ eyebrow, title, description, action, className }: P
           {eyebrow ? (
             <p className="t-label text-accent">{eyebrow}</p>
           ) : null}
-          <h1 className="t-display text-text" style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)" }}>
+          <h1 className="t-display text-text" style={{ fontSize: "clamp(1.4rem, 4vw, 2.5rem)" }}>
             {title}
           </h1>
         </div>
