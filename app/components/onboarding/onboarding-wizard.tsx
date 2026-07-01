@@ -3,13 +3,9 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ChevronLeft, ChevronRight, Check, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Zap } from "lucide-react";
 
 import { PhotoUpload } from "@/components/onboarding/photo-upload";
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
@@ -26,9 +22,9 @@ import {
 } from "@/lib/vocab";
 import type { BudgetRange, Profile, ProfileInput } from "@gyf/types";
 
-type ConsentState = Record<string, boolean>;
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-/** The dropdown fields the photo estimate can fill (and badge). */
+type ConsentState = Record<string, boolean>;
 type EstimatedKey = "skin_tone" | "undertone" | "body_type";
 const ESTIMATED_KEYS: EstimatedKey[] = ["skin_tone", "undertone", "body_type"];
 
@@ -51,10 +47,132 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
-const lux = [0.16, 1, 0.3, 1] as const;
+/* ── Dark field primitives ── */
 
-/** Stepped onboarding wizard — same backend contract as `OnboardingForm` but
- *  presented one section at a time with Framer Motion slide transitions. */
+function MonoLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{
+      fontFamily: "var(--font-mono)",
+      fontSize: "0.6rem",
+      fontWeight: 500,
+      letterSpacing: "0.1em",
+      textTransform: "uppercase" as const,
+      color: "#5a5a65",
+      display: "block",
+      marginBottom: "0.5rem",
+    }}>
+      {children}
+    </span>
+  );
+}
+
+function DarkSelect({
+  id,
+  value,
+  onChange,
+  options,
+  placeholder = "Prefer not to say",
+}: {
+  id?: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <select
+      id={id}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        width: "100%",
+        background: "transparent",
+        border: "none",
+        borderBottom: `1px solid ${focused ? "#ffffff" : "#444748"}`,
+        borderRadius: 0,
+        padding: "0.625rem 0",
+        fontFamily: "var(--font-body)",
+        fontSize: "0.9375rem",
+        color: value ? "#e2e2e9" : "#5a5a65",
+        outline: "none",
+        appearance: "none",
+        WebkitAppearance: "none",
+        cursor: "pointer",
+        transition: "border-color 0.2s",
+        minHeight: "44px",
+      }}
+    >
+      <option value="" style={{ background: "#111318", color: "#5a5a65" }}>{placeholder}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value} style={{ background: "#111318", color: "#e2e2e9" }}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function DarkInput({
+  id,
+  type = "text",
+  value,
+  onChange,
+  min,
+  placeholder,
+}: {
+  id?: string;
+  type?: string;
+  value: string | number;
+  onChange: (v: string) => void;
+  min?: number;
+  placeholder?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <input
+      id={id}
+      type={type}
+      value={value}
+      min={min}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        width: "100%",
+        background: "transparent",
+        border: "none",
+        borderBottom: `1px solid ${focused ? "#ffffff" : "#444748"}`,
+        borderRadius: 0,
+        padding: "0.625rem 0",
+        fontFamily: "var(--font-body)",
+        fontSize: "0.9375rem",
+        color: "#e2e2e9",
+        outline: "none",
+        transition: "border-color 0.2s",
+        minHeight: "44px",
+      }}
+    />
+  );
+}
+
+function FieldWrap({ label, badge, children }: { label: string; badge?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+        <MonoLabel>{label}</MonoLabel>
+        {badge}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* ── Wizard ── */
+
 export function OnboardingWizard() {
   const router = useRouter();
   const { toast } = useToast();
@@ -67,8 +185,6 @@ export function OnboardingWizard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Fields the photo estimate auto-filled — drives the "Estimated" badge and clears
-  // the moment the user edits that field (the estimate was only ever a suggestion).
   const [estimated, setEstimated] = useState<Set<EstimatedKey>>(new Set());
 
   useEffect(() => {
@@ -94,15 +210,12 @@ export function OnboardingWizard() {
         }
         setConsent({ data_processing: true, ...consentFlags });
       })
-      .catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : "Could not load your profile."),
-      )
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Could not load your profile."))
       .finally(() => setLoading(false));
   }, []);
 
   function set<K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) {
     setForm((f) => ({ ...f, [key]: value }));
-    // A user edit overrides the photo estimate — drop the "Estimated" badge.
     setEstimated((prev) => {
       if (!prev.has(key as EstimatedKey)) return prev;
       const next = new Set(prev);
@@ -113,17 +226,12 @@ export function OnboardingWizard() {
 
   function toggleStyle(value: string) {
     const current = form.style_intent ?? [];
-    set(
-      "style_intent",
-      current.includes(value) ? current.filter((s) => s !== value) : [...current, value],
-    );
+    set("style_intent", current.includes(value) ? current.filter((s) => s !== value) : [...current, value]);
   }
 
   function applyEstimated(profile: Profile): string[] {
     const { patch, applied } = mergeEstimated(profile);
     setForm((f) => ({ ...f, ...patch }));
-    // Mark exactly the dropdown fields that got a value, so each shows an
-    // "Estimated" badge until the user confirms or changes it.
     const filled = ESTIMATED_KEYS.filter((k) => patch[k] != null);
     setEstimated(new Set(filled));
     return applied;
@@ -134,15 +242,9 @@ export function OnboardingWizard() {
     setStep(next);
   }
 
-  // Move focus to the new step's panel so keyboard + screen-reader users land on
-  // the freshly revealed content (and not stranded on the now-hidden control).
-  // Skips the initial mount so we don't yank focus away from the page header.
   const mounted = useRef(false);
   useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      return;
-    }
+    if (!mounted.current) { mounted.current = true; return; }
     panelRef.current?.focus();
   }, [step]);
 
@@ -154,17 +256,13 @@ export function OnboardingWizard() {
       const api = browserApi();
       await api.putProfile(form);
       await api.putConsent({ flags: consent });
-      toast({
-        variant: "success",
-        title: "Profile saved",
-        description: "Your stylist is composing looks for you.",
-      });
+      toast({ variant: "success", title: "Profile saved", description: "Your stylist is composing looks for you." });
       router.push("/");
       router.refresh();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Could not save your profile.";
       setError(message);
-      toast({ variant: "error", title: "Couldn’t save your profile", description: message });
+      toast({ variant: "error", title: "Couldn't save your profile", description: message });
     } finally {
       setSaving(false);
     }
@@ -172,9 +270,15 @@ export function OnboardingWizard() {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-4">
-        <div className="h-1 w-full bg-surface-2" />
-        <p className="t-caption text-text-faint">Loading your profile…</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "2rem 0" }}>
+        {[80, 60, 100].map((w, i) => (
+          <motion.div
+            key={i}
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 1.4, delay: i * 0.15, repeat: Infinity }}
+            style={{ height: "12px", width: `${w}%`, background: "rgba(255,255,255,0.06)", borderRadius: "2px" }}
+          />
+        ))}
       </div>
     );
   }
@@ -182,8 +286,8 @@ export function OnboardingWizard() {
   const budget = form.budget_range ?? { min: 0, max: null, currency: "USD" };
   const isLast = step === STEPS.length - 1;
   const currentStepId: StepId = STEPS[step]!.id;
+  const offset = reduceMotion ? 0 : 32;
 
-  const offset = reduceMotion ? 0 : 40;
   const variants = {
     enter: (dir: number) => ({ x: dir > 0 ? offset : -offset, opacity: 0 }),
     center: { x: 0, opacity: 1 },
@@ -191,38 +295,62 @@ export function OnboardingWizard() {
   };
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-8">
-      {/* Progress bar + step labels */}
-      <div className="flex flex-col gap-3">
-        <p className="t-mono text-text-faint">
-          Step {step + 1} of {STEPS.length}
-        </p>
-        <ol className="flex gap-1.5" aria-label="Onboarding progress">
+    <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+
+      {/* ── Step indicator ── */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <span style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.6rem",
+          fontWeight: 500,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "#f0bd8f",
+        }}>
+          Step {String(step + 1).padStart(2, "0")} / {String(STEPS.length).padStart(2, "0")}
+        </span>
+
+        <ol aria-label="Onboarding progress" style={{ display: "flex", gap: "0.375rem", listStyle: "none", margin: 0, padding: 0 }}>
           {STEPS.map((s, i) => {
             const state = i === step ? "current" : i < step ? "done" : "upcoming";
             return (
-              <li key={s.id} className="flex flex-1 flex-col gap-1.5">
+              <li key={s.id} style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <button
                   type="button"
                   onClick={() => goTo(i)}
-                  className="group relative h-1 w-full overflow-hidden bg-surface-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-bg"
                   aria-current={state === "current" ? "step" : undefined}
-                  aria-label={`Step ${i + 1}: ${s.label}${
-                    state === "done" ? " (completed)" : state === "current" ? " (current)" : ""
-                  }`}
+                  aria-label={`Step ${i + 1}: ${s.label}${state === "done" ? " (completed)" : state === "current" ? " (current)" : ""}`}
+                  style={{
+                    position: "relative",
+                    height: "2px",
+                    width: "100%",
+                    background: "#1e2025",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    overflow: "hidden",
+                  }}
                 >
                   <motion.span
-                    className="absolute inset-y-0 left-0 bg-accent"
                     initial={false}
                     animate={{ width: i <= step ? "100%" : "0%" }}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.4, ease: EASE }}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "#f0bd8f",
+                      display: "block",
+                    }}
                   />
                 </button>
-                <span
-                  className={`t-mono text-left transition-colors duration-200 ${
-                    state === "current" ? "text-text" : "text-text-faint"
-                  }`}
-                >
+                <span style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.55rem",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: state === "current" ? "#e2e2e9" : "#444748",
+                  transition: "color 0.2s",
+                }}>
                   {s.label}
                 </span>
               </li>
@@ -231,8 +359,8 @@ export function OnboardingWizard() {
         </ol>
       </div>
 
-      {/* Animated step panel */}
-      <div className="relative min-h-80 overflow-hidden">
+      {/* ── Animated step panel ── */}
+      <div style={{ position: "relative", minHeight: "320px", overflow: "hidden" }}>
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentStepId}
@@ -245,57 +373,133 @@ export function OnboardingWizard() {
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: reduceMotion ? 0.15 : 0.3, ease: lux }}
-            className="flex flex-col gap-6 focus-visible:outline-none"
+            transition={{ duration: reduceMotion ? 0.15 : 0.28, ease: EASE }}
+            style={{ display: "flex", flexDirection: "column", gap: "1.5rem", outline: "none" }}
           >
-            {currentStepId === "you" && (
-              <StepYou
-                form={form}
-                set={set}
-                applyEstimated={applyEstimated}
-                estimated={estimated}
-              />
-            )}
-            {currentStepId === "style" && (
-              <StepStyle form={form} set={set} toggleStyle={toggleStyle} />
-            )}
+            {currentStepId === "you" && <StepYou form={form} set={set} applyEstimated={applyEstimated} estimated={estimated} />}
+            {currentStepId === "style" && <StepStyle form={form} toggleStyle={toggleStyle} set={set} />}
             {currentStepId === "budget" && <StepBudget budget={budget} set={set} />}
-            {currentStepId === "privacy" && (
-              <StepPrivacy consent={consent} setConsent={setConsent} />
-            )}
+            {currentStepId === "privacy" && <StepPrivacy consent={consent} setConsent={setConsent} />}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Error */}
-      {error && (
-        <p role="alert" className="t-caption text-error">
-          {error}
-        </p>
-      )}
+      {/* ── Error ── */}
+      <AnimatePresence>
+        {error && (
+          <motion.p
+            role="alert"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#ffb4ab", margin: 0 }}
+          >
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 border-t border-border pt-6">
-        <div className="flex gap-3">
+      {/* ── Navigation ── */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "0.75rem",
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        paddingTop: "1.5rem",
+      }}>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
           {step > 0 && (
-            <Button type="button" variant="ghost" size="sm" onClick={() => goTo(step - 1)}>
-              <ChevronLeft className="h-4 w-4" aria-hidden />
+            <button
+              type="button"
+              onClick={() => goTo(step - 1)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem",
+                minHeight: "44px",
+                padding: "0 1rem",
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "2px",
+                color: "#8e9192",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.6rem",
+                fontWeight: 500,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+              }}
+            >
+              <ChevronLeft size={14} aria-hidden />
               Back
-            </Button>
+            </button>
           )}
           <DeleteAccount />
         </div>
 
         {isLast ? (
-          <Button type="submit" disabled={saving} aria-busy={saving}>
-            {saving ? "Saving…" : "Save & meet your stylist"}
-            {!saving && <Check className="h-4 w-4" aria-hidden />}
-          </Button>
+          <motion.button
+            type="submit"
+            disabled={saving}
+            aria-busy={saving}
+            whileTap={saving ? undefined : { scale: 0.97 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              minHeight: "44px",
+              padding: "0 1.5rem",
+              background: saving ? "rgba(255,255,255,0.1)" : "#ffffff",
+              color: saving ? "#5a5a65" : "#000000",
+              border: "none",
+              borderRadius: "2px",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.6rem",
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              cursor: saving ? "not-allowed" : "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            {saving ? (
+              <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1, repeat: Infinity }}>
+                Saving…
+              </motion.span>
+            ) : (
+              <>
+                Save & meet your stylist
+                <Check size={14} aria-hidden />
+              </>
+            )}
+          </motion.button>
         ) : (
-          <Button type="button" onClick={() => goTo(step + 1)}>
+          <motion.button
+            type="button"
+            onClick={() => goTo(step + 1)}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              minHeight: "44px",
+              padding: "0 1.5rem",
+              background: "#ffffff",
+              color: "#000000",
+              border: "none",
+              borderRadius: "2px",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.6rem",
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
             Next
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </Button>
+            <ChevronRight size={14} aria-hidden />
+          </motion.button>
         )}
       </div>
     </form>
@@ -309,12 +513,51 @@ function EstimatedBadge() {
     <motion.span
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.25, ease: lux }}
-      className="inline-flex items-center gap-1 border border-accent px-1.5 py-0.5 t-mono uppercase text-accent"
+      transition={{ duration: 0.25, ease: EASE }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "0.25rem",
+        border: "1px solid rgba(240,189,143,0.4)",
+        padding: "0.125rem 0.5rem",
+        fontFamily: "var(--font-mono)",
+        fontSize: "0.5rem",
+        letterSpacing: "0.08em",
+        textTransform: "uppercase" as const,
+        color: "#f0bd8f",
+        flexShrink: 0,
+      }}
     >
-      <Sparkles className="h-2.5 w-2.5" aria-hidden />
-      Estimated
+      <Zap size={10} aria-hidden />
+      AI Est.
     </motion.span>
+  );
+}
+
+function StepHeader({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div style={{ marginBottom: "0.5rem" }}>
+      <h2 style={{
+        fontFamily: "var(--font-body)",
+        fontSize: "1.375rem",
+        fontWeight: 700,
+        color: "#ffffff",
+        margin: 0,
+        letterSpacing: "-0.02em",
+      }}>
+        {title}
+      </h2>
+      {hint && (
+        <p style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "0.8125rem",
+          color: "#5a5a65",
+          marginTop: "0.375rem",
+        }}>
+          {hint}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -331,53 +574,26 @@ function StepYou({
 }) {
   return (
     <>
-      <StepHeader
-        title="About you"
-        hint="Helps GYF choose flattering colours and cuts. Everything is optional."
-      />
+      <StepHeader title="About you" hint="Helps GYF choose flattering colours and cuts. Everything is optional." />
       <PhotoUpload onEstimated={applyEstimated} />
-      <Field label="I'm shopping for" hint="Sets which part of the catalogue we style you from.">
-        {(p) => (
-          <Select
-            {...p}
-            options={GENDERS}
-            placeholder="No preference"
-            value={form.gender ?? ""}
-            onChange={(e) => set("gender", e.target.value)}
-          />
-        )}
-      </Field>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label="Skin tone" badge={estimated.has("skin_tone") ? <EstimatedBadge /> : null}>
-          {(p) => (
-            <Select
-              {...p}
-              options={SKIN_TONES}
-              value={form.skin_tone ?? ""}
-              onChange={(e) => set("skin_tone", e.target.value)}
-            />
-          )}
-        </Field>
-        <Field label="Undertone" badge={estimated.has("undertone") ? <EstimatedBadge /> : null}>
-          {(p) => (
-            <Select
-              {...p}
-              options={UNDERTONES}
-              value={form.undertone ?? ""}
-              onChange={(e) => set("undertone", e.target.value)}
-            />
-          )}
-        </Field>
-        <Field label="Body type" badge={estimated.has("body_type") ? <EstimatedBadge /> : null}>
-          {(p) => (
-            <Select
-              {...p}
-              options={BODY_TYPES}
-              value={form.body_type ?? ""}
-              onChange={(e) => set("body_type", e.target.value)}
-            />
-          )}
-        </Field>
+      <FieldWrap label="I'm shopping for">
+        <DarkSelect
+          options={GENDERS}
+          placeholder="No preference"
+          value={form.gender ?? ""}
+          onChange={(v) => set("gender", v)}
+        />
+      </FieldWrap>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem" }}>
+        <FieldWrap label="Skin tone" badge={estimated.has("skin_tone") ? <EstimatedBadge /> : null}>
+          <DarkSelect options={SKIN_TONES} value={form.skin_tone ?? ""} onChange={(v) => set("skin_tone", v)} />
+        </FieldWrap>
+        <FieldWrap label="Undertone" badge={estimated.has("undertone") ? <EstimatedBadge /> : null}>
+          <DarkSelect options={UNDERTONES} value={form.undertone ?? ""} onChange={(v) => set("undertone", v)} />
+        </FieldWrap>
+        <FieldWrap label="Body type" badge={estimated.has("body_type") ? <EstimatedBadge /> : null}>
+          <DarkSelect options={BODY_TYPES} value={form.body_type ?? ""} onChange={(v) => set("body_type", v)} />
+        </FieldWrap>
       </div>
     </>
   );
@@ -385,22 +601,19 @@ function StepYou({
 
 function StepStyle({
   form,
-  set,
   toggleStyle,
+  set,
 }: {
   form: ProfileInput;
-  set: <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) => void;
   toggleStyle: (v: string) => void;
+  set: <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) => void;
 }) {
   return (
     <>
-      <StepHeader
-        title="Your style"
-        hint="Pick the aesthetics you lean toward and the occasions you dress for most."
-      />
-      <fieldset>
-        <legend className="t-label mb-4 text-text-faint">Style intent</legend>
-        <div className="flex flex-wrap gap-2">
+      <StepHeader title="Your style" hint="Pick the aesthetics you lean toward and occasions you dress for." />
+      <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
+        <MonoLabel>Style intent</MonoLabel>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
           {STYLE_INTENTS.map((s) => {
             const active = (form.style_intent ?? []).includes(s.value);
             return (
@@ -409,14 +622,23 @@ function StepStyle({
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleStyle(s.value)}
-                whileTap={{ scale: 0.93 }}
+                whileTap={{ scale: 0.94 }}
                 transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                className={
-                  "min-h-9 border px-3 py-1 t-label transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
-                  (active
-                    ? "border-accent bg-accent/10 text-accent"
-                    : "border-border-mid text-text-faint hover:border-border-hi hover:text-text")
-                }
+                style={{
+                  minHeight: "36px",
+                  padding: "0 0.875rem",
+                  border: `1px solid ${active ? "#f0bd8f" : "rgba(255,255,255,0.08)"}`,
+                  background: active ? "rgba(240,189,143,0.08)" : "transparent",
+                  color: active ? "#f0bd8f" : "#5a5a65",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.6rem",
+                  fontWeight: 500,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  borderRadius: "2px",
+                  cursor: "pointer",
+                  transition: "all 0.18s",
+                }}
               >
                 {s.label}
               </motion.button>
@@ -424,17 +646,14 @@ function StepStyle({
           })}
         </div>
       </fieldset>
-      <Field label="Usual occasion">
-        {(p) => (
-          <Select
-            {...p}
-            options={OCCASIONS}
-            placeholder="No preference"
-            value={form.occasion ?? ""}
-            onChange={(e) => set("occasion", e.target.value)}
-          />
-        )}
-      </Field>
+      <FieldWrap label="Usual occasion">
+        <DarkSelect
+          options={OCCASIONS}
+          placeholder="No preference"
+          value={form.occasion ?? ""}
+          onChange={(v) => set("occasion", v)}
+        />
+      </FieldWrap>
     </>
   );
 }
@@ -449,47 +668,32 @@ function StepBudget({
   return (
     <>
       <StepHeader title="Budget" hint="Per garment, not per outfit." />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-        <Field label="Min">
-          {(p) => (
-            <Input
-              {...p}
-              type="number"
-              min={0}
-              value={budget.min ?? 0}
-              onChange={(e) => set("budget_range", { ...budget, min: Number(e.target.value) })}
-            />
-          )}
-        </Field>
-        <Field label="Max">
-          {(p) => (
-            <Input
-              {...p}
-              type="number"
-              min={0}
-              value={budget.max ?? ""}
-              onChange={(e) =>
-                set("budget_range", {
-                  ...budget,
-                  max: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
-            />
-          )}
-        </Field>
-        <Field label="Currency">
-          {(p) => (
-            <Select
-              {...p}
-              options={CURRENCIES}
-              placeholder="USD"
-              value={budget.currency ?? "USD"}
-              onChange={(e) =>
-                set("budget_range", { ...budget, currency: e.target.value || "USD" })
-              }
-            />
-          )}
-        </Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem" }}>
+        <FieldWrap label="Min">
+          <DarkInput
+            type="number"
+            min={0}
+            value={budget.min ?? 0}
+            onChange={(v) => set("budget_range", { ...budget, min: Number(v) })}
+          />
+        </FieldWrap>
+        <FieldWrap label="Max">
+          <DarkInput
+            type="number"
+            min={0}
+            value={budget.max ?? ""}
+            placeholder="No limit"
+            onChange={(v) => set("budget_range", { ...budget, max: v === "" ? null : Number(v) })}
+          />
+        </FieldWrap>
+        <FieldWrap label="Currency">
+          <DarkSelect
+            options={CURRENCIES}
+            placeholder="USD"
+            value={budget.currency ?? "USD"}
+            onChange={(v) => set("budget_range", { ...budget, currency: v || "USD" })}
+          />
+        </FieldWrap>
       </div>
     </>
   );
@@ -504,39 +708,61 @@ function StepPrivacy({
 }) {
   return (
     <>
-      <StepHeader
-        title="Privacy & consent"
-        hint="You control your data. Change or revoke anytime."
-      />
-      <ul className="flex flex-col gap-5">
+      <StepHeader title="Privacy & consent" hint="You control your data. Change or revoke anytime." />
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "1.25rem" }}>
         {CONSENT_OPTIONS.map((c) => (
-          <li key={c.value} className="flex items-start gap-4">
+          <li key={c.value} style={{ display: "flex", alignItems: "flex-start", gap: "0.875rem" }}>
             <input
               id={`consent-${c.value}`}
               type="checkbox"
-              className="mt-1 h-4 w-4 shrink-0 border-border-mid bg-surface accent-accent"
               checked={consent[c.value] ?? false}
               disabled={c.required}
               onChange={(e) => setConsent((s) => ({ ...s, [c.value]: e.target.checked }))}
+              style={{
+                marginTop: "2px",
+                width: "16px",
+                height: "16px",
+                flexShrink: 0,
+                accentColor: "#f0bd8f",
+                cursor: c.required ? "not-allowed" : "pointer",
+              }}
             />
-            <label htmlFor={`consent-${c.value}`}>
-              <span className="t-body font-medium text-text">{c.label}</span>
-              {c.required && <span className="ml-2 t-mono text-text-faint">(required)</span>}
-              <span className="block t-caption mt-0.5">{c.description}</span>
+            <label htmlFor={`consent-${c.value}`} style={{ cursor: c.required ? "default" : "pointer" }}>
+              <span style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                color: "#e2e2e9",
+                display: "block",
+              }}>
+                {c.label}
+                {c.required && (
+                  <span style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.55rem",
+                    color: "#5a5a65",
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    marginLeft: "0.5rem",
+                  }}>
+                    required
+                  </span>
+                )}
+              </span>
+              <span style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.75rem",
+                color: "#5a5a65",
+                display: "block",
+                marginTop: "0.25rem",
+              }}>
+                {c.description}
+              </span>
             </label>
           </li>
         ))}
       </ul>
     </>
-  );
-}
-
-function StepHeader({ title, hint }: { title: string; hint?: string }) {
-  return (
-    <div>
-      <h2 className="t-title text-text">{title}</h2>
-      {hint && <p className="mt-1 t-caption">{hint}</p>}
-    </div>
   );
 }
 
@@ -556,15 +782,29 @@ function DeleteAccount() {
   }
 
   return (
-    <Button
+    <button
       type="button"
-      variant="ghost"
-      size="sm"
-      className="text-error hover:text-error"
       disabled={busy}
       onClick={onDelete}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        minHeight: "44px",
+        padding: "0 0.5rem",
+        background: "transparent",
+        border: "none",
+        color: busy ? "#444748" : "#5a5a65",
+        fontFamily: "var(--font-mono)",
+        fontSize: "0.55rem",
+        letterSpacing: "0.06em",
+        textTransform: "uppercase",
+        cursor: busy ? "not-allowed" : "pointer",
+        transition: "color 0.2s",
+      }}
+      onMouseEnter={(e) => { if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#ffb4ab"; }}
+      onMouseLeave={(e) => { if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#5a5a65"; }}
     >
       Delete account
-    </Button>
+    </button>
   );
 }
