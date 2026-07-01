@@ -4,19 +4,12 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-const lux = [0.16, 1, 0.3, 1] as const;
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-/** The consent flags the product surfaces, in display order. The backend stores
- *  an open map and merges on write, so listing them here is the single source of
- *  truth for what a user can grant/revoke — and `data_processing` is the one the
- *  API enforces before any photo module runs. */
 const CONSENT_FLAGS: Array<{ key: string; title: string; description: string }> = [
   {
     key: "data_processing",
@@ -52,15 +45,10 @@ export function AccountManager() {
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
 
-  // Guards every async setState against a unmounted/navigated-away component, so
-  // both the mount load and the retry handler are race-safe (no state writes
-  // after teardown, even under Strict Mode double-invocation).
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
+    return () => { mounted.current = false; };
   }, []);
 
   const load = useCallback(async () => {
@@ -68,29 +56,18 @@ export function AccountManager() {
     try {
       const flags = await browserApi().getConsent();
       if (!mounted.current) return;
-      setSaved(flags);
-      setDraft(flags);
-      setStatus("ready");
+      setSaved(flags); setDraft(flags); setStatus("ready");
     } catch {
       if (mounted.current) setStatus("error");
     }
   }, []);
 
   useEffect(() => {
-    browserApi()
-      .getConsent()
-      .then((flags) => {
-        if (!mounted.current) return;
-        setSaved(flags);
-        setDraft(flags);
-        setStatus("ready");
-      })
+    browserApi().getConsent()
+      .then((flags) => { if (!mounted.current) return; setSaved(flags); setDraft(flags); setStatus("ready"); })
       .catch(() => mounted.current && setStatus("error"));
   }, []);
 
-  // Move focus into the confirmation region when it reveals, so keyboard /
-  // switch-access users land on the type-to-confirm input instead of dropping to
-  // <body> (the confirm button starts disabled until "DELETE" is typed).
   const confirmInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (confirming) confirmInputRef.current?.focus();
@@ -100,17 +77,11 @@ export function AccountManager() {
 
   const saveConsent = useCallback(async () => {
     setSaving(true);
-    // Send the full known set so an explicit "off" is recorded, not just grants.
     const flags = Object.fromEntries(CONSENT_FLAGS.map((f) => [f.key, Boolean(draft[f.key])]));
     try {
       const merged = await browserApi().putConsent({ flags });
-      setSaved(merged);
-      setDraft(merged);
-      toast({
-        variant: "success",
-        title: "Preferences saved",
-        description: "Your choices are in effect.",
-      });
+      setSaved(merged); setDraft(merged);
+      toast({ variant: "success", title: "Preferences saved", description: "Your choices are in effect." });
     } catch {
       toast({ variant: "error", title: "Couldn't save", description: "Please try again." });
     } finally {
@@ -133,27 +104,17 @@ export function AccountManager() {
       const bundle = {
         exported_at: new Date().toISOString(),
         format: "gyf-data-export/v1",
-        profile,
-        consent,
-        summary,
-        saved_items: savedItems,
-        saved_outfits: savedOutfits,
-        wardrobe,
+        profile, consent, summary,
+        saved_items: savedItems, saved_outfits: savedOutfits, wardrobe,
       };
       const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `gyf-data-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
-      toast({
-        variant: "success",
-        title: "Export ready",
-        description: "Your data is downloading.",
-      });
+      toast({ variant: "success", title: "Export ready", description: "Your data is downloading." });
     } catch {
       toast({ variant: "error", title: "Export failed", description: "Please try again." });
     } finally {
@@ -164,8 +125,7 @@ export function AccountManager() {
   const signOut = useCallback(async () => {
     try {
       await createSupabaseBrowserClient().auth.signOut();
-      router.push("/login");
-      router.refresh();
+      router.push("/login"); router.refresh();
     } catch {
       toast({ variant: "error", title: "Couldn't sign out", description: "Please try again." });
     }
@@ -176,13 +136,8 @@ export function AccountManager() {
     try {
       await browserApi().deleteAccount();
       await createSupabaseBrowserClient().auth.signOut();
-      toast({
-        variant: "success",
-        title: "Account deleted",
-        description: "Your data has been erased.",
-      });
-      router.push("/login");
-      router.refresh();
+      toast({ variant: "success", title: "Account deleted", description: "Your data has been erased." });
+      router.push("/login"); router.refresh();
     } catch {
       setDeleting(false);
       toast({ variant: "error", title: "Deletion failed", description: "Please try again." });
@@ -196,18 +151,30 @@ export function AccountManager() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: lux }}
-      className="flex flex-col gap-12"
+      transition={{ duration: 0.35, ease: EASE }}
+      style={{ display: "flex", flexDirection: "column", gap: "3rem" }}
     >
-      {/* Consent */}
-      <section className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1">
-          <h2 className="t-label text-text-faint">Privacy controls</h2>
-          <p className="t-caption max-w-prose">
+      {/* ── Privacy controls ── */}
+      <section style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <div>
+          <p style={{
+            fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
+            letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65",
+            marginBottom: "0.5rem",
+          }}>
+            Privacy controls
+          </p>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", lineHeight: 1.55 }}>
             You decide what GYF can use. Changes take effect the moment you save.
           </p>
         </div>
-        <ul role="list" className="flex flex-col border border-border bg-surface">
+        <ul
+          role="list"
+          style={{
+            listStyle: "none", margin: 0, padding: 0,
+            border: "1px solid rgba(255,255,255,0.07)", background: "#111318",
+          }}
+        >
           {CONSENT_FLAGS.map((flag, i) => (
             <ConsentRow
               key={flag.key}
@@ -219,101 +186,180 @@ export function AccountManager() {
             />
           ))}
         </ul>
-        <div className="flex items-center gap-4">
-          <Button
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <button
             type="button"
             onClick={saveConsent}
             disabled={!dirty || saving}
             aria-busy={saving}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              minHeight: "44px", padding: "0 1.5rem",
+              background: !dirty || saving ? "rgba(255,255,255,0.08)" : "#ffffff",
+              color: !dirty || saving ? "#5a5a65" : "#000000",
+              border: "none", borderRadius: "2px", cursor: !dirty || saving ? "not-allowed" : "pointer",
+              fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+              fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
+              transition: "all 0.2s",
+            }}
           >
             {saving ? "Saving…" : "Save preferences"}
-          </Button>
-          <span role="status" className="t-caption text-text-faint">
-            {dirty ? "Unsaved changes" : ""}
-          </span>
+          </button>
+          {dirty && (
+            <span role="status" style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", color: "#f0bd8f", letterSpacing: "0.06em" }}>
+              Unsaved changes
+            </span>
+          )}
         </div>
       </section>
 
-      {/* Data portability */}
-      <section className="flex flex-col gap-4 border-t border-border pt-10">
-        <div className="flex flex-col gap-1">
-          <h2 className="t-label text-text-faint">Your data</h2>
-          <p className="t-caption max-w-prose">
-            Download everything GYF holds about you — your profile, saved looks, wardrobe, and
-            preferences — as a single JSON file.
+      {/* ── Data portability ── */}
+      <section style={{
+        display: "flex", flexDirection: "column", gap: "1rem",
+        borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "2rem",
+      }}>
+        <div>
+          <p style={{
+            fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
+            letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65",
+            marginBottom: "0.5rem",
+          }}>
+            Your data
+          </p>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", lineHeight: 1.55, maxWidth: "320px" }}>
+            Download everything GYF holds about you — your profile, saved looks, wardrobe, and preferences — as a single JSON file.
           </p>
         </div>
-        <div>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={exportData}
-            disabled={exporting}
-            aria-busy={exporting}
-          >
-            {exporting ? "Preparing…" : "Download my data"}
-          </Button>
-        </div>
+        <button
+          type="button"
+          onClick={exportData}
+          disabled={exporting}
+          aria-busy={exporting}
+          style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            minHeight: "44px", padding: "0 1.5rem", alignSelf: "flex-start",
+            border: "1px solid rgba(255,255,255,0.15)", background: "transparent",
+            color: "#e2e2e9", cursor: exporting ? "not-allowed" : "pointer",
+            fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+            fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
+            opacity: exporting ? 0.5 : 1, borderRadius: "2px",
+          }}
+        >
+          {exporting ? "Preparing…" : "Download my data"}
+        </button>
       </section>
 
-      {/* Danger zone */}
-      <section className="flex flex-col gap-4 border-t border-border pt-10">
-        <h2 className="t-label text-text-faint">Account</h2>
+      {/* ── Account / danger zone ── */}
+      <section style={{
+        display: "flex", flexDirection: "column", gap: "1rem",
+        borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "2rem",
+      }}>
+        <p style={{
+          fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
+          letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65",
+        }}>
+          Account
+        </p>
+
         {!confirming ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" variant="secondary" onClick={signOut}>
-              Sign out
-            </Button>
-            <Button
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem" }}>
+            <button
               type="button"
-              variant="secondary"
-              className="text-error hover:text-error"
+              onClick={signOut}
+              style={{
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                minHeight: "44px", padding: "0 1.5rem",
+                border: "1px solid rgba(255,255,255,0.2)", background: "transparent",
+                color: "#ffffff", cursor: "pointer", borderRadius: "2px",
+                fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+                fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
+              }}
+            >
+              Sign out
+            </button>
+            <button
+              type="button"
               onClick={() => setConfirming(true)}
+              style={{
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                minHeight: "44px", padding: "0 1.5rem",
+                border: "1px solid rgba(255,180,171,0.3)", background: "transparent",
+                color: "#ffb4ab", cursor: "pointer", borderRadius: "2px",
+                fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+                fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
+              }}
             >
               Delete my account
-            </Button>
+            </button>
           </div>
         ) : (
-          <div role="alert" className="flex flex-col gap-4 border border-error/40 bg-error/5 p-5">
-            <p className="t-caption text-text">
-              This permanently erases your profile, saved looks, wardrobe, and posts. It can&apos;t
-              be undone. Type <span className="t-mono text-text">DELETE</span> to confirm.
+          <div
+            role="alert"
+            style={{
+              display: "flex", flexDirection: "column", gap: "1rem",
+              border: "1px solid rgba(255,180,171,0.25)",
+              background: "rgba(255,180,171,0.04)", padding: "1.25rem",
+              borderRadius: "2px",
+            }}
+          >
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#c4c7c8", lineHeight: 1.6, margin: 0 }}>
+              This permanently erases your profile, saved looks, wardrobe, and posts. It can&apos;t be undone.
+              Type <span style={{ fontFamily: "var(--font-mono)", color: "#ffb4ab" }}>DELETE</span> to confirm.
             </p>
-            <Input
+            <input
               ref={confirmInputRef}
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="DELETE"
               aria-label="Type DELETE to confirm account deletion"
               autoComplete="off"
-              className="max-w-[200px]"
+              style={{
+                maxWidth: "200px", minHeight: "44px",
+                background: "transparent",
+                border: "none", borderBottom: "1px solid rgba(255,180,171,0.4)",
+                color: "#ffb4ab", outline: "none", padding: "0.5rem 0",
+                fontFamily: "var(--font-mono)", fontSize: "0.875rem",
+                letterSpacing: "0.06em",
+              }}
             />
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem" }}>
+              <button
                 type="button"
-                variant="danger"
                 onClick={deleteAccount}
                 disabled={deleting || confirmText !== "DELETE"}
                 aria-busy={deleting}
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  minHeight: "44px", padding: "0 1.5rem",
+                  background: confirmText === "DELETE" && !deleting ? "#ffb4ab" : "rgba(255,180,171,0.12)",
+                  color: confirmText === "DELETE" && !deleting ? "#000000" : "#ffb4ab",
+                  border: "none", borderRadius: "2px",
+                  cursor: deleting || confirmText !== "DELETE" ? "not-allowed" : "pointer",
+                  fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+                  fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
+                  opacity: deleting ? 0.6 : 1, transition: "all 0.2s",
+                }}
               >
                 {deleting ? "Deleting…" : "Permanently delete"}
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setConfirming(false);
-                  setConfirmText("");
-                }}
                 disabled={deleting}
+                onClick={() => { setConfirming(false); setConfirmText(""); }}
+                style={{
+                  background: "transparent", border: "none", cursor: "pointer",
+                  fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+                  color: "#5a5a65", letterSpacing: "0.06em", textTransform: "uppercase",
+                  minHeight: "44px", padding: "0 0.75rem",
+                }}
               >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         )}
-        <p className="t-caption text-text-faint max-w-prose">
+
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", color: "#5a5a65", maxWidth: "320px", lineHeight: 1.5 }}>
           Your data is yours — we remove it on request, immediately.
         </p>
       </section>
@@ -322,69 +368,100 @@ export function AccountManager() {
 }
 
 function ConsentRow({
-  title,
-  description,
-  checked,
-  first,
-  onChange,
+  title, description, checked, first, onChange,
 }: {
-  title: string;
-  description: string;
-  checked: boolean;
-  first: boolean;
-  onChange: (next: boolean) => void;
+  title: string; description: string; checked: boolean; first: boolean; onChange: (next: boolean) => void;
 }) {
   const labelId = useId();
   const descId = useId();
   return (
-    <li
-      className={`flex items-start justify-between gap-5 p-5 ${first ? "" : "border-t border-border"}`}
-    >
-      <div className="flex flex-col gap-1.5">
-        <span id={labelId} className="t-title text-text">
+    <li style={{
+      display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+      gap: "1.25rem", padding: "1.25rem",
+      borderTop: first ? "none" : "1px solid rgba(255,255,255,0.06)",
+    }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+        <span id={labelId} style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#e2e2e9" }}>
           {title}
         </span>
-        <span id={descId} className="t-caption max-w-prose">
+        <span id={descId} style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", lineHeight: 1.55, maxWidth: "280px" }}>
           {description}
         </span>
       </div>
-      <Switch
-        checked={checked}
-        onChange={onChange}
+      {/* Inline switch — ochre when on */}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
         aria-labelledby={labelId}
         aria-describedby={descId}
-        className="mt-1"
-      />
+        onClick={() => onChange(!checked)}
+        style={{
+          flexShrink: 0, marginTop: "2px",
+          position: "relative", display: "inline-flex",
+          width: "44px", height: "24px", alignItems: "center",
+          border: `1px solid ${checked ? "#f0bd8f" : "rgba(255,255,255,0.2)"}`,
+          background: checked ? "rgba(240,189,143,0.15)" : "transparent",
+          cursor: "pointer", transition: "all 0.2s", borderRadius: "2px",
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: checked ? "calc(100% - 18px)" : "2px",
+            width: "14px", height: "14px",
+            background: checked ? "#f0bd8f" : "#5a5a65",
+            transition: "left 0.2s, background 0.2s",
+          }}
+        />
+      </button>
     </li>
   );
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="mx-auto max-w-sm py-20 text-center">
-      <p className="t-headline text-text">Couldn&apos;t load your settings</p>
-      <p className="mt-3 t-caption mx-auto max-w-xs">
+    <div style={{ textAlign: "center", padding: "5rem 1rem" }}>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.75rem" }}>
+        Couldn&apos;t load your settings
+      </p>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", marginBottom: "2rem" }}>
         Something went wrong reaching GYF. Your data is safe — try again.
       </p>
-      <Button type="button" variant="secondary" onClick={onRetry} className="mt-8">
+      <button
+        type="button"
+        onClick={onRetry}
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          minHeight: "44px", padding: "0 1.5rem",
+          border: "1px solid rgba(255,255,255,0.2)", background: "transparent",
+          color: "#ffffff", cursor: "pointer", borderRadius: "2px",
+          fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+          fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
+        }}
+      >
         Retry
-      </Button>
+      </button>
     </div>
   );
 }
 
 function AccountSkeleton() {
   return (
-    <div className="flex flex-col gap-12" aria-hidden>
-      <div className="flex flex-col gap-5">
-        <div className="h-4 w-40 skeleton" />
-        <div className="border border-border">
+    <div style={{ display: "flex", flexDirection: "column", gap: "3rem" }} aria-hidden>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <div style={{ height: "12px", width: "160px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />
+        <div style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={`row-${i}`} className="h-24 skeleton border-t border-border first:border-t-0" />
+            <div key={`row-${i}`} style={{
+              height: "96px", background: "rgba(255,255,255,0.03)",
+              borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.06)",
+            }} />
           ))}
         </div>
       </div>
-      <div className="h-28 skeleton" />
+      <div style={{ height: "112px", background: "rgba(255,255,255,0.03)", borderRadius: "2px" }} />
     </div>
   );
 }

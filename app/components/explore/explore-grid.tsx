@@ -1,10 +1,9 @@
 "use client";
 
-import { AnimatePresence } from "framer-motion";
-import { ImageOff, SearchX } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { SearchX, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
 import type { SearchResult } from "@gyf/types";
@@ -12,20 +11,37 @@ import { ExploreCard } from "./explore-card";
 import type { ExploreFilters } from "./filter-bar";
 
 const PAGE_SIZE = 24;
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-const GRID_COLS = "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5";
-
-function CardSkeleton() {
+function CardSkeleton({ i }: { i: number }) {
   return (
-    <div className="flex flex-col border border-border bg-surface">
-      <div className="aspect-[3/4] animate-pulse bg-surface-2" />
-      <div className="flex flex-col gap-2 p-3 sm:p-4">
-        <div className="h-3 w-4/5 animate-pulse bg-surface-2" />
-        <div className="h-3 w-1/3 animate-pulse bg-surface-2" />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 0.5, 0.35] }}
+      transition={{ duration: 1.2, delay: i * 0.04, repeat: Infinity, repeatType: "reverse" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        background: "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.05)",
+        borderRadius: "4px",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ aspectRatio: "3/4", background: "rgba(255,255,255,0.04)" }} />
+      <div style={{ padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div style={{ height: "10px", width: "80%", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />
+        <div style={{ height: "8px", width: "40%", background: "rgba(255,255,255,0.04)", borderRadius: "2px" }} />
       </div>
-    </div>
+    </motion.div>
   );
 }
+
+const GRID_STYLE: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, 1fr)",
+  gap: "0.75rem",
+};
 
 interface ExploreGridProps {
   filters: ExploreFilters;
@@ -33,6 +49,7 @@ interface ExploreGridProps {
 
 export function ExploreGrid({ filters }: ExploreGridProps) {
   const { toast } = useToast();
+  const reduce = useReducedMotion();
   const [items, setItems] = useState<SearchResult[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -41,33 +58,22 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const sentinelRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-  // Synchronous in-flight guard — never stale in the loadPage closure (unlike the
-  // `loading` state, which would lag a render and let a concurrent append slip through).
   const loadingRef = useRef(false);
 
   const query = [filters.q || "fashion", filters.occasion, filters.style].filter(Boolean).join(" ");
 
   const loadPage = useCallback(
     async (pageNum: number, reset: boolean) => {
-      // Append loads yield while one is in flight; a reset (filter change) always
-      // proceeds, aborting any prior request first.
       if (loadingRef.current && !reset) return;
       loadingRef.current = true;
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
-      if (reset) {
-        setItems([]);
-        setPage(0);
-        setHasMore(true);
-      }
+      if (reset) { setItems([]); setPage(0); setHasMore(true); }
       setLoading(true);
       setError(null);
       try {
         const api = browserApi();
-        // Price filter + sort run server-side so pagination stays correct: every
-        // page is a full window of in-budget items in the chosen order (a client
-        // per-page sort would only order each chunk, not the cumulative list).
         const maxPrice = filters.maxPrice ? Number(filters.maxPrice) : undefined;
         const results = await api.search(query, {
           k: PAGE_SIZE,
@@ -75,11 +81,8 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
           ...(maxPrice != null && !Number.isNaN(maxPrice) ? { max_price: maxPrice } : {}),
           sort: filters.sort,
         });
-        if (reset) {
-          setItems(results);
-        } else {
-          setItems((prev) => [...prev, ...results]);
-        }
+        if (reset) setItems(results);
+        else setItems((prev) => [...prev, ...results]);
         setPage(pageNum);
         setHasMore(results.length === PAGE_SIZE);
       } catch (e) {
@@ -90,25 +93,18 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
         setLoading(false);
       }
     },
-    // `query`/`filters` capture the current filter set; intentionally the only deps.
     [query, filters],
   );
 
-  // Reload from scratch whenever the filters change. This is the legitimate
-  // "fetch on dependency change" effect; the reset setState lives in loadPage's
-  // reset branch, which the rule flags transitively — intentional here.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadPage(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.q, filters.occasion, filters.style, filters.maxPrice, filters.sort]);
 
-  // IntersectionObserver for infinite scroll
   const onIntersect = useCallback(
     (entries: IntersectionObserverEntry[]) => {
-      if (entries[0]?.isIntersecting && hasMore && !loading) {
-        loadPage(page + 1, false);
-      }
+      if (entries[0]?.isIntersecting && hasMore && !loading) loadPage(page + 1, false);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [hasMore, loading, page],
@@ -122,31 +118,21 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
     return () => obs.disconnect();
   }, [onIntersect]);
 
-  // Hydrate the saved set from the server so items the user already saved render
-  // in their true state (not as un-saved) when Explore mounts. Best-effort.
   useEffect(() => {
     let active = true;
     browserApi()
       .listSaved()
-      .then((rows) => {
-        if (active) setSaved(new Set(rows.map((r) => r.item_id)));
-      })
+      .then((rows) => { if (active) setSaved(new Set(rows.map((r) => r.item_id))); })
       .catch(() => {});
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
-  // Persist saves/un-saves to the shortlist so the Saved page reflects them.
-  // Optimistic: flip immediately, roll back + warn if the write fails — never a
-  // success toast for a save that didn't actually persist.
   const toggleSave = useCallback(
     (item: SearchResult) => {
       const wasSaved = saved.has(item.item_id);
       setSaved((prev) => {
         const next = new Set(prev);
-        if (wasSaved) next.delete(item.item_id);
-        else next.add(item.item_id);
+        if (wasSaved) next.delete(item.item_id); else next.add(item.item_id);
         return next;
       });
       const api = browserApi();
@@ -158,111 +144,148 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
             : { title: "Saved", description: item.title, variant: "success" },
         );
       }).catch(() => {
-        // roll back to the real (pre-toggle) state
         setSaved((prev) => {
           const next = new Set(prev);
-          if (wasSaved) next.add(item.item_id);
-          else next.delete(item.item_id);
+          if (wasSaved) next.add(item.item_id); else next.delete(item.item_id);
           return next;
         });
-        toast({
-          title: wasSaved ? "Couldn't remove that" : "Couldn't save that",
-          description: "Please try again.",
-          variant: "error",
-        });
+        toast({ title: wasSaved ? "Couldn't remove that" : "Couldn't save that", description: "Please try again.", variant: "error" });
       });
     },
     [saved, toast],
   );
 
-  // First load — full-bleed skeleton grid that mirrors the card shape.
+  // First load skeleton
   if (loading && items.length === 0 && !error) {
     return (
-      <div className={GRID_COLS} aria-busy aria-label="Loading items">
-        {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-          <CardSkeleton key={i} />
-        ))}
+      <div style={GRID_STYLE} aria-busy aria-label="Loading items">
+        {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} i={i} />)}
       </div>
     );
   }
 
-  // Error — editorial, with retry.
+  // Error (no items yet)
   if (error && items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-5 border border-border bg-surface px-6 py-24 text-center">
-        <ImageOff size={28} className="text-text-faint" aria-hidden />
-        <div className="flex flex-col gap-1">
-          <p className="t-title text-text">Something interrupted the catalog</p>
-          <p role="alert" className="t-caption text-text-mid">
-            {error}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: EASE }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "1.25rem",
+          padding: "4rem 1.5rem",
+          textAlign: "center",
+          border: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(255,255,255,0.02)",
+          borderRadius: "4px",
+        }}
+      >
+        <RefreshCw size={24} aria-hidden style={{ color: "#5a5a65" }} />
+        <div>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#e2e2e9", marginBottom: "0.375rem" }}>
+            Something interrupted the catalog
           </p>
+          <p role="alert" style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192" }}>{error}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => loadPage(0, true)}>
+        <button
+          type="button"
+          onClick={() => void loadPage(0, true)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.375rem",
+            padding: "0.5rem 1.25rem",
+            background: "transparent",
+            border: "1px solid rgba(255,255,255,0.15)",
+            color: "#c4c7c8",
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            cursor: "pointer",
+            borderRadius: "2px",
+          }}
+        >
+          <RefreshCw size={12} aria-hidden />
           Try again
-        </Button>
-      </div>
+        </button>
+      </motion.div>
     );
   }
 
-  // Empty — art-directed concentric frame.
+  // Empty state
   if (!loading && items.length === 0 && !error) {
     return (
-      <div className="flex flex-col items-center justify-center gap-6 border border-border bg-surface px-6 py-24 text-center">
-        <div className="relative flex h-24 w-24 items-center justify-center">
-          <div className="absolute inset-0 border border-border" />
-          <div className="absolute inset-3 border border-border-mid" />
-          <div className="absolute inset-6 border border-border-hi" />
-          <SearchX size={22} className="text-text-faint" aria-hidden />
+      <motion.div
+        initial={reduce ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: EASE }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "1.5rem",
+          padding: "4rem 1.5rem",
+          textAlign: "center",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: "4px",
+        }}
+      >
+        <div style={{ position: "relative", width: "72px", height: "72px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ position: "absolute", inset: 0, border: "1px solid rgba(255,255,255,0.06)" }} />
+          <div style={{ position: "absolute", inset: "10px", border: "1px solid rgba(255,255,255,0.1)" }} />
+          <div style={{ position: "absolute", inset: "20px", border: "1px solid rgba(255,255,255,0.15)" }} />
+          <SearchX size={20} aria-hidden style={{ color: "#5a5a65", position: "relative", zIndex: 1 }} />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <p className="t-title text-text">Nothing matches yet</p>
-          <p className="t-caption text-text-faint">
+        <div>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#ffffff", marginBottom: "0.375rem" }}>
+            Nothing matches yet
+          </p>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#5a5a65" }}>
             Try a different search or loosen your filters.
           </p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
     <>
-      <div className={GRID_COLS}>
+      <div style={GRID_STYLE}>
         <AnimatePresence mode="popLayout">
           {items.map((item, i) => (
-            <ExploreCard
-              key={item.item_id}
-              item={item}
-              index={i}
-              saved={saved.has(item.item_id)}
-              onSave={toggleSave}
-            />
+            <ExploreCard key={item.item_id} item={item} index={i} saved={saved.has(item.item_id)} onSave={toggleSave} />
           ))}
         </AnimatePresence>
       </div>
 
-      {/* Skeleton rows while appending the next page */}
+      {/* Append skeleton */}
       {loading && items.length > 0 && (
-        <div className={`mt-4 ${GRID_COLS}`} aria-busy aria-label="Loading more items">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <CardSkeleton key={i} />
-          ))}
+        <div style={{ ...GRID_STYLE, marginTop: "0.75rem" }} aria-busy aria-label="Loading more items">
+          {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} i={i} />)}
         </div>
       )}
 
-      {/* Inline error when a later page fails but content is already shown */}
+      {/* Inline error on later page */}
       {error && items.length > 0 && (
-        <p role="alert" className="t-caption mt-6 text-center text-error">
+        <p role="alert" style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#ffb4ab", textAlign: "center", marginTop: "1.5rem" }}>
           {error}
         </p>
       )}
 
-      {/* End-of-results marker */}
+      {/* End of results */}
       {!hasMore && !loading && items.length > 0 && (
-        <p className="t-label mt-10 text-center text-text-faint">End of results</p>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65", textAlign: "center", marginTop: "2.5rem" }}>
+          End of results
+        </p>
       )}
 
-      {/* Infinite scroll sentinel */}
-      <div ref={sentinelRef} className="h-1" aria-hidden />
+      <div ref={sentinelRef} style={{ height: "4px" }} aria-hidden />
     </>
   );
 }

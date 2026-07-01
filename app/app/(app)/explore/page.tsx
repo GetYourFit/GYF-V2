@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-
 import { ExploreShell } from "@/components/explore/explore-shell";
-import { PageContainer } from "@/components/layout/page-container";
 
 export const metadata: Metadata = {
   title: "Explore — GYF",
@@ -10,8 +8,38 @@ export const metadata: Metadata = {
 
 export default function ExplorePage() {
   return (
-    <PageContainer width="wide">
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <header style={{ padding: "1.25rem 1rem 0.75rem" }}>
+        <span
+          style={{
+            display: "block",
+            fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#f0bd8f",
+            marginBottom: "0.5rem",
+          }}
+        >
+          Explore
+        </span>
+        <h1
+          style={{
+            fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+            fontSize: "clamp(1.625rem, 7vw, 2.25rem)",
+            fontWeight: 800,
+            lineHeight: 1.1,
+            letterSpacing: "-0.03em",
+            color: "#ffffff",
+            margin: 0,
+          }}
+        >
+          The full{" "}
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#c4c7c8" }}>catalog.</em>
+        </h1>
+      </header>
       <ExploreShell />
-    </PageContainer>
+    </div>
   );
 }
