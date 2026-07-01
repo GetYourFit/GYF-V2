@@ -31,7 +31,7 @@ export function AppIntro() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "#f4f3f0",
+            background: "#ffffff",
           }}
         >
           <motion.div
@@ -54,6 +54,8 @@ export function AppIntro() {
                 height: "auto",
                 objectFit: "contain",
                 display: "block",
+                /* multiply blend removes the white canvas of the PNG on a white bg */
+                mixBlendMode: "multiply",
               }}
             />
           </motion.div>
@@ -68,7 +70,7 @@ export function AppIntro() {
                 bottom: 48,
                 width: 32,
                 height: 1,
-                background: "#d4cfc6",
+                background: "#e8e8e8",
                 transformOrigin: "center",
               }}
             />

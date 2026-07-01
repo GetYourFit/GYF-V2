@@ -21,7 +21,7 @@ export function AppShell({ children }: AppShellProps) {
               width={160}
               height={160}
               priority
-              style={{ width: 42, height: "auto" }}
+              style={{ width: 42, height: "auto", mixBlendMode: "multiply" }}
               className="transition-opacity duration-150 group-hover:opacity-70"
             />
             <span

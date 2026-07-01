@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { fraunces, jakarta, fragmentMono } from "@/lib/fonts";
+import { playfair, jakarta, fragmentMono } from "@/lib/fonts";
 import { AppIntro } from "@/components/intro/app-intro";
 import "./globals.css";
 
@@ -26,12 +26,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#f4f3f0",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${jakarta.variable} ${fragmentMono.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${jakarta.variable} ${fragmentMono.variable}`}>
       <body>
         <AppIntro />
         {children}

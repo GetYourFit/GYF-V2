@@ -47,7 +47,7 @@ export function BottomNav() {
           className={cn(
             "flex h-12 w-12 -mt-5 items-center justify-center rounded-full transition-all duration-300 motion-reduce:transition-none",
             stylistActive
-              ? "bg-accent shadow-[0_4px_20px_rgba(194,24,91,0.35)]"
+              ? "bg-accent shadow-[0_4px_20px_rgba(0,0,0,0.18)]"
               : "bg-surface-3 group-hover:bg-surface-2 border border-border",
           )}
         >

@@ -1,8 +1,9 @@
-import { Fraunces, Plus_Jakarta_Sans, Fragment_Mono } from "next/font/google";
+import { Playfair_Display, Plus_Jakarta_Sans, Fragment_Mono } from "next/font/google";
 
-export const fraunces = Fraunces({
+export const playfair = Playfair_Display({
   subsets: ["latin"],
-  axes: ["SOFT", "WONK"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
 });
@@ -25,5 +26,5 @@ export const fragmentMono = Fragment_Mono({
 
 // Legacy aliases
 export const inter = jakarta;
-export const playfair = fraunces;
+export const fraunces = playfair;
 export const jetbrainsMono = fragmentMono;
