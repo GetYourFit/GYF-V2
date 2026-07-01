@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { playfair, inter, jetbrainsMono } from "@/lib/fonts";
+import { jakarta, jetbrainsMono } from "@/lib/fonts";
 import { AppIntro } from "@/components/intro/app-intro";
 import "./globals.css";
 
@@ -31,7 +31,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${jakarta.variable} ${jetbrainsMono.variable}`}>
       <body>
         <AppIntro />
         {children}

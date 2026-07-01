@@ -36,7 +36,7 @@ export function OutfitCard({
 
   return (
     <>
-      <article className="group flex h-full flex-col border border-border bg-surface transition-all duration-300 motion-reduce:transition-none hover:border-border-hi hover:-translate-y-0.5">
+      <article className="group flex h-full flex-col border border-border bg-surface transition-all duration-300 motion-reduce:transition-none hover:border-border-hi hover:-translate-y-0.5 active:scale-[0.992] motion-reduce:active:scale-100">
         {/* Garment images — 1px hairlines via the card border showing through */}
         <div className="relative flex gap-px bg-border">
           {/* View-details affordance over the spread — opens the full look */}
@@ -45,7 +45,7 @@ export function OutfitCard({
             onClick={() => setDetailOpen(true)}
             aria-label={`View look ${index + 1} in detail`}
             aria-haspopup="dialog"
-            className="absolute inset-0 z-10 flex items-end justify-center p-3 opacity-0 transition-opacity duration-300 focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100 motion-reduce:transition-none"
+            className="absolute inset-0 z-10 flex items-end justify-center p-3 opacity-100 transition-opacity duration-300 focus-visible:opacity-100 focus-visible:outline-none sm:opacity-0 sm:group-hover:opacity-100 motion-reduce:transition-none"
           >
             <span className="t-label inline-flex items-center gap-2 border border-text/20 bg-bg/80 px-4 py-2 text-text backdrop-blur-sm">
               <Maximize2 className="h-3 w-3" aria-hidden />

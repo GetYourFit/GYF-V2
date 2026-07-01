@@ -39,7 +39,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         CHEVRON,
         compact
           ? "py-1.5 pl-3 pr-8 text-xs text-text-mid bg-[right_0.6rem_center]"
-          : "min-h-11 w-full px-4 py-2.5 pr-10 text-sm bg-[right_1rem_center]",
+          : "min-h-11 w-full px-4 py-2.5 pr-10 text-base bg-[right_1rem_center]",
         className,
       )}
       {...props}

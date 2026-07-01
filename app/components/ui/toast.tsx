@@ -147,25 +147,36 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 onFocusCapture={() => pause(t.id)}
                 onBlurCapture={() => resume(t.id, t.duration)}
                 className={cn(
-                  "pointer-events-auto flex w-full max-w-sm items-start gap-3",
-                  "border border-border-mid bg-surface px-4 py-3 shadow-card",
+                  "pointer-events-auto relative flex w-full max-w-sm flex-col overflow-hidden",
+                  "border border-border-mid bg-surface shadow-card",
                 )}
               >
-                <Icon size={16} className={cn("mt-0.5 shrink-0", ACCENT[t.variant])} aria-hidden />
-                <div className="min-w-0 flex-1">
-                  <p className="t-title text-sm text-text">{t.title}</p>
-                  {t.description && (
-                    <p className="t-caption mt-0.5 text-text-mid">{t.description}</p>
-                  )}
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <Icon size={16} className={cn("mt-0.5 shrink-0", ACCENT[t.variant])} aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <p className="t-title text-sm text-text">{t.title}</p>
+                    {t.description && (
+                      <p className="t-caption mt-0.5 text-text-mid">{t.description}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Dismiss notification"
+                    onClick={() => dismiss(t.id)}
+                    className="-mr-1.5 -mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center text-text-faint transition-colors hover:text-text focus-visible:text-text focus-visible:outline-none"
+                  >
+                    <X size={14} aria-hidden />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  aria-label="Dismiss notification"
-                  onClick={() => dismiss(t.id)}
-                  className="-mr-1.5 -mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center text-text-faint transition-colors hover:text-text focus-visible:text-text focus-visible:outline-none"
-                >
-                  <X size={14} aria-hidden />
-                </button>
+                {/* Progress drain bar */}
+                {t.duration > 0 && (
+                  <motion.div
+                    className={cn("h-[2px]", t.variant === "error" ? "bg-error" : t.variant === "success" ? "bg-success" : "bg-border-hi")}
+                    initial={{ scaleX: 1, originX: 0 }}
+                    animate={{ scaleX: 0 }}
+                    transition={{ duration: t.duration / 1000, ease: "linear" }}
+                  />
+                )}
               </motion.div>
             );
           })}

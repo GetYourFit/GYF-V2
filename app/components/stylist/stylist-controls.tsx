@@ -31,7 +31,7 @@ export function StylistControls({
   return (
     <form
       onSubmit={submit}
-      className="flex flex-col gap-4 border border-border bg-surface p-5 sm:flex-row sm:items-end"
+      className="flex flex-col gap-4 border border-border bg-surface p-4 sm:flex-row sm:items-end sm:p-5"
     >
       <div className="flex-1">
         <label htmlFor="goal" className="t-label mb-2 block text-text-faint">
@@ -43,7 +43,9 @@ export function StylistControls({
           onChange={(e) => setGoal(e.target.value)}
           maxLength={200}
           placeholder="I want to look taller and slimmer…"
-          className="min-h-11 w-full border-b border-border-mid bg-transparent pb-2 font-[family-name:var(--font-display)] text-lg italic text-text placeholder:text-text-faint placeholder:not-italic focus:border-accent focus:outline-none transition-colors duration-200 motion-reduce:transition-none"
+          /* font-size ≥ 16px prevents iOS viewport zoom on focus */
+          className="min-h-11 w-full border-b border-border-mid bg-transparent pb-2 font-[family-name:var(--font-body)] text-base italic text-text placeholder:text-text-faint placeholder:not-italic focus:border-accent focus:outline-none transition-colors duration-200 motion-reduce:transition-none"
+          style={{ fontSize: "16px" }}
         />
       </div>
       <div className="sm:w-48">
@@ -58,7 +60,7 @@ export function StylistControls({
           onChange={(e) => setOccasion(e.target.value)}
         />
       </div>
-      <Button type="submit" disabled={busy} aria-busy={busy}>
+      <Button type="submit" disabled={busy} aria-busy={busy} className="w-full sm:w-auto">
         {busy ? "Styling…" : "Restyle"}
       </Button>
     </form>

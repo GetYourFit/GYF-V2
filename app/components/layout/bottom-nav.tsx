@@ -23,7 +23,7 @@ export function BottomNav() {
     <nav
       aria-label="Primary"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-screen-md items-stretch border-t border-rule bg-bg/90 backdrop-blur-xl"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-screen-md items-stretch border-t border-rule bg-bg/92 backdrop-blur-xl"
     >
       {TAB_ITEMS.map(({ href, icon: Icon, label }) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -33,25 +33,38 @@ export function BottomNav() {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "group relative flex h-14 flex-1 flex-col items-center justify-center gap-1",
-              "transition-colors duration-150 active:opacity-70",
-              active ? "text-text" : "text-text-faint hover:text-text-mid",
+              "group relative flex h-[3.75rem] flex-1 flex-col items-center justify-center gap-1",
+              "transition-colors duration-150",
+              "active:opacity-60 motion-reduce:active:opacity-100",
+              active ? "text-accent-warm" : "text-text-faint hover:text-text-mid",
             )}
           >
             {active && (
               <motion.span
                 layoutId={reduce ? undefined : "bottom-nav-indicator"}
-                className="absolute top-0 left-1/2 h-px w-8 -translate-x-1/2 bg-text"
-                transition={{ type: "spring", stiffness: 520, damping: 40 }}
+                className="absolute top-0 left-1/2 h-[2px] w-7 -translate-x-1/2 bg-accent-warm"
+                transition={{ type: "spring", stiffness: 480, damping: 38 }}
                 aria-hidden
               />
             )}
-            <Icon
-              size={22}
-              className="shrink-0 transition-transform duration-200 group-active:scale-90"
-              aria-hidden
-            />
-            <span className="t-mono text-[0.5625rem] tracking-[0.12em]">{label}</span>
+            <motion.div
+              whileTap={reduce ? undefined : { scale: 0.82 }}
+              transition={{ type: "spring", stiffness: 600, damping: 30 }}
+            >
+              <Icon
+                size={21}
+                className="shrink-0"
+                aria-hidden
+              />
+            </motion.div>
+            <span
+              className={cn(
+                "font-[family-name:var(--font-body)] text-[0.5rem] font-semibold tracking-[0.15em] uppercase",
+                active ? "text-accent-warm" : "",
+              )}
+            >
+              {label}
+            </span>
           </Link>
         );
       })}

@@ -1,63 +1,63 @@
 @import "tailwindcss";
 
-/* ─── Design tokens: Editorial Noir ──────────────────────────────────────── */
+/* ─── Design tokens: Editorial Noir (Jakarta Sans edition) ────────────────── */
 /* Near-black canvas, warm ivory ink, hairline rules, antique-gold for         */
-/* confidence/editorial accents — garments read as gallery pieces lit in the   */
-/* dark (Vogue / SSENSE after dark). Ivory inverts to the primary CTA.         */
+/* confidence/editorial accents. Plus Jakarta Sans throughout — geometric,     */
+/* premium, highly legible at all sizes.                                       */
 @theme {
-  --color-bg: #0a0a0a; /* near-black page canvas */
-  --color-surface: #141414; /* card / panel surface */
-  --color-surface-2: #1c1c1c; /* elevated surface (modals, dropdowns) */
-  --color-surface-3: #262626; /* hover state on surfaces */
-  --color-border: rgba(255, 255, 255, 0.1); /* subtle structural hairline */
-  --color-border-mid: rgba(255, 255, 255, 0.16); /* medium border */
-  --color-border-hi: rgba(255, 255, 255, 0.34); /* high-contrast border */
-  --color-text: #f4f1ea; /* warm ivory ink */
-  --color-text-mid: #a8a29a; /* secondary / muted warm grey */
-  --color-text-faint: #9a948b; /* muted labels — WCAG-AA ≥4.5:1 on bg + surface */
-  --color-accent: #f4f1ea; /* ivory — CTA inverts to ink-on-light */
-  --color-accent-warm: #c9a86a; /* antique gold — confidence / editorial accents */
-  --color-rule: rgba(255, 255, 255, 0.08); /* dividers */
-  --color-error: #e5675a; /* legible red on dark */
+  --color-bg: #0a0a0a;
+  --color-surface: #141414;
+  --color-surface-2: #1c1c1c;
+  --color-surface-3: #262626;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-mid: rgba(255, 255, 255, 0.18);
+  --color-border-hi: rgba(255, 255, 255, 0.36);
+  --color-text: #f4f1ea;
+  --color-text-mid: #a8a29a;
+  --color-text-faint: #9a948b;
+  --color-accent: #f4f1ea;
+  --color-accent-warm: #c9a86a;
+  --color-accent-cool: #7b9eff;
+  --color-rule: rgba(255, 255, 255, 0.08);
+  --color-error: #e5675a;
+  --color-success: #4caf7a;
 
-  --font-display: var(--font-playfair), Georgia, serif;
-  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-jakarta), system-ui, sans-serif;
+  --font-body: var(--font-jakarta), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), "Courier New", monospace;
 
-  /* Elevation — depth read through shadow against the near-black canvas. */
   --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.55);
   --shadow-overlay: 0 -10px 50px rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 40px rgba(201, 168, 106, 0.12);
 
-  /* Brand easing — the single "lux" curve, usable as the ease-lux utility. */
   --ease-lux: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Raw CSS vars — used for arbitrary-value classes (bg-[var(--bg)]) and JS */
+/* Raw CSS vars — used for arbitrary-value classes and JS */
 :root {
   color-scheme: dark;
   --bg: #0a0a0a;
   --surface: #141414;
   --surface-2: #1c1c1c;
   --surface-3: #262626;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-mid: rgba(255, 255, 255, 0.16);
-  --border-hi: rgba(255, 255, 255, 0.34);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-mid: rgba(255, 255, 255, 0.18);
+  --border-hi: rgba(255, 255, 255, 0.36);
   --text: #f4f1ea;
   --text-mid: #a8a29a;
   --text-faint: #9a948b;
   --accent: #f4f1ea;
   --accent-warm: #c9a86a;
+  --accent-cool: #7b9eff;
   --rule: rgba(255, 255, 255, 0.08);
   --error: #e5675a;
+  --success: #4caf7a;
   --lux: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ─── Reset ─────────────────────────────────────────────────────────────── */
-/* MUST live inside `@layer base`. Tailwind v4 emits its utilities in
-   `@layer utilities`; per the CSS cascade, *unlayered* rules outrank every
-   layered rule, so an unlayered `* { margin:0; padding:0 }` silently nukes
-   every `p-*`/`m-*`/`mx-auto` utility to 0 (gaps survive — they're `gap`).
-   Keeping the reset in `@layer base` lets utilities override it as intended. */
 @layer base {
   *,
   *::before,
@@ -73,9 +73,7 @@
     -moz-osx-font-smoothing: grayscale;
     scrollbar-width: thin;
     scrollbar-color: var(--border-mid) var(--bg);
-    /* prevent elastic overscroll on iOS */
     overscroll-behavior: none;
-    /* fill notch/status bar area */
     padding-top: env(safe-area-inset-top);
   }
 
@@ -97,57 +95,63 @@
     font-family: var(--font-body);
     overflow-x: hidden;
     min-height: 100dvh;
-    /* mobile: suppress tap flash, enable momentum scroll */
     -webkit-tap-highlight-color: transparent;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
   }
 }
 
-/* ─── Semantic type scale ────────────────────────────────────────────────── */
+/* ─── Semantic type scale — Plus Jakarta Sans ────────────────────────────── */
 @layer components {
+  /* Display: large bold hero text */
   .t-display {
     font-family: var(--font-display);
-    font-size: clamp(2.5rem, 6vw, 5rem);
-    font-weight: 400;
-    line-height: 1.03;
-    letter-spacing: -0.025em;
+    font-size: clamp(2.25rem, 5.5vw, 4.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
   }
+  /* Headline: section headings */
   .t-headline {
     font-family: var(--font-display);
-    font-size: clamp(1.75rem, 3.5vw, 2.75rem);
-    font-weight: 400;
-    line-height: 1.08;
-    letter-spacing: -0.018em;
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
   }
+  /* Title: card headings, modal titles */
   .t-title {
     font-family: var(--font-body);
-    font-size: 1.125rem;
-    font-weight: 500;
+    font-size: 1.0625rem;
+    font-weight: 600;
     line-height: 1.3;
     letter-spacing: -0.01em;
   }
+  /* Body: readable prose */
   .t-body {
     font-family: var(--font-body);
     font-size: 0.9375rem;
     font-weight: 400;
     line-height: 1.65;
   }
+  /* Caption: hints, secondary labels */
   .t-caption {
     font-family: var(--font-body);
     font-size: 0.8125rem;
     font-weight: 400;
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--text-mid);
   }
+  /* Label: buttons, nav, uppercase tags */
   .t-label {
     font-family: var(--font-body);
     font-size: 0.6875rem;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
   }
+  /* Mono: metadata, timestamps, status */
   .t-mono {
     font-family: var(--font-mono);
     font-size: 0.6875rem;
@@ -155,20 +159,20 @@
     line-height: 1;
     letter-spacing: 0.06em;
   }
-  /* Wordmark — the GYF lockup; serif display, tight tracking, ivory ink. */
+  /* Wordmark: GYF lockup, bold tight */
   .t-wordmark {
     font-family: var(--font-display);
-    font-weight: 400;
-    letter-spacing: -0.04em;
+    font-weight: 700;
+    letter-spacing: -0.05em;
     line-height: 1;
   }
-  /* Editorial voice — serif italic at body size, for stylist explanations and pull-quotes. */
+  /* Editorial: italic feature text, stylist explanations */
   .t-editorial {
     font-family: var(--font-display);
     font-style: italic;
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 400;
-    line-height: 1.4;
+    line-height: 1.5;
     letter-spacing: -0.005em;
   }
 }
@@ -181,28 +185,48 @@
   }
 }
 
-/* ─── Intro animation keyframes ──────────────────────────────────────────── */
-@keyframes shimmer {
-  from {
-    background-position: -200% center;
+/* ─── Interactive press scale (mobile haptic affordance) ─────────────────── */
+@layer base {
+  .press-scale {
+    transition: transform 0.12s var(--lux);
   }
-  to {
-    background-position: 200% center;
+  .press-scale:active {
+    transform: scale(0.96);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .press-scale:active {
+      transform: none;
+    }
   }
 }
 
-@keyframes scan-line {
-  0% {
-    top: 0%;
-    opacity: 1;
+/* ─── Shimmer button hover effect ───────────────────────────────────────── */
+@layer components {
+  .btn-shimmer {
+    position: relative;
+    overflow: hidden;
   }
-  95% {
-    top: 100%;
-    opacity: 1;
+  .btn-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.12) 50%,
+      transparent 60%
+    );
+    transform: translateX(-100%);
+    transition: transform 0s;
   }
-  100% {
-    top: 100%;
-    opacity: 0;
+  .btn-shimmer:hover::after {
+    transform: translateX(100%);
+    transition: transform 0.55s var(--lux);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-shimmer::after {
+      display: none;
+    }
   }
 }
 
@@ -219,11 +243,32 @@
     animation: shimmer 1.6s ease-in-out infinite;
   }
 
-  /* Respect reduced-motion: hold a static elevated tone, no shimmer. */
   @media (prefers-reduced-motion: reduce) {
     .skeleton {
       animation: none;
       background: var(--surface-2);
     }
   }
+}
+
+/* ─── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+
+@keyframes scan-line {
+  0%   { top: 0%;   opacity: 1; }
+  95%  { top: 100%; opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0; }
+  50%       { opacity: 1; }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

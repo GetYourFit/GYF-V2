@@ -201,29 +201,30 @@ export function OnboardingWizard() {
           {STEPS.map((s, i) => {
             const state = i === step ? "current" : i < step ? "done" : "upcoming";
             return (
-              <li key={s.id} className="flex flex-1 flex-col">
+              <li key={s.id} className="flex flex-1 flex-col gap-1.5">
                 <button
                   type="button"
                   onClick={() => goTo(i)}
-                  className="group flex w-full flex-col gap-1.5 focus-visible:outline-none"
+                  className="group relative h-1 w-full overflow-hidden bg-surface-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-bg"
                   aria-current={state === "current" ? "step" : undefined}
                   aria-label={`Step ${i + 1}: ${s.label}${
                     state === "done" ? " (completed)" : state === "current" ? " (current)" : ""
                   }`}
                 >
-                  <span
-                    className={`h-0.5 w-full transition-colors duration-300 group-focus-visible:ring-2 group-focus-visible:ring-accent ${
-                      i <= step ? "bg-accent" : "bg-surface-3"
-                    }`}
+                  <motion.span
+                    className="absolute inset-y-0 left-0 bg-accent-warm"
+                    initial={false}
+                    animate={{ width: i <= step ? "100%" : "0%" }}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   />
-                  <span
-                    className={`t-mono text-left transition-colors duration-200 ${
-                      state === "current" ? "text-text" : "text-text-faint"
-                    }`}
-                  >
-                    {s.label}
-                  </span>
                 </button>
+                <span
+                  className={`t-mono text-left transition-colors duration-200 ${
+                    state === "current" ? "text-text" : "text-text-faint"
+                  }`}
+                >
+                  {s.label}
+                </span>
               </li>
             );
           })}
@@ -403,20 +404,22 @@ function StepStyle({
           {STYLE_INTENTS.map((s) => {
             const active = (form.style_intent ?? []).includes(s.value);
             return (
-              <button
+              <motion.button
                 key={s.value}
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleStyle(s.value)}
+                whileTap={{ scale: 0.93 }}
+                transition={{ type: "spring", stiffness: 500, damping: 28 }}
                 className={
-                  "min-h-9 border px-3 py-1 t-label transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
+                  "min-h-9 border px-3 py-1 t-label transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg " +
                   (active
-                    ? "border-accent bg-accent text-bg"
+                    ? "border-accent-warm bg-accent-warm/10 text-accent-warm"
                     : "border-border-mid text-text-faint hover:border-border-hi hover:text-text")
                 }
               >
                 {s.label}
-              </button>
+              </motion.button>
             );
           })}
         </div>

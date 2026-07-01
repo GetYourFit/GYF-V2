@@ -108,7 +108,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             placeholder="Search garments…"
             value={filters.q}
             onChange={handleSearch}
-            className="w-full border border-border-mid bg-surface py-2.5 pl-11 pr-10 text-sm text-text transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full border border-border-mid bg-surface py-2.5 pl-11 pr-10 text-base text-text transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
           {filters.q && (
             <button
@@ -151,7 +151,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               max={facets?.price_max ?? undefined}
               value={filters.maxPrice}
               onChange={(e) => set("maxPrice", e.target.value)}
-              className="w-28 border border-border-mid bg-surface px-3 py-1.5 text-xs text-text-mid transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-28 border border-border-mid bg-surface px-3 py-1.5 text-base text-text-mid transition-colors placeholder:text-text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           )}
           <Select

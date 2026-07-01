@@ -5,6 +5,26 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+function useCountUp(target: number, duration = 800): number {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (target === 0) { setValue(0); return; }
+    const start = performance.now();
+    let raf: number;
+    function tick(now: number) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * target));
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
 import type { Profile, ProfileSummary } from "@gyf/types";
 
 import { Button } from "@/components/ui/button";
@@ -99,6 +119,36 @@ export function ProfileView() {
   );
 }
 
+function StatCell({ label, value, href }: { label: string; value: number; href?: string }) {
+  const displayed = useCountUp(value, 700);
+  const inner = (
+    <>
+      <motion.span
+        className="t-display text-text tabular-nums"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {displayed}
+      </motion.span>
+      <span className="t-label text-text-faint">{label}</span>
+    </>
+  );
+  return href ? (
+    <Link
+      href={href}
+      className="group flex flex-col gap-1 bg-surface p-4 sm:p-5 transition-colors duration-200 hover:bg-surface-2 active:bg-surface-3"
+    >
+      {inner}
+      <span className="mt-0.5 h-px w-0 bg-accent-warm transition-all duration-300 group-hover:w-full" aria-hidden />
+    </Link>
+  ) : (
+    <div className="flex flex-col gap-1 bg-surface p-4 sm:p-5">
+      {inner}
+    </div>
+  );
+}
+
 function Stats({ summary }: { summary: ProfileSummary }) {
   const items: Array<{ label: string; value: number; href?: string }> = [
     { label: "Outfits", value: summary.outfits_made },
@@ -112,27 +162,9 @@ function Stats({ summary }: { summary: ProfileSummary }) {
       aria-label="Profile statistics"
       className="grid grid-cols-3 gap-px border border-border bg-border sm:grid-cols-5"
     >
-      {items.map(({ label, value, href }) => {
-        const inner = (
-          <>
-            <span className="t-display text-text">{value}</span>
-            <span className="t-label text-text-faint">{label}</span>
-          </>
-        );
-        return href ? (
-          <Link
-            key={label}
-            href={href}
-            className="flex flex-col gap-1 bg-surface p-5 transition-colors hover:bg-surface-2"
-          >
-            {inner}
-          </Link>
-        ) : (
-          <div key={label} className="flex flex-col gap-1 bg-surface p-5">
-            {inner}
-          </div>
-        );
-      })}
+      {items.map((item) => (
+        <StatCell key={item.label} {...item} />
+      ))}
     </section>
   );
 }

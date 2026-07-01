@@ -182,13 +182,17 @@ export function SocialFeed() {
         type="button"
         aria-label="Share a look"
         onClick={() => setSheetOpen(true)}
-        initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
+        initial={reduceMotion ? false : { scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.25, ease: LUX }}
-        whileTap={reduceMotion ? undefined : { scale: 0.92 }}
-        className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+16px)] right-4 z-30 flex h-14 w-14 items-center justify-center bg-accent text-bg shadow-lg transition-transform sm:bottom-8 sm:right-8"
+        transition={
+          reduceMotion
+            ? { duration: 0.2 }
+            : { type: "spring", stiffness: 380, damping: 26, delay: 0.35 }
+        }
+        whileTap={reduceMotion ? undefined : { scale: 0.88 }}
+        className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+16px)] right-4 z-30 flex h-14 w-14 items-center justify-center bg-accent-warm text-bg shadow-[0_8px_32px_rgba(201,168,106,0.35)] sm:bottom-8 sm:right-8"
       >
-        <Plus size={24} aria-hidden />
+        <Plus size={22} aria-hidden />
       </motion.button>
 
       <CreatePostSheet
