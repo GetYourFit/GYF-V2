@@ -249,7 +249,7 @@ function EmptyState() {
       </p>
       <Link
         href="/"
-        className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-white transition-colors duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="mt-8 inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg transition-colors duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       >
         See my outfits
       </Link>

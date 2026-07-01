@@ -190,7 +190,7 @@ export function SocialFeed() {
             : { type: "spring", stiffness: 380, damping: 26, delay: 0.35 }
         }
         whileTap={reduceMotion ? undefined : { scale: 0.88 }}
-        className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+16px)] right-4 z-30 flex h-14 w-14 items-center justify-center bg-accent text-white shadow-[0_8px_24px_rgba(0,0,0,0.20)] sm:bottom-8 sm:right-8"
+        className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+16px)] right-4 z-30 flex h-14 w-14 items-center justify-center bg-accent text-bg shadow-[0_8px_24px_rgba(0,0,0,0.40)] sm:bottom-8 sm:right-8"
       >
         <Plus size={22} aria-hidden />
       </motion.button>

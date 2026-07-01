@@ -200,7 +200,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
         </div>
         <Link
           href="/onboarding"
-          className="inline-flex min-h-11 items-center bg-accent px-8 t-label text-white transition-colors duration-200 hover:bg-text-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="inline-flex min-h-11 items-center bg-accent px-8 t-label text-bg transition-colors duration-200 hover:bg-accent-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         >
           Set up my profile
         </Link>
