@@ -1,30 +1,32 @@
-/** Honest confidence indicator — thin bar + mono label. Calibrated value only;
- *  never rounds to 100% so the user always sees a real signal. Gold (accent)
- *  is the editorial callout reserved for a genuinely high-confidence look. */
+/** Confidence pill badge — high/moderate/low with visual weight proportional to signal. */
 export function ConfidenceMeter({ value }: { value: number }) {
   const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
   const high = pct >= 75;
   const moderate = pct >= 50 && !high;
-  const label = high ? "High" : moderate ? "Moderate" : "Exploring";
-  const barColor = high ? "bg-accent" : moderate ? "bg-text-mid" : "bg-text-faint";
+  const label = high ? "Strong match" : moderate ? "Good match" : "Exploring";
 
   return (
-    <div className="flex items-center gap-3" title={`Confidence: ${pct}%`}>
+    <div className="inline-flex items-center gap-1.5" title={`Confidence: ${pct}%`}>
+      {/* Track */}
       <div
-        className="h-0.5 w-20 overflow-hidden bg-surface-3"
+        className="h-1 w-14 overflow-hidden rounded-full bg-border"
         role="meter"
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${label} confidence, ${pct}%`}
+        aria-label={`${label}, ${pct}%`}
       >
         <div
-          className={`h-full transition-all duration-500 motion-reduce:transition-none ${barColor}`}
+          className={`h-full rounded-full transition-all duration-700 motion-reduce:transition-none ${
+            high ? "bg-accent" : moderate ? "bg-text-mid" : "bg-border-mid"
+          }`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`t-mono ${high ? "text-accent" : "text-text-faint"}`}>
-        {label} · {pct}%
+      <span
+        className={`t-mono ${high ? "text-accent font-semibold" : "text-text-faint"}`}
+      >
+        {label}
       </span>
     </div>
   );
