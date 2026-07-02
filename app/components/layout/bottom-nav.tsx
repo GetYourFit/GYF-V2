@@ -11,8 +11,8 @@ import { NavSocial } from "@/components/icons/NavSocial";
 import { NavProfile } from "@/components/icons/NavProfile";
 
 const LEFT_TABS = [
-  { href: "/",         Icon: NavFeed,     label: "Stylist",  exact: true  },
   { href: "/explore",  Icon: NavExplore,  label: "Explore",  exact: false },
+  { href: "/wardrobe", Icon: NavWardrobe, label: "Wardrobe", exact: false },
 ] as const;
 
 const RIGHT_TABS = [
