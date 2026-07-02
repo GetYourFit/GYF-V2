@@ -32,6 +32,7 @@ def _test_dsn() -> str:
     suite never touches the app's configured DB), else the local default."""
     return os.environ.get("GYF_TEST_DATABASE_URL") or settings.database_url
 
+
 # Categories the candidate query actually filters on, per slot — derived from the
 # shared taxonomy so the seed stays correct if the taxonomy changes.
 from app.recsys.conditioning import _CATEGORIES_BY_SLOT  # noqa: E402

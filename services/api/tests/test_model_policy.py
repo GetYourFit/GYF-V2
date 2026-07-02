@@ -55,9 +55,7 @@ def test_missing_eval_blocks_when_required():
 
 
 def test_reasons_accumulate():
-    ok, reasons = is_servable(
-        _card(lane=Lane.RESEARCH, commercial_ok=False, eval_report=None)
-    )
+    ok, reasons = is_servable(_card(lane=Lane.RESEARCH, commercial_ok=False, eval_report=None))
     assert not ok and len(reasons) >= 3
 
 

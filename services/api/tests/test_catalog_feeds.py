@@ -51,13 +51,17 @@ def test_delimited_feed_skips_unusable_rows_and_bad_prices(tmp_path) -> None:
             "SKU3,Valid Item,jeans,https://shop/z,https://img/z.jpg,,USD",  # blank price ok
         ],
     )
-    items = list(DelimitedFeedSource(csv_path, provider="p", license="l", column_map=_COLUMN_MAP).fetch())
+    items = list(
+        DelimitedFeedSource(csv_path, provider="p", license="l", column_map=_COLUMN_MAP).fetch()
+    )
     assert [i.title for i in items] == ["Valid Item"]
     assert items[0].price is None  # blank price degrades to None, not a crash
 
 
 def test_delimited_feed_default_region_hints_applied(tmp_path) -> None:
-    csv_path = _write_csv(tmp_path / "feed.csv", ["SKU4,Kurta,kurta,https://s/k,https://i/k.jpg,499,INR"])
+    csv_path = _write_csv(
+        tmp_path / "feed.csv", ["SKU4,Kurta,kurta,https://s/k,https://i/k.jpg,499,INR"]
+    )
     source = DelimitedFeedSource(
         csv_path, provider="p", license="l", column_map=_COLUMN_MAP, default_region_hints=("IN",)
     )
@@ -65,10 +69,14 @@ def test_delimited_feed_default_region_hints_applied(tmp_path) -> None:
 
 
 def test_delimited_feed_ingests_end_to_end(tmp_path) -> None:
-    csv_path = _write_csv(tmp_path / "feed.csv", ["SKU5,Denim,jeans,https://s/d,https://i/d.jpg,59,USD"])
+    csv_path = _write_csv(
+        tmp_path / "feed.csv", ["SKU5,Denim,jeans,https://s/d,https://i/d.jpg,59,USD"]
+    )
     repo = InMemoryItemRepository()
     result = ingest(
-        DelimitedFeedSource(csv_path, provider="cj-demo", license="affiliate", column_map=_COLUMN_MAP),
+        DelimitedFeedSource(
+            csv_path, provider="cj-demo", license="affiliate", column_map=_COLUMN_MAP
+        ),
         repo,
     )
     assert result.seen == 1 and result.written == 1

@@ -31,9 +31,7 @@ def test_rls_hides_other_users_rows():
     with psycopg.connect(DSN, autocommit=True) as conn:
         # Seed two users + a profile each as the owner (bypasses RLS).
         conn.execute("INSERT INTO users (id) VALUES (%s), (%s)", (user_a, user_b))
-        conn.execute(
-            "INSERT INTO profiles (user_id) VALUES (%s), (%s)", (user_a, user_b)
-        )
+        conn.execute("INSERT INTO profiles (user_id) VALUES (%s), (%s)", (user_a, user_b))
         # A non-superuser, non-owner role: RLS applies to it.
         conn.execute(f"CREATE ROLE {role} NOLOGIN")
         conn.execute(f"GRANT SELECT ON profiles, users TO {role}")
@@ -41,9 +39,7 @@ def test_rls_hides_other_users_rows():
             with conn.transaction():
                 conn.execute(f"SET LOCAL ROLE {role}")
                 # SET cannot be parameterized; set_config(..., is_local=true) == SET LOCAL.
-                conn.execute(
-                    "SELECT set_config('app.current_user_id', %s, true)", (user_a,)
-                )
+                conn.execute("SELECT set_config('app.current_user_id', %s, true)", (user_a,))
 
                 visible = conn.execute("SELECT user_id FROM profiles").fetchall()
                 assert visible == [(uuid.UUID(user_a),)], "A must see only its own row"

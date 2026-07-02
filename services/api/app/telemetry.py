@@ -27,7 +27,9 @@ def _configure_logging() -> None:
     """Structured single-line logs to stdout (12-factor; container-friendly)."""
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(
-        logging.Formatter('{"ts":"%(asctime)s","level":"%(levelname)s","logger":"%(name)s","msg":"%(message)s"}')
+        logging.Formatter(
+            '{"ts":"%(asctime)s","level":"%(levelname)s","logger":"%(name)s","msg":"%(message)s"}'
+        )
     )
     root = logging.getLogger()
     if not any(isinstance(h, logging.StreamHandler) for h in root.handlers):

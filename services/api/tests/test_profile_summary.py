@@ -36,7 +36,9 @@ def test_badges_threshold_logic():
 
 
 def test_summary_endpoint_returns_stats_and_badges():
-    stats = SummaryStats(outfits_made=6, items_saved=12, wardrobe_size=3, posts=2, reactions_received=30)
+    stats = SummaryStats(
+        outfits_made=6, items_saved=12, wardrobe_size=3, posts=2, reactions_received=30
+    )
     try:
         body = _client(stats).get("/profile/summary").json()
         assert body["outfits_made"] == 6

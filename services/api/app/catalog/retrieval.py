@@ -113,11 +113,7 @@ class PostgresVectorSearchRepository:
         self, item_id: str, k: int, region: str | None, offset: int = 0
     ) -> list[SearchResult]:
         sql = _SIMILAR.format(region=_REGION_FILTER if region else "")
-        params = (
-            (item_id, item_id, region, k, offset)
-            if region
-            else (item_id, item_id, k, offset)
-        )
+        params = (item_id, item_id, region, k, offset) if region else (item_id, item_id, k, offset)
         return self._run(sql, params)
 
     def search_by_vector(
@@ -211,9 +207,7 @@ def search_text(
     )
 
 
-def enrich_results(
-    results: list[SearchResult], directory: ItemDirectory
-) -> list[SearchResult]:
+def enrich_results(results: list[SearchResult], directory: ItemDirectory) -> list[SearchResult]:
     """Attach real commerce fields (price/currency/colour/buy_url) to search hits.
 
     The vector SQL stays lean (id/title/score/image); shop-the-look data comes from

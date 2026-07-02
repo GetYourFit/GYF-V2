@@ -48,9 +48,7 @@ def test_similar_sql_excludes_self_and_orders_by_distance():
     assert "ORDER BY e.embedding <=> q.embedding" in sql
     assert "LIMIT %s OFFSET %s" in sql
     assert params == ("11111111", "11111111", 5, 0)
-    assert results == [
-        SearchResult("22222222", "Other Tee", 0.91, image_url="/media/22222222.jpg")
-    ]
+    assert results == [SearchResult("22222222", "Other Tee", 0.91, image_url="/media/22222222.jpg")]
 
 
 def test_region_filter_added_only_when_region_given():
@@ -200,9 +198,7 @@ class StubRepo:
     def similar_to_item(self, item_id, k, region, offset=0):
         return [SearchResult("sibling", "Sibling Item", 0.88)]
 
-    def search_by_vector(
-        self, embedding, k, region, offset=0, max_price=None, sort="relevance"
-    ):
+    def search_by_vector(self, embedding, k, region, offset=0, max_price=None, sort="relevance"):
         return [SearchResult("hit", "Search Hit", 0.77)]
 
 

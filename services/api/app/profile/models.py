@@ -59,6 +59,7 @@ class ConsentInput(BaseModel):
     def _only_known_keys(cls, v: dict[str, bool]) -> dict[str, bool]:
         return {k: bool(val) for k, val in v.items() if k in CONSENT_KEYS}
 
+
 Money = Annotated[float, Field(ge=0)]
 
 

@@ -145,7 +145,9 @@ class DelimitedFeedSource:
 
         def split(field: str) -> list[str]:
             value = col(field)
-            return [p.strip() for p in value.split(self._list_delimiter) if p.strip()] if value else []
+            return (
+                [p.strip() for p in value.split(self._list_delimiter) if p.strip()] if value else []
+            )
 
         price_raw = col("price")
         try:
