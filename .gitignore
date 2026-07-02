@@ -80,3 +80,4 @@ packages/types/openapi.json
 
 # GAN design/build harness scratch (specs, eval reports, dev logs)
 gan-harness/
+.data/

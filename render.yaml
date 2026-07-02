@@ -55,6 +55,16 @@ services:
         sync: false
       - key: GYF_HF_TOKEN
         sync: false
+      # Virtual try-on (M9): the licensed rendering lane. Set BOTH in the dashboard
+      # once FASHN credits are purchased AND the D5 eval report is recorded (see
+      # models.registry.json fashn-tryon-v1.6 notes). Unset = the endpoint abstains
+      # honestly and the surface still works.
+      #   GYF_TRYON_PROVIDER = fashn
+      #   GYF_FASHN_API_KEY  = <fashn.ai → Settings → API>
+      - key: GYF_TRYON_PROVIDER
+        sync: false
+      - key: GYF_FASHN_API_KEY
+        sync: false
       # --- Secrets: set in dashboard / `render` CLI, not committed ---
       # The entrypoint runs `alembic upgrade head` on boot. DDL must NOT go through
       # the transaction pooler (:6543) — pgbouncer transaction mode breaks Alembic's

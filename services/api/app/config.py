@@ -99,6 +99,16 @@ class Settings(BaseSettings):
             return candidate
         return ""
 
+    # --- Virtual try-on (M9, doctrine D2: licensed model at inference) ---
+    # Rendering lane provider: "fashn" (the licensed beta lane) or "" (unset =
+    # the NullTryOnRenderer baseline abstains honestly; the surface still works).
+    tryon_provider: str = ""
+    # FASHN API key (fashn.ai → Settings → API). Secret; never committed.
+    fashn_api_key: str = ""
+    # Vendor quality mode: "performance" (~5s/garment) | "balanced" (~8s) |
+    # "quality" (~15s). Cost is identical (1 credit/image) — this trades latency.
+    tryon_mode: str = "balanced"
+
     # --- Observability (P0-E). All env-driven; unset = no-op (free-tier first). ---
     service_name: str = "gyf-api"
     # OTLP traces endpoint (e.g. http://localhost:4318). Unset = tracing disabled.
@@ -123,6 +133,8 @@ class Settings(BaseSettings):
     trusted_proxies: str = ""
     # Per-window request caps per client. 0 disables the limit for that route.
     rate_limit_photo: int = 5
+    # Try-on renders cost real vendor credits per image — keep the cap tight.
+    rate_limit_tryon: int = 3
     rate_limit_recommend: int = 60
     rate_limit_feedback: int = 60
     rate_limit_search: int = 60

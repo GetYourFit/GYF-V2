@@ -230,3 +230,37 @@ live/remote-gpu, skin-tone beta/remote-gpu, DB ready, 24,254 items (12 priced). 
 page's text_search check was a false negative (proxied via local torch, but prod embeds
 queries over GYF_ENCODER_REMOTE_URL — real search returns 200 with results); the check now
 mirrors the real serving path (remote lane → local torch → degraded). +1 test (4 total).
+
+### 2026-07-03 — Virtual try-on (M9) built end-to-end behind the TryOnRenderer port ✅ (lane pending credits+eval)
+
+**User asked:** continue with the recommended moves — try-on + skin-tone fairness eval.
+
+**Vendor research (subagent, cited):** FASHN AI wins the licensed-inference lane —
+proprietary weights, ToS grants commercial output use, ~$0.075/image (~$0.15–0.23/outfit via
+sequential top→bottom), 72h vendor auto-delete + return_base64 keeps renders off vendor
+storage (D8), available from India. Runner-up: Vertex AI VTO (GA). Kolors-via-fal ($0.07,
+commercially cleared by fal) as A/B hedge; Leffa (MIT) on our ZeroGPU Space as the $0
+own-lane candidate (flag: trained on VITON-HD/DressCode research data). ALL Replicate
+IDM-VTON/CatVTON/OOTDiffusion deployments are CC-BY-NC → fail the license gate.
+
+**Shipped:**
+- `app/tryon/` — `TryOnRenderer` port (D1): `render(person_png, garments) -> TryOnRender`
+  (image | honest abstention, calibrated confidence, rendered_slots, reason);
+  `NullTryOnRenderer` baseline (invariant #5) serves when no lane is configured.
+- `app/tryon/fashn.py` — FASHN adapter: sequential composition (one-piece→top→bottom;
+  footwear honestly skipped — unsupported by tryon-v1.6), confidence decays 0.8×0.9^k per
+  extra pass, partial-look honesty, injectable transport (stdlib urllib; zero new deps).
+- `POST /tryon` — consent-gated, photo validated exactly like onboarding uploads
+  (type sniff, size, decompression-bomb), ephemeral in-memory processing, per-garment
+  TRYON events into the behavioral spine, tight rate limit (3/min — vendor credits).
+- `/system/status` now reports try-on beta/licensed-api when configured, planned otherwise.
+- Registry: `fashn-tryon-v1.6` in RESEARCH lane — the license gate correctly refused
+  production without an eval report (D5). Promotion recipe in the registry notes.
+- Web: "See it on you" in outfit detail — upload → render with confidence + rendered-slots
+  caption + "never stored" promise; abstention shows the reason, never a fake.
+- Tests: 10 new (sequential composition + D8 pin, footwear skip, partial/total failure,
+  consent 403, null-lane honesty, event logging, 404, upload sniffing). API total 203.
+
+**Activation (user):** buy FASHN credits → run the eval look-set → record
+eval-reports/tryon-fashn-v1.json → flip registry lane to production → set
+GYF_TRYON_PROVIDER=fashn + GYF_FASHN_API_KEY on Render.

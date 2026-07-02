@@ -1,5 +1,5 @@
 {
-  "_comment": "GYF model registry — the machine-enforced license/lane gate (engineering-doctrine D2). Every model GYF can load is tagged here. CI (scripts/check_model_licenses.py) fails if any 'production' model is not commercial-clean + evaluated. RESEARCH-lane models are OFFLINE-only north-stars and never served. Keep in lockstep with tech-stack.md.",
+  "_comment": "GYF model registry \u2014 the machine-enforced license/lane gate (engineering-doctrine D2). Every model GYF can load is tagged here. CI (scripts/check_model_licenses.py) fails if any 'production' model is not commercial-clean + evaluated. RESEARCH-lane models are OFFLINE-only north-stars and never served. Keep in lockstep with tech-stack.md.",
   "models": [
     {
       "name": "marqo-fashionSigLIP",
@@ -38,7 +38,7 @@
       "train_data_license": "Apache-2.0 (WebLI)",
       "eval_report": null,
       "model_uri": "hf-hub:timm/ViT-SO400M-16-SigLIP2-384",
-      "notes": "M2 bake-off candidate. Larger backbone (1152-dim → needs a vector-dim migration + re-embed if promoted). Only escalate to this if the base candidate is competitive. Research-lane until proven."
+      "notes": "M2 bake-off candidate. Larger backbone (1152-dim \u2192 needs a vector-dim migration + re-embed if promoted). Only escalate to this if the base candidate is competitive. Research-lane until proven."
     },
     {
       "name": "sam-3d-body",
@@ -99,7 +99,7 @@
       "train_data_commercial_ok": false,
       "train_data_license": "VITON-HD/DressCode (research-only)",
       "eval_report": null,
-      "notes": "North-star try-on quality, OFFLINE benchmark only. MUST NOT be served — see engineering-doctrine try-on path (use a licensed model at inference)."
+      "notes": "North-star try-on quality, OFFLINE benchmark only. MUST NOT be served \u2014 see engineering-doctrine try-on path (use a licensed model at inference)."
     },
     {
       "name": "idm-vton",
@@ -112,6 +112,19 @@
       "train_data_license": "VITON-HD/DressCode (research-only)",
       "eval_report": null,
       "notes": "Non-commercial try-on baseline; research-lane reference only."
+    },
+    {
+      "name": "fashn-tryon-v1.6",
+      "capability": "try_on",
+      "provider": "FASHN AI",
+      "license": "Proprietary (hosted API; ToS grants commercial use of outputs)",
+      "lane": "research",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "Vendor-proprietary (licensed model at inference \u2014 doctrine D2 beta lane; no weights ever touch GYF infra)",
+      "eval_report": null,
+      "model_uri": "https://api.fashn.ai/v1 (model_name=tryon-v1.6)",
+      "notes": "M9 beta try-on lane behind the TryOnRenderer port (licensed hosted model at inference \u2014 doctrine D2; no weights ever touch GYF infra; 72h vendor auto-delete + return_base64 keeps generated user imagery off vendor storage, D8). One garment per call \u2014 the adapter composes top\u2192bottom sequentially; footwear unsupported and honestly skipped. PROMOTION (D5): buy API credits, render the eval look-set, record eval-reports/tryon-fashn-v1.json, flip lane to production, then set GYF_TRYON_PROVIDER=fashn + GYF_FASHN_API_KEY. Until then the NullTryOnRenderer baseline serves (abstains honestly). Own-it-later: permissive architecture trained on brand on-model photos behind the same port."
     }
   ]
 }

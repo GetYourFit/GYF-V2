@@ -204,3 +204,19 @@ def get_summary_repo() -> SummaryRepository:
     from .profile.summary import PostgresSummaryRepository
 
     return PostgresSummaryRepository(settings.database_url)
+
+
+def get_tryon_renderer():
+    """The configured TryOnRenderer port (M9, doctrine D1/D2).
+
+    ``GYF_TRYON_PROVIDER=fashn`` + ``GYF_FASHN_API_KEY`` activate the licensed
+    beta lane; anything else returns the always-available abstaining baseline
+    (invariant #5) so the endpoint stays honest instead of erroring.
+    """
+    from .tryon import NullTryOnRenderer
+
+    if settings.tryon_provider == "fashn" and settings.fashn_api_key:
+        from .tryon.fashn import FashnTryOnRenderer
+
+        return FashnTryOnRenderer(settings.fashn_api_key, mode=settings.tryon_mode)
+    return NullTryOnRenderer()
