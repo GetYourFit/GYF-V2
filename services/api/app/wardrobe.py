@@ -23,7 +23,7 @@ VALUES (%s, %s, %s, %s, %s, %s)
 """
 _LIST = """
 SELECT id, item_id, title, category, slot
-FROM wardrobe_items WHERE user_id = %s ORDER BY created_at DESC
+FROM wardrobe_items WHERE user_id = %s ORDER BY created_at DESC LIMIT 500
 """
 _REMOVE = "DELETE FROM wardrobe_items WHERE user_id = %s AND id = %s"
 

@@ -19,7 +19,10 @@ _SAVE = """
 INSERT INTO collections (user_id, item_id) VALUES (%s, %s)
 ON CONFLICT (user_id, item_id) DO NOTHING
 """
-_LIST = "SELECT item_id FROM collections WHERE user_id = %s ORDER BY created_at DESC"
+# Bounded so a very large shortlist can neither return an unbounded response nor
+# drive an unbounded `directory.lookup(...)` fan-out. Far above any real beta user;
+# revisit with cursor pagination if a client ever needs to page past it.
+_LIST = "SELECT item_id FROM collections WHERE user_id = %s ORDER BY created_at DESC LIMIT 500"
 _REMOVE = "DELETE FROM collections WHERE user_id = %s AND item_id = %s"
 
 

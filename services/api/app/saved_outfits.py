@@ -33,7 +33,7 @@ RETURNING id
 """
 _LIST = """
 SELECT id, outfit_key, recommendation_id, item_ids, occasion, explanation, score, confidence
-FROM saved_outfits WHERE user_id = %s ORDER BY created_at DESC
+FROM saved_outfits WHERE user_id = %s ORDER BY created_at DESC LIMIT 500
 """
 _REMOVE = "DELETE FROM saved_outfits WHERE user_id = %s AND id = %s"
 

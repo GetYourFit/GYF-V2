@@ -21,11 +21,14 @@ from ..ratelimit import rate_limit
 router = APIRouter(tags=["catalog"])
 
 
-@router.get("/items/{item_id}/similar")
+@router.get(
+    "/items/{item_id}/similar",
+    dependencies=[Depends(rate_limit("similar", "rate_limit_search"))],
+)
 def similar_items(
     item_id: str,
     k: int = Query(10, ge=1, le=50),
-    offset: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0, le=10_000),
     region: str | None = None,
     repo: VectorSearchRepository = Depends(get_search_repo),
     directory: ItemDirectory = Depends(get_item_directory),
@@ -50,7 +53,7 @@ def catalog_facets(
 def search_items(
     q: str = Query(..., min_length=1),
     k: int = Query(10, ge=1, le=50),
-    offset: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0, le=10_000),
     region: str | None = None,
     max_price: float | None = Query(
         None,
@@ -76,9 +79,7 @@ def search_items(
     construction-time path returns, never a 500 that pretends the search broke.
     """
     try:
-        hits = search_text(
-            repo, embedder, q, k, region, offset, max_price=max_price, sort=sort
-        )
+        hits = search_text(repo, embedder, q, k, region, offset, max_price=max_price, sort=sort)
         return {"results": enrich_results(hits, directory)}
     except ImportError as exc:  # encoder backend not installed in this runtime
         raise HTTPException(status_code=503, detail="text search unavailable") from exc
