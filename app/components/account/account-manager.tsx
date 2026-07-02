@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
+import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/contact";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -529,6 +530,38 @@ export function AccountManager() {
           }}
         >
           Your data is yours — we remove it on request, immediately.
+        </p>
+      </section>
+
+      <section aria-labelledby="support-heading" style={{ marginTop: "2rem" }}>
+        <h2
+          id="support-heading"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#9a9490",
+            marginBottom: "0.5rem",
+          }}
+        >
+          Contact &amp; support
+        </h2>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.875rem",
+            color: "#5c5650",
+            lineHeight: 1.6,
+            margin: 0,
+          }}
+        >
+          Questions, feedback, or partnership enquiries? Reach us at{" "}
+          <a href={CONTACT_MAILTO} style={{ color: "#1c1a17", textDecoration: "underline" }}>
+            {CONTACT_EMAIL}
+          </a>
+          .
         </p>
       </section>
     </motion.div>

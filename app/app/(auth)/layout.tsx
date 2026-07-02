@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Suspense, type ReactNode } from "react";
 import { GYFLogo } from "@/components/brand/GYFLogo";
+import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/contact";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -82,6 +83,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           }}
         >
           GYF &mdash; Get Your Fit &copy; {new Date().getFullYear()}
+          <br />
+          <span style={{ textTransform: "none", letterSpacing: "normal" }}>
+            Contact us:{" "}
+            <a href={CONTACT_MAILTO} style={{ color: "#5c5650", textDecoration: "underline" }}>
+              {CONTACT_EMAIL}
+            </a>
+          </span>
         </motion.p>
       </div>
     </main>
