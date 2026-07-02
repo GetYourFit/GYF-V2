@@ -12,7 +12,7 @@ import { WearItWithRow } from "./WearItWithRow";
 import type { SearchResult } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const ACCENT = "#d4a96a";
+const ACCENT = "#b87a30";
 
 const MONO: React.CSSProperties = {
   fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
@@ -109,7 +109,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
           width: "100%",
           maxWidth: "390px",
           maxHeight: "92dvh",
-          background: "#0f0f12",
+          background: "#faf8f5",
           borderTop: "1px solid rgba(255,255,255,0.10)",
           borderRadius: "20px 20px 0 0",
           overflowY: "auto",
@@ -125,7 +125,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
             padding: "0.75rem 1rem 0",
             position: "sticky",
             top: 0,
-            background: "#0f0f12",
+            background: "#faf8f5",
             zIndex: 10,
           }}
         >
@@ -153,9 +153,9 @@ export function ItemDetailSheet({ item, onClose }: Props) {
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "#8a8a95",
+              background: "rgba(0,0,0,0.06)",
+              border: "1px solid rgba(0,0,0,0.10)",
+              color: "#9a9490",
               cursor: "pointer",
               borderRadius: "999px",
             }}
@@ -219,7 +219,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                 fontSize: "1.0625rem",
                 fontWeight: 600,
-                color: "#e8e4dc",
+                color: "#1c1a17",
                 margin: 0,
                 lineHeight: 1.3,
               }}
@@ -262,9 +262,9 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                 justifyContent: "center",
                 gap: "0.375rem",
                 padding: "0.875rem",
-                background: "rgba(255,255,255,0.06)",
+                background: "rgba(0,0,0,0.06)",
                 border: "1px solid rgba(255,255,255,0.12)",
-                color: addingToWardrobe ? "#5a5a65" : "#e8e4dc",
+                color: addingToWardrobe ? "#5a5a65" : "#1c1a17",
                 ...MONO,
                 cursor: addingToWardrobe ? "not-allowed" : "pointer",
                 borderRadius: "999px",
@@ -288,9 +288,9 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                   justifyContent: "center",
                   gap: "0.375rem",
                   padding: "0.875rem",
-                  background: "#e8e4dc",
+                  background: "#1c1a17",
                   border: "none",
-                  color: "#0f0f12",
+                  color: "#faf8f5",
                   ...MONO,
                   cursor: "pointer",
                   borderRadius: "999px",

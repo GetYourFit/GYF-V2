@@ -25,7 +25,7 @@ export default function SocialPage() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#f0bd8f",
+            color: "#b87a30",
             marginBottom: "0.5rem",
           }}
         >
@@ -38,7 +38,7 @@ export default function SocialPage() {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#ffffff",
+            color: "#1c1a17",
             margin: 0,
           }}
         >

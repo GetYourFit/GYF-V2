@@ -25,10 +25,10 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: "rgba(255,255,255,0.04)",
+        background: "rgba(0,0,0,0.03)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid rgba(0,0,0,0.08)",
         borderRadius: "16px",
         overflow: "hidden",
       }}
@@ -41,7 +41,7 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
         }
       </div>
       <div style={{ padding: "0.625rem" }}>
-        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.6875rem", color: "#e8e4dc", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", margin: 0 }}>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.6875rem", color: "#1c1a17", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", margin: 0 }}>
           {item.title}
         </p>
       </div>
@@ -62,10 +62,10 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: "rgba(255,255,255,0.04)",
+        background: "rgba(0,0,0,0.03)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid rgba(0,0,0,0.08)",
         borderRadius: "16px",
         overflow: "hidden",
       }}
@@ -88,13 +88,13 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
             No items
           </div>
         )}
-        {previews.length === 1 && <div style={{ background: "rgba(255,255,255,0.03)" }} />}
+        {previews.length === 1 && <div style={{ background: "rgba(0,0,0,0.02)" }} />}
       </div>
       <div style={{ padding: "0.625rem" }}>
-        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.6875rem", color: "#e8e4dc", margin: 0 }}>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.6875rem", color: "#1c1a17", margin: 0 }}>
           {outfit.occasion ?? "Outfit"}
         </p>
-        <p style={{ ...MONO, color: "#8a8a95", marginTop: "0.25rem", fontSize: "0.5rem" }}>
+        <p style={{ ...MONO, color: "#9a9490", marginTop: "0.25rem", fontSize: "0.5rem" }}>
           {outfit.items?.length ?? 0} pieces
         </p>
       </div>

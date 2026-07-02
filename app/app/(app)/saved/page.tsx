@@ -14,7 +14,7 @@ export default function SavedPage() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#f0bd8f",
+            color: "#b87a30",
           }}
         >
           Saved
@@ -26,12 +26,12 @@ export default function SavedPage() {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#ffffff",
+            color: "#1c1a17",
             margin: 0,
           }}
         >
           Your curated{" "}
-          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#c4c7c8" }}>looks.</em>
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#5c5650" }}>looks.</em>
         </h1>
       </header>
       <SavedGrid />

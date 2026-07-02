@@ -87,7 +87,7 @@ function IndustrialInput({
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: focused ? "#ffffff" : "#8e9192",
+          color: focused ? "#ffffff" : "#9a9490",
           transition: "color 0.2s",
         }}
       >
@@ -100,7 +100,7 @@ function IndustrialInput({
           style={{
             position: "absolute",
             left: 0,
-            color: focused ? "#ffffff" : "#8a8a95",
+            color: focused ? "#ffffff" : "#9a9490",
             transition: "color 0.2s",
             flexShrink: 0,
           }}
@@ -124,7 +124,7 @@ function IndustrialInput({
             padding: "0.75rem 2rem 0.75rem 1.75rem",
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "1rem",
-            color: "#e2e2e9",
+            color: "#1c1a17",
             outline: "none",
             transition: "border-color 0.2s",
             minHeight: "44px",
@@ -141,7 +141,7 @@ function IndustrialInput({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#8a8a95",
+              color: "#9a9490",
               padding: "0.25rem",
               display: "flex",
               alignItems: "center",
@@ -212,7 +212,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4a96a",
+            color: "#b87a30",
             display: "flex",
             alignItems: "center",
             gap: "0.5rem",
@@ -224,7 +224,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               display: "inline-block",
               width: 24,
               height: 1,
-              background: "#d4a96a",
+              background: "#b87a30",
               flexShrink: 0,
             }}
           />
@@ -241,7 +241,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#e8e4dc",
+            color: "#1c1a17",
             margin: 0,
           }}
         >
@@ -255,7 +255,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           style={{
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "0.9375rem",
-            color: "#8e9192",
+            color: "#9a9490",
             margin: 0,
           }}
         >
@@ -301,7 +301,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.875rem",
-              color: "#ffb4ab",
+              color: "#c0392b",
               margin: 0,
             }}
           >
@@ -344,7 +344,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             width: "100%",
             minHeight: "52px",
             background: busy ? "#333" : "#ffffff",
-            color: "#0f0f12",
+            color: "#faf8f5",
             border: "none",
             borderRadius: "16px",
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
@@ -379,7 +379,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.8125rem",
-            color: "#8a8a95",
+            color: "#9a9490",
             textAlign: "center",
             margin: 0,
           }}
@@ -388,7 +388,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <Link
             href={copy.altHref}
             style={{
-              color: "#c4c7c8",
+              color: "#5c5650",
               textDecoration: "underline",
               textUnderlineOffset: "3px",
             }}

@@ -18,7 +18,7 @@ export default function ExplorePage() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#f0bd8f",
+            color: "#b87a30",
             marginBottom: "0.5rem",
           }}
         >
@@ -31,12 +31,12 @@ export default function ExplorePage() {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#ffffff",
+            color: "#1c1a17",
             margin: 0,
           }}
         >
           The full{" "}
-          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#c4c7c8" }}>catalog.</em>
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#5c5650" }}>catalog.</em>
         </h1>
       </header>
       <ExploreShell />

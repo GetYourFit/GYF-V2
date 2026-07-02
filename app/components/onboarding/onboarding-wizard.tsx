@@ -57,7 +57,7 @@ function MonoLabel({ children }: { children: React.ReactNode }) {
       fontWeight: 500,
       letterSpacing: "0.1em",
       textTransform: "uppercase" as const,
-      color: "#8a8a95",
+      color: "#9a9490",
       display: "block",
       marginBottom: "0.5rem",
     }}>
@@ -96,7 +96,7 @@ function DarkSelect({
         padding: "0.625rem 0",
         fontFamily: "var(--font-body)",
         fontSize: "0.9375rem",
-        color: value ? "#e2e2e9" : "#8a8a95",
+        color: value ? "#1c1a17" : "#9a9490",
         outline: "none",
         appearance: "none",
         WebkitAppearance: "none",
@@ -105,9 +105,9 @@ function DarkSelect({
         minHeight: "44px",
       }}
     >
-      <option value="" style={{ background: "#0f0f12", color: "#8a8a95" }}>{placeholder}</option>
+      <option value="" style={{ background: "#faf8f5", color: "#9a9490" }}>{placeholder}</option>
       {options.map((o) => (
-        <option key={o.value} value={o.value} style={{ background: "#0f0f12", color: "#e2e2e9" }}>
+        <option key={o.value} value={o.value} style={{ background: "#faf8f5", color: "#1c1a17" }}>
           {o.label}
         </option>
       ))}
@@ -150,7 +150,7 @@ function DarkInput({
         padding: "0.625rem 0",
         fontFamily: "var(--font-body)",
         fontSize: "0.9375rem",
-        color: "#e2e2e9",
+        color: "#1c1a17",
         outline: "none",
         transition: "border-color 0.2s",
         minHeight: "44px",
@@ -276,7 +276,7 @@ export function OnboardingWizard() {
             key={i}
             animate={{ opacity: [0.3, 0.6, 0.3] }}
             transition={{ duration: 1.4, delay: i * 0.15, repeat: Infinity }}
-            style={{ height: "12px", width: `${w}%`, background: "rgba(255,255,255,0.06)", borderRadius: "999px" }}
+            style={{ height: "12px", width: `${w}%`, background: "rgba(0,0,0,0.06)", borderRadius: "999px" }}
           />
         ))}
       </div>
@@ -305,7 +305,7 @@ export function OnboardingWizard() {
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: "#d4a96a",
+          color: "#b87a30",
         }}>
           Step {String(step + 1).padStart(2, "0")} / {String(STEPS.length).padStart(2, "0")}
         </span>
@@ -324,7 +324,7 @@ export function OnboardingWizard() {
                     position: "relative",
                     height: "2px",
                     width: "100%",
-                    background: "#0f0f12",
+                    background: "#faf8f5",
                     border: "none",
                     padding: 0,
                     cursor: "pointer",
@@ -338,7 +338,7 @@ export function OnboardingWizard() {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: "#d4a96a",
+                      background: "#b87a30",
                       display: "block",
                     }}
                   />
@@ -348,7 +348,7 @@ export function OnboardingWizard() {
                   fontSize: "0.55rem",
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",
-                  color: state === "current" ? "#e2e2e9" : "#444748",
+                  color: state === "current" ? "#1c1a17" : "#444748",
                   transition: "color 0.2s",
                 }}>
                   {s.label}
@@ -392,7 +392,7 @@ export function OnboardingWizard() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#ffb4ab", margin: 0 }}
+            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#c0392b", margin: 0 }}
           >
             {error}
           </motion.p>
@@ -405,7 +405,7 @@ export function OnboardingWizard() {
         alignItems: "center",
         justifyContent: "space-between",
         gap: "0.75rem",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
+        borderTop: "1px solid rgba(0,0,0,0.06)",
         paddingTop: "1.5rem",
       }}>
         <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -420,9 +420,9 @@ export function OnboardingWizard() {
                 minHeight: "44px",
                 padding: "0 1rem",
                 background: "transparent",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid rgba(0,0,0,0.10)",
                 borderRadius: "999px",
-                color: "#8e9192",
+                color: "#9a9490",
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.6rem",
                 fontWeight: 500,
@@ -450,8 +450,8 @@ export function OnboardingWizard() {
               gap: "0.5rem",
               minHeight: "44px",
               padding: "0 1.5rem",
-              background: saving ? "rgba(255,255,255,0.1)" : "#ffffff",
-              color: saving ? "#8a8a95" : "#0f0f12",
+              background: saving ? "rgba(0,0,0,0.10)" : "#ffffff",
+              color: saving ? "#9a9490" : "#faf8f5",
               border: "none",
               borderRadius: "999px",
               fontFamily: "var(--font-mono)",
@@ -486,7 +486,7 @@ export function OnboardingWizard() {
               minHeight: "44px",
               padding: "0 1.5rem",
               background: "#ffffff",
-              color: "#0f0f12",
+              color: "#faf8f5",
               border: "none",
               borderRadius: "999px",
               fontFamily: "var(--font-mono)",
@@ -524,7 +524,7 @@ function EstimatedBadge() {
         fontSize: "0.5rem",
         letterSpacing: "0.08em",
         textTransform: "uppercase" as const,
-        color: "#d4a96a",
+        color: "#b87a30",
         flexShrink: 0,
       }}
     >
@@ -541,7 +541,7 @@ function StepHeader({ title, hint }: { title: string; hint?: string }) {
         fontFamily: "var(--font-body)",
         fontSize: "1.375rem",
         fontWeight: 700,
-        color: "#e8e4dc",
+        color: "#1c1a17",
         margin: 0,
         letterSpacing: "-0.02em",
       }}>
@@ -551,7 +551,7 @@ function StepHeader({ title, hint }: { title: string; hint?: string }) {
         <p style={{
           fontFamily: "var(--font-body)",
           fontSize: "0.8125rem",
-          color: "#8a8a95",
+          color: "#9a9490",
           marginTop: "0.375rem",
         }}>
           {hint}
@@ -627,9 +627,9 @@ function StepStyle({
                 style={{
                   minHeight: "36px",
                   padding: "0 0.875rem",
-                  border: `1px solid ${active ? "#d4a96a" : "rgba(255,255,255,0.08)"}`,
+                  border: `1px solid ${active ? "#b87a30" : "rgba(0,0,0,0.08)"}`,
                   background: active ? "rgba(240,189,143,0.08)" : "transparent",
-                  color: active ? "#d4a96a" : "#8a8a95",
+                  color: active ? "#b87a30" : "#9a9490",
                   fontFamily: "var(--font-mono)",
                   fontSize: "0.6rem",
                   fontWeight: 500,
@@ -723,7 +723,7 @@ function StepPrivacy({
                 width: "16px",
                 height: "16px",
                 flexShrink: 0,
-                accentColor: "#d4a96a",
+                accentColor: "#b87a30",
                 cursor: c.required ? "not-allowed" : "pointer",
               }}
             />
@@ -732,7 +732,7 @@ function StepPrivacy({
                 fontFamily: "var(--font-body)",
                 fontSize: "0.875rem",
                 fontWeight: 500,
-                color: "#e2e2e9",
+                color: "#1c1a17",
                 display: "block",
               }}>
                 {c.label}
@@ -740,7 +740,7 @@ function StepPrivacy({
                   <span style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: "0.55rem",
-                    color: "#8a8a95",
+                    color: "#9a9490",
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
                     marginLeft: "0.5rem",
@@ -752,7 +752,7 @@ function StepPrivacy({
               <span style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "0.75rem",
-                color: "#8a8a95",
+                color: "#9a9490",
                 display: "block",
                 marginTop: "0.25rem",
               }}>
@@ -793,7 +793,7 @@ function DeleteAccount() {
         padding: "0 0.5rem",
         background: "transparent",
         border: "none",
-        color: busy ? "#444748" : "#8a8a95",
+        color: busy ? "#444748" : "#9a9490",
         fontFamily: "var(--font-mono)",
         fontSize: "0.55rem",
         letterSpacing: "0.06em",
@@ -801,8 +801,8 @@ function DeleteAccount() {
         cursor: busy ? "not-allowed" : "pointer",
         transition: "color 0.2s",
       }}
-      onMouseEnter={(e) => { if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#ffb4ab"; }}
-      onMouseLeave={(e) => { if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#8a8a95"; }}
+      onMouseEnter={(e) => { if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#c0392b"; }}
+      onMouseLeave={(e) => { if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#9a9490"; }}
     >
       Delete account
     </button>

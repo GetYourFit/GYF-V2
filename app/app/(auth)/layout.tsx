@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <main
       style={{
         minHeight: "100dvh",
-        background: "#0f0f12",
+        background: "#faf8f5",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -77,7 +77,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             fontWeight: 500,
             letterSpacing: "0.05em",
             textTransform: "uppercase",
-            color: "#8a8a95",
+            color: "#9a9490",
             textAlign: "center",
           }}
         >

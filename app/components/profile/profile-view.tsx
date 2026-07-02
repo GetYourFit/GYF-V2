@@ -109,7 +109,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
           fontFamily: "var(--font-body)",
           fontSize: "clamp(1.5rem, 6vw, 2rem)",
           fontWeight: 800,
-          color: "#e8e4dc",
+          color: "#1c1a17",
           fontVariantNumeric: "tabular-nums",
           lineHeight: 1,
         }}
@@ -123,7 +123,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "#8a8a95",
+          color: "#9a9490",
         }}
       >
         {label}
@@ -135,7 +135,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
     display: "flex",
     flexDirection: "column",
     gap: "0.375rem",
-    background: "#0f0f12",
+    background: "#faf8f5",
     padding: "1rem",
     transition: "background 0.2s",
     textDecoration: "none",
@@ -145,8 +145,8 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
     <Link
       href={href}
       style={cellStyle}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#0f0f12"; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#0f0f12"; }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#faf8f5"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#faf8f5"; }}
     >
       {inner}
     </Link>
@@ -170,7 +170,7 @@ function Stats({ summary }: { summary: ProfileSummary }) {
         display: "grid",
         gridTemplateColumns: "repeat(3, 1fr)",
         gap: "1px",
-        background: "rgba(255,255,255,0.06)",
+        background: "rgba(0,0,0,0.06)",
       }}
     >
       {items.map((item) => <StatCell key={item.label} {...item} />)}
@@ -183,7 +183,7 @@ function Badges({ badges }: { badges: string[] }) {
     <section style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <p style={{
         fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-        letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95",
+        letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a9490",
       }}>
         Badges earned
       </p>
@@ -193,11 +193,11 @@ function Badges({ badges }: { badges: string[] }) {
             key={b}
             style={{
               display: "inline-flex", alignItems: "center",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: "1px solid rgba(0,0,0,0.10)",
               padding: "0.375rem 0.875rem",
               fontFamily: "var(--font-mono)", fontSize: "0.6rem",
               fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
-              color: "#c4c7c8",
+              color: "#5c5650",
             }}
           >
             {b}
@@ -213,13 +213,13 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
     return (
       <section style={{
         display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "1.25rem",
-        border: "1px solid rgba(255,255,255,0.1)", background: "#0f0f12", padding: "1.5rem",
+        border: "1px solid rgba(0,0,0,0.10)", background: "#faf8f5", padding: "1.5rem",
       }}>
         <div>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#e8e4dc", marginBottom: "0.5rem" }}>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#1c1a17", marginBottom: "0.5rem" }}>
             No style profile yet
           </p>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", maxWidth: "280px", lineHeight: 1.55 }}>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490", maxWidth: "280px", lineHeight: 1.55 }}>
             Tell GYF about your skin tone, body type, and the looks you love — it sharpens every recommendation.
           </p>
         </div>
@@ -228,7 +228,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           style={{
             display: "inline-flex", alignItems: "center", justifyContent: "center",
             minHeight: "44px", padding: "0 2rem",
-            background: "#ffffff", color: "#0f0f12",
+            background: "#ffffff", color: "#faf8f5",
             fontFamily: "var(--font-mono)", fontSize: "0.6rem", fontWeight: 600,
             letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none",
             borderRadius: "999px",
@@ -255,12 +255,12 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <p style={{
           fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-          letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95",
+          letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a9490",
         }}>
           Style profile
         </p>
         <Link href="/onboarding" style={{
-          fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "#8e9192",
+          fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "#9a9490",
           textDecoration: "underline", textUnderlineOffset: "3px",
         }}>
           Edit
@@ -268,22 +268,22 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
       </div>
       <dl style={{
         display: "grid", gridTemplateColumns: "1fr 1fr",
-        gap: "1px", background: "rgba(255,255,255,0.06)",
+        gap: "1px", background: "rgba(0,0,0,0.06)",
       }}>
         {rows.map(([label, value]) => (
           <div key={label} style={{
             display: "flex", flexDirection: "column", gap: "0.375rem",
-            background: "#0f0f12", padding: "1rem",
+            background: "#faf8f5", padding: "1rem",
           }}>
             <dt style={{
               fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-              letterSpacing: "0.08em", textTransform: "uppercase", color: "#8a8a95",
+              letterSpacing: "0.08em", textTransform: "uppercase", color: "#9a9490",
             }}>
               {label}
             </dt>
             <dd style={{
               fontFamily: "var(--font-body)", fontSize: "0.875rem",
-              color: "#e2e2e9", margin: 0,
+              color: "#1c1a17", margin: 0,
             }}>
               {value}
             </dd>
@@ -298,11 +298,11 @@ function AccountLink() {
   return (
     <section style={{
       display: "flex", flexDirection: "column", gap: "1rem",
-      borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "2rem",
+      borderTop: "1px solid rgba(0,0,0,0.10)", paddingTop: "2rem",
     }}>
       <p style={{
         fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-        letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95",
+        letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a9490",
       }}>
         Account
       </p>
@@ -310,30 +310,30 @@ function AccountLink() {
         href="/account"
         style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          gap: "1rem", border: "1px solid rgba(255,255,255,0.1)",
-          background: "#0f0f12", padding: "1.25rem",
+          gap: "1rem", border: "1px solid rgba(0,0,0,0.10)",
+          background: "#faf8f5", padding: "1.25rem",
           textDecoration: "none", transition: "background 0.2s, border-color 0.2s",
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
-          el.style.background = "#0f0f12";
+          el.style.background = "#faf8f5";
           el.style.borderColor = "rgba(255,255,255,0.14)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
-          el.style.background = "#0f0f12";
-          el.style.borderColor = "rgba(255,255,255,0.1)";
+          el.style.background = "#faf8f5";
+          el.style.borderColor = "rgba(0,0,0,0.10)";
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-          <span style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#e8e4dc" }}>
+          <span style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#1c1a17" }}>
             Privacy &amp; data
           </span>
-          <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192" }}>
+          <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}>
             Manage consent, download your data, sign out, or delete your account.
           </span>
         </span>
-        <ChevronRight size={18} aria-hidden style={{ flexShrink: 0, color: "#8a8a95" }} />
+        <ChevronRight size={18} aria-hidden style={{ flexShrink: 0, color: "#9a9490" }} />
       </Link>
     </section>
   );
@@ -352,10 +352,10 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       transition={{ duration: 0.4, ease: EASE }}
       style={{ textAlign: "center", padding: "5rem 1rem" }}
     >
-      <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#e8e4dc", marginBottom: "0.75rem" }}>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#1c1a17", marginBottom: "0.75rem" }}>
         Couldn&apos;t load your profile
       </p>
-      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", marginBottom: "2rem" }}>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490", marginBottom: "2rem" }}>
         Something went wrong reaching the stylist. Your data is safe — try again.
       </p>
       <button
@@ -365,7 +365,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           display: "inline-flex", alignItems: "center", justifyContent: "center",
           minHeight: "44px", padding: "0 1.5rem",
           border: "1px solid rgba(255,255,255,0.2)", background: "transparent",
-          color: "#e8e4dc", cursor: "pointer",
+          color: "#1c1a17", cursor: "pointer",
           fontFamily: "var(--font-mono)", fontSize: "0.6rem",
           fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
         }}
@@ -379,14 +379,14 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 function ProfileSkeleton() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }} aria-hidden>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", background: "rgba(255,255,255,0.06)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", background: "rgba(0,0,0,0.06)" }}>
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={`stat-${i}`} style={{ height: "80px", background: "#0f0f12", opacity: 0.6 }} />
+          <div key={`stat-${i}`} style={{ height: "80px", background: "#faf8f5", opacity: 0.6 }} />
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "rgba(255,255,255,0.06)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "rgba(0,0,0,0.06)" }}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={`row-${i}`} style={{ height: "64px", background: "#0f0f12", opacity: 0.6 }} />
+          <div key={`row-${i}`} style={{ height: "64px", background: "#faf8f5", opacity: 0.6 }} />
         ))}
       </div>
     </div>

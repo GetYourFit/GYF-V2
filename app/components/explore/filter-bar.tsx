@@ -51,9 +51,9 @@ const CHIP_BASE: React.CSSProperties = {
 function chip(active: boolean): React.CSSProperties {
   return {
     ...CHIP_BASE,
-    border: active ? "1px solid #d4a96a" : "1px solid rgba(255,255,255,0.1)",
+    border: active ? "1px solid #b87a30" : "1px solid rgba(0,0,0,0.10)",
     background: active ? "rgba(240,189,143,0.08)" : "transparent",
-    color: active ? "#d4a96a" : "#8a8a95",
+    color: active ? "#b87a30" : "#9a9490",
   };
 }
 
@@ -115,7 +115,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         background: "rgba(0,0,0,0.92)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: "1px solid rgba(0,0,0,0.06)",
         padding: "0.75rem 1rem",
         display: "flex",
         flexDirection: "column",
@@ -130,7 +130,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           style={{
             position: "absolute",
             left: 0,
-            color: focused ? "#c4c7c8" : "#8a8a95",
+            color: focused ? "#5c5650" : "#9a9490",
             flexShrink: 0,
             transition: "color 0.2s",
           }}
@@ -152,7 +152,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             padding: "0.625rem 2rem 0.625rem 1.5rem",
             fontFamily: "var(--font-body)",
             fontSize: "16px",
-            color: "#e2e2e9",
+            color: "#1c1a17",
             transition: "border-color 0.2s",
           }}
         />
@@ -166,7 +166,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               right: 0,
               background: "none",
               border: "none",
-              color: "#8a8a95",
+              color: "#9a9490",
               cursor: "pointer",
               padding: "0.25rem",
               display: "flex",
@@ -210,7 +210,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
       {/* Style + sort row */}
       <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-        <SlidersHorizontal size={13} aria-hidden style={{ color: "#8a8a95", flexShrink: 0 }} />
+        <SlidersHorizontal size={13} aria-hidden style={{ color: "#9a9490", flexShrink: 0 }} />
 
         {/* Style chips */}
         <div
@@ -247,8 +247,8 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           onChange={(e) => set("sort", e.target.value as SortKey)}
           style={{
             background: "transparent",
-            border: "1px solid rgba(255,255,255,0.1)",
-            color: "#8e9192",
+            border: "1px solid rgba(0,0,0,0.10)",
+            color: "#9a9490",
             padding: "0.25rem 0.5rem",
             fontFamily: "var(--font-mono)",
             fontSize: "0.6rem",
@@ -260,7 +260,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           }}
         >
           {sortOptions.map((o) => (
-            <option key={o.value} value={o.value} style={{ background: "#0f0f12" }}>
+            <option key={o.value} value={o.value} style={{ background: "#faf8f5" }}>
               {o.label}
             </option>
           ))}
@@ -280,8 +280,8 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             style={{
               width: "80px",
               background: "transparent",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "#8e9192",
+              border: "1px solid rgba(0,0,0,0.10)",
+              color: "#9a9490",
               padding: "0.25rem 0.5rem",
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
@@ -302,7 +302,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               border: "none",
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
-              color: "#8a8a95",
+              color: "#9a9490",
               letterSpacing: "0.06em",
               textDecoration: "underline",
               textUnderlineOffset: "3px",

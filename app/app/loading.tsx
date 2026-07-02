@@ -10,7 +10,7 @@ export default function Loading() {
         position: "fixed",
         inset: 0,
         zIndex: 9000,
-        background: "#0f0f12",
+        background: "#faf8f5",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -29,7 +29,7 @@ export default function Loading() {
           left: 0,
           right: 0,
           height: "2px",
-          background: "#d4a96a",
+          background: "#b87a30",
           transformOrigin: "left",
         }}
       />
@@ -47,7 +47,7 @@ export default function Loading() {
           fontSize: "0.6rem",
           letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: "#e8e4dc",
+          color: "#1c1a17",
           margin: 0,
         }}
       >

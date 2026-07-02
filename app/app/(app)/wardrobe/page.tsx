@@ -17,7 +17,7 @@ export default function WardrobePage() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#f0bd8f",
+            color: "#b87a30",
           }}
         >
           Wardrobe
@@ -29,12 +29,12 @@ export default function WardrobePage() {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#ffffff",
+            color: "#1c1a17",
             margin: 0,
           }}
         >
           Your closet,{" "}
-          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#c4c7c8" }}>digitised.</em>
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#5c5650" }}>digitised.</em>
         </h1>
       </header>
       <WardrobeGrid />

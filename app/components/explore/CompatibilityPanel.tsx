@@ -24,10 +24,10 @@ export function CompatibilityPanel({ item }: Props) {
 
   return (
     <div style={{
-      background: "rgba(255,255,255,0.05)",
+      background: "rgba(0,0,0,0.04)",
       backdropFilter: "blur(12px)",
       WebkitBackdropFilter: "blur(12px)",
-      border: "1px solid rgba(255,255,255,0.1)",
+      border: "1px solid rgba(0,0,0,0.10)",
       borderRadius: "16px",
       padding: "1rem",
       display: "flex",
@@ -35,22 +35,22 @@ export function CompatibilityPanel({ item }: Props) {
       gap: "0.875rem",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <span style={{ display: "block", width: "16px", height: "1px", background: "#d4a96a" }} />
-        <span style={{ ...MONO, color: "#d4a96a" }}>Why this works</span>
+        <span style={{ display: "block", width: "16px", height: "1px", background: "#b87a30" }} />
+        <span style={{ ...MONO, color: "#b87a30" }}>Why this works</span>
       </div>
 
       <ConfidenceMeter value={item.score} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
         {item.color && (
-          <p style={{ ...MONO, color: "#8a8a95", fontSize: "0.55rem" }}>
-            Colour: <span style={{ color: "#e8e4dc" }}>{item.color}</span>
+          <p style={{ ...MONO, color: "#9a9490", fontSize: "0.55rem" }}>
+            Colour: <span style={{ color: "#1c1a17" }}>{item.color}</span>
           </p>
         )}
         <p style={{
           fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
           fontSize: "0.8125rem",
-          color: "#8a8a95",
+          color: "#9a9490",
           lineHeight: 1.55,
           marginTop: "0.25rem",
         }}>

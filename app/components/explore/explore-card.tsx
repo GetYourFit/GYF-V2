@@ -47,10 +47,10 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        background: "rgba(255,255,255,0.06)",
+        background: "rgba(0,0,0,0.06)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid rgba(0,0,0,0.08)",
         borderRadius: "16px",
         overflow: "hidden",
         cursor: onSelect ? "pointer" : "default",
@@ -63,7 +63,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
           position: "relative",
           aspectRatio: "3/4",
           overflow: "hidden",
-          background: "#0f0f12",
+          background: "#faf8f5",
         }}
       >
         {item.image_url ? (
@@ -85,7 +85,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
               height: "100%",
               fontFamily: "var(--font-mono)",
               fontSize: "0.55rem",
-              color: "#8a8a95",
+              color: "#9a9490",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
             }}
@@ -113,8 +113,8 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
             background: "rgba(0,0,0,0.6)",
             backdropFilter: "blur(8px)",
             WebkitBackdropFilter: "blur(8px)",
-            border: `1px solid ${saved ? "#d4a96a" : "rgba(255,255,255,0.15)"}`,
-            color: saved ? "#d4a96a" : "#8a8a95",
+            border: `1px solid ${saved ? "#b87a30" : "rgba(255,255,255,0.15)"}`,
+            color: saved ? "#b87a30" : "#9a9490",
             cursor: "pointer",
             borderRadius: "999px",
             transition: "all 0.2s",
@@ -133,7 +133,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.75rem",
-            color: "#e8e4dc",
+            color: "#1c1a17",
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
@@ -148,7 +148,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "0.65rem",
-              color: "#d4a96a",
+              color: "#b87a30",
               letterSpacing: "0.04em",
               marginTop: "0.375rem",
             }}

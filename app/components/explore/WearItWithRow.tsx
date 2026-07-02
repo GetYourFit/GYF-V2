@@ -18,8 +18,8 @@ const MONO: React.CSSProperties = {
 function Skeleton() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", flex: 1 }}>
-      <div style={{ aspectRatio: "3/4", background: "rgba(255,255,255,0.05)", borderRadius: "12px" }} />
-      <div style={{ height: "8px", width: "70%", background: "rgba(255,255,255,0.05)", borderRadius: "999px" }} />
+      <div style={{ aspectRatio: "3/4", background: "rgba(0,0,0,0.04)", borderRadius: "12px" }} />
+      <div style={{ height: "8px", width: "70%", background: "rgba(0,0,0,0.04)", borderRadius: "999px" }} />
     </div>
   );
 }
@@ -33,7 +33,7 @@ function Tile({ item }: { item: SearchResult }) {
         background: "#1a1a22",
         borderRadius: "12px",
         overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid rgba(0,0,0,0.08)",
       }}>
         {src
           // eslint-disable-next-line @next/next/no-img-element
@@ -41,7 +41,7 @@ function Tile({ item }: { item: SearchResult }) {
           : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", ...MONO, fontSize: "0.5rem", color: "#5a5a65" }}>No image</div>
         }
       </div>
-      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.6875rem", color: "#8a8a95", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", margin: 0 }}>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.6875rem", color: "#9a9490", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", margin: 0 }}>
         {item.title}
       </p>
     </div>
@@ -62,8 +62,8 @@ export function WearItWithRow({ itemId }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <span style={{ display: "block", width: "16px", height: "1px", background: "#d4a96a" }} />
-        <span style={{ ...MONO, color: "#d4a96a" }}>Wear it with</span>
+        <span style={{ display: "block", width: "16px", height: "1px", background: "#b87a30" }} />
+        <span style={{ ...MONO, color: "#b87a30" }}>Wear it with</span>
       </div>
       <div style={{ display: "flex", gap: "0.75rem" }}>
         {pairings === null ? (<><Skeleton /><Skeleton /></>) :

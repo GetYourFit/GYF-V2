@@ -9,7 +9,7 @@ export default function AccountPage() {
       <header style={{ marginBottom: "2rem" }}>
         <span style={{
           fontFamily: "var(--font-mono)", fontSize: "0.6rem", fontWeight: 500,
-          letterSpacing: "0.1em", textTransform: "uppercase", color: "#f0bd8f",
+          letterSpacing: "0.1em", textTransform: "uppercase", color: "#b87a30",
           display: "block", marginBottom: "0.5rem",
         }}>
           Privacy &amp; data
@@ -17,11 +17,11 @@ export default function AccountPage() {
         <h1 style={{
           fontFamily: "var(--font-body)", fontSize: "clamp(1.625rem,7vw,2.25rem)",
           fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em",
-          color: "#ffffff", margin: "0 0 0.5rem",
+          color: "#1c1a17", margin: "0 0 0.5rem",
         }}>
           Account
         </h1>
-        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#8e9192", margin: 0 }}>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#9a9490", margin: 0 }}>
           Control what GYF can use, take your data with you, or erase it entirely.
         </p>
       </header>

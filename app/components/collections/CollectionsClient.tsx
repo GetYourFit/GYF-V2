@@ -19,9 +19,9 @@ const MONO: React.CSSProperties = {
 function SectionHeader({ index, title }: { index: string; title: string }) {
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem", marginBottom: "1rem" }}>
-      <span style={{ ...MONO, fontSize: "0.5rem", color: "#d4a96a" }}>{index}</span>
-      <span style={{ ...MONO, color: "#e8e4dc", fontSize: "0.65rem" }}>{title}</span>
-      <span style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+      <span style={{ ...MONO, fontSize: "0.5rem", color: "#b87a30" }}>{index}</span>
+      <span style={{ ...MONO, color: "#1c1a17", fontSize: "0.65rem" }}>{title}</span>
+      <span style={{ flex: 1, height: "1px", background: "rgba(0,0,0,0.08)" }} />
     </div>
   );
 }
@@ -33,8 +33,8 @@ function EmptyState({ message }: { message: string }) {
       alignItems: "center",
       justifyContent: "center",
       padding: "2rem",
-      background: "rgba(255,255,255,0.03)",
-      border: "1px dashed rgba(255,255,255,0.1)",
+      background: "rgba(0,0,0,0.02)",
+      border: "1px dashed rgba(0,0,0,0.10)",
       borderRadius: "16px",
     }}>
       <p style={{ ...MONO, color: "#5a5a65", fontSize: "0.55rem", textAlign: "center" }}>{message}</p>
@@ -49,7 +49,7 @@ function GridSkeleton({ count = 4 }: { count?: number }) {
         <motion.div key={i}
           animate={{ opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 1.4, delay: i * 0.08, repeat: Infinity }}
-          style={{ aspectRatio: "3/4", background: "rgba(255,255,255,0.05)", borderRadius: "16px" }}
+          style={{ aspectRatio: "3/4", background: "rgba(0,0,0,0.04)", borderRadius: "16px" }}
         />
       ))}
     </div>
@@ -81,14 +81,14 @@ export function CollectionsClient() {
         transition={{ duration: 0.38, ease: EASE }}
         style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}
       >
-        <span style={{ ...MONO, color: "#d4a96a" }}>Library</span>
+        <span style={{ ...MONO, color: "#b87a30" }}>Library</span>
         <h1 style={{
           fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
           fontSize: "clamp(1.5rem, 6vw, 2rem)",
           fontWeight: 800,
           lineHeight: 1.1,
           letterSpacing: "-0.03em",
-          color: "#e8e4dc",
+          color: "#1c1a17",
           margin: 0,
         }}>
           Your Collections

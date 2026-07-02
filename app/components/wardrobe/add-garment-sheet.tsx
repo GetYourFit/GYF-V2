@@ -146,7 +146,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
     padding: "0.75rem 0",
     fontFamily: "var(--font-body)",
     fontSize: "16px",
-    color: "#e2e2e9",
+    color: "#1c1a17",
     minHeight: "44px",
   };
 
@@ -156,7 +156,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
     fontWeight: 500,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
-    color: "#8a8a95",
+    color: "#9a9490",
     display: "block",
     marginBottom: "0.25rem",
   };
@@ -215,7 +215,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
               maxWidth: "390px",
               maxHeight: "88dvh",
               background: "#0a0b0e",
-              borderTop: "1px solid rgba(255,255,255,0.1)",
+              borderTop: "1px solid rgba(0,0,0,0.10)",
               outline: "none",
               display: "flex",
               flexDirection: "column",
@@ -229,7 +229,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "1rem 1.25rem",
-                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                borderBottom: "1px solid rgba(0,0,0,0.06)",
                 flexShrink: 0,
               }}
             >
@@ -238,7 +238,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: "0.6rem",
-                    color: "#d4a96a",
+                    color: "#b87a30",
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     display: "block",
@@ -252,7 +252,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                     fontFamily: "var(--font-body)",
                     fontSize: "1rem",
                     fontWeight: 700,
-                    color: "#e8e4dc",
+                    color: "#1c1a17",
                     margin: 0,
                   }}
                 >
@@ -271,7 +271,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                   height: "44px",
                   background: "transparent",
                   border: "none",
-                  color: "#8a8a95",
+                  color: "#9a9490",
                   cursor: "pointer",
                 }}
               >
@@ -286,7 +286,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                 display: "flex",
                 gap: "0.5rem",
                 padding: "0.75rem 1.25rem",
-                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                borderBottom: "1px solid rgba(0,0,0,0.06)",
                 flexShrink: 0,
               }}
             >
@@ -306,9 +306,9 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                       fontWeight: 500,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
-                      border: `1px solid ${active ? "#d4a96a" : "rgba(255,255,255,0.1)"}`,
+                      border: `1px solid ${active ? "#b87a30" : "rgba(0,0,0,0.10)"}`,
                       background: active ? "rgba(240,189,143,0.08)" : "transparent",
-                      color: active ? "#d4a96a" : "#8a8a95",
+                      color: active ? "#b87a30" : "#9a9490",
                       cursor: "pointer",
                       borderRadius: "999px",
                       minHeight: "36px",
@@ -332,7 +332,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                       gap: "0.75rem",
                       alignItems: "center",
                       padding: "1rem 1.25rem",
-                      borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      borderBottom: "1px solid rgba(0,0,0,0.06)",
                       flexShrink: 0,
                     }}
                   >
@@ -351,7 +351,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         padding: "0.5rem 0",
                         fontFamily: "var(--font-body)",
                         fontSize: "16px",
-                        color: "#e2e2e9",
+                        color: "#1c1a17",
                         minHeight: "44px",
                       }}
                     />
@@ -368,7 +368,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         background: "#ffffff",
                         border: "none",
                         borderRadius: "999px",
-                        color: "#0f0f12",
+                        color: "#faf8f5",
                         cursor: phase === "searching" ? "not-allowed" : "pointer",
                         opacity: phase === "searching" ? 0.5 : 1,
                         flexShrink: 0,
@@ -385,7 +385,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         padding: "0.75rem 1.25rem",
                         fontFamily: "var(--font-body)",
                         fontSize: "0.8125rem",
-                        color: "#ffb4ab",
+                        color: "#c0392b",
                         margin: 0,
                       }}
                     >
@@ -400,7 +400,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                           display: "grid",
                           gridTemplateColumns: "repeat(3, 1fr)",
                           gap: "1px",
-                          background: "rgba(255,255,255,0.05)",
+                          background: "rgba(0,0,0,0.04)",
                         }}
                         aria-label="Searching garments"
                         aria-hidden
@@ -410,7 +410,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                             key={i}
                             animate={{ opacity: [0.3, 0.6, 0.3] }}
                             transition={{ duration: 1.4, delay: i * 0.08, repeat: Infinity }}
-                            style={{ aspectRatio: "3/4", background: "#0f0f12" }}
+                            style={{ aspectRatio: "3/4", background: "#faf8f5" }}
                           />
                         ))}
                       </div>
@@ -420,7 +420,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                           display: "grid",
                           gridTemplateColumns: "repeat(3, 1fr)",
                           gap: "1px",
-                          background: "rgba(255,255,255,0.05)",
+                          background: "rgba(0,0,0,0.04)",
                         }}
                       >
                         {results.map((r) => {
@@ -437,7 +437,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                                 position: "relative",
                                 aspectRatio: "3/4",
                                 overflow: "hidden",
-                                background: "#0f0f12",
+                                background: "#faf8f5",
                                 border: "none",
                                 cursor: busy ? "not-allowed" : "pointer",
                                 opacity: busy ? 0.5 : 1,
@@ -459,7 +459,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                                     alignItems: "center",
                                     justifyContent: "center",
                                     height: "100%",
-                                    color: "#8a8a95",
+                                    color: "#9a9490",
                                   }}
                                 >
                                   <Plus size={20} aria-hidden />
@@ -487,7 +487,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                             fontFamily: "var(--font-body)",
                             fontSize: "0.9375rem",
                             fontWeight: 600,
-                            color: "#e2e2e9",
+                            color: "#1c1a17",
                             margin: 0,
                           }}
                         >
@@ -497,7 +497,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                           style={{
                             fontFamily: "var(--font-body)",
                             fontSize: "0.8125rem",
-                            color: "#8a8a95",
+                            color: "#9a9490",
                             margin: 0,
                           }}
                         >
@@ -546,7 +546,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                     >
                       {CATEGORY_OPTIONS.map((o) => (
                         <option key={o.value} value={o.value}
-                          style={{ background: "#0a0b0e", color: "#e2e2e9" }}
+                          style={{ background: "#0a0b0e", color: "#1c1a17" }}
                         >
                           {o.label}
                         </option>
@@ -560,7 +560,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: "0.8125rem",
-                        color: "#ffb4ab",
+                        color: "#c0392b",
                         margin: 0,
                       }}
                     >
@@ -583,7 +583,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         flex: 1,
                         minHeight: "48px",
                         background: busy ? "rgba(255,255,255,0.3)" : "#ffffff",
-                        color: "#0f0f12",
+                        color: "#faf8f5",
                         border: "none",
                         borderRadius: "999px",
                         fontFamily: "var(--font-mono)",
@@ -605,7 +605,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         background: "transparent",
                         border: "1px solid rgba(255,255,255,0.12)",
                         borderRadius: "999px",
-                        color: "#8e9192",
+                        color: "#9a9490",
                         fontFamily: "var(--font-mono)",
                         fontSize: "0.6rem",
                         fontWeight: 500,

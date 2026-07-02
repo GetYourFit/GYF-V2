@@ -84,7 +84,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: "#d4a96a",
+          color: "#b87a30",
           marginBottom: "0.375rem",
         }}>
           Estimate from photo
@@ -93,7 +93,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           fontFamily: "var(--font-body)",
           fontSize: "0.8125rem",
           lineHeight: 1.55,
-          color: "#8a8a95",
+          color: "#9a9490",
         }}>
           Upload a clear, well-lit photo. GYF estimates your skin tone and body type — edit anything it gets wrong. Image is not stored.
         </p>
@@ -112,8 +112,8 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           justifyContent: "center",
           gap: "0.75rem",
           padding: previewUrl ? "0" : "2rem 1rem",
-          background: dragActive ? "rgba(240,189,143,0.04)" : "rgba(255,255,255,0.04)",
-          border: `1px dashed ${dragActive ? "#d4a96a" : "rgba(255,255,255,0.12)"}`,
+          background: dragActive ? "rgba(240,189,143,0.04)" : "rgba(0,0,0,0.03)",
+          border: `1px dashed ${dragActive ? "#b87a30" : "rgba(255,255,255,0.12)"}`,
           cursor: "pointer",
           transition: "all 0.2s",
           textAlign: "center",
@@ -131,8 +131,8 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
         ) : (
           <>
             <UploadCloud size={28} aria-hidden style={{ color: "#444748" }} />
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8a8a95" }}>
-              <span style={{ color: "#c4c7c8" }}>Choose a photo</span> or drag it here
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}>
+              <span style={{ color: "#5c5650" }}>Choose a photo</span> or drag it here
             </span>
             <span style={{
               fontFamily: "var(--font-mono)",
@@ -166,7 +166,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: EASE }}
-            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#ffb4ab", margin: 0 }}
+            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#c0392b", margin: 0 }}
           >
             {error}
           </motion.p>
@@ -193,7 +193,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: EASE }}
-            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", margin: 0 }}
+            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490", margin: 0 }}
           >
             Couldn't read your features — try a clearer front-facing photo, or set fields below manually.
           </motion.p>
@@ -214,8 +214,8 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             gap: "0.375rem",
             height: "40px",
             padding: "0 1rem",
-            background: file && !busy ? "#ffffff" : "rgba(255,255,255,0.06)",
-            color: file && !busy ? "#0f0f12" : "#8a8a95",
+            background: file && !busy ? "#ffffff" : "rgba(0,0,0,0.06)",
+            color: file && !busy ? "#faf8f5" : "#9a9490",
             border: "none",
             borderRadius: "999px",
             fontFamily: "var(--font-mono)",
@@ -245,7 +245,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
               gap: "0.25rem",
               background: "transparent",
               border: "none",
-              color: "#8a8a95",
+              color: "#9a9490",
               fontFamily: "var(--font-mono)",
               fontSize: "0.55rem",
               letterSpacing: "0.06em",

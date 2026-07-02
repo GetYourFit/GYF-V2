@@ -12,7 +12,7 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
   const high     = pct >= 75;
   const moderate = pct >= 50 && !high;
 
-  const fillColor = high ? "#10B981" : moderate ? "#f0bd8f" : "#5a5a65";
+  const fillColor = high ? "#10B981" : moderate ? "#b87a30" : "#5a5a65";
   const label     = high ? "Strong match" : moderate ? "Good match" : "Exploring";
 
   return (
@@ -64,7 +64,7 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
         style={{
           height: "2px",
           width: "100%",
-          background: "#1e2025",
+          background: "#e5e1da",
           overflow: "hidden",
           borderRadius: 0,
         }}

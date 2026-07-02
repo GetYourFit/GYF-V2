@@ -17,7 +17,7 @@ const TABS = [
   { href: "/profile",  Icon: NavProfile,  label: "Profile",  exact: false },
 ] as const;
 
-const ACCENT = "#d4a96a";
+const ACCENT = "#b87a30";
 const MUTED  = "#5a5a65";
 
 export function BottomNav() {
@@ -34,10 +34,10 @@ export function BottomNav() {
         left: "50%",
         transform: "translateX(-50%)",
         paddingBottom: "env(safe-area-inset-bottom)",
-        background: "rgba(15,15,18,0.94)",
+        background: "rgba(250,248,245,0.94)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
+        borderTop: "1px solid rgba(0,0,0,0.08)",
         display: "flex",
         maxWidth: "390px",
         width: "100%",

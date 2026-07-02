@@ -66,7 +66,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "#0f0f12",
+            background: "#faf8f5",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -87,7 +87,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                 marginTop: "2.5rem",
                 width: "160px",
                 height: "1px",
-                background: "#d4a96a",
+                background: "#b87a30",
                 transformOrigin: "left",
               }}
             />
@@ -121,7 +121,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                       fontSize: "0.875rem",
                       fontWeight: 400,
                       lineHeight: 1.6,
-                      color: "#c4c7c8",
+                      color: "#5c5650",
                       margin: 0,
                     }}
                   >
@@ -134,7 +134,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                       fontWeight: 500,
                       letterSpacing: "0.05em",
                       textTransform: "uppercase",
-                      color: "#8e9192",
+                      color: "#9a9490",
                       opacity: 0.7,
                       margin: 0,
                     }}
@@ -157,7 +157,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                   width: i === activeDot ? 20 : 6,
                   height: 6,
                   borderRadius: 3,
-                  background: i === activeDot ? "#d4a96a" : "#8a8a95",
+                  background: i === activeDot ? "#b87a30" : "#9a9490",
                   display: "block",
                 }}
               />

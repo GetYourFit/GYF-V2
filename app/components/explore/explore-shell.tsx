@@ -41,7 +41,7 @@ export function ExploreShell() {
               fontWeight: 500,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#d4a96a",
+              color: "#b87a30",
             }}
           >
             Explore
@@ -53,7 +53,7 @@ export function ExploreShell() {
               fontWeight: 800,
               lineHeight: 1.1,
               letterSpacing: "-0.03em",
-              color: "#e8e4dc",
+              color: "#1c1a17",
               margin: 0,
             }}
           >

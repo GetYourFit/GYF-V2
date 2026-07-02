@@ -9,7 +9,7 @@ export default function ProfilePage() {
       <header style={{ marginBottom: "2rem" }}>
         <span style={{
           fontFamily: "var(--font-mono)", fontSize: "0.6rem", fontWeight: 500,
-          letterSpacing: "0.1em", textTransform: "uppercase", color: "#f0bd8f",
+          letterSpacing: "0.1em", textTransform: "uppercase", color: "#b87a30",
           display: "block", marginBottom: "0.5rem",
         }}>
           You
@@ -17,7 +17,7 @@ export default function ProfilePage() {
         <h1 style={{
           fontFamily: "var(--font-body)", fontSize: "clamp(1.625rem,7vw,2.25rem)",
           fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em",
-          color: "#ffffff", margin: 0,
+          color: "#1c1a17", margin: 0,
         }}>
           Profile
         </h1>

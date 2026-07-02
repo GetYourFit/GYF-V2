@@ -8,7 +8,7 @@ export default function OnboardingPage() {
   return (
     <div style={{
       minHeight: "100dvh",
-      background: "#000000",
+      background: "#faf8f5",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",

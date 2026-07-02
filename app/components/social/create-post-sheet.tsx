@@ -180,9 +180,9 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
               width: "100%",
               maxWidth: "390px",
               maxHeight: "88dvh",
-              background: "#0f0f12",
+              background: "#faf8f5",
               borderRadius: "20px 20px 0 0",
-              borderTop: "1px solid rgba(255,255,255,0.1)",
+              borderTop: "1px solid rgba(0,0,0,0.10)",
               outline: "none",
               display: "flex",
               flexDirection: "column",
@@ -201,7 +201,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "0.75rem 1.25rem",
-                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                borderBottom: "1px solid rgba(0,0,0,0.06)",
               }}
             >
               <p
@@ -212,7 +212,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   fontWeight: 500,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  color: "#d4a96a",
+                  color: "#b87a30",
                   margin: 0,
                 }}
               >
@@ -230,7 +230,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   height: "44px",
                   background: "transparent",
                   border: "none",
-                  color: "#8a8a95",
+                  color: "#9a9490",
                   cursor: "pointer",
                 }}
               >
@@ -256,7 +256,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   fontSize: "0.6rem",
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: "#8a8a95",
+                  color: "#9a9490",
                   margin: 0,
                 }}
               >
@@ -271,7 +271,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                       key={i}
                       animate={{ opacity: [0.3, 0.6, 0.3] }}
                       transition={{ duration: 1.4, delay: i * 0.15, repeat: Infinity }}
-                      style={{ aspectRatio: "1/1", background: "rgba(255,255,255,0.06)" }}
+                      style={{ aspectRatio: "1/1", background: "rgba(0,0,0,0.06)" }}
                     />
                   ))}
                 </div>
@@ -283,7 +283,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "0.875rem",
-                    color: "#8a8a95",
+                    color: "#9a9490",
                     margin: 0,
                   }}
                 >
@@ -316,8 +316,8 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                           position: "relative",
                           aspectRatio: "1/1",
                           overflow: "hidden",
-                          background: "#0f0f12",
-                          border: `1px solid ${active ? "#d4a96a" : "rgba(255,255,255,0.08)"}`,
+                          background: "#faf8f5",
+                          border: `1px solid ${active ? "#b87a30" : "rgba(0,0,0,0.08)"}`,
                           cursor: "pointer",
                           padding: 0,
                           outline: "none",
@@ -336,7 +336,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                               justifyContent: "center",
                               fontFamily: "var(--font-mono)",
                               fontSize: "0.55rem",
-                              color: "#8a8a95",
+                              color: "#9a9490",
                               textTransform: "uppercase",
                               letterSpacing: "0.06em",
                             }}
@@ -350,7 +350,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                             style={{
                               position: "absolute",
                               inset: 0,
-                              border: "2px solid #d4a96a",
+                              border: "2px solid #b87a30",
                               pointerEvents: "none",
                             }}
                           />
@@ -370,7 +370,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                     fontSize: "0.6rem",
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: "#8a8a95",
+                    color: "#9a9490",
                   }}
                 >
                   Caption (optional)
@@ -391,7 +391,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                     padding: "0.625rem 0",
                     fontFamily: "var(--font-body)",
                     fontSize: "0.9375rem",
-                    color: "#e2e2e9",
+                    color: "#1c1a17",
                     boxSizing: "border-box",
                   }}
                 />
@@ -399,7 +399,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
 
               {/* Field error */}
               {fieldError && (
-                <p role="alert" style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#ffb4ab", margin: 0 }}>
+                <p role="alert" style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#c0392b", margin: 0 }}>
                   {fieldError}
                 </p>
               )}
@@ -414,8 +414,8 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   marginTop: "auto",
                   width: "100%",
                   minHeight: "52px",
-                  background: submitting || !selected ? "rgba(255,255,255,0.1)" : "#ffffff",
-                  color: submitting || !selected ? "#8a8a95" : "#0f0f12",
+                  background: submitting || !selected ? "rgba(0,0,0,0.10)" : "#ffffff",
+                  color: submitting || !selected ? "#9a9490" : "#faf8f5",
                   border: "none",
                   borderRadius: "999px",
                   fontFamily: "var(--font-mono)",

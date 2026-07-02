@@ -49,7 +49,7 @@ export function GYFLogoAnimated({ width = 200 }: Props) {
       {/* ── G ── */}
       <motion.path
         d="M34 10 A24 24 0 1 0 58 50 L58 36 L42 36"
-        stroke="white"
+        stroke="#1c1a17"
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -60,7 +60,7 @@ export function GYFLogoAnimated({ width = 200 }: Props) {
       />
       <motion.path
         d="M34 10 A24 24 0 1 0 58 50 L58 36 L42 36"
-        fill="white"
+        fill="#1c1a17"
         stroke="none"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -70,7 +70,7 @@ export function GYFLogoAnimated({ width = 200 }: Props) {
       {/* ── Y ── */}
       <motion.path
         d="M76 10 L90 34 L104 10 M90 34 L90 62"
-        stroke="white"
+        stroke="#1c1a17"
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -81,7 +81,7 @@ export function GYFLogoAnimated({ width = 200 }: Props) {
       />
       <motion.path
         d="M76 10 L90 34 L104 10 M90 34 L90 62"
-        stroke="white"
+        stroke="#1c1a17"
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -94,7 +94,7 @@ export function GYFLogoAnimated({ width = 200 }: Props) {
       {/* ── F ── */}
       <motion.path
         d="M120 10 L120 62 M120 10 L156 10 M120 36 L150 36"
-        stroke="white"
+        stroke="#1c1a17"
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -105,7 +105,7 @@ export function GYFLogoAnimated({ width = 200 }: Props) {
       />
       <motion.path
         d="M120 10 L120 62 M120 10 L156 10 M120 36 L150 36"
-        stroke="white"
+        stroke="#1c1a17"
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
