@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { WardrobeItem, WardrobeItemInput } from "@gyf/types";
 
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
 import { AddGarmentSheet } from "./add-garment-sheet";
@@ -113,9 +112,12 @@ export function WardrobeGrid() {
             Something interrupted the connection. Your garments are safe.
           </p>
         </div>
-        <Button variant="primary" size="md" onClick={() => void load()}>
+        <button
+          type="button" onClick={() => void load()}
+          style={{ padding: "0.75rem 2rem", background: "#1c1a17", color: "#faf8f5", border: "none", borderRadius: "999px", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer" }}
+        >
           Retry
-        </Button>
+        </button>
       </div>
     );
   }
@@ -124,41 +126,53 @@ export function WardrobeGrid() {
     <>
       {/* Toolbar */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }} role="group" aria-label="Filter by category">
           {[ALL, ...categories].map((value) => {
             const active = filter === value;
-            const count =
-              value === ALL ? items.length : items.filter((i) => i.category === value).length;
+            const count = value === ALL ? items.length : items.filter((i) => i.category === value).length;
             return (
               <button
                 key={value}
                 type="button"
                 aria-pressed={active}
                 onClick={() => setFilter(value)}
-                className={[
-                  "t-caption border px-3 py-1.5 capitalize transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-                  active
-                    ? "border-accent bg-accent text-bg"
-                    : "border-border-mid text-text-mid hover:border-border-hi hover:text-text",
-                ].join(" ")}
+                style={{
+                  padding: "0.45rem 1rem",
+                  fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  borderRadius: "999px",
+                  border: `1.5px solid ${active ? "#1c1a17" : "rgba(0,0,0,0.12)"}`,
+                  background: active ? "#1c1a17" : "#ffffff",
+                  color: active ? "#faf8f5" : "#5c5650",
+                  cursor: "pointer",
+                  minHeight: "36px",
+                  textTransform: "capitalize",
+                  transition: "all 0.15s",
+                }}
               >
                 {value === ALL ? "All" : value}
-                <span className={active ? "ml-1.5 opacity-70" : "ml-1.5 opacity-50"}>{count}</span>
+                <span style={{ marginLeft: "0.375rem", opacity: 0.6 }}>{count}</span>
               </button>
             );
           })}
         </div>
 
-        <Button
+        <button
           type="button"
-          variant="primary"
-          size="sm"
           onClick={() => setSheetOpen(true)}
-          className="shrink-0"
+          style={{
+            display: "flex", alignItems: "center", gap: "0.375rem",
+            padding: "0.5rem 1.25rem", minHeight: "40px",
+            background: "#1c1a17", color: "#faf8f5", border: "none",
+            borderRadius: "999px", cursor: "pointer", flexShrink: 0,
+            fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+            fontSize: "0.875rem", fontWeight: 600,
+          }}
         >
           <Plus size={14} aria-hidden />
           Add garment
-        </Button>
+        </button>
       </div>
 
       {/* Grid */}
@@ -181,9 +195,12 @@ export function WardrobeGrid() {
               Add garments you own — GYF styles around your real closet.
             </p>
           </div>
-          <Button variant="primary" size="md" onClick={() => setSheetOpen(true)}>
+          <button
+            type="button" onClick={() => setSheetOpen(true)}
+            style={{ padding: "0.75rem 2rem", background: "#1c1a17", color: "#faf8f5", border: "none", borderRadius: "999px", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer" }}
+          >
             {filter === ALL ? "Add your first garment" : "Add a garment"}
-          </Button>
+          </button>
         </motion.div>
       ) : (
         <motion.div layout className={GRID}>
