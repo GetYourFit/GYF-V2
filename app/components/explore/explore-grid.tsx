@@ -45,9 +45,10 @@ const GRID_STYLE: React.CSSProperties = {
 
 interface ExploreGridProps {
   filters: ExploreFilters;
+  onSelectItem?: (item: SearchResult) => void;
 }
 
-export function ExploreGrid({ filters }: ExploreGridProps) {
+export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   const { toast } = useToast();
   const reduce = useReducedMotion();
   const [items, setItems] = useState<SearchResult[]>([]);
@@ -259,7 +260,7 @@ export function ExploreGrid({ filters }: ExploreGridProps) {
       <div style={GRID_STYLE}>
         <AnimatePresence mode="popLayout">
           {items.map((item, i) => (
-            <ExploreCard key={item.item_id} item={item} index={i} saved={saved.has(item.item_id)} onSave={toggleSave} />
+            <ExploreCard key={item.item_id} item={item} index={i} saved={saved.has(item.item_id)} onSave={toggleSave} onSelect={onSelectItem} />
           ))}
         </AnimatePresence>
       </div>

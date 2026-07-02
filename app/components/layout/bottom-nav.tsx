@@ -3,15 +3,22 @@
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, Search, Archive, Users, User } from "lucide-react";
+import { NavFeed } from "@/components/icons/NavFeed";
+import { NavExplore } from "@/components/icons/NavExplore";
+import { NavWardrobe } from "@/components/icons/NavWardrobe";
+import { NavSocial } from "@/components/icons/NavSocial";
+import { NavProfile } from "@/components/icons/NavProfile";
 
 const TABS = [
-  { href: "/",        icon: Sparkles, label: "Stylist",  exact: true  },
-  { href: "/explore", icon: Search,   label: "Explore",  exact: false },
-  { href: "/wardrobe",icon: Archive,  label: "Wardrobe", exact: false },
-  { href: "/social",  icon: Users,    label: "Social",   exact: false },
-  { href: "/profile", icon: User,     label: "Profile",  exact: false },
+  { href: "/",         Icon: NavFeed,     label: "Stylist",  exact: true  },
+  { href: "/explore",  Icon: NavExplore,  label: "Explore",  exact: false },
+  { href: "/wardrobe", Icon: NavWardrobe, label: "Wardrobe", exact: false },
+  { href: "/social",   Icon: NavSocial,   label: "Social",   exact: false },
+  { href: "/profile",  Icon: NavProfile,  label: "Profile",  exact: false },
 ] as const;
+
+const ACCENT = "#d4a96a";
+const MUTED  = "#5a5a65";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -27,16 +34,17 @@ export function BottomNav() {
         left: "50%",
         transform: "translateX(-50%)",
         paddingBottom: "env(safe-area-inset-bottom)",
-        background: "rgba(0,0,0,0.92)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
+        background: "rgba(15,15,18,0.94)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        borderTop: "1px solid rgba(255,255,255,0.08)",
         display: "flex",
         maxWidth: "390px",
         width: "100%",
+        borderRadius: "16px 16px 0 0",
       }}
     >
-      {TABS.map(({ href, icon: Icon, label, exact }) => {
+      {TABS.map(({ href, Icon, label, exact }) => {
         const active = exact ? pathname === href : pathname.startsWith(href);
 
         return (
@@ -54,13 +62,13 @@ export function BottomNav() {
               gap: "0.25rem",
               height: "64px",
               position: "relative",
-              color: active ? "#ffffff" : "#5a5a65",
+              color: active ? ACCENT : MUTED,
               textDecoration: "none",
               minWidth: "44px",
               transition: "color 0.2s",
             }}
           >
-            {/* Active indicator — top bar */}
+            {/* Active indicator — gold top bar */}
             {active && (
               <motion.span
                 layoutId={reduce ? undefined : "nav-indicator"}
@@ -73,8 +81,8 @@ export function BottomNav() {
                   transform: "translateX(-50%)",
                   width: 20,
                   height: 2,
-                  background: "#f0bd8f",
-                  borderRadius: 0,
+                  background: ACCENT,
+                  borderRadius: "0 0 2px 2px",
                 }}
               />
             )}
@@ -84,10 +92,8 @@ export function BottomNav() {
               transition={{ type: "spring", stiffness: 600, damping: 30 }}
             >
               <Icon
-                size={20}
-                aria-hidden
+                size={22}
                 strokeWidth={active ? 2 : 1.5}
-                style={{ display: "block" }}
               />
             </motion.div>
 
@@ -98,7 +104,7 @@ export function BottomNav() {
                 fontWeight: 500,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: active ? "#f0bd8f" : "#5a5a65",
+                color: active ? ACCENT : MUTED,
                 lineHeight: 1,
               }}
             >

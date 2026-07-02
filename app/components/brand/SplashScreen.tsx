@@ -1,9 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { randomQuote } from "@/lib/fashionQuotes";
+import { GYFLogoAnimated } from "./GYFLogoAnimated";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const MIN_SHOW_MS = 2400;
@@ -74,43 +74,8 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             padding: "0 2rem",
           }}
         >
-          {/* ── GYF Logo — reveal sweep from left ── */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, ease: EASE }}
-            style={{ position: "relative", overflow: "hidden" }}
-          >
-            {!reduce && (
-              <motion.div
-                initial={{ scaleX: 1 }}
-                animate={{ scaleX: 0 }}
-                transition={{ duration: 1.1, ease: EASE, delay: 0.2 }}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "#000000",
-                  transformOrigin: "right",
-                  zIndex: 1,
-                }}
-              />
-            )}
-            <Image
-              src="/assets/logo.png"
-              alt="GYF — Get Your Fit"
-              width={600}
-              height={600}
-              priority
-              style={{
-                width: 200,
-                height: "auto",
-                display: "block",
-                position: "relative",
-                zIndex: 0,
-                filter: "brightness(0) invert(1)",
-              }}
-            />
-          </motion.div>
+          {/* ── GYF Logo — SVG draw-on animation ── */}
+          <GYFLogoAnimated width={200} />
 
           {/* ── Progress line — ochre sweep ── */}
           {!reduce && (

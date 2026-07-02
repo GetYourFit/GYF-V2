@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowUpRight, Bookmark, BookmarkCheck } from "lucide-react";
+import { Bookmark, BookmarkCheck } from "lucide-react";
 
 import type { SearchResult } from "@gyf/types";
 
@@ -10,6 +10,7 @@ interface ExploreCardProps {
   index: number;
   saved: boolean;
   onSave: (item: SearchResult) => void;
+  onSelect?: (item: SearchResult) => void;
 }
 
 function formatPrice(price?: number | null, currency?: string | null): string | null {
@@ -27,11 +28,9 @@ function formatPrice(price?: number | null, currency?: string | null): string | 
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
+export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCardProps) {
   const reduce = useReducedMotion();
   const price = formatPrice(item.price, item.currency);
-  const external = Boolean(item.buy_url);
-  const href = item.buy_url ?? `/items/${item.item_id}`;
 
   return (
     <motion.article
@@ -43,17 +42,20 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
         delay: reduce ? 0 : Math.min(index * 0.03, 0.4),
         ease: EASE,
       }}
+      whileHover={reduce ? undefined : { scale: 1.02, y: -2 }}
       style={{
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        borderRadius: "4px",
+        background: "rgba(255,255,255,0.04)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: "16px",
         overflow: "hidden",
-        transition: "border-color 0.2s",
+        cursor: onSelect ? "pointer" : "default",
       }}
-      whileHover={reduce ? undefined : { borderColor: "rgba(255,255,255,0.18)" }}
+      onClick={onSelect ? () => onSelect(item) : undefined}
     >
       {/* Image */}
       <div
@@ -97,7 +99,7 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
           type="button"
           aria-label={saved ? "Remove from saved" : "Save item"}
           aria-pressed={saved}
-          onClick={() => onSave(item)}
+          onClick={(e) => { e.stopPropagation(); onSave(item); }}
           style={{
             position: "absolute",
             right: "0.5rem",
@@ -108,13 +110,13 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
             justifyContent: "center",
             width: "36px",
             height: "36px",
-            background: "rgba(0,0,0,0.65)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            border: `1px solid ${saved ? "#f0bd8f" : "rgba(255,255,255,0.15)"}`,
-            color: saved ? "#f0bd8f" : "#8e9192",
+            background: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            border: `1px solid ${saved ? "#d4a96a" : "rgba(255,255,255,0.15)"}`,
+            color: saved ? "#d4a96a" : "#8a8a95",
             cursor: "pointer",
-            borderRadius: "2px",
+            borderRadius: "999px",
             transition: "all 0.2s",
           }}
         >
@@ -126,62 +128,34 @@ export function ExploreCard({ item, index, saved, onSave }: ExploreCardProps) {
       </div>
 
       {/* Meta */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: "0.5rem",
-          padding: "0.75rem",
-        }}
-      >
-        <div style={{ minWidth: 0, flex: 1 }}>
-          {/* Stretched link covers full card, save button (z-10) stays independently clickable */}
-          <a
-            href={href}
-            target={external ? "_blank" : undefined}
-            rel={external ? "noopener noreferrer" : undefined}
-            aria-label={external ? `Shop ${item.title}` : `View ${item.title}`}
+      <div style={{ padding: "0.75rem" }}>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.75rem",
+            color: "#e8e4dc",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            margin: 0,
+          }}
+        >
+          {item.title}
+        </p>
+        {price && (
+          <p
             style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "0.75rem",
-              color: "#c4c7c8",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              textDecoration: "none",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.65rem",
+              color: "#d4a96a",
+              letterSpacing: "0.04em",
+              marginTop: "0.375rem",
             }}
           >
-            <span
-              style={{
-                position: "absolute",
-                inset: 0,
-                zIndex: 1,
-              }}
-              aria-hidden
-            />
-            {item.title}
-          </a>
-          {price && (
-            <p
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.65rem",
-                color: "#f0bd8f",
-                letterSpacing: "0.04em",
-                marginTop: "0.375rem",
-              }}
-            >
-              {price}
-            </p>
-          )}
-        </div>
-        <ArrowUpRight
-          size={14}
-          aria-hidden
-          style={{ color: "#5a5a65", flexShrink: 0, marginTop: "2px" }}
-        />
+            {price}
+          </p>
+        )}
       </div>
     </motion.article>
   );
