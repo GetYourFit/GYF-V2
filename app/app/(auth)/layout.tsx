@@ -53,7 +53,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           style={{ display: "flex", justifyContent: "center" }}
         >
           <Link href="/" aria-label="GYF home">
-            <GYFLogo width={200} />
+            <GYFLogo width={150} />
           </Link>
         </motion.div>
 

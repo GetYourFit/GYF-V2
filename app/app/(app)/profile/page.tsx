@@ -9,7 +9,7 @@ export default function ProfilePage() {
       <header style={{ marginBottom: "2rem" }}>
         <span style={{
           fontFamily: "var(--font-mono)", fontSize: "0.6rem", fontWeight: 500,
-          letterSpacing: "0.1em", textTransform: "uppercase", color: "#b87a30",
+          letterSpacing: "0.1em", textTransform: "uppercase", color: "#d4607a",
           display: "block", marginBottom: "0.5rem",
         }}>
           You

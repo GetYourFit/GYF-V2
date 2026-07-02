@@ -69,7 +69,7 @@ export function OutfitCard({
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
               fontSize: "0.7rem",
               fontWeight: 700,
-              color: "#b87a30",
+              color: "#d4607a",
               letterSpacing: "0.06em",
             }}
           >
@@ -204,8 +204,8 @@ export function OutfitCard({
                   padding: "0.875rem 1.25rem",
                   margin: "0.75rem 1.25rem 0",
                   borderRadius: "12px",
-                  background: "rgba(184,122,48,0.06)",
-                  border: "1px solid rgba(184,122,48,0.12)",
+                  background: "rgba(212,96,122,0.06)",
+                  border: "1px solid rgba(212,96,122,0.12)",
                 }}
               >
                 <p
@@ -249,10 +249,10 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: expanded ? "rgba(184,122,48,0.08)" : "rgba(0,0,0,0.04)",
+              background: expanded ? "rgba(212,96,122,0.08)" : "rgba(0,0,0,0.04)",
               border: "none",
               borderRadius: "50%",
-              color: expanded ? "#b87a30" : "#9a9490",
+              color: expanded ? "#d4607a" : "#9a9490",
               cursor: "pointer",
             }}
           >
@@ -272,17 +272,17 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: saved ? "rgba(184,122,48,0.12)" : "rgba(0,0,0,0.04)",
+              background: saved ? "rgba(212,96,122,0.12)" : "rgba(0,0,0,0.04)",
               border: "none",
               borderRadius: "50%",
-              color: saved ? "#b87a30" : "#9a9490",
+              color: saved ? "#d4607a" : "#9a9490",
               cursor: "pointer",
             }}
           >
             <Bookmark
               size={18}
               aria-hidden
-              style={{ fill: saved ? "#b87a30" : "none", transition: "fill 0.2s" }}
+              style={{ fill: saved ? "#d4607a" : "none", transition: "fill 0.2s" }}
             />
           </motion.button>
 

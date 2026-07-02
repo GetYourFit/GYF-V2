@@ -23,13 +23,13 @@
 
   /* Brand */
   --color-primary:          #1c1a17;
-  --color-secondary:        #b87a30;
+  --color-secondary:        #d4607a;
   --color-accent:           #1c1a17;
   --color-accent-press:     #2e2b26;
 
   /* Functional */
   --color-success:          #0d7a55;
-  --color-warning:          #c27c0e;
+  --color-warning:          #c2560e;
   --color-error:            #c0392b;
 
   /* Fonts */
@@ -63,11 +63,11 @@
   --text-mid:        #5c5650;
   --text-faint:      #9a9490;
   --primary:         #1c1a17;
-  --secondary:       #b87a30;
+  --secondary:       #d4607a;
   --accent:          #1c1a17;
   --accent-press:    #2e2b26;
   --success:         #0d7a55;
-  --warning:         #c27c0e;
+  --warning:         #c2560e;
   --error:           #c0392b;
   --lux:             cubic-bezier(0.22, 1, 0.36, 1);
   --spring:          cubic-bezier(0.34, 1.56, 0.64, 1);

@@ -146,7 +146,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
 
       {/* Style tag */}
       <span style={{
-        background: "rgba(184,122,48,0.10)", color: "#b87a30",
+        background: "rgba(212,96,122,0.10)", color: "#d4607a",
         borderRadius: "999px", padding: "0.25rem 0.875rem",
         fontFamily: "var(--font-body)", fontSize: "0.7rem", fontWeight: 600,
         letterSpacing: "0.08em", textTransform: "uppercase",
@@ -316,7 +316,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           style={{
             display: "inline-flex", alignItems: "center", justifyContent: "center",
             minHeight: "44px", padding: "0 2rem",
-            background: "#b87a30", color: "#ffffff",
+            background: "#d4607a", color: "#ffffff",
             fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600,
             textDecoration: "none",
             borderRadius: "999px",

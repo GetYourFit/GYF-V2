@@ -206,7 +206,7 @@ export function AccountManager() {
             {saving ? "Saving…" : "Save preferences"}
           </button>
           {dirty && (
-            <span role="status" style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", color: "#b87a30", letterSpacing: "0.06em" }}>
+            <span role="status" style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", color: "#d4607a", letterSpacing: "0.06em" }}>
               Unsaved changes
             </span>
           )}
@@ -400,7 +400,7 @@ function ConsentRow({
           flexShrink: 0, marginTop: "2px",
           position: "relative", display: "inline-flex",
           width: "44px", height: "24px", alignItems: "center",
-          border: `1px solid ${checked ? "#b87a30" : "rgba(255,255,255,0.2)"}`,
+          border: `1px solid ${checked ? "#d4607a" : "rgba(255,255,255,0.2)"}`,
           background: checked ? "rgba(240,189,143,0.15)" : "transparent",
           cursor: "pointer", transition: "all 0.2s", borderRadius: "999px",
         }}
@@ -411,7 +411,7 @@ function ConsentRow({
             position: "absolute",
             left: checked ? "calc(100% - 18px)" : "2px",
             width: "14px", height: "14px",
-            background: checked ? "#b87a30" : "#9a9490",
+            background: checked ? "#d4607a" : "#9a9490",
             transition: "left 0.2s, background 0.2s",
           }}
         />

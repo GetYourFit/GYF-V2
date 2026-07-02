@@ -162,7 +162,7 @@ export function PostCard({ post, index = 0, onReact, onShared, onDressLikeMe }: 
                 style={{ pointerEvents: "none", position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
                 aria-hidden
               >
-                <Heart size={72} style={{ fill: "#b87a30", color: "#b87a30", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.3))" }} />
+                <Heart size={72} style={{ fill: "#d4607a", color: "#d4607a", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.3))" }} />
               </motion.span>
             )}
           </AnimatePresence>
@@ -180,7 +180,7 @@ export function PostCard({ post, index = 0, onReact, onShared, onDressLikeMe }: 
           whileTap={reduceMotion ? undefined : { scale: 0.88 }}
           style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "none", border: "none", cursor: "pointer", padding: 0, minHeight: 44, minWidth: 44 }}
         >
-          <Heart size={18} aria-hidden style={{ color: reacted ? "#b87a30" : "#9a9490", fill: reacted ? "#b87a30" : "none", transition: "all 0.2s" }} />
+          <Heart size={18} aria-hidden style={{ color: reacted ? "#d4607a" : "#9a9490", fill: reacted ? "#d4607a" : "none", transition: "all 0.2s" }} />
           <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: reacted ? "#1c1a17" : "#5c5650" }}>{count}</span>
         </motion.button>
 
@@ -191,7 +191,7 @@ export function PostCard({ post, index = 0, onReact, onShared, onDressLikeMe }: 
           whileTap={reduceMotion ? undefined : { scale: 0.88 }}
           style={{ display: "flex", alignItems: "center", gap: "0.375rem", background: "none", border: "none", cursor: "pointer", padding: 0, minHeight: 44, minWidth: 44 }}
         >
-          <Bookmark size={18} aria-hidden style={{ color: saved ? "#b87a30" : "#9a9490", fill: saved ? "#b87a30" : "none", transition: "all 0.2s" }} />
+          <Bookmark size={18} aria-hidden style={{ color: saved ? "#d4607a" : "#9a9490", fill: saved ? "#d4607a" : "none", transition: "all 0.2s" }} />
         </motion.button>
 
         <motion.button

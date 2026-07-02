@@ -84,7 +84,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: "#b87a30",
+          color: "#d4607a",
           marginBottom: "0.375rem",
         }}>
           Estimate from photo
@@ -113,7 +113,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           gap: "0.75rem",
           padding: previewUrl ? "0" : "2rem 1rem",
           background: dragActive ? "rgba(240,189,143,0.04)" : "rgba(0,0,0,0.03)",
-          border: `1px dashed ${dragActive ? "#b87a30" : "rgba(255,255,255,0.12)"}`,
+          border: `1px dashed ${dragActive ? "#d4607a" : "rgba(255,255,255,0.12)"}`,
           cursor: "pointer",
           transition: "all 0.2s",
           textAlign: "center",

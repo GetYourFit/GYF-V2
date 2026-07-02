@@ -145,14 +145,14 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           style={{
             flex: 1,
             background: "#ffffff",
-            border: `1.5px solid ${focused ? "#b87a30" : "rgba(0,0,0,0.12)"}`,
+            border: `1.5px solid ${focused ? "#d4607a" : "rgba(0,0,0,0.12)"}`,
             outline: "none",
             borderRadius: "999px",
             padding: "0.75rem 2.5rem 0.75rem 3rem",
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "0.9375rem",
             color: "#1c1a17",
-            boxShadow: focused ? "0 0 0 3px rgba(184,122,48,0.12)" : "0 2px 8px rgba(0,0,0,0.06)",
+            boxShadow: focused ? "0 0 0 3px rgba(212,96,122,0.12)" : "0 2px 8px rgba(0,0,0,0.06)",
             transition: "border-color 0.2s, box-shadow 0.2s",
           }}
         />
@@ -240,31 +240,33 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           })}
         </div>
 
-        {/* Sort select */}
-        <select
-          aria-label="Sort results"
-          value={safeSort}
-          onChange={(e) => set("sort", e.target.value as SortKey)}
-          style={{
-            background: "transparent",
-            border: "1px solid rgba(0,0,0,0.10)",
-            color: "#9a9490",
-            padding: "0.25rem 0.5rem",
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.6rem",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-            flexShrink: 0,
-            outline: "none",
-          }}
-        >
-          {sortOptions.map((o) => (
-            <option key={o.value} value={o.value} style={{ background: "#faf8f5" }}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        {/* Sort select — only shown when price sorts are available */}
+        {priceEnabled && (
+          <select
+            aria-label="Sort results"
+            value={safeSort}
+            onChange={(e) => set("sort", e.target.value as SortKey)}
+            style={{
+              background: "#ffffff",
+              border: "1px solid rgba(0,0,0,0.12)",
+              borderRadius: "999px",
+              color: "#5c5650",
+              padding: "0.3rem 0.75rem",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              flexShrink: 0,
+              outline: "none",
+            }}
+          >
+            {PRICE_SORTS.map((o) => (
+              <option key={o.value} value={o.value} style={{ background: "#faf8f5" }}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        )}
 
         {/* Price input */}
         {priceEnabled && (

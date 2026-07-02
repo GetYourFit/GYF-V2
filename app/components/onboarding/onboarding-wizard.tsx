@@ -305,7 +305,7 @@ export function OnboardingWizard() {
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: "#b87a30",
+          color: "#d4607a",
         }}>
           Step {String(step + 1).padStart(2, "0")} / {String(STEPS.length).padStart(2, "0")}
         </span>
@@ -338,7 +338,7 @@ export function OnboardingWizard() {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: "#b87a30",
+                      background: "#d4607a",
                       display: "block",
                     }}
                   />
@@ -524,7 +524,7 @@ function EstimatedBadge() {
         fontSize: "0.5rem",
         letterSpacing: "0.08em",
         textTransform: "uppercase" as const,
-        color: "#b87a30",
+        color: "#d4607a",
         flexShrink: 0,
       }}
     >
@@ -627,9 +627,9 @@ function StepStyle({
                 style={{
                   minHeight: "36px",
                   padding: "0 0.875rem",
-                  border: `1px solid ${active ? "#b87a30" : "rgba(0,0,0,0.08)"}`,
+                  border: `1px solid ${active ? "#d4607a" : "rgba(0,0,0,0.08)"}`,
                   background: active ? "rgba(240,189,143,0.08)" : "transparent",
-                  color: active ? "#b87a30" : "#9a9490",
+                  color: active ? "#d4607a" : "#9a9490",
                   fontFamily: "var(--font-mono)",
                   fontSize: "0.6rem",
                   fontWeight: 500,
@@ -723,7 +723,7 @@ function StepPrivacy({
                 width: "16px",
                 height: "16px",
                 flexShrink: 0,
-                accentColor: "#b87a30",
+                accentColor: "#d4607a",
                 cursor: c.required ? "not-allowed" : "pointer",
               }}
             />

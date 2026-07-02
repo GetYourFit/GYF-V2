@@ -28,7 +28,7 @@ export default function Loading() {
           left: 0,
           right: 0,
           height: "2px",
-          background: "#b87a30",
+          background: "#d4607a",
           transformOrigin: "left",
         }}
       />
@@ -52,7 +52,7 @@ export default function Loading() {
           height={125}
           priority
           style={{
-            width: "200px",
+            width: "160px",
             height: "auto",
           }}
         />

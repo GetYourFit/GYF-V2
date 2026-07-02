@@ -101,8 +101,8 @@ export function StylistControls({
           transition: "border-color 0.2s, box-shadow 0.2s",
         }}
         onFocus={(e) => {
-          (e.currentTarget as HTMLFormElement).style.borderColor = "#b87a30";
-          (e.currentTarget as HTMLFormElement).style.boxShadow = "0 0 0 3px rgba(184,122,48,0.12)";
+          (e.currentTarget as HTMLFormElement).style.borderColor = "#d4607a";
+          (e.currentTarget as HTMLFormElement).style.boxShadow = "0 0 0 3px rgba(212,96,122,0.12)";
         }}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) {

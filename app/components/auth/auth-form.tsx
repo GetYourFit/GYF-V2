@@ -212,7 +212,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#b87a30",
+            color: "#d4607a",
             display: "flex",
             alignItems: "center",
             gap: "0.5rem",
@@ -224,7 +224,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               display: "inline-block",
               width: 24,
               height: 1,
-              background: "#b87a30",
+              background: "#d4607a",
               flexShrink: 0,
             }}
           />

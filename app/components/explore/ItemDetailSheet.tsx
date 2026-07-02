@@ -12,7 +12,7 @@ import { WearItWithRow } from "./WearItWithRow";
 import type { SearchResult } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const ACCENT = "#b87a30";
+const ACCENT = "#d4607a";
 
 const MONO: React.CSSProperties = {
   fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",

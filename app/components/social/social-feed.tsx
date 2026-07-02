@@ -113,7 +113,7 @@ export function SocialFeed() {
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
               padding: "0.5rem 1.125rem",
-              background: "#b87a30", color: "#ffffff",
+              background: "#d4607a", color: "#ffffff",
               borderRadius: "999px", border: "none",
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
               fontSize: "0.875rem", fontWeight: 600,
@@ -175,7 +175,7 @@ export function SocialFeed() {
             <button
               type="button"
               onClick={() => setSheetOpen(true)}
-              style={{ padding: "0.75rem 1.75rem", background: "#b87a30", color: "#ffffff", borderRadius: "999px", border: "none", fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}
+              style={{ padding: "0.75rem 1.75rem", background: "#d4607a", color: "#ffffff", borderRadius: "999px", border: "none", fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}
             >
               Share a look
             </button>
@@ -212,7 +212,7 @@ export function SocialFeed() {
             : { type: "spring", stiffness: 380, damping: 26, delay: 0.35 }
         }
         whileTap={reduceMotion ? undefined : { scale: 0.88 }}
-        style={{ position: "fixed", bottom: "calc(5.5rem + env(safe-area-inset-bottom))", right: "1.25rem", zIndex: 30, display: "flex", width: 52, height: 52, alignItems: "center", justifyContent: "center", background: "#b87a30", color: "#ffffff", borderRadius: "999px", border: "none", boxShadow: "0 4px 20px rgba(184,122,48,0.40)", cursor: "pointer" }}
+        style={{ position: "fixed", bottom: "calc(5.5rem + env(safe-area-inset-bottom))", right: "1.25rem", zIndex: 30, display: "flex", width: 52, height: 52, alignItems: "center", justifyContent: "center", background: "#d4607a", color: "#ffffff", borderRadius: "999px", border: "none", boxShadow: "0 4px 20px rgba(212,96,122,0.40)", cursor: "pointer" }}
       >
         <Plus size={22} aria-hidden />
       </motion.button>

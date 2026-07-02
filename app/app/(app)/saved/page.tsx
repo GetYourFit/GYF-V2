@@ -14,7 +14,7 @@ export default function SavedPage() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#b87a30",
+            color: "#d4607a",
           }}
         >
           Saved

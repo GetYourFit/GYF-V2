@@ -133,7 +133,7 @@ export function StylistFeed() {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
-              color: "#b87a30",
+              color: "#d4607a",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               marginBottom: "1rem",
@@ -199,7 +199,7 @@ export function StylistFeed() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#b87a30",
+            color: "#d4607a",
           }}
         >
           Your stylist

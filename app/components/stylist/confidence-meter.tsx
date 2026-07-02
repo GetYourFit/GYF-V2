@@ -21,7 +21,7 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "0.65rem",
             fontWeight: 600,
-            color: "#b87a30",
+            color: "#d4607a",
           }}
         >
           {pct >= 75 ? "Strong match" : pct >= 50 ? "Good match" : "Exploring"}
@@ -56,7 +56,7 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
           initial={{ width: "0%" }}
           animate={{ width: `${pct}%` }}
           transition={reduce ? { duration: 0 } : { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-          style={{ height: "100%", background: "#b87a30", borderRadius: "999px" }}
+          style={{ height: "100%", background: "#d4607a", borderRadius: "999px" }}
         />
       </div>
     </div>

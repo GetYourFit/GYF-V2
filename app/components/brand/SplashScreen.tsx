@@ -80,7 +80,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, ease: EASE }}
           >
-            <GYFLogo width={220} />
+            <GYFLogo width={160} />
           </motion.div>
 
           {/* ── Progress line — ochre sweep ── */}
@@ -93,7 +93,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                 marginTop: "2.5rem",
                 width: "160px",
                 height: "1px",
-                background: "#b87a30",
+                background: "#d4607a",
                 transformOrigin: "left",
               }}
             />
@@ -163,7 +163,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                   width: i === activeDot ? 20 : 6,
                   height: 6,
                   borderRadius: 3,
-                  background: i === activeDot ? "#b87a30" : "#9a9490",
+                  background: i === activeDot ? "#d4607a" : "#9a9490",
                   display: "block",
                 }}
               />

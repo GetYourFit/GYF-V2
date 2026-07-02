@@ -110,8 +110,8 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
             width: "36px",
             height: "36px",
             background: "rgba(255,255,255,0.92)",
-            border: `1px solid ${saved ? "#b87a30" : "rgba(0,0,0,0.10)"}`,
-            color: saved ? "#b87a30" : "#9a9490",
+            border: `1px solid ${saved ? "#d4607a" : "rgba(0,0,0,0.10)"}`,
+            color: saved ? "#d4607a" : "#9a9490",
             cursor: "pointer",
             borderRadius: "999px",
             transition: "all 0.2s",
@@ -147,7 +147,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
               fontFamily: "var(--font-body)",
               fontSize: "0.875rem",
               fontWeight: 700,
-              color: "#b87a30",
+              color: "#d4607a",
               marginTop: "0.25rem",
             }}
           >

@@ -44,7 +44,7 @@ export function AppShell({ children }: AppShellProps) {
           }}
         >
           <Link href="/" aria-label="GYF home">
-            <GYFLogo width={110} />
+            <GYFLogo width={80} />
           </Link>
           {/* Right slot — reserved for future notifications icon */}
           <div style={{ width: 44 }} aria-hidden />

@@ -169,7 +169,7 @@ export function OutfitDetail({
                     fontSize: "0.6rem",
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "#b87a30",
+                    color: "#d4607a",
                   }}
                 >
                   N°{String(index + 1).padStart(2, "0")}
@@ -402,7 +402,7 @@ export function OutfitDetail({
                           style={{
                             fontFamily: "var(--font-mono)",
                             fontSize: "0.75rem",
-                            color: "#b87a30",
+                            color: "#d4607a",
                             flexShrink: 0,
                           }}
                         >

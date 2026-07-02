@@ -35,8 +35,8 @@ export function CompatibilityPanel({ item }: Props) {
       gap: "0.875rem",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <span style={{ display: "block", width: "16px", height: "1px", background: "#b87a30" }} />
-        <span style={{ ...MONO, color: "#b87a30" }}>Why this works</span>
+        <span style={{ display: "block", width: "16px", height: "1px", background: "#d4607a" }} />
+        <span style={{ ...MONO, color: "#d4607a" }}>Why this works</span>
       </div>
 
       <ConfidenceMeter value={item.score} />

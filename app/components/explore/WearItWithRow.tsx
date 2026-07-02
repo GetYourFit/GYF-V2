@@ -62,8 +62,8 @@ export function WearItWithRow({ itemId }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <span style={{ display: "block", width: "16px", height: "1px", background: "#b87a30" }} />
-        <span style={{ ...MONO, color: "#b87a30" }}>Wear it with</span>
+        <span style={{ display: "block", width: "16px", height: "1px", background: "#d4607a" }} />
+        <span style={{ ...MONO, color: "#d4607a" }}>Wear it with</span>
       </div>
       <div style={{ display: "flex", gap: "0.75rem" }}>
         {pairings === null ? (<><Skeleton /><Skeleton /></>) :
