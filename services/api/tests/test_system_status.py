@@ -69,3 +69,9 @@ def test_status_survives_stats_repo_failure():
     resp = _get(stats=_ExplodingStats())
     assert resp.status_code == 200
     assert resp.json()["catalog"]["items"] is None
+
+
+def test_text_search_reports_remote_gpu_lane(monkeypatch):
+    monkeypatch.setenv("GYF_ENCODER_REMOTE_URL", "https://GetYourFit-gyf-gpu.hf.space")
+    cap = _get().json()["capabilities"]["text_search"]
+    assert cap["status"] == "live" and cap["lane"] == "remote-gpu"

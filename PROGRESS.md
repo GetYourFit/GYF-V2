@@ -222,3 +222,11 @@ will then report it honestly.
 
 **Gates:** API pytest 192 ✓ ruff check+format ✓ web ESLint/tsc/vitest 24 ✓ Prettier ✓.
 (Separate chore commit: ruff-format drift on 10 files after the ruff bump.)
+
+### 2026-07-03 — Status surface false-negative fixed; prod photo path VERIFIED LIVE
+
+User set GYF_BODY_REMOTE_URL on Render. Prod /system/status now reports photo body-type
+live/remote-gpu, skin-tone beta/remote-gpu, DB ready, 24,254 items (12 priced). The status
+page's text_search check was a false negative (proxied via local torch, but prod embeds
+queries over GYF_ENCODER_REMOTE_URL — real search returns 200 with results); the check now
+mirrors the real serving path (remote lane → local torch → degraded). +1 test (4 total).

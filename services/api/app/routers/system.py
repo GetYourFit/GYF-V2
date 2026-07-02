@@ -13,6 +13,7 @@ could identify a user are exposed — capability states and catalog aggregates o
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 from typing import Literal, Protocol
 
@@ -129,6 +130,29 @@ def _skin_tone_fairness_evaluated() -> bool:
     return False
 
 
+def _text_search_capability() -> Capability:
+    """Mirror the real /items/search serving path (perception.remote.encoder_for):
+    a set ``GYF_ENCODER_REMOTE_URL`` serves queries over the ZeroGPU lane with no
+    local torch; otherwise the local SigLIP encoder needs the torch runtime."""
+    if os.environ.get("GYF_ENCODER_REMOTE_URL", "").strip():
+        return Capability(
+            status="live",
+            lane="remote-gpu",
+            detail="Text→image catalog search embeds queries on the remote GPU lane.",
+        )
+    if _runtime_installed("torch"):
+        return Capability(
+            status="live",
+            lane="local",
+            detail="Text→image catalog search is serving in-process.",
+        )
+    return Capability(
+        status="degraded",
+        lane="none",
+        detail="No encoder lane configured and no local ML runtime — search returns 503.",
+    )
+
+
 def _photo_module(remote_url: str, name: str) -> Capability:
     """Status of a photo-onboarding module from its lane config + local runtime."""
     if remote_url:
@@ -193,13 +217,7 @@ def system_status(
             if db_ready
             else "Database unreachable — recommendations cannot serve.",
         ),
-        "text_search": Capability(
-            status="live" if _runtime_installed("torch") else "degraded",
-            lane="local",
-            detail="Text→image catalog search is serving."
-            if _runtime_installed("torch")
-            else "Perception runtime not installed on this host — search returns 503.",
-        ),
+        "text_search": _text_search_capability(),
         "photo_body_type": _photo_module(settings.body_remote_url, "Body-type estimation"),
         "photo_skin_tone": skin,
         "virtual_try_on": Capability(
