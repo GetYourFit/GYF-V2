@@ -32,6 +32,10 @@ export type SavedOutfit = components["schemas"]["SavedOutfit"];
 export type SavedOutfitItem = components["schemas"]["SavedOutfitItem"];
 export type SaveOutfitRequest = components["schemas"]["SaveOutfitRequest"];
 
+/** Trust surface (M8.5): what is live, experimental, degraded, or planned. */
+export type SystemStatus = components["schemas"]["SystemStatus"];
+export type Capability = components["schemas"]["Capability"];
+
 /** Interaction actions captured as the behavioral event spine. */
 export const INTERACTION_ACTIONS = [
   "view",

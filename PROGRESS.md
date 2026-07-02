@@ -195,3 +195,30 @@ line that leaks into openapi.json line 1.
 
 **Remaining gap matrix after this session:** try-on (M9), affiliate attribution (Cuelinks —
 waiting on approval), M8.5 operator trust surface, M12 beta hardening, prod GPU-lane env vars.
+
+### 2026-07-03 — M8.5 operator/user trust surface ✅ + ZeroGPU body lane verified live
+
+**User asked:** ZeroGPU is the GPU lane; nothing may stay degraded — continue development.
+
+**Shipped — `/system/status` + `/status` (the M8.5 trust surface, gap #4 closed):**
+- `GET /system/status` (no auth — transparency is the point; no secrets/URLs/user data):
+  per-capability honest state (`live/beta/shadow/degraded/planned`) derived from real
+  runtime state (remote-lane config, installed runtimes, DB reachability, the
+  eval-reports fairness-gate artifact), plus catalog aggregate health (items/embeddings/
+  prices/images) and the event sink. Never 500s: an unreachable DB is itself a status.
+- Web `/status` page rendering the report; linked from the top menu ("System Status").
+- Types regenerated (SystemStatus/Capability exported); `GyfApi.systemStatus()`.
+- Tests: honesty pins (try-on=planned, price gap reported), unreachable-DB and
+  exploding-stats paths both 200.
+
+**ZeroGPU lane un-degraded (the stale gotcha killed):** the deployed Space
+`GetYourFit-gyf-gpu.hf.space` now serves **all four** endpoints — verified live via
+`gradio_api/info` AND a real `/estimate_body` call through the wire format (returned
+rtmw-birefnet-v1 measurements, confidence 1.0). The old "GYF_BODY_REMOTE_URL must stay
+UNSET (no SAM on Space)" note is obsolete. **Remaining one-time op (user):** set
+`GYF_BODY_REMOTE_URL=https://GetYourFit-gyf-gpu.hf.space` on the Render service
+(dashboard or `render login` + env set) → photo body-type goes live on prod; /status
+will then report it honestly.
+
+**Gates:** API pytest 192 ✓ ruff check+format ✓ web ESLint/tsc/vitest 24 ✓ Prettier ✓.
+(Separate chore commit: ruff-format drift on 10 files after the ruff bump.)

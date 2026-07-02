@@ -47,6 +47,25 @@ const MENU_ITEMS = [
       </svg>
     ),
   },
+  {
+    href: "/status",
+    label: "System Status",
+    description: "What's live, experimental, or degraded",
+    icon: (
+      <svg
+        width={20}
+        height={20}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    ),
+  },
 ] as const;
 
 function DotsIcon() {

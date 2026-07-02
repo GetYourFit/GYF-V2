@@ -21,6 +21,7 @@ import type {
   SavedOutfit,
   SaveOutfitRequest,
   SearchResult,
+  SystemStatus,
   WardrobeItem,
   WardrobeItemInput,
 } from "@gyf/types";
@@ -239,6 +240,13 @@ export class GyfApi {
   /** The caller's identity (id + email) as the API resolves it from the token. */
   me(): Promise<{ user_id: string; email: string | null }> {
     return this.request("GET", "/me");
+  }
+
+  // --- Trust surface (M8.5) ---
+
+  /** What is live, experimental (beta/shadow), degraded, or planned. Public. */
+  systemStatus(): Promise<SystemStatus> {
+    return this.request<SystemStatus>("GET", "/system/status");
   }
 
   // --- Social (shared looks) ---

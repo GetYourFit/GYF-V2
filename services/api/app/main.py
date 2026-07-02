@@ -34,6 +34,7 @@ from .routers import (
     profile,
     recommendations,
     social,
+    system,
     wardrobe,
 )
 from .telemetry import configure_telemetry
@@ -210,6 +211,7 @@ app.include_router(feedback.router)
 app.include_router(collections.router)
 app.include_router(wardrobe.router)
 app.include_router(social.router)
+app.include_router(system.router)
 
 
 # --- Back-compat re-exports -------------------------------------------------

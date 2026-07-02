@@ -592,6 +592,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What is live, experimental, degraded, or planned
+         * @description The M8.5 trust report. Safe to expose: states and aggregates only.
+         *
+         *     Capability states: ``live`` (serving), ``beta`` (surfaced as an editable
+         *     estimate), ``shadow`` (computed, not surfaced), ``degraded`` (fallback
+         *     carrying the flow), ``planned`` (not built — never pretended otherwise).
+         */
+        get: operations["system_status_system_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -623,6 +647,21 @@ export interface components {
             currency: string;
         };
         /**
+         * Capability
+         * @description One product capability: its honest state and how it is served.
+         */
+        Capability: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "live" | "beta" | "shadow" | "degraded" | "planned";
+            /** Lane */
+            lane: string;
+            /** Detail */
+            detail: string;
+        };
+        /**
          * CatalogFacets
          * @description Real, server-computed filter ranges for the in-scope (region-filtered)
          *     catalog so the client offers only filters the data can actually satisfy —
@@ -637,6 +676,20 @@ export interface components {
             price_min: number | null;
             /** Price Max */
             price_max: number | null;
+        };
+        /**
+         * CatalogHealth
+         * @description Aggregate data health of the serving catalog (no per-item data).
+         */
+        CatalogHealth: {
+            /** Items */
+            items?: number | null;
+            /** With Embedding */
+            with_embedding?: number | null;
+            /** With Price */
+            with_price?: number | null;
+            /** With Image */
+            with_image?: number | null;
         };
         /**
          * ConsentInput
@@ -1054,6 +1107,26 @@ export interface components {
             color?: string | null;
             /** Buy Url */
             buy_url?: string | null;
+        };
+        /**
+         * SystemStatus
+         * @description The full trust report: per-capability state + data/backbone health.
+         */
+        SystemStatus: {
+            /** Environment */
+            environment: string;
+            /**
+             * Database
+             * @enum {string}
+             */
+            database: "ready" | "unreachable";
+            /** Capabilities */
+            capabilities: {
+                [key: string]: components["schemas"]["Capability"];
+            };
+            catalog: components["schemas"]["CatalogHealth"];
+            /** Event Sink */
+            event_sink: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -2042,6 +2115,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    system_status_system_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemStatus"];
                 };
             };
         };
