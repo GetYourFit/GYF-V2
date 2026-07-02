@@ -40,7 +40,7 @@ export function OutfitDetail({
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
   const titleId = `outfit-detail-${index}`;
-  const shopItem = outfit.items.find((i) => i.affiliate_url);
+  const shopItem = outfit.items.find((i) => !i.owned && i.affiliate_url);
   const colorHarmony = Math.round(outfit.color_harmony * 100);
   const formality = Math.round(outfit.formality_fit * 100);
 
@@ -387,7 +387,8 @@ export function OutfitDetail({
                 }}
               >
                 {outfit.items.map((item) => {
-                  const tag = price(item);
+                  // Owned garments show a closet badge, not a price or buy link.
+                  const tag = item.owned ? null : price(item);
                   return (
                     <li
                       key={item.item_id}
@@ -427,6 +428,24 @@ export function OutfitDetail({
                           {item.slot}
                         </span>
                       </div>
+                      {item.owned && (
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: "0.55rem",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.08em",
+                            color: "#f7f4ef",
+                            background: "rgba(28, 26, 23, 0.82)",
+                            borderRadius: "999px",
+                            padding: "0.25rem 0.55rem",
+                            flexShrink: 0,
+                          }}
+                        >
+                          You own this
+                        </span>
+                      )}
                       {tag && (
                         <span
                           style={{
@@ -439,7 +458,7 @@ export function OutfitDetail({
                           {tag}
                         </span>
                       )}
-                      {item.affiliate_url && (
+                      {!item.owned && item.affiliate_url && (
                         <a
                           href={item.affiliate_url}
                           target="_blank"

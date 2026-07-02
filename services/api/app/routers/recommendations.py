@@ -10,6 +10,7 @@ from ..dependencies import (
     get_event_sink,
     get_profile_repo,
     get_taste_repo,
+    get_wardrobe_repo,
     require_active_principal,
 )
 from ..profile.repository import ProfileRepository
@@ -19,6 +20,7 @@ from ..recsys.models import OutfitRecommendation
 from ..recsys.service import recommend
 from ..recsys.taste import TasteRepository
 from ..sink import EventSink
+from ..wardrobe import WardrobeRepository
 
 router = APIRouter(tags=["recommendations"])
 
@@ -67,6 +69,7 @@ def recommend_outfits(
     candidates: CandidateRepository = Depends(get_candidate_repo),
     taste_repo: TasteRepository = Depends(get_taste_repo),
     event_sink: EventSink = Depends(get_event_sink),
+    wardrobe_repo: WardrobeRepository = Depends(get_wardrobe_repo),
 ) -> OutfitRecommendation:
     """Personalized outfit recommendations: complete, explained, diverse looks.
 
@@ -82,5 +85,14 @@ def recommend_outfits(
     if profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
     return recommend(
-        profile, principal.user_id, candidates, taste_repo, event_sink, occasion, region, k, goal
+        profile,
+        principal.user_id,
+        candidates,
+        taste_repo,
+        event_sink,
+        occasion,
+        region,
+        k,
+        goal,
+        wardrobe_repo,
     )

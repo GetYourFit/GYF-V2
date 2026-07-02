@@ -10,6 +10,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.events import InteractionAction
+from app.dependencies import get_wardrobe_repo
 from app.main import (
     app,
     get_account_repo,
@@ -23,8 +24,15 @@ from app.profile.models import BudgetRange, Profile
 from app.profile.repository import InMemoryProfileRepository
 from app.recsys import conditioning
 from app.recsys.candidates import Candidate, InMemoryCandidateRepository
-from app.recsys.compose import compose, pair_color_harmony, score_outfit
+from app.recsys.compose import (
+    WardrobeContext,
+    compose,
+    pair_color_harmony,
+    score_outfit,
+    wardrobe_fit,
+)
 from app.recsys.service import recommend
+from app.wardrobe import InMemoryWardrobeRepository, WardrobeRecord
 from app.recsys.taste import (
     EngagedItem,
     InMemoryTasteRepository,
@@ -217,7 +225,7 @@ def test_uncertain_formality_lowers_confidence():
 # --- Service + API end to end ----------------------------------------------
 
 
-def _client(profile: Profile | None, taste=None, sink=None) -> TestClient:
+def _client(profile: Profile | None, taste=None, sink=None, wardrobe=None) -> TestClient:
     profiles = InMemoryProfileRepository()
     if profile is not None:
         profiles.upsert(DEV_USER, profile)
@@ -230,6 +238,7 @@ def _client(profile: Profile | None, taste=None, sink=None) -> TestClient:
     )
     app.dependency_overrides[get_taste_repo] = lambda: taste or InMemoryTasteRepository()
     app.dependency_overrides[get_event_sink] = lambda: sink or _CollectingSink()
+    app.dependency_overrides[get_wardrobe_repo] = lambda: wardrobe or InMemoryWardrobeRepository()
     return TestClient(app)
 
 
@@ -543,3 +552,112 @@ def test_certain_structural_attributes_pass_through():
         "loose fit",
         "streetwear",
     )
+
+
+# --- Wardrobe grounding (closet-anchored styling) ---------------------------
+
+
+def _wardrobe_repo(*item_ids: str) -> InMemoryWardrobeRepository:
+    repo = InMemoryWardrobeRepository()
+    for i, item_id in enumerate(item_ids):
+        repo.add(
+            DEV_USER,
+            WardrobeRecord(
+                id=f"w{i}", item_id=item_id, title="owned", category="jeans", slot="bottom"
+            ),
+        )
+    return repo
+
+
+def test_wardrobe_fit_rewards_owned_anchor():
+    ctx = WardrobeContext(palette=((40, 10, 250),), has_items=True)
+    anchored = (
+        _item("t1", "t_shirt", "top", lch=(50, 40, 30)),
+        Candidate(**{**_item("b1", "jeans", "bottom", lch=(40, 10, 250)).__dict__, "owned": True}),
+    )
+    all_new = (
+        _item("t1", "t_shirt", "top", lch=(50, 40, 30)),
+        _item("b1", "jeans", "bottom", lch=(40, 10, 250)),
+    )
+    assert wardrobe_fit(anchored, ctx) > wardrobe_fit(all_new, ctx)
+
+
+def test_wardrobe_fit_rewards_palette_versatility():
+    # Wardrobe is warm red-orange; an analogous new piece beats a clash-valley one.
+    ctx = WardrobeContext(palette=((50, 50, 30),), has_items=True)
+    analogous = (_item("t1", "t_shirt", "top", lch=(50, 50, 50)),)
+    clash = (_item("t2", "t_shirt", "top", lch=(50, 50, 95)),)
+    assert wardrobe_fit(analogous, ctx) > wardrobe_fit(clash, ctx)
+
+
+def test_compose_without_wardrobe_is_byte_identical():
+    pools = InMemoryCandidateRepository(_three_slot_catalog()).candidates_by_slot(
+        conditioning.CANDIDATE_SLOTS, None, None, 40
+    )
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    base = compose(pools, c, k=3)
+    unset = compose(pools, c, k=3, wardrobe=None)
+    empty = compose(pools, c, k=3, wardrobe=WardrobeContext())
+    assert base == unset == empty
+
+
+def test_service_grounds_in_owned_garment():
+    rec = recommend(
+        Profile(occasion="casual"),
+        DEV_USER,
+        InMemoryCandidateRepository(_three_slot_catalog()),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        3,
+        None,
+        _wardrobe_repo("b1"),
+    )
+    assert rec.wardrobe_grounded is True
+    top = rec.outfits[0]
+    owned = [it for it in top.items if it.owned]
+    assert owned and owned[0].item_id == "b1"
+    assert "you already own" in top.explanation
+
+
+def test_service_ignores_freeform_and_stale_wardrobe_rows():
+    repo = InMemoryWardrobeRepository()
+    repo.add(
+        DEV_USER,
+        WardrobeRecord(id="w0", item_id=None, title="my scarf", category="scarf", slot="accessory"),
+    )
+    repo.add(
+        DEV_USER,
+        WardrobeRecord(id="w1", item_id="ghost", title="gone", category="jeans", slot="bottom"),
+    )
+    rec = recommend(
+        Profile(occasion="casual"),
+        DEV_USER,
+        InMemoryCandidateRepository(_three_slot_catalog()),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        3,
+        None,
+        repo,
+    )
+    assert rec.wardrobe_grounded is False
+    assert all(not it.owned for o in rec.outfits for it in o.items)
+
+
+def test_endpoint_badges_owned_items():
+    try:
+        client = _client(Profile(occasion="casual"), wardrobe=_wardrobe_repo("b1"))
+        body = client.get("/outfits/recommend?k=3").json()
+        assert body["wardrobe_grounded"] is True
+        assert any(it["owned"] for o in body["outfits"] for it in o["items"])
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_candidates_by_ids_resolves_known_ids_only():
+    repo = InMemoryCandidateRepository(_three_slot_catalog())
+    found = repo.candidates_by_ids(["b1", "nope"])
+    assert [c.item_id for c in found] == ["b1"]

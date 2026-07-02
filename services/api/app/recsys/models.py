@@ -21,10 +21,14 @@ class OutfitItem(BaseModel):
     affiliate_url: str | None = None
     # Served photo URL (``/media/<file>``) so clients can render the look.
     image_url: str | None = None
+    # True when this garment comes from the user's wardrobe (they already own
+    # it) — clients badge it instead of offering a buy link.
+    owned: bool = False
 
     @classmethod
     def from_candidate(cls, c: Candidate) -> OutfitItem:
         return cls(
+            owned=c.owned,
             item_id=c.item_id,
             title=c.title,
             category=c.category,
@@ -79,3 +83,6 @@ class OutfitRecommendation(BaseModel):
     # actually applied to this slate (empty when no goal / unrecognized). Echoed
     # for transparency and so the client can confirm what it asked for landed.
     applied_goals: list[str] = []
+    # True when the slate was grounded in the user's real wardrobe (owned anchors
+    # in the pools + closet-versatility scoring) — transparency, per CLAUDE.md §7.
+    wardrobe_grounded: bool = False

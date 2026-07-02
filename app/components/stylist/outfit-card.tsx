@@ -34,7 +34,7 @@ export function OutfitCard({
   const reduce = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
-  const shopItem = outfit.items.find((i) => i.affiliate_url);
+  const shopItem = outfit.items.find((i) => !i.owned && i.affiliate_url);
 
   return (
     <>
@@ -124,7 +124,8 @@ export function OutfitCard({
         >
           {outfit.items.map((item) => {
             const src = mediaUrl(item.image_url);
-            const tag = price(item);
+            // No price tag on garments the user already owns — nothing to buy.
+            const tag = item.owned ? null : price(item);
 
             return (
               <div
@@ -171,6 +172,26 @@ export function OutfitCard({
                     >
                       {item.category.replace(/_/g, " ")}
                     </div>
+                  )}
+                  {item.owned && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "0.4rem",
+                        left: "0.4rem",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "0.55rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        color: "#f7f4ef",
+                        background: "rgba(28, 26, 23, 0.82)",
+                        borderRadius: "999px",
+                        padding: "0.2rem 0.5rem",
+                      }}
+                    >
+                      You own this
+                    </span>
                   )}
                 </div>
                 <span

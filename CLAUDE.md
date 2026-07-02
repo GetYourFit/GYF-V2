@@ -64,10 +64,11 @@ GetYourFit-New/
 1. **Virtual try-on (M9) is MISSING** — no `TryOnRenderer` port, no UI, no router; only event vocabulary exists. It is a headline Phase-1 feature.
 2. **Affiliate attribution is MISSING** — buy is a raw `buy_url` redirect; no affiliate wrapping/attribution. Cuelinks signup is on hold pending channel verification (contact email now published in-app); prod catalog prices are null until a real feed lands, which keeps the price filter inert.
 3. **Photo onboarding is DEGRADED on prod** — body-type and skin-tone modules abstain (no GPU runtime wired on Render); skin-tone additionally shadow-gated (⚠️ fairness eval) — manual path is the live fallback, as designed.
-4. **Style-following is PARTIAL** — per-post "recreate for me" works (re-rendered to the follower), but there is **no follow-graph** (no follow/unfollow endpoints), so "follow someone's style" isn't real yet.
-5. **Trust/ops surface (M8.5) PARTIAL** — per-rec confidence ships; no operator-facing live-vs-shadow status view.
+4. **Trust/ops surface (M8.5) PARTIAL** — per-rec confidence ships; no operator-facing live-vs-shadow status view.
 
-**Next:** land the real affiliate feed (Cuelinks) → real prices/buy-URLs activate Explore + revenue + flywheel; build the follow-graph (small); then try-on behind a `TryOnRenderer` port (licensed model at inference, ZeroGPU). M3/M4 GPU lanes fill the photo path behind the live surface.
+**Done since the audit:** follow-graph ✅ (follow/unfollow endpoints, Following feed, 2026-07-02) and **wardrobe-aware recommendations ✅** (closet-anchored styling: owned garments join the candidate pools as anchors, new pieces scored for versatility against the owned palette, "You own this" badges, 2026-07-03).
+
+**Next:** land the real affiliate feed (Cuelinks) → real prices/buy-URLs activate Explore + revenue + flywheel; then try-on behind a `TryOnRenderer` port (licensed model at inference, ZeroGPU). M3/M4 GPU lanes fill the photo path behind the live surface.
 
 ---
 

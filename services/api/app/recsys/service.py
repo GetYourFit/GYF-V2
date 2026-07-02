@@ -15,18 +15,20 @@ best-effort: a sink failure must never fail a recommendation.
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import uuid
 
 from . import conditioning
-from .candidates import CANDIDATE_SLOTS, CandidateRepository
-from .compose import ScoredOutfit, compose
+from .candidates import CANDIDATE_SLOTS, Candidate, CandidateRepository
+from .compose import ScoredOutfit, WardrobeContext, compose
 from .goals import parse_goal
 from .models import Outfit, OutfitRecommendation
 from .taste import TasteProfile, TasteRepository, build_taste
 from ..events import InteractionAction, InteractionEvent, InteractionTarget
 from ..profile.models import Profile
 from ..sink import EventSink
+from ..wardrobe import WardrobeRepository
 
 logger = logging.getLogger("gyf")
 
@@ -37,6 +39,11 @@ _CANDIDATES_PER_SLOT = 40
 # How many recent engagements feed the taste vector. Recency decay handles older
 # ones; this just bounds the read.
 _TASTE_HISTORY = 200
+
+# How many owned garments anchor composition. The most recently added win — the
+# freshest closet is the truest one — and the cap keeps the assembly cartesian
+# product bounded while still letting several looks build around owned pieces.
+_WARDROBE_ANCHORS = 12
 
 
 def recommend(
@@ -49,6 +56,7 @@ def recommend(
     region: str | None,
     k: int,
     goal: str | None = None,
+    wardrobe_repo: WardrobeRepository | None = None,
 ) -> OutfitRecommendation:
     """Produce up to ``k`` diverse, explained, taste-aware outfits and log them.
 
@@ -56,6 +64,12 @@ def recommend(
     slimmer / broader"); it is parsed into canonical effects that re-weight the
     composer toward looks achieving the effect. Unrecognized/empty goals are a
     no-op, leaving the recommendation identical to the un-goal path.
+
+    When ``wardrobe_repo`` is given and the user owns catalog garments, those
+    garments join the candidate pools as **owned anchors** — looks get built
+    around the real closet — and the composer's wardrobe grounding rewards new
+    pieces that pair with what the user already owns. An empty wardrobe leaves
+    the recommendation identical to the un-grounded path.
     """
     goals = parse_goal(goal)
     constraints = conditioning.resolve(profile, occasion, region, goals)
@@ -68,14 +82,13 @@ def recommend(
         _CANDIDATES_PER_SLOT,
         taste.vector if taste.has_signal else None,
     )
+    wardrobe = _ground_in_wardrobe(pools, user_id, candidates, wardrobe_repo)
     strength = taste.strength if taste.has_signal else 0.0
-    scored = compose(pools, constraints, k, strength)
+    scored = compose(pools, constraints, k, strength, wardrobe)
 
     recommendation_id = str(uuid.uuid4())
     applied_goals = [g.value for g in goals]
-    _log_impressions(
-        sink, user_id, recommendation_id, constraints.occasion, applied_goals, scored
-    )
+    _log_impressions(sink, user_id, recommendation_id, constraints.occasion, applied_goals, scored)
 
     return OutfitRecommendation(
         recommendation_id=recommendation_id,
@@ -85,7 +98,39 @@ def recommend(
         personalized=constraints.personalization_strength > 0.0 or taste.has_signal,
         taste_strength=round(strength, 3),
         applied_goals=applied_goals,
+        wardrobe_grounded=wardrobe is not None,
     )
+
+
+def _ground_in_wardrobe(
+    pools: dict[str, list[Candidate]],
+    user_id: str,
+    candidates: CandidateRepository,
+    wardrobe_repo: WardrobeRepository | None,
+) -> WardrobeContext | None:
+    """Inject the user's owned garments into the pools; return the closet context.
+
+    Only catalog-referenced wardrobe rows anchor (freeform typed garments carry no
+    perception signals to reason over — D6 abstention). The most recent
+    ``_WARDROBE_ANCHORS`` owned items are resolved, flagged ``owned`` and put at
+    the front of their slot pool (replacing a duplicate catalog copy if present).
+    Returns ``None`` when there is no wardrobe to ground in.
+    """
+    if wardrobe_repo is None:
+        return None
+    records = wardrobe_repo.list(user_id)
+    owned_ids = [r.item_id for r in records if r.item_id][:_WARDROBE_ANCHORS]
+    if not owned_ids:
+        return None
+    owned = [dataclasses.replace(c, owned=True) for c in candidates.candidates_by_ids(owned_ids)]
+    if not owned:
+        return None  # stale references only — nothing real to anchor on
+    for anchor in owned:
+        pool = pools.setdefault(anchor.slot, [])
+        pool[:] = [c for c in pool if c.item_id != anchor.item_id]
+        pool.insert(0, anchor)
+    palette = tuple(c.lch for c in owned if c.lch is not None)
+    return WardrobeContext(palette=palette, has_items=True)
 
 
 def _log_impressions(

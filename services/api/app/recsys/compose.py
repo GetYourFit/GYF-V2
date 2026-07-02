@@ -42,6 +42,50 @@ _MMR_LAMBDA = 0.3
 # and taste still carry the majority weight (CLAUDE.md §3 guardrail).
 _W_GOAL = 0.35
 
+# How strongly wardrobe grounding re-weights the score once the user has owned
+# garments GYF can reason over. Applied last (like goals): with an empty wardrobe
+# the score is byte-identical to the un-grounded path, so wardrobe conditioning
+# can never regress a wardrobe-less user.
+_W_WARDROBE = 0.25
+
+
+@dataclass(frozen=True)
+class WardrobeContext:
+    """What the composer knows about the user's real closet.
+
+    ``palette`` holds the LCh colours of the owned garments perception has seen
+    (freeform typed garments carry no colour, so they ground composition via
+    ownership only — honest absence of signal, per D6).
+    """
+
+    palette: tuple[tuple[float, float, float], ...] = ()
+    has_items: bool = False
+
+
+def wardrobe_fit(items: tuple[Candidate, ...], wardrobe: WardrobeContext) -> float:
+    """How well a look styles *around the user's real closet*, in [0, 1].
+
+    Two halves, deliberately balanced:
+
+    - **Anchor** — the look contains a garment the user already owns. One anchor
+      is full credit: an outfit built around one owned piece plus new pieces is
+      the product's sweet spot (reuse *and* commerce); an all-owned look is not
+      rewarded more than an anchored one.
+    - **Versatility** — the *new* garments harmonise with the owned palette, so
+      a purchase pairs with the closet the user already has instead of becoming
+      an orphan. Neutrals score high (they pair with everything); with no owned
+      colour signal we return the codebase's neutral prior.
+    """
+    anchor = 1.0 if any(it.owned for it in items) else 0.0
+    new_colored = [it.lch for it in items if not it.owned and it.lch is not None]
+    if not wardrobe.palette or not new_colored:
+        versatility = 0.7  # no colour signal to judge against — neutral prior
+    else:
+        versatility = sum(
+            max(pair_color_harmony(c, w) for w in wardrobe.palette) for c in new_colored
+        ) / len(new_colored)
+    return 0.5 * anchor + 0.5 * versatility
+
 
 @dataclass(frozen=True)
 class ScoredOutfit:
@@ -141,7 +185,10 @@ def _undertone_fit(items: tuple[Candidate, ...], preferred_hues: tuple[float, ..
     colors = [it.lch for it in items if it.lch is not None and it.lch[1] >= _NEUTRAL_CHROMA]
     if not colors:
         return 0.6  # an all-neutral palette flatters every undertone
-    best = [max(0.0, 1.0 - min(_hue_distance(h, p) for p in preferred_hues) / 90.0) for _, _, h in colors]
+    best = [
+        max(0.0, 1.0 - min(_hue_distance(h, p) for p in preferred_hues) / 90.0)
+        for _, _, h in colors
+    ]
     return sum(best) / len(best)
 
 
@@ -173,6 +220,7 @@ def score_outfit(
     constraints: Constraints,
     taste_strength: float = 0.0,
     goal_effects: GoalEffects | None = None,
+    wardrobe: WardrobeContext | None = None,
 ) -> tuple[float, float, float]:
     """Overall styling score plus the colour and formality sub-scores (for reasons).
 
@@ -203,6 +251,8 @@ def score_outfit(
         score = content
     if goal_effects is not None and not goal_effects.is_empty:
         score = (1.0 - _W_GOAL) * score + _W_GOAL * goal_fit(items, goal_effects)
+    if wardrobe is not None and wardrobe.has_items:
+        score = (1.0 - _W_WARDROBE) * score + _W_WARDROBE * wardrobe_fit(items, wardrobe)
     return score, color, formality
 
 
@@ -247,6 +297,7 @@ def _explain(
     color: float,
     formality: float,
     taste_strength: float,
+    wardrobe: WardrobeContext | None = None,
 ) -> str:
     """A concise stylist reason: what the look is, why it coordinates, who for."""
     pieces = ", ".join(_describe(it) for it in items)
@@ -260,7 +311,20 @@ def _explain(
     # Only claim taste personalization when it meaningfully shaped the pick.
     if taste_strength >= 0.25 and _outfit_affinity(items) is not None:
         sentence += " Matched to the styles you've been saving."
+    sentence += _wardrobe_phrase(items, wardrobe)
     return sentence
+
+
+def _wardrobe_phrase(items: tuple[Candidate, ...], wardrobe: WardrobeContext | None) -> str:
+    """Name the closet grounding, honestly: an owned anchor beats palette talk."""
+    if wardrobe is None or not wardrobe.has_items:
+        return ""
+    owned = next((it for it in items if it.owned), None)
+    if owned is not None:
+        return f" Built around the {owned.title.lower()} you already own."
+    if wardrobe.palette and wardrobe_fit(items, wardrobe) >= 0.85:
+        return " It pairs easily with pieces already in your wardrobe."
+    return ""
 
 
 # Per-goal stylist phrasing for the explanation, naming the visual effect the
@@ -312,7 +376,9 @@ def _color_reason(items: tuple[Candidate, ...]) -> str:
 # --- Assembly + diverse ranking --------------------------------------------
 
 
-def _assemble(pools: dict[str, list[Candidate]], constraints: Constraints) -> list[tuple[Candidate, ...]]:
+def _assemble(
+    pools: dict[str, list[Candidate]], constraints: Constraints
+) -> list[tuple[Candidate, ...]]:
     """Cartesian-product complete outfits from the per-slot pools.
 
     Tries each blueprint (separates, then full-body) and skips any whose slots are
@@ -345,12 +411,15 @@ def compose(
     constraints: Constraints,
     k: int,
     taste_strength: float = 0.0,
+    wardrobe: WardrobeContext | None = None,
 ) -> list[ScoredOutfit]:
     """Assemble, score, and MMR-rank the top ``k`` diverse complete outfits.
 
     ``taste_strength`` (α, 0 at cold start) blends the user's learned taste into
-    the score. Returns fewer than ``k`` (possibly zero) when the catalog cannot
-    fill a blueprint — honest scarcity over padding with bad looks.
+    the score. ``wardrobe`` grounds the ranking in the user's real closet (owned
+    anchors + palette versatility); ``None``/empty leaves scoring byte-identical.
+    Returns fewer than ``k`` (possibly zero) when the catalog cannot fill a
+    blueprint — honest scarcity over padding with bad looks.
     """
     candidates = _assemble(pools, constraints)
     if not candidates:
@@ -360,7 +429,7 @@ def compose(
     # GoalEffects that leaves scoring unchanged.
     goal_effects = effects_for(constraints.goals)
     scored = [
-        (items, *score_outfit(items, constraints, taste_strength, goal_effects))
+        (items, *score_outfit(items, constraints, taste_strength, goal_effects, wardrobe))
         for items in candidates
     ]
     scored.sort(key=lambda t: t[1], reverse=True)
@@ -370,7 +439,7 @@ def compose(
 
     selected = _mmr_select(pool, k)
     return [
-        _finalize(items, score, color, formality, constraints, taste_strength)
+        _finalize(items, score, color, formality, constraints, taste_strength, wardrobe)
         for items, score, color, formality in selected
     ]
 
@@ -400,12 +469,13 @@ def _finalize(
     formality: float,
     constraints: Constraints,
     taste_strength: float,
+    wardrobe: WardrobeContext | None = None,
 ) -> ScoredOutfit:
     return ScoredOutfit(
         items=items,
         score=round(score, 3),
         confidence=_confidence(items, score, constraints, taste_strength),
-        explanation=_explain(items, constraints, color, formality, taste_strength),
+        explanation=_explain(items, constraints, color, formality, taste_strength, wardrobe),
         color_harmony=round(color, 3),
         formality_fit=round(formality, 3),
     )

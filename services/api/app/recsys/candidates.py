@@ -51,6 +51,10 @@ class Candidate:
     # Served image URL (``/media/<file>``) for the item's primary photo, or
     # ``None`` when the item has no stored image.
     image_url: str | None = None
+    # True when the user already owns this garment (wardrobe anchor). Owned items
+    # are injected by the service, never read from the catalog, so this defaults
+    # False for every repository row.
+    owned: bool = False
 
 
 class CandidateRepository(Protocol):
@@ -69,6 +73,15 @@ class CandidateRepository(Protocol):
         """
         ...
 
+    def candidates_by_ids(self, item_ids: list[str]) -> list[Candidate]:
+        """Resolve specific catalog items (e.g. wardrobe anchors) to candidates.
+
+        Unknown ids are simply absent — a stale wardrobe reference degrades to
+        "no anchor", never an error. No region/price filter: the user already
+        owns these garments.
+        """
+        ...
+
 
 # One row carries every signal the composer needs; we read the perception block
 # (written by ml/pipelines/backfill.py) via JSONB paths. The region filter matches
@@ -77,7 +90,10 @@ class CandidateRepository(Protocol):
 # ``{affinity}`` is filled with either ``NULL`` (cold start) or a pgvector cosine
 # similarity against the user's taste vector. We LEFT JOIN embeddings so an item
 # missing its embedding still appears (just without affinity).
-_CANDIDATES = """
+# Shared SELECT list so per-slot retrieval and by-id anchor resolution read the
+# exact same signals (one place to add a column). ``{affinity}`` is NULL or a
+# pgvector cosine expression, filled by the caller.
+_SELECT = """
 SELECT
     i.id,
     i.title,
@@ -106,12 +122,21 @@ SELECT
     i.attributes #>> '{{perception,attributes,fit,certain}}'         AS fit_certain
 FROM items i
 LEFT JOIN item_embeddings e ON e.item_id = i.id
+"""
+
+_CANDIDATES = (
+    _SELECT
+    + """
 WHERE i.category = ANY(%s)
   AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
   AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
 ORDER BY i.created_at DESC
 LIMIT %s
 """
+)
+
+# Wardrobe anchors: the user owns these items, so no region/price predicates.
+_BY_IDS = _SELECT + "\nWHERE i.id = ANY(%s)\n"
 
 _AFFINITY_EXPR = "1 - (e.embedding <=> %s::vector)"
 
@@ -151,6 +176,16 @@ class PostgresCandidateRepository:
                 params = prefix + (categories, region, region, max_price, max_price, limit_per_slot)
                 out[slot] = [_row_to_candidate(slot, r) for r in conn.execute(sql, params)]
         return out
+
+    def candidates_by_ids(self, item_ids: list[str]) -> list[Candidate]:
+        if not item_ids:
+            return []
+        from gyf_contracts.taxonomy import get as get_category  # lazy: mirrors directory
+
+        sql = _BY_IDS.format(affinity="NULL")
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            rows = conn.execute(sql, (item_ids,)).fetchall()
+        return [_row_to_candidate(get_category(r[2]).slot, r) for r in rows]
 
 
 def _certain(value: str | None, certain_flag: str | None) -> str | None:
@@ -211,6 +246,10 @@ class InMemoryCandidateRepository:
             if len(bucket) < limit_per_slot:
                 bucket.append(item)
         return out
+
+    def candidates_by_ids(self, item_ids: list[str]) -> list[Candidate]:
+        wanted = set(item_ids)
+        return [it for it in self.items if it.item_id in wanted]
 
 
 __all__ = [

@@ -729,6 +729,11 @@ export interface components {
             affiliate_url?: string | null;
             /** Image Url */
             image_url?: string | null;
+            /**
+             * Owned
+             * @default false
+             */
+            owned: boolean;
         };
         /**
          * OutfitRecommendation
@@ -767,6 +772,11 @@ export interface components {
              * @default []
              */
             applied_goals: string[];
+            /**
+             * Wardrobe Grounded
+             * @default false
+             */
+            wardrobe_grounded: boolean;
         };
         /**
          * Post

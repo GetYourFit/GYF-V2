@@ -148,9 +148,50 @@ window** — read it first, trust it over re-derivation for session context, app
 change, never duplicate its content into other stores.
 
 **Shipped (docs dedup):**
+
 - Deleted `docs/plans/CONTINUE-HANDOFF.md` — its handoff role is superseded by this ledger;
   its unique §4 Editorial-Noir design spec was inlined into
   `docs/plans/gyf-v2-launch-program.md` S1 (the one place that referenced it).
 - Deleted `docs/vision/drafts/` (ideas.md, ideas.V2.md) — pure duplicates folded into
   `ideas-complete.md` long ago; git history preserves them. Updated CLAUDE.md repo map/
   precedence, ideas-complete.md maintenance note, tech-stack.md §223 citation.
+
+### 2026-07-03 — Wardrobe-aware recommendations (closet-anchored styling) ✅
+
+**User asked:** re-audit "is GYF complete except Cuelinks?" (answer unchanged: NO — see the
+2026-07-02 gap matrix), then continue with the highest-IQ unblocked move while Cuelinks
+approval waits. Also: never add AI attribution trailers to commits.
+
+**Shipped — "styles around your real closet" is now real (gap #3 closed):**
+- `CandidateRepository.candidates_by_ids` (Postgres `WHERE id = ANY` over the shared SELECT;
+  no region/price predicates — you already own these) + `Candidate.owned` flag.
+- Service `_ground_in_wardrobe`: the 12 most recent catalog-referenced wardrobe rows resolve
+  to full candidates, are flagged owned, and are injected at the front of their slot pools —
+  looks get *built around* owned garments. Freeform/stale rows abstain (D6). Empty wardrobe →
+  byte-identical recommendation (test-pinned).
+- `compose.WardrobeContext` + `wardrobe_fit` (blend weight 0.25, applied last like goals):
+  0.5 × **anchor** (any owned garment in the look; one anchor = full credit — an anchored look
+  plus new pieces is the reuse+commerce sweet spot, all-owned is not rewarded more) +
+  0.5 × **versatility** (new coloured pieces scored by best CIELAB harmony against the owned
+  palette — purchases must pair with the closet, never orphans).
+- Explanations name the grounding honestly: "Built around the <garment> you already own." /
+  "It pairs easily with pieces already in your wardrobe." (only at fit ≥ 0.85).
+- API surface: `OutfitItem.owned`, `OutfitRecommendation.wardrobe_grounded` (transparency §7);
+  router passes the wardrobe repo; api.ts regenerated (FE/BE lockstep).
+- Web: "You own this" badge on outfit-card tiles + outfit-detail rows; owned garments show no
+  price and no buy link; shop-the-look skips owned items.
+- Tests: 7 new (anchor beats unanchored, palette versatility, byte-identical no-wardrobe,
+  service grounding + explanation, freeform/stale abstention, endpoint badge, by-ids lookup).
+
+**Also fixed (pulled main was CI-red):** `top-menu.tsx` react-hooks/set-state-in-effect ×2 —
+mounted flag → `useSyncExternalStore` hydration snapshot; close-on-navigation → render-time
+state adjustment (React docs pattern), no post-commit re-render.
+
+**Gates:** API pytest 189 ✓ ruff ✓ web ESLint/tsc/vitest 24 ✓ Prettier ✓ license gate ✓
+ports gate ✓. Env notes: uv needs `UV_CACHE_DIR=$PWD/.uv-cache` (~/.cache unwritable);
+`make types`' bunx cannot write its tempdir — use
+`node node_modules/.bun/node_modules/openapi-typescript/bin/cli.js`; strip the telemetry log
+line that leaks into openapi.json line 1.
+
+**Remaining gap matrix after this session:** try-on (M9), affiliate attribution (Cuelinks —
+waiting on approval), M8.5 operator trust surface, M12 beta hardening, prod GPU-lane env vars.
