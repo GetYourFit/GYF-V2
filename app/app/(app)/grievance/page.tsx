@@ -16,7 +16,12 @@ const ISSUE_TYPES = [
 type IssueType = (typeof ISSUE_TYPES)[number];
 
 export default function GrievancePage() {
-  const [form, setForm] = useState({ issueType: "" as IssueType | "", description: "", email: "", attachmentName: "" });
+  const [form, setForm] = useState({
+    issueType: "" as IssueType | "",
+    description: "",
+    email: "",
+    attachmentName: "",
+  });
   const [submitted, setSubmitted] = useState(false);
   const reduce = useReducedMotion();
 
@@ -53,14 +58,32 @@ export default function GrievancePage() {
               margin: "0 auto 1rem",
             }}
           >
-            <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#faf8f5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width={24}
+              height={24}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#faf8f5"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1c1a17", marginBottom: "0.5rem" }}>Grievance Submitted</h2>
+          <h2
+            style={{
+              fontSize: "1.25rem",
+              fontWeight: 700,
+              color: "#1c1a17",
+              marginBottom: "0.5rem",
+            }}
+          >
+            Grievance Submitted
+          </h2>
           <p style={{ fontSize: "0.875rem", color: "#5c5650", lineHeight: 1.6 }}>
-            We&apos;ve received your report and will review it within 48 hours. You&apos;ll hear from us at{" "}
-            <strong style={{ color: "#1c1a17" }}>{form.email}</strong>.
+            We&apos;ve received your report and will review it within 48 hours. You&apos;ll hear
+            from us at <strong style={{ color: "#1c1a17" }}>{form.email}</strong>.
           </p>
         </motion.div>
       </PageContainer>
@@ -76,14 +99,33 @@ export default function GrievancePage() {
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         style={{ marginBottom: "2rem" }}
       >
-        <p style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#d4607a", marginBottom: "0.5rem" }}>
+        <p
+          style={{
+            fontSize: "0.7rem",
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#d4607a",
+            marginBottom: "0.5rem",
+          }}
+        >
           Report an issue
         </p>
-        <h1 style={{ fontSize: "clamp(1.75rem, 5vw, 2.5rem)", fontWeight: 800, letterSpacing: "-0.03em", color: "#1c1a17", lineHeight: 1.1, marginBottom: "0.75rem" }}>
+        <h1
+          style={{
+            fontSize: "clamp(1.75rem, 5vw, 2.5rem)",
+            fontWeight: 800,
+            letterSpacing: "-0.03em",
+            color: "#1c1a17",
+            lineHeight: 1.1,
+            marginBottom: "0.75rem",
+          }}
+        >
           Grievance
         </h1>
         <p style={{ fontSize: "0.9rem", color: "#5c5650", lineHeight: 1.65 }}>
-          Tell us what went wrong and we&apos;ll make it right. Every report is reviewed by our team.
+          Tell us what went wrong and we&apos;ll make it right. Every report is reviewed by our
+          team.
         </p>
       </motion.div>
 
@@ -96,7 +138,15 @@ export default function GrievancePage() {
       >
         {/* Issue type chips */}
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <p style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5c5650" }}>
+          <p
+            style={{
+              fontSize: "0.7rem",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#5c5650",
+            }}
+          >
             Issue Type <span style={{ color: "#d4607a" }}>*</span>
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
@@ -128,7 +178,16 @@ export default function GrievancePage() {
 
         {/* Email */}
         <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-          <label htmlFor="g-email" style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5c5650" }}>
+          <label
+            htmlFor="g-email"
+            style={{
+              fontSize: "0.7rem",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#5c5650",
+            }}
+          >
             Your Email <span style={{ color: "#d4607a" }}>*</span>
           </label>
           <input
@@ -150,14 +209,27 @@ export default function GrievancePage() {
               outline: "none",
               transition: "border-color 0.2s",
             }}
-            onFocus={(e) => { e.currentTarget.style.borderBottomColor = "#1c1a17"; }}
-            onBlur={(e) => { e.currentTarget.style.borderBottomColor = "rgba(0,0,0,0.18)"; }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderBottomColor = "#1c1a17";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderBottomColor = "rgba(0,0,0,0.18)";
+            }}
           />
         </div>
 
         {/* Description */}
         <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-          <label htmlFor="g-desc" style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5c5650" }}>
+          <label
+            htmlFor="g-desc"
+            style={{
+              fontSize: "0.7rem",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#5c5650",
+            }}
+          >
             Describe the Issue <span style={{ color: "#d4607a" }}>*</span>
           </label>
           <textarea
@@ -181,15 +253,22 @@ export default function GrievancePage() {
               transition: "border-color 0.2s",
               fontFamily: "inherit",
             }}
-            onFocus={(e) => { e.currentTarget.style.borderBottomColor = "#1c1a17"; }}
-            onBlur={(e) => { e.currentTarget.style.borderBottomColor = "rgba(0,0,0,0.18)"; }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderBottomColor = "#1c1a17";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderBottomColor = "rgba(0,0,0,0.18)";
+            }}
           />
         </div>
 
         {/* Notice */}
         <p style={{ fontSize: "0.75rem", color: "#9a9490", lineHeight: 1.5 }}>
           All grievances are reviewed within 48 hours. For urgent matters, email us directly at{" "}
-          <a href="mailto:gyf1ltd@gmail.com" style={{ color: "#1c1a17", fontWeight: 600 }}>gyf1ltd@gmail.com</a>.
+          <a href="mailto:gyf1ltd@gmail.com" style={{ color: "#1c1a17", fontWeight: 600 }}>
+            gyf1ltd@gmail.com
+          </a>
+          .
         </p>
 
         <button
@@ -206,10 +285,14 @@ export default function GrievancePage() {
             border: "none",
             cursor: "pointer",
             transition: "opacity 0.15s",
-            opacity: (!form.issueType || !form.email || !form.description) ? 0.4 : 1,
+            opacity: !form.issueType || !form.email || !form.description ? 0.4 : 1,
           }}
-          onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.opacity = "0.85"; }}
-          onMouseLeave={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.opacity = "1"; }}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled) e.currentTarget.style.opacity = "0.85";
+          }}
+          onMouseLeave={(e) => {
+            if (!e.currentTarget.disabled) e.currentTarget.style.opacity = "1";
+          }}
         >
           Submit Grievance
         </button>

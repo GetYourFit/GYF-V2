@@ -67,9 +67,7 @@ def parse_goal(text: str | None) -> frozenset[Effect]:
     if not text:
         return frozenset()
     words = {w.strip(".,!?;:'\"") for w in text.lower().split()}
-    return frozenset(
-        effect for effect, synonyms in _KEYWORDS.items() if words & synonyms
-    )
+    return frozenset(effect for effect, synonyms in _KEYWORDS.items() if words & synonyms)
 
 
 @dataclass(frozen=True)
@@ -202,7 +200,9 @@ def goal_fit(items: tuple[Candidate, ...], effects: GoalEffects) -> float:
     if effects.prefer_patterns or effects.penalize_patterns:
         patterns = [it.pattern for it in items if it.pattern is not None]
         if patterns:
-            subscores.append(_match_fraction(patterns, effects.prefer_patterns, effects.penalize_patterns))
+            subscores.append(
+                _match_fraction(patterns, effects.prefer_patterns, effects.penalize_patterns)
+            )
 
     if not subscores:
         return 0.5
