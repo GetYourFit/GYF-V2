@@ -69,14 +69,12 @@ export function StylistControls({
               style={{
                 flexShrink: 0,
                 padding: "0.375rem 0.875rem",
-                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-                fontSize: "0.6rem",
+                fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+                fontSize: "0.8125rem",
                 fontWeight: 500,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                border: `1px solid ${active ? "#b87a30" : "rgba(255,255,255,0.12)"}`,
-                background: active ? "rgba(240,189,143,0.1)" : "transparent",
-                color: active ? "#b87a30" : "#9a9490",
+                border: `1px solid ${active ? "#1c1a17" : "rgba(0,0,0,0.12)"}`,
+                background: active ? "#1c1a17" : "#ffffff",
+                color: active ? "#faf8f5" : "#5c5650",
                 borderRadius: "999px",
                 cursor: busy ? "not-allowed" : "pointer",
                 opacity: busy ? 0.5 : 1,
@@ -97,15 +95,19 @@ export function StylistControls({
           position: "relative",
           display: "flex",
           alignItems: "center",
-          borderBottom: "1px solid rgba(255,255,255,0.15)",
-          transition: "border-color 0.2s",
+          border: "1.5px solid rgba(0,0,0,0.15)",
+          borderRadius: "999px",
+          background: "#ffffff",
+          transition: "border-color 0.2s, box-shadow 0.2s",
         }}
         onFocus={(e) => {
-          (e.currentTarget as HTMLFormElement).style.borderBottomColor = "rgba(255,255,255,0.6)";
+          (e.currentTarget as HTMLFormElement).style.borderColor = "#b87a30";
+          (e.currentTarget as HTMLFormElement).style.boxShadow = "0 0 0 3px rgba(184,122,48,0.12)";
         }}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-            (e.currentTarget as HTMLFormElement).style.borderBottomColor = "rgba(255,255,255,0.15)";
+            (e.currentTarget as HTMLFormElement).style.borderColor = "rgba(0,0,0,0.15)";
+            (e.currentTarget as HTMLFormElement).style.boxShadow = "none";
           }
         }}
       >
@@ -122,7 +124,7 @@ export function StylistControls({
             background: "transparent",
             border: "none",
             outline: "none",
-            padding: "0.75rem 3rem 0.75rem 0",
+            padding: "0.75rem 3rem 0.75rem 1.25rem",
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "16px",
             fontStyle: "italic",

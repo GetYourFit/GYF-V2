@@ -47,13 +47,12 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        background: "rgba(0,0,0,0.06)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        background: "#ffffff",
         border: "1px solid rgba(0,0,0,0.08)",
         borderRadius: "16px",
         overflow: "hidden",
         cursor: onSelect ? "pointer" : "default",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
       }}
       onClick={onSelect ? () => onSelect(item) : undefined}
     >
@@ -110,10 +109,8 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
             justifyContent: "center",
             width: "36px",
             height: "36px",
-            background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            border: `1px solid ${saved ? "#b87a30" : "rgba(255,255,255,0.15)"}`,
+            background: "rgba(255,255,255,0.92)",
+            border: `1px solid ${saved ? "#b87a30" : "rgba(0,0,0,0.10)"}`,
             color: saved ? "#b87a30" : "#9a9490",
             cursor: "pointer",
             borderRadius: "999px",
@@ -132,7 +129,8 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         <p
           style={{
             fontFamily: "var(--font-body)",
-            fontSize: "0.75rem",
+            fontSize: "0.875rem",
+            fontWeight: 600,
             color: "#1c1a17",
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -146,11 +144,11 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         {price && (
           <p
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.65rem",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.875rem",
+              fontWeight: 700,
               color: "#b87a30",
-              letterSpacing: "0.04em",
-              marginTop: "0.375rem",
+              marginTop: "0.25rem",
             }}
           >
             {price}

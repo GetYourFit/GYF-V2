@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
-import { Bookmark, ExternalLink, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Bookmark, ExternalLink, X, ChevronDown, ChevronUp, ShoppingBag, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { OutfitDetail } from "@/components/stylist/outfit-detail";
@@ -43,14 +43,15 @@ export function OutfitCard({
         initial={reduce ? { opacity: 1 } : { opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, ease: EASE, delay: Math.min(index * 0.08, 0.4) }}
-        whileHover={reduce ? undefined : { scale: 1.02, y: -2 }}
+        whileHover={reduce ? undefined : { y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.10)" }}
         style={{
-          background: "rgba(0,0,0,0.04)",
-          border: "1px solid rgba(0,0,0,0.10)",
-          borderRadius: "16px",
+          background: "#ffffff",
+          border: "1px solid rgba(0,0,0,0.08)",
+          borderRadius: "20px",
           overflow: "hidden",
           cursor: "default",
           willChange: "transform",
+          boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
         }}
       >
         {/* ── Header: number + confidence ── */}
@@ -59,61 +60,66 @@ export function OutfitCard({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "0.875rem 1rem 0.5rem",
+            padding: "1rem 1.25rem 0.5rem",
             gap: "0.75rem",
           }}
         >
           <span
             style={{
-              fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-              fontSize: "0.6rem",
-              fontWeight: 500,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#9a9490",
+              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+              fontSize: "0.7rem",
+              fontWeight: 700,
+              color: "#b87a30",
+              letterSpacing: "0.06em",
             }}
           >
-            LAYER {String(index + 1).padStart(2, "0")}
+            {String(index + 1).padStart(2, "0")}
           </span>
           <div style={{ flex: 1, maxWidth: "140px" }}>
             <ConfidenceMeter value={outfit.confidence} />
           </div>
         </div>
 
-        {/* ── Stylist reasoning — secondary ochre accent ── */}
-        <div style={{ padding: "0.25rem 1rem 0.75rem" }}>
+        {/* ── Stylist reasoning ── */}
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          style={{
+            display: "block",
+            width: "100%",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            textAlign: "left",
+            padding: "0.375rem 1.25rem 0.875rem",
+          }}
+        >
           <p
             style={{
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-              fontSize: "0.875rem",
-              lineHeight: 1.55,
+              fontSize: "0.9rem",
+              fontStyle: "italic",
+              lineHeight: 1.5,
               color: "#5c5650",
               margin: 0,
+              display: "-webkit-box",
+              WebkitLineClamp: expanded ? undefined : 2,
+              WebkitBoxOrient: "vertical",
+              overflow: expanded ? "visible" : "hidden",
             }}
           >
-            <span
-              style={{
-                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-                fontSize: "0.6rem",
-                color: "#b87a30",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                marginRight: "0.375rem",
-              }}
-            >
-              WHY THIS WORKS
-            </span>
             {outfit.explanation}
           </p>
-        </div>
+        </button>
 
         {/* ── Garment image grid — 3 col ── */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "1px",
-            background: "rgba(0,0,0,0.04)",
+            gap: "0.625rem",
+            padding: "0 1.25rem",
           }}
         >
           {outfit.items.map((item) => {
@@ -121,81 +127,62 @@ export function OutfitCard({
             const tag = price(item);
 
             return (
-              <div
-                key={item.item_id}
-                style={{ position: "relative", aspectRatio: "3/4", background: "#faf8f5", overflow: "hidden" }}
-              >
-                {src ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={src}
-                    alt={`${item.title ?? ""} — ${item.category.replace(/_/g, " ")}`}
-                    loading="lazy"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      height: "100%",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "0.6rem",
-                      color: "#9a9490",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      textAlign: "center",
-                      padding: "0.5rem",
-                    }}
-                  >
-                    {item.category.replace(/_/g, " ")}
-                  </div>
-                )}
-
-                {/* Category label */}
+              <div key={item.item_id} style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                 <div
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    padding: "0.5rem 0.375rem 0.375rem",
-                    background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-                  }}
+                  style={{ position: "relative", aspectRatio: "3/4", background: "#f4f1ec", borderRadius: "12px", overflow: "hidden" }}
                 >
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "0.5rem",
-                      color: "#5c5650",
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      display: "block",
-                    }}
-                  >
-                    {item.category.replace(/_/g, " ")}
-                  </span>
-                  {tag && (
-                    <span
+                  {src ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={src}
+                      alt={`${item.title ?? ""} — ${item.category.replace(/_/g, " ")}`}
+                      loading="lazy"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    />
+                  ) : (
+                    <div
                       style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "0.55rem",
-                        color: "#b87a30",
-                        letterSpacing: "0.04em",
-                        display: "block",
-                        marginTop: "1px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "0.6rem",
+                        color: "#9a9490",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        textAlign: "center",
+                        padding: "0.5rem",
                       }}
                     >
-                      {tag}
-                    </span>
+                      {item.category.replace(/_/g, " ")}
+                    </div>
                   )}
                 </div>
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.7rem",
+                    color: "#9a9490",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {item.brand ?? item.category.replace(/_/g, " ")}
+                </span>
+                {tag && (
+                  <span
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      color: "#1c1a17",
+                    }}
+                  >
+                    {tag}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -214,29 +201,19 @@ export function OutfitCard({
             >
               <div
                 style={{
-                  padding: "0.875rem 1rem",
-                  borderTop: "1px solid rgba(0,0,0,0.06)",
-                  background: "rgba(0,0,0,0.03)",
+                  padding: "0.875rem 1.25rem",
+                  margin: "0.75rem 1.25rem 0",
+                  borderRadius: "12px",
+                  background: "rgba(184,122,48,0.06)",
+                  border: "1px solid rgba(184,122,48,0.12)",
                 }}
               >
-                <p
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "0.6rem",
-                    color: "#b87a30",
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  AI Reasoning
-                </p>
                 <p
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "0.8125rem",
                     lineHeight: 1.6,
-                    color: "#9a9490",
+                    color: "#5c5650",
                     margin: 0,
                   }}
                 >
@@ -252,101 +229,110 @@ export function OutfitCard({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "0.5rem",
-            padding: "0.75rem 1rem",
+            justifyContent: "space-between",
+            padding: "1rem 1.25rem",
+            marginTop: "0.75rem",
             borderTop: "1px solid rgba(0,0,0,0.06)",
           }}
         >
-          {/* Expand reasoning */}
-          <button
+          {/* Expand toggle */}
+          <motion.button
             type="button"
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
             aria-label="Toggle AI reasoning"
+            whileTap={reduce ? undefined : { scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              height: "44px",
               width: "44px",
-              background: "transparent",
-              border: "1px solid rgba(0,0,0,0.10)",
-              borderRadius: "16px",
-              color: "#9a9490",
+              height: "44px",
+              background: expanded ? "rgba(184,122,48,0.08)" : "rgba(0,0,0,0.04)",
+              border: "none",
+              borderRadius: "50%",
+              color: expanded ? "#b87a30" : "#9a9490",
               cursor: "pointer",
-              flexShrink: 0,
             }}
           >
-            {expanded
-              ? <ChevronUp size={16} aria-hidden />
-              : <ChevronDown size={16} aria-hidden />
-            }
-          </button>
+            {expanded ? <ChevronUp size={18} aria-hidden /> : <ChevronDown size={18} aria-hidden />}
+          </motion.button>
 
           {/* Save */}
           <motion.button
             type="button"
             onClick={onSave}
             aria-pressed={saved}
-            whileTap={reduce ? undefined : { scale: 1.15 }}
-            transition={{ type: "spring", stiffness: 500, damping: 20 }}
+            whileTap={reduce ? undefined : { scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
-              flex: 1,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "0.375rem",
+              width: "44px",
               height: "44px",
-              background: saved ? "rgba(0,0,0,0.08)" : "transparent",
-              border: `1px solid ${saved ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.10)"}`,
-              borderRadius: "16px",
-              color: saved ? "#ffffff" : "#9a9490",
+              background: saved ? "rgba(184,122,48,0.12)" : "rgba(0,0,0,0.04)",
+              border: "none",
+              borderRadius: "50%",
+              color: saved ? "#b87a30" : "#9a9490",
               cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.6rem",
-              fontWeight: 500,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              transition: "all 0.2s",
             }}
           >
             <Bookmark
-              size={14}
+              size={18}
               aria-hidden
-              style={{ fill: saved ? "#ffffff" : "none", transition: "fill 0.2s" }}
+              style={{ fill: saved ? "#b87a30" : "none", transition: "fill 0.2s" }}
             />
-            {saved ? "Saved" : "Save"}
+          </motion.button>
+
+          {/* Try On */}
+          <motion.button
+            type="button"
+            onClick={() => setDetailOpen(true)}
+            aria-label="Try on this look"
+            whileTap={reduce ? undefined : { scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "44px",
+              height: "44px",
+              background: "rgba(0,0,0,0.04)",
+              border: "none",
+              borderRadius: "50%",
+              color: "#9a9490",
+              cursor: "pointer",
+            }}
+          >
+            <Wand2 size={18} aria-hidden />
           </motion.button>
 
           {/* Shop */}
-          {shopItem?.affiliate_url && (
-            <a
+          {shopItem?.affiliate_url ? (
+            <motion.a
               href={shopItem.affiliate_url}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => onShopCart(shopItem.item_id)}
+              whileTap={reduce ? undefined : { scale: 0.96 }}
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "0.375rem",
+                width: "44px",
                 height: "44px",
-                padding: "0 1rem",
-                background: "#ffffff",
-                borderRadius: "16px",
-                color: "#faf8f5",
+                background: "rgba(0,0,0,0.04)",
+                borderRadius: "50%",
+                color: "#9a9490",
                 textDecoration: "none",
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.6rem",
-                fontWeight: 500,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                flexShrink: 0,
               }}
             >
-              <ExternalLink size={14} aria-hidden />
-              Shop
-            </a>
+              <ShoppingBag size={18} aria-hidden />
+            </motion.a>
+          ) : (
+            <div style={{ width: "44px" }} />
           )}
 
           {/* Dismiss */}
@@ -354,32 +340,22 @@ export function OutfitCard({
             type="button"
             onClick={onDismiss}
             aria-label={`Dismiss look ${index + 1}`}
-            whileTap={reduce ? undefined : { scale: 0.88 }}
-            transition={{ type: "spring", stiffness: 600, damping: 28 }}
+            whileTap={reduce ? undefined : { scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              height: "44px",
               width: "44px",
-              background: "transparent",
-              border: "1px solid rgba(0,0,0,0.06)",
-              borderRadius: "16px",
+              height: "44px",
+              background: "rgba(0,0,0,0.04)",
+              border: "none",
+              borderRadius: "50%",
               color: "#9a9490",
               cursor: "pointer",
-              flexShrink: 0,
-              transition: "color 0.15s, border-color 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = "#c0392b";
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,180,171,0.3)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = "#9a9490";
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,0,0,0.06)";
             }}
           >
-            <X size={16} aria-hidden />
+            <X size={18} aria-hidden />
           </motion.button>
         </div>
       </motion.article>

@@ -39,10 +39,11 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        background: "rgba(0,0,0,0.04)",
-        border: "1px solid rgba(0,0,0,0.10)",
+        background: "#ffffff",
+        border: "1px solid rgba(0,0,0,0.08)",
         borderRadius: "16px",
         overflow: "hidden",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
       }}
     >
       {/* Image / placeholder */}
@@ -140,11 +141,10 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
           </span>
           <span
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.55rem",
-              color: "#444748",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.7rem",
+              color: "#9a9490",
+              textTransform: "capitalize",
             }}
           >
             {item.slot}

@@ -86,13 +86,101 @@ export function ProfileView() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: EASE }}
-      style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }}
+      style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
     >
-      <Stats summary={data.summary} />
-      {data.summary.badges.length > 0 && <Badges badges={data.summary.badges} />}
-      <StyleProfile profile={data.profile} />
-      <AccountLink />
+      <UserHero profile={data.profile} summary={data.summary} />
+      <div style={{ padding: "0 1rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
+        <Stats summary={data.summary} />
+        {data.summary.badges.length > 0 && <Badges badges={data.summary.badges} />}
+        <StyleProfile profile={data.profile} />
+        <AccountLink />
+      </div>
     </motion.div>
+  );
+}
+
+function UserHero({ profile, summary }: { profile: Profile | null; summary: ProfileSummary }) {
+  const displayName = profile ? titleCase(profile.skin_tone ? "My Style" : "Style Explorer") : "Style Explorer";
+  const styleTag = profile?.style_intent?.length
+    ? profile.style_intent.map(titleCase).join(" · ")
+    : "Style Explorer";
+
+  const stats = [
+    { label: "Outfits", value: summary.outfits_made },
+    { label: "Saved", value: summary.items_saved },
+    { label: "Posts", value: summary.posts },
+    { label: "Badges", value: summary.badges.length },
+  ];
+
+  return (
+    <div
+      style={{
+        background: "linear-gradient(135deg, #f4f1ec 0%, #faf8f5 100%)",
+        padding: "2.5rem 1.5rem 1.5rem",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "1rem",
+      }}
+    >
+      {/* Avatar */}
+      <div
+        style={{
+          width: 88, height: 88, borderRadius: "50%",
+          background: "#edeae4",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "3px solid #ffffff",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+          flexShrink: 0,
+        }}
+      >
+        <span style={{ fontFamily: "var(--font-body)", fontSize: "2rem", fontWeight: 700, color: "#5c5650" }}>
+          G
+        </span>
+      </div>
+
+      {/* Name */}
+      <p style={{ fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)", fontSize: "1.375rem", fontWeight: 700, color: "#1c1a17", margin: 0, textAlign: "center" }}>
+        {displayName}
+      </p>
+
+      {/* Style tag */}
+      <span style={{
+        background: "rgba(184,122,48,0.10)", color: "#b87a30",
+        borderRadius: "999px", padding: "0.25rem 0.875rem",
+        fontFamily: "var(--font-body)", fontSize: "0.7rem", fontWeight: 600,
+        letterSpacing: "0.08em", textTransform: "uppercase",
+      }}>
+        {styleTag}
+      </span>
+
+      {/* Stats row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 0, width: "100%", maxWidth: 320 }}>
+        {stats.map((s, i) => (
+          <div key={s.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "0.2rem", position: "relative" }}>
+            {i > 0 && (
+              <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 1, height: "2rem", background: "rgba(0,0,0,0.10)" }} />
+            )}
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "1.25rem", fontWeight: 700, color: "#1c1a17" }}>{s.value}</span>
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.7rem", color: "#9a9490", textTransform: "uppercase", letterSpacing: "0.04em" }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Edit profile */}
+      <Link
+        href="/onboarding"
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          minHeight: 44, padding: "0 1.75rem", width: "100%", maxWidth: 200,
+          background: "transparent", border: "1.5px solid #1c1a17", borderRadius: "999px",
+          fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600,
+          color: "#1c1a17", textDecoration: "none",
+        }}
+      >
+        Edit profile
+      </Link>
+    </div>
   );
 }
 
@@ -118,7 +206,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
       </motion.span>
       <span
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-body)",
           fontSize: "0.55rem",
           fontWeight: 500,
           letterSpacing: "0.08em",
@@ -182,7 +270,7 @@ function Badges({ badges }: { badges: string[] }) {
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <p style={{
-        fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
+        fontFamily: "var(--font-body)", fontSize: "0.55rem", fontWeight: 500,
         letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a9490",
       }}>
         Badges earned
@@ -195,7 +283,7 @@ function Badges({ badges }: { badges: string[] }) {
               display: "inline-flex", alignItems: "center",
               border: "1px solid rgba(0,0,0,0.10)",
               padding: "0.375rem 0.875rem",
-              fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+              fontFamily: "var(--font-body)", fontSize: "0.6rem",
               fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
               color: "#5c5650",
             }}
@@ -228,9 +316,9 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           style={{
             display: "inline-flex", alignItems: "center", justifyContent: "center",
             minHeight: "44px", padding: "0 2rem",
-            background: "#ffffff", color: "#faf8f5",
-            fontFamily: "var(--font-mono)", fontSize: "0.6rem", fontWeight: 600,
-            letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none",
+            background: "#b87a30", color: "#ffffff",
+            fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600,
+            textDecoration: "none",
             borderRadius: "999px",
           }}
         >
@@ -254,13 +342,13 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
     <section style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <p style={{
-          fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-          letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a9490",
+          fontFamily: "var(--font-body)", fontSize: "0.7rem", fontWeight: 600,
+          letterSpacing: "0.06em", textTransform: "uppercase", color: "#9a9490",
         }}>
           Style profile
         </p>
         <Link href="/onboarding" style={{
-          fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "#9a9490",
+          fontFamily: "var(--font-body)", fontSize: "0.6rem", color: "#9a9490",
           textDecoration: "underline", textUnderlineOffset: "3px",
         }}>
           Edit
@@ -276,7 +364,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
             background: "#faf8f5", padding: "1rem",
           }}>
             <dt style={{
-              fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
+              fontFamily: "var(--font-body)", fontSize: "0.55rem", fontWeight: 500,
               letterSpacing: "0.08em", textTransform: "uppercase", color: "#9a9490",
             }}>
               {label}
@@ -301,7 +389,7 @@ function AccountLink() {
       borderTop: "1px solid rgba(0,0,0,0.10)", paddingTop: "2rem",
     }}>
       <p style={{
-        fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
+        fontFamily: "var(--font-body)", fontSize: "0.55rem", fontWeight: 500,
         letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a9490",
       }}>
         Account
@@ -366,7 +454,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           minHeight: "44px", padding: "0 1.5rem",
           border: "1px solid rgba(255,255,255,0.2)", background: "transparent",
           color: "#1c1a17", cursor: "pointer",
-          fontFamily: "var(--font-mono)", fontSize: "0.6rem",
+          fontFamily: "var(--font-body)", fontSize: "0.6rem",
           fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
         }}
       >

@@ -35,12 +35,10 @@ const EMPTY: ExploreFilters = { q: "", occasion: "", style: "", maxPrice: "", so
 
 const CHIP_BASE: React.CSSProperties = {
   flexShrink: 0,
-  padding: "0.25rem 0.75rem",
-  fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-  fontSize: "0.6rem",
+  padding: "0.35rem 0.875rem",
+  fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+  fontSize: "0.8125rem",
   fontWeight: 500,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
   borderRadius: "999px",
   cursor: "pointer",
   minHeight: "32px",
@@ -51,9 +49,9 @@ const CHIP_BASE: React.CSSProperties = {
 function chip(active: boolean): React.CSSProperties {
   return {
     ...CHIP_BASE,
-    border: active ? "1px solid #b87a30" : "1px solid rgba(0,0,0,0.10)",
-    background: active ? "rgba(240,189,143,0.08)" : "transparent",
-    color: active ? "#b87a30" : "#9a9490",
+    border: active ? "1px solid #1c1a17" : "1px solid rgba(0,0,0,0.12)",
+    background: active ? "#1c1a17" : "#ffffff",
+    color: active ? "#faf8f5" : "#5c5650",
   };
 }
 
@@ -112,7 +110,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         position: "sticky",
         top: 0,
         zIndex: 20,
-        background: "rgba(0,0,0,0.92)",
+        background: "rgba(250,248,245,0.95)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(0,0,0,0.06)",
@@ -125,14 +123,15 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       {/* Search input */}
       <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
         <Search
-          size={15}
+          size={16}
           aria-hidden
           style={{
             position: "absolute",
-            left: 0,
-            color: focused ? "#5c5650" : "#9a9490",
+            left: "1rem",
+            color: "#9a9490",
             flexShrink: 0,
-            transition: "color 0.2s",
+            pointerEvents: "none",
+            zIndex: 1,
           }}
         />
         <input
@@ -145,15 +144,16 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           aria-label="Search garments"
           style={{
             flex: 1,
-            background: "transparent",
-            border: "none",
-            borderBottom: `1px solid ${focused ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.12)"}`,
+            background: "#ffffff",
+            border: `1.5px solid ${focused ? "#b87a30" : "rgba(0,0,0,0.12)"}`,
             outline: "none",
-            padding: "0.625rem 2rem 0.625rem 1.5rem",
-            fontFamily: "var(--font-body)",
-            fontSize: "16px",
+            borderRadius: "999px",
+            padding: "0.75rem 2.5rem 0.75rem 3rem",
+            fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+            fontSize: "0.9375rem",
             color: "#1c1a17",
-            transition: "border-color 0.2s",
+            boxShadow: focused ? "0 0 0 3px rgba(184,122,48,0.12)" : "0 2px 8px rgba(0,0,0,0.06)",
+            transition: "border-color 0.2s, box-shadow 0.2s",
           }}
         />
         {filters.q && (
@@ -163,7 +163,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             onClick={() => set("q", "")}
             style={{
               position: "absolute",
-              right: 0,
+              right: "0.875rem",
               background: "none",
               border: "none",
               color: "#9a9490",

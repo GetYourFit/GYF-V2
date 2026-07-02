@@ -100,22 +100,45 @@ export function SocialFeed() {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+      <div style={{ maxWidth: "390px", margin: "0 auto", padding: "1.25rem 1rem" }}>
+        {/* Feed header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+          <h1 style={{ fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)", fontSize: "1.5rem", fontWeight: 700, color: "#1c1a17", margin: 0 }}>
+            Community
+          </h1>
+          <motion.button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            style={{
+              padding: "0.5rem 1.125rem",
+              background: "#b87a30", color: "#ffffff",
+              borderRadius: "999px", border: "none",
+              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+              fontSize: "0.875rem", fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Share a look
+          </motion.button>
+        </div>
+
         {loading && (
-          <div className="flex flex-col gap-6" aria-hidden>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }} aria-hidden>
             {[0, 1, 2].map((i) => (
-              <div key={i} className="flex flex-col border border-border bg-surface">
-                <div className="flex items-center gap-3 px-4 py-4">
-                  <div className="skeleton h-9 w-9" />
-                  <div className="flex flex-col gap-2">
-                    <div className="skeleton h-3 w-24" />
-                    <div className="skeleton h-2 w-14" />
+              <div key={i} style={{ background: "#ffffff", borderRadius: "20px", border: "1px solid rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.875rem 1rem" }}>
+                  <div className="skeleton" style={{ width: 40, height: 40, borderRadius: "50%" }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <div className="skeleton" style={{ height: 12, width: 96 }} />
+                    <div className="skeleton" style={{ height: 10, width: 56 }} />
                   </div>
                 </div>
-                <div className="skeleton aspect-square w-full" />
-                <div className="flex items-center gap-3 px-4 py-4">
-                  <div className="skeleton h-3 w-10" />
-                  <div className="skeleton h-3 w-10" />
+                <div className="skeleton" style={{ aspectRatio: "4/5", width: "100%" }} />
+                <div style={{ display: "flex", gap: "0.75rem", padding: "0.875rem 1rem" }}>
+                  <div className="skeleton" style={{ height: 12, width: 40 }} />
+                  <div className="skeleton" style={{ height: 12, width: 40 }} />
                 </div>
               </div>
             ))}
@@ -123,12 +146,12 @@ export function SocialFeed() {
         )}
 
         {!loading && error && (
-          <div className="flex flex-col items-center gap-4 px-6 py-24 text-center">
-            <p className="t-body text-text-mid">{error}</p>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", padding: "6rem 1.5rem", textAlign: "center" }}>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", color: "#5c5650" }}>{error}</p>
             <button
               type="button"
               onClick={() => void load()}
-              className="border border-border-mid px-5 py-2.5 t-label text-text transition-colors hover:border-border-hi hover:bg-surface-2"
+              style={{ padding: "0.75rem 1.75rem", background: "#1c1a17", color: "#faf8f5", borderRadius: "999px", border: "none", fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}
             >
               Retry
             </button>
@@ -140,20 +163,19 @@ export function SocialFeed() {
             initial={reduceMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: LUX }}
-            className="flex flex-col items-center gap-5 px-6 py-24 text-center"
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem", padding: "6rem 1.5rem", textAlign: "center" }}
           >
             <EmptyArt />
-            <div className="flex flex-col gap-2">
-              <p className="t-headline text-text">No looks yet</p>
-              <p className="t-body mx-auto max-w-xs text-text-mid">
-                Be the first to share a styled look — every post is re-rendered for whoever views
-                it.
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#1c1a17", margin: 0 }}>No looks yet</p>
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#5c5650", maxWidth: "280px", margin: 0 }}>
+                Be the first to share a styled look — every post is re-rendered for whoever views it.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setSheetOpen(true)}
-              className="mt-1 border border-border-mid px-5 py-2.5 t-label text-text transition-colors hover:border-border-hi hover:bg-surface-2"
+              style={{ padding: "0.75rem 1.75rem", background: "#b87a30", color: "#ffffff", borderRadius: "999px", border: "none", fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}
             >
               Share a look
             </button>
@@ -161,7 +183,7 @@ export function SocialFeed() {
         )}
 
         {!loading && !error && posts.length > 0 && (
-          <ul className="flex list-none flex-col gap-6">
+          <ul style={{ display: "flex", flexDirection: "column", gap: "1rem", listStyle: "none", padding: 0, margin: 0 }}>
             <AnimatePresence mode="popLayout" initial={false}>
               {posts.map((post, i) => (
                 <PostCard
@@ -190,7 +212,7 @@ export function SocialFeed() {
             : { type: "spring", stiffness: 380, damping: 26, delay: 0.35 }
         }
         whileTap={reduceMotion ? undefined : { scale: 0.88 }}
-        className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+16px)] right-4 z-30 flex h-14 w-14 items-center justify-center bg-accent text-bg shadow-[0_8px_24px_rgba(0,0,0,0.40)] sm:bottom-8 sm:right-8"
+        style={{ position: "fixed", bottom: "calc(5.5rem + env(safe-area-inset-bottom))", right: "1.25rem", zIndex: 30, display: "flex", width: 52, height: 52, alignItems: "center", justifyContent: "center", background: "#b87a30", color: "#ffffff", borderRadius: "999px", border: "none", boxShadow: "0 4px 20px rgba(184,122,48,0.40)", cursor: "pointer" }}
       >
         <Plus size={22} aria-hidden />
       </motion.button>
