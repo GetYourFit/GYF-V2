@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { ReactNode } from "react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { TopMenu } from "@/components/layout/top-menu";
@@ -45,28 +44,26 @@ export function AppShell({ children }: AppShellProps) {
           }}
         >
           <Link href="/" aria-label="Get Your Fit home">
-            {/* Crop window isolates the wordmark from the 500×500 transparent canvas */}
+            {/* Crop window: render image large, clip to just the wordmark */}
             <div
               style={{
-                width: 150,
-                height: 28,
+                width: 160,
+                height: 32,
                 overflow: "hidden",
                 position: "relative",
                 flexShrink: 0,
               }}
             >
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src="/assets/get-your-fit.png"
                 alt="Get Your Fit"
-                width={500}
-                height={500}
-                priority
                 style={{
                   position: "absolute",
-                  width: 350,
-                  height: 350,
-                  top: -131,
-                  left: -96,
+                  width: 600,
+                  height: 600,
+                  top: -232,
+                  left: -214,
                 }}
               />
             </div>
