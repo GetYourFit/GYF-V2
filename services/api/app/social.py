@@ -34,6 +34,20 @@ INSERT INTO post_reactions (post_id, user_id, reaction) VALUES (%s, %s, %s)
 ON CONFLICT (post_id, user_id) DO NOTHING
 """
 _BUMP = "UPDATE social_posts SET reaction_count = reaction_count + 1 WHERE id = %s"
+_FEED_BY_AUTHORS = """
+SELECT id, user_id, item_ids, caption, occasion, region, reaction_count, created_at
+FROM social_posts WHERE user_id = ANY(%s)
+ORDER BY reaction_count DESC, created_at DESC LIMIT %s OFFSET %s
+"""
+_FOLLOW = """
+INSERT INTO follows (follower_id, followee_id) VALUES (%s, %s)
+ON CONFLICT (follower_id, followee_id) DO NOTHING
+"""
+_UNFOLLOW = "DELETE FROM follows WHERE follower_id = %s AND followee_id = %s"
+# Bounded like the other per-user lists; revisit with cursors if anyone nears it.
+_FOLLOWING = """
+SELECT followee_id FROM follows WHERE follower_id = %s ORDER BY created_at DESC LIMIT 500
+"""
 
 
 class PostInput(BaseModel):
@@ -80,8 +94,14 @@ class SocialRepository(Protocol):
         """Persist a new post."""
         ...
 
-    def feed(self, limit: int, offset: int) -> list[PostRecord]:
-        """The ranked feed (engagement then recency), paginated."""
+    def feed(
+        self, limit: int, offset: int, author_ids: list[str] | None = None
+    ) -> list[PostRecord]:
+        """The ranked feed (engagement then recency), paginated.
+
+        ``author_ids`` scopes the feed to those authors (the "following" view);
+        ``None`` means the global feed. An empty list returns no posts.
+        """
         ...
 
     def get(self, post_id: str) -> PostRecord | None:
@@ -90,6 +110,21 @@ class SocialRepository(Protocol):
 
     def react(self, post_id: str, user_id: str, reaction: str) -> bool:
         """React once per (post, user). Returns True if newly reacted."""
+        ...
+
+    def follow(self, follower_id: str, followee_id: str) -> bool:
+        """Follow a user's style. Idempotent; True if newly followed.
+
+        Raises :class:`KeyError` when the followee does not exist.
+        """
+        ...
+
+    def unfollow(self, follower_id: str, followee_id: str) -> None:
+        """Stop following. Idempotent — a no-op when not following."""
+        ...
+
+    def following(self, follower_id: str) -> list[str]:
+        """The user ids this user follows, most recent first."""
         ...
 
 
@@ -118,9 +153,16 @@ class PostgresSocialRepository:
                 ),
             )
 
-    def feed(self, limit: int, offset: int) -> list[PostRecord]:
+    def feed(
+        self, limit: int, offset: int, author_ids: list[str] | None = None
+    ) -> list[PostRecord]:
+        if author_ids is not None and not author_ids:
+            return []  # following nobody → empty following-feed, no query needed
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
-            rows = conn.execute(_FEED, (limit, offset)).fetchall()
+            if author_ids is None:
+                rows = conn.execute(_FEED, (limit, offset)).fetchall()
+            else:
+                rows = conn.execute(_FEED_BY_AUTHORS, (author_ids, limit, offset)).fetchall()
         return [_record_from_row(r) for r in rows]
 
     def get(self, post_id: str) -> PostRecord | None:
@@ -136,6 +178,26 @@ class PostgresSocialRepository:
                 return True
             return False
 
+    def follow(self, follower_id: str, followee_id: str) -> bool:
+        from psycopg.errors import ForeignKeyViolation  # lazy, like the pool import
+
+        try:
+            with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                cur = conn.execute(_FOLLOW, (follower_id, followee_id))
+                return cur.rowcount > 0
+        except ForeignKeyViolation as exc:
+            # The followee FK is the existence check — no separate lookup query.
+            raise KeyError(followee_id) from exc
+
+    def unfollow(self, follower_id: str, followee_id: str) -> None:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            conn.execute(_UNFOLLOW, (follower_id, followee_id))
+
+    def following(self, follower_id: str) -> list[str]:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            rows = conn.execute(_FOLLOWING, (follower_id,)).fetchall()
+        return [str(r[0]) for r in rows]
+
 
 def _record_from_row(row: tuple) -> PostRecord:
     return PostRecord(
@@ -150,17 +212,28 @@ def _record_from_row(row: tuple) -> PostRecord:
 
 
 class InMemorySocialRepository:
-    """List-backed repo for tests. Ranks by reactions then insertion recency."""
+    """List-backed repo for tests. Ranks by reactions then insertion recency.
 
-    def __init__(self) -> None:
+    ``known_users`` mirrors the FK existence check the Postgres repo gets for
+    free: when non-``None``, following an id outside it raises :class:`KeyError`.
+    """
+
+    def __init__(self, known_users: set[str] | None = None) -> None:
         self.posts: list[PostRecord] = []
         self.reactions: set[tuple[str, str]] = set()
+        self.follows: list[tuple[str, str]] = []  # (follower, followee), oldest first
+        self.known_users = known_users
 
     def create(self, record: PostRecord) -> None:
         self.posts.insert(0, record)
 
-    def feed(self, limit: int, offset: int) -> list[PostRecord]:
-        ranked = sorted(self.posts, key=lambda p: p.reaction_count, reverse=True)
+    def feed(
+        self, limit: int, offset: int, author_ids: list[str] | None = None
+    ) -> list[PostRecord]:
+        posts = (
+            self.posts if author_ids is None else [p for p in self.posts if p.user_id in author_ids]
+        )
+        ranked = sorted(posts, key=lambda p: p.reaction_count, reverse=True)
         return ranked[offset : offset + limit]
 
     def get(self, post_id: str) -> PostRecord | None:
@@ -173,6 +246,23 @@ class InMemorySocialRepository:
         self.reactions.add((post_id, user_id))
         post.reaction_count += 1
         return True
+
+    def follow(self, follower_id: str, followee_id: str) -> bool:
+        if self.known_users is not None and followee_id not in self.known_users:
+            raise KeyError(followee_id)
+        if (follower_id, followee_id) in self.follows:
+            return False
+        self.follows.append((follower_id, followee_id))
+        return True
+
+    def unfollow(self, follower_id: str, followee_id: str) -> None:
+        try:
+            self.follows.remove((follower_id, followee_id))
+        except ValueError:
+            pass  # idempotent
+
+    def following(self, follower_id: str) -> list[str]:
+        return [ee for er, ee in reversed(self.follows) if er == follower_id]
 
 
 def make_record(payload: PostInput, user_id: str) -> PostRecord:

@@ -10,9 +10,14 @@ const LUX = [0.16, 1, 0.3, 1] as const;
 interface PostCardProps {
   post: Post;
   index?: number;
+  /** The viewer's user id — used to hide Follow on the viewer's own posts. */
+  viewerId?: string | null;
+  /** Whether the viewer currently follows this post's author. */
+  followed?: boolean;
   onReact?: (postId: string) => Promise<boolean>;
   onShared?: (text: string) => void;
   onDressLikeMe?: (post: Post) => void;
+  onToggleFollow?: (userId: string) => void;
 }
 
 function authorOf(userId: string): { handle: string; initial: string } {
@@ -20,7 +25,16 @@ function authorOf(userId: string): { handle: string; initial: string } {
   return { handle, initial: (handle[0] ?? "?").toUpperCase() };
 }
 
-export function PostCard({ post, index = 0, onReact, onShared, onDressLikeMe }: PostCardProps) {
+export function PostCard({
+  post,
+  index = 0,
+  viewerId,
+  followed = false,
+  onReact,
+  onShared,
+  onDressLikeMe,
+  onToggleFollow,
+}: PostCardProps) {
   const reduceMotion = useReducedMotion();
   const author = authorOf(post.user_id);
   const [reacted, setReacted] = useState(false);
@@ -151,25 +165,33 @@ export function PostCard({ post, index = 0, onReact, onShared, onDressLikeMe }: 
             </p>
           )}
         </div>
-        <motion.button
-          type="button"
-          whileTap={reduceMotion ? undefined : { scale: 0.96 }}
-          transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          style={{
-            padding: "0.35rem 0.875rem",
-            background: "transparent",
-            border: "1.5px solid #1c1a17",
-            borderRadius: "999px",
-            fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            color: "#1c1a17",
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          Follow
-        </motion.button>
+        {onToggleFollow && post.user_id !== viewerId && (
+          <motion.button
+            type="button"
+            onClick={() => onToggleFollow(post.user_id)}
+            aria-pressed={followed}
+            aria-label={
+              followed ? `Unfollow @${author.handle}` : `Follow @${author.handle}'s style`
+            }
+            whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            style={{
+              padding: "0.35rem 0.875rem",
+              background: followed ? "#1c1a17" : "transparent",
+              border: "1.5px solid #1c1a17",
+              borderRadius: "999px",
+              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              color: followed ? "#faf8f5" : "#1c1a17",
+              cursor: "pointer",
+              flexShrink: 0,
+              transition: "background 0.2s, color 0.2s",
+            }}
+          >
+            {followed ? "Following" : "Follow"}
+          </motion.button>
+        )}
       </div>
 
       {/* Hero image */}

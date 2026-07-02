@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from ..auth import Principal
 from ..catalog.directory import ItemDirectory
@@ -37,13 +39,19 @@ router = APIRouter(tags=["social"])
 @router.get("/social/posts", summary="The ranked social feed")
 def social_feed(
     limit: int = Query(20, ge=1, le=50),
-    offset: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0, le=10_000),
+    scope: Literal["all", "following"] = Query(
+        "all",
+        description="'all' = the global feed; 'following' = only posts by authors "
+        "the caller follows (empty until they follow someone).",
+    ),
     principal: Principal = Depends(require_active_principal),
     repo: SocialRepository = Depends(get_social_repo),
     directory: ItemDirectory = Depends(get_item_directory),
 ) -> dict[str, list[Post]]:
     """Posts ranked by engagement then recency, each with its look rendered."""
-    return {"posts": enrich_feed(repo.feed(limit, offset), directory)}
+    authors = repo.following(principal.user_id) if scope == "following" else None
+    return {"posts": enrich_feed(repo.feed(limit, offset, authors), directory)}
 
 
 @router.post("/social/posts", status_code=201, summary="Share a look")
@@ -75,6 +83,56 @@ def react_to_post(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown post")
     newly = repo.react(post_id, principal.user_id, body.reaction)
     return {"post_id": post_id, "reacted": newly}
+
+
+@router.put(
+    "/social/follows/{user_id}",
+    summary="Follow a user's style",
+    dependencies=[Depends(rate_limit("feedback", "rate_limit_feedback"))],
+)
+def follow_user(
+    user_id: str,
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+) -> dict[str, object]:
+    """Follow another user (idempotent PUT). Their posts appear in the
+    ``scope=following`` feed and any of their looks stay one "recreate" away —
+    always re-rendered for *you*, never blindly copied (CLAUDE.md §2).
+    422 on self-follow, 404 if the user does not exist."""
+    if user_id == principal.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Cannot follow yourself"
+        )
+    try:
+        newly = repo.follow(principal.user_id, user_id)
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown user") from None
+    return {"user_id": user_id, "following": True, "newly": newly}
+
+
+@router.delete(
+    "/social/follows/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Unfollow a user",
+)
+def unfollow_user(
+    user_id: str,
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+) -> Response:
+    """Stop following. Idempotent: 204 whether or not currently following."""
+    repo.unfollow(principal.user_id, user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/social/follows", summary="Who the caller follows")
+def list_follows(
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+) -> dict[str, list[str]]:
+    """The caller's follow list (most recent first) — lets the client mark
+    authors as followed and render the Following feed tab."""
+    return {"following": repo.following(principal.user_id)}
 
 
 @router.post(

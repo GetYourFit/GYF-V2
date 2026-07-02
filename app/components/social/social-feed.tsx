@@ -44,23 +44,65 @@ export function SocialFeed() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [scope, setScope] = useState<"all" | "following">("all");
+  const [follows, setFollows] = useState<ReadonlySet<string>>(new Set());
+  const [viewerId, setViewerId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await browserApi().socialFeed({ limit: 30 });
-      setPosts(res);
+      // Feed + follow list together: the follow list marks each author's button
+      // state, so rendering either without the other flashes wrong UI.
+      const api = browserApi();
+      const [feed, following, me] = await Promise.all([
+        api.socialFeed({ limit: 30, scope }),
+        api.listFollows(),
+        api.me(),
+      ]);
+      setPosts(feed);
+      setFollows(new Set(following));
+      setViewerId(me.user_id);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load the feed. Tap retry.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [scope]);
 
   useEffect(() => {
     void Promise.resolve().then(() => load());
   }, [load]);
+
+  const toggleFollow = useCallback(
+    async (userId: string) => {
+      const wasFollowing = follows.has(userId);
+      // Optimistic flip; revert on failure so the UI never lies about state.
+      setFollows((prev) => {
+        const next = new Set(prev);
+        if (wasFollowing) next.delete(userId);
+        else next.add(userId);
+        return next;
+      });
+      try {
+        if (wasFollowing) await browserApi().unfollowUser(userId);
+        else await browserApi().followUser(userId);
+      } catch (e) {
+        setFollows((prev) => {
+          const next = new Set(prev);
+          if (wasFollowing) next.add(userId);
+          else next.delete(userId);
+          return next;
+        });
+        toast({
+          variant: "error",
+          title: wasFollowing ? "Unfollow failed" : "Follow failed",
+          description: e instanceof ApiError ? e.message : "Please try again in a moment.",
+        });
+      }
+    },
+    [follows, toast],
+  );
 
   const react = useCallback(
     async (postId: string): Promise<boolean> => {
@@ -140,6 +182,41 @@ export function SocialFeed() {
           >
             Share a look
           </motion.button>
+        </div>
+
+        {/* Scope toggle — global feed vs. authors the user follows */}
+        <div
+          role="group"
+          aria-label="Feed scope"
+          style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem" }}
+        >
+          {(
+            [
+              { key: "all", label: "For you" },
+              { key: "following", label: "Following" },
+            ] as const
+          ).map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={scope === key}
+              onClick={() => setScope(key)}
+              style={{
+                padding: "0.4rem 1rem",
+                borderRadius: "999px",
+                border: `1px solid ${scope === key ? "#1c1a17" : "rgba(0,0,0,0.12)"}`,
+                background: scope === key ? "#1c1a17" : "transparent",
+                color: scope === key ? "#faf8f5" : "#5c5650",
+                fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {loading && (
@@ -240,7 +317,7 @@ export function SocialFeed() {
                   margin: 0,
                 }}
               >
-                No looks yet
+                {scope === "following" ? "Nothing here yet" : "No looks yet"}
               </p>
               <p
                 style={{
@@ -251,8 +328,9 @@ export function SocialFeed() {
                   margin: 0,
                 }}
               >
-                Be the first to share a styled look — every post is re-rendered for whoever views
-                it.
+                {scope === "following"
+                  ? "Follow a stylist from the For-you feed and their looks will land here — always re-rendered for you."
+                  : "Be the first to share a styled look — every post is re-rendered for whoever views it."}
               </p>
             </div>
             <button
@@ -292,8 +370,11 @@ export function SocialFeed() {
                   key={post.id}
                   post={post}
                   index={i}
+                  viewerId={viewerId}
+                  followed={follows.has(post.user_id)}
                   onReact={react}
                   onShared={handleShared}
+                  onToggleFollow={(userId) => void toggleFollow(userId)}
                 />
               ))}
             </AnimatePresence>

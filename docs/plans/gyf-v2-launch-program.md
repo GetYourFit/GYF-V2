@@ -82,8 +82,10 @@ rubric → generate → evaluate (auto + visual + adversarial) → review (speci
 
 ### S3 — Social, for real (replace `MOCK_POSTS`) ✅ (core)
 > Verified 2026-06-29: `social-feed`/`create-post-sheet` call `browserApi().socialFeed/createPost/
-> reactToPost`; no `MOCK_POSTS`. ⏳ remaining: follower-rerendered shares (re-render to follower's
-> region/taste) — revisit in S5/Phase-2.
+> reactToPost`; no `MOCK_POSTS`. ✅ 2026-07-02: **follow graph shipped** — `follows` table
+> (migration 0008, RLS follower-owned, self-follow CHECK), `PUT/DELETE /social/follows/{id}` +
+> `GET /social/follows`, `scope=following` feed, Follow/Following button + For-you/Following
+> toggle in the UI; recreate already re-renders to the follower (never blind copy).
 - Wire `SocialFeed` to `GET /social/posts`; `create-post-sheet` to `POST /social/posts`; reactions to `/social/posts/.../reactions` (build endpoint if missing).
 - Re-render shared styles to the **follower's** region/taste via the recommendation path (vision requirement), not blind copy.
 - **DoD:** post persists across reload + appears in another user's feed; reactions persist. **Gate:** `verify` + security-review (authz on post ownership).

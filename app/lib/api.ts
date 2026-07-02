@@ -236,12 +236,35 @@ export class GyfApi {
     return this.request<void>("DELETE", `/wardrobe/items/${encodeURIComponent(wardrobeId)}`);
   }
 
+  /** The caller's identity (id + email) as the API resolves it from the token. */
+  me(): Promise<{ user_id: string; email: string | null }> {
+    return this.request("GET", "/me");
+  }
+
   // --- Social (shared looks) ---
 
-  /** The ranked social feed: posts by engagement then recency, each look rendered. */
-  socialFeed(params: { limit?: number; offset?: number } = {}): Promise<Post[]> {
+  /** The ranked social feed: posts by engagement then recency, each look rendered.
+   *  `scope: "following"` narrows it to authors the caller follows. */
+  socialFeed(
+    params: { limit?: number; offset?: number; scope?: "all" | "following" } = {},
+  ): Promise<Post[]> {
     const query = toQuery({ ...params });
     return this.request<{ posts: Post[] }>("GET", `/social/posts${query}`).then((r) => r.posts);
+  }
+
+  /** Follow a user's style (idempotent). 422 self-follow, 404 unknown user. */
+  followUser(userId: string): Promise<{ user_id: string; following: boolean; newly: boolean }> {
+    return this.request("PUT", `/social/follows/${encodeURIComponent(userId)}`);
+  }
+
+  /** Stop following (idempotent — 204 either way). */
+  unfollowUser(userId: string): Promise<void> {
+    return this.request<void>("DELETE", `/social/follows/${encodeURIComponent(userId)}`);
+  }
+
+  /** The user ids the caller follows, most recent first. */
+  listFollows(): Promise<string[]> {
+    return this.request<{ following: string[] }>("GET", "/social/follows").then((r) => r.following);
   }
 
   /** Share an outfit as a post. The look's item ids are stored and re-rendered. */
