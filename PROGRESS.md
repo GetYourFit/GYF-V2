@@ -29,6 +29,10 @@
 9. **Contact email** — `gyf1ltd@gmail.com` is THE public contact for the whole app.
 10. **Real verification, no fakes** — validate with real models/data/stacks, never stubs
     masquerading as verification. Milestone not done until built AND verified (DoD hard gate).
+11. **PROGRESS.md is the external context window** (added 2026-07-02) — read it first,
+    trust it over re-derivation, append every change, never duplicate its content into
+    other stores; duplicated or purposeless docs/lines are deleted (git history suffices);
+    never do work twice.
 
 ## 2. Where everything else lives (read in this order on session start)
 
@@ -128,3 +132,25 @@ ruff ✓ doctrine license gate ✓ ports gate ✓. Everything pushed.
 3. Wardrobe-aware recsys conditioning (real "dress around what you own").
 4. Try-on M9: pick licensed inference model, TryOnRenderer port, ZeroGPU Space, UI.
 5. M3/M4 GPU lane on prod (set the three Render env vars once Space is funded/live).
+
+### 2026-07-02 (later) — PROGRESS.md promoted to THE context window; doc dedup sweep
+
+**User asked:** Use PROGRESS.md as the single external context window — never rebuild
+context internally or in auto-memory when it already lives here; always update it on every
+change; remove all duplicated docs and any content without a purpose (every line must earn
+its place); never do work twice. Restated §1 directives (novel/expert/no-noob-mistakes,
+boil-the-ocean, commit+push) — already codified above, no change needed. Re-asked "is GYF
+complete except Cuelinks?" — answer unchanged from this morning's gap matrix (§ above):
+NO — try-on (M9), affiliate attribution, wardrobe-aware recsys, M8.5/M12 remain.
+
+**Standing directive added to §1 (amendment): 11. PROGRESS.md is the external context
+window** — read it first, trust it over re-derivation for session context, append every
+change, never duplicate its content into other stores.
+
+**Shipped (docs dedup):**
+- Deleted `docs/plans/CONTINUE-HANDOFF.md` — its handoff role is superseded by this ledger;
+  its unique §4 Editorial-Noir design spec was inlined into
+  `docs/plans/gyf-v2-launch-program.md` S1 (the one place that referenced it).
+- Deleted `docs/vision/drafts/` (ideas.md, ideas.V2.md) — pure duplicates folded into
+  `ideas-complete.md` long ago; git history preserves them. Updated CLAUDE.md repo map/
+  precedence, ideas-complete.md maintenance note, tech-stack.md §223 citation.

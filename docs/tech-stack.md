@@ -220,7 +220,7 @@ single items.
 
 ### 4.45 Controllable Styling — NL Goals, Occasion & Region
 
-**Goal.** Honor explicit user intent at recommendation time (per `ideas.V2.md`): a free-text
+**Goal.** Honor explicit user intent at recommendation time (per `vision/ideas-complete.md`): a free-text
 goal box ("I want to look taller / broader / slimmer"), an occasion selector, and
 region/culture-aware garments — all steering the recommender, not bolted on after.
 

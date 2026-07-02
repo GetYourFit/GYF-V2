@@ -6,11 +6,10 @@
 > will fully understand the product, its vision, and how to help build it — starting
 > fresh, with machine learning at the core from day one.
 >
-> **How to maintain this document.** New idea drafts live in `./drafts/` (e.g.
-> `drafts/ideas.md`, `drafts/ideas.V2.md`). When new ideas land there, fold them into the
-> relevant section here rather than appending loosely. Keep this file as the merged
-> superset; the draft files are inputs, this is the master. The **Changelog** at the bottom
-> tracks what each version contributed.
+> **How to maintain this document.** When new ideas land, fold them into the relevant
+> section here rather than appending loosely — this file is the merged superset and the
+> master. (The original raw drafts were folded in and deleted; git history preserves them.)
+> The **Changelog** at the bottom tracks what each version contributed.
 
 ---
 

@@ -29,10 +29,7 @@ GetYourFit-New/
 │   ├── engineering-doctrine.md        # THE HIGHEST-IQ WAY — cross-cutting design law (how every pillar is built)
 │   ├── roadmap.md                     # the SEQUENCE — dependency-correct build order (M0→M12→P2–P5)
 │   ├── vision/
-│   │   ├── ideas-complete.md          # canonical product/vision brief
-│   │   └── drafts/                    # raw idea inputs (history)
-│   │       ├── ideas.md
-│   │       └── ideas.V2.md
+│   │   └── ideas-complete.md          # canonical product/vision brief
 │   ├── tech-stack.md                  # authoritative tech & architecture decisions
 │   ├── implementation-plan.md         # phased build plan (P0–P5) with gates
 │   └── research/
@@ -45,14 +42,13 @@ GetYourFit-New/
 | `CLAUDE.md` | **This file.** Structured operating guide for agents/devs; entry point that summarizes everything and points to the source docs. |
 | `docs/engineering-doctrine.md` | **The highest-IQ way — authoritative cross-cutting design law.** *How* every ML pillar is built so GYF is SOTA, commercially clean, never quality-compromised, and never dev-blocked: capability ports, two-lane (research/production) model lifecycle with a CI license gate, foundation+adapter, the data-flywheel moat, eval-gated promotion. Read alongside `tech-stack.md`. |
 | `docs/vision/ideas-complete.md` | **Canonical product/vision brief** — the merged superset of all `ideas*.md`. Authoritative for *what* GYF is. |
-| `docs/vision/drafts/ideas.md`, `…/ideas.V2.md` | Raw idea-draft inputs, folded into `ideas-complete.md` (kept for history). |
 | `docs/tech-stack.md` | **Authoritative for *how*** — every technology, model, and architecture decision with rationale and alternatives. |
 | `docs/implementation-plan.md` | **Phased build plan** (P0–P5) with workstreams, DoD, gates, risks, and next steps. |
 | `docs/research/deep-research-report.md` | Cited state-of-the-art research backing each technical pillar (models, papers, alternatives, confidence levels, cost notes). |
 | `ECC/` | ECC plugin folder — reusable skills/agents to leverage during development (see §7). |
 
 > **Doc precedence (read in this order; on conflict, higher wins):**
-> 1. `docs/vision/ideas-complete.md` — **what** GYF is (canonical product brief). `vision/drafts/*` are raw history.
+> 1. `docs/vision/ideas-complete.md` — **what** GYF is (canonical product brief).
 > 2. `docs/engineering-doctrine.md` — **how** every pillar is built (binding design law: ports, license gate, foundation+adapter, real data, eval-gated).
 > 3. `docs/tech-stack.md` — **which** model/tech per pillar + rationale. `docs/research/deep-research-report.md` — cited SOTA backing.
 > 4. `docs/roadmap.md` — **the order** (dependency-correct build sequence M0→M12→P2–P5). `docs/implementation-plan.md` — phase detail + DoD. `docs/plans/*` — per-cycle execution specs.
