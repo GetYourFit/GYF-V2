@@ -45,28 +45,28 @@ export function AppShell({ children }: AppShellProps) {
           }}
         >
           <Link href="/" aria-label="Get Your Fit home">
-            {/* Cropped window: shows just the wordmark text from the square canvas */}
+            {/* Crop window isolates the wordmark from the 500×500 transparent canvas */}
             <div
               style={{
-                width: 160,
-                height: 30,
+                width: 150,
+                height: 28,
                 overflow: "hidden",
                 position: "relative",
                 flexShrink: 0,
               }}
             >
               <Image
-                src="/assets/get-your-fit.jpg"
+                src="/assets/get-your-fit.png"
                 alt="Get Your Fit"
-                width={1060}
-                height={1060}
+                width={500}
+                height={500}
                 priority
                 style={{
                   position: "absolute",
-                  width: 450,
-                  height: 450,
-                  top: -184,
-                  left: -145,
+                  width: 350,
+                  height: 350,
+                  top: -131,
+                  left: -96,
                 }}
               />
             </div>
