@@ -16,8 +16,8 @@ export function GYFLogo({ width = 120, className, style, invert = false }: GYFLo
     <Image
       src="/assets/logo.png"
       alt="GYF — Get Your Fit"
-      width={600}
-      height={600}
+      width={139}
+      height={125}
       priority
       className={cn("object-contain block", className)}
       style={{

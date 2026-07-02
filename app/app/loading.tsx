@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { GYFLogo } from "@/components/brand/GYFLogo";
+import Image from "next/image";
 
 export default function Loading() {
   return (
@@ -15,7 +15,6 @@ export default function Loading() {
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "column",
-        gap: "2rem",
       }}
     >
       {/* Top progress bar */}
@@ -34,27 +33,42 @@ export default function Loading() {
         }}
       />
 
-      {/* GYF logo — centred, pulses while loading */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: [0, 1, 0.6, 1], scale: [0.92, 1, 0.98, 1] }}
-        transition={{ duration: 1.6, ease: "easeOut" }}
-        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem" }}
+        initial={{ opacity: 0, scale: 0.88 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "0.75rem",
+        }}
       >
-        <GYFLogo width={260} />
+        {/* Logo — raw Image, no extra component wrapping */}
+        <Image
+          src="/assets/logo.png"
+          alt="GYF — Get Your Fit"
+          width={139}
+          height={125}
+          priority
+          style={{
+            width: "200px",
+            height: "auto",
+          }}
+        />
 
         {/* Tagline */}
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.5 }}
-          transition={{ duration: 0.6, delay: 1 }}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
           style={{
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "0.75rem",
-            letterSpacing: "0.18em",
+            letterSpacing: "0.2em",
             textTransform: "uppercase",
-            fontWeight: 500,
-            color: "#5c5650",
+            fontWeight: 600,
+            color: "#9a9490",
             margin: 0,
           }}
         >
