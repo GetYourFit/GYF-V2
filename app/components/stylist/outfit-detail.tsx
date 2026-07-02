@@ -11,8 +11,7 @@ import type { Outfit, OutfitItem } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-const FOCUSABLE =
-  'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
+const FOCUSABLE = 'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
 
 function price(item: OutfitItem): string | null {
   if (item.price == null) return null;
@@ -52,7 +51,9 @@ export function OutfitDetail({
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   useEffect(() => {
@@ -60,24 +61,40 @@ export function OutfitDetail({
     const panel = panelRef.current;
     const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
     (first ?? panel)?.focus();
-    return () => { restoreRef.current?.focus?.(); };
+    return () => {
+      restoreRef.current?.focus?.();
+    };
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") { e.stopPropagation(); onClose(); return; }
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
       if (e.key !== "Tab") return;
       const panel = panelRef.current;
       if (!panel) return;
       const nodes = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
         (n) => n.offsetParent !== null,
       );
-      if (!nodes.length) { e.preventDefault(); panel.focus(); return; }
-      const first = nodes[0]; const last = nodes[nodes.length - 1];
+      if (!nodes.length) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
       const active = document.activeElement;
-      if (e.shiftKey && (active === first || active === panel)) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+      if (e.shiftKey && (active === first || active === panel)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
@@ -234,7 +251,12 @@ export function OutfitDetail({
                       <img
                         src={src}
                         alt={`${item.title} — ${item.category.replace(/_/g, " ")}`}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
                       />
                     ) : (
                       <div
@@ -278,8 +300,14 @@ export function OutfitDetail({
             </div>
 
             {/* ── Body ── */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", padding: "1.25rem" }}>
-
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "1.5rem",
+                padding: "1.25rem",
+              }}
+            >
               {/* Stylist explanation */}
               <p
                 style={{
@@ -371,7 +399,9 @@ export function OutfitDetail({
                         borderBottom: "1px solid rgba(0,0,0,0.06)",
                       }}
                     >
-                      <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}
+                      >
                         <span
                           style={{
                             fontFamily: "var(--font-body)",

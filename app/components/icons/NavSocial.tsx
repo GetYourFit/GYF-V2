@@ -1,9 +1,21 @@
-interface Props { size?: number; strokeWidth?: number; }
+interface Props {
+  size?: number;
+  strokeWidth?: number;
+}
 
 export function NavSocial({ size = 24, strokeWidth = 1.5 }: Props) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       {/* Primary person */}
       <circle cx="12" cy="7" r="3" />
       <path d="M6 21v-1a6 6 0 0 1 12 0v1" />

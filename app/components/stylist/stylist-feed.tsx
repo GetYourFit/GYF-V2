@@ -99,10 +99,24 @@ export function StylistFeed() {
         score: outfit.score,
         confidence: outfit.confidence,
       })
-      .then(() => toast({ title: "Saved to your looks", description: "Find it on your Saved page.", variant: "success" }))
+      .then(() =>
+        toast({
+          title: "Saved to your looks",
+          description: "Find it on your Saved page.",
+          variant: "success",
+        }),
+      )
       .catch(() => {
-        setSaved((s) => { const n = new Set(s); n.delete(index); return n; });
-        toast({ title: "Couldn't save that look", description: "Please try again.", variant: "error" });
+        setSaved((s) => {
+          const n = new Set(s);
+          n.delete(index);
+          return n;
+        });
+        toast({
+          title: "Couldn't save that look",
+          description: "Please try again.",
+          variant: "error",
+        });
       });
     void sendFeedback(index, "save").catch(() => {});
   }
@@ -111,23 +125,45 @@ export function StylistFeed() {
     setDismissed((d) => new Set(d).add(index));
     toast({ title: "Look removed", description: "We'll show fewer like it.", variant: "info" });
     void sendFeedback(index, "skip").catch(() =>
-      setDismissed((d) => { const n = new Set(d); n.delete(index); return n; }),
+      setDismissed((d) => {
+        const n = new Set(d);
+        n.delete(index);
+        return n;
+      }),
     );
   }
 
   function undoDismiss(index: number) {
-    setDismissed((d) => { const n = new Set(d); n.delete(index); return n; });
+    setDismissed((d) => {
+      const n = new Set(d);
+      n.delete(index);
+      return n;
+    });
   }
 
   // ── Needs onboarding ──
   if (needsOnboarding) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60dvh", padding: "2rem" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60dvh",
+          padding: "2rem",
+        }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: EASE }}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", maxWidth: "280px" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            maxWidth: "280px",
+          }}
         >
           <p
             style={{
@@ -153,7 +189,14 @@ export function StylistFeed() {
           >
             First, tell GYF about you
           </p>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#9a9490", marginBottom: "2rem" }}>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.875rem",
+              color: "#9a9490",
+              marginBottom: "2rem",
+            }}
+          >
             A few quick preferences and your stylist gets to work.
           </p>
           <Link
@@ -183,8 +226,14 @@ export function StylistFeed() {
   }
 
   return (
-    <div style={{ padding: "1.25rem 1rem 1rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-
+    <div
+      style={{
+        padding: "1.25rem 1rem 1rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "1.5rem",
+      }}
+    >
       {/* ── Page header ── */}
       <motion.header
         initial={reduce ? { opacity: 1 } : { opacity: 0, y: 10 }}
@@ -364,7 +413,15 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
     parts.push(`taste ${Math.round(data.taste_strength * 100)}%`);
   }
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem", marginTop: "0.25rem" }}>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: "0.5rem",
+        marginTop: "0.25rem",
+      }}
+    >
       <span
         style={{
           fontFamily: "var(--font-mono)",
@@ -465,9 +522,25 @@ function SkeletonGrid() {
           }}
         >
           <div style={{ aspectRatio: "16/9", background: "rgba(0,0,0,0.06)" }} />
-          <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div style={{ height: "10px", width: "60%", background: "rgba(0,0,0,0.06)", borderRadius: "999px" }} />
-            <div style={{ height: "8px", width: "40%", background: "rgba(0,0,0,0.06)", borderRadius: "999px" }} />
+          <div
+            style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}
+          >
+            <div
+              style={{
+                height: "10px",
+                width: "60%",
+                background: "rgba(0,0,0,0.06)",
+                borderRadius: "999px",
+              }}
+            />
+            <div
+              style={{
+                height: "8px",
+                width: "40%",
+                background: "rgba(0,0,0,0.06)",
+                borderRadius: "999px",
+              }}
+            />
           </div>
         </motion.div>
       ))}

@@ -4,24 +4,23 @@ import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { NavFeed } from "@/components/icons/NavFeed";
 import { NavExplore } from "@/components/icons/NavExplore";
 import { NavWardrobe } from "@/components/icons/NavWardrobe";
 import { NavSocial } from "@/components/icons/NavSocial";
 import { NavProfile } from "@/components/icons/NavProfile";
 
 const LEFT_TABS = [
-  { href: "/explore",  Icon: NavExplore,  label: "Explore",  exact: false },
+  { href: "/explore", Icon: NavExplore, label: "Explore", exact: false },
   { href: "/wardrobe", Icon: NavWardrobe, label: "Wardrobe", exact: false },
 ] as const;
 
 const RIGHT_TABS = [
-  { href: "/social",   Icon: NavSocial,   label: "Social",   exact: false },
-  { href: "/profile",  Icon: NavProfile,  label: "Profile",  exact: false },
+  { href: "/social", Icon: NavSocial, label: "Social", exact: false },
+  { href: "/profile", Icon: NavProfile, label: "Profile", exact: false },
 ] as const;
 
 const ACCENT = "#d4607a";
-const MUTED  = "#5a5a65";
+const MUTED = "#5a5a65";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -88,10 +87,23 @@ export function BottomNav() {
                 }}
               />
             )}
-            <motion.div whileTap={reduce ? undefined : { scale: 0.82 }} transition={{ type: "spring", stiffness: 600, damping: 30 }}>
+            <motion.div
+              whileTap={reduce ? undefined : { scale: 0.82 }}
+              transition={{ type: "spring", stiffness: 600, damping: 30 }}
+            >
               <Icon size={22} strokeWidth={active ? 2 : 1.5} />
             </motion.div>
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.55rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: active ? ACCENT : MUTED, lineHeight: 1 }}>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.55rem",
+                fontWeight: 600,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: active ? ACCENT : MUTED,
+                lineHeight: 1,
+              }}
+            >
               {label}
             </span>
           </Link>
@@ -177,10 +189,23 @@ export function BottomNav() {
                 }}
               />
             )}
-            <motion.div whileTap={reduce ? undefined : { scale: 0.82 }} transition={{ type: "spring", stiffness: 600, damping: 30 }}>
+            <motion.div
+              whileTap={reduce ? undefined : { scale: 0.82 }}
+              transition={{ type: "spring", stiffness: 600, damping: 30 }}
+            >
               <Icon size={22} strokeWidth={active ? 2 : 1.5} />
             </motion.div>
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.55rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: active ? ACCENT : MUTED, lineHeight: 1 }}>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.55rem",
+                fontWeight: 600,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: active ? ACCENT : MUTED,
+                lineHeight: 1,
+              }}
+            >
               {label}
             </span>
           </Link>

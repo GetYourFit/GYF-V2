@@ -8,7 +8,14 @@ export const metadata: Metadata = {
 
 export default function WardrobePage() {
   return (
-    <div style={{ padding: "1.25rem 1rem 1rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <div
+      style={{
+        padding: "1.25rem 1rem 1rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "1.5rem",
+      }}
+    >
       <header style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         <span
           style={{

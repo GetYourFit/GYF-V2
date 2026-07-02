@@ -113,8 +113,19 @@ export function WardrobeGrid() {
           </p>
         </div>
         <button
-          type="button" onClick={() => void load()}
-          style={{ padding: "0.75rem 2rem", background: "#1c1a17", color: "#faf8f5", border: "none", borderRadius: "999px", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer" }}
+          type="button"
+          onClick={() => void load()}
+          style={{
+            padding: "0.75rem 2rem",
+            background: "#1c1a17",
+            color: "#faf8f5",
+            border: "none",
+            borderRadius: "999px",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
         >
           Retry
         </button>
@@ -126,10 +137,15 @@ export function WardrobeGrid() {
     <>
       {/* Toolbar */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }} role="group" aria-label="Filter by category">
+        <div
+          style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}
+          role="group"
+          aria-label="Filter by category"
+        >
           {[ALL, ...categories].map((value) => {
             const active = filter === value;
-            const count = value === ALL ? items.length : items.filter((i) => i.category === value).length;
+            const count =
+              value === ALL ? items.length : items.filter((i) => i.category === value).length;
             return (
               <button
                 key={value}
@@ -162,12 +178,20 @@ export function WardrobeGrid() {
           type="button"
           onClick={() => setSheetOpen(true)}
           style={{
-            display: "flex", alignItems: "center", gap: "0.375rem",
-            padding: "0.5rem 1.25rem", minHeight: "40px",
-            background: "#1c1a17", color: "#faf8f5", border: "none",
-            borderRadius: "999px", cursor: "pointer", flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.375rem",
+            padding: "0.5rem 1.25rem",
+            minHeight: "40px",
+            background: "#1c1a17",
+            color: "#faf8f5",
+            border: "none",
+            borderRadius: "999px",
+            cursor: "pointer",
+            flexShrink: 0,
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-            fontSize: "0.875rem", fontWeight: 600,
+            fontSize: "0.875rem",
+            fontWeight: 600,
           }}
         >
           <Plus size={14} aria-hidden />
@@ -196,8 +220,19 @@ export function WardrobeGrid() {
             </p>
           </div>
           <button
-            type="button" onClick={() => setSheetOpen(true)}
-            style={{ padding: "0.75rem 2rem", background: "#1c1a17", color: "#faf8f5", border: "none", borderRadius: "999px", fontFamily: "var(--font-body)", fontSize: "0.9rem", fontWeight: 600, cursor: "pointer" }}
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            style={{
+              padding: "0.75rem 2rem",
+              background: "#1c1a17",
+              color: "#faf8f5",
+              border: "none",
+              borderRadius: "999px",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
           >
             {filter === ALL ? "Add your first garment" : "Add a garment"}
           </button>

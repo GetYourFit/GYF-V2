@@ -34,14 +34,20 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
     setEstimated([]);
     setMissed(false);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    if (!next) { setFile(null); setPreviewUrl(null); return; }
+    if (!next) {
+      setFile(null);
+      setPreviewUrl(null);
+      return;
+    }
     if (!ACCEPTED.includes(next.type)) {
-      setFile(null); setPreviewUrl(null);
+      setFile(null);
+      setPreviewUrl(null);
       setError("Please choose a JPEG, PNG, or WebP image.");
       return;
     }
     if (next.size > MAX_BYTES) {
-      setFile(null); setPreviewUrl(null);
+      setFile(null);
+      setPreviewUrl(null);
       setError("That image is over 10 MB — please choose a smaller one.");
       return;
     }
@@ -63,7 +69,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       setDone(true);
     } catch (e) {
       if (e instanceof ApiError && e.isUnavailable) {
-        setError("Photo onboarding isn't available right now — please use the form below.");
+        setError("Photo onboarding isn’t available right now — please use the form below.");
       } else if (e instanceof ApiError && e.status === 403) {
         setError('Please accept "Process my data" consent below, then try again.');
       } else {
@@ -78,33 +84,45 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
     <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
       {/* Header */}
       <div>
-        <p style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "0.6rem",
-          fontWeight: 500,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          color: "#d4607a",
-          marginBottom: "0.375rem",
-        }}>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#d4607a",
+            marginBottom: "0.375rem",
+          }}
+        >
           Estimate from photo
         </p>
-        <p style={{
-          fontFamily: "var(--font-body)",
-          fontSize: "0.8125rem",
-          lineHeight: 1.55,
-          color: "#9a9490",
-        }}>
-          Upload a clear, well-lit photo. GYF estimates your skin tone and body type — edit anything it gets wrong. Image is not stored.
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.8125rem",
+            lineHeight: 1.55,
+            color: "#9a9490",
+          }}
+        >
+          Upload a clear, well-lit photo. GYF estimates your skin tone and body type — edit anything
+          it gets wrong. Image is not stored.
         </p>
       </div>
 
       {/* Drop zone */}
       <label
         htmlFor={inputId}
-        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }}
         onDragLeave={() => setDragActive(false)}
-        onDrop={(e) => { e.preventDefault(); setDragActive(false); selectFile(e.dataTransfer.files?.[0] ?? null); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragActive(false);
+          selectFile(e.dataTransfer.files?.[0] ?? null);
+        }}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -131,16 +149,20 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
         ) : (
           <>
             <UploadCloud size={28} aria-hidden style={{ color: "#444748" }} />
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}>
+            <span
+              style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}
+            >
               <span style={{ color: "#5c5650" }}>Choose a photo</span> or drag it here
             </span>
-            <span style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.55rem",
-              color: "#444748",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-            }}>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.55rem",
+                color: "#444748",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}
+            >
               JPEG · PNG · WebP · max 10 MB
             </span>
           </>
@@ -151,7 +173,14 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           type="file"
           accept="image/jpeg,image/png,image/webp"
           capture="user"
-          style={{ position: "absolute", width: "1px", height: "1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}
+          style={{
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            overflow: "hidden",
+            clip: "rect(0,0,0,0)",
+            whiteSpace: "nowrap",
+          }}
           onChange={(e) => selectFile(e.target.files?.[0] ?? null)}
         />
       </label>
@@ -166,7 +195,12 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: EASE }}
-            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#c0392b", margin: 0 }}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.8125rem",
+              color: "#c0392b",
+              margin: 0,
+            }}
           >
             {error}
           </motion.p>
@@ -179,7 +213,15 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: EASE }}
-            style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#10B981", margin: 0 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.375rem",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.8125rem",
+              color: "#10B981",
+              margin: 0,
+            }}
           >
             <CheckCircle size={14} aria-hidden />
             Estimated {estimated.join(" & ")} — review and edit below.
@@ -193,9 +235,15 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: EASE }}
-            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490", margin: 0 }}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.8125rem",
+              color: "#9a9490",
+              margin: 0,
+            }}
           >
-            Couldn't read your features — try a clearer front-facing photo, or set fields below manually.
+            Couldn’t read your features — try a clearer front-facing photo, or set fields below
+            manually.
           </motion.p>
         )}
       </AnimatePresence>
@@ -229,10 +277,15 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           }}
         >
           {busy ? (
-            <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1, repeat: Infinity }}>
+            <motion.span
+              animate={{ opacity: [1, 0.4, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
               Analysing…
             </motion.span>
-          ) : "Estimate from photo"}
+          ) : (
+            "Estimate from photo"
+          )}
         </motion.button>
 
         {file && (

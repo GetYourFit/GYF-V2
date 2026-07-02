@@ -7,18 +7,31 @@ export default function ProfilePage() {
   return (
     <div style={{ padding: "1.25rem 1rem 1rem" }}>
       <header style={{ marginBottom: "2rem" }}>
-        <span style={{
-          fontFamily: "var(--font-mono)", fontSize: "0.6rem", fontWeight: 500,
-          letterSpacing: "0.1em", textTransform: "uppercase", color: "#d4607a",
-          display: "block", marginBottom: "0.5rem",
-        }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#d4607a",
+            display: "block",
+            marginBottom: "0.5rem",
+          }}
+        >
           You
         </span>
-        <h1 style={{
-          fontFamily: "var(--font-body)", fontSize: "clamp(1.625rem,7vw,2.25rem)",
-          fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.03em",
-          color: "#1c1a17", margin: 0,
-        }}>
+        <h1
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "clamp(1.625rem,7vw,2.25rem)",
+            fontWeight: 800,
+            lineHeight: 1.1,
+            letterSpacing: "-0.03em",
+            color: "#1c1a17",
+            margin: 0,
+          }}
+        >
           Profile
         </h1>
       </header>

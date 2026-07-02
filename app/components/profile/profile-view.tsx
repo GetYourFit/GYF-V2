@@ -14,7 +14,8 @@ const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 function useCountUp(target: number, duration = 800): number {
   const [value, setValue] = useState(0);
   useEffect(() => {
-    if (target === 0) { setValue(0); return; }
+    // target 0 is handled by the rAF loop itself (round(eased*0) === 0);
+    // no synchronous setState in the effect body (avoids cascading renders).
     const start = performance.now();
     let raf: number;
     function tick(now: number) {
@@ -31,11 +32,18 @@ function useCountUp(target: number, duration = 800): number {
 }
 
 type Status = "loading" | "ready" | "error";
-interface Loaded { profile: Profile | null; summary: ProfileSummary; }
+interface Loaded {
+  profile: Profile | null;
+  summary: ProfileSummary;
+}
 
 const EMPTY_SUMMARY: ProfileSummary = {
-  outfits_made: 0, items_saved: 0, wardrobe_size: 0,
-  posts: 0, reactions_received: 0, badges: [],
+  outfits_made: 0,
+  items_saved: 0,
+  wardrobe_size: 0,
+  posts: 0,
+  reactions_received: 0,
+  badges: [],
 };
 
 export function ProfileView() {
@@ -45,7 +53,9 @@ export function ProfileView() {
 
   useEffect(() => {
     mounted.current = true;
-    return () => { mounted.current = false; };
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
   const fetchData = useCallback(async (): Promise<Loaded> => {
@@ -74,8 +84,14 @@ export function ProfileView() {
 
   useEffect(() => {
     fetchData()
-      .then((d) => { if (!mounted.current) return; setData(d); setStatus("ready"); })
-      .catch(() => { if (mounted.current) setStatus("error"); });
+      .then((d) => {
+        if (!mounted.current) return;
+        setData(d);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (mounted.current) setStatus("error");
+      });
   }, [fetchData]);
 
   if (status === "loading") return <ProfileSkeleton />;
@@ -100,7 +116,9 @@ export function ProfileView() {
 }
 
 function UserHero({ profile, summary }: { profile: Profile | null; summary: ProfileSummary }) {
-  const displayName = profile ? titleCase(profile.skin_tone ? "My Style" : "Style Explorer") : "Style Explorer";
+  const displayName = profile
+    ? titleCase(profile.skin_tone ? "My Style" : "Style Explorer")
+    : "Style Explorer";
   const styleTag = profile?.style_intent?.length
     ? profile.style_intent.map(titleCase).join(" · ")
     : "Style Explorer";
@@ -126,43 +144,109 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
       {/* Avatar */}
       <div
         style={{
-          width: 88, height: 88, borderRadius: "50%",
+          width: 88,
+          height: 88,
+          borderRadius: "50%",
           background: "#edeae4",
-          display: "flex", alignItems: "center", justifyContent: "center",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           border: "3px solid #ffffff",
           boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
           flexShrink: 0,
         }}
       >
-        <span style={{ fontFamily: "var(--font-body)", fontSize: "2rem", fontWeight: 700, color: "#5c5650" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "2rem",
+            fontWeight: 700,
+            color: "#5c5650",
+          }}
+        >
           G
         </span>
       </div>
 
       {/* Name */}
-      <p style={{ fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)", fontSize: "1.375rem", fontWeight: 700, color: "#1c1a17", margin: 0, textAlign: "center" }}>
+      <p
+        style={{
+          fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+          fontSize: "1.375rem",
+          fontWeight: 700,
+          color: "#1c1a17",
+          margin: 0,
+          textAlign: "center",
+        }}
+      >
         {displayName}
       </p>
 
       {/* Style tag */}
-      <span style={{
-        background: "rgba(212,96,122,0.10)", color: "#d4607a",
-        borderRadius: "999px", padding: "0.25rem 0.875rem",
-        fontFamily: "var(--font-body)", fontSize: "0.7rem", fontWeight: 600,
-        letterSpacing: "0.08em", textTransform: "uppercase",
-      }}>
+      <span
+        style={{
+          background: "rgba(212,96,122,0.10)",
+          color: "#d4607a",
+          borderRadius: "999px",
+          padding: "0.25rem 0.875rem",
+          fontFamily: "var(--font-body)",
+          fontSize: "0.7rem",
+          fontWeight: 600,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+        }}
+      >
         {styleTag}
       </span>
 
       {/* Stats row */}
       <div style={{ display: "flex", alignItems: "center", gap: 0, width: "100%", maxWidth: 320 }}>
         {stats.map((s, i) => (
-          <div key={s.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "0.2rem", position: "relative" }}>
+          <div
+            key={s.label}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "0.2rem",
+              position: "relative",
+            }}
+          >
             {i > 0 && (
-              <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 1, height: "2rem", background: "rgba(0,0,0,0.10)" }} />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: 1,
+                  height: "2rem",
+                  background: "rgba(0,0,0,0.10)",
+                }}
+              />
             )}
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "1.25rem", fontWeight: 700, color: "#1c1a17" }}>{s.value}</span>
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.7rem", color: "#9a9490", textTransform: "uppercase", letterSpacing: "0.04em" }}>{s.label}</span>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "1.25rem",
+                fontWeight: 700,
+                color: "#1c1a17",
+              }}
+            >
+              {s.value}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.7rem",
+                color: "#9a9490",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {s.label}
+            </span>
           </div>
         ))}
       </div>
@@ -171,11 +255,21 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
       <Link
         href="/onboarding"
         style={{
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          minHeight: 44, padding: "0 1.75rem", width: "100%", maxWidth: 200,
-          background: "transparent", border: "1.5px solid #1c1a17", borderRadius: "999px",
-          fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600,
-          color: "#1c1a17", textDecoration: "none",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 44,
+          padding: "0 1.75rem",
+          width: "100%",
+          maxWidth: 200,
+          background: "transparent",
+          border: "1.5px solid #1c1a17",
+          borderRadius: "999px",
+          fontFamily: "var(--font-body)",
+          fontSize: "0.875rem",
+          fontWeight: 600,
+          color: "#1c1a17",
+          textDecoration: "none",
         }}
       >
         Edit profile
@@ -233,8 +327,12 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
     <Link
       href={href}
       style={cellStyle}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#faf8f5"; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#faf8f5"; }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLAnchorElement).style.background = "#faf8f5";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLAnchorElement).style.background = "#faf8f5";
+      }}
     >
       {inner}
     </Link>
@@ -261,7 +359,9 @@ function Stats({ summary }: { summary: ProfileSummary }) {
         background: "rgba(0,0,0,0.06)",
       }}
     >
-      {items.map((item) => <StatCell key={item.label} {...item} />)}
+      {items.map((item) => (
+        <StatCell key={item.label} {...item} />
+      ))}
     </section>
   );
 }
@@ -269,10 +369,16 @@ function Stats({ summary }: { summary: ProfileSummary }) {
 function Badges({ badges }: { badges: string[] }) {
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-      <p style={{
-        fontFamily: "var(--font-body)", fontSize: "0.55rem", fontWeight: 500,
-        letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a9490",
-      }}>
+      <p
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "0.55rem",
+          fontWeight: 500,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "#9a9490",
+        }}
+      >
         Badges earned
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.625rem" }}>
@@ -280,11 +386,15 @@ function Badges({ badges }: { badges: string[] }) {
           <span
             key={b}
             style={{
-              display: "inline-flex", alignItems: "center",
+              display: "inline-flex",
+              alignItems: "center",
               border: "1px solid rgba(0,0,0,0.10)",
               padding: "0.375rem 0.875rem",
-              fontFamily: "var(--font-body)", fontSize: "0.6rem",
-              fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.6rem",
+              fontWeight: 500,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
               color: "#5c5650",
             }}
           >
@@ -299,25 +409,55 @@ function Badges({ badges }: { badges: string[] }) {
 function StyleProfile({ profile }: { profile: Profile | null }) {
   if (!profile) {
     return (
-      <section style={{
-        display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "1.25rem",
-        border: "1px solid rgba(0,0,0,0.10)", background: "#faf8f5", padding: "1.5rem",
-      }}>
+      <section
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: "1.25rem",
+          border: "1px solid rgba(0,0,0,0.10)",
+          background: "#faf8f5",
+          padding: "1.5rem",
+        }}
+      >
         <div>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#1c1a17", marginBottom: "0.5rem" }}>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "1.125rem",
+              fontWeight: 700,
+              color: "#1c1a17",
+              marginBottom: "0.5rem",
+            }}
+          >
             No style profile yet
           </p>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490", maxWidth: "280px", lineHeight: 1.55 }}>
-            Tell GYF about your skin tone, body type, and the looks you love — it sharpens every recommendation.
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.8125rem",
+              color: "#9a9490",
+              maxWidth: "280px",
+              lineHeight: 1.55,
+            }}
+          >
+            Tell GYF about your skin tone, body type, and the looks you love — it sharpens every
+            recommendation.
           </p>
         </div>
         <Link
           href="/onboarding"
           style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            minHeight: "44px", padding: "0 2rem",
-            background: "#d4607a", color: "#ffffff",
-            fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "44px",
+            padding: "0 2rem",
+            background: "#d4607a",
+            color: "#ffffff",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.875rem",
+            fontWeight: 600,
             textDecoration: "none",
             borderRadius: "999px",
           }}
@@ -335,44 +475,81 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
     ["Body type", titleCase(profile.body_type)],
     ["Occasion", titleCase(profile.occasion)],
     ["Style", profile.style_intent?.length ? profile.style_intent.map(titleCase).join(", ") : "—"],
-    ["Budget", budget && (budget.min || budget.max) ? `${budget.currency} ${budget.min ?? 0}–${budget.max ?? "∞"}` : "—"],
+    [
+      "Budget",
+      budget && (budget.min || budget.max)
+        ? `${budget.currency} ${budget.min ?? 0}–${budget.max ?? "∞"}`
+        : "—",
+    ],
   ];
 
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <p style={{
-          fontFamily: "var(--font-body)", fontSize: "0.7rem", fontWeight: 600,
-          letterSpacing: "0.06em", textTransform: "uppercase", color: "#9a9490",
-        }}>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.7rem",
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "#9a9490",
+          }}
+        >
           Style profile
         </p>
-        <Link href="/onboarding" style={{
-          fontFamily: "var(--font-body)", fontSize: "0.6rem", color: "#9a9490",
-          textDecoration: "underline", textUnderlineOffset: "3px",
-        }}>
+        <Link
+          href="/onboarding"
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.6rem",
+            color: "#9a9490",
+            textDecoration: "underline",
+            textUnderlineOffset: "3px",
+          }}
+        >
           Edit
         </Link>
       </div>
-      <dl style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr",
-        gap: "1px", background: "rgba(0,0,0,0.06)",
-      }}>
+      <dl
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "1px",
+          background: "rgba(0,0,0,0.06)",
+        }}
+      >
         {rows.map(([label, value]) => (
-          <div key={label} style={{
-            display: "flex", flexDirection: "column", gap: "0.375rem",
-            background: "#faf8f5", padding: "1rem",
-          }}>
-            <dt style={{
-              fontFamily: "var(--font-body)", fontSize: "0.55rem", fontWeight: 500,
-              letterSpacing: "0.08em", textTransform: "uppercase", color: "#9a9490",
-            }}>
+          <div
+            key={label}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.375rem",
+              background: "#faf8f5",
+              padding: "1rem",
+            }}
+          >
+            <dt
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.55rem",
+                fontWeight: 500,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#9a9490",
+              }}
+            >
               {label}
             </dt>
-            <dd style={{
-              fontFamily: "var(--font-body)", fontSize: "0.875rem",
-              color: "#1c1a17", margin: 0,
-            }}>
+            <dd
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.875rem",
+                color: "#1c1a17",
+                margin: 0,
+              }}
+            >
               {value}
             </dd>
           </div>
@@ -384,23 +561,39 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
 
 function AccountLink() {
   return (
-    <section style={{
-      display: "flex", flexDirection: "column", gap: "1rem",
-      borderTop: "1px solid rgba(0,0,0,0.10)", paddingTop: "2rem",
-    }}>
-      <p style={{
-        fontFamily: "var(--font-body)", fontSize: "0.55rem", fontWeight: 500,
-        letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a9490",
-      }}>
+    <section
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+        borderTop: "1px solid rgba(0,0,0,0.10)",
+        paddingTop: "2rem",
+      }}
+    >
+      <p
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "0.55rem",
+          fontWeight: 500,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "#9a9490",
+        }}
+      >
         Account
       </p>
       <Link
         href="/account"
         style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          gap: "1rem", border: "1px solid rgba(0,0,0,0.10)",
-          background: "#faf8f5", padding: "1.25rem",
-          textDecoration: "none", transition: "background 0.2s, border-color 0.2s",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "1rem",
+          border: "1px solid rgba(0,0,0,0.10)",
+          background: "#faf8f5",
+          padding: "1.25rem",
+          textDecoration: "none",
+          transition: "background 0.2s, border-color 0.2s",
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
@@ -414,7 +607,14 @@ function AccountLink() {
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-          <span style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#1c1a17" }}>
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.9375rem",
+              fontWeight: 600,
+              color: "#1c1a17",
+            }}
+          >
             Privacy &amp; data
           </span>
           <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}>
@@ -440,22 +640,45 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       transition={{ duration: 0.4, ease: EASE }}
       style={{ textAlign: "center", padding: "5rem 1rem" }}
     >
-      <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#1c1a17", marginBottom: "0.75rem" }}>
+      <p
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "1.125rem",
+          fontWeight: 700,
+          color: "#1c1a17",
+          marginBottom: "0.75rem",
+        }}
+      >
         Couldn&apos;t load your profile
       </p>
-      <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490", marginBottom: "2rem" }}>
+      <p
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "0.8125rem",
+          color: "#9a9490",
+          marginBottom: "2rem",
+        }}
+      >
         Something went wrong reaching the stylist. Your data is safe — try again.
       </p>
       <button
         type="button"
         onClick={onRetry}
         style={{
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          minHeight: "44px", padding: "0 1.5rem",
-          border: "1px solid rgba(255,255,255,0.2)", background: "transparent",
-          color: "#1c1a17", cursor: "pointer",
-          fontFamily: "var(--font-body)", fontSize: "0.6rem",
-          fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "44px",
+          padding: "0 1.5rem",
+          border: "1px solid rgba(255,255,255,0.2)",
+          background: "transparent",
+          color: "#1c1a17",
+          cursor: "pointer",
+          fontFamily: "var(--font-body)",
+          fontSize: "0.6rem",
+          fontWeight: 500,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
         }}
       >
         Retry
@@ -467,12 +690,26 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 function ProfileSkeleton() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }} aria-hidden>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", background: "rgba(0,0,0,0.06)" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "1px",
+          background: "rgba(0,0,0,0.06)",
+        }}
+      >
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={`stat-${i}`} style={{ height: "80px", background: "#faf8f5", opacity: 0.6 }} />
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "rgba(0,0,0,0.06)" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "1px",
+          background: "rgba(0,0,0,0.06)",
+        }}
+      >
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={`row-${i}`} style={{ height: "64px", background: "#faf8f5", opacity: 0.6 }} />
         ))}

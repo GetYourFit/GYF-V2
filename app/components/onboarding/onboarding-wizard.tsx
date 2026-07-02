@@ -2,7 +2,16 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactElement,
+} from "react";
 import { ChevronLeft, ChevronRight, Check, Zap } from "lucide-react";
 
 import { PhotoUpload } from "@/components/onboarding/photo-upload";
@@ -51,16 +60,18 @@ type StepId = (typeof STEPS)[number]["id"];
 
 function MonoLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{
-      fontFamily: "var(--font-mono)",
-      fontSize: "0.6rem",
-      fontWeight: 500,
-      letterSpacing: "0.1em",
-      textTransform: "uppercase" as const,
-      color: "#9a9490",
-      display: "block",
-      marginBottom: "0.5rem",
-    }}>
+    <span
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: "0.6rem",
+        fontWeight: 500,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase" as const,
+        color: "#9a9490",
+        display: "block",
+        marginBottom: "0.5rem",
+      }}
+    >
       {children}
     </span>
   );
@@ -105,7 +116,9 @@ function DarkSelect({
         minHeight: "44px",
       }}
     >
-      <option value="" style={{ background: "#faf8f5", color: "#9a9490" }}>{placeholder}</option>
+      <option value="" style={{ background: "#faf8f5", color: "#9a9490" }}>
+        {placeholder}
+      </option>
       {options.map((o) => (
         <option key={o.value} value={o.value} style={{ background: "#faf8f5", color: "#1c1a17" }}>
           {o.label}
@@ -159,14 +172,49 @@ function DarkInput({
   );
 }
 
-function FieldWrap({ label, badge, children }: { label: string; badge?: React.ReactNode; children: React.ReactNode }) {
+function FieldWrap({
+  label,
+  badge,
+  children,
+}: {
+  label: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  // Generate a stable id and associate the visible label with the wrapped
+  // control so assistive tech announces a proper accessible name (WCAG 1.3.1 / 4.1.2).
+  const id = useId();
+  const control = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ id?: string }>, { id })
+    : children;
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.25rem" }}>
-        <MonoLabel>{label}</MonoLabel>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "0.25rem",
+        }}
+      >
+        <label
+          htmlFor={id}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase" as const,
+            color: "#9a9490",
+            display: "block",
+            marginBottom: "0.5rem",
+          }}
+        >
+          {label}
+        </label>
         {badge}
       </div>
-      {children}
+      {control}
     </div>
   );
 }
@@ -210,7 +258,9 @@ export function OnboardingWizard() {
         }
         setConsent({ data_processing: true, ...consentFlags });
       })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Could not load your profile."))
+      .catch((e: unknown) =>
+        setError(e instanceof Error ? e.message : "Could not load your profile."),
+      )
       .finally(() => setLoading(false));
   }, []);
 
@@ -226,7 +276,10 @@ export function OnboardingWizard() {
 
   function toggleStyle(value: string) {
     const current = form.style_intent ?? [];
-    set("style_intent", current.includes(value) ? current.filter((s) => s !== value) : [...current, value]);
+    set(
+      "style_intent",
+      current.includes(value) ? current.filter((s) => s !== value) : [...current, value],
+    );
   }
 
   function applyEstimated(profile: Profile): string[] {
@@ -244,7 +297,10 @@ export function OnboardingWizard() {
 
   const mounted = useRef(false);
   useEffect(() => {
-    if (!mounted.current) { mounted.current = true; return; }
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
     panelRef.current?.focus();
   }, [step]);
 
@@ -256,7 +312,11 @@ export function OnboardingWizard() {
       const api = browserApi();
       await api.putProfile(form);
       await api.putConsent({ flags: consent });
-      toast({ variant: "success", title: "Profile saved", description: "Your stylist is composing looks for you." });
+      toast({
+        variant: "success",
+        title: "Profile saved",
+        description: "Your stylist is composing looks for you.",
+      });
       router.push("/");
       router.refresh();
     } catch (e) {
@@ -276,7 +336,12 @@ export function OnboardingWizard() {
             key={i}
             animate={{ opacity: [0.3, 0.6, 0.3] }}
             transition={{ duration: 1.4, delay: i * 0.15, repeat: Infinity }}
-            style={{ height: "12px", width: `${w}%`, background: "rgba(0,0,0,0.06)", borderRadius: "999px" }}
+            style={{
+              height: "12px",
+              width: `${w}%`,
+              background: "rgba(0,0,0,0.06)",
+              borderRadius: "999px",
+            }}
           />
         ))}
       </div>
@@ -296,25 +361,32 @@ export function OnboardingWizard() {
 
   return (
     <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-
       {/* ── Step indicator ── */}
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <span style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "0.6rem",
-          fontWeight: 500,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          color: "#d4607a",
-        }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#d4607a",
+          }}
+        >
           Step {String(step + 1).padStart(2, "0")} / {String(STEPS.length).padStart(2, "0")}
         </span>
 
-        <ol aria-label="Onboarding progress" style={{ display: "flex", gap: "0.375rem", listStyle: "none", margin: 0, padding: 0 }}>
+        <ol
+          aria-label="Onboarding progress"
+          style={{ display: "flex", gap: "0.375rem", listStyle: "none", margin: 0, padding: 0 }}
+        >
           {STEPS.map((s, i) => {
             const state = i === step ? "current" : i < step ? "done" : "upcoming";
             return (
-              <li key={s.id} style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <li
+                key={s.id}
+                style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem" }}
+              >
                 <button
                   type="button"
                   onClick={() => goTo(i)}
@@ -343,14 +415,16 @@ export function OnboardingWizard() {
                     }}
                   />
                 </button>
-                <span style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "0.55rem",
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: state === "current" ? "#1c1a17" : "#444748",
-                  transition: "color 0.2s",
-                }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.55rem",
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: state === "current" ? "#1c1a17" : "#444748",
+                    transition: "color 0.2s",
+                  }}
+                >
                   {s.label}
                 </span>
               </li>
@@ -376,10 +450,21 @@ export function OnboardingWizard() {
             transition={{ duration: reduceMotion ? 0.15 : 0.28, ease: EASE }}
             style={{ display: "flex", flexDirection: "column", gap: "1.5rem", outline: "none" }}
           >
-            {currentStepId === "you" && <StepYou form={form} set={set} applyEstimated={applyEstimated} estimated={estimated} />}
-            {currentStepId === "style" && <StepStyle form={form} toggleStyle={toggleStyle} set={set} />}
+            {currentStepId === "you" && (
+              <StepYou
+                form={form}
+                set={set}
+                applyEstimated={applyEstimated}
+                estimated={estimated}
+              />
+            )}
+            {currentStepId === "style" && (
+              <StepStyle form={form} toggleStyle={toggleStyle} set={set} />
+            )}
             {currentStepId === "budget" && <StepBudget budget={budget} set={set} />}
-            {currentStepId === "privacy" && <StepPrivacy consent={consent} setConsent={setConsent} />}
+            {currentStepId === "privacy" && (
+              <StepPrivacy consent={consent} setConsent={setConsent} />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -392,7 +477,12 @@ export function OnboardingWizard() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#c0392b", margin: 0 }}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.8125rem",
+              color: "#c0392b",
+              margin: 0,
+            }}
           >
             {error}
           </motion.p>
@@ -400,14 +490,16 @@ export function OnboardingWizard() {
       </AnimatePresence>
 
       {/* ── Navigation ── */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "0.75rem",
-        borderTop: "1px solid rgba(0,0,0,0.06)",
-        paddingTop: "1.5rem",
-      }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.75rem",
+          borderTop: "1px solid rgba(0,0,0,0.06)",
+          paddingTop: "1.5rem",
+        }}
+      >
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {step > 0 && (
             <button
@@ -464,7 +556,10 @@ export function OnboardingWizard() {
             }}
           >
             {saving ? (
-              <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1, repeat: Infinity }}>
+              <motion.span
+                animate={{ opacity: [1, 0.4, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >
                 Saving…
               </motion.span>
             ) : (
@@ -537,23 +632,27 @@ function EstimatedBadge() {
 function StepHeader({ title, hint }: { title: string; hint?: string }) {
   return (
     <div style={{ marginBottom: "0.5rem" }}>
-      <h2 style={{
-        fontFamily: "var(--font-body)",
-        fontSize: "1.375rem",
-        fontWeight: 700,
-        color: "#1c1a17",
-        margin: 0,
-        letterSpacing: "-0.02em",
-      }}>
+      <h2
+        style={{
+          fontFamily: "var(--font-body)",
+          fontSize: "1.375rem",
+          fontWeight: 700,
+          color: "#1c1a17",
+          margin: 0,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {title}
       </h2>
       {hint && (
-        <p style={{
-          fontFamily: "var(--font-body)",
-          fontSize: "0.8125rem",
-          color: "#9a9490",
-          marginTop: "0.375rem",
-        }}>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.8125rem",
+            color: "#9a9490",
+            marginTop: "0.375rem",
+          }}
+        >
           {hint}
         </p>
       )}
@@ -574,7 +673,10 @@ function StepYou({
 }) {
   return (
     <>
-      <StepHeader title="About you" hint="Helps GYF choose flattering colours and cuts. Everything is optional." />
+      <StepHeader
+        title="About you"
+        hint="Helps GYF choose flattering colours and cuts. Everything is optional."
+      />
       <PhotoUpload onEstimated={applyEstimated} />
       <FieldWrap label="I'm shopping for">
         <DarkSelect
@@ -586,13 +688,25 @@ function StepYou({
       </FieldWrap>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem" }}>
         <FieldWrap label="Skin tone" badge={estimated.has("skin_tone") ? <EstimatedBadge /> : null}>
-          <DarkSelect options={SKIN_TONES} value={form.skin_tone ?? ""} onChange={(v) => set("skin_tone", v)} />
+          <DarkSelect
+            options={SKIN_TONES}
+            value={form.skin_tone ?? ""}
+            onChange={(v) => set("skin_tone", v)}
+          />
         </FieldWrap>
         <FieldWrap label="Undertone" badge={estimated.has("undertone") ? <EstimatedBadge /> : null}>
-          <DarkSelect options={UNDERTONES} value={form.undertone ?? ""} onChange={(v) => set("undertone", v)} />
+          <DarkSelect
+            options={UNDERTONES}
+            value={form.undertone ?? ""}
+            onChange={(v) => set("undertone", v)}
+          />
         </FieldWrap>
         <FieldWrap label="Body type" badge={estimated.has("body_type") ? <EstimatedBadge /> : null}>
-          <DarkSelect options={BODY_TYPES} value={form.body_type ?? ""} onChange={(v) => set("body_type", v)} />
+          <DarkSelect
+            options={BODY_TYPES}
+            value={form.body_type ?? ""}
+            onChange={(v) => set("body_type", v)}
+          />
         </FieldWrap>
       </div>
     </>
@@ -610,7 +724,10 @@ function StepStyle({
 }) {
   return (
     <>
-      <StepHeader title="Your style" hint="Pick the aesthetics you lean toward and occasions you dress for." />
+      <StepHeader
+        title="Your style"
+        hint="Pick the aesthetics you lean toward and occasions you dress for."
+      />
       <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
         <MonoLabel>Style intent</MonoLabel>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
@@ -708,8 +825,20 @@ function StepPrivacy({
 }) {
   return (
     <>
-      <StepHeader title="Privacy & consent" hint="You control your data. Change or revoke anytime." />
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      <StepHeader
+        title="Privacy & consent"
+        hint="You control your data. Change or revoke anytime."
+      />
+      <ul
+        style={{
+          listStyle: "none",
+          margin: 0,
+          padding: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: "1.25rem",
+        }}
+      >
         {CONSENT_OPTIONS.map((c) => (
           <li key={c.value} style={{ display: "flex", alignItems: "flex-start", gap: "0.875rem" }}>
             <input
@@ -727,35 +856,44 @@ function StepPrivacy({
                 cursor: c.required ? "not-allowed" : "pointer",
               }}
             />
-            <label htmlFor={`consent-${c.value}`} style={{ cursor: c.required ? "default" : "pointer" }}>
-              <span style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                color: "#1c1a17",
-                display: "block",
-              }}>
+            <label
+              htmlFor={`consent-${c.value}`}
+              style={{ cursor: c.required ? "default" : "pointer" }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  color: "#1c1a17",
+                  display: "block",
+                }}
+              >
                 {c.label}
                 {c.required && (
-                  <span style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "0.55rem",
-                    color: "#9a9490",
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
-                    marginLeft: "0.5rem",
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "0.55rem",
+                      color: "#9a9490",
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      marginLeft: "0.5rem",
+                    }}
+                  >
                     required
                   </span>
                 )}
               </span>
-              <span style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "0.75rem",
-                color: "#9a9490",
-                display: "block",
-                marginTop: "0.25rem",
-              }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "0.75rem",
+                  color: "#9a9490",
+                  display: "block",
+                  marginTop: "0.25rem",
+                }}
+              >
                 {c.description}
               </span>
             </label>
@@ -801,8 +939,12 @@ function DeleteAccount() {
         cursor: busy ? "not-allowed" : "pointer",
         transition: "color 0.2s",
       }}
-      onMouseEnter={(e) => { if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#c0392b"; }}
-      onMouseLeave={(e) => { if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#9a9490"; }}
+      onMouseEnter={(e) => {
+        if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#c0392b";
+      }}
+      onMouseLeave={(e) => {
+        if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#9a9490";
+      }}
     >
       Delete account
     </button>

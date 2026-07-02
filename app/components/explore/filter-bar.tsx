@@ -82,8 +82,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       .catch((err) => {
         console.error("[FilterBar] facets fetch failed", err);
       });
-    return () => { active = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      active = false;
+    };
   }, []);
 
   const priceEnabled = (facets?.priced ?? 0) > 0;
@@ -181,14 +182,16 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       {/* Occasion chips */}
       <div
         aria-label="Filter by occasion"
-        style={{
-          display: "flex",
-          gap: "0.375rem",
-          overflowX: "auto",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-          paddingBottom: "2px",
-        } as React.CSSProperties}
+        style={
+          {
+            display: "flex",
+            gap: "0.375rem",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            paddingBottom: "2px",
+          } as React.CSSProperties
+        }
       >
         {allOccasions.map((occ) => {
           const active = filters.occasion === occ.value;
@@ -214,13 +217,15 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
         {/* Style chips */}
         <div
-          style={{
-            display: "flex",
-            gap: "0.375rem",
-            overflowX: "auto",
-            scrollbarWidth: "none",
-            flex: 1,
-          } as React.CSSProperties}
+          style={
+            {
+              display: "flex",
+              gap: "0.375rem",
+              overflowX: "auto",
+              scrollbarWidth: "none",
+              flex: 1,
+            } as React.CSSProperties
+          }
         >
           {allStyles.map((s) => {
             const active = filters.style === s.value;
@@ -260,7 +265,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               outline: "none",
             }}
           >
-            {PRICE_SORTS.map((o) => (
+            {sortOptions.map((o) => (
               <option key={o.value} value={o.value} style={{ background: "#faf8f5" }}>
                 {o.label}
               </option>

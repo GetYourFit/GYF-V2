@@ -15,12 +15,12 @@ interface GarmentCardProps {
 }
 
 const SLOT_ICONS: Record<string, React.ElementType> = {
-  top:       Shirt,
-  bottom:    Scissors,
+  top: Shirt,
+  bottom: Scissors,
   outerwear: Wind,
-  footwear:  Footprints,
+  footwear: Footprints,
   accessory: Watch,
-  dress:     Layers,
+  dress: Layers,
 };
 
 export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
@@ -47,7 +47,14 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
       }}
     >
       {/* Image / placeholder */}
-      <div style={{ position: "relative", aspectRatio: "3/4", overflow: "hidden", background: "#faf8f5" }}>
+      <div
+        style={{
+          position: "relative",
+          aspectRatio: "3/4",
+          overflow: "hidden",
+          background: "#faf8f5",
+        }}
+      >
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -113,7 +120,14 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
       </div>
 
       {/* Meta */}
-      <div style={{ padding: "0.625rem 0.75rem", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+      <div
+        style={{
+          padding: "0.625rem 0.75rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.25rem",
+        }}
+      >
         <p
           style={{
             fontFamily: "var(--font-body)",
@@ -128,7 +142,14 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
         >
           {item.title}
         </p>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.5rem",
+          }}
+        >
           <span
             style={{
               fontFamily: "var(--font-body)",

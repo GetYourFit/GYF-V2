@@ -38,9 +38,7 @@ export function AppIntro() {
             initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.88 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={
-              reduce
-                ? { duration: 0.35, ease: LUX }
-                : { duration: 0.6, delay: 0.08, ease: LUX }
+              reduce ? { duration: 0.35, ease: LUX } : { duration: 0.6, delay: 0.08, ease: LUX }
             }
           >
             <Image

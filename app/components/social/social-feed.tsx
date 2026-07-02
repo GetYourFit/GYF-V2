@@ -102,8 +102,23 @@ export function SocialFeed() {
     <>
       <div style={{ maxWidth: "390px", margin: "0 auto", padding: "1.25rem 1rem" }}>
         {/* Feed header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
-          <h1 style={{ fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)", fontSize: "1.5rem", fontWeight: 700, color: "#1c1a17", margin: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "1.25rem",
+          }}
+        >
+          <h1
+            style={{
+              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              color: "#1c1a17",
+              margin: 0,
+            }}
+          >
             Community
           </h1>
           <motion.button
@@ -113,10 +128,13 @@ export function SocialFeed() {
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
               padding: "0.5rem 1.125rem",
-              background: "#d4607a", color: "#ffffff",
-              borderRadius: "999px", border: "none",
+              background: "#d4607a",
+              color: "#ffffff",
+              borderRadius: "999px",
+              border: "none",
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-              fontSize: "0.875rem", fontWeight: 600,
+              fontSize: "0.875rem",
+              fontWeight: 600,
               cursor: "pointer",
             }}
           >
@@ -127,9 +145,27 @@ export function SocialFeed() {
         {loading && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }} aria-hidden>
             {[0, 1, 2].map((i) => (
-              <div key={i} style={{ background: "#ffffff", borderRadius: "20px", border: "1px solid rgba(0,0,0,0.08)", overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.875rem 1rem" }}>
-                  <div className="skeleton" style={{ width: 40, height: 40, borderRadius: "50%" }} />
+              <div
+                key={i}
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "20px",
+                  border: "1px solid rgba(0,0,0,0.08)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    padding: "0.875rem 1rem",
+                  }}
+                >
+                  <div
+                    className="skeleton"
+                    style={{ width: 40, height: 40, borderRadius: "50%" }}
+                  />
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                     <div className="skeleton" style={{ height: 12, width: 96 }} />
                     <div className="skeleton" style={{ height: 10, width: 56 }} />
@@ -146,12 +182,33 @@ export function SocialFeed() {
         )}
 
         {!loading && error && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", padding: "6rem 1.5rem", textAlign: "center" }}>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", color: "#5c5650" }}>{error}</p>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "1rem",
+              padding: "6rem 1.5rem",
+              textAlign: "center",
+            }}
+          >
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", color: "#5c5650" }}>
+              {error}
+            </p>
             <button
               type="button"
               onClick={() => void load()}
-              style={{ padding: "0.75rem 1.75rem", background: "#1c1a17", color: "#faf8f5", borderRadius: "999px", border: "none", fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}
+              style={{
+                padding: "0.75rem 1.75rem",
+                background: "#1c1a17",
+                color: "#faf8f5",
+                borderRadius: "999px",
+                border: "none",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
             >
               Retry
             </button>
@@ -163,19 +220,55 @@ export function SocialFeed() {
             initial={reduceMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: LUX }}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem", padding: "6rem 1.5rem", textAlign: "center" }}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "1.25rem",
+              padding: "6rem 1.5rem",
+              textAlign: "center",
+            }}
           >
             <EmptyArt />
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#1c1a17", margin: 0 }}>No looks yet</p>
-              <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#5c5650", maxWidth: "280px", margin: 0 }}>
-                Be the first to share a styled look — every post is re-rendered for whoever views it.
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "1.125rem",
+                  fontWeight: 700,
+                  color: "#1c1a17",
+                  margin: 0,
+                }}
+              >
+                No looks yet
+              </p>
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "0.875rem",
+                  color: "#5c5650",
+                  maxWidth: "280px",
+                  margin: 0,
+                }}
+              >
+                Be the first to share a styled look — every post is re-rendered for whoever views
+                it.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setSheetOpen(true)}
-              style={{ padding: "0.75rem 1.75rem", background: "#d4607a", color: "#ffffff", borderRadius: "999px", border: "none", fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}
+              style={{
+                padding: "0.75rem 1.75rem",
+                background: "#d4607a",
+                color: "#ffffff",
+                borderRadius: "999px",
+                border: "none",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
             >
               Share a look
             </button>
@@ -183,7 +276,16 @@ export function SocialFeed() {
         )}
 
         {!loading && !error && posts.length > 0 && (
-          <ul style={{ display: "flex", flexDirection: "column", gap: "1rem", listStyle: "none", padding: 0, margin: 0 }}>
+          <ul
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "1rem",
+              listStyle: "none",
+              padding: 0,
+              margin: 0,
+            }}
+          >
             <AnimatePresence mode="popLayout" initial={false}>
               {posts.map((post, i) => (
                 <PostCard
@@ -212,7 +314,23 @@ export function SocialFeed() {
             : { type: "spring", stiffness: 380, damping: 26, delay: 0.35 }
         }
         whileTap={reduceMotion ? undefined : { scale: 0.88 }}
-        style={{ position: "fixed", bottom: "calc(5.5rem + env(safe-area-inset-bottom))", right: "1.25rem", zIndex: 30, display: "flex", width: 52, height: 52, alignItems: "center", justifyContent: "center", background: "#d4607a", color: "#ffffff", borderRadius: "999px", border: "none", boxShadow: "0 4px 20px rgba(212,96,122,0.40)", cursor: "pointer" }}
+        style={{
+          position: "fixed",
+          bottom: "calc(5.5rem + env(safe-area-inset-bottom))",
+          right: "1.25rem",
+          zIndex: 30,
+          display: "flex",
+          width: 52,
+          height: 52,
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#d4607a",
+          color: "#ffffff",
+          borderRadius: "999px",
+          border: "none",
+          boxShadow: "0 4px 20px rgba(212,96,122,0.40)",
+          cursor: "pointer",
+        }}
       >
         <Plus size={22} aria-hidden />
       </motion.button>

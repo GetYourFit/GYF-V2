@@ -15,7 +15,14 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
       style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
       title={`Confidence: ${pct}%`}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.5rem",
+        }}
+      >
         <span
           style={{
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
@@ -55,7 +62,9 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
         <motion.div
           initial={{ width: "0%" }}
           animate={{ width: `${pct}%` }}
-          transition={reduce ? { duration: 0 } : { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+          transition={
+            reduce ? { duration: 0 } : { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }
+          }
           style={{ height: "100%", background: "#d4607a", borderRadius: "999px" }}
         />
       </div>

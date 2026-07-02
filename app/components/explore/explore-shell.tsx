@@ -32,7 +32,12 @@ export function ExploreShell() {
           initial={reduce ? { opacity: 1 } : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.38, ease: EASE }}
-          style={{ padding: "1.25rem 1rem 0", display: "flex", flexDirection: "column", gap: "0.375rem" }}
+          style={{
+            padding: "1.25rem 1rem 0",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.375rem",
+          }}
         >
           <span
             style={{
@@ -68,9 +73,8 @@ export function ExploreShell() {
         </div>
       </div>
 
-      {selectedItem && (
-        <ItemDetailSheet item={selectedItem} onClose={() => setSelectedItem(null)} />
-      )}
+      {/* Always mounted so the sheet can animate its exit when the item clears. */}
+      <ItemDetailSheet item={selectedItem} onClose={() => setSelectedItem(null)} />
     </>
   );
 }

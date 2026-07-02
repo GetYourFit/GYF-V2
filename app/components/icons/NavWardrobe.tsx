@@ -1,9 +1,21 @@
-interface Props { size?: number; strokeWidth?: number; }
+interface Props {
+  size?: number;
+  strokeWidth?: number;
+}
 
 export function NavWardrobe({ size = 24, strokeWidth = 1.5 }: Props) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       {/* Cabinet body */}
       <rect x="3" y="3" width="18" height="18" rx="2" />
       {/* Centre divider */}

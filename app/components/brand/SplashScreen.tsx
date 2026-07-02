@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { randomQuote } from "@/lib/fashionQuotes";
 import { GYFLogo } from "./GYFLogo";
 
@@ -18,7 +18,6 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
   const [visible, setVisible] = useState(true);
   const [quoteState, setQuoteState] = useState(() => randomQuote());
   const [quoteVisible, setQuoteVisible] = useState(false);
-  const startTime = useRef(Date.now());
 
   // Show quote after logo animates in
   useEffect(() => {
@@ -39,15 +38,16 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
     return () => clearInterval(interval);
   }, [reduce]);
 
-  // Hide splash after minimum show time
+  // Hide splash after minimum show time (effect runs at mount, so the timer
+  // starts from first paint — no impure Date.now() read during render).
   useEffect(() => {
-    const elapsed = Date.now() - startTime.current;
-    const remaining = Math.max(0, MIN_SHOW_MS - elapsed);
     const t = setTimeout(() => {
       setVisible(false);
       onDone?.();
-      try { sessionStorage.setItem("gyf_splash_shown", "1"); } catch {}
-    }, remaining);
+      try {
+        sessionStorage.setItem("gyf_splash_shown", "1");
+      } catch {}
+    }, MIN_SHOW_MS);
     return () => clearTimeout(t);
   }, [onDone]);
 
@@ -119,7 +119,12 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE } }}
                   exit={{ opacity: 0, y: -8, transition: { duration: 0.25, ease: EASE } }}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
                 >
                   <p
                     style={{

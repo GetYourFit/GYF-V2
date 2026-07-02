@@ -66,7 +66,6 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         }}
       >
         {item.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <motion.img
             src={item.image_url}
             alt={item.title}
@@ -98,7 +97,10 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
           type="button"
           aria-label={saved ? "Remove from saved" : "Save item"}
           aria-pressed={saved}
-          onClick={(e) => { e.stopPropagation(); onSave(item); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSave(item);
+          }}
           style={{
             position: "absolute",
             right: "0.5rem",
@@ -117,10 +119,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
             transition: "all 0.2s",
           }}
         >
-          {saved
-            ? <BookmarkCheck size={14} aria-hidden />
-            : <Bookmark size={14} aria-hidden />
-          }
+          {saved ? <BookmarkCheck size={14} aria-hidden /> : <Bookmark size={14} aria-hidden />}
         </button>
       </div>
 

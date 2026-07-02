@@ -46,14 +46,16 @@ export function StylistControls({
       {/* Occasion chips */}
       <div
         aria-label="Filter by occasion"
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          overflowX: "auto",
-          paddingBottom: "2px",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        } as React.CSSProperties}
+        style={
+          {
+            display: "flex",
+            gap: "0.5rem",
+            overflowX: "auto",
+            paddingBottom: "2px",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          } as React.CSSProperties
+        }
       >
         {OCCASIONS.map((occ) => {
           const active = occasion === occ.value;

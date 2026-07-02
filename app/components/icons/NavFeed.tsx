@@ -1,10 +1,22 @@
-interface Props { size?: number; strokeWidth?: number; }
+interface Props {
+  size?: number;
+  strokeWidth?: number;
+}
 
 /** Outfit hanger — premium nav icon for the Stylist Feed tab */
 export function NavFeed({ size = 24, strokeWidth = 1.5 }: Props) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       {/* Hook */}
       <path d="M12 4a2 2 0 0 1 2 2c0 .9-.6 1.7-1.4 1.9" />
       {/* Hanger arc spreading to shoulders */}

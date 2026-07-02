@@ -21,24 +21,13 @@ export function GYFLogoAnimated({ width = 200 }: Props) {
   const DASH = 300;
 
   const drawTransition = (delay: number): Transition =>
-    reduce
-      ? { duration: 0 }
-      : { duration: 1.2, ease: EASE, delay };
+    reduce ? { duration: 0 } : { duration: 1.2, ease: EASE, delay };
 
   const fillTransition = (delay: number): Transition =>
-    reduce
-      ? { duration: 0 }
-      : { duration: 0.4, ease: [0.0, 0.0, 0.58, 1.0], delay };
+    reduce ? { duration: 0 } : { duration: 0.4, ease: [0.0, 0.0, 0.58, 1.0], delay };
 
   return (
-    <svg
-      width={width}
-      height={height}
-      viewBox="0 0 200 76"
-      fill="none"
-      aria-label="GYF"
-      role="img"
-    >
+    <svg width={width} height={height} viewBox="0 0 200 76" fill="none" aria-label="GYF" role="img">
       {/*
         Geometric letterform paths for "GYF".
         G — circle with gap + inner horizontal bar

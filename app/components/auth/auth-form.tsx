@@ -18,7 +18,9 @@ async function waitForGuardToAccept(path: string, timeoutMs = 4000): Promise<voi
     try {
       const res = await fetch(target, { credentials: "same-origin", redirect: "follow" });
       if (!new URL(res.url).pathname.startsWith("/login")) return;
-    } catch { /* retry */ }
+    } catch {
+      /* retry */
+    }
     await new Promise((r) => setTimeout(r, 100));
   }
 }
@@ -198,8 +200,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-
+    <form
+      onSubmit={onSubmit}
+      noValidate
+      style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
+    >
       {/* Header */}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         <motion.p

@@ -36,7 +36,9 @@ function formatPrice(price?: number | null, currency?: string | null): string | 
 }
 
 interface Props {
-  item: SearchResult;
+  /** The selected item, or `null` when closed. Kept mounted so the sheet can
+   *  animate its exit (AnimatePresence preserves the exiting children). */
+  item: SearchResult | null;
   onClose: () => void;
 }
 
@@ -44,266 +46,281 @@ export function ItemDetailSheet({ item, onClose }: Props) {
   const reduce = useReducedMotion();
   const { toast } = useToast();
   const [addingToWardrobe, setAddingToWardrobe] = useState(false);
-  const src = mediaUrl(item.image_url);
-  const price = formatPrice(item.price, item.currency);
+  const src = item ? mediaUrl(item.image_url) : null;
+  const price = item ? formatPrice(item.price, item.currency) : null;
 
   async function handleAddToWardrobe() {
+    if (!item) return;
     setAddingToWardrobe(true);
     try {
       await browserApi().addWardrobeItem({ item_id: item.item_id, title: item.title });
       toast({ title: "Added to wardrobe", description: item.title, variant: "success" });
     } catch {
-      toast({ title: "Could not add to wardrobe", description: "Please try again.", variant: "error" });
+      toast({
+        title: "Could not add to wardrobe",
+        description: "Please try again.",
+        variant: "error",
+      });
     } finally {
       setAddingToWardrobe(false);
     }
   }
 
   function handleShopNow() {
-    if (item.buy_url) {
+    if (item?.buy_url) {
       window.open(item.buy_url, "_blank", "noopener,noreferrer");
     }
   }
 
   return (
     <AnimatePresence>
-      {/* Backdrop */}
-      <motion.div
-        key="backdrop"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25 }}
-        onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 200,
-          background: "rgba(0,0,0,0.72)",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
-        }}
-        aria-hidden
-      />
-
-      {/* Sheet */}
-      <motion.div
-        key="sheet"
-        role="dialog"
-        aria-modal
-        aria-label={`Details for ${item.title}`}
-        initial={reduce ? { opacity: 0 } : { y: "100%" }}
-        animate={reduce ? { opacity: 1 } : { y: 0 }}
-        exit={reduce ? { opacity: 0 } : { y: "100%" }}
-        transition={
-          reduce
-            ? { duration: 0.2, ease: EASE }
-            : { type: "spring", stiffness: 300, damping: 30 }
-        }
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 201,
-          width: "100%",
-          maxWidth: "390px",
-          maxHeight: "92dvh",
-          background: "#faf8f5",
-          borderTop: "1px solid rgba(255,255,255,0.10)",
-          borderRadius: "20px 20px 0 0",
-          overflowY: "auto",
-          paddingBottom: "calc(80px + env(safe-area-inset-bottom))",
-        }}
-      >
-        {/* Drag handle + close */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            padding: "0.75rem 1rem 0",
-            position: "sticky",
-            top: 0,
-            background: "#faf8f5",
-            zIndex: 10,
-          }}
-        >
-          <div
-            aria-hidden
-            style={{
-              width: "40px",
-              height: "4px",
-              background: "rgba(255,255,255,0.18)",
-              borderRadius: "999px",
-              position: "absolute",
-              left: "50%",
-              top: "0.75rem",
-              transform: "translateX(-50%)",
-            }}
-          />
-          <motion.button
-            type="button"
+      {item && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
             onClick={onClose}
-            aria-label="Close"
-            whileTap={reduce ? undefined : { scale: 0.9 }}
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "44px",
-              height: "44px",
-              background: "rgba(0,0,0,0.06)",
-              border: "1px solid rgba(0,0,0,0.10)",
-              color: "#9a9490",
-              cursor: "pointer",
-              borderRadius: "999px",
+              position: "fixed",
+              inset: 0,
+              zIndex: 200,
+              background: "rgba(0,0,0,0.72)",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+            }}
+            aria-hidden
+          />
+
+          {/* Sheet */}
+          <motion.div
+            key="sheet"
+            role="dialog"
+            aria-modal
+            aria-label={`Details for ${item.title}`}
+            initial={reduce ? { opacity: 0 } : { y: "100%" }}
+            animate={reduce ? { opacity: 1 } : { y: 0 }}
+            exit={reduce ? { opacity: 0 } : { y: "100%" }}
+            transition={
+              reduce
+                ? { duration: 0.2, ease: EASE }
+                : { type: "spring", stiffness: 300, damping: 30 }
+            }
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 201,
+              width: "100%",
+              maxWidth: "390px",
+              maxHeight: "92dvh",
+              background: "#faf8f5",
+              borderTop: "1px solid rgba(255,255,255,0.10)",
+              borderRadius: "20px 20px 0 0",
+              overflowY: "auto",
+              paddingBottom: "calc(80px + env(safe-area-inset-bottom))",
             }}
           >
-            <X size={16} aria-hidden />
-          </motion.button>
-        </div>
-
-        {/* Full-bleed image */}
-        <motion.div
-          layoutId={reduce ? undefined : `explore-img-${item.item_id}`}
-          style={{
-            position: "relative",
-            aspectRatio: "3/4",
-            overflow: "hidden",
-            background: "#1a1a22",
-            marginTop: "0.5rem",
-            borderRadius: "16px",
-            margin: "0.5rem 1rem 0",
-          }}
-        >
-          {src ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={src}
-              alt={item.title}
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", borderRadius: "16px" }}
-            />
-          ) : (
+            {/* Drag handle + close */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                ...MONO,
-                color: "#5a5a65",
+                justifyContent: "flex-end",
+                padding: "0.75rem 1rem 0",
+                position: "sticky",
+                top: 0,
+                background: "#faf8f5",
+                zIndex: 10,
               }}
             >
-              No image
-            </div>
-          )}
-        </motion.div>
-
-        {/* Content */}
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: EASE, delay: 0.15 }}
-          style={{
-            padding: "1.25rem 1rem",
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.25rem",
-          }}
-        >
-          {/* Title + price */}
-          <div>
-            <h2
-              style={{
-                fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-                fontSize: "1.0625rem",
-                fontWeight: 600,
-                color: "#1c1a17",
-                margin: 0,
-                lineHeight: 1.3,
-              }}
-            >
-              {item.title}
-            </h2>
-            {price && (
-              <p
+              <div
+                aria-hidden
                 style={{
-                  ...MONO,
-                  color: ACCENT,
-                  fontSize: "0.75rem",
-                  marginTop: "0.5rem",
-                  letterSpacing: "0.06em",
+                  width: "40px",
+                  height: "4px",
+                  background: "rgba(255,255,255,0.18)",
+                  borderRadius: "999px",
+                  position: "absolute",
+                  left: "50%",
+                  top: "0.75rem",
+                  transform: "translateX(-50%)",
                 }}
-              >
-                {price}
-              </p>
-            )}
-          </div>
-
-          {/* AI compatibility panel */}
-          <CompatibilityPanel item={item} />
-
-          {/* Wear it with */}
-          <WearItWithRow itemId={item.item_id} />
-
-          {/* CTAs */}
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.25rem" }}>
-            <motion.button
-              type="button"
-              onClick={() => void handleAddToWardrobe()}
-              disabled={addingToWardrobe}
-              aria-label="Add to wardrobe"
-              whileTap={reduce ? undefined : { scale: 0.96 }}
-              style={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.375rem",
-                padding: "0.875rem",
-                background: "rgba(0,0,0,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: addingToWardrobe ? "#5a5a65" : "#1c1a17",
-                ...MONO,
-                cursor: addingToWardrobe ? "not-allowed" : "pointer",
-                borderRadius: "999px",
-                transition: "all 0.2s",
-              }}
-            >
-              <Plus size={14} aria-hidden />
-              {addingToWardrobe ? "Adding…" : "Add to wardrobe"}
-            </motion.button>
-
-            {item.buy_url && (
+              />
               <motion.button
                 type="button"
-                onClick={handleShopNow}
-                aria-label={`Shop ${item.title}`}
-                whileTap={reduce ? undefined : { scale: 0.96 }}
+                onClick={onClose}
+                aria-label="Close"
+                whileTap={reduce ? undefined : { scale: 0.9 }}
                 style={{
-                  flex: 1,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "0.375rem",
-                  padding: "0.875rem",
-                  background: "#1c1a17",
-                  border: "none",
-                  color: "#faf8f5",
-                  ...MONO,
+                  width: "44px",
+                  height: "44px",
+                  background: "rgba(0,0,0,0.06)",
+                  border: "1px solid rgba(0,0,0,0.10)",
+                  color: "#9a9490",
                   cursor: "pointer",
                   borderRadius: "999px",
-                  fontWeight: 600,
                 }}
               >
-                Shop now
-                <ArrowUpRight size={14} aria-hidden />
+                <X size={16} aria-hidden />
               </motion.button>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
+            </div>
+
+            {/* Full-bleed image */}
+            <motion.div
+              layoutId={reduce ? undefined : `explore-img-${item.item_id}`}
+              style={{
+                position: "relative",
+                aspectRatio: "3/4",
+                overflow: "hidden",
+                background: "#1a1a22",
+                marginTop: "0.5rem",
+                borderRadius: "16px",
+                margin: "0.5rem 1rem 0",
+              }}
+            >
+              {src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={src}
+                  alt={item.title}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                    borderRadius: "16px",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                    ...MONO,
+                    color: "#5a5a65",
+                  }}
+                >
+                  No image
+                </div>
+              )}
+            </motion.div>
+
+            {/* Content */}
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: EASE, delay: 0.15 }}
+              style={{
+                padding: "1.25rem 1rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "1.25rem",
+              }}
+            >
+              {/* Title + price */}
+              <div>
+                <h2
+                  style={{
+                    fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+                    fontSize: "1.0625rem",
+                    fontWeight: 600,
+                    color: "#1c1a17",
+                    margin: 0,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {item.title}
+                </h2>
+                {price && (
+                  <p
+                    style={{
+                      ...MONO,
+                      color: ACCENT,
+                      fontSize: "0.75rem",
+                      marginTop: "0.5rem",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    {price}
+                  </p>
+                )}
+              </div>
+
+              {/* AI compatibility panel */}
+              <CompatibilityPanel item={item} />
+
+              {/* Wear it with */}
+              <WearItWithRow itemId={item.item_id} />
+
+              {/* CTAs */}
+              <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.25rem" }}>
+                <motion.button
+                  type="button"
+                  onClick={() => void handleAddToWardrobe()}
+                  disabled={addingToWardrobe}
+                  aria-label="Add to wardrobe"
+                  whileTap={reduce ? undefined : { scale: 0.96 }}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.375rem",
+                    padding: "0.875rem",
+                    background: "rgba(0,0,0,0.06)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    color: addingToWardrobe ? "#5a5a65" : "#1c1a17",
+                    ...MONO,
+                    cursor: addingToWardrobe ? "not-allowed" : "pointer",
+                    borderRadius: "999px",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  <Plus size={14} aria-hidden />
+                  {addingToWardrobe ? "Adding…" : "Add to wardrobe"}
+                </motion.button>
+
+                {item.buy_url && (
+                  <motion.button
+                    type="button"
+                    onClick={handleShopNow}
+                    aria-label={`Shop ${item.title}`}
+                    whileTap={reduce ? undefined : { scale: 0.96 }}
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.375rem",
+                      padding: "0.875rem",
+                      background: "#1c1a17",
+                      border: "none",
+                      color: "#faf8f5",
+                      ...MONO,
+                      cursor: "pointer",
+                      borderRadius: "999px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Shop now
+                    <ArrowUpRight size={14} aria-hidden />
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        </>
+      )}
     </AnimatePresence>
   );
 }

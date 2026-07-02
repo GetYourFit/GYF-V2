@@ -11,8 +11,7 @@ import type { Post, SavedOutfit } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-const FOCUSABLE =
-  'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
+const FOCUSABLE = 'a[href],button:not([disabled]),textarea,input,[tabindex]:not([tabindex="-1"])';
 
 interface CreatePostSheetProps {
   open: boolean;
@@ -64,7 +63,9 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   useEffect(() => {
@@ -72,17 +73,22 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
     const panel = panelRef.current;
     const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
     setTimeout(() => (first ?? panel)?.focus(), 50);
-    return () => { restoreRef.current?.focus?.(); };
+    return () => {
+      restoreRef.current?.focus?.();
+    };
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") { e.stopPropagation(); handleClose(); }
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        handleClose();
+      }
     }
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   function onRadioKeyDown(e: React.KeyboardEvent) {
@@ -90,20 +96,34 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
     const idx = looks.findIndex((l) => l.id === selected);
     let next = idx;
     if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % looks.length;
-    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + looks.length) % looks.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp")
+      next = (idx - 1 + looks.length) % looks.length;
     else return;
     e.preventDefault();
     const look = looks[next];
-    if (look) { setSelected(look.id); radioRefs.current[next]?.focus(); }
+    if (look) {
+      setSelected(look.id);
+      radioRefs.current[next]?.focus();
+    }
   }
 
-  function reset() { setCaption(""); setSelected(null); setFieldError(null); }
-  function handleClose() { reset(); onClose(); }
+  function reset() {
+    setCaption("");
+    setSelected(null);
+    setFieldError(null);
+  }
+  function handleClose() {
+    reset();
+    onClose();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const look = looks.find((l) => l.id === selected);
-    if (!look) { setFieldError("Select a look to share."); return; }
+    if (!look) {
+      setFieldError("Select a look to share.");
+      return;
+    }
     setSubmitting(true);
     setFieldError(null);
     try {
@@ -190,8 +210,17 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
             }}
           >
             {/* Grab handle */}
-            <div style={{ display: "flex", justifyContent: "center", padding: "0.75rem 0 0.25rem" }}>
-              <div style={{ width: 36, height: 4, background: "rgba(255,255,255,0.15)", borderRadius: 2 }} />
+            <div
+              style={{ display: "flex", justifyContent: "center", padding: "0.75rem 0 0.25rem" }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 4,
+                  background: "rgba(255,255,255,0.15)",
+                  borderRadius: 2,
+                }}
+              />
             </div>
 
             {/* Header */}
@@ -265,7 +294,10 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
 
               {/* Loading skeletons */}
               {loadingLooks && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.5rem" }} aria-hidden>
+                <div
+                  style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.5rem" }}
+                  aria-hidden
+                >
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
@@ -305,7 +337,9 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                     return (
                       <button
                         key={look.id}
-                        ref={(el) => { radioRefs.current[i] = el; }}
+                        ref={(el) => {
+                          radioRefs.current[i] = el;
+                        }}
                         type="button"
                         role="radio"
                         aria-checked={active}
@@ -326,7 +360,16 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                       >
                         {img ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          <img
+                            src={img}
+                            alt=""
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              display: "block",
+                            }}
+                          />
                         ) : (
                           <span
                             style={{
@@ -380,7 +423,10 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   rows={3}
                   placeholder="Why this look works…"
                   value={caption}
-                  onChange={(e) => { setCaption(e.target.value); setFieldError(null); }}
+                  onChange={(e) => {
+                    setCaption(e.target.value);
+                    setFieldError(null);
+                  }}
                   style={{
                     width: "100%",
                     resize: "none",
@@ -399,7 +445,15 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
 
               {/* Field error */}
               {fieldError && (
-                <p role="alert" style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#c0392b", margin: 0 }}>
+                <p
+                  role="alert"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.8125rem",
+                    color: "#c0392b",
+                    margin: 0,
+                  }}
+                >
                   {fieldError}
                 </p>
               )}

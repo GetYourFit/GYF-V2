@@ -30,8 +30,22 @@ function CardSkeleton({ i }: { i: number }) {
     >
       <div style={{ aspectRatio: "3/4", background: "rgba(0,0,0,0.06)" }} />
       <div style={{ padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <div style={{ height: "10px", width: "80%", background: "rgba(0,0,0,0.06)", borderRadius: "999px" }} />
-        <div style={{ height: "8px", width: "40%", background: "rgba(0,0,0,0.06)", borderRadius: "999px" }} />
+        <div
+          style={{
+            height: "10px",
+            width: "80%",
+            background: "rgba(0,0,0,0.06)",
+            borderRadius: "999px",
+          }}
+        />
+        <div
+          style={{
+            height: "8px",
+            width: "40%",
+            background: "rgba(0,0,0,0.06)",
+            borderRadius: "999px",
+          }}
+        />
       </div>
     </motion.div>
   );
@@ -70,7 +84,11 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
-      if (reset) { setItems([]); setPage(0); setHasMore(true); }
+      if (reset) {
+        setItems([]);
+        setPage(0);
+        setHasMore(true);
+      }
       setLoading(true);
       setError(null);
       try {
@@ -123,9 +141,13 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
     let active = true;
     browserApi()
       .listSaved()
-      .then((rows) => { if (active) setSaved(new Set(rows.map((r) => r.item_id))); })
+      .then((rows) => {
+        if (active) setSaved(new Set(rows.map((r) => r.item_id)));
+      })
       .catch(() => {});
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   const toggleSave = useCallback(
@@ -133,7 +155,8 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
       const wasSaved = saved.has(item.item_id);
       setSaved((prev) => {
         const next = new Set(prev);
-        if (wasSaved) next.delete(item.item_id); else next.add(item.item_id);
+        if (wasSaved) next.delete(item.item_id);
+        else next.add(item.item_id);
         return next;
       });
       const api = browserApi();
@@ -147,10 +170,15 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
       }).catch(() => {
         setSaved((prev) => {
           const next = new Set(prev);
-          if (wasSaved) next.add(item.item_id); else next.delete(item.item_id);
+          if (wasSaved) next.add(item.item_id);
+          else next.delete(item.item_id);
           return next;
         });
-        toast({ title: wasSaved ? "Couldn't remove that" : "Couldn't save that", description: "Please try again.", variant: "error" });
+        toast({
+          title: wasSaved ? "Couldn't remove that" : "Couldn't save that",
+          description: "Please try again.",
+          variant: "error",
+        });
       });
     },
     [saved, toast],
@@ -160,7 +188,9 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   if (loading && items.length === 0 && !error) {
     return (
       <div style={GRID_STYLE} aria-busy aria-label="Loading items">
-        {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} i={i} />)}
+        {Array.from({ length: 12 }).map((_, i) => (
+          <CardSkeleton key={i} i={i} />
+        ))}
       </div>
     );
   }
@@ -187,10 +217,23 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
       >
         <RefreshCw size={24} aria-hidden style={{ color: "#9a9490" }} />
         <div>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#1c1a17", marginBottom: "0.375rem" }}>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.9375rem",
+              fontWeight: 600,
+              color: "#1c1a17",
+              marginBottom: "0.375rem",
+            }}
+          >
             Something interrupted the catalog
           </p>
-          <p role="alert" style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}>{error}</p>
+          <p
+            role="alert"
+            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}
+          >
+            {error}
+          </p>
         </div>
         <button
           type="button"
@@ -237,14 +280,43 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           borderRadius: "16px",
         }}
       >
-        <div style={{ position: "relative", width: "72px", height: "72px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div
+          style={{
+            position: "relative",
+            width: "72px",
+            height: "72px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <div style={{ position: "absolute", inset: 0, border: "1px solid rgba(0,0,0,0.06)" }} />
-          <div style={{ position: "absolute", inset: "10px", border: "1px solid rgba(0,0,0,0.10)" }} />
-          <div style={{ position: "absolute", inset: "20px", border: "1px solid rgba(255,255,255,0.15)" }} />
-          <SearchX size={20} aria-hidden style={{ color: "#9a9490", position: "relative", zIndex: 1 }} />
+          <div
+            style={{ position: "absolute", inset: "10px", border: "1px solid rgba(0,0,0,0.10)" }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: "20px",
+              border: "1px solid rgba(255,255,255,0.15)",
+            }}
+          />
+          <SearchX
+            size={20}
+            aria-hidden
+            style={{ color: "#9a9490", position: "relative", zIndex: 1 }}
+          />
         </div>
         <div>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#1c1a17", marginBottom: "0.375rem" }}>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.9375rem",
+              fontWeight: 600,
+              color: "#1c1a17",
+              marginBottom: "0.375rem",
+            }}
+          >
             Nothing matches yet
           </p>
           <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}>
@@ -260,28 +332,60 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
       <div style={GRID_STYLE}>
         <AnimatePresence mode="popLayout">
           {items.map((item, i) => (
-            <ExploreCard key={item.item_id} item={item} index={i} saved={saved.has(item.item_id)} onSave={toggleSave} onSelect={onSelectItem} />
+            <ExploreCard
+              key={item.item_id}
+              item={item}
+              index={i}
+              saved={saved.has(item.item_id)}
+              onSave={toggleSave}
+              onSelect={onSelectItem}
+            />
           ))}
         </AnimatePresence>
       </div>
 
       {/* Append skeleton */}
       {loading && items.length > 0 && (
-        <div style={{ ...GRID_STYLE, marginTop: "0.75rem" }} aria-busy aria-label="Loading more items">
-          {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} i={i} />)}
+        <div
+          style={{ ...GRID_STYLE, marginTop: "0.75rem" }}
+          aria-busy
+          aria-label="Loading more items"
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <CardSkeleton key={i} i={i} />
+          ))}
         </div>
       )}
 
       {/* Inline error on later page */}
       {error && items.length > 0 && (
-        <p role="alert" style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#c0392b", textAlign: "center", marginTop: "1.5rem" }}>
+        <p
+          role="alert"
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.8125rem",
+            color: "#c0392b",
+            textAlign: "center",
+            marginTop: "1.5rem",
+          }}
+        >
           {error}
         </p>
       )}
 
       {/* End of results */}
       {!hasMore && !loading && items.length > 0 && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "#9a9490", textAlign: "center", marginTop: "2.5rem" }}>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.55rem",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#9a9490",
+            textAlign: "center",
+            marginTop: "2.5rem",
+          }}
+        >
           End of results
         </p>
       )}

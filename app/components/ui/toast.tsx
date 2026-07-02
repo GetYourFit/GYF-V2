@@ -152,7 +152,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 )}
               >
                 <div className="flex items-start gap-3 px-4 py-3">
-                  <Icon size={16} className={cn("mt-0.5 shrink-0", ACCENT[t.variant])} aria-hidden />
+                  <Icon
+                    size={16}
+                    className={cn("mt-0.5 shrink-0", ACCENT[t.variant])}
+                    aria-hidden
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="t-title text-sm text-text">{t.title}</p>
                     {t.description && (
@@ -171,7 +175,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {/* Progress drain bar */}
                 {t.duration > 0 && (
                   <motion.div
-                    className={cn("h-[2px]", t.variant === "error" ? "bg-error" : t.variant === "success" ? "bg-success" : "bg-border-hi")}
+                    className={cn(
+                      "h-[2px]",
+                      t.variant === "error"
+                        ? "bg-error"
+                        : t.variant === "success"
+                          ? "bg-success"
+                          : "bg-border-hi",
+                    )}
                     initial={{ scaleX: 1, originX: 0 }}
                     animate={{ scaleX: 0 }}
                     transition={{ duration: t.duration / 1000, ease: "linear" }}

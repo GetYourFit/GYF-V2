@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
-import { Bookmark, ExternalLink, X, ChevronDown, ChevronUp, ShoppingBag, Wand2 } from "lucide-react";
+import { Bookmark, X, ChevronDown, ChevronUp, ShoppingBag, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { OutfitDetail } from "@/components/stylist/outfit-detail";
@@ -127,9 +127,18 @@ export function OutfitCard({
             const tag = price(item);
 
             return (
-              <div key={item.item_id} style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <div
+                key={item.item_id}
+                style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}
+              >
                 <div
-                  style={{ position: "relative", aspectRatio: "3/4", background: "#f4f1ec", borderRadius: "12px", overflow: "hidden" }}
+                  style={{
+                    position: "relative",
+                    aspectRatio: "3/4",
+                    background: "#f4f1ec",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                  }}
                 >
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -137,7 +146,12 @@ export function OutfitCard({
                       src={src}
                       alt={`${item.title ?? ""} — ${item.category.replace(/_/g, " ")}`}
                       loading="lazy"
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
                     />
                   ) : (
                     <div
