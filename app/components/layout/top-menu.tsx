@@ -226,7 +226,6 @@ export function TopMenu() {
               >
                 <Link
                   href={href}
-                  onClick={() => setOpen(false)}
                   style={{
                     display: "flex",
                     alignItems: "center",
