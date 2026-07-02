@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 // Security headers (W6 / M-2). Applied to every route by Next at the edge so the
 // browser enforces them regardless of the page. We deliberately avoid a strict
@@ -32,9 +31,6 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
-  },
-  turbopack: {
-    root: path.resolve(__dirname, ".."),
   },
 };
 

@@ -65,7 +65,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       if (e instanceof ApiError && e.isUnavailable) {
         setError("Photo onboarding isn't available right now — please use the form below.");
       } else if (e instanceof ApiError && e.status === 403) {
-        setError("Please accept "Process my data" consent below, then try again.");
+        setError('Please accept "Process my data" consent below, then try again.');
       } else {
         setError(e instanceof Error ? e.message : "Could not read that photo. Try another.");
       }
