@@ -44,29 +44,20 @@ export function AppShell({ children }: AppShellProps) {
           }}
         >
           <Link href="/" aria-label="Get Your Fit home">
-            {/* Crop window: render image large, clip to just the wordmark */}
-            <div
+            {/* object-fit:none shows a 200×36 window into the 500×500 canvas centred on the text */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/assets/get-your-fit.png"
+              alt="Get Your Fit"
               style={{
-                width: 160,
-                height: 32,
-                overflow: "hidden",
-                position: "relative",
+                display: "block",
+                width: 200,
+                height: 36,
+                objectFit: "none",
+                objectPosition: "49% 42%",
                 flexShrink: 0,
               }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/assets/get-your-fit.png"
-                alt="Get Your Fit"
-                style={{
-                  position: "absolute",
-                  width: 600,
-                  height: 600,
-                  top: -232,
-                  left: -214,
-                }}
-              />
-            </div>
+            />
           </Link>
           <TopMenu />
         </header>
