@@ -34,30 +34,33 @@ export default function Loading() {
         }}
       />
 
-      {/* GYF logo mark — pulses while loading */}
+      {/* GYF logo — centred, pulses while loading */}
       <motion.div
-        animate={{ opacity: [0.4, 1, 0.4], scale: [0.97, 1, 0.97] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: [0, 1, 0.6, 1], scale: [0.92, 1, 0.98, 1] }}
+        transition={{ duration: 1.6, ease: "easeOut" }}
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem" }}
       >
-        <GYFLogo width={180} />
-      </motion.div>
+        <GYFLogo width={260} />
 
-      {/* Subtle tagline */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.45 }}
-        transition={{ duration: 0.6, delay: 0.8 }}
-        style={{
-          fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-          fontSize: "0.6rem",
-          letterSpacing: "0.2em",
-          textTransform: "uppercase",
-          color: "#1c1a17",
-          margin: 0,
-        }}
-      >
-        Get Your Fit
-      </motion.p>
+        {/* Tagline */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          style={{
+            fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+            fontSize: "0.75rem",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+            color: "#5c5650",
+            margin: 0,
+          }}
+        >
+          Get Your Fit
+        </motion.p>
+      </motion.div>
     </div>
   );
 }
