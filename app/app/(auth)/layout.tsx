@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Suspense, type ReactNode } from "react";
-import { GYFLogo } from "@/components/brand/GYFLogo";
+import { GYFLogoAnimated } from "@/components/brand/GYFLogoAnimated";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <main
       style={{
         minHeight: "100dvh",
-        background: "#000000",
+        background: "#0f0f12",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -53,10 +53,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           style={{ display: "flex", justifyContent: "center" }}
         >
           <Link href="/" aria-label="GYF home">
-            <GYFLogo
-              width={160}
-              style={{ filter: "brightness(0) invert(1)" }}
-            />
+            <GYFLogoAnimated width={160} />
           </Link>
         </motion.div>
 
@@ -80,7 +77,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             fontWeight: 500,
             letterSpacing: "0.05em",
             textTransform: "uppercase",
-            color: "#5a5a65",
+            color: "#8a8a95",
             textAlign: "center",
           }}
         >

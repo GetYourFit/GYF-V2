@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { GYFLogo } from "@/components/brand/GYFLogo";
 import { BottomNav } from "@/components/layout/bottom-nav";
 
 interface AppShellProps {
@@ -43,11 +42,13 @@ export function AppShell({ children }: AppShellProps) {
             width: "100%",
           }}
         >
-          <Link href="/" aria-label="GYF home">
-            <GYFLogo
-              width={80}
-              style={{ filter: "brightness(0) invert(1)" }}
-            />
+          <Link href="/" aria-label="GYF home" style={{ display: "flex", alignItems: "center" }}>
+            {/* Inline SVG wordmark — always white, never depends on PNG loading */}
+            <svg width="64" height="24" viewBox="0 0 200 76" fill="none" aria-hidden>
+              <path d="M34 10 A24 24 0 1 0 58 50 L58 36 L42 36" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M76 10 L90 34 L104 10 M90 34 L90 62" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M120 10 L120 62 M120 10 L156 10 M120 36 L150 36" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </Link>
           {/* Right slot — reserved for future notifications icon */}
           <div style={{ width: 44 }} aria-hidden />

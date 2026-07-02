@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { GYFMark } from "@/components/brand/GYFMark";
+import { GYFLogoAnimated } from "@/components/brand/GYFLogoAnimated";
 
 export default function Loading() {
   return (
@@ -10,11 +10,12 @@ export default function Loading() {
         position: "fixed",
         inset: 0,
         zIndex: 9000,
-        background: "#000000",
+        background: "#0f0f12",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "column",
+        gap: "2rem",
       }}
     >
       {/* Top progress bar */}
@@ -28,19 +29,30 @@ export default function Loading() {
           left: 0,
           right: 0,
           height: "2px",
-          background: "#f0bd8f",
+          background: "#d4a96a",
           transformOrigin: "left",
         }}
       />
 
-      {/* Pulsing logomark */}
-      <motion.div
-        animate={{ opacity: [0.35, 1, 0.35] }}
-        transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-        style={{ filter: "brightness(0) invert(1)" }}
+      {/* Animated GYF wordmark */}
+      <GYFLogoAnimated width={160} />
+
+      {/* Subtle tagline */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.45 }}
+        transition={{ duration: 0.6, delay: 0.8 }}
+        style={{
+          fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+          fontSize: "0.6rem",
+          letterSpacing: "0.2em",
+          textTransform: "uppercase",
+          color: "#e8e4dc",
+          margin: 0,
+        }}
       >
-        <GYFMark size={48} />
-      </motion.div>
+        Get Your Fit
+      </motion.p>
     </div>
   );
 }
