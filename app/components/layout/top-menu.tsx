@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,9 +52,12 @@ function CloseIcon() {
 
 export function TopMenu() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const reduce = useReducedMotion();
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => { setOpen(false); }, [pathname]);
 
@@ -131,8 +135,13 @@ export function TopMenu() {
         </AnimatePresence>
       </motion.button>
 
-      {/* ── Backdrop — separate AnimatePresence avoids fragment child bug ── */}
-      <AnimatePresence>
+      {/* ── Backdrop + sheet rendered into document.body via portal ──
+           backdrop-filter on the header creates a new CSS containing block,
+           which makes position:fixed children anchor to the header instead of
+           the viewport. Portal escapes that entirely. ── */}
+      {mounted && createPortal(
+        <>
+        <AnimatePresence>
         {open && (
           <motion.div
             key="backdrop"
@@ -264,6 +273,9 @@ export function TopMenu() {
           </motion.div>
         )}
       </AnimatePresence>
+        </>,
+        document.body
+      )}
     </div>
   );
 }
