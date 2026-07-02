@@ -48,18 +48,18 @@
   production model lacking a passing report; online-eval scaffolding stubbed. Plan:
   `docs/plans/m1-eval-harness.md`.
 
-**In progress:**
-- **M2 ⏳** embedding upgrade — dockerized encoder bake-off harness is built (`make m2-bakeoff`);
-  the real bake-off run + promotion is **pending a GPU lane**. (Note: no "FashionSigLIP-2" weight
-  actually exists yet; candidates under research.) The `eval-reports/encoder-*.json` must be a
-  **real run** before M2 counts as done (milestone-done discipline). Plan:
+- **M2 ✅** embedding upgrade — real ZeroGPU bake-off run; **`google-siglip2-base-v1` promoted**
+  (eval-reports committed); prod catalog seeded with ~24k items + embeddings. (Note: no
+  "FashionSigLIP-2" weight exists; SigLIP 2 base won the bake-off.) Plan:
   `docs/plans/m2-embedding-upgrade.md`.
 
-**The honest gap:** the **backend "brain" is strong; the product surface is not built.** The
-`app/` frontend is a **marketing landing page only** (Hero/Vision/About). There is **no
-onboarding UI, no recommendations UI, no try-on UI, no auth flow.** *This is the largest piece
-of "the thing people pay for," and most of Stage 2 below — and the **only** way to start the
-real-data flywheel (D4) that is GYF's actual moat.*
+**The honest gap (updated 2026-07-02):** the product **surface is now built and deployed**
+(auth, onboarding, stylist, Explore, social, collections, wardrobe, profile, account — see
+`CLAUDE.md` §0.5). What remains from this roadmap: **M9 try-on (missing entirely)**, **affiliate
+attribution** (raw redirect only; Cuelinks pending), **follow-graph** (recreate exists; no
+follow/unfollow), **M3/M4 live GPU lanes** (prod abstains → manual fallback), **M8.5 operator
+trust surface**, and **M12 beta hardening**. The flywheel's binding constraint is now **real
+catalog data** (prices/buy-URLs), not the surface.
 
 ---
 

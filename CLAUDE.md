@@ -60,13 +60,18 @@ GetYourFit-New/
 
 ---
 
-## 0.5 Current Status (2026-06-22)
+## 0.5 Current Status (2026-07-02)
 
-**Done & verified:** P0 infra; P1-A perception & catalog; P1-B Cycle 1 manual onboarding (+ consent/erasure); P1-C Cycles 1–3 (cold-start outfit composition → online taste model + impression logging → NL styling-goal box); image serving + `/gallery`; fully-dockerized disposable dev stack; **engineering doctrine adopted** + commercial-clean stack decided; **M0** (registry + CI license gate + import lint) and **M1** (eval-report contract + per-capability + promotion gate) ✅. **M2 ⏳** embedding bake-off harness built; real run + promotion **pending a GPU lane**.
+**Done & verified:** P0 infra; P1-A/B/C (perception & catalog, manual onboarding + consent/erasure, cold-start → taste model → NL goals); **M0** (license gate) and **M1** (eval harness + promotion gate) ✅; **M2 ✅** — `google-siglip2-base-v1` promoted via a real ZeroGPU bake-off, prod catalog seeded with ~24k items + embeddings; **the full product surface is built, wired to prod, and deployed** (Vercel web + Render API + Supabase): auth, onboarding (manual + photo path), stylist feed with explanations/confidence/NL goals/occasion, Explore search + facets + price filter/sort, collections & saved looks, wardrobe, social posts/reactions/recreate, profile + badges, account (consent + erasure). Security hardening (headers, rate limits, bounded queries) and a full lint/type/test/doctrine CI gate are green.
 
-**The honest gap:** the **backend "brain" is strong; the product *surface* is not built** — `app/` is a **marketing landing page only** (no onboarding/recommendations/try-on UI). That UI is most of Stage 2 in `roadmap.md`, the bulk of remaining launch work, **and the only way to start the real-data flywheel (D4) that is GYF's moat.**
+**The honest gaps (requirements not yet met — see the 2026-07-02 audit):**
+1. **Virtual try-on (M9) is MISSING** — no `TryOnRenderer` port, no UI, no router; only event vocabulary exists. It is a headline Phase-1 feature.
+2. **Affiliate attribution is MISSING** — buy is a raw `buy_url` redirect; no affiliate wrapping/attribution. Cuelinks signup is on hold pending channel verification (contact email now published in-app); prod catalog prices are null until a real feed lands, which keeps the price filter inert.
+3. **Photo onboarding is DEGRADED on prod** — body-type and skin-tone modules abstain (no GPU runtime wired on Render); skin-tone additionally shadow-gated (⚠️ fairness eval) — manual path is the live fallback, as designed.
+4. **Style-following is PARTIAL** — per-post "recreate for me" works (re-rendered to the follower), but there is **no follow-graph** (no follow/unfollow endpoints), so "follow someone's style" isn't real yet.
+5. **Trust/ops surface (M8.5) PARTIAL** — per-rec confidence ships; no operator-facing live-vs-shadow status view.
 
-**Next (parallel-track strategy — see `roadmap.md` §1 principle #5):** the brain is already worth a UI, so **start the product surface now** — **M5 auth + onboarding on the already-built manual path** (it does *not* depend on the photo modules) → **M6 stylist experience**. In a **parallel background track**, finish the brain through the gates: **M2** embeddings (GPU-lane gated) → **M3** photo body-type → **M4** skin-tone (⚠️ fairness-gated), which fill the onboarding *photo* path *behind* the live surface. This starts behavioural data weeks earlier without breaking any dependency or invariant.
+**Next:** land the real affiliate feed (Cuelinks) → real prices/buy-URLs activate Explore + revenue + flywheel; build the follow-graph (small); then try-on behind a `TryOnRenderer` port (licensed model at inference, ZeroGPU). M3/M4 GPU lanes fill the photo path behind the live surface.
 
 ---
 
