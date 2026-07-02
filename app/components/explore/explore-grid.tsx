@@ -22,16 +22,16 @@ function CardSkeleton({ i }: { i: number }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: "rgba(255,255,255,0.02)",
+        background: "rgba(255,255,255,0.04)",
         border: "1px solid rgba(255,255,255,0.05)",
-        borderRadius: "4px",
+        borderRadius: "16px",
         overflow: "hidden",
       }}
     >
-      <div style={{ aspectRatio: "3/4", background: "rgba(255,255,255,0.04)" }} />
+      <div style={{ aspectRatio: "3/4", background: "rgba(255,255,255,0.06)" }} />
       <div style={{ padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <div style={{ height: "10px", width: "80%", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />
-        <div style={{ height: "8px", width: "40%", background: "rgba(255,255,255,0.04)", borderRadius: "2px" }} />
+        <div style={{ height: "10px", width: "80%", background: "rgba(255,255,255,0.06)", borderRadius: "999px" }} />
+        <div style={{ height: "8px", width: "40%", background: "rgba(255,255,255,0.06)", borderRadius: "999px" }} />
       </div>
     </motion.div>
   );
@@ -181,11 +181,11 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           padding: "4rem 1.5rem",
           textAlign: "center",
           border: "1px solid rgba(255,255,255,0.06)",
-          background: "rgba(255,255,255,0.02)",
-          borderRadius: "4px",
+          background: "rgba(255,255,255,0.04)",
+          borderRadius: "16px",
         }}
       >
-        <RefreshCw size={24} aria-hidden style={{ color: "#5a5a65" }} />
+        <RefreshCw size={24} aria-hidden style={{ color: "#8a8a95" }} />
         <div>
           <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#e2e2e9", marginBottom: "0.375rem" }}>
             Something interrupted the catalog
@@ -208,7 +208,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
             letterSpacing: "0.08em",
             textTransform: "uppercase",
             cursor: "pointer",
-            borderRadius: "2px",
+            borderRadius: "999px",
           }}
         >
           <RefreshCw size={12} aria-hidden />
@@ -234,20 +234,20 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           padding: "4rem 1.5rem",
           textAlign: "center",
           border: "1px solid rgba(255,255,255,0.06)",
-          borderRadius: "4px",
+          borderRadius: "16px",
         }}
       >
         <div style={{ position: "relative", width: "72px", height: "72px", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 0, border: "1px solid rgba(255,255,255,0.06)" }} />
           <div style={{ position: "absolute", inset: "10px", border: "1px solid rgba(255,255,255,0.1)" }} />
           <div style={{ position: "absolute", inset: "20px", border: "1px solid rgba(255,255,255,0.15)" }} />
-          <SearchX size={20} aria-hidden style={{ color: "#5a5a65", position: "relative", zIndex: 1 }} />
+          <SearchX size={20} aria-hidden style={{ color: "#8a8a95", position: "relative", zIndex: 1 }} />
         </div>
         <div>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#ffffff", marginBottom: "0.375rem" }}>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#e8e4dc", marginBottom: "0.375rem" }}>
             Nothing matches yet
           </p>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#5a5a65" }}>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8a8a95" }}>
             Try a different search or loosen your filters.
           </p>
         </div>
@@ -281,7 +281,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
 
       {/* End of results */}
       {!hasMore && !loading && items.length > 0 && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65", textAlign: "center", marginTop: "2.5rem" }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95", textAlign: "center", marginTop: "2.5rem" }}>
           End of results
         </p>
       )}

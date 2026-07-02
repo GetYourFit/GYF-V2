@@ -169,7 +169,7 @@ export function OutfitDetail({
                     fontSize: "0.6rem",
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "#f0bd8f",
+                    color: "#d4a96a",
                   }}
                 >
                   N°{String(index + 1).padStart(2, "0")}
@@ -181,7 +181,7 @@ export function OutfitDetail({
                     fontSize: "0.6rem",
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: "#5a5a65",
+                    color: "#8a8a95",
                     margin: 0,
                   }}
                 >
@@ -200,7 +200,7 @@ export function OutfitDetail({
                   height: "44px",
                   background: "transparent",
                   border: "none",
-                  color: "#5a5a65",
+                  color: "#8a8a95",
                   cursor: "pointer",
                 }}
               >
@@ -226,7 +226,7 @@ export function OutfitDetail({
                       flex: 1,
                       aspectRatio: "3/4",
                       overflow: "hidden",
-                      background: "#111318",
+                      background: "#0f0f12",
                     }}
                   >
                     {src ? (
@@ -245,7 +245,7 @@ export function OutfitDetail({
                           height: "100%",
                           fontFamily: "var(--font-mono)",
                           fontSize: "0.5rem",
-                          color: "#5a5a65",
+                          color: "#8a8a95",
                           textTransform: "uppercase",
                           letterSpacing: "0.06em",
                           textAlign: "center",
@@ -323,7 +323,7 @@ export function OutfitDetail({
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: "0.55rem",
-                        color: "#5a5a65",
+                        color: "#8a8a95",
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
                       }}
@@ -368,7 +368,7 @@ export function OutfitDetail({
                         alignItems: "center",
                         gap: "0.75rem",
                         padding: "0.75rem 0",
-                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                        borderBottom: "1px solid rgba(255,255,255,0.06)",
                       }}
                     >
                       <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
@@ -388,7 +388,7 @@ export function OutfitDetail({
                           style={{
                             fontFamily: "var(--font-mono)",
                             fontSize: "0.55rem",
-                            color: "#5a5a65",
+                            color: "#8a8a95",
                             textTransform: "uppercase",
                             letterSpacing: "0.06em",
                             marginTop: "2px",
@@ -402,7 +402,7 @@ export function OutfitDetail({
                           style={{
                             fontFamily: "var(--font-mono)",
                             fontSize: "0.75rem",
-                            color: "#f0bd8f",
+                            color: "#d4a96a",
                             flexShrink: 0,
                           }}
                         >
@@ -474,7 +474,7 @@ export function OutfitDetail({
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
                   cursor: "pointer",
-                  borderRadius: "2px",
+                  borderRadius: "999px",
                   transition: "all 0.2s",
                 }}
               >
@@ -500,14 +500,14 @@ export function OutfitDetail({
                     gap: "0.5rem",
                     minHeight: "48px",
                     background: "#ffffff",
-                    color: "#000000",
+                    color: "#0f0f12",
                     fontFamily: "var(--font-mono)",
                     fontSize: "0.6rem",
                     fontWeight: 500,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     textDecoration: "none",
-                    borderRadius: "2px",
+                    borderRadius: "999px",
                   }}
                 >
                   <ExternalLink size={14} aria-hidden />

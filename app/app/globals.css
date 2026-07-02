@@ -3,27 +3,27 @@
 /* ─── Design tokens — GYF Industrial Intelligence (dark) ─────────────────── */
 @theme {
   /* Surfaces */
-  --color-bg:               #000000;
-  --color-surface:          #111318;
-  --color-surface-2:        #1a1b21;
-  --color-surface-3:        #1e2025;
-  --color-surface-high:     #282a2f;
-  --color-surface-highest:  #33353a;
+  --color-bg:               #0f0f12;
+  --color-surface:          #16161a;
+  --color-surface-2:        #1a1a20;
+  --color-surface-3:        #1e1e26;
+  --color-surface-high:     #26262e;
+  --color-surface-highest:  #2e2e38;
 
   /* Borders */
-  --color-border:           #444748;
-  --color-border-mid:       #5a5a65;
+  --color-border:           #3a3a44;
+  --color-border-mid:       #8a8a95;
   --color-border-hi:        #ffffff;
-  --color-rule:             #33353a;
+  --color-rule:             #2e2e38;
 
   /* Text */
-  --color-text:             #e2e2e9;
-  --color-text-mid:         #c4c7c8;
-  --color-text-faint:       #8e9192;
+  --color-text:             #e8e4dc;
+  --color-text-mid:         #c8c4bc;
+  --color-text-faint:       #8a8a95;
 
   /* Brand */
   --color-primary:          #ffffff;
-  --color-secondary:        #f0bd8f;
+  --color-secondary:        #d4a96a;
   --color-accent:           #ffffff;
   --color-accent-press:     #e2e2e2;
 
@@ -49,21 +49,21 @@
 
 :root {
   color-scheme: dark;
-  --bg:              #000000;
-  --surface:         #111318;
-  --surface-2:       #1a1b21;
-  --surface-3:       #1e2025;
-  --surface-high:    #282a2f;
-  --surface-highest: #33353a;
-  --border:          #444748;
-  --border-mid:      #5a5a65;
+  --bg:              #0f0f12;
+  --surface:         #16161a;
+  --surface-2:       #1a1a20;
+  --surface-3:       #1e1e26;
+  --surface-high:    #26262e;
+  --surface-highest: #2e2e38;
+  --border:          #3a3a44;
+  --border-mid:      #8a8a95;
   --border-hi:       #ffffff;
-  --rule:            #33353a;
-  --text:            #e2e2e9;
-  --text-mid:        #c4c7c8;
-  --text-faint:      #8e9192;
+  --rule:            #2e2e38;
+  --text:            #e8e4dc;
+  --text-mid:        #c8c4bc;
+  --text-faint:      #8a8a95;
   --primary:         #ffffff;
-  --secondary:       #f0bd8f;
+  --secondary:       #d4a96a;
   --accent:          #ffffff;
   --accent-press:    #e2e2e2;
   --success:         #10B981;

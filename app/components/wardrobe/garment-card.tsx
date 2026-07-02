@@ -39,14 +39,14 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        borderRadius: "4px",
+        background: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: "16px",
         overflow: "hidden",
       }}
     >
       {/* Image / placeholder */}
-      <div style={{ position: "relative", aspectRatio: "3/4", overflow: "hidden", background: "#111318" }}>
+      <div style={{ position: "relative", aspectRatio: "3/4", overflow: "hidden", background: "#0f0f12" }}>
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -85,7 +85,7 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
             justifyContent: "center",
             background: "rgba(0,0,0,0.7)",
             border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "4px",
+            borderRadius: "16px",
             color: "#8e9192",
             cursor: "pointer",
           }}
@@ -132,7 +132,7 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.75rem",
-              color: "#5a5a65",
+              color: "#8a8a95",
               textTransform: "capitalize",
             }}
           >

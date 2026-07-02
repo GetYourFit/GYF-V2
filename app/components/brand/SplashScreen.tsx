@@ -66,7 +66,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "#000000",
+            background: "#0f0f12",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",

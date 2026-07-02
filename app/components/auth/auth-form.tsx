@@ -100,7 +100,7 @@ function IndustrialInput({
           style={{
             position: "absolute",
             left: 0,
-            color: focused ? "#ffffff" : "#5a5a65",
+            color: focused ? "#ffffff" : "#8a8a95",
             transition: "color 0.2s",
             flexShrink: 0,
           }}
@@ -141,7 +141,7 @@ function IndustrialInput({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#5a5a65",
+              color: "#8a8a95",
               padding: "0.25rem",
               display: "flex",
               alignItems: "center",
@@ -212,7 +212,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#f0bd8f",
+            color: "#d4a96a",
             display: "flex",
             alignItems: "center",
             gap: "0.5rem",
@@ -224,7 +224,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               display: "inline-block",
               width: 24,
               height: 1,
-              background: "#f0bd8f",
+              background: "#d4a96a",
               flexShrink: 0,
             }}
           />
@@ -241,7 +241,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#ffffff",
+            color: "#e8e4dc",
             margin: 0,
           }}
         >
@@ -344,9 +344,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
             width: "100%",
             minHeight: "52px",
             background: busy ? "#333" : "#ffffff",
-            color: "#000000",
+            color: "#0f0f12",
             border: "none",
-            borderRadius: "4px",
+            borderRadius: "16px",
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "0.875rem",
             fontWeight: 700,
@@ -379,7 +379,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.8125rem",
-            color: "#5a5a65",
+            color: "#8a8a95",
             textAlign: "center",
             margin: 0,
           }}

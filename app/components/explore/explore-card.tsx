@@ -47,7 +47,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        background: "rgba(255,255,255,0.04)",
+        background: "rgba(255,255,255,0.06)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         border: "1px solid rgba(255,255,255,0.08)",
@@ -63,7 +63,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
           position: "relative",
           aspectRatio: "3/4",
           overflow: "hidden",
-          background: "#111318",
+          background: "#0f0f12",
         }}
       >
         {item.image_url ? (
@@ -85,7 +85,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
               height: "100%",
               fontFamily: "var(--font-mono)",
               fontSize: "0.55rem",
-              color: "#5a5a65",
+              color: "#8a8a95",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
             }}

@@ -216,7 +216,7 @@ export function OutfitCard({
                 style={{
                   padding: "0.875rem 1rem",
                   borderTop: "1px solid rgba(255,255,255,0.06)",
-                  background: "rgba(255,255,255,0.02)",
+                  background: "rgba(255,255,255,0.04)",
                 }}
               >
                 <p
@@ -334,7 +334,7 @@ export function OutfitCard({
                 padding: "0 1rem",
                 background: "#ffffff",
                 borderRadius: "16px",
-                color: "#000000",
+                color: "#0f0f12",
                 textDecoration: "none",
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.6rem",

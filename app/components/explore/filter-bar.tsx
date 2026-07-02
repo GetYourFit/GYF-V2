@@ -41,7 +41,7 @@ const CHIP_BASE: React.CSSProperties = {
   fontWeight: 500,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  borderRadius: "2px",
+  borderRadius: "999px",
   cursor: "pointer",
   minHeight: "32px",
   background: "transparent",
@@ -51,9 +51,9 @@ const CHIP_BASE: React.CSSProperties = {
 function chip(active: boolean): React.CSSProperties {
   return {
     ...CHIP_BASE,
-    border: active ? "1px solid #f0bd8f" : "1px solid rgba(255,255,255,0.1)",
+    border: active ? "1px solid #d4a96a" : "1px solid rgba(255,255,255,0.1)",
     background: active ? "rgba(240,189,143,0.08)" : "transparent",
-    color: active ? "#f0bd8f" : "#5a5a65",
+    color: active ? "#d4a96a" : "#8a8a95",
   };
 }
 
@@ -130,7 +130,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           style={{
             position: "absolute",
             left: 0,
-            color: focused ? "#c4c7c8" : "#5a5a65",
+            color: focused ? "#c4c7c8" : "#8a8a95",
             flexShrink: 0,
             transition: "color 0.2s",
           }}
@@ -166,7 +166,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               right: 0,
               background: "none",
               border: "none",
-              color: "#5a5a65",
+              color: "#8a8a95",
               cursor: "pointer",
               padding: "0.25rem",
               display: "flex",
@@ -210,7 +210,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
       {/* Style + sort row */}
       <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-        <SlidersHorizontal size={13} aria-hidden style={{ color: "#5a5a65", flexShrink: 0 }} />
+        <SlidersHorizontal size={13} aria-hidden style={{ color: "#8a8a95", flexShrink: 0 }} />
 
         {/* Style chips */}
         <div
@@ -260,7 +260,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           }}
         >
           {sortOptions.map((o) => (
-            <option key={o.value} value={o.value} style={{ background: "#111318" }}>
+            <option key={o.value} value={o.value} style={{ background: "#0f0f12" }}>
               {o.label}
             </option>
           ))}
@@ -302,7 +302,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               border: "none",
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
-              color: "#5a5a65",
+              color: "#8a8a95",
               letterSpacing: "0.06em",
               textDecoration: "underline",
               textUnderlineOffset: "3px",

@@ -133,7 +133,7 @@ export function StylistFeed() {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
-              color: "#f0bd8f",
+              color: "#d4a96a",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               marginBottom: "1rem",
@@ -146,7 +146,7 @@ export function StylistFeed() {
               fontFamily: "var(--font-body)",
               fontSize: "1.25rem",
               fontWeight: 700,
-              color: "#ffffff",
+              color: "#e8e4dc",
               lineHeight: 1.25,
               marginBottom: "0.75rem",
             }}
@@ -165,14 +165,14 @@ export function StylistFeed() {
               minHeight: "48px",
               padding: "0 2rem",
               background: "#ffffff",
-              color: "#000000",
+              color: "#0f0f12",
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
               fontWeight: 600,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               textDecoration: "none",
-              borderRadius: "2px",
+              borderRadius: "999px",
             }}
           >
             Set up my profile
@@ -199,7 +199,7 @@ export function StylistFeed() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#f0bd8f",
+            color: "#d4a96a",
           }}
         >
           Your stylist
@@ -211,7 +211,7 @@ export function StylistFeed() {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#ffffff",
+            color: "#e8e4dc",
             margin: 0,
           }}
         >
@@ -296,13 +296,13 @@ export function StylistFeed() {
                 fontFamily: "var(--font-body)",
                 fontSize: "1rem",
                 fontWeight: 600,
-                color: "#ffffff",
+                color: "#e8e4dc",
                 marginBottom: "0.5rem",
               }}
             >
               No complete looks for this just yet
             </p>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#5a5a65" }}>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#8a8a95" }}>
               Try a different occasion or clear your goal.
             </p>
           </motion.div>
@@ -369,7 +369,7 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: "0.55rem",
-          color: "#5a5a65",
+          color: "#8a8a95",
           letterSpacing: "0.06em",
           textTransform: "uppercase",
         }}
@@ -406,14 +406,14 @@ function UndoStrip({ index, onUndo }: { index: number; onUndo: () => void }) {
         minHeight: "72px",
         padding: "1rem",
         border: "1px dashed rgba(255,255,255,0.1)",
-        background: "rgba(255,255,255,0.02)",
+        background: "rgba(255,255,255,0.04)",
       }}
     >
       <span
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: "0.6rem",
-          color: "#5a5a65",
+          color: "#8a8a95",
           letterSpacing: "0.06em",
           textTransform: "uppercase",
         }}
@@ -459,15 +459,15 @@ function SkeletonGrid() {
           transition={{ duration: 1.4, delay: i * 0.1, repeat: Infinity, repeatType: "reverse" }}
           style={{
             border: "1px solid rgba(255,255,255,0.06)",
-            background: "rgba(255,255,255,0.02)",
-            borderRadius: "4px",
+            background: "rgba(255,255,255,0.04)",
+            borderRadius: "16px",
             overflow: "hidden",
           }}
         >
-          <div style={{ aspectRatio: "16/9", background: "rgba(255,255,255,0.04)" }} />
+          <div style={{ aspectRatio: "16/9", background: "rgba(255,255,255,0.06)" }} />
           <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div style={{ height: "10px", width: "60%", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />
-            <div style={{ height: "8px", width: "40%", background: "rgba(255,255,255,0.04)", borderRadius: "2px" }} />
+            <div style={{ height: "10px", width: "60%", background: "rgba(255,255,255,0.06)", borderRadius: "999px" }} />
+            <div style={{ height: "8px", width: "40%", background: "rgba(255,255,255,0.06)", borderRadius: "999px" }} />
           </div>
         </motion.div>
       ))}

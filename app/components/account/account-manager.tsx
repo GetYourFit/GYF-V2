@@ -159,7 +159,7 @@ export function AccountManager() {
         <div>
           <p style={{
             fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-            letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65",
+            letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95",
             marginBottom: "0.5rem",
           }}>
             Privacy controls
@@ -172,7 +172,7 @@ export function AccountManager() {
           role="list"
           style={{
             listStyle: "none", margin: 0, padding: 0,
-            border: "1px solid rgba(255,255,255,0.07)", background: "#111318",
+            border: "1px solid rgba(255,255,255,0.1)", background: "#0f0f12",
           }}
         >
           {CONSENT_FLAGS.map((flag, i) => (
@@ -196,8 +196,8 @@ export function AccountManager() {
               display: "inline-flex", alignItems: "center", justifyContent: "center",
               minHeight: "44px", padding: "0 1.5rem",
               background: !dirty || saving ? "rgba(255,255,255,0.08)" : "#ffffff",
-              color: !dirty || saving ? "#5a5a65" : "#000000",
-              border: "none", borderRadius: "2px", cursor: !dirty || saving ? "not-allowed" : "pointer",
+              color: !dirty || saving ? "#8a8a95" : "#0f0f12",
+              border: "none", borderRadius: "999px", cursor: !dirty || saving ? "not-allowed" : "pointer",
               fontFamily: "var(--font-mono)", fontSize: "0.6rem",
               fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
               transition: "all 0.2s",
@@ -206,7 +206,7 @@ export function AccountManager() {
             {saving ? "Saving…" : "Save preferences"}
           </button>
           {dirty && (
-            <span role="status" style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", color: "#f0bd8f", letterSpacing: "0.06em" }}>
+            <span role="status" style={{ fontFamily: "var(--font-mono)", fontSize: "0.55rem", color: "#d4a96a", letterSpacing: "0.06em" }}>
               Unsaved changes
             </span>
           )}
@@ -216,12 +216,12 @@ export function AccountManager() {
       {/* ── Data portability ── */}
       <section style={{
         display: "flex", flexDirection: "column", gap: "1rem",
-        borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "2rem",
+        borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "2rem",
       }}>
         <div>
           <p style={{
             fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-            letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65",
+            letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95",
             marginBottom: "0.5rem",
           }}>
             Your data
@@ -242,7 +242,7 @@ export function AccountManager() {
             color: "#e2e2e9", cursor: exporting ? "not-allowed" : "pointer",
             fontFamily: "var(--font-mono)", fontSize: "0.6rem",
             fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
-            opacity: exporting ? 0.5 : 1, borderRadius: "2px",
+            opacity: exporting ? 0.5 : 1, borderRadius: "999px",
           }}
         >
           {exporting ? "Preparing…" : "Download my data"}
@@ -252,11 +252,11 @@ export function AccountManager() {
       {/* ── Account / danger zone ── */}
       <section style={{
         display: "flex", flexDirection: "column", gap: "1rem",
-        borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "2rem",
+        borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "2rem",
       }}>
         <p style={{
           fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-          letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65",
+          letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95",
         }}>
           Account
         </p>
@@ -270,7 +270,7 @@ export function AccountManager() {
                 display: "inline-flex", alignItems: "center", justifyContent: "center",
                 minHeight: "44px", padding: "0 1.5rem",
                 border: "1px solid rgba(255,255,255,0.2)", background: "transparent",
-                color: "#ffffff", cursor: "pointer", borderRadius: "2px",
+                color: "#e8e4dc", cursor: "pointer", borderRadius: "999px",
                 fontFamily: "var(--font-mono)", fontSize: "0.6rem",
                 fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
               }}
@@ -284,7 +284,7 @@ export function AccountManager() {
                 display: "inline-flex", alignItems: "center", justifyContent: "center",
                 minHeight: "44px", padding: "0 1.5rem",
                 border: "1px solid rgba(255,180,171,0.3)", background: "transparent",
-                color: "#ffb4ab", cursor: "pointer", borderRadius: "2px",
+                color: "#ffb4ab", cursor: "pointer", borderRadius: "999px",
                 fontFamily: "var(--font-mono)", fontSize: "0.6rem",
                 fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
               }}
@@ -299,7 +299,7 @@ export function AccountManager() {
               display: "flex", flexDirection: "column", gap: "1rem",
               border: "1px solid rgba(255,180,171,0.25)",
               background: "rgba(255,180,171,0.04)", padding: "1.25rem",
-              borderRadius: "2px",
+              borderRadius: "999px",
             }}
           >
             <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#c4c7c8", lineHeight: 1.6, margin: 0 }}>
@@ -332,8 +332,8 @@ export function AccountManager() {
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
                   minHeight: "44px", padding: "0 1.5rem",
                   background: confirmText === "DELETE" && !deleting ? "#ffb4ab" : "rgba(255,180,171,0.12)",
-                  color: confirmText === "DELETE" && !deleting ? "#000000" : "#ffb4ab",
-                  border: "none", borderRadius: "2px",
+                  color: confirmText === "DELETE" && !deleting ? "#0f0f12" : "#ffb4ab",
+                  border: "none", borderRadius: "999px",
                   cursor: deleting || confirmText !== "DELETE" ? "not-allowed" : "pointer",
                   fontFamily: "var(--font-mono)", fontSize: "0.6rem",
                   fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
@@ -349,7 +349,7 @@ export function AccountManager() {
                 style={{
                   background: "transparent", border: "none", cursor: "pointer",
                   fontFamily: "var(--font-mono)", fontSize: "0.6rem",
-                  color: "#5a5a65", letterSpacing: "0.06em", textTransform: "uppercase",
+                  color: "#8a8a95", letterSpacing: "0.06em", textTransform: "uppercase",
                   minHeight: "44px", padding: "0 0.75rem",
                 }}
               >
@@ -359,7 +359,7 @@ export function AccountManager() {
           </div>
         )}
 
-        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", color: "#5a5a65", maxWidth: "320px", lineHeight: 1.5 }}>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", color: "#8a8a95", maxWidth: "320px", lineHeight: 1.5 }}>
           Your data is yours — we remove it on request, immediately.
         </p>
       </section>
@@ -400,9 +400,9 @@ function ConsentRow({
           flexShrink: 0, marginTop: "2px",
           position: "relative", display: "inline-flex",
           width: "44px", height: "24px", alignItems: "center",
-          border: `1px solid ${checked ? "#f0bd8f" : "rgba(255,255,255,0.2)"}`,
+          border: `1px solid ${checked ? "#d4a96a" : "rgba(255,255,255,0.2)"}`,
           background: checked ? "rgba(240,189,143,0.15)" : "transparent",
-          cursor: "pointer", transition: "all 0.2s", borderRadius: "2px",
+          cursor: "pointer", transition: "all 0.2s", borderRadius: "999px",
         }}
       >
         <span
@@ -411,7 +411,7 @@ function ConsentRow({
             position: "absolute",
             left: checked ? "calc(100% - 18px)" : "2px",
             width: "14px", height: "14px",
-            background: checked ? "#f0bd8f" : "#5a5a65",
+            background: checked ? "#d4a96a" : "#8a8a95",
             transition: "left 0.2s, background 0.2s",
           }}
         />
@@ -423,7 +423,7 @@ function ConsentRow({
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div style={{ textAlign: "center", padding: "5rem 1rem" }}>
-      <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.75rem" }}>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#e8e4dc", marginBottom: "0.75rem" }}>
         Couldn&apos;t load your settings
       </p>
       <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", marginBottom: "2rem" }}>
@@ -436,7 +436,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           display: "inline-flex", alignItems: "center", justifyContent: "center",
           minHeight: "44px", padding: "0 1.5rem",
           border: "1px solid rgba(255,255,255,0.2)", background: "transparent",
-          color: "#ffffff", cursor: "pointer", borderRadius: "2px",
+          color: "#e8e4dc", cursor: "pointer", borderRadius: "999px",
           fontFamily: "var(--font-mono)", fontSize: "0.6rem",
           fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
         }}
@@ -451,17 +451,17 @@ function AccountSkeleton() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "3rem" }} aria-hidden>
       <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-        <div style={{ height: "12px", width: "160px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />
-        <div style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+        <div style={{ height: "12px", width: "160px", background: "rgba(255,255,255,0.06)", borderRadius: "999px" }} />
+        <div style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={`row-${i}`} style={{
-              height: "96px", background: "rgba(255,255,255,0.03)",
+              height: "96px", background: "rgba(255,255,255,0.05)",
               borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.06)",
             }} />
           ))}
         </div>
       </div>
-      <div style={{ height: "112px", background: "rgba(255,255,255,0.03)", borderRadius: "2px" }} />
+      <div style={{ height: "112px", background: "rgba(255,255,255,0.05)", borderRadius: "999px" }} />
     </div>
   );
 }

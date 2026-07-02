@@ -84,7 +84,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: "#f0bd8f",
+          color: "#d4a96a",
           marginBottom: "0.375rem",
         }}>
           Estimate from photo
@@ -93,7 +93,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           fontFamily: "var(--font-body)",
           fontSize: "0.8125rem",
           lineHeight: 1.55,
-          color: "#5a5a65",
+          color: "#8a8a95",
         }}>
           Upload a clear, well-lit photo. GYF estimates your skin tone and body type — edit anything it gets wrong. Image is not stored.
         </p>
@@ -112,8 +112,8 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           justifyContent: "center",
           gap: "0.75rem",
           padding: previewUrl ? "0" : "2rem 1rem",
-          background: dragActive ? "rgba(240,189,143,0.04)" : "rgba(255,255,255,0.02)",
-          border: `1px dashed ${dragActive ? "#f0bd8f" : "rgba(255,255,255,0.12)"}`,
+          background: dragActive ? "rgba(240,189,143,0.04)" : "rgba(255,255,255,0.04)",
+          border: `1px dashed ${dragActive ? "#d4a96a" : "rgba(255,255,255,0.12)"}`,
           cursor: "pointer",
           transition: "all 0.2s",
           textAlign: "center",
@@ -131,7 +131,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
         ) : (
           <>
             <UploadCloud size={28} aria-hidden style={{ color: "#444748" }} />
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#5a5a65" }}>
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8a8a95" }}>
               <span style={{ color: "#c4c7c8" }}>Choose a photo</span> or drag it here
             </span>
             <span style={{
@@ -215,9 +215,9 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             height: "40px",
             padding: "0 1rem",
             background: file && !busy ? "#ffffff" : "rgba(255,255,255,0.06)",
-            color: file && !busy ? "#000000" : "#5a5a65",
+            color: file && !busy ? "#0f0f12" : "#8a8a95",
             border: "none",
-            borderRadius: "2px",
+            borderRadius: "999px",
             fontFamily: "var(--font-mono)",
             fontSize: "0.6rem",
             fontWeight: 500,
@@ -245,7 +245,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
               gap: "0.25rem",
               background: "transparent",
               border: "none",
-              color: "#5a5a65",
+              color: "#8a8a95",
               fontFamily: "var(--font-mono)",
               fontSize: "0.55rem",
               letterSpacing: "0.06em",

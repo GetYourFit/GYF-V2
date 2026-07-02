@@ -212,7 +212,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   fontWeight: 500,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  color: "#f0bd8f",
+                  color: "#d4a96a",
                   margin: 0,
                 }}
               >
@@ -316,7 +316,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                           position: "relative",
                           aspectRatio: "1/1",
                           overflow: "hidden",
-                          background: "#1a1b21",
+                          background: "#0f0f12",
                           border: `1px solid ${active ? "#d4a96a" : "rgba(255,255,255,0.08)"}`,
                           cursor: "pointer",
                           padding: 0,
@@ -415,7 +415,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   width: "100%",
                   minHeight: "52px",
                   background: submitting || !selected ? "rgba(255,255,255,0.1)" : "#ffffff",
-                  color: submitting || !selected ? "#8a8a95" : "#000000",
+                  color: submitting || !selected ? "#8a8a95" : "#0f0f12",
                   border: "none",
                   borderRadius: "999px",
                   fontFamily: "var(--font-mono)",

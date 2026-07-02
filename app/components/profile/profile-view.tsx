@@ -109,7 +109,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
           fontFamily: "var(--font-body)",
           fontSize: "clamp(1.5rem, 6vw, 2rem)",
           fontWeight: 800,
-          color: "#ffffff",
+          color: "#e8e4dc",
           fontVariantNumeric: "tabular-nums",
           lineHeight: 1,
         }}
@@ -145,7 +145,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
     <Link
       href={href}
       style={cellStyle}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#1a1b21"; }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#0f0f12"; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#0f0f12"; }}
     >
       {inner}
@@ -213,10 +213,10 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
     return (
       <section style={{
         display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "1.25rem",
-        border: "1px solid rgba(255,255,255,0.07)", background: "#0f0f12", padding: "1.5rem",
+        border: "1px solid rgba(255,255,255,0.1)", background: "#0f0f12", padding: "1.5rem",
       }}>
         <div>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.5rem" }}>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#e8e4dc", marginBottom: "0.5rem" }}>
             No style profile yet
           </p>
           <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", maxWidth: "280px", lineHeight: 1.55 }}>
@@ -228,7 +228,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           style={{
             display: "inline-flex", alignItems: "center", justifyContent: "center",
             minHeight: "44px", padding: "0 2rem",
-            background: "#ffffff", color: "#000000",
+            background: "#ffffff", color: "#0f0f12",
             fontFamily: "var(--font-mono)", fontSize: "0.6rem", fontWeight: 600,
             letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none",
             borderRadius: "999px",
@@ -298,7 +298,7 @@ function AccountLink() {
   return (
     <section style={{
       display: "flex", flexDirection: "column", gap: "1rem",
-      borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "2rem",
+      borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "2rem",
     }}>
       <p style={{
         fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
@@ -310,23 +310,23 @@ function AccountLink() {
         href="/account"
         style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          gap: "1rem", border: "1px solid rgba(255,255,255,0.07)",
+          gap: "1rem", border: "1px solid rgba(255,255,255,0.1)",
           background: "#0f0f12", padding: "1.25rem",
           textDecoration: "none", transition: "background 0.2s, border-color 0.2s",
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
-          el.style.background = "#1a1b21";
+          el.style.background = "#0f0f12";
           el.style.borderColor = "rgba(255,255,255,0.14)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
           el.style.background = "#0f0f12";
-          el.style.borderColor = "rgba(255,255,255,0.07)";
+          el.style.borderColor = "rgba(255,255,255,0.1)";
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-          <span style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#ffffff" }}>
+          <span style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", fontWeight: 600, color: "#e8e4dc" }}>
             Privacy &amp; data
           </span>
           <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192" }}>
@@ -352,7 +352,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       transition={{ duration: 0.4, ease: EASE }}
       style={{ textAlign: "center", padding: "5rem 1rem" }}
     >
-      <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.75rem" }}>
+      <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#e8e4dc", marginBottom: "0.75rem" }}>
         Couldn&apos;t load your profile
       </p>
       <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#8e9192", marginBottom: "2rem" }}>
@@ -365,7 +365,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           display: "inline-flex", alignItems: "center", justifyContent: "center",
           minHeight: "44px", padding: "0 1.5rem",
           border: "1px solid rgba(255,255,255,0.2)", background: "transparent",
-          color: "#ffffff", cursor: "pointer",
+          color: "#e8e4dc", cursor: "pointer",
           fontFamily: "var(--font-mono)", fontSize: "0.6rem",
           fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase",
         }}
