@@ -33,33 +33,43 @@ export function AppShell({ children }: AppShellProps) {
       >
         <header
           style={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "44px 1fr 44px",
             height: "56px",
             alignItems: "center",
-            justifyContent: "space-between",
             padding: "0 1rem",
             maxWidth: "390px",
             margin: "0 auto",
             width: "100%",
           }}
         >
-          <Link href="/" aria-label="Get Your Fit home">
-            {/* object-fit:none shows a 200×36 window into the 500×500 canvas centred on the text */}
+          {/* Left — empty spacer balancing the right menu button */}
+          <div />
+
+          {/* Centre — wordmark, perfectly centred */}
+          <Link
+            href="/"
+            aria-label="Get Your Fit home"
+            style={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/assets/get-your-fit.png"
               alt="Get Your Fit"
               style={{
                 display: "block",
-                width: 200,
-                height: 36,
+                width: 180,
+                height: 32,
                 objectFit: "none",
                 objectPosition: "49% 42%",
-                flexShrink: 0,
               }}
             />
           </Link>
-          <TopMenu />
+
+          {/* Right — menu button */}
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <TopMenu />
+          </div>
         </header>
       </div>
 
