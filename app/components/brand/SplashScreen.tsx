@@ -87,7 +87,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                 marginTop: "2.5rem",
                 width: "160px",
                 height: "1px",
-                background: "#f0bd8f",
+                background: "#d4a96a",
                 transformOrigin: "left",
               }}
             />
@@ -157,7 +157,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                   width: i === activeDot ? 20 : 6,
                   height: 6,
                   borderRadius: 3,
-                  background: i === activeDot ? "#f0bd8f" : "#5a5a65",
+                  background: i === activeDot ? "#d4a96a" : "#8a8a95",
                   display: "block",
                 }}
               />

@@ -1236,3 +1236,5 @@ All previous completion gates apply. Add these:
 9. Page tested at 390px in Chrome DevTools — no horizontal overflow (`document.body.scrollWidth === 390`)
 10. `prefers-reduced-motion` checked — animations disable gracefully
 11. Loading screen verified: logo draws on, quote appears, progress line sweeps, exits cleanly
+
+USE ECC FOLDER.

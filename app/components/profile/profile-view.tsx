@@ -123,7 +123,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "#5a5a65",
+          color: "#8a8a95",
         }}
       >
         {label}
@@ -135,7 +135,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
     display: "flex",
     flexDirection: "column",
     gap: "0.375rem",
-    background: "#111318",
+    background: "#0f0f12",
     padding: "1rem",
     transition: "background 0.2s",
     textDecoration: "none",
@@ -146,7 +146,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
       href={href}
       style={cellStyle}
       onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#1a1b21"; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#111318"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#0f0f12"; }}
     >
       {inner}
     </Link>
@@ -183,7 +183,7 @@ function Badges({ badges }: { badges: string[] }) {
     <section style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <p style={{
         fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-        letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65",
+        letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95",
       }}>
         Badges earned
       </p>
@@ -213,7 +213,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
     return (
       <section style={{
         display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "1.25rem",
-        border: "1px solid rgba(255,255,255,0.07)", background: "#111318", padding: "1.5rem",
+        border: "1px solid rgba(255,255,255,0.07)", background: "#0f0f12", padding: "1.5rem",
       }}>
         <div>
           <p style={{ fontFamily: "var(--font-body)", fontSize: "1.125rem", fontWeight: 700, color: "#ffffff", marginBottom: "0.5rem" }}>
@@ -231,7 +231,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
             background: "#ffffff", color: "#000000",
             fontFamily: "var(--font-mono)", fontSize: "0.6rem", fontWeight: 600,
             letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none",
-            borderRadius: "2px",
+            borderRadius: "999px",
           }}
         >
           Set up my profile
@@ -255,7 +255,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <p style={{
           fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-          letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65",
+          letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95",
         }}>
           Style profile
         </p>
@@ -273,11 +273,11 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
         {rows.map(([label, value]) => (
           <div key={label} style={{
             display: "flex", flexDirection: "column", gap: "0.375rem",
-            background: "#111318", padding: "1rem",
+            background: "#0f0f12", padding: "1rem",
           }}>
             <dt style={{
               fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-              letterSpacing: "0.08em", textTransform: "uppercase", color: "#5a5a65",
+              letterSpacing: "0.08em", textTransform: "uppercase", color: "#8a8a95",
             }}>
               {label}
             </dt>
@@ -302,7 +302,7 @@ function AccountLink() {
     }}>
       <p style={{
         fontFamily: "var(--font-mono)", fontSize: "0.55rem", fontWeight: 500,
-        letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5a65",
+        letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8a95",
       }}>
         Account
       </p>
@@ -311,7 +311,7 @@ function AccountLink() {
         style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           gap: "1rem", border: "1px solid rgba(255,255,255,0.07)",
-          background: "#111318", padding: "1.25rem",
+          background: "#0f0f12", padding: "1.25rem",
           textDecoration: "none", transition: "background 0.2s, border-color 0.2s",
         }}
         onMouseEnter={(e) => {
@@ -321,7 +321,7 @@ function AccountLink() {
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
-          el.style.background = "#111318";
+          el.style.background = "#0f0f12";
           el.style.borderColor = "rgba(255,255,255,0.07)";
         }}
       >
@@ -333,7 +333,7 @@ function AccountLink() {
             Manage consent, download your data, sign out, or delete your account.
           </span>
         </span>
-        <ChevronRight size={18} aria-hidden style={{ flexShrink: 0, color: "#5a5a65" }} />
+        <ChevronRight size={18} aria-hidden style={{ flexShrink: 0, color: "#8a8a95" }} />
       </Link>
     </section>
   );
@@ -381,12 +381,12 @@ function ProfileSkeleton() {
     <div style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }} aria-hidden>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", background: "rgba(255,255,255,0.06)" }}>
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={`stat-${i}`} style={{ height: "80px", background: "#111318", opacity: 0.6 }} />
+          <div key={`stat-${i}`} style={{ height: "80px", background: "#0f0f12", opacity: 0.6 }} />
         ))}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "rgba(255,255,255,0.06)" }}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={`row-${i}`} style={{ height: "64px", background: "#111318", opacity: 0.6 }} />
+          <div key={`row-${i}`} style={{ height: "64px", background: "#0f0f12", opacity: 0.6 }} />
         ))}
       </div>
     </div>

@@ -43,11 +43,11 @@ export function OutfitCard({
         initial={reduce ? { opacity: 1 } : { opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, ease: EASE, delay: Math.min(index * 0.08, 0.4) }}
-        whileHover={reduce ? undefined : { scale: 1.01 }}
+        whileHover={reduce ? undefined : { scale: 1.02, y: -2 }}
         style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderRadius: "4px",
+          background: "rgba(255,255,255,0.05)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: "16px",
           overflow: "hidden",
           cursor: "default",
           willChange: "transform",
@@ -70,7 +70,7 @@ export function OutfitCard({
               fontWeight: 500,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#5a5a65",
+              color: "#8a8a95",
             }}
           >
             LAYER {String(index + 1).padStart(2, "0")}
@@ -95,7 +95,7 @@ export function OutfitCard({
               style={{
                 fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
                 fontSize: "0.6rem",
-                color: "#f0bd8f",
+                color: "#d4a96a",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
                 marginRight: "0.375rem",
@@ -123,7 +123,7 @@ export function OutfitCard({
             return (
               <div
                 key={item.item_id}
-                style={{ position: "relative", aspectRatio: "3/4", background: "#111318", overflow: "hidden" }}
+                style={{ position: "relative", aspectRatio: "3/4", background: "#0f0f12", overflow: "hidden" }}
               >
                 {src ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -147,7 +147,7 @@ export function OutfitCard({
                       height: "100%",
                       fontFamily: "var(--font-mono)",
                       fontSize: "0.6rem",
-                      color: "#5a5a65",
+                      color: "#8a8a95",
                       textTransform: "uppercase",
                       letterSpacing: "0.06em",
                       textAlign: "center",
@@ -186,7 +186,7 @@ export function OutfitCard({
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: "0.55rem",
-                        color: "#f0bd8f",
+                        color: "#d4a96a",
                         letterSpacing: "0.04em",
                         display: "block",
                         marginTop: "1px",
@@ -223,7 +223,7 @@ export function OutfitCard({
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: "0.6rem",
-                    color: "#f0bd8f",
+                    color: "#d4a96a",
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     marginBottom: "0.5rem",
@@ -271,8 +271,8 @@ export function OutfitCard({
               width: "44px",
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "4px",
-              color: "#5a5a65",
+              borderRadius: "16px",
+              color: "#8a8a95",
               cursor: "pointer",
               flexShrink: 0,
             }}
@@ -299,8 +299,8 @@ export function OutfitCard({
               height: "44px",
               background: saved ? "rgba(255,255,255,0.08)" : "transparent",
               border: `1px solid ${saved ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.1)"}`,
-              borderRadius: "4px",
-              color: saved ? "#ffffff" : "#5a5a65",
+              borderRadius: "16px",
+              color: saved ? "#ffffff" : "#8a8a95",
               cursor: "pointer",
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
@@ -333,7 +333,7 @@ export function OutfitCard({
                 height: "44px",
                 padding: "0 1rem",
                 background: "#ffffff",
-                borderRadius: "4px",
+                borderRadius: "16px",
                 color: "#000000",
                 textDecoration: "none",
                 fontFamily: "var(--font-mono)",
@@ -364,8 +364,8 @@ export function OutfitCard({
               width: "44px",
               background: "transparent",
               border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: "4px",
-              color: "#5a5a65",
+              borderRadius: "16px",
+              color: "#8a8a95",
               cursor: "pointer",
               flexShrink: 0,
               transition: "color 0.15s, border-color 0.15s",
@@ -375,7 +375,7 @@ export function OutfitCard({
               (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,180,171,0.3)";
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = "#5a5a65";
+              (e.currentTarget as HTMLButtonElement).style.color = "#8a8a95";
               (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.06)";
             }}
           >

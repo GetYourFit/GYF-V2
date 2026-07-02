@@ -180,7 +180,8 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
               width: "100%",
               maxWidth: "390px",
               maxHeight: "88dvh",
-              background: "#0a0b0e",
+              background: "#0f0f12",
+              borderRadius: "20px 20px 0 0",
               borderTop: "1px solid rgba(255,255,255,0.1)",
               outline: "none",
               display: "flex",
@@ -229,7 +230,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   height: "44px",
                   background: "transparent",
                   border: "none",
-                  color: "#5a5a65",
+                  color: "#8a8a95",
                   cursor: "pointer",
                 }}
               >
@@ -255,7 +256,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   fontSize: "0.6rem",
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: "#5a5a65",
+                  color: "#8a8a95",
                   margin: 0,
                 }}
               >
@@ -282,7 +283,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "0.875rem",
-                    color: "#5a5a65",
+                    color: "#8a8a95",
                     margin: 0,
                   }}
                 >
@@ -316,7 +317,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                           aspectRatio: "1/1",
                           overflow: "hidden",
                           background: "#1a1b21",
-                          border: `1px solid ${active ? "#f0bd8f" : "rgba(255,255,255,0.08)"}`,
+                          border: `1px solid ${active ? "#d4a96a" : "rgba(255,255,255,0.08)"}`,
                           cursor: "pointer",
                           padding: 0,
                           outline: "none",
@@ -335,7 +336,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                               justifyContent: "center",
                               fontFamily: "var(--font-mono)",
                               fontSize: "0.55rem",
-                              color: "#5a5a65",
+                              color: "#8a8a95",
                               textTransform: "uppercase",
                               letterSpacing: "0.06em",
                             }}
@@ -349,7 +350,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                             style={{
                               position: "absolute",
                               inset: 0,
-                              border: "2px solid #f0bd8f",
+                              border: "2px solid #d4a96a",
                               pointerEvents: "none",
                             }}
                           />
@@ -369,7 +370,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                     fontSize: "0.6rem",
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: "#5a5a65",
+                    color: "#8a8a95",
                   }}
                 >
                   Caption (optional)
@@ -414,9 +415,9 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   width: "100%",
                   minHeight: "52px",
                   background: submitting || !selected ? "rgba(255,255,255,0.1)" : "#ffffff",
-                  color: submitting || !selected ? "#5a5a65" : "#000000",
+                  color: submitting || !selected ? "#8a8a95" : "#000000",
                   border: "none",
-                  borderRadius: "2px",
+                  borderRadius: "999px",
                   fontFamily: "var(--font-mono)",
                   fontSize: "0.65rem",
                   fontWeight: 600,

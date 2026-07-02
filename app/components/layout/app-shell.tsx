@@ -14,8 +14,8 @@ export function AppShell({ children }: AppShellProps) {
         display: "flex",
         minHeight: "100dvh",
         flexDirection: "column",
-        background: "#000000",
-        color: "#e2e2e9",
+        background: "#0f0f12",
+        color: "#e8e4dc",
       }}
     >
       {/* Top brand header */}
@@ -25,7 +25,7 @@ export function AppShell({ children }: AppShellProps) {
           position: "sticky",
           top: 0,
           zIndex: 30,
-          background: "rgba(0,0,0,0.85)",
+          background: "rgba(15,15,18,0.92)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
