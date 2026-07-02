@@ -169,7 +169,7 @@ export function OutfitCard({
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {item.brand ?? item.category.replace(/_/g, " ")}
+                  {item.category.replace(/_/g, " ")}
                 </span>
                 {tag && (
                   <span
