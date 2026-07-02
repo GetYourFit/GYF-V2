@@ -3,13 +3,15 @@ import type { CSSProperties } from "react";
 import { cn } from "@/lib/cn";
 
 interface GYFLogoProps {
-  /** Rendered width in px. Min 80 in headers, 160 on login, 200 on splash. */
+  /** Rendered width in px. 96 in top bar, 140 on login, 120 on splash. */
   width?: number;
   className?: string;
   style?: CSSProperties;
+  /** Pass true when rendering on a dark background — inverts to white */
+  invert?: boolean;
 }
 
-export function GYFLogo({ width = 120, className, style }: GYFLogoProps) {
+export function GYFLogo({ width = 120, className, style, invert = false }: GYFLogoProps) {
   return (
     <Image
       src="/assets/logo.png"
@@ -18,7 +20,12 @@ export function GYFLogo({ width = 120, className, style }: GYFLogoProps) {
       height={600}
       priority
       className={cn("object-contain block", className)}
-      style={{ width, height: "auto", ...style }}
+      style={{
+        width,
+        height: "auto",
+        filter: invert ? "brightness(0) invert(1)" : undefined,
+        ...style,
+      }}
     />
   );
 }

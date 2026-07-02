@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { GYFLogoAnimated } from "@/components/brand/GYFLogoAnimated";
+import { GYFMark } from "@/components/brand/GYFMark";
 
 export default function Loading() {
   return (
@@ -34,8 +34,13 @@ export default function Loading() {
         }}
       />
 
-      {/* Animated GYF wordmark */}
-      <GYFLogoAnimated width={160} />
+      {/* GYF logo mark — pulses while loading */}
+      <motion.div
+        animate={{ opacity: [0.4, 1, 0.4], scale: [0.97, 1, 0.97] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <GYFMark size={96} />
+      </motion.div>
 
       {/* Subtle tagline */}
       <motion.p
