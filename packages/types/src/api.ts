@@ -110,6 +110,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/items/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Catalog Facets
+         * @description Real filter ranges for the (region-scoped) catalog so the client only
+         *     offers filters the data can satisfy — e.g. ``priced == 0`` tells Explore to
+         *     hide the price control rather than present a slider that empties the grid.
+         */
+        get: operations["catalog_facets_items_facets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/items/search": {
         parameters: {
             query?: never;
@@ -235,6 +257,26 @@ export interface paths {
          *     (cascading) after the grace window. Idempotent — re-requesting is a no-op.
          */
         delete: operations["delete_account_account_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/profile/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Profile stats & badges
+         * @description Stats (outfits made, items saved, wardrobe size, posts, reactions) + badges.
+         */
+        get: operations["profile_summary_profile_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -477,6 +519,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/social/follows/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Follow a user's style
+         * @description Follow another user (idempotent PUT). Their posts appear in the
+         *     ``scope=following`` feed and any of their looks stay one "recreate" away —
+         *     always re-rendered for *you*, never blindly copied (CLAUDE.md §2).
+         *     422 on self-follow, 404 if the user does not exist.
+         */
+        put: operations["follow_user_social_follows__user_id__put"];
+        post?: never;
+        /**
+         * Unfollow a user
+         * @description Stop following. Idempotent: 204 whether or not currently following.
+         */
+        delete: operations["unfollow_user_social_follows__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/social/follows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who the caller follows
+         * @description The caller's follow list (most recent first) — lets the client mark
+         *     authors as followed and render the Following feed tab.
+         */
+        get: operations["list_follows_social_follows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/social/posts/{post_id}/recreate": {
         parameters: {
             query?: never;
@@ -496,26 +586,6 @@ export interface paths {
          *     404 if the caller has not onboarded.
          */
         post: operations["recreate_post_social_posts__post_id__recreate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/profile/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Profile stats & badges
-         * @description Stats (outfits made, items saved, wardrobe size, posts, reactions) + badges.
-         */
-        get: operations["profile_summary_profile_summary_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -551,6 +621,22 @@ export interface components {
              * @default USD
              */
             currency: string;
+        };
+        /**
+         * CatalogFacets
+         * @description Real, server-computed filter ranges for the in-scope (region-filtered)
+         *     catalog so the client offers only filters the data can actually satisfy —
+         *     never a price control that empties the grid because no item is priced.
+         */
+        CatalogFacets: {
+            /** Total */
+            total: number;
+            /** Priced */
+            priced: number;
+            /** Price Min */
+            price_min: number | null;
+            /** Price Max */
+            price_max: number | null;
         };
         /**
          * ConsentInput
@@ -1134,6 +1220,37 @@ export interface operations {
             };
         };
     };
+    catalog_facets_items_facets_get: {
+        parameters: {
+            query?: {
+                region?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogFacets"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     search_items_items_search_get: {
         parameters: {
             query: {
@@ -1141,6 +1258,10 @@ export interface operations {
                 k?: number;
                 offset?: number;
                 region?: string | null;
+                /** @description Upper price bound (inclusive, in the item's catalog currency). Null means no price filter. */
+                max_price?: number | null;
+                /** @description Result ordering: relevance (cosine similarity), price_asc, or price_desc. Price-sorted pages still carry honest relevance scores. */
+                sort?: "relevance" | "price_asc" | "price_desc";
             };
             header?: never;
             path?: never;
@@ -1346,6 +1467,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    profile_summary_profile_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileSummary"];
+                };
             };
         };
     };
@@ -1679,6 +1820,8 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                /** @description 'all' = the global feed; 'following' = only posts by authors the caller follows (empty until they follow someone). */
+                scope?: "all" | "following";
             };
             header?: never;
             path?: never;
@@ -1778,6 +1921,90 @@ export interface operations {
             };
         };
     };
+    follow_user_social_follows__user_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unfollow_user_social_follows__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_follows_social_follows_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string[];
+                    };
+                };
+            };
+        };
+    };
     recreate_post_social_posts__post_id__recreate_post: {
         parameters: {
             query?: never;
@@ -1805,26 +2032,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    profile_summary_profile_summary_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProfileSummary"];
                 };
             };
         };
