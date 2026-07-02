@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, type Transition } from "framer-motion";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -20,15 +20,15 @@ export function GYFLogoAnimated({ width = 200 }: Props) {
   // Stroke length — enough to cover any path in the wordmark
   const DASH = 300;
 
-  const drawTransition = (delay: number) =>
+  const drawTransition = (delay: number): Transition =>
     reduce
       ? { duration: 0 }
       : { duration: 1.2, ease: EASE, delay };
 
-  const fillTransition = (delay: number) =>
+  const fillTransition = (delay: number): Transition =>
     reduce
       ? { duration: 0 }
-      : { duration: 0.4, ease: "easeOut", delay };
+      : { duration: 0.4, ease: [0.0, 0.0, 0.58, 1.0], delay };
 
   return (
     <svg
