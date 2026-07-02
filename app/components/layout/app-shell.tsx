@@ -1,6 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
-import { GYFLogo } from "@/components/brand/GYFLogo";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { TopMenu } from "@/components/layout/top-menu";
 
@@ -44,8 +44,32 @@ export function AppShell({ children }: AppShellProps) {
             width: "100%",
           }}
         >
-          <Link href="/" aria-label="GYF home">
-            <GYFLogo width={80} />
+          <Link href="/" aria-label="Get Your Fit home">
+            {/* Cropped window: shows just the wordmark text from the square canvas */}
+            <div
+              style={{
+                width: 160,
+                height: 30,
+                overflow: "hidden",
+                position: "relative",
+                flexShrink: 0,
+              }}
+            >
+              <Image
+                src="/assets/get-your-fit.jpg"
+                alt="Get Your Fit"
+                width={1060}
+                height={1060}
+                priority
+                style={{
+                  position: "absolute",
+                  width: 450,
+                  height: 450,
+                  top: -184,
+                  left: -145,
+                }}
+              />
+            </div>
           </Link>
           <TopMenu />
         </header>
