@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { GYFMark } from "@/components/brand/GYFMark";
+import { GYFLogo } from "@/components/brand/GYFLogo";
 
 export default function Loading() {
   return (
@@ -39,7 +39,7 @@ export default function Loading() {
         animate={{ opacity: [0.4, 1, 0.4], scale: [0.97, 1, 0.97] }}
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
       >
-        <GYFMark size={96} />
+        <GYFLogo width={180} />
       </motion.div>
 
       {/* Subtle tagline */}

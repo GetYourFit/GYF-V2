@@ -23,7 +23,7 @@ export default function OnboardingPage() {
         alignItems: "center",
         justifyContent: "space-between",
       }}>
-        <GYFLogo width={80} style={{ filter: "brightness(0) invert(1)" }} />
+        <GYFLogo width={120} />
         <span style={{
           fontFamily: "var(--font-mono)",
           fontSize: "0.55rem",
