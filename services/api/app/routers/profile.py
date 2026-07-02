@@ -6,6 +6,7 @@ import io
 import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from starlette.concurrency import run_in_threadpool
 
 from ..auth import Principal, get_current_principal
 from ..config import settings
@@ -117,14 +118,18 @@ async def upsert_profile_from_photo(
     if not _is_supported_image(raw):
         raise HTTPException(status_code=415, detail="unsupported image type (use jpeg, png, webp)")
 
-    image = _decode_photo(raw)
+    # Decode + inference are CPU-bound (PIL, local torch) or block on a remote GPU
+    # Space for seconds. This is the only `async def` route, so running that work
+    # inline would stall the event loop for every other concurrent request. Offload
+    # it to the threadpool (where all the plain `def` routes already run).
+    image = await run_in_threadpool(_decode_photo, raw)
 
     # Each module abstains on ANY runtime failure (remote Space down, weights/runtime
     # missing, decode error), not just an import error at build time — a flaky or
     # not-yet-deployed module must never 500 the whole onboarding; the other module
     # still runs and the manual path is always the fallback.
-    skin = _estimate_or_abstain(skin_adapter, image, "skin-tone")
-    body = _estimate_or_abstain(body_adapter, image, "body-type")
+    skin = await run_in_threadpool(_estimate_or_abstain, skin_adapter, image, "skin-tone")
+    body = await run_in_threadpool(_estimate_or_abstain, body_adapter, image, "body-type")
     if skin is None and body is None:
         raise HTTPException(status_code=503, detail="photo onboarding unavailable")
 
