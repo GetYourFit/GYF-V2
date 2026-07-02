@@ -42,7 +42,7 @@ function DotsIcon() {
 
 function CloseIcon() {
   return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
       <line x1={18} y1={6} x2={6} y2={18} />
       <line x1={6} y1={6} x2={18} y2={18} />
     </svg>
@@ -57,7 +57,6 @@ export function TopMenu() {
 
   useEffect(() => { setOpen(false); }, [pathname]);
 
-  // Close on outside click (desktop fallback)
   useEffect(() => {
     if (!open) return;
     function handler(e: MouseEvent) {
@@ -69,7 +68,6 @@ export function TopMenu() {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  // Lock body scroll when sheet open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -84,8 +82,8 @@ export function TopMenu() {
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         aria-haspopup="dialog"
-        whileTap={reduce ? undefined : { scale: 0.80 }}
-        transition={{ type: "spring", stiffness: 600, damping: 28 }}
+        whileTap={reduce ? undefined : { scale: 0.78 }}
+        transition={{ type: "spring", stiffness: 500, damping: 25 }}
         style={{
           width: 38,
           height: 38,
@@ -101,28 +99,31 @@ export function TopMenu() {
           WebkitTapHighlightColor: "transparent",
           flexShrink: 0,
           outline: "none",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Icon swap — mode="wait" ensures exit finishes before enter starts */}
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
             <motion.span
               key="close"
-              initial={reduce ? { opacity: 0 } : { opacity: 0, rotate: -45, scale: 0.6 }}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, rotate: -60, scale: 0.5 }}
               animate={{ opacity: 1, rotate: 0, scale: 1 }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, rotate: 45, scale: 0.6 }}
-              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              style={{ display: "flex" }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, rotate: 60, scale: 0.5 }}
+              transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              style={{ display: "flex", position: "absolute" }}
             >
               <CloseIcon />
             </motion.span>
           ) : (
             <motion.span
               key="dots"
-              initial={reduce ? { opacity: 0 } : { opacity: 0, rotate: 45, scale: 0.6 }}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, rotate: 60, scale: 0.5 }}
               animate={{ opacity: 1, rotate: 0, scale: 1 }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, rotate: -45, scale: 0.6 }}
-              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              style={{ display: "flex" }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, rotate: -60, scale: 0.5 }}
+              transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              style={{ display: "flex", position: "absolute" }}
             >
               <DotsIcon />
             </motion.span>
@@ -130,131 +131,137 @@ export function TopMenu() {
         </AnimatePresence>
       </motion.button>
 
-      {/* ── Bottom sheet + backdrop ── */}
+      {/* ── Backdrop — separate AnimatePresence avoids fragment child bug ── */}
       <AnimatePresence>
         {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.22 }}
-              onClick={() => setOpen(false)}
-              style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 40,
-                background: "rgba(28,26,23,0.35)",
-                backdropFilter: "blur(2px)",
-                WebkitBackdropFilter: "blur(2px)",
-                touchAction: "none",
-              }}
-            />
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={() => setOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 40,
+              background: "rgba(28,26,23,0.4)",
+              backdropFilter: "blur(3px)",
+              WebkitBackdropFilter: "blur(3px)",
+              touchAction: "none",
+            }}
+          />
+        )}
+      </AnimatePresence>
 
-            {/* Sheet */}
-            <motion.div
-              key="sheet"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Menu"
-              initial={reduce ? { opacity: 0 } : { y: "100%" }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={reduce ? { opacity: 0 } : { y: "100%" }}
-              transition={{ type: "spring", stiffness: 380, damping: 38, mass: 0.8 }}
-              style={{
-                position: "fixed",
-                bottom: 0,
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: "100%",
-                maxWidth: 390,
-                zIndex: 50,
-                background: "rgba(250,248,245,0.98)",
-                backdropFilter: "blur(28px)",
-                WebkitBackdropFilter: "blur(28px)",
-                borderRadius: "20px 20px 0 0",
-                boxShadow: "0 -4px 40px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.05)",
-                paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
-                overflow: "hidden",
-              }}
-            >
-              {/* Drag handle */}
-              <div style={{ display: "flex", justifyContent: "center", padding: "0.75rem 0 0.25rem" }}>
-                <div style={{ width: 36, height: 4, borderRadius: 99, background: "rgba(0,0,0,0.15)" }} />
-              </div>
+      {/* ── Bottom sheet — separate AnimatePresence, no CSS transform conflict ── */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
+            /*
+             * FIX: use margin:auto centering instead of transform:translateX(-50%).
+             * Framer Motion's y animation writes its own transform, overwriting any
+             * CSS transform set via style — the sheet would drift left during slide.
+             */
+            initial={reduce ? { opacity: 0 } : { y: "100%" }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={reduce ? { opacity: 0 } : { y: "100%", transition: { type: "spring", stiffness: 400, damping: 40 } }}
+            transition={{ type: "spring", stiffness: 350, damping: 36, mass: 0.9 }}
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              margin: "0 auto",
+              width: "100%",
+              maxWidth: 390,
+              zIndex: 50,
+              background: "rgba(250,248,245,0.98)",
+              backdropFilter: "blur(28px)",
+              WebkitBackdropFilter: "blur(28px)",
+              borderRadius: "20px 20px 0 0",
+              boxShadow: "0 -4px 40px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.05)",
+              paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
+              overflow: "hidden",
+            }}
+          >
+            {/* Drag handle */}
+            <div style={{ display: "flex", justifyContent: "center", padding: "0.875rem 0 0.25rem" }}>
+              <div style={{ width: 36, height: 4, borderRadius: 99, background: "rgba(0,0,0,0.14)" }} />
+            </div>
 
-              {/* Sheet label */}
-              <p style={{
-                fontSize: "0.65rem",
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: "#9a9490",
-                padding: "0.75rem 1.25rem 0.5rem",
-              }}>
-                Menu
-              </p>
+            {/* Label */}
+            <p style={{
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "#9a9490",
+              padding: "0.5rem 1.25rem 0.5rem",
+              margin: 0,
+            }}>
+              Menu
+            </p>
 
-              {/* Items */}
-              {MENU_ITEMS.map(({ href, label, description, icon }, i) => (
-                <motion.div
-                  key={href}
-                  initial={reduce ? { opacity: 0 } : { opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.06 + i * 0.07, duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            {/* Items — stagger via delay, NOT nested AnimatePresence */}
+            {MENU_ITEMS.map(({ href, label, description, icon }, i) => (
+              <motion.div
+                key={href}
+                initial={reduce ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 + i * 0.06, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Link
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1rem",
+                    padding: "0.875rem 1.25rem",
+                    textDecoration: "none",
+                    color: "#1c1a17",
+                    borderBottom: i < MENU_ITEMS.length - 1 ? "1px solid rgba(0,0,0,0.06)" : "none",
+                    WebkitTapHighlightColor: "transparent",
+                    transition: "background 0.1s",
+                    minHeight: 64,
+                  }}
+                  onTouchStart={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,0,0,0.05)"; }}
+                  onTouchEnd={(e) => { setTimeout(() => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }, 150); }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,0,0,0.04)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
                 >
-                  <Link
-                    href={href}
-                    onClick={() => setOpen(false)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "1rem",
-                      padding: "0.9rem 1.25rem",
-                      textDecoration: "none",
-                      color: "#1c1a17",
-                      borderBottom: i < MENU_ITEMS.length - 1 ? "1px solid rgba(0,0,0,0.06)" : "none",
-                      WebkitTapHighlightColor: "transparent",
-                      transition: "background 0.12s",
-                      minHeight: 64,
-                    }}
-                    onTouchStart={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,0,0,0.04)"; }}
-                    onTouchEnd={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,0,0,0.04)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
-                  >
-                    <span style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 13,
-                      background: "#f4f1ec",
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      color: "#5c5650",
-                    }}>
-                      {icon}
-                    </span>
-                    <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                      <span style={{ fontSize: "1rem", fontWeight: 600, lineHeight: 1.2 }}>{label}</span>
-                      <span style={{ fontSize: "0.78rem", color: "#9a9490", lineHeight: 1.4 }}>{description}</span>
-                    </span>
-
-                    {/* Chevron */}
-                    <span style={{ marginLeft: "auto", color: "#c5c0b8", flexShrink: 0 }}>
-                      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </span>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-          </>
+                  <span style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 13,
+                    background: "#f4f1ec",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    color: "#5c5650",
+                  }}>
+                    {icon}
+                  </span>
+                  <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <span style={{ fontSize: "1rem", fontWeight: 600, lineHeight: 1.2 }}>{label}</span>
+                    <span style={{ fontSize: "0.78rem", color: "#9a9490", lineHeight: 1.4 }}>{description}</span>
+                  </span>
+                  <span style={{ marginLeft: "auto", color: "#c5c0b8", flexShrink: 0 }}>
+                    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </span>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
