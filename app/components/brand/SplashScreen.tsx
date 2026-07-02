@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { randomQuote } from "@/lib/fashionQuotes";
-import { GYFLogoAnimated } from "./GYFLogoAnimated";
+import { GYFLogo } from "./GYFLogo";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const MIN_SHOW_MS = 2400;
@@ -74,8 +74,14 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             padding: "0 2rem",
           }}
         >
-          {/* ── GYF Logo — SVG draw-on animation ── */}
-          <GYFLogoAnimated width={200} />
+          {/* ── GYF Logo ── */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: EASE }}
+          >
+            <GYFLogo width={220} />
+          </motion.div>
 
           {/* ── Progress line — ochre sweep ── */}
           {!reduce && (
