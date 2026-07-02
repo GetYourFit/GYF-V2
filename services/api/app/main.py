@@ -26,6 +26,7 @@ from .config import settings
 from .dependencies import get_readiness
 from .metrics import install_metrics, metrics_enabled
 from .observability import install_request_context
+from .security_headers import install_security_headers
 from .routers import (
     catalog,
     collections,
@@ -149,6 +150,8 @@ _telemetry = configure_telemetry(app)
 install_metrics(app)
 # Foundation hardening (W1): request ids, structured access log, uniform error envelope.
 install_request_context(app)
+# Baseline security headers on every response (nosniff, frame-deny, referrer, HSTS).
+install_security_headers(app)
 
 
 # --- System probes & the visual gallery ------------------------------------
