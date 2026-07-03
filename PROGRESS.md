@@ -325,3 +325,34 @@ Cuelinks approved (channel cid=274785; token verified live against /api/v2 — c
 **Honest gap:** Cuelinks has NO product feed API — real prices/images still need
 merchant catalog ingestion (separate W-DATA track); wrapping applies to whatever
 buy_urls the catalog holds (academic seed rows have none yet).
+
+## 2026-07-03 — Shopify D2C catalog connector (real products, $0, no aggregator)
+
+Real buyable fashion now has a free ingestion lane: Shopify's public
+`/products.json` on popular Indian D2C brands. Planned first (user-confirmed),
+then shipped on the EXISTING FeedSource port — no parallel system:
+
+- `app/catalog/merchants.py` — config-as-data roster, 9 stores each verified
+  live before inclusion (Snitch, Freakins, The Bear House, Bonkers Corner,
+  Rare Rabbit, BlissClub, Urban Monkey, Littlebox, Offduty). US-INR brands
+  join as registry entries when verified (most US Shopify stores serve USD).
+- `ShopifySource` (sources.py) — paged fetch (polite delay, honest UA,
+  50k backstop), lowest in-stock variant price, currency guard, price sanity
+  bounds, out-of-stock skip, malformed-product tolerance, title fallback for
+  blank product_type. provenance license="merchant-public-feed".
+- `ingest_shopify_roster()` + `--provider shopify` CLI — per-store failure
+  isolation (one dead store never kills the roster refresh).
+- media.py root-cause fix: absolute image URLs pass through (were being
+  mangled by basename+media-base rebasing).
+- Nightly workflow step refreshes prices/stock (idempotent by dedupe_key).
+- Merchant choice in the feed stays EMERGENT (embeddings + conditioning +
+  taste + behavioral spine) — no hardcoded merchant preference (D5/D6).
+- Verified: 9 offline tests + live e2e (25 real Snitch products → real
+  Postgres, canonical categories, INR prices, 7 images/product, idempotent
+  re-run). API suite 223 passed; ruff clean.
+
+**Honest gaps:** new items need the embedding backfill (existing recipe:
+CPU lane `GYF_ENCODER_REMOTE_URL=""` or ZeroGPU) before they are stylable —
+not yet automated in CI (torch install weight); permission emails to brands
+recommended (public endpoint, ToS-grey without them); US-INR roster empty
+until a store verifies.

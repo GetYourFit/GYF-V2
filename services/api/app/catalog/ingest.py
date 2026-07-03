@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Protocol
@@ -180,24 +181,67 @@ class InMemoryItemRepository:
         return True
 
 
+def ingest_shopify_roster(repo: ItemRepository, merchants=None) -> dict[str, IngestResult]:
+    """Ingest every registry merchant's live Shopify catalog, failure-isolated.
+
+    One unreachable/broken store logs and moves on — a nightly refresh must
+    never lose eight catalogs because a ninth was down. Returns per-provider
+    results so callers (CLI, workflow logs) can see exactly what landed.
+    """
+    from .merchants import MERCHANTS
+    from .sources import ShopifySource
+
+    results: dict[str, IngestResult] = {}
+    for merchant in merchants if merchants is not None else MERCHANTS:
+        source = ShopifySource(merchant)
+        try:
+            results[source.provider] = ingest(source, repo)
+        except Exception:  # noqa: BLE001 — isolate per store; the roster survives
+            logging.getLogger("gyf.catalog.ingest").exception(
+                "shopify ingest failed for %s — continuing with the rest", source.provider
+            )
+            results[source.provider] = IngestResult()
+    return results
+
+
 def _build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Ingest an open-dataset catalog (JSONL).")
-    parser.add_argument("path", help="Path to a JSONL catalog file.")
-    parser.add_argument("--provider", required=True, help="Provenance: feed/dataset name.")
-    parser.add_argument("--license", required=True, help="Provenance: data license.")
+    parser = argparse.ArgumentParser(description="Ingest a product catalog into items.")
+    parser.add_argument(
+        "path",
+        nargs="?",
+        help="Path to a JSONL catalog file (omit with --provider shopify).",
+    )
+    parser.add_argument(
+        "--provider",
+        required=True,
+        help="Provenance: feed/dataset name, or 'shopify' for the live merchant roster.",
+    )
+    parser.add_argument(
+        "--license",
+        help="Provenance: data license (required for file feeds; implied for shopify).",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Normalize without writing.")
     return parser
 
 
 def main(argv: Iterable[str] | None = None) -> None:
     args = _build_arg_parser().parse_args(list(argv) if argv is not None else None)
-    source = OpenDatasetSource(args.path, provider=args.provider, license=args.license)
     if args.dry_run:
         repo: ItemRepository = InMemoryItemRepository()
     else:
         from app.config import settings
 
         repo = PostgresItemRepository(settings.database_url)
+
+    if args.provider == "shopify":
+        results = ingest_shopify_roster(repo)
+        for provider, result in results.items():
+            print(f"ingest: seen={result.seen} written={result.written} provider={provider}")
+        return
+
+    if not args.path or not args.license:
+        raise SystemExit("file feeds require a path and --license")
+    source = OpenDatasetSource(args.path, provider=args.provider, license=args.license)
     result = ingest(source, repo)
     print(f"ingest: seen={result.seen} written={result.written} provider={args.provider}")
 

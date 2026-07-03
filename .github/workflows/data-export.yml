@@ -47,6 +47,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Refresh the Shopify merchant catalogs (real products, prices, stock)
+        if: steps.gate.outputs.configured == 'true'
+        working-directory: services/api
+        env:
+          GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
+        run: uv run --extra postgres python -m app.catalog.ingest --provider shopify
+
       - name: Sync Cuelinks conversions into the spine
         if: steps.gate.outputs.configured == 'true'
         env:
