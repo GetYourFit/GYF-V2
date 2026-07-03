@@ -20,7 +20,7 @@ const RIGHT_TABS = [
 ] as const;
 
 const ACCENT = "#d4607a";
-const MUTED = "#5a5a65";
+const MUTED = "#5c5650";
 
 export function BottomNav() {
   const pathname = usePathname();
