@@ -37,44 +37,28 @@ function RotatingTip({ reduce }: { reduce: boolean | null }) {
 
   return (
     <div
-      style={{
-        minHeight: "2.5rem",
-        display: "flex",
-        alignItems: "center",
-        overflow: "hidden",
-      }}
+      style={{ minHeight: "1.6rem", overflow: "hidden" }}
       aria-live="polite"
       aria-atomic="true"
     >
       <AnimatePresence mode="wait">
         <motion.p
           key={index}
-          initial={reduce ? { opacity: 1 } : { opacity: 0, y: 8 }}
+          initial={reduce ? { opacity: 1 } : { opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
-          transition={{ duration: 0.35, ease: EASE }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
+          transition={{ duration: 0.3, ease: EASE }}
           style={{
-            fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-            fontSize: "0.875rem",
+            fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+            fontSize: "0.7rem",
             fontWeight: 400,
-            color: "#5c5650",
-            lineHeight: 1.45,
+            fontStyle: "italic",
+            color: "#9a9490",
+            lineHeight: 1.5,
+            letterSpacing: "0.02em",
             margin: 0,
           }}
         >
-          <span
-            style={{
-              fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-              fontSize: "0.55rem",
-              fontWeight: 600,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#d4607a",
-              marginRight: "0.5rem",
-            }}
-          >
-            Tip
-          </span>
           {TIPS[index]}
         </motion.p>
       </AnimatePresence>
@@ -107,21 +91,22 @@ export function ExploreShell() {
             padding: "1.25rem 1rem 0",
             display: "flex",
             flexDirection: "column",
-            gap: "0.625rem",
+            gap: "0.5rem",
           }}
         >
-          <span
+          <h1
             style={{
-              fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-              fontSize: "0.6rem",
-              fontWeight: 500,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#d4607a",
+              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+              fontSize: "clamp(1.75rem, 7vw, 2.25rem)",
+              fontWeight: 800,
+              lineHeight: 1.1,
+              letterSpacing: "-0.03em",
+              color: "#1c1a17",
+              margin: 0,
             }}
           >
             Explore
-          </span>
+          </h1>
           <RotatingTip reduce={reduce} />
         </motion.header>
 
