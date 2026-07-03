@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 
 from ..catalog.directory import ItemDirectory
 from ..catalog.retrieval import (
@@ -30,12 +31,21 @@ def similar_items(
     k: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0, le=10_000),
     region: str | None = None,
+    gender: str | None = Query(
+        None, description="Styling gender: results narrow to that slice + unisex."
+    ),
     repo: VectorSearchRepository = Depends(get_search_repo),
     directory: ItemDirectory = Depends(get_item_directory),
 ) -> dict[str, list[SearchResult]]:
     """Visually-similar items (nearest neighbours of the item's embedding)."""
-    hits = repo.similar_to_item(item_id, k, region, offset)
+    hits = repo.similar_to_item(item_id, k, region, offset, genders=_genders(gender))
     return {"results": enrich_results(hits, directory)}
+
+
+def _genders(gender: str | None) -> frozenset[str] | None:
+    """Catalog gender facets for a stated styling gender; ``None`` = no filter."""
+    allowed = catalog_genders_for(gender)
+    return allowed if allowed != CATALOG_GENDERS else None
 
 
 @router.get("/items/facets")
@@ -67,6 +77,9 @@ def search_items(
         description="Result ordering: relevance (cosine similarity), price_asc, or "
         "price_desc. Price-sorted pages still carry honest relevance scores.",
     ),
+    gender: str | None = Query(
+        None, description="Styling gender: results narrow to that slice + unisex."
+    ),
     repo: VectorSearchRepository = Depends(get_search_repo),
     embedder: TextEmbedder = Depends(get_text_embedder),
     directory: ItemDirectory = Depends(get_item_directory),
@@ -79,7 +92,17 @@ def search_items(
     construction-time path returns, never a 500 that pretends the search broke.
     """
     try:
-        hits = search_text(repo, embedder, q, k, region, offset, max_price=max_price, sort=sort)
+        hits = search_text(
+            repo,
+            embedder,
+            q,
+            k,
+            region,
+            offset,
+            max_price=max_price,
+            sort=sort,
+            genders=_genders(gender),
+        )
         return {"results": enrich_results(hits, directory)}
     except ImportError as exc:  # encoder backend not installed in this runtime
         raise HTTPException(status_code=503, detail="text search unavailable") from exc

@@ -141,3 +141,65 @@ def test_media_passes_remote_image_urls_through_untouched():
     assert image_url_from_refs([remote]) == remote
     # local refs keep the existing rebasing behavior
     assert image_url_from_refs(["catalog/tee.jpg"]).endswith("/tee.jpg")
+
+
+def test_infer_gender_from_product_text_over_merchant_audience():
+    src = _source({})
+    # Product's own text wins over the merchant default.
+    assert (
+        src._infer_gender(_product(title="Women's Oversized Tee"), "Women's Oversized Tee")
+        == "women"
+    )
+    assert src._infer_gender(_product(tags=["Men", "New"]), "Box Tee") == "men"
+    assert src._infer_gender(_product(tags="unisex essentials"), "Box Tee") == "unisex"
+    # Both signals → unisex; "women" never leaks a "men" match.
+    assert src._infer_gender(_product(title="For Men and Women"), "For Men and Women") == "unisex"
+    assert src._infer_gender(_product(title="Womens Kurta"), "Womens Kurta") == "women"
+
+
+def test_infer_gender_falls_back_to_merchant_audience():
+    src = _source({})
+    item = src._infer_gender(_product(), "Box Fit Abstract Shirt")
+    assert item == _M.audience
+
+
+def test_fetch_carries_gender_facet():
+    (item,) = list(_source({1: [_product(title="Men's Slim Shirt")]}).fetch())
+    assert item.gender == "men"
+
+
+def test_resolve_category_chain_title_then_default():
+    src = _source({})
+    # product_type is a model name -> title classifies -> title wins
+    assert src._resolve_category("X Lows", "Retro Sneakers in White") == "Retro Sneakers in White"
+    # nothing classifies -> merchant default (None for Snitch -> raw passthrough)
+    assert src._resolve_category("X Lows", "Aeon V2") in ("X Lows", "Aeon V2", _M.default_category)
+
+
+def test_http_get_retries_once_on_transient_5xx(monkeypatch):
+    import urllib.error
+    import urllib.request
+
+    calls = {"n": 0}
+
+    class FakeResp:
+        def read(self):
+            return b'{"products": []}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def fake_urlopen(req, timeout):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise urllib.error.HTTPError(req.full_url, 500, "boom", {}, None)
+        return FakeResp()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    source = ShopifySource(_M, page_delay_s=0)
+    assert source._http_get("https://snitch.co.in/products.json") == '{"products": []}'
+    assert calls["n"] == 2

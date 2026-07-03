@@ -135,8 +135,8 @@ WHERE jsonb_array_length(i.image_refs) > 0
       SELECT 1 FROM item_embeddings e
       WHERE e.item_id = i.id AND e.model_version = %s
   )
-ORDER BY i.created_at
 """
+_ORDER = "ORDER BY i.created_at\n"
 _UPSERT_EMBEDDING = """
 INSERT INTO item_embeddings (item_id, embedding, model_version)
 VALUES (%s, %s::vector, %s)
@@ -150,16 +150,26 @@ _MERGE_ATTRIBUTES = "UPDATE items SET attributes = attributes || %s WHERE id = %
 class PostgresBackfillStore:
     """Reads pending items and writes embeddings + attributes. Lazy pool, injectable."""
 
-    def __init__(self, dsn: str, pool: object | None = None) -> None:
+    def __init__(
+        self, dsn: str, pool: object | None = None, shard: tuple[int, int] | None = None
+    ) -> None:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy
 
             pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
         self._pool = pool
+        self._shard = shard  # (index, count): stable id-hash split for concurrent workers
 
     def pending(self, model_version: str, limit: int | None) -> Iterator[PendingItem]:
-        sql = _PENDING + ("LIMIT %s" if limit else "")
-        params = (model_version, limit) if limit else (model_version,)
+        sql, params = _PENDING, [model_version]
+        if self._shard:
+            sql += "  AND (hashtext(i.id::text) & 2147483647) %% %s = %s\n"
+            params += [self._shard[1], self._shard[0]]
+        sql += _ORDER
+        if limit:
+            sql += "LIMIT %s"
+            params.append(limit)
+        params = tuple(params)
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             for row in conn.execute(sql, params):
                 yield PendingItem(item_id=str(row[0]), image_refs=list(row[1]))
@@ -184,9 +194,18 @@ def main(argv: Iterable[str] | None = None) -> None:
 
     parser = argparse.ArgumentParser(description="Backfill perception (embeddings + attributes).")
     parser.add_argument("--limit", type=int, default=None, help="Max items to process.")
+    parser.add_argument(
+        "--shard", default=None, help="i/n — process only this stable id-hash shard."
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
-    store = PostgresBackfillStore(settings.database_url)
+    shard = None
+    if args.shard:
+        i, n = (int(x) for x in args.shard.split("/"))
+        if not 0 <= i < n:
+            parser.error("--shard must be i/n with 0 <= i < n")
+        shard = (i, n)
+    store = PostgresBackfillStore(settings.database_url, shard=shard)
     perceptor = Perceptor(default_encoder())
     result = run_backfill(
         store,

@@ -58,7 +58,12 @@ class TextEmbedder(Protocol):
 
 class VectorSearchRepository(Protocol):
     def similar_to_item(
-        self, item_id: str, k: int, region: str | None, offset: int = 0
+        self,
+        item_id: str,
+        k: int,
+        region: str | None,
+        offset: int = 0,
+        genders: frozenset[str] | None = None,
     ) -> list[SearchResult]: ...
 
     def search_by_vector(
@@ -69,6 +74,7 @@ class VectorSearchRepository(Protocol):
         offset: int = 0,
         max_price: float | None = None,
         sort: str = "relevance",
+        genders: frozenset[str] | None = None,
     ) -> list[SearchResult]: ...
 
     def catalog_facets(self, region: str | None) -> CatalogFacets: ...
@@ -78,12 +84,19 @@ class VectorSearchRepository(Protocol):
 # filter, when present, keeps region-neutral items ('{}') and items tagged for it.
 _REGION_FILTER = "AND (i.region_tags = '{}' OR %s = ANY(i.region_tags))"
 
+# A gender filter keeps unfaceted items (no taxonomy gender) and items whose
+# facet is in the allowed set — gendered relevance, never a wall.
+_GENDER_FILTER = (
+    "AND (i.attributes #>> '{taxonomy,gender}' IS NULL"
+    " OR i.attributes #>> '{taxonomy,gender}' = ANY(%s::text[]))"
+)
+
 _SIMILAR = """
 SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score, i.image_refs
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 CROSS JOIN (SELECT embedding FROM item_embeddings WHERE item_id = %s) q
-WHERE e.item_id <> %s {region}
+WHERE e.item_id <> %s {region} {gender}
 ORDER BY e.embedding <=> q.embedding
 LIMIT %s OFFSET %s
 """
@@ -110,11 +123,25 @@ class PostgresVectorSearchRepository:
         self._pool = pool
 
     def similar_to_item(
-        self, item_id: str, k: int, region: str | None, offset: int = 0
+        self,
+        item_id: str,
+        k: int,
+        region: str | None,
+        offset: int = 0,
+        genders: frozenset[str] | None = None,
     ) -> list[SearchResult]:
-        sql = _SIMILAR.format(region=_REGION_FILTER if region else "")
-        params = (item_id, item_id, region, k, offset) if region else (item_id, item_id, k, offset)
-        return self._run(sql, params)
+        gender_list = sorted(genders) if genders else None
+        sql = _SIMILAR.format(
+            region=_REGION_FILTER if region else "",
+            gender=_GENDER_FILTER if gender_list else "",
+        )
+        params: list[object] = [item_id, item_id]
+        if region:
+            params.append(region)
+        if gender_list:
+            params.append(gender_list)
+        params.extend([k, offset])
+        return self._run(sql, tuple(params))
 
     def search_by_vector(
         self,
@@ -124,6 +151,7 @@ class PostgresVectorSearchRepository:
         offset: int = 0,
         max_price: float | None = None,
         sort: str = "relevance",
+        genders: frozenset[str] | None = None,
     ) -> list[SearchResult]:
         vec = _pgvector(embedding)
         # The score column always reflects relevance to the query; `sort` only
@@ -137,6 +165,9 @@ class PostgresVectorSearchRepository:
         if max_price is not None:
             where += " AND i.price IS NOT NULL AND i.price <= %s"
             params.append(max_price)
+        if genders:
+            where += " " + _GENDER_FILTER
+            params.append(sorted(genders))
         order = _SORT_CLAUSES.get(sort)
         if order is None:  # relevance (default): nearest-neighbour by cosine distance
             order = "ORDER BY e.embedding <=> %s::vector"
@@ -200,10 +231,17 @@ def search_text(
     offset: int = 0,
     max_price: float | None = None,
     sort: str = "relevance",
+    genders: frozenset[str] | None = None,
 ) -> list[SearchResult]:
     """Embed a text query and return the matching items (relevance- or price-ordered)."""
     return repo.search_by_vector(
-        embedder.embed_query(query), k, region, offset, max_price=max_price, sort=sort
+        embedder.embed_query(query),
+        k,
+        region,
+        offset,
+        max_price=max_price,
+        sort=sort,
+        genders=genders,
     )
 
 

@@ -19,6 +19,8 @@ import dataclasses
 import logging
 import uuid
 
+from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
+
 from . import conditioning
 from ..affiliate import AffiliateLinker, linker_from_settings
 from .candidates import CANDIDATE_SLOTS, Candidate, CandidateRepository
@@ -84,12 +86,16 @@ def recommend(
     constraints = conditioning.resolve(profile, occasion, region, goals)
     taste = build_taste(taste_repo.engagements(user_id, _TASTE_HISTORY))
 
+    # Gendered relevance: draw only from the user's slice + unisex (unfaceted
+    # items always pass). Nonbinary/unknown users see the full catalog.
+    genders = catalog_genders_for(profile.gender)
     pools = candidates.candidates_by_slot(
         CANDIDATE_SLOTS,
         constraints.region,
         constraints.max_price,
         _CANDIDATES_PER_SLOT,
         taste.vector if taste.has_signal else None,
+        genders if genders != CATALOG_GENDERS else None,
     )
     wardrobe = _ground_in_wardrobe(pools, user_id, candidates, wardrobe_repo)
     if anchor_item_id is not None:

@@ -173,13 +173,13 @@ def test_search_text_embeds_query_then_searches():
 
     class FakeRepo:
         def search_by_vector(
-            self, embedding, k, region, offset=0, max_price=None, sort="relevance"
+            self, embedding, k, region, offset=0, max_price=None, sort="relevance", genders=None
         ):
             captured["embedding"] = embedding
             captured["offset"] = offset
             return [SearchResult("x", "X", 1.0)]
 
-        def similar_to_item(self, item_id, k, region, offset=0):  # pragma: no cover
+        def similar_to_item(self, item_id, k, region, offset=0, genders=None):  # pragma: no cover
             return []
 
     class FakeEmbedder:
@@ -195,10 +195,12 @@ def test_search_text_embeds_query_then_searches():
 
 
 class StubRepo:
-    def similar_to_item(self, item_id, k, region, offset=0):
+    def similar_to_item(self, item_id, k, region, offset=0, genders=None):
         return [SearchResult("sibling", "Sibling Item", 0.88)]
 
-    def search_by_vector(self, embedding, k, region, offset=0, max_price=None, sort="relevance"):
+    def search_by_vector(
+        self, embedding, k, region, offset=0, max_price=None, sort="relevance", genders=None
+    ):
         return [SearchResult("hit", "Search Hit", 0.77)]
 
 
@@ -261,7 +263,7 @@ def test_search_endpoint_validates_and_forwards_price_and_sort():
 
     class CapturingRepo:
         def search_by_vector(
-            self, embedding, k, region, offset=0, max_price=None, sort="relevance"
+            self, embedding, k, region, offset=0, max_price=None, sort="relevance", genders=None
         ):
             captured["max_price"] = max_price
             captured["sort"] = sort

@@ -32,6 +32,7 @@ from app.recsys.compose import (
     score_outfit,
     wardrobe_fit,
 )
+from app.recsys.goals import Effect
 from app.recsys.service import recommend
 from app.wardrobe import InMemoryWardrobeRepository, WardrobeRecord
 from app.recsys.taste import (
@@ -514,6 +515,7 @@ def _attr_row(*, pattern_certain, silhouette_certain, fit_certain, aesthetic_cer
         pattern_certain,
         silhouette_certain,
         fit_certain,  # 16-19
+        None,  # 20 gender (unfaceted)
     )
 
 
@@ -735,3 +737,131 @@ def test_complete_look_endpoint_and_impression_context():
         assert client.get("/outfits/complete?item_id=nope").status_code == 404
     finally:
         app.dependency_overrides.clear()
+
+
+# --- Personalized explanations (undertone / body type / budget) --------------
+
+
+def test_body_type_sets_default_goals_and_explains():
+    profile = Profile(occasion="casual", body_type="oval")
+    c = conditioning.resolve(profile, "casual", None)
+    assert c.goals and c.goals_from_body is True
+    rec = recommend(
+        profile,
+        DEV_USER,
+        InMemoryCandidateRepository(_three_slot_catalog()),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        3,
+    )
+    assert any("apple-shaped" in o.explanation for o in rec.outfits)
+
+
+def test_explicit_goal_beats_body_type_default():
+    profile = Profile(occasion="casual", body_type="oval")
+    c = conditioning.resolve(profile, "casual", None, frozenset({Effect.SLIM}))
+    assert c.goals == frozenset({Effect.SLIM})
+    assert c.goals_from_body is False
+
+
+def test_no_body_type_means_no_default_goals():
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    assert not c.goals
+
+
+def test_budget_phrase_appears_when_every_piece_fits():
+    catalog = [
+        _item("t1", "t_shirt", "top", price=500),
+        _item("b1", "jeans", "bottom", price=900),
+        _item("f1", "sneakers", "footwear", price=999),
+    ]
+    profile = Profile(occasion="casual", budget_range=BudgetRange(min=0, max=1000, currency="INR"))
+    rec = recommend(
+        profile,
+        DEV_USER,
+        InMemoryCandidateRepository(catalog),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        1,
+    )
+    assert "within your ₹1,000 budget" in rec.outfits[0].explanation
+
+
+def test_undertone_phrase_names_the_undertone_only_when_earned():
+    # Warm-toned look for a warm-undertone user: the claim is earned.
+    warm = [
+        _item("t1", "t_shirt", "top", lch=(60, 40, 45), hue_name="orange"),
+        _item("b1", "jeans", "bottom", lch=(40, 8, 250), hue_name="blue"),
+        _item("f1", "sneakers", "footwear", lch=(80, 5, 0), hue_name="white"),
+    ]
+    profile = Profile(occasion="casual", undertone="warm", field_confidence={"undertone": 1.0})
+    rec = recommend(
+        profile,
+        DEV_USER,
+        InMemoryCandidateRepository(warm),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        1,
+    )
+    assert "warm-undertone palette" in rec.outfits[0].explanation
+    # Cool-hued look for the same user: no false flattery claim.
+    cool = [
+        _item("t2", "t_shirt", "top", lch=(60, 50, 300), hue_name="purple"),
+        _item("b2", "jeans", "bottom", lch=(40, 45, 280), hue_name="blue"),
+        _item("f2", "sneakers", "footwear", lch=(50, 45, 320), hue_name="purple"),
+    ]
+    rec = recommend(
+        profile,
+        DEV_USER,
+        InMemoryCandidateRepository(cool),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        1,
+    )
+    assert "warm-undertone palette" not in rec.outfits[0].explanation
+
+
+def test_gender_filter_keeps_own_slice_and_unisex():
+    import dataclasses as _dc
+
+    catalog = [
+        _dc.replace(_item("t1", "t_shirt", "top", lch=(50, 40, 30)), gender="men"),
+        _dc.replace(_item("t2", "shirt", "top", lch=(60, 8, 0)), gender="women"),
+        _dc.replace(_item("t3", "shirt", "top", lch=(60, 8, 0)), gender="unisex"),
+        _item("b1", "jeans", "bottom", lch=(40, 10, 250)),  # unfaceted: always passes
+        _item("f1", "sneakers", "footwear", lch=(80, 5, 0)),
+    ]
+    rec = recommend(
+        Profile(occasion="casual", gender="women"),
+        DEV_USER,
+        InMemoryCandidateRepository(catalog),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        5,
+    )
+    tops = {it.item_id for o in rec.outfits for it in o.items if it.slot == "top"}
+    assert "t1" not in tops  # men's top never shown to a women-profile user
+    assert tops <= {"t2", "t3"}
+    # Nonbinary/unknown users see the full catalog — never narrowed away.
+    rec_all = recommend(
+        Profile(occasion="casual", gender="nonbinary"),
+        DEV_USER,
+        InMemoryCandidateRepository(catalog),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        5,
+    )
+    tops_all = {it.item_id for o in rec_all.outfits for it in o.items if it.slot == "top"}
+    assert "t1" in tops_all or "t2" in tops_all

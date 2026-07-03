@@ -1350,6 +1350,8 @@ export interface operations {
                 k?: number;
                 offset?: number;
                 region?: string | null;
+                /** @description Styling gender: results narrow to that slice + unisex. */
+                gender?: string | null;
             };
             header?: never;
             path: {
@@ -1423,6 +1425,8 @@ export interface operations {
                 max_price?: number | null;
                 /** @description Result ordering: relevance (cosine similarity), price_asc, or price_desc. Price-sorted pages still carry honest relevance scores. */
                 sort?: "relevance" | "price_asc" | "price_desc";
+                /** @description Styling gender: results narrow to that slice + unisex. */
+                gender?: string | null;
             };
             header?: never;
             path?: never;

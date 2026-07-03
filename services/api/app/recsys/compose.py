@@ -304,15 +304,73 @@ def _explain(
     occasion = _OCCASION_PHRASE.get(constraints.occasion, constraints.occasion)
     reason = _color_reason(items) if color >= 0.75 else "balanced tones"
     sentence = f"{pieces.capitalize()} — {reason}, styled for {occasion}."
-    if constraints.preferred_hues:
-        sentence += " The colours are chosen to flatter your undertone."
+    sentence += _undertone_phrase(items, constraints)
     if constraints.goals:
-        sentence += f" {_goal_phrase(constraints.goals)}"
+        if constraints.goals_from_body:
+            sentence += f" {_body_type_phrase(constraints)}"
+        else:
+            sentence += f" {_goal_phrase(constraints.goals)}"
+    sentence += _budget_phrase(items, constraints)
     # Only claim taste personalization when it meaningfully shaped the pick.
     if taste_strength >= 0.25 and _outfit_affinity(items) is not None:
         sentence += " Matched to the styles you've been saving."
     sentence += _wardrobe_phrase(items, wardrobe)
     return sentence
+
+
+def _undertone_phrase(items: tuple[Candidate, ...], constraints: Constraints) -> str:
+    """Name the undertone flattery — only when the palette genuinely delivers it.
+
+    Claims are earned, never boilerplate (D6): the sentence appears only when the
+    user gave an undertone AND this look's colours actually sit near the
+    flattering hue centres (or are safe neutrals).
+    """
+    if not constraints.preferred_hues or constraints.undertone is None:
+        return ""
+    if _undertone_fit(items, constraints.preferred_hues) < 0.6:
+        return ""
+    return (
+        f" These tones sit in the {constraints.undertone}-undertone palette, "
+        "so they'll bring out your natural colouring."
+    )
+
+
+# Human phrasing for the body types that carry default styling effects.
+_BODY_TYPE_LABEL: dict[str, str] = {
+    "oval": "apple-shaped",
+    "triangle": "pear-shaped",
+}
+
+_BODY_GOAL_PHRASE: dict[Effect, str] = {
+    Effect.ELONGATE: "an unbroken vertical line that lengthens your silhouette",
+    Effect.BROADEN: "fuller, lighter pieces up top that balance your proportions",
+}
+
+
+def _body_type_phrase(constraints: Constraints) -> str:
+    """Credit the body type that shaped the look — the user set no explicit goal."""
+    label = _BODY_TYPE_LABEL.get(constraints.body_type or "", constraints.body_type)
+    effects = [_BODY_GOAL_PHRASE[g] for g in Effect if g in constraints.goals]
+    if not effects or label is None:
+        return ""
+    return f"Cut for your {label} frame — {'; '.join(effects)}."
+
+
+# Currency symbols for the budget phrase; unknown codes print as the code itself.
+_CURRENCY_SYMBOL: dict[str, str] = {"INR": "₹", "USD": "$", "EUR": "€", "GBP": "£"}
+
+
+def _budget_phrase(items: tuple[Candidate, ...], constraints: Constraints) -> str:
+    """Confirm the budget was honoured — only when a budget exists and every
+    priced (non-owned) garment respects it."""
+    if constraints.max_price is None:
+        return ""
+    prices = [it.price for it in items if not it.owned and it.price is not None]
+    if not prices or any(p > constraints.max_price for p in prices):
+        return ""
+    symbol = _CURRENCY_SYMBOL.get(constraints.currency or "", constraints.currency or "")
+    ceiling = f"{symbol}{constraints.max_price:,.0f}"
+    return f" Every piece stays within your {ceiling} budget."
 
 
 def _wardrobe_phrase(items: tuple[Candidate, ...], wardrobe: WardrobeContext | None) -> str:

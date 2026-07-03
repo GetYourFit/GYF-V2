@@ -34,6 +34,14 @@ def test_classify_region_facet():
 
 def test_classify_unknown_is_not_dropped():
     assert classify("flux capacitor") is UNKNOWN
+
+
+def test_classify_matches_words_never_substrings():
+    # "wheels" must not resolve to "heels" (real bug: skateboard wheels served
+    # as footwear), and boundaries hold for other embedded-word traps too.
+    assert classify("54mm OJ Wheels") is UNKNOWN
+    assert classify("Wheels") is UNKNOWN
+    assert classify("High Heels").name == "heels"
     assert classify("") is UNKNOWN
 
 
@@ -122,3 +130,34 @@ def test_postgres_repo_upsert_binds_all_columns():
     assert params[0] == "Tee"  # title
     assert json.loads(params[2]) == item.attributes  # attributes serialized to JSON
     assert params[-1] == item.dedupe_key
+
+
+def test_postgres_repo_upsert_retries_once_on_dropped_connection():
+    import psycopg
+
+    class FakeCursor:
+        rowcount = 1
+
+    calls = {"n": 0}
+
+    class FakeConn:
+        def execute(self, sql, params):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise psycopg.OperationalError("server closed the connection unexpectedly")
+            return FakeCursor()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    class FakePool:
+        def connection(self):
+            return FakeConn()
+
+    repo = PostgresItemRepository("postgresql://unused", pool=FakePool())
+    item = normalize(RawFeedItem(title="Tee", retailer_id="1"), provider="ds", license="l")
+    assert repo.upsert(item) is True
+    assert calls["n"] == 2

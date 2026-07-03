@@ -55,6 +55,15 @@ _UNDERTONE_HUES: dict[str, tuple[float, ...]] = {
     "cool": (180.0, 270.0, 320.0),  # cyan-green, blue, purple
 }
 
+# Body type -> default visual-effect goals (classic body-type styling), applied
+# only when the user set NO explicit NL goal — an explicit ask always wins.
+# Types with no clearly-flattering outfit-level lever (rectangle, hourglass,
+# inverted_triangle) get none: no guessing (D6).
+_BODY_TYPE_EFFECTS: dict[str, frozenset[Effect]] = {
+    "oval": frozenset({Effect.ELONGATE}),  # a vertical column flatters a fuller middle
+    "triangle": frozenset({Effect.BROADEN}),  # fuller/lighter up top balances wider hips
+}
+
 _FOOTWEAR = "footwear"
 _FULL_BODY = "full_body"
 # Outfit blueprints: a complete look is either separates (top+bottom+footwear) or
@@ -94,6 +103,14 @@ class Constraints:
     # Empty by default — the no-goal path is unchanged.
     goals: frozenset[Effect] = field(default_factory=frozenset)
     blueprints: tuple[tuple[str, ...], ...] = field(default=OUTFIT_BLUEPRINTS)
+    # The profile labels behind the personal conditioning, so explanations can
+    # name *why* honestly ("flatters your warm undertone"). ``None`` when the
+    # user never provided them — no claim is ever made without the signal.
+    undertone: str | None = None
+    body_type: str | None = None
+    # True when ``goals`` were derived from the body type (no explicit NL goal):
+    # the explanation then credits the body type, not a goal the user never set.
+    goals_from_body: bool = False
 
     def categories_for_slot(self, slot: str) -> tuple[str, ...]:
         return _CATEGORIES_BY_SLOT.get(slot, ())
@@ -124,7 +141,16 @@ def resolve(
 
     max_price, currency = _budget(profile)
     aesthetics = _aesthetics(profile, chosen_occasion)
-    hues = _UNDERTONE_HUES.get((profile.undertone or "").lower(), ())
+    undertone = (profile.undertone or "").lower() or None
+    hues = _UNDERTONE_HUES.get(undertone or "", ())
+
+    # Body-type intelligence: with no explicit goal, the stated body type sets
+    # gentle default effects through the same engine an NL goal uses.
+    body_type = (profile.body_type or "").lower() or None
+    goals_from_body = False
+    if not goals and body_type in _BODY_TYPE_EFFECTS:
+        goals = _BODY_TYPE_EFFECTS[body_type]
+        goals_from_body = True
 
     # Personalization strength reflects how much *personal* signal (beyond the
     # occasion everyone shares) we actually have — undertone and style intent.
@@ -144,6 +170,9 @@ def resolve(
         preferred_hues=hues,
         personalization_strength=personalization,
         goals=goals,
+        undertone=undertone,
+        body_type=body_type,
+        goals_from_body=goals_from_body,
     )
 
 

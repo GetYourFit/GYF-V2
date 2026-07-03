@@ -80,6 +80,8 @@ export interface SearchParams {
   max_price?: number;
   /** Result ordering: relevance (default), or price ascending/descending. */
   sort?: "relevance" | "price_asc" | "price_desc";
+  /** Styling gender: results narrow to that slice + unisex (unfaceted items always pass). */
+  gender?: string;
 }
 
 interface SearchResults {

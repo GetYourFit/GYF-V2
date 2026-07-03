@@ -388,3 +388,71 @@ garment), not a coordinated outfit. Fixed at the engine, not the UI:
 context). API pytest 227 ✓ ruff check+format ✓ web tsc/ESLint/vitest 24/
 Prettier ✓ license gate ✓ ports gate ✓. Scoped commit only — the Shopify
 roster ingest/backfill files still uncommitted from the running prod job.
+
+## 2026-07-03 — Catalog repair + gendered relevance + personalized explanations
+
+**Asks (this session, sequential):** catalog "not working" on prod; Wear-it-with must
+show the complete outfit (done previous entry — complete-the-look); richer explanations
+naming skin tone / body type / budget; ask + use gender so users only see their slice +
+unisex; mixed stores must classify per-product (no data missed); keep the whole app
+efficient/secure/optimised; use subagents/loops.
+
+**Prod catalog diagnosis (the "not working"):** the academic purge left 1,649 real
+Shopify items; only 1,103 embedded (546 pending backfill — the user's backfill job had
+stalled); "footwear" contained skateboard wheels (substring bug: "W-heels"→heels) and
+only 9 rows; 237 unknowns. Verified live: /items/search 200 with real Snitch products;
+composition ran but with 0/40 perceived tops → 0.25 confidence and junk footwear.
+
+**Root-cause fixes shipped:**
+1. **Taxonomy classifier** (contracts): containment fallback now matches whole words
+   with an optional plural suffix — "Shirts"→shirt, "Dresses"→dress, but "Wheels" can
+   never hit heels. Vocab widened for real feeds: shoes (generic closed footwear),
+   cap, socks; synonyms clogs/slip on/loafers/lace ups/derby/oxford/brogues/hat/
+   snapback/beanie. Prod rows re-classified in one batched UPDATE (862 rows) from the
+   stored taxonomy.raw_category — junk is out of footwear.
+2. **Footwear merchants** (roster): Neeman's, Comet (default_category=sneakers — its
+   product_types are model names), Monkstory — all three verified live with INR prices.
+   ShopifySource now resolves category via product_type → title → merchant default.
+3. **Gendered relevance, end to end:** Merchant.audience (config-as-data per store) +
+   per-product inference from the product's own title/tags/type (word-boundary regexes;
+   men+women→unisex; product text beats store default — mixed stores classify right,
+   nothing dropped) → attributes.taxonomy.gender at ingest → gender predicates in the
+   candidate SQL and vector-search SQL (unfaceted rows always pass) → recsys filters
+   server-side from profile.gender via contracts.catalog_genders_for (nonbinary/unknown
+   = full catalog, never narrowed); /items/search + /similar take a validated gender
+   param; Explore passes the profile's gender. Gender remains relevance, never a wall.
+4. **Personalized explanations (earned, D6-honest):** undertone sentence only when the
+   look's palette actually scores ≥0.6 against the user's undertone hues ("These tones
+   sit in the warm-undertone palette…"); budget sentence only when every non-owned
+   piece is priced within budget ("Every piece stays within your ₹1,000 budget.");
+   **body-type intelligence**: with no explicit NL goal, profile body type sets default
+   effects through the same goals engine (oval→elongate, triangle→broaden; others none)
+   and the explanation credits it ("Cut for your apple-shaped frame — an unbroken
+   vertical line…"). Explicit goals always win.
+5. **Backfill sharding** (`--shard i/n`, stable id-hash) + Snitch storefront-domain fix
+   (buy links → snitch.com) — committed from the prior session's working tree.
+
+**Verified:** API suite 238 passed (13 new tests: word-boundary+plurals, gender
+inference/fallback/fetch, category chain, recsys gender slice + nonbinary full view,
+body-type goals + explanation phrases, budget + undertone claims, fixture row widened);
+ruff + format clean; web tsc/ESLint/vitest 24/Prettier clean; types regenerated.
+Prod re-classified (862 rows, batched single statement). Full roster re-ingest with
+gender facets + footwear running against prod; embedding backfill to follow.
+
+## 2026-07-03 (evening) — Ingest resilience + prod gender-coverage repair
+
+**Ask:** feedback-v4 flags men's profile still seeing women's wear with the new
+catalog; classifier must not miss any product on mixed stores; finish the backfill;
+verify + commit + push.
+
+**Diagnosis:** the classifier/filter code was correct but prod data never caught up —
+the roster re-ingest kept dying store-by-store (Supabase pooler drops connections
+mid-run; one transient storefront 500 also killed a whole store), leaving 1,130/1,660
+rows with no gender facet, and unfaceted rows always pass the filter.
+
+**Fixes:** one-retry-on-fresh-connection guard in PostgresItemRepository.upsert;
+one retry on transient HTTP errors in ShopifySource._http_get. 2 new tests (both
+retry paths). Full roster re-ingest re-run against prod with the fixes; gender
+straggler backfill + stale-row cleanup + embedding backfill to follow.
+
+**Verified:** API pytest 242 ✓ ruff check+format ✓ web tsc/ESLint/vitest 24 ✓.

@@ -60,8 +60,13 @@ CATEGORIES: tuple[Category, ...] = (
     Category("boots", "footwear"),
     Category("heels", "footwear"),
     Category("sandals", "footwear"),
+    # Generic closed shoes that are neither sneakers nor boots (derbies, oxfords,
+    # loafers) — real D2C footwear feeds need a home for these.
+    Category("shoes", "footwear"),
     Category("belt", "accessory"),
     Category("scarf", "accessory"),
+    Category("cap", "accessory"),
+    Category("socks", "accessory"),
     # India.
     Category("saree", "full_body", ("IN",)),
     Category("lehenga", "full_body", ("IN",)),
@@ -115,6 +120,16 @@ _SYNONYMS: dict[str, str] = {
     "pumps": "heels",
     "flip flops": "sandals",
     "slides": "sandals",
+    "clogs": "sandals",
+    "slip on": "sneakers",
+    "loafers": "shoes",
+    "lace ups": "shoes",
+    "derby": "shoes",
+    "oxford": "shoes",
+    "brogues": "shoes",
+    "hat": "cap",
+    "snapback": "cap",
+    "beanie": "cap",
     "sari": "saree",
     "kurti": "kurta",
     "salwar kameez": "salwar",
@@ -160,10 +175,16 @@ def classify(raw_category: str) -> Category:
         return _BY_NAME[_SYNONYMS[norm]]
 
     # Containment fallback: longest matching key wins to avoid "shirt" beating
-    # "t shirt" on "long t shirt".
-    candidates = [(k, v) for k, v in _SYNONYMS.items() if k in norm]
+    # "t shirt" on "long t shirt". Matches whole words (with an optional plural
+    # suffix), never substrings — "Shirts" resolves to shirt, but "Wheels" must
+    # not resolve to heels (real bug: skateboard wheels served as footwear).
+    candidates = list(_SYNONYMS.items())
     candidates += [(c.name.replace("_", " "), c.name) for c in CATEGORIES]
-    matches = [(key, name) for key, name in candidates if key in norm]
+    matches = [
+        (key, name)
+        for key, name in candidates
+        if re.search(rf"\b{re.escape(key)}(e?s)?\b", norm)
+    ]
     if matches:
         best = max(matches, key=lambda kv: len(kv[0]))
         return _BY_NAME[best[1]]

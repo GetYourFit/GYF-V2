@@ -77,6 +77,22 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
 
   const query = [filters.q || "fashion", filters.occasion, filters.style].filter(Boolean).join(" ");
 
+  // The user's styling gender scopes the grid to their slice + unisex; loaded
+  // once, and its absence (signed-out edge, no profile) means no filter.
+  const [gender, setGender] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    browserApi()
+      .getProfile()
+      .then((p) => {
+        if (active && p.gender && p.gender !== "unknown") setGender(p.gender);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const loadPage = useCallback(
     async (pageNum: number, reset: boolean) => {
       if (loadingRef.current && !reset) return;
@@ -98,6 +114,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           k: PAGE_SIZE,
           offset: pageNum * PAGE_SIZE,
           ...(maxPrice != null && !Number.isNaN(maxPrice) ? { max_price: maxPrice } : {}),
+          ...(gender ? { gender } : {}),
           sort: filters.sort,
         });
         if (reset) setItems(results);
@@ -112,14 +129,14 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
         setLoading(false);
       }
     },
-    [query, filters],
+    [query, filters, gender],
   );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadPage(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.q, filters.occasion, filters.style, filters.maxPrice, filters.sort]);
+  }, [filters.q, filters.occasion, filters.style, filters.maxPrice, filters.sort, gender]);
 
   const onIntersect = useCallback(
     (entries: IntersectionObserverEntry[]) => {

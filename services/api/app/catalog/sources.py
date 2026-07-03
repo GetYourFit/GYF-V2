@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import logging
+import re
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Protocol
@@ -36,6 +37,9 @@ class RawFeedItem(BaseModel):
     # Region hints the feed already provides (ISO country codes); merged with the
     # taxonomy's region facet during normalization.
     region_hints: list[str] = Field(default_factory=list)
+    # Catalog gender facet (men / women / unisex) when the feed knows it;
+    # ``None`` means unfaceted — surfaced to everyone.
+    gender: str | None = None
 
 
 class FeedSource(Protocol):
@@ -242,11 +246,22 @@ class ShopifySource:
         self.license = "merchant-public-feed"
 
     def _http_get(self, url: str) -> str:
+        import time
+        import urllib.error
         import urllib.request
 
         req = urllib.request.Request(url, headers={"User-Agent": self._USER_AGENT})
-        with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 — https, fixed host
-            return resp.read().decode("utf-8")
+        for attempt in (1, 2):
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 — https, fixed host
+                    return resp.read().decode("utf-8")
+            except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError):
+                # Storefronts throw transient 5xx under load; one retry keeps a
+                # single bad page from losing the whole store's catalog.
+                if attempt == 2:
+                    raise
+                time.sleep(2)
+        raise AssertionError("unreachable")
 
     def _price(self, product: Mapping) -> float | None:
         """Lowest in-stock variant price, or None when nothing is purchasable."""
@@ -262,6 +277,55 @@ class ShopifySource:
                 prices.append(price)
         return min(prices) if prices else None
 
+    # Per-product gender signals, matched on word boundaries against the
+    # product's own text (title + tags + product_type). "women" can never match
+    # "men" and "female" can never match "male" — the boundary guarantees it.
+    _WOMEN_RE = re.compile(r"\b(women|woman|womens|ladies|female|girls?)\b")
+    _MEN_RE = re.compile(r"\b(men|man|mens|gents|male|boys?)\b")
+    _UNISEX_RE = re.compile(r"\bunisex\b")
+
+    def _infer_gender(self, product: Mapping, title: str) -> str:
+        """The product's own gender facet, falling back to the merchant audience.
+
+        Mixed stores (one shop selling men's, women's and unisex lines) tag or
+        title their products; trusting the product first means no item is ever
+        mis-bucketed by a store-wide default — and nothing is dropped: with no
+        signal at all, the merchant's declared audience applies.
+        """
+        tags = product.get("tags")
+        if isinstance(tags, list):
+            tags = " ".join(str(t) for t in tags)
+        text = " ".join(
+            str(part) for part in (title, tags, product.get("product_type")) if part
+        ).lower()
+        if self._UNISEX_RE.search(text):
+            return "unisex"
+        women = bool(self._WOMEN_RE.search(text))
+        men = bool(self._MEN_RE.search(text))
+        if women and men:
+            return "unisex"
+        if women:
+            return "women"
+        if men:
+            return "men"
+        return self._merchant.audience
+
+    def _resolve_category(self, product_type: str | None, title: str) -> str:
+        """The raw category string most likely to classify canonically.
+
+        Chain: product_type if the taxonomy understands it → title (stores with
+        model-name product_types like "X Lows") → the merchant's declared
+        ``default_category`` → the raw product_type/title as-is (lands on
+        ``unknown`` downstream, never dropped).
+        """
+        from gyf_contracts.taxonomy import UNKNOWN, classify  # lazy: mirrors ingest
+
+        ptype = (product_type or "").strip()
+        for raw in (ptype, title):
+            if raw and classify(raw) is not UNKNOWN:
+                return raw
+        return self._merchant.default_category or ptype or title
+
     def _to_item(self, product: Mapping) -> RawFeedItem | None:
         title = (product.get("title") or "").strip()
         handle = (product.get("handle") or "").strip()
@@ -270,7 +334,7 @@ class ShopifySource:
         price = self._price(product)
         if price is None:
             return None  # out of stock or unpriceable — never surface the unbuyable
-        category = (product.get("product_type") or "").strip() or title
+        category = self._resolve_category(product.get("product_type"), title)
         images = [
             img["src"] for img in product.get("images") or [] if isinstance(img.get("src"), str)
         ]
@@ -281,8 +345,12 @@ class ShopifySource:
             price=price,
             currency=self._merchant.currency,
             image_urls=images,
-            affiliate_url=f"https://{self._merchant.domain}/products/{handle}",
+            affiliate_url=(
+                f"https://{self._merchant.storefront_domain or self._merchant.domain}"
+                f"/products/{handle}"
+            ),
             region_hints=list(self._merchant.region_hints),
+            gender=self._infer_gender(product, title),
         )
 
     def fetch(self) -> Iterator[RawFeedItem]:

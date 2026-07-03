@@ -55,6 +55,8 @@ class Candidate:
     # are injected by the service, never read from the catalog, so this defaults
     # False for every repository row.
     owned: bool = False
+    # Catalog gender facet (men / women / unisex), or ``None`` when unfaceted.
+    gender: str | None = None
 
 
 class CandidateRepository(Protocol):
@@ -65,11 +67,14 @@ class CandidateRepository(Protocol):
         max_price: float | None,
         limit_per_slot: int,
         taste_vector: list[float] | None = None,
+        genders: frozenset[str] | None = None,
     ) -> dict[str, list[Candidate]]:
         """Return up to ``limit_per_slot`` candidates for each requested slot.
 
         When ``taste_vector`` is given, each candidate carries its cosine affinity
         to it (computed in pgvector); otherwise ``affinity`` is ``None``.
+        ``genders`` restricts to items whose catalog gender facet is in the set
+        (unfaceted items always pass); ``None`` applies no gender predicate.
         """
         ...
 
@@ -119,7 +124,8 @@ SELECT
     i.attributes #>> '{{perception,attributes,aesthetic,certain}}'   AS aesthetic_certain,
     i.attributes #>> '{{perception,attributes,pattern,certain}}'     AS pattern_certain,
     i.attributes #>> '{{perception,attributes,silhouette,certain}}'  AS silhouette_certain,
-    i.attributes #>> '{{perception,attributes,fit,certain}}'         AS fit_certain
+    i.attributes #>> '{{perception,attributes,fit,certain}}'         AS fit_certain,
+    i.attributes #>> '{{taxonomy,gender}}'                           AS gender
 FROM items i
 LEFT JOIN item_embeddings e ON e.item_id = i.id
 """
@@ -130,6 +136,9 @@ _CANDIDATES = (
 WHERE i.category = ANY(%s)
   AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
   AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
+  AND (%s::text[] IS NULL
+       OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
+       OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
 ORDER BY i.created_at DESC
 LIMIT %s
 """
@@ -162,18 +171,29 @@ class PostgresCandidateRepository:
         max_price: float | None,
         limit_per_slot: int,
         taste_vector: list[float] | None = None,
+        genders: frozenset[str] | None = None,
     ) -> dict[str, list[Candidate]]:
         affinity_expr = _AFFINITY_EXPR if taste_vector else "NULL"
         sql = _CANDIDATES.format(affinity=affinity_expr)
         # The affinity param (if any) is bound first — it appears before WHERE.
         prefix: tuple = (_pgvector(taste_vector),) if taste_vector else ()
+        gender_list = sorted(genders) if genders else None
         out: dict[str, list[Candidate]] = {}
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             for slot in slots:
                 categories = list(_CATEGORIES_BY_SLOT.get(slot, ()))
                 if not categories:
                     continue
-                params = prefix + (categories, region, region, max_price, max_price, limit_per_slot)
+                params = prefix + (
+                    categories,
+                    region,
+                    region,
+                    max_price,
+                    max_price,
+                    gender_list,
+                    gender_list,
+                    limit_per_slot,
+                )
                 out[slot] = [_row_to_candidate(slot, r) for r in conn.execute(sql, params)]
         return out
 
@@ -219,6 +239,7 @@ def _row_to_candidate(slot: str, row: tuple) -> Candidate:
         fit=_certain(row[13], row[19]),
         affinity=float(row[14]) if row[14] is not None else None,
         image_url=image_url_from_refs(row[15]),
+        gender=row[20],
     )
 
 
@@ -235,12 +256,15 @@ class InMemoryCandidateRepository:
         max_price: float | None,
         limit_per_slot: int,
         taste_vector: list[float] | None = None,
+        genders: frozenset[str] | None = None,
     ) -> dict[str, list[Candidate]]:
         out: dict[str, list[Candidate]] = {slot: [] for slot in slots}
         for item in self.items:
             if item.slot not in slots:
                 continue
             if max_price is not None and item.price is not None and item.price > max_price:
+                continue
+            if genders is not None and item.gender is not None and item.gender not in genders:
                 continue
             bucket = out[item.slot]
             if len(bucket) < limit_per_slot:

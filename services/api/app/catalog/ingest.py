@@ -79,7 +79,11 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
         title=raw.title.strip(),
         category=category.name,
         attributes={
-            "taxonomy": {"slot": category.slot, "raw_category": raw.category},
+            "taxonomy": {
+                "slot": category.slot,
+                "raw_category": raw.category,
+                **({"gender": raw.gender} if raw.gender else {}),
+            },
         },
         price=raw.price,
         currency=raw.currency,
@@ -149,6 +153,16 @@ class PostgresItemRepository:
         self._pool = pool
 
     def upsert(self, item: NormalizedItem) -> bool:
+        import psycopg
+
+        try:
+            return self._upsert_once(item)
+        except psycopg.OperationalError:
+            # Pooled prod connections get dropped mid-run (Supabase pooler);
+            # one retry on a fresh connection rides out the blip.
+            return self._upsert_once(item)
+
+    def _upsert_once(self, item: NormalizedItem) -> bool:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             cur = conn.execute(
                 _UPSERT_ITEM,
