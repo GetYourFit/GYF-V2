@@ -35,33 +35,43 @@ function RotatingTip({ reduce }: { reduce: boolean | null }) {
     return () => clearInterval(id);
   }, [reduce]);
 
+  const tipStyle: React.CSSProperties = {
+    fontFamily: "var(--font-display-serif, 'Cormorant Garamond', serif)",
+    fontSize: "clamp(1.375rem, 5.5vw, 1.75rem)",
+    fontWeight: 600,
+    fontStyle: "italic",
+    lineHeight: 1.25,
+    letterSpacing: "0.01em",
+    color: "#1c1a17",
+    margin: 0,
+  };
+
   return (
-    <div
-      style={{ overflow: "hidden", minHeight: "clamp(5rem, 22vw, 6.5rem)" }}
-      aria-live="polite"
-      aria-atomic="true"
-    >
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={index}
-          initial={reduce ? { opacity: 1 } : { opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={reduce ? { opacity: 0 } : { opacity: 0, y: -5 }}
-          transition={{ duration: 0.3, ease: EASE }}
-          style={{
-            fontFamily: "var(--font-display-serif, 'Playfair Display', serif)",
-            fontSize: "clamp(1.375rem, 5.5vw, 1.75rem)",
-            fontWeight: 700,
-            fontStyle: "italic",
-            lineHeight: 1.2,
-            letterSpacing: "-0.01em",
-            color: "#1c1a17",
-            margin: 0,
-          }}
-        >
-          &ldquo;{TIPS[index]}&rdquo;
-        </motion.p>
-      </AnimatePresence>
+    <div style={{ position: "relative" }} aria-live="polite" aria-atomic="true">
+      {/* Invisible stack of all tips — the tallest one defines the container height */}
+      <div aria-hidden="true" style={{ visibility: "hidden", pointerEvents: "none" }}>
+        {TIPS.map((tip, i) => (
+          <p key={i} style={{ ...tipStyle, position: i === 0 ? "relative" : "absolute", top: 0, margin: 0 }}>
+            &ldquo;{tip}&rdquo;
+          </p>
+        ))}
+      </div>
+
+      {/* Animated tip rendered absolutely over the sizer */}
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={index}
+            initial={reduce ? { opacity: 1 } : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            transition={{ duration: 0.3, ease: EASE }}
+            style={tipStyle}
+          >
+            &ldquo;{TIPS[index]}&rdquo;
+          </motion.p>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

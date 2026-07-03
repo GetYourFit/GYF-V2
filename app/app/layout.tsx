@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { jakarta, jetbrainsMono, playfairDisplay } from "@/lib/fonts";
+import { jakarta, jetbrainsMono, cormorant } from "@/lib/fonts";
 import { SplashScreen } from "@/components/brand/SplashScreen";
 import "./globals.css";
 
@@ -31,7 +31,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${jetbrainsMono.variable} ${playfairDisplay.variable}`}>
+    <html lang="en" className={`${jakarta.variable} ${jetbrainsMono.variable} ${cormorant.variable}`}>
       <body>
         <SplashScreen />
         {children}
