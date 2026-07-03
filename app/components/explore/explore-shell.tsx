@@ -51,7 +51,10 @@ function RotatingTip({ reduce }: { reduce: boolean | null }) {
       {/* Invisible stack of all tips — the tallest one defines the container height */}
       <div aria-hidden="true" style={{ visibility: "hidden", pointerEvents: "none" }}>
         {TIPS.map((tip, i) => (
-          <p key={i} style={{ ...tipStyle, position: i === 0 ? "relative" : "absolute", top: 0, margin: 0 }}>
+          <p
+            key={i}
+            style={{ ...tipStyle, position: i === 0 ? "relative" : "absolute", top: 0, margin: 0 }}
+          >
             &ldquo;{tip}&rdquo;
           </p>
         ))}

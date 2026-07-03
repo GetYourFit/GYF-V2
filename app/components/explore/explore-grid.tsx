@@ -6,11 +6,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
+import { readCache, writeCache } from "@/lib/session-cache";
 import type { SearchResult } from "@gyf/types";
 import { ExploreCard } from "./explore-card";
 import type { ExploreFilters } from "./filter-bar";
 
 const PAGE_SIZE = 24;
+
+interface GridCache {
+  items: SearchResult[];
+  page: number;
+  hasMore: boolean;
+  gender: string | null;
+  scrollY: number;
+}
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 function CardSkeleton({ i }: { i: number }) {
@@ -65,6 +74,10 @@ interface ExploreGridProps {
 export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   const { toast } = useToast();
   const reduce = useReducedMotion();
+  // Back-nav restore: repaint the last grid + scroll position instead of
+  // refetching from page 0 (the classic gallery-app frustration, §2.2).
+  const cacheKey = `gyf:explore:${JSON.stringify(filters)}`;
+  const firstLoad = useRef(true);
   const [items, setItems] = useState<SearchResult[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -133,10 +146,49 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // Back-nav restore (§2.2): on first mount, repaint the cached grid and
+    // scroll position instead of refetching from page 0. Runs in an effect
+    // (not initial state) so server and client render identically.
+    if (firstLoad.current) {
+      firstLoad.current = false;
+      const cached = readCache<GridCache>(cacheKey);
+      if (cached && cached.items.length > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setItems(cached.items);
+        setPage(cached.page);
+        setHasMore(cached.hasMore);
+        setGender(cached.gender);
+        requestAnimationFrame(() => window.scrollTo(0, cached.scrollY));
+        return;
+      }
+    }
     void loadPage(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.q, filters.occasion, filters.style, filters.maxPrice, filters.sort, gender]);
+
+  // Persist the grid + scroll position for back-nav restore.
+  useEffect(() => {
+    if (items.length === 0) return;
+    let raf = 0;
+    const save = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() =>
+        writeCache(cacheKey, {
+          items,
+          page,
+          hasMore,
+          gender,
+          scrollY: window.scrollY,
+        } satisfies GridCache),
+      );
+    };
+    save();
+    window.addEventListener("scroll", save, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", save);
+    };
+  }, [cacheKey, items, page, hasMore, gender]);
 
   const onIntersect = useCallback(
     (entries: IntersectionObserverEntry[]) => {
@@ -149,7 +201,9 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(onIntersect, { rootMargin: "200px" });
+    // 600px lookahead ≈ prefetching the next page well before the user hits
+    // the bottom (§3.4) — pages arrive before the scroll does on 4G.
+    const obs = new IntersectionObserver(onIntersect, { rootMargin: "600px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, [onIntersect]);

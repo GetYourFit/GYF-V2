@@ -10,10 +10,12 @@ import { StylistControls, type StylistQuery } from "@/components/stylist/stylist
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
+import { readCache, writeCache } from "@/lib/session-cache";
 import type { InteractionAction } from "@gyf/types";
 import type { OutfitRecommendation } from "@gyf/types";
 
 const EMPTY_QUERY: StylistQuery = { goal: "", occasion: "" };
+const feedCacheKey = (q: StylistQuery) => `gyf:feed:${q.goal}|${q.occasion}`;
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export function StylistFeed() {
@@ -27,8 +29,8 @@ export function StylistFeed() {
   const [saved, setSaved] = useState<Set<number>>(new Set());
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
 
-  const load = useCallback(async (q: StylistQuery) => {
-    setLoading(true);
+  const load = useCallback(async (q: StylistQuery, background = false) => {
+    if (!background) setLoading(true);
     setError(null);
     try {
       const res = await browserApi().recommend({
@@ -36,19 +38,34 @@ export function StylistFeed() {
         occasion: q.occasion || undefined,
         k: 6,
       });
+      writeCache(feedCacheKey(q), res);
+      // Never restack the feed under a mid-scroll user (§2.4): a background
+      // refresh only swaps in when they're still at the top.
+      if (background && window.scrollY > 120) return;
       setData(res);
       setSaved(new Set());
       setDismissed(new Set());
     } catch (e) {
       if (e instanceof ApiError && e.isNotOnboarded) setNeedsOnboarding(true);
-      else setError(e instanceof Error ? e.message : "Could not reach your stylist.");
+      else if (!background)
+        setError(e instanceof Error ? e.message : "Could not reach your stylist.");
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void Promise.resolve().then(() => load(EMPTY_QUERY));
+    // Stale-while-revalidate: repaint the last session's looks instantly on
+    // tab return, then quietly freshen underneath (Doherty budget).
+    const cached = readCache<OutfitRecommendation>(feedCacheKey(EMPTY_QUERY));
+    if (cached) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setData(cached);
+      setLoading(false);
+      void load(EMPTY_QUERY, true);
+    } else {
+      void Promise.resolve().then(() => load(EMPTY_QUERY));
+    }
   }, [load]);
 
   function apply(q: StylistQuery) {

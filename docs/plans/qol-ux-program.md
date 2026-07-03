@@ -138,7 +138,14 @@
 6. **Standalone PWA shell** — manifest + service worker so "install GYF" gives
    full-screen, no browser chrome, offline shell; the cheapest "we have an app"
    move ($0, no store).
-7. **First-minutes rule** — retention studies: users decide within the first
+7. **W2 shipped (2026-07-03):** session cache lib (`lib/session-cache.ts`),
+   stale-while-revalidate stylist feed (instant repaint on tab return, quiet
+   refresh only while user is still at top — no silent restack), Explore
+   back-nav restore (items + page + scroll position), 600px infinite-scroll
+   prefetch lookahead, offline pill in the app shell. 2026 sweep re-confirmed
+   the thesis: skeletons > spinners, felt-speed = perceived intelligence,
+   micro-interactions as trust signals are table stakes.
+8. **First-minutes rule** — retention studies: users decide within the first
    session. The onboarding wave (§5.2 value-before-work) is therefore W2-adjacent,
    not W4; pull the 3-instant-looks change forward.
 
@@ -146,8 +153,8 @@
 
 | Wave | Items | Why first |
 | --- | --- | --- |
-| **W1 — floor** | §7.1–7.4 (contrast, error boundaries, offline grace, auth restore) | Feedback-v4 bugs; trust floor before delight. |
-| **W2 — core loop speed** | §2.1–2.4 (swipes, scroll restore, layers, refresh) + §3 all | Fastest visible transformation; grows signal volume. |
+| **W1 — floor** ✅ 2026-07-03 | §7.1–7.4 (contrast, error boundaries, offline grace, auth restore) | Feedback-v4 bugs; trust floor before delight. |
+| **W2 — core loop speed** ✅ 2026-07-03 | §2.1–2.4 (swipes, scroll restore, layers, refresh) + §3 all | Fastest visible transformation; grows signal volume. |
 | **W3 — stylist feel** | §4.1–4.4 (reactive delta, why-this, swap-a-piece, daily pick) | Directly answers "it feels dumb" in v4. |
 | **W4 — habit & onboarding** | §5 + §6 | Retention layer once the loop is worth returning to. |
 
