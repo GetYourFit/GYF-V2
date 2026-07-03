@@ -49,6 +49,7 @@ export const INTERACTION_ACTIONS = [
   "share",
   "follow",
   "tryon",
+  "swap",
 ] as const;
 export type InteractionAction = (typeof INTERACTION_ACTIONS)[number];
 

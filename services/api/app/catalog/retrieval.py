@@ -64,7 +64,11 @@ class VectorSearchRepository(Protocol):
         region: str | None,
         offset: int = 0,
         genders: frozenset[str] | None = None,
-    ) -> list[SearchResult]: ...
+        categories: list[str] | None = None,
+    ) -> list[SearchResult]:
+        """Nearest neighbours of an item. ``categories``, when given, restricts
+        results to those catalog categories (swap-a-piece: same-slot alternates)."""
+        ...
 
     def search_by_vector(
         self,
@@ -91,12 +95,14 @@ _GENDER_FILTER = (
     " OR i.attributes #>> '{taxonomy,gender}' = ANY(%s::text[]))"
 )
 
+_CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
+
 _SIMILAR = """
 SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score, i.image_refs
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 CROSS JOIN (SELECT embedding FROM item_embeddings WHERE item_id = %s) q
-WHERE e.item_id <> %s {region} {gender}
+WHERE e.item_id <> %s {region} {gender} {category}
 ORDER BY e.embedding <=> q.embedding
 LIMIT %s OFFSET %s
 """
@@ -129,17 +135,21 @@ class PostgresVectorSearchRepository:
         region: str | None,
         offset: int = 0,
         genders: frozenset[str] | None = None,
+        categories: list[str] | None = None,
     ) -> list[SearchResult]:
         gender_list = sorted(genders) if genders else None
         sql = _SIMILAR.format(
             region=_REGION_FILTER if region else "",
             gender=_GENDER_FILTER if gender_list else "",
+            category=_CATEGORY_FILTER if categories else "",
         )
         params: list[object] = [item_id, item_id]
         if region:
             params.append(region)
         if gender_list:
             params.append(gender_list)
+        if categories:
+            params.append(categories)
         params.extend([k, offset])
         return self._run(sql, tuple(params))
 

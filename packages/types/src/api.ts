@@ -795,7 +795,7 @@ export interface components {
          * InteractionAction
          * @enum {string}
          */
-        InteractionAction: "view" | "save" | "cart" | "skip" | "react" | "share" | "follow" | "tryon" | "impression" | "purchase";
+        InteractionAction: "view" | "save" | "cart" | "skip" | "react" | "share" | "follow" | "tryon" | "swap" | "impression" | "purchase";
         /**
          * InteractionTarget
          * @enum {string}

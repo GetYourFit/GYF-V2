@@ -865,3 +865,38 @@ def test_gender_filter_keeps_own_slice_and_unisex():
     )
     tops_all = {it.item_id for o in rec_all.outfits for it in o.items if it.slot == "top"}
     assert "t1" in tops_all or "t2" in tops_all
+
+
+def test_alternates_endpoint_same_slot_and_order():
+    """Swap-a-piece: alternates are same-slot, similarity-ordered, item-shaped."""
+
+    from types import SimpleNamespace
+
+    class _FakeSearchRepo:
+        def __init__(self):
+            self.calls = []
+
+        def similar_to_item(self, item_id, k, region, offset=0, genders=None, categories=None):
+            self.calls.append({"item_id": item_id, "categories": categories, "genders": genders})
+            # b2 nearest, b1 (the swapped item) never returned; order must
+            # survive hydration.
+            return [
+                SimpleNamespace(item_id="b2", title="Trousers", score=0.9),
+                SimpleNamespace(item_id="f1", title="Sneakers", score=0.8),
+            ][:k]
+
+    from app.dependencies import get_search_repo
+
+    try:
+        client = _client(Profile(occasion="casual"))
+        fake = _FakeSearchRepo()
+        app.dependency_overrides[get_search_repo] = lambda: fake
+        resp = client.get("/outfits/alternates?item_id=b1&k=2&recommendation_id=rec-1")
+        assert resp.status_code == 200
+        alts = resp.json()["alternates"]
+        assert [a["item_id"] for a in alts][0] == "b2"
+        # The retrieval was scoped to the bottom slot's categories.
+        assert "jeans" in fake.calls[0]["categories"]
+        assert client.get("/outfits/alternates?item_id=nope").status_code == 404
+    finally:
+        app.dependency_overrides.clear()

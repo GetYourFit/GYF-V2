@@ -11,6 +11,7 @@
 import type {
   ConsentInput,
   FeedbackRequest,
+  OutfitItem,
   OutfitRecommendation,
   Post,
   PostInput,
@@ -166,6 +167,15 @@ export class GyfApi {
   completeLook(itemId: string, params: RecommendParams = {}): Promise<OutfitRecommendation> {
     const query = toQuery({ item_id: itemId, ...params });
     return this.request<OutfitRecommendation>("GET", `/outfits/complete${query}`);
+  }
+
+  /** Swap-a-piece: same-slot, visually-coherent alternates for one garment
+   *  in a look, affiliate-attributed to the recommendation. */
+  alternates(itemId: string, recommendationId?: string, k = 3): Promise<OutfitItem[]> {
+    const query = toQuery({ item_id: itemId, recommendation_id: recommendationId, k });
+    return this.request<{ alternates: OutfitItem[] }>("GET", `/outfits/alternates${query}`).then(
+      (r) => r.alternates,
+    );
   }
 
   feedback(body: FeedbackRequest): Promise<FeedbackAck> {

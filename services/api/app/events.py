@@ -23,6 +23,11 @@ class InteractionAction(str, Enum):
     SHARE = "share"
     FOLLOW = "follow"
     TRYON = "tryon"
+    # The user replaced one garment in a recommended outfit with an alternate
+    # (swap-a-piece). Context carries recommendation_id + replaced_item_id;
+    # target_id is the chosen alternate. Each swap is a labelled compatibility
+    # example: "this piece works better in this look, for this user".
+    SWAP = "swap"
     # Served-but-not-yet-acted-on: logged when a recommendation is shown. These are
     # the implicit negatives + propensities a future two-tower/ranker trains on
     # (and the counterfactual/IPS gate needs). Never user-supplied — emitted by the

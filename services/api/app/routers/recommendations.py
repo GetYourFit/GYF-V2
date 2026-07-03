@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 
+from ..affiliate import linker_from_settings
 from ..auth import Principal
+from ..catalog.retrieval import VectorSearchRepository
 from ..dependencies import (
     get_candidate_repo,
     get_event_sink,
     get_profile_repo,
+    get_search_repo,
     get_taste_repo,
     get_wardrobe_repo,
     require_active_principal,
@@ -16,7 +20,8 @@ from ..dependencies import (
 from ..profile.repository import ProfileRepository
 from ..ratelimit import rate_limit
 from ..recsys.candidates import CandidateRepository
-from ..recsys.models import OutfitRecommendation
+from ..recsys.conditioning import _CATEGORIES_BY_SLOT
+from ..recsys.models import OutfitItem, OutfitRecommendation
 from ..recsys.service import recommend
 from ..recsys.taste import TasteRepository
 from ..sink import EventSink
@@ -149,3 +154,55 @@ def complete_look(
         )
     except LookupError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown item") from None
+
+
+@router.get(
+    "/outfits/alternates",
+    summary="Same-slot alternates for one garment in a look (swap-a-piece)",
+    dependencies=[Depends(rate_limit("recommend", "rate_limit_recommend"))],
+)
+def outfit_alternates(
+    item_id: str = Query(..., description="The garment being swapped out."),
+    recommendation_id: str | None = Query(
+        None, description="The slate the outfit came from — joins the swap to it."
+    ),
+    k: int = Query(3, ge=1, le=6, description="How many alternates to return."),
+    region: str | None = Query(None, description="Region code (e.g. IN)."),
+    principal: Principal = Depends(require_active_principal),
+    profile_repo: ProfileRepository = Depends(get_profile_repo),
+    candidates: CandidateRepository = Depends(get_candidate_repo),
+    search_repo: VectorSearchRepository = Depends(get_search_repo),
+) -> dict[str, list[OutfitItem]]:
+    """Visually-coherent replacements for one piece of a recommended outfit.
+
+    Nearest neighbours of the garment's embedding, restricted to the same slot's
+    categories and the user's gender slice, hydrated to full outfit items with
+    affiliate-wrapped links (attributed to ``recommendation_id`` when given).
+    Every swap the client then reports (action=``swap``) is a labelled
+    compatibility example. 404s when the item is unknown.
+    """
+    base = candidates.candidates_by_ids([item_id])
+    if not base:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown item")
+    slot = base[0].slot
+    categories = list(_CATEGORIES_BY_SLOT.get(slot, ())) or [base[0].category]
+    profile = profile_repo.get(principal.user_id)
+    genders = catalog_genders_for(profile.gender) if profile else CATALOG_GENDERS
+    hits = search_repo.similar_to_item(
+        item_id,
+        k,
+        region,
+        genders=genders if genders != CATALOG_GENDERS else None,
+        categories=categories,
+    )
+    by_id = {c.item_id: c for c in candidates.candidates_by_ids([h.item_id for h in hits])}
+    linker = linker_from_settings()
+    items: list[OutfitItem] = []
+    for hit in hits:  # preserve similarity order through hydration
+        c = by_id.get(hit.item_id)
+        if c is None:
+            continue
+        item = OutfitItem.from_candidate(c)
+        item.affiliate_url = linker.wrap(item.affiliate_url, recommendation_id or "swap")
+        items.append(item)
+    return {"alternates": items}

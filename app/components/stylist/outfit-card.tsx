@@ -24,6 +24,8 @@ export function OutfitCard({
   onDismiss,
   onShopCart,
   pick = false,
+  recommendationId,
+  onSwap,
 }: {
   outfit: Outfit;
   index: number;
@@ -33,6 +35,8 @@ export function OutfitCard({
   onShopCart: (itemId: string) => void;
   /** Stylist's pick — the feed's highest-confidence look gets one distinct frame. */
   pick?: boolean;
+  recommendationId?: string;
+  onSwap?: (replacedItemId: string, alt: OutfitItem) => void;
 }) {
   const reduce = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
@@ -441,6 +445,8 @@ export function OutfitCard({
         onClose={() => setDetailOpen(false)}
         onSave={onSave}
         onShopCart={onShopCart}
+        recommendationId={recommendationId}
+        onSwap={onSwap}
       />
     </>
   );

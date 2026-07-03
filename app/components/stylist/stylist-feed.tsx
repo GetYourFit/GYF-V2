@@ -11,8 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import { readCache, writeCache } from "@/lib/session-cache";
-import type { InteractionAction } from "@gyf/types";
-import type { OutfitRecommendation } from "@gyf/types";
+import type { InteractionAction, OutfitItem, OutfitRecommendation } from "@gyf/types";
 
 const EMPTY_QUERY: StylistQuery = { goal: "", occasion: "" };
 const feedCacheKey = (q: StylistQuery) => `gyf:feed:${q.goal}|${q.occasion}`;
@@ -165,6 +164,29 @@ export function StylistFeed() {
         });
       });
     void sendFeedback(index, "save").catch(() => {});
+  }
+
+  function onSwap(index: number, replacedItemId: string, alt: OutfitItem) {
+    if (!data) return;
+    setData({
+      ...data,
+      outfits: data.outfits.map((o, i) =>
+        i === index
+          ? { ...o, items: o.items.map((it) => (it.item_id === replacedItemId ? alt : it)) }
+          : o,
+      ),
+    });
+    navigator.vibrate?.(10);
+    toast({ title: "Swapped in", description: alt.title, variant: "success" });
+    // The labelled compatibility example: chosen alternate + what it replaced.
+    void browserApi()
+      .feedback({
+        target_type: "item",
+        target_id: alt.item_id,
+        action: "swap",
+        context: { recommendation_id: data.recommendation_id, replaced_item_id: replacedItemId },
+      })
+      .catch(() => {});
   }
 
   function onDismiss(index: number) {
@@ -446,6 +468,8 @@ export function StylistFeed() {
                     onSave={() => onSave(i)}
                     onDismiss={() => onDismiss(i)}
                     onShopCart={onShopCart}
+                    recommendationId={data.recommendation_id}
+                    onSwap={(replacedId, alt) => onSwap(i, replacedId, alt)}
                   />
                 </motion.div>
               ),

@@ -1,12 +1,13 @@
 "use client";
 
-import { Bookmark, ExternalLink, X } from "lucide-react";
+import { Bookmark, ExternalLink, Repeat2, X } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { TryOnSection } from "@/components/stylist/try-on-section";
+import { browserApi } from "@/lib/api-client";
 import { mediaUrl } from "@/lib/media";
 import type { Outfit, OutfitItem } from "@gyf/types";
 
@@ -28,6 +29,8 @@ export function OutfitDetail({
   onClose,
   onSave,
   onShopCart,
+  recommendationId,
+  onSwap,
 }: {
   outfit: Outfit;
   index: number;
@@ -36,6 +39,10 @@ export function OutfitDetail({
   onClose: () => void;
   onSave: () => void;
   onShopCart: (itemId: string) => void;
+  /** Slate this outfit came from — attributes swap alternates + events to it. */
+  recommendationId?: string;
+  /** Swap-a-piece: replace one garment with a chosen alternate (IKEA effect). */
+  onSwap?: (replacedItemId: string, alt: OutfitItem) => void;
 }) {
   const reduce = useReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -398,6 +405,7 @@ export function OutfitDetail({
                       key={item.item_id}
                       style={{
                         display: "flex",
+                        flexWrap: "wrap",
                         alignItems: "center",
                         gap: "0.75rem",
                         padding: "0.75rem 0",
@@ -483,6 +491,14 @@ export function OutfitDetail({
                         >
                           <ExternalLink size={13} aria-hidden />
                         </a>
+                      )}
+                      {!item.owned && onSwap && (
+                        <SwapButton
+                          item={item}
+                          outfit={outfit}
+                          recommendationId={recommendationId}
+                          onSwap={onSwap}
+                        />
                       )}
                     </li>
                   );
@@ -572,5 +588,136 @@ export function OutfitDetail({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/** Swap-a-piece (IKEA effect): tap → 3 same-slot, look-coherent alternates;
+ *  picking one rebuilds the outfit around the user's choice. */
+function SwapButton({
+  item,
+  outfit,
+  recommendationId,
+  onSwap,
+}: {
+  item: OutfitItem;
+  outfit: Outfit;
+  recommendationId?: string;
+  onSwap: (replacedItemId: string, alt: OutfitItem) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [alts, setAlts] = useState<OutfitItem[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && alts === null && !failed) {
+      browserApi()
+        .alternates(item.item_id, recommendationId)
+        .then((rows) => {
+          // Never offer a piece the look already contains.
+          const inLook = new Set(outfit.items.map((i) => i.item_id));
+          setAlts(rows.filter((r) => !inLook.has(r.item_id)));
+        })
+        .catch(() => setFailed(true));
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-label={`Swap ${item.title} for an alternate`}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "36px",
+          height: "36px",
+          flexShrink: 0,
+          border: "1px solid rgba(0,0,0,0.10)",
+          background: open ? "rgba(212,96,122,0.08)" : "transparent",
+          color: open ? "#d4607a" : "#9a9490",
+          cursor: "pointer",
+        }}
+      >
+        <Repeat2 size={13} aria-hidden />
+      </button>
+      {open && (
+        <div style={{ flexBasis: "100%", display: "flex", gap: "0.5rem", paddingTop: "0.25rem" }}>
+          {failed && (
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", color: "#9a9490" }}>
+              Couldn&apos;t load alternates right now.
+            </span>
+          )}
+          {!failed && alts === null && (
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", color: "#9a9490" }}>
+              Finding pieces that keep the look…
+            </span>
+          )}
+          {!failed && alts !== null && alts.length === 0 && (
+            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", color: "#9a9490" }}>
+              No coherent alternates for this piece yet.
+            </span>
+          )}
+          {alts?.map((alt) => {
+            const src = mediaUrl(alt.image_url);
+            return (
+              <button
+                key={alt.item_id}
+                type="button"
+                onClick={() => {
+                  onSwap(item.item_id, alt);
+                  setOpen(false);
+                }}
+                aria-label={`Swap in ${alt.title}`}
+                style={{
+                  flex: 1,
+                  maxWidth: "96px",
+                  padding: 0,
+                  border: "1px solid rgba(0,0,0,0.10)",
+                  background: "#faf8f5",
+                  cursor: "pointer",
+                  overflow: "hidden",
+                }}
+              >
+                <div style={{ aspectRatio: "3/4", overflow: "hidden" }}>
+                  {src ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={src}
+                      alt=""
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  ) : null}
+                </div>
+                <span
+                  style={{
+                    display: "block",
+                    padding: "0.25rem 0.375rem",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.625rem",
+                    color: "#1c1a17",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    textAlign: "left",
+                  }}
+                >
+                  {alt.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
