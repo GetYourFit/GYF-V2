@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import { readCache, writeCache } from "@/lib/session-cache";
-import type { InteractionAction, OutfitItem, OutfitRecommendation } from "@gyf/types";
+import type { InteractionAction, Outfit, OutfitItem, OutfitRecommendation } from "@gyf/types";
 
 const EMPTY_QUERY: StylistQuery = { goal: "", occasion: "" };
 const feedCacheKey = (q: StylistQuery) => `gyf:feed:${q.goal}|${q.occasion}`;
@@ -446,7 +446,11 @@ export function StylistFeed() {
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <UndoStrip index={i} onUndo={() => undoDismiss(i)} />
+                  <UndoStrip
+                    index={i}
+                    delta={dismissDelta(data.outfits[i])}
+                    onUndo={() => undoDismiss(i)}
+                  />
                 </motion.div>
               ) : (
                 <motion.div
@@ -528,7 +532,19 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
   );
 }
 
-function UndoStrip({ index, onUndo }: { index: number; onUndo: () => void }) {
+/** The honest reactive-feedback delta (§4.1): a skip downweights the taste
+ *  model on exactly these garments, so the line names what was actually sent
+ *  — never an invented "we learned X" claim. */
+function dismissDelta(outfit: Outfit | undefined): string {
+  const colors = [
+    ...new Set((outfit?.items ?? []).map((i) => i.color).filter((c): c is string => Boolean(c))),
+  ];
+  return colors.length
+    ? `Noted — dialing down ${colors.slice(0, 3).join(" · ")} looks like this.`
+    : "Noted — we'll show fewer looks like this.";
+}
+
+function UndoStrip({ index, delta, onUndo }: { index: number; delta: string; onUndo: () => void }) {
   return (
     <div
       style={{
@@ -541,17 +557,28 @@ function UndoStrip({ index, onUndo }: { index: number; onUndo: () => void }) {
         background: "rgba(0,0,0,0.03)",
       }}
     >
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "0.6rem",
-          color: "#9a9490",
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-        }}
-      >
-        Removed look {index + 1}
-      </span>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", minWidth: 0 }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            color: "#9a9490",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+          }}
+        >
+          Removed look {index + 1}
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.75rem",
+            color: "#5c5650",
+          }}
+        >
+          {delta}
+        </span>
+      </div>
       <button
         type="button"
         onClick={onUndo}
