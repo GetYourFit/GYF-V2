@@ -31,7 +31,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${jetbrainsMono.variable} ${cormorant.variable}`}>
+    <html
+      lang="en"
+      className={`${jakarta.variable} ${jetbrainsMono.variable} ${cormorant.variable}`}
+    >
       <body>
         <SplashScreen />
         {children}

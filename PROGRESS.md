@@ -163,11 +163,12 @@ change, never duplicate its content into other stores.
 approval waits. Also: never add AI attribution trailers to commits.
 
 **Shipped — "styles around your real closet" is now real (gap #3 closed):**
+
 - `CandidateRepository.candidates_by_ids` (Postgres `WHERE id = ANY` over the shared SELECT;
   no region/price predicates — you already own these) + `Candidate.owned` flag.
 - Service `_ground_in_wardrobe`: the 12 most recent catalog-referenced wardrobe rows resolve
   to full candidates, are flagged owned, and are injected at the front of their slot pools —
-  looks get *built around* owned garments. Freeform/stale rows abstain (D6). Empty wardrobe →
+  looks get _built around_ owned garments. Freeform/stale rows abstain (D6). Empty wardrobe →
   byte-identical recommendation (test-pinned).
 - `compose.WardrobeContext` + `wardrobe_fit` (blend weight 0.25, applied last like goals):
   0.5 × **anchor** (any owned garment in the look; one anchor = full credit — an anchored look
@@ -201,6 +202,7 @@ waiting on approval), M8.5 operator trust surface, M12 beta hardening, prod GPU-
 **User asked:** ZeroGPU is the GPU lane; nothing may stay degraded — continue development.
 
 **Shipped — `/system/status` + `/status` (the M8.5 trust surface, gap #4 closed):**
+
 - `GET /system/status` (no auth — transparency is the point; no secrets/URLs/user data):
   per-capability honest state (`live/beta/shadow/degraded/planned`) derived from real
   runtime state (remote-lane config, installed runtimes, DB reachability, the
@@ -244,6 +246,7 @@ own-lane candidate (flag: trained on VITON-HD/DressCode research data). ALL Repl
 IDM-VTON/CatVTON/OOTDiffusion deployments are CC-BY-NC → fail the license gate.
 
 **Shipped:**
+
 - `app/tryon/` — `TryOnRenderer` port (D1): `render(person_png, garments) -> TryOnRender`
   (image | honest abstention, calibrated confidence, rendered_slots, reason);
   `NullTryOnRenderer` baseline (invariant #5) serves when no lane is configured.
@@ -274,6 +277,7 @@ reusable for own-it-later on brand photos).
 
 **Shipped:** `ml/pipelines/export_events.py` + `make data-export` — turns the
 append-only `interactions` spine into versioned artifacts under `ml/data/exports/<date>/`:
+
 - `examples.jsonl` — one training example per served item: impression (rank, propensity
   score, occasion, goals) joined with later engagements by the same user/item; label =
   strongest signed reward per the reward contract (signals.py). Organic engagements
@@ -363,7 +367,7 @@ until a store verifies.
 outfit to pair with it (shirt → these pants + these shoes), personalized.
 
 **Root cause found:** the Explore item sheet's "Wear it with" row called
-`/items/{id}/similar` — visually *similar* items (near-duplicates of the same
+`/items/{id}/similar` — visually _similar_ items (near-duplicates of the same
 garment), not a coordinated outfit. Fixed at the engine, not the UI:
 
 - `recsys.service.recommend(anchor_item_id=…)`: the item is resolved via
@@ -404,6 +408,7 @@ only 9 rows; 237 unknowns. Verified live: /items/search 200 with real Snitch pro
 composition ran but with 0/40 perceived tops → 0.25 confidence and junk footwear.
 
 **Root-cause fixes shipped:**
+
 1. **Taxonomy classifier** (contracts): containment fallback now matches whole words
    with an optional plural suffix — "Shirts"→shirt, "Dresses"→dress, but "Wheels" can
    never hit heels. Vocab widened for real feeds: shoes (generic closed footwear),
@@ -451,7 +456,7 @@ mid-run; one transient storefront 500 also killed a whole store), leaving 1,130/
 rows with no gender facet, and unfaceted rows always pass the filter.
 
 **Fixes:** one-retry-on-fresh-connection guard in PostgresItemRepository.upsert;
-one retry on transient HTTP errors in ShopifySource._http_get. 2 new tests (both
+one retry on transient HTTP errors in ShopifySource.\_http_get. 2 new tests (both
 retry paths). Full roster re-ingest re-run against prod with the fixes; gender
 straggler backfill + stale-row cleanup + embedding backfill to follow.
 
