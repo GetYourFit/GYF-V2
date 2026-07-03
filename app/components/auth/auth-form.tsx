@@ -89,7 +89,7 @@ function IndustrialInput({
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: focused ? "#ffffff" : "#9a9490",
+          color: focused ? "#1c1a17" : "#9a9490",
           transition: "color 0.2s",
         }}
       >
@@ -102,7 +102,7 @@ function IndustrialInput({
           style={{
             position: "absolute",
             left: 0,
-            color: focused ? "#ffffff" : "#9a9490",
+            color: focused ? "#1c1a17" : "#9a9490",
             transition: "color 0.2s",
             flexShrink: 0,
           }}
@@ -121,7 +121,7 @@ function IndustrialInput({
             width: "100%",
             background: "transparent",
             border: "none",
-            borderBottom: `1px solid ${focused ? "#ffffff" : "#444748"}`,
+            borderBottom: `1px solid ${focused ? "#1c1a17" : "#444748"}`,
             borderRadius: 0,
             padding: "0.75rem 2rem 0.75rem 1.75rem",
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
@@ -348,7 +348,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           style={{
             width: "100%",
             minHeight: "52px",
-            background: busy ? "#333" : "#ffffff",
+            background: busy ? "#444" : "#1c1a17",
             color: "#faf8f5",
             border: "none",
             borderRadius: "16px",
