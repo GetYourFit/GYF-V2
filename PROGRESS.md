@@ -492,3 +492,14 @@ end to end (contracts→api.ts); SwapButton in outfit detail; feed swaps the pie
 in place and logs the labelled compatibility example.
 
 **Verified:** API pytest 242 ✓ ruff ✓ · web tsc/eslint/vitest 24/prettier ✓.
+
+## 2026-07-04 (contd.) — backfill sharded 3×, reactive-feedback delta
+
+Backfill throughput was ~10 items/min single-process (9+ h to drain); killed it
+and relaunched as 3 parallel `--shard i/3` workers (stable id-hash split,
+idempotent) — ~3× throughput. Progress 2,708/9,162 and climbing.
+
+**Reactive delta (commit 3bdc9f9):** the dismiss/undo strip now names what the
+skip actually taught the model — "dialing down <palette> looks like this" from
+the dismissed garments' real color signals (generic when no signal; never an
+invented claim). W3's §4.1 honest version.
