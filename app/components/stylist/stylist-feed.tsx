@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { OutfitCard } from "@/components/stylist/outfit-card";
@@ -56,6 +56,19 @@ export function StylistFeed() {
     void load(q);
   }
 
+  // Pull-to-refresh: a firm downward drag from the very top refetches the feed.
+  const pullStartY = useRef<number | null>(null);
+  function onTouchStart(e: React.TouchEvent) {
+    pullStartY.current = window.scrollY === 0 ? e.touches[0].clientY : null;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    const start = pullStartY.current;
+    pullStartY.current = null;
+    if (start !== null && !loading && e.changedTouches[0].clientY - start > 80) {
+      void load(query);
+    }
+  }
+
   async function sendFeedback(index: number, action: InteractionAction) {
     if (!data) return;
     const outfit = data.outfits[index];
@@ -89,6 +102,7 @@ export function StylistFeed() {
     const outfit = data.outfits[index];
     if (!outfit) return;
     setSaved((s) => new Set(s).add(index));
+    navigator.vibrate?.(10); // subtle haptic where supported; silently ignored elsewhere
     void browserApi()
       .saveOutfit({
         outfit_key: `${data.recommendation_id}:${index}`,
@@ -207,7 +221,7 @@ export function StylistFeed() {
               justifyContent: "center",
               minHeight: "48px",
               padding: "0 2rem",
-              background: "#ffffff",
+              background: "#1c1a17",
               color: "#faf8f5",
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
@@ -227,6 +241,8 @@ export function StylistFeed() {
 
   return (
     <div
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
       style={{
         padding: "1.25rem 1rem 1rem",
         display: "flex",

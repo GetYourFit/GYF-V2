@@ -34,7 +34,16 @@ export function OutfitCard({
   const reduce = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [lastTap, setLastTap] = useState(0);
   const shopItem = outfit.items.find((i) => !i.owned && i.affiliate_url);
+
+  // Double-tap anywhere on the garment grid = save (Jakob's law: Instagram
+  // muscle memory). Single taps still fall through to whatever was tapped.
+  function onGridTap() {
+    const now = Date.now();
+    if (now - lastTap < 300 && !saved) onSave();
+    setLastTap(now);
+  }
 
   return (
     <>
@@ -44,6 +53,16 @@ export function OutfitCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, ease: EASE, delay: Math.min(index * 0.08, 0.4) }}
         whileHover={reduce ? undefined : { y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.10)" }}
+        // Swipe right = save, left = not interested — same actions as the
+        // buttons below, an order of magnitude faster on touch.
+        drag="x"
+        dragDirectionLock
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.5}
+        onDragEnd={(_, info) => {
+          if (info.offset.x > 120 && !saved) onSave();
+          else if (info.offset.x < -120) onDismiss();
+        }}
         style={{
           background: "#ffffff",
           border: "1px solid rgba(0,0,0,0.08)",
@@ -115,6 +134,7 @@ export function OutfitCard({
 
         {/* ── Garment image grid — 3 col ── */}
         <div
+          onPointerUp={onGridTap}
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",

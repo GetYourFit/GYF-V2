@@ -552,7 +552,7 @@ export function OutfitDetail({
                     justifyContent: "center",
                     gap: "0.5rem",
                     minHeight: "48px",
-                    background: "#ffffff",
+                    background: "#1c1a17",
                     color: "#faf8f5",
                     fontFamily: "var(--font-mono)",
                     fontSize: "0.6rem",
