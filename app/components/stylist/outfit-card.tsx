@@ -23,6 +23,7 @@ export function OutfitCard({
   onSave,
   onDismiss,
   onShopCart,
+  pick = false,
 }: {
   outfit: Outfit;
   index: number;
@@ -30,6 +31,8 @@ export function OutfitCard({
   onSave: () => void;
   onDismiss: () => void;
   onShopCart: (itemId: string) => void;
+  /** Stylist's pick — the feed's highest-confidence look gets one distinct frame. */
+  pick?: boolean;
 }) {
   const reduce = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
@@ -65,14 +68,29 @@ export function OutfitCard({
         }}
         style={{
           background: "#ffffff",
-          border: "1px solid rgba(0,0,0,0.08)",
+          border: pick ? "1px solid rgba(212,96,122,0.45)" : "1px solid rgba(0,0,0,0.08)",
           borderRadius: "20px",
           overflow: "hidden",
           cursor: "default",
           willChange: "transform",
-          boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+          boxShadow: pick ? "0 4px 24px rgba(212,96,122,0.14)" : "0 2px 16px rgba(0,0,0,0.06)",
         }}
       >
+        {pick && (
+          <div
+            style={{
+              padding: "0.5rem 1.25rem 0",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.55rem",
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#d4607a",
+            }}
+          >
+            Stylist&apos;s pick
+          </div>
+        )}
         {/* ── Header: number + confidence ── */}
         <div
           style={{

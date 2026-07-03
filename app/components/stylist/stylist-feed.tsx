@@ -73,6 +73,21 @@ export function StylistFeed() {
     void load(q);
   }
 
+  // The stylist's pick: index of the highest-confidence outfit, but only when
+  // that confidence clears 0.6 — a low-confidence "pick" would be a false claim.
+  const pickIndex = (() => {
+    if (!data) return -1;
+    let best = -1;
+    for (let i = 0; i < data.outfits.length; i++) {
+      if (
+        data.outfits[i].confidence >= 0.6 &&
+        (best === -1 || data.outfits[i].confidence > data.outfits[best].confidence)
+      )
+        best = i;
+    }
+    return best;
+  })();
+
   // Pull-to-refresh: a firm downward drag from the very top refetches the feed.
   const pullStartY = useRef<number | null>(null);
   function onTouchStart(e: React.TouchEvent) {
@@ -392,6 +407,8 @@ export function StylistFeed() {
       )}
 
       {/* ── Outfit cards ── */}
+      {/* Stylist's pick (Von Restorff): the single highest-confidence look gets
+          a distinct frame — only when confidence is actually earned (≥0.6). */}
       {!loading && data && data.outfits.length > 0 && (
         <motion.div
           key={data.recommendation_id}
@@ -424,6 +441,7 @@ export function StylistFeed() {
                   <OutfitCard
                     outfit={outfit}
                     index={i}
+                    pick={i === pickIndex}
                     saved={saved.has(i)}
                     onSave={() => onSave(i)}
                     onDismiss={() => onDismiss(i)}
