@@ -37,7 +37,7 @@ function RotatingTip({ reduce }: { reduce: boolean | null }) {
 
   return (
     <div
-      style={{ overflow: "hidden", minHeight: "6.5rem" }}
+      style={{ overflow: "hidden", minHeight: "clamp(5rem, 22vw, 6.5rem)" }}
       aria-live="polite"
       aria-atomic="true"
     >
