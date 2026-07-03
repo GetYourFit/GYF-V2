@@ -95,31 +95,40 @@ export function ItemDetailSheet({ item, onClose }: Props) {
             aria-hidden
           />
 
-          {/* Sheet */}
+          {/* Sheet wrapper — flex centering avoids transform conflicts with framer y animation */}
+          <div
+            key="sheet-wrapper"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 201,
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "center",
+              pointerEvents: "none",
+            }}
+          >
           <motion.div
             key="sheet"
             role="dialog"
             aria-modal
             aria-label={`Details for ${item.title}`}
-            initial={reduce ? { opacity: 0 } : { y: "100%" }}
-            animate={reduce ? { opacity: 1 } : { y: 0 }}
-            exit={reduce ? { opacity: 0 } : { y: "100%" }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: "100%" }}
+            animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: "100%" }}
             transition={
               reduce
                 ? { duration: 0.2, ease: EASE }
                 : { type: "spring", stiffness: 300, damping: 30 }
             }
             style={{
-              position: "fixed",
-              bottom: 0,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 201,
+              position: "relative",
+              pointerEvents: "auto",
               width: "100%",
               maxWidth: "390px",
               maxHeight: "92dvh",
               background: "#faf8f5",
-              borderTop: "1px solid rgba(255,255,255,0.10)",
+              borderTop: "1px solid rgba(0,0,0,0.08)",
               borderRadius: "20px 20px 0 0",
               overflowY: "auto",
               paddingBottom: "calc(80px + env(safe-area-inset-bottom))",
@@ -319,6 +328,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
               </div>
             </motion.div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
