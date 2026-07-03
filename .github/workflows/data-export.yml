@@ -1,0 +1,68 @@
+name: Data export
+
+# Nightly flywheel harvest: turns the prod `interactions` spine into versioned
+# training examples + an operator insight report (ml/pipelines/export_events.py)
+# and publishes them as a workflow artifact. Read-only against the DB.
+#
+# Guarded like CD: no-ops gracefully until the secret is set, so the pipeline
+# is green from day one and "turns on" once configured.
+#
+# Required repo secret:
+#   GYF_PROD_DATABASE_URL — Supabase session-pooler URL, e.g.
+#     postgresql://postgres.<ref>:<password>@aws-1-us-east-1.pooler.supabase.com:5432/postgres
+#     (Supabase dashboard → Connect → Session pooler. The :6543 transaction
+#     pooler also works for this read-only workload.)
+
+on:
+  schedule:
+    - cron: "30 22 * * *" # nightly, 04:00 IST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    name: Export interactions → training examples + report
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secret configured
+        id: gate
+        env:
+          DSN: ${{ secrets.GYF_PROD_DATABASE_URL }}
+        run: |
+          if [ -z "$DSN" ]; then
+            echo "GYF_PROD_DATABASE_URL not set — skipping (set the repo secret to activate)."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: astral-sh/setup-uv@v5
+        if: steps.gate.outputs.configured == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Run export
+        if: steps.gate.outputs.configured == 'true'
+        working-directory: ml
+        env:
+          GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
+        run: uv run --extra postgres python -m pipelines.export_events
+
+      - name: Upload dataset + report
+        if: steps.gate.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gyf-data-export
+          path: ml/data/exports/
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Surface the report in the run summary
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          report=$(ls -d ml/data/exports/*/report.md 2>/dev/null | sort | tail -1)
+          if [ -n "$report" ]; then cat "$report" >> "$GITHUB_STEP_SUMMARY"; fi

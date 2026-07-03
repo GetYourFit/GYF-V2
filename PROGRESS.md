@@ -290,3 +290,13 @@ GYF_DATABASE_URL runs it against prod as-is.
 
 **Decision:** no model training yet — at beta volume a trained two-tower underperforms
 the content+taste baseline; the export makes flipping training on trivial later.
+
+## 2026-07-03 — Nightly automated data export (GitHub Actions)
+
+`.github/workflows/data-export.yml`: nightly (04:00 IST) + manual dispatch; runs
+`pipelines.export_events` read-only against prod, uploads examples+report as a
+90-day artifact, and prints the insight report into the run summary. Guarded —
+green no-op until the repo secret `GYF_PROD_DATABASE_URL` (Supabase session-pooler
+URL with the rotated password) is set. VTON research note: Kolors-Virtual-Try-On
+weights were never released (Space-only demo; commercial API pending) — no
+genuinely free commercial VTON exists; FASHN pay-per-render stays the beta lane.
