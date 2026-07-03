@@ -86,3 +86,6 @@ class OutfitRecommendation(BaseModel):
     # True when the slate was grounded in the user's real wardrobe (owned anchors
     # in the pools + closet-versatility scoring) — transparency, per CLAUDE.md §7.
     wardrobe_grounded: bool = False
+    # Set when this slate is a "complete the look" answer: every outfit contains
+    # this catalog item and the rest is styled around it.
+    anchor_item_id: str | None = None

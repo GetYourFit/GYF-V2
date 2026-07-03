@@ -59,6 +59,7 @@ def recommend(
     goal: str | None = None,
     wardrobe_repo: WardrobeRepository | None = None,
     linker: AffiliateLinker | None = None,
+    anchor_item_id: str | None = None,
 ) -> OutfitRecommendation:
     """Produce up to ``k`` diverse, explained, taste-aware outfits and log them.
 
@@ -72,6 +73,12 @@ def recommend(
     around the real closet — and the composer's wardrobe grounding rewards new
     pieces that pair with what the user already owns. An empty wardrobe leaves
     the recommendation identical to the un-grounded path.
+
+    ``anchor_item_id`` pins a specific catalog item ("complete the look"): it
+    becomes the *only* candidate in its slot, so every returned outfit is a
+    complete look built around that product — same personalization, scoring,
+    diversity and attribution as the feed. Raises :class:`LookupError` when the
+    item is unknown, so the route can answer 404 honestly.
     """
     goals = parse_goal(goal)
     constraints = conditioning.resolve(profile, occasion, region, goals)
@@ -85,12 +92,28 @@ def recommend(
         taste.vector if taste.has_signal else None,
     )
     wardrobe = _ground_in_wardrobe(pools, user_id, candidates, wardrobe_repo)
+    if anchor_item_id is not None:
+        anchor = _pin_anchor(pools, anchor_item_id, candidates)
+        # Only blueprints that include the anchor's slot may assemble — every
+        # returned look must genuinely contain the pinned product.
+        constraints = dataclasses.replace(
+            constraints,
+            blueprints=tuple(bp for bp in constraints.blueprints if anchor.slot in bp),
+        )
     strength = taste.strength if taste.has_signal else 0.0
     scored = compose(pools, constraints, k, strength, wardrobe)
 
     recommendation_id = str(uuid.uuid4())
     applied_goals = [g.value for g in goals]
-    _log_impressions(sink, user_id, recommendation_id, constraints.occasion, applied_goals, scored)
+    _log_impressions(
+        sink,
+        user_id,
+        recommendation_id,
+        constraints.occasion,
+        applied_goals,
+        scored,
+        anchor_item_id,
+    )
 
     # Monetize + attribute every shop link at serve time: the Cuelinks subid IS
     # the recommendation_id, so a later conversion (transactions API) joins back
@@ -112,7 +135,28 @@ def recommend(
         taste_strength=round(strength, 3),
         applied_goals=applied_goals,
         wardrobe_grounded=wardrobe is not None,
+        anchor_item_id=anchor_item_id,
     )
+
+
+def _pin_anchor(
+    pools: dict[str, list[Candidate]],
+    anchor_item_id: str,
+    candidates: CandidateRepository,
+) -> Candidate:
+    """Make ``anchor_item_id`` the sole candidate in its slot ("complete the look").
+
+    Pinned *after* wardrobe grounding so the anchor always wins its slot; other
+    slots keep their full personalized pools (and owned anchors), so composition
+    styles the rest of the look around the pinned product. No region/price
+    predicates — the user chose this item explicitly.
+    """
+    resolved = candidates.candidates_by_ids([anchor_item_id])
+    if not resolved:
+        raise LookupError(anchor_item_id)
+    anchor = resolved[0]
+    pools[anchor.slot] = [anchor]
+    return anchor
 
 
 def _ground_in_wardrobe(
@@ -153,6 +197,7 @@ def _log_impressions(
     occasion: str,
     applied_goals: list[str],
     scored: list[ScoredOutfit],
+    anchor_item_id: str | None = None,
 ) -> None:
     """Emit one impression per served item with its propensity (rank + score).
 
@@ -161,6 +206,7 @@ def _log_impressions(
     label, propensity) tuple. Best-effort — never raises into the request path.
     """
     try:
+        extra = {"anchor_item_id": anchor_item_id} if anchor_item_id else {}
         for rank, outfit in enumerate(scored):
             for item in outfit.items:
                 sink.publish(
@@ -175,6 +221,7 @@ def _log_impressions(
                             "goals": applied_goals,  # goal-conditioned slate
                             "rank": rank,
                             "score": outfit.score,  # propensity for IPS
+                            **extra,  # anchored ("complete the look") slates
                         },
                     )
                 )

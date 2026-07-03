@@ -159,6 +159,13 @@ export class GyfApi {
     return this.request<OutfitRecommendation>("GET", `/outfits/recommend${query}`);
   }
 
+  /** Complete the look: personalized full outfits pinned to one catalog item —
+   *  every returned outfit contains it, the rest is styled around it. */
+  completeLook(itemId: string, params: RecommendParams = {}): Promise<OutfitRecommendation> {
+    const query = toQuery({ item_id: itemId, ...params });
+    return this.request<OutfitRecommendation>("GET", `/outfits/complete${query}`);
+  }
+
   feedback(body: FeedbackRequest): Promise<FeedbackAck> {
     return this.request<FeedbackAck>("POST", "/feedback", body);
   }

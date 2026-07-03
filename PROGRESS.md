@@ -356,3 +356,35 @@ CPU lane `GYF_ENCODER_REMOTE_URL=""` or ZeroGPU) before they are stylable —
 not yet automated in CI (torch install weight); permission emails to brands
 recommended (public endpoint, ToS-grey without them); US-INR roster empty
 until a store verifies.
+
+## 2026-07-03 — "Complete the look": item-anchored outfit completion ✅
+
+**Ask:** don't only recommend a product — for any product, show the complete
+outfit to pair with it (shirt → these pants + these shoes), personalized.
+
+**Root cause found:** the Explore item sheet's "Wear it with" row called
+`/items/{id}/similar` — visually *similar* items (near-duplicates of the same
+garment), not a coordinated outfit. Fixed at the engine, not the UI:
+
+- `recsys.service.recommend(anchor_item_id=…)`: the item is resolved via
+  `candidates_by_ids` (no region/price predicates — the user chose it), pinned
+  as the SOLE candidate in its slot after wardrobe grounding, and blueprints
+  are filtered to those containing the anchor's slot (a full-body blueprint can
+  never emit an anchor-free look). Everything else is the existing engine:
+  occasion, undertone, taste, NL goals, wardrobe versatility, MMR diversity,
+  explanation + calibrated confidence, affiliate wrapping, impression logging
+  (context now carries `anchor_item_id` for anchored-slate training data).
+  Unknown item → LookupError → 404.
+- `GET /outfits/complete?item_id=…&k=&occasion=&goal=&region=` (same auth +
+  recommend rate limit); `OutfitRecommendation.anchor_item_id` echoed.
+- Web: `GyfApi.completeLook()`; item detail sheet section renamed
+  **"Complete the look"** — renders the other pieces of the composed outfit
+  (slot + price + title, tap → affiliate link), the stylist explanation, and a
+  "% match" confidence chip. Honest empty state when no look can be assembled.
+- api.ts/openapi regenerated (FE/BE lockstep).
+
+**Verified:** 4 new tests (every outfit contains the anchor; unknown anchor
+404/LookupError; anchor-free blueprints excluded; endpoint + impression
+context). API pytest 227 ✓ ruff check+format ✓ web tsc/ESLint/vitest 24/
+Prettier ✓ license gate ✓ ports gate ✓. Scoped commit only — the Shopify
+roster ingest/backfill files still uncommitted from the running prod job.

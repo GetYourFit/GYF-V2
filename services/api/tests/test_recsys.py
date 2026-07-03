@@ -7,6 +7,7 @@ confidence. All pure/in-memory — no live DB, no torch.
 
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.events import InteractionAction
@@ -661,3 +662,76 @@ def test_candidates_by_ids_resolves_known_ids_only():
     repo = InMemoryCandidateRepository(_three_slot_catalog())
     found = repo.candidates_by_ids(["b1", "nope"])
     assert [c.item_id for c in found] == ["b1"]
+
+
+# --- Complete the look (anchored composition) --------------------------------
+
+
+def test_complete_look_every_outfit_contains_anchor():
+    rec = recommend(
+        Profile(occasion="casual"),
+        DEV_USER,
+        InMemoryCandidateRepository(_three_slot_catalog()),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        3,
+        anchor_item_id="t1",
+    )
+    assert rec.anchor_item_id == "t1"
+    assert rec.outfits
+    for outfit in rec.outfits:
+        assert any(it.item_id == "t1" for it in outfit.items)
+        assert {it.slot for it in outfit.items} == {"top", "bottom", "footwear"}
+
+
+def test_complete_look_unknown_anchor_raises_lookup():
+    with pytest.raises(LookupError):
+        recommend(
+            Profile(occasion="casual"),
+            DEV_USER,
+            InMemoryCandidateRepository(_three_slot_catalog()),
+            InMemoryTasteRepository(),
+            _CollectingSink(),
+            "casual",
+            None,
+            3,
+            anchor_item_id="nope",
+        )
+
+
+def test_complete_look_excludes_anchor_free_blueprints():
+    # A full-body garment exists; anchoring a top must never yield a full-body
+    # look that omits the anchor.
+    catalog = _three_slot_catalog() + [_item("d1", "dress", "full_body", formality="casual")]
+    rec = recommend(
+        Profile(occasion="casual"),
+        DEV_USER,
+        InMemoryCandidateRepository(catalog),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        5,
+        anchor_item_id="t1",
+    )
+    for outfit in rec.outfits:
+        assert any(it.item_id == "t1" for it in outfit.items)
+
+
+def test_complete_look_endpoint_and_impression_context():
+    try:
+        sink = _CollectingSink()
+        client = _client(Profile(occasion="casual"), sink=sink)
+        resp = client.get("/outfits/complete?item_id=b1&k=2")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["anchor_item_id"] == "b1"
+        for outfit in body["outfits"]:
+            assert any(it["item_id"] == "b1" for it in outfit["items"])
+        assert sink.events
+        assert all(e.context["anchor_item_id"] == "b1" for e in sink.events)
+        assert client.get("/outfits/complete?item_id=nope").status_code == 404
+    finally:
+        app.dependency_overrides.clear()

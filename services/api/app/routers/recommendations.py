@@ -96,3 +96,56 @@ def recommend_outfits(
         goal,
         wardrobe_repo,
     )
+
+
+@router.get(
+    "/outfits/complete",
+    summary="Complete the look around a specific item",
+    dependencies=[Depends(rate_limit("recommend", "rate_limit_recommend"))],
+)
+def complete_look(
+    item_id: str = Query(..., description="Catalog item every returned outfit is built around."),
+    occasion: str | None = Query(
+        None, description="What you're dressing for. Overrides your profile's stored occasion."
+    ),
+    k: int = Query(3, ge=1, le=10, description="How many completed looks to return."),
+    region: str | None = Query(
+        None, description="Region code (e.g. IN) for culture-aware garments."
+    ),
+    goal: str | None = Query(
+        None, max_length=200, description="Free-text styling goal (taller / slimmer / broader)."
+    ),
+    principal: Principal = Depends(require_active_principal),
+    profile_repo: ProfileRepository = Depends(get_profile_repo),
+    candidates: CandidateRepository = Depends(get_candidate_repo),
+    taste_repo: TasteRepository = Depends(get_taste_repo),
+    event_sink: EventSink = Depends(get_event_sink),
+    wardrobe_repo: WardrobeRepository = Depends(get_wardrobe_repo),
+) -> OutfitRecommendation:
+    """Complete, personalized outfits pinned to one product ("complete the look").
+
+    The item is the sole candidate in its slot, so every outfit contains it —
+    the rest of the look (e.g. pants + shoes around a chosen shirt) is styled by
+    the same engine as the feed: occasion, undertone, taste, wardrobe grounding,
+    NL goals, diversity, explanation and confidence all apply. 404s when the
+    item is unknown or the user has no profile yet.
+    """
+    profile = profile_repo.get(principal.user_id)
+    if profile is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
+    try:
+        return recommend(
+            profile,
+            principal.user_id,
+            candidates,
+            taste_repo,
+            event_sink,
+            occasion,
+            region,
+            k,
+            goal,
+            wardrobe_repo,
+            anchor_item_id=item_id,
+        )
+    except LookupError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown item") from None

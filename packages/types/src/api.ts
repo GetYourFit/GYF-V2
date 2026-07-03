@@ -310,6 +310,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/outfits/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Complete the look around a specific item
+         * @description Complete, personalized outfits pinned to one product ("complete the look").
+         *
+         *     The item is the sole candidate in its slot, so every outfit contains it —
+         *     the rest of the look (e.g. pants + shoes around a chosen shirt) is styled by
+         *     the same engine as the feed: occasion, undertone, taste, wardrobe grounding,
+         *     NL goals, diversity, explanation and confidence all apply. 404s when the
+         *     item is unknown or the user has no profile yet.
+         */
+        get: operations["complete_look_outfits_complete_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/feedback": {
         parameters: {
             query?: never;
@@ -769,7 +795,7 @@ export interface components {
          * InteractionAction
          * @enum {string}
          */
-        InteractionAction: "view" | "save" | "cart" | "skip" | "react" | "share" | "follow" | "tryon" | "impression";
+        InteractionAction: "view" | "save" | "cart" | "skip" | "react" | "share" | "follow" | "tryon" | "impression" | "purchase";
         /**
          * InteractionTarget
          * @enum {string}
@@ -864,6 +890,8 @@ export interface components {
              * @default false
              */
             wardrobe_grounded: boolean;
+            /** Anchor Item Id */
+            anchor_item_id?: string | null;
         };
         /**
          * Post
@@ -1633,6 +1661,46 @@ export interface operations {
                 /** @description Region code (e.g. IN) for culture-aware garments. */
                 region?: string | null;
                 /** @description Free-text styling goal. GYF parses it into visual effects (taller / slimmer / broader) and steers the look with color theory + body-type intelligence. Unrecognized text is a no-op. */
+                goal?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutfitRecommendation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_look_outfits_complete_get: {
+        parameters: {
+            query: {
+                /** @description Catalog item every returned outfit is built around. */
+                item_id: string;
+                /** @description What you're dressing for. Overrides your profile's stored occasion. */
+                occasion?: string | null;
+                /** @description How many completed looks to return. */
+                k?: number;
+                /** @description Region code (e.g. IN) for culture-aware garments. */
+                region?: string | null;
+                /** @description Free-text styling goal (taller / slimmer / broader). */
                 goal?: string | null;
             };
             header?: never;

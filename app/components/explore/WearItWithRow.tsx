@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { browserApi } from "@/lib/api-client";
 import { mediaUrl } from "@/lib/media";
-import type { SearchResult } from "@gyf/types";
+import type { Outfit, OutfitItem } from "@gyf/types";
 
 interface Props {
   itemId: string;
@@ -16,6 +16,19 @@ const MONO: React.CSSProperties = {
   letterSpacing: "0.1em",
   textTransform: "uppercase",
 };
+
+function formatPrice(price?: number | null, currency?: string | null): string | null {
+  if (price == null) return null;
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency ?? "USD",
+      maximumFractionDigits: 0,
+    }).format(price);
+  } catch {
+    return `${currency ?? "$"}${Math.round(price)}`;
+  }
+}
 
 function Skeleton() {
   return (
@@ -33,13 +46,35 @@ function Skeleton() {
   );
 }
 
-function Tile({ item }: { item: SearchResult }) {
+function Tile({ item }: { item: OutfitItem }) {
   const src = mediaUrl(item.image_url);
+  const price = formatPrice(item.price, item.currency);
+  const open = () => {
+    if (item.affiliate_url) window.open(item.affiliate_url, "_blank", "noopener,noreferrer");
+  };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", flex: 1 }}>
+    <button
+      type="button"
+      onClick={open}
+      aria-label={`Shop ${item.title}`}
+      disabled={!item.affiliate_url}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.375rem",
+        flex: 1,
+        minWidth: 0,
+        background: "none",
+        border: "none",
+        padding: 0,
+        textAlign: "left",
+        cursor: item.affiliate_url ? "pointer" : "default",
+      }}
+    >
       <div
         style={{
           aspectRatio: "3/4",
+          width: "100%",
           background: "#1a1a22",
           borderRadius: "12px",
           overflow: "hidden",
@@ -82,48 +117,76 @@ function Tile({ item }: { item: SearchResult }) {
           margin: 0,
         }}
       >
-        {item.title}
+        {item.slot.replace("_", " ")}
+        {price ? ` · ${price}` : ""} — {item.title}
       </p>
-    </div>
+    </button>
   );
 }
 
+/** "Complete the look": the stylist engine composes full outfits (top + bottom +
+ *  footwear) pinned to this item — the same personalization, explanation, and
+ *  confidence as the feed, not a similar-items lookup. */
 export function WearItWithRow({ itemId }: Props) {
-  const [pairings, setPairings] = useState<SearchResult[] | null>(null);
+  const [look, setLook] = useState<Outfit | null | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
     browserApi()
-      .similar(itemId, { k: 2 })
+      .completeLook(itemId, { k: 1 })
       .then((r) => {
-        if (active) setPairings(r.slice(0, 2));
+        if (active) setLook(r.outfits[0] ?? null);
       })
       .catch(() => {
-        if (active) setPairings([]);
+        if (active) setLook(null);
       });
     return () => {
       active = false;
     };
   }, [itemId]);
 
+  const pairings = look?.items.filter((it) => it.item_id !== itemId) ?? [];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <span style={{ display: "block", width: "16px", height: "1px", background: "#d4607a" }} />
-        <span style={{ ...MONO, color: "#d4607a" }}>Wear it with</span>
-      </div>
-      <div style={{ display: "flex", gap: "0.75rem" }}>
-        {pairings === null ? (
-          <>
-            <Skeleton />
-            <Skeleton />
-          </>
-        ) : pairings.length === 0 ? (
-          <p style={{ ...MONO, color: "#5a5a65", fontSize: "0.55rem" }}>No pairings available</p>
-        ) : (
-          pairings.map((item) => <Tile key={item.item_id} item={item} />)
+        <span style={{ ...MONO, color: "#d4607a" }}>Complete the look</span>
+        {look && (
+          <span style={{ ...MONO, color: "#9a9490", marginLeft: "auto" }}>
+            {Math.round(look.confidence * 100)}% match
+          </span>
         )}
       </div>
+      {look === undefined ? (
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <Skeleton />
+          <Skeleton />
+        </div>
+      ) : look === null || pairings.length === 0 ? (
+        <p style={{ ...MONO, color: "#5a5a65", fontSize: "0.55rem" }}>
+          No complete look available for this piece yet
+        </p>
+      ) : (
+        <>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            {pairings.map((item) => (
+              <Tile key={item.item_id} item={item} />
+            ))}
+          </div>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.75rem",
+              lineHeight: 1.5,
+              color: "#5f5a55",
+              margin: 0,
+            }}
+          >
+            {look.explanation}
+          </p>
+        </>
+      )}
     </div>
   );
 }
