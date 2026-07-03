@@ -456,3 +456,19 @@ retry paths). Full roster re-ingest re-run against prod with the fixes; gender
 straggler backfill + stale-row cleanup + embedding backfill to follow.
 
 **Verified:** API pytest 242 ✓ ruff check+format ✓ web tsc/ESLint/vitest 24 ✓.
+
+## 2026-07-03 (night) — QoL wave 2: core-loop speed
+
+**Ask:** more QoL/UX changes — research, extend the program, continue implementation;
+always pull first, commit+push after.
+
+**Shipped (commit 94b34a5):** `lib/session-cache.ts` (sessionStorage view cache);
+stylist feed stale-while-revalidate (instant repaint on tab return, background
+refresh only applied while user is still at top — no silent restack); Explore
+back-nav restore (items+page+scroll, hydration-safe via mount effect); prefetch
+lookahead 200→600px; offline pill in app shell. 2026 research sweep re-confirmed
+skeletons/felt-speed/micro-interaction direction; noted in qol-ux-program.md §7.5
+with W1/W2 marked shipped. Also formatted two files left prettier-dirty on main.
+
+**Verified:** tsc ✓ eslint ✓ vitest 24 ✓ prettier ✓. Next: W3 (stylist feel —
+reactive delta, swap-a-piece, daily pick) per the program's sequencing.
