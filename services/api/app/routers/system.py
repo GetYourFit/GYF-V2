@@ -233,6 +233,15 @@ def system_status(
             detail="No rendering lane configured — nothing is rendered or implied.",
         ),
         "affiliate_commerce": Capability(
+            status="live",
+            lane="cuelinks",
+            detail=(
+                "Buy links wrap through Cuelinks deeplinks with per-recommendation "
+                "attribution (subid = recommendation_id); real price feeds pending."
+            ),
+        )
+        if settings.cuelinks_cid
+        else Capability(
             status="degraded",
             lane="manual-fallback",
             detail=(

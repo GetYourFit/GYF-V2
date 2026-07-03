@@ -300,3 +300,28 @@ green no-op until the repo secret `GYF_PROD_DATABASE_URL` (Supabase session-pool
 URL with the rotated password) is set. VTON research note: Kolors-Virtual-Try-On
 weights were never released (Space-only demo; commercial API pending) — no
 genuinely free commercial VTON exists; FASHN pay-per-render stays the beta lane.
+
+## 2026-07-03 — Affiliate attribution LIVE (Cuelinks lane behind the AffiliateLinker port)
+
+Cuelinks approved (channel cid=274785; token verified live against /api/v2 — campaigns
+200, transactions 204/empty as expected). Shipped the full revenue seam:
+
+- `app/affiliate.py` — AffiliateLinker port: CuelinksLinker (deeplink wrap, subid
+  sanitization, idempotent, non-http passthrough) + NullAffiliateLinker baseline.
+- Two choke points wrap every surfaced buy link: ItemDirectory.lookup (explore/
+  social/collections/saved → subid "catalog") and recsys serve (subid =
+  recommendation_id → a conversion joins back to the exact impression slate).
+- `purchase` action added to the event vocabulary (reward 1.5, mirrored in
+  signals.py + ml export) — the ground-truth commerce label.
+- `scripts/sync_conversions.py` — nightly Cuelinks transactions → purchase events
+  (idempotent by transaction id; joins subid → impression → user+item; never
+  guesses on foreign subids). Wired into data-export.yml before the export.
+- /system/status affiliate_commerce flips to live/cuelinks when GYF_CUELINKS_CID set.
+- render.yaml sets GYF_CUELINKS_CID=274785 (public channel id; token only in CI).
+- Verified: real deeplink 302s to Myntra with our cid+subid; 214 API tests pass
+  (11 new); ruff clean.
+
+**User actions:** add GitHub secrets GYF_PROD_DATABASE_URL + GYF_CUELINKS_API_TOKEN.
+**Honest gap:** Cuelinks has NO product feed API — real prices/images still need
+merchant catalog ingestion (separate W-DATA track); wrapping applies to whatever
+buy_urls the catalog holds (academic seed rows have none yet).

@@ -38,6 +38,12 @@ services:
       # fairness eval passes.
       - key: GYF_SKIN_TONE_ENABLED
         value: "true"
+      # Affiliate attribution (Cuelinks channel id — public, not a secret): every
+      # buy link wraps through linksredirect.com deeplinks with a subid tying
+      # conversions back to the recommendation that drove them. The API token
+      # (secret, conversions sync only) lives in GitHub Actions, not here.
+      - key: GYF_CUELINKS_CID
+        value: "274785"
       # Photo onboarding runs the skin-tone + body-type modules on the remote HF
       # ZeroGPU Space (spaces/gyf-gpu) — the API host has no torch/pyfacer/SAM, so
       # WITHOUT these the modules abstain on every upload and onboarding shows

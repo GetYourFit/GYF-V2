@@ -20,6 +20,7 @@ import logging
 import uuid
 
 from . import conditioning
+from ..affiliate import AffiliateLinker, linker_from_settings
 from .candidates import CANDIDATE_SLOTS, Candidate, CandidateRepository
 from .compose import ScoredOutfit, WardrobeContext, compose
 from .goals import parse_goal
@@ -57,6 +58,7 @@ def recommend(
     k: int,
     goal: str | None = None,
     wardrobe_repo: WardrobeRepository | None = None,
+    linker: AffiliateLinker | None = None,
 ) -> OutfitRecommendation:
     """Produce up to ``k`` diverse, explained, taste-aware outfits and log them.
 
@@ -90,10 +92,21 @@ def recommend(
     applied_goals = [g.value for g in goals]
     _log_impressions(sink, user_id, recommendation_id, constraints.occasion, applied_goals, scored)
 
+    # Monetize + attribute every shop link at serve time: the Cuelinks subid IS
+    # the recommendation_id, so a later conversion (transactions API) joins back
+    # to the exact impression slate — revenue and the strongest training label
+    # from the same click. Owned garments show no shop link, so they stay raw.
+    outfits = [Outfit.from_scored(o) for o in scored]
+    linker = linker or linker_from_settings()
+    for outfit in outfits:
+        for item in outfit.items:
+            if not item.owned:
+                item.affiliate_url = linker.wrap(item.affiliate_url, recommendation_id)
+
     return OutfitRecommendation(
         recommendation_id=recommendation_id,
         occasion=constraints.occasion,
-        outfits=[Outfit.from_scored(o) for o in scored],
+        outfits=outfits,
         cold_start=not taste.has_signal,
         personalized=constraints.personalization_strength > 0.0 or taste.has_signal,
         taste_strength=round(strength, 3),

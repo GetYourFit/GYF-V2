@@ -13,7 +13,7 @@ than crashing the page).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Protocol
 
 from gyf_contracts.taxonomy import get as get_category
@@ -77,19 +77,29 @@ def _detail_from_row(row: tuple) -> ItemDetail:
 class PostgresItemDirectory:
     """JOIN-free item lookup over the ``items`` table. Lazy pool, injectable."""
 
-    def __init__(self, dsn: str, pool: object | None = None) -> None:
+    def __init__(self, dsn: str, pool: object | None = None, linker: object | None = None) -> None:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
             pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
         self._pool = pool
+        # AffiliateLinker port (duck-typed to avoid an import cycle): every buy
+        # link leaving the directory is monetized + channel-attributed here, the
+        # single choke point all non-recsys surfaces read through.
+        self._linker = linker
 
     def lookup(self, item_ids: list[str]) -> dict[str, ItemDetail]:
         if not item_ids:
             return {}
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             rows = conn.execute(_LOOKUP, (item_ids,)).fetchall()
-        return {str(r[0]): _detail_from_row(r) for r in rows}
+        details = {str(r[0]): _detail_from_row(r) for r in rows}
+        if self._linker is not None:
+            details = {
+                k: replace(d, buy_url=self._linker.wrap(d.buy_url, "catalog"))  # type: ignore[attr-defined]
+                for k, d in details.items()
+            }
+        return details
 
 
 class InMemoryItemDirectory:

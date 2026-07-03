@@ -20,6 +20,7 @@ from ..events import InteractionAction
 # Action -> reward. Tuned for *intent strength*, not frequency. Revisit against
 # real engagement once volume exists (offline calibration, then online gate).
 ACTION_REWARD: dict[InteractionAction, float] = {
+    InteractionAction.PURCHASE: 1.5,  # ground truth: money changed hands
     InteractionAction.CART: 1.2,  # strongest purchase intent
     InteractionAction.TRYON: 1.0,  # high intent: imagining it on themselves
     InteractionAction.SAVE: 1.0,  # explicit "I like this"

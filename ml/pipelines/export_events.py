@@ -31,6 +31,7 @@ from typing import Any, Iterable
 # contract). Kept as strings so ml/ needs no dependency on the API package;
 # if the contract changes there, change it here.
 ACTION_REWARD: dict[str, float] = {
+    "purchase": 1.5,
     "cart": 1.2,
     "tryon": 1.0,
     "save": 1.0,

@@ -74,9 +74,10 @@ def get_text_embedder() -> TextEmbedder:
 def get_item_directory() -> ItemDirectory:
     """The Postgres-backed item directory used to enrich saved/wardrobe/social ids
     and to attach real commerce fields (price/buy_url) to catalog search hits."""
+    from .affiliate import linker_from_settings
     from .catalog.directory import PostgresItemDirectory
 
-    return PostgresItemDirectory(settings.database_url)
+    return PostgresItemDirectory(settings.database_url, linker=linker_from_settings())
 
 
 # --- Profile / account -----------------------------------------------------

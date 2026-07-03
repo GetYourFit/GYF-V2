@@ -28,6 +28,10 @@ class InteractionAction(str, Enum):
     # (and the counterfactual/IPS gate needs). Never user-supplied — emitted by the
     # recommender at serve time.
     IMPRESSION = "impression"
+    # A confirmed retailer conversion synced from the affiliate network
+    # (scripts/sync_conversions.py), joined to its recommendation via the deeplink
+    # subid. Never user-supplied — the ground-truth commerce label.
+    PURCHASE = "purchase"
 
 
 class InteractionTarget(str, Enum):

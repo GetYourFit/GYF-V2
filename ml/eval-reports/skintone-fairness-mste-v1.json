@@ -1,0 +1,23 @@
+{
+  "report_id": "skintone-fairness-mste-v1",
+  "capability": "skin_tone",
+  "model_version": "retinaface-farl-celebm-cielab-mst-v1",
+  "metrics": {
+    "mean_abs_bucket_error": 4.3133,
+    "max_band_gap": 3.2,
+    "band_mae_mst1": 4.6667,
+    "band_mae_mst2": 5.2667,
+    "band_mae_mst3": 5.4,
+    "band_mae_mst4": 3.6667,
+    "band_mae_mst5": 4.1333,
+    "band_mae_mst6": 5.0667,
+    "band_mae_mst7": 2.2,
+    "band_mae_mst8": 3.0,
+    "band_mae_mst9": 4.8,
+    "band_mae_mst10": 4.9333
+  },
+  "num_samples": 150,
+  "dataset": "mst-fairness-set",
+  "created_at": "2026-07-02T19:33:12.333627+00:00",
+  "notes": "Per-band MST fairness; abstain scored as full-scale error."
+}
