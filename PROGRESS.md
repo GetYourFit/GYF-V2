@@ -264,3 +264,29 @@ IDM-VTON/CatVTON/OOTDiffusion deployments are CC-BY-NC → fail the license gate
 **Activation (user):** buy FASHN credits → run the eval look-set → record
 eval-reports/tryon-fashn-v1.json → flip registry lane to production → set
 GYF_TRYON_PROVIDER=fashn + GYF_FASHN_API_KEY on Render.
+
+## 2026-07-03 — Behavioral-data export pipeline (no data wasted)
+
+**Ask:** "data is getting wasted — make it useful internally." Also confirmed VTON
+position (M9 built, dormant pending FASHN credits + env vars) and Leffa licensing
+(MIT code, but weights VITON-HD/DressCode-tainted → serving-lane unusable; architecture
+reusable for own-it-later on brand photos).
+
+**Shipped:** `ml/pipelines/export_events.py` + `make data-export` — turns the
+append-only `interactions` spine into versioned artifacts under `ml/data/exports/<date>/`:
+- `examples.jsonl` — one training example per served item: impression (rank, propensity
+  score, occasion, goals) joined with later engagements by the same user/item; label =
+  strongest signed reward per the reward contract (signals.py). Organic engagements
+  (no impression) export as propensity-null positives. This is the (context, slate,
+  label, propensity) dataset the future two-tower/ranker + IPS gate consume.
+- `report.md` — operator insight: engagement/skip rates, by-occasion and by-slate-rank
+  tables, event volume/user counts.
+
+**Verified:** 8 unit tests (join, labels, no backward leakage, per-user/item scoping,
+report aggregates) + a real end-to-end run against a genuine Postgres (pgserver) with
+the prod schema — impression+save → label 1.0 @ propensity 0.87; skip → −0.6 organic.
+Prod-run blocked only on the rotated DB password (user-only); `make data-export` with
+GYF_DATABASE_URL runs it against prod as-is.
+
+**Decision:** no model training yet — at beta volume a trained two-tower underperforms
+the content+taste baseline; the export makes flipping training on trivial later.

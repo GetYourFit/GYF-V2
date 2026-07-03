@@ -22,7 +22,7 @@ DEV_ENV := $(CACHE_ENV) GYF_EVENT_SINK=postgres
 # health-wait loops and gyf.test service-name DNS. Requires `container system start`.
 STACK := bash infra/container-stack.sh
 
-.PHONY: help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean deploy-web deploy-web-preview
+.PHONY: data-export help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean deploy-web deploy-web-preview
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -112,6 +112,9 @@ doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1)
 	python scripts/check_ports.py
 
 ci: fmt-check lint typecheck doctrine test ## Run the full local CI gate
+
+data-export: ## Export the interactions spine into training examples + insight report (needs GYF_DATABASE_URL)
+	cd ml && $(CACHE_ENV) uv run --extra postgres python -m pipelines.export_events
 
 m2-bakeoff: ## Build + run the M2 encoder bake-off on Apple container (weights in a named volume; reports to host)
 	container build -f ml/Dockerfile -t gyf-ml-bakeoff .

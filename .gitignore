@@ -72,6 +72,9 @@ ml/*.jpg
 ml/*.jpeg
 ml/*.png
 
+# Exported training datasets + reports (regenerable from the interactions spine)
+ml/data/exports/
+
 # Generated intermediate (api.ts is the committed artifact)
 packages/types/openapi.json
 .uv-cache/
