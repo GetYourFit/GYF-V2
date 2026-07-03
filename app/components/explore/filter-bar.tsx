@@ -211,11 +211,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         })}
       </div>
 
-      {/* Style + sort row */}
-      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+      {/* Style chips row */}
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
         <SlidersHorizontal size={13} aria-hidden style={{ color: "#9a9490", flexShrink: 0 }} />
-
-        {/* Style chips */}
         <div
           style={
             {
@@ -223,6 +221,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               gap: "0.375rem",
               overflowX: "auto",
               scrollbarWidth: "none",
+              msOverflowStyle: "none",
               flex: 1,
             } as React.CSSProperties
           }
@@ -244,62 +243,93 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             );
           })}
         </div>
+      </div>
 
-        {/* Sort select — only shown when price sorts are available */}
-        {priceEnabled && (
-          <select
-            aria-label="Sort results"
-            value={safeSort}
-            onChange={(e) => set("sort", e.target.value as SortKey)}
-            style={{
-              background: "#ffffff",
-              border: "1px solid rgba(0,0,0,0.12)",
-              borderRadius: "999px",
-              color: "#5c5650",
-              padding: "0.3rem 0.75rem",
-              fontFamily: "var(--font-body)",
-              fontSize: "0.75rem",
-              fontWeight: 500,
-              cursor: "pointer",
-              flexShrink: 0,
-              outline: "none",
-            }}
-          >
-            {sortOptions.map((o) => (
-              <option key={o.value} value={o.value} style={{ background: "#faf8f5" }}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        )}
+      {/* Sort + price + clear — own row so they never collide with chips */}
+      {(priceEnabled || hasActive) && (
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          {priceEnabled && (
+            <select
+              aria-label="Sort results"
+              value={safeSort}
+              onChange={(e) => set("sort", e.target.value as SortKey)}
+              style={{
+                background: "#ffffff",
+                border: "1px solid rgba(0,0,0,0.12)",
+                borderRadius: "999px",
+                color: "#5c5650",
+                padding: "0.3rem 0.75rem",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                cursor: "pointer",
+                flexShrink: 0,
+                outline: "none",
+              }}
+            >
+              {sortOptions.map((o) => (
+                <option key={o.value} value={o.value} style={{ background: "#faf8f5" }}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          )}
 
-        {/* Price input */}
-        {priceEnabled && (
-          <input
-            type="number"
-            inputMode="numeric"
-            aria-label="Maximum price"
-            placeholder={facets?.price_max ? `Max ${Math.ceil(facets.price_max)}` : "Max price"}
-            min={0}
-            max={facets?.price_max ?? undefined}
-            value={filters.maxPrice}
-            onChange={(e) => set("maxPrice", e.target.value)}
-            style={{
-              width: "80px",
-              background: "transparent",
-              border: "1px solid rgba(0,0,0,0.10)",
-              color: "#9a9490",
-              padding: "0.25rem 0.5rem",
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.6rem",
-              outline: "none",
-              flexShrink: 0,
-            }}
-          />
-        )}
+          {priceEnabled && (
+            <input
+              type="number"
+              inputMode="numeric"
+              aria-label="Maximum price"
+              placeholder={facets?.price_max ? `Max £${Math.ceil(facets.price_max)}` : "Max price"}
+              min={0}
+              max={facets?.price_max ?? undefined}
+              value={filters.maxPrice}
+              onChange={(e) => set("maxPrice", e.target.value)}
+              style={{
+                width: "90px",
+                background: "#ffffff",
+                border: "1px solid rgba(0,0,0,0.12)",
+                borderRadius: "999px",
+                color: "#5c5650",
+                padding: "0.3rem 0.625rem",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.7rem",
+                outline: "none",
+                flexShrink: 0,
+              }}
+            />
+          )}
 
-        {/* Clear */}
-        {hasActive && (
+          <div style={{ flex: 1 }} />
+
+          {hasActive && (
+            <button
+              type="button"
+              onClick={() => onChange(EMPTY)}
+              aria-label={`Clear ${activeCount} active ${activeCount === 1 ? "filter" : "filters"}`}
+              style={{
+                background: "none",
+                border: "none",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.6rem",
+                color: "#9a9490",
+                letterSpacing: "0.06em",
+                textDecoration: "underline",
+                textUnderlineOffset: "3px",
+                cursor: "pointer",
+                flexShrink: 0,
+                padding: "0.25rem",
+              }}
+            >
+              Clear ({activeCount})
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Clear-only row when price controls are hidden but filters are active */}
+      {!priceEnabled && hasActive && (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
             type="button"
             onClick={() => onChange(EMPTY)}
@@ -314,14 +344,13 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               textDecoration: "underline",
               textUnderlineOffset: "3px",
               cursor: "pointer",
-              flexShrink: 0,
               padding: "0.25rem",
             }}
           >
             Clear ({activeCount})
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <p className="sr-only" role="status" aria-live="polite">
         {hasActive ? `${activeCount} filters active` : "No filters active"}
