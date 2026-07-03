@@ -107,9 +107,9 @@ test-api: ## Run API tests
 	cd $(API_DIR) && uv run pytest -q
 
 doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1)
-	python scripts/check_model_licenses.py
-	python scripts/check_promotion.py
-	python scripts/check_ports.py
+	python3 scripts/check_model_licenses.py
+	python3 scripts/check_promotion.py
+	python3 scripts/check_ports.py
 
 ci: fmt-check lint typecheck doctrine test ## Run the full local CI gate
 
