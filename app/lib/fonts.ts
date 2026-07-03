@@ -1,4 +1,4 @@
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono, Playfair_Display } from "next/font/google";
 
 export const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -10,6 +10,14 @@ export const jakarta = Plus_Jakarta_Sans({
 
 // Also used as display font — same family, heavy weight
 export const jakartaDisplay = jakarta;
+
+export const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
+  variable: "--font-display-serif",
+  display: "swap",
+});
 
 export const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],

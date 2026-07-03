@@ -37,7 +37,7 @@ function RotatingTip({ reduce }: { reduce: boolean | null }) {
 
   return (
     <div
-      style={{ overflow: "hidden" }}
+      style={{ overflow: "hidden", minHeight: "6.5rem" }}
       aria-live="polite"
       aria-atomic="true"
     >
@@ -49,17 +49,17 @@ function RotatingTip({ reduce }: { reduce: boolean | null }) {
           exit={reduce ? { opacity: 0 } : { opacity: 0, y: -5 }}
           transition={{ duration: 0.3, ease: EASE }}
           style={{
-            fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+            fontFamily: "var(--font-display-serif, 'Playfair Display', serif)",
             fontSize: "clamp(1.375rem, 5.5vw, 1.75rem)",
-            fontWeight: 800,
+            fontWeight: 700,
             fontStyle: "italic",
-            lineHeight: 1.15,
-            letterSpacing: "-0.02em",
+            lineHeight: 1.2,
+            letterSpacing: "-0.01em",
             color: "#1c1a17",
             margin: 0,
           }}
         >
-          {TIPS[index]}
+          &ldquo;{TIPS[index]}&rdquo;
         </motion.p>
       </AnimatePresence>
     </div>
