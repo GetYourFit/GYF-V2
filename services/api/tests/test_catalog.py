@@ -53,7 +53,24 @@ def test_normalize_merges_region_hints_with_facet():
     item = normalize(raw, provider="ds", license="research")
     assert item.region_tags == ["IN", "US"]
     assert item.category == "saree"
-    assert item.attributes["taxonomy"] == {"slot": "full_body", "raw_category": "saree"}
+    # A saree is gendered by construction, so text inference fills the facet.
+    assert item.attributes["taxonomy"] == {
+        "slot": "full_body",
+        "raw_category": "saree",
+        "gender": "women",
+    }
+
+
+def test_normalize_title_gender_beats_feed_facet():
+    raw = RawFeedItem(title="Rareism Women's Jancura Trouser", category="trousers", gender="unisex")
+    item = normalize(raw, provider="ds", license="research")
+    assert item.attributes["taxonomy"]["gender"] == "women"
+
+
+def test_normalize_keeps_feed_gender_when_text_is_silent():
+    raw = RawFeedItem(title="Classic Chino", category="trousers", gender="men")
+    item = normalize(raw, provider="ds", license="research")
+    assert item.attributes["taxonomy"]["gender"] == "men"
     assert item.source_provider == "ds"
 
 

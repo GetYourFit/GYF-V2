@@ -103,10 +103,24 @@ _SYNONYMS: dict[str, str] = {
     "jumper": "sweater",
     "cardigan": "sweater",
     "hoodie": "sweater",
+    "sweatshirt": "sweater",
+    "crop top": "blouse",
+    "camisole": "blouse",
     "denim": "jeans",
     "pants": "trousers",
     "chinos": "trousers",
     "slacks": "trousers",
+    "trouser": "trousers",
+    "joggers": "trousers",
+    "tank": "t_shirt",
+    "muffler": "scarf",
+    "sweatpants": "trousers",
+    "cargos": "trousers",
+    "leggings": "trousers",
+    "overshirt": "shirt",
+    "jumpsuit": "dress",
+    "co ord set": "dress",
+    "co ord": "dress",
     "gown": "dress",
     "frock": "dress",
     "blazer": "jacket",
@@ -157,6 +171,53 @@ def get(name: str) -> Category:
     return _BY_NAME.get(name, UNKNOWN)
 
 
+# --- Gender inference from merchant text ------------------------------------
+#
+# High-precision keyword rules that read the gender a merchant already wrote
+# into the title/category ("Women's …", "Saree", "Men's …"). Explicit gender
+# words are authoritative — a title saying "Women's" beats a feed's facet tag
+# (real bug: "Rareism Women's … Trouser" arrived facet-tagged "unisex").
+# Garment-word rules cover pieces that are gendered by construction (saree,
+# lehenga, bralette). Anything ambiguous returns ``None`` — abstain, never
+# guess; the zero-shot visual pass or a human decides the tail.
+_GENDER_EXPLICIT: tuple[tuple[str, str], ...] = (
+    (r"\bwomen s?\b|\bwomens\b|\bladies\b|\bfor her\b|\bfemale\b", "women"),
+    (r"\bmen s?\b|\bmens\b|\bfor him\b|\bmale\b|\bgentlemen\b", "men"),
+    (r"\bunisex\b", "unisex"),
+)
+_GENDER_GARMENTS: tuple[tuple[str, str], ...] = (
+    (
+        r"\b(saree|sari|lehenga|kurti|blouse|bralette|bra|cami|camisole|"
+        r"dress(?! (shirt|shoe|pant|sock|loafer))|gown|"
+        r"skirt|jumpsuit|romper|leggings|dupatta|choli|salwar|anarkali|tunic|"
+        r"bodysuit|crop top|heels|stiletto)(e?s)?\b",
+        "women",
+    ),
+    (r"\b(sherwani|kurta pajama|dhoti|lungi|necktie|bow tie)(e?s)?\b", "men"),
+)
+
+
+def infer_gender(*texts: str | None, explicit_only: bool = False) -> str | None:
+    """Catalog gender facet read from merchant text, or ``None`` to abstain.
+
+    Explicit gender words are checked across all supplied texts first (most
+    trustworthy), then gendered-garment words. Within each tier a unique match
+    wins; conflicting matches (e.g. "women" and "men" both present — common on
+    unisex listing titles) abstain rather than pick a side.
+    ``explicit_only=True`` skips the garment tier — use when the result must be
+    strong enough to *override* an existing facet, not just fill a blank.
+    """
+    norms = [_normalize(t) for t in texts if t]
+    tiers = (_GENDER_EXPLICIT,) if explicit_only else (_GENDER_EXPLICIT, _GENDER_GARMENTS)
+    for rules in tiers:
+        hits = {g for pattern, g in rules for n in norms if re.search(pattern, n)}
+        if len(hits) == 1:
+            return next(iter(hits))
+        if hits:
+            return None  # conflicting signals — abstain
+    return None
+
+
 def classify(raw_category: str) -> Category:
     """Map a raw feed category label onto a canonical :class:`Category`.
 
@@ -181,9 +242,7 @@ def classify(raw_category: str) -> Category:
     candidates = list(_SYNONYMS.items())
     candidates += [(c.name.replace("_", " "), c.name) for c in CATEGORIES]
     matches = [
-        (key, name)
-        for key, name in candidates
-        if re.search(rf"\b{re.escape(key)}(e?s)?\b", norm)
+        (key, name) for key, name in candidates if re.search(rf"\b{re.escape(key)}(e?s)?\b", norm)
     ]
     if matches:
         best = max(matches, key=lambda kv: len(kv[0]))

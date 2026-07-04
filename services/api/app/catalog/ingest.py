@@ -22,7 +22,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Protocol
 
-from gyf_contracts.taxonomy import classify
+from gyf_contracts.taxonomy import classify, infer_gender
 
 from .sources import FeedSource, OpenDatasetSource, RawFeedItem
 
@@ -73,8 +73,19 @@ def _image_hash(image_urls: list[str]) -> str | None:
 def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedItem:
     """Normalize one raw feed item to the canonical ``items`` shape."""
     category = classify(raw.category)
+    if category.name == "unknown":
+        # Feeds routinely carry junk category strings while the title names the
+        # garment plainly ("Relaxed Fit Stretch Joggers" under category "NEW").
+        # An unknown category exiles a real garment from every outfit slot, so
+        # the title is a second, often better, classification source.
+        category = classify(raw.title)
     region_tags = sorted({*raw.region_hints, *category.region_tags})
     image_hash = _image_hash(raw.image_urls)
+    # Merchant text is more trustworthy than the feed's facet tag: a title that
+    # says "Women's" wins over a feed-supplied "unisex" (observed in the wild).
+    # When the feed carries no gender at all, text inference fills the gap so
+    # gendered relevance holds without waiting for a perception backfill.
+    gender = infer_gender(raw.title, raw.category) or raw.gender
     return NormalizedItem(
         title=raw.title.strip(),
         category=category.name,
@@ -82,7 +93,7 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
             "taxonomy": {
                 "slot": category.slot,
                 "raw_category": raw.category,
-                **({"gender": raw.gender} if raw.gender else {}),
+                **({"gender": gender} if gender else {}),
             },
         },
         price=raw.price,
