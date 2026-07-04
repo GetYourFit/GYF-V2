@@ -524,7 +524,7 @@ three layers: (1) `infer_gender` text rules in the shared taxonomy contract —
 explicit words override a wrong feed facet, garment words (saree, bralette)
 fill blanks, conflicts abstain; wired into ingest for all future feeds;
 (2) new `ml/pipelines/backfill_gender.py` — rules first, then zero-shot
-women/men against the *stored* SigLIP embeddings (no image refetch), floor
+women/men against the _stored_ SigLIP embeddings (no image refetch), floor
 0.70, honest abstention; run against prod: 171 ruled + 251 zero-shot +
 overrides, NULL 596→31. (3) tests both sides.
 
@@ -538,7 +538,7 @@ are never surfaced.
 
 **Composer got eyes (the "really dumb, can't tell what matches" complaint):**
 new style-cohesion score component — mean pairwise cosine of the items'
-perception embeddings (the signal that *sees* the garments; colour/formality
+perception embeddings (the signal that _sees_ the garments; colour/formality
 arithmetic can't tell a varsity jacket from a blazer of the same hue), weights
 rebalanced 0.34/0.26/0.15/0.15/0.10, neutral prior pre-backfill. Explanations
 earn two new claims: statement-piece pattern play (exactly one patterned piece,

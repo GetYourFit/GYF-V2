@@ -67,9 +67,7 @@ def summarize(
         error = 9.0 if pred_idx is None else float(abs(true_idx - pred_idx))
         errors_by_band[true_idx].append(error)
 
-    per_band = {
-        band: sum(errs) / len(errs) for band, errs in errors_by_band.items() if errs
-    }
+    per_band = {band: sum(errs) / len(errs) for band, errs in errors_by_band.items() if errs}
     num_samples = sum(len(errs) for errs in errors_by_band.values())
     overall = (
         sum(e for errs in errors_by_band.values() for e in errs) / num_samples

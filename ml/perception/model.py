@@ -188,7 +188,9 @@ class SiglipEncoder:
         self._torch = torch
         # `logit_scale` is stored in log space; exponentiate once to the temperature.
         scale = getattr(model, "logit_scale", None)
-        self._logit_scale = float(scale.detach().exp()) if scale is not None else DEFAULT_LOGIT_SCALE
+        self._logit_scale = (
+            float(scale.detach().exp()) if scale is not None else DEFAULT_LOGIT_SCALE
+        )
 
     @property
     def logit_scale(self) -> float:

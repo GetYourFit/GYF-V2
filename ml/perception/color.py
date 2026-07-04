@@ -121,7 +121,7 @@ def _dominant_rgb(pixels: np.ndarray, *, bits: int = 4) -> np.ndarray:
     centroid, so the reported value is a real garment colour.
     """
     shift = 8 - bits
-    keys = (pixels.astype(int) >> shift)
+    keys = pixels.astype(int) >> shift
     flat_keys = (keys[:, 0] << (2 * bits)) | (keys[:, 1] << bits) | keys[:, 2]
     dominant_key = np.bincount(flat_keys).argmax()
     return pixels[flat_keys == dominant_key].mean(axis=0)

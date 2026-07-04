@@ -77,7 +77,9 @@ def test_measurements_abstain_on_low_keypoint_score():
 
 
 def _ratios(*, shoulder, chest, waist, hip):
-    m, _, _ = silhouette_measurements(*_silhouette(shoulder=shoulder, chest=chest, waist=waist, hip=hip))
+    m, _, _ = silhouette_measurements(
+        *_silhouette(shoulder=shoulder, chest=chest, waist=waist, hip=hip)
+    )
     return ratios(m)
 
 

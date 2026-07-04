@@ -26,7 +26,9 @@ def main(argv: list[str]) -> int:
     est = estimate_skin_tone(image, estimator)
 
     print(f"image:        {argv[1]}  ({image.width}x{image.height})")
-    print(f"skin Lab:     L*={readout.lab[0]:.1f}  a*={readout.lab[1]:.1f}  b*={readout.lab[2]:.1f}")
+    print(
+        f"skin Lab:     L*={readout.lab[0]:.1f}  a*={readout.lab[1]:.1f}  b*={readout.lab[2]:.1f}"
+    )
     print(f"coverage:     {readout.coverage:.2f}  ({readout.skin_pixels} px)")
     print(f"face found:   {readout.face_confidence > 0}")
     print(f"skin_tone:    {est.skin_tone}   (conf {est.field_confidence.get('skin_tone', 0):.2f})")

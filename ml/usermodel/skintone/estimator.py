@@ -96,7 +96,9 @@ class FaceParsingSkinToneEstimator:
         with torch.inference_mode():
             faces = self._detector(img_t)
             if faces is None or len(faces.get("scores", [])) == 0:
-                return SkinReadout((0.0, 0.0, 0.0), coverage=0.0, face_confidence=0.0, skin_pixels=0)
+                return SkinReadout(
+                    (0.0, 0.0, 0.0), coverage=0.0, face_confidence=0.0, skin_pixels=0
+                )
             faces = self._parser(img_t, faces)
 
         # Pick the highest-scoring detected face.
@@ -116,7 +118,12 @@ class FaceParsingSkinToneEstimator:
         face_area = float((class_map != _bg_index(label_names)).sum()) or 1.0
         skin_px = rgb[skin_mask]
         if skin_px.shape[0] < 50:  # too little skin to read honestly → abstain
-            return SkinReadout((0.0, 0.0, 0.0), coverage=0.0, face_confidence=float(scores[best]), skin_pixels=int(skin_px.shape[0]))
+            return SkinReadout(
+                (0.0, 0.0, 0.0),
+                coverage=0.0,
+                face_confidence=float(scores[best]),
+                skin_pixels=int(skin_px.shape[0]),
+            )
 
         # White-balance using the skin pixels as the illuminant estimate, then trim
         # specular highlights / deep shadow before the colour read.

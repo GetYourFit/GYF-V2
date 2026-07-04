@@ -47,8 +47,12 @@ def test_image_to_b64_png_roundtrips() -> None:
 
 def test_estimate_returns_shape_and_calls_api() -> None:
     est, client = _estimator_with(
-        {"measurements": _MEASUREMENTS, "region_quality": {"waist": 0.9},
-         "model_confidence": 0.8, "model_version": "rtmw-birefnet-v1"}
+        {
+            "measurements": _MEASUREMENTS,
+            "region_quality": {"waist": 0.9},
+            "model_confidence": 0.8,
+            "model_version": "rtmw-birefnet-v1",
+        }
     )
     shape = est.estimate(Image.new("RGB", (8, 8)))
     assert shape.measurements["waist"] == pytest.approx(0.33)

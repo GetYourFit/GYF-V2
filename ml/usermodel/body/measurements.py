@@ -95,11 +95,7 @@ def _band_width(mask: np.ndarray, y: float, mid_col: int, half: float) -> float:
     """Median midline-run width over the rows in ``[y-half, y+half]`` (robust pool)."""
     r_lo = int(round(y - half))
     r_hi = int(round(y + half))
-    widths = [
-        w
-        for r in range(r_lo, r_hi + 1)
-        if (w := _midline_run_width(mask, r, mid_col)) > 0.0
-    ]
+    widths = [w for r in range(r_lo, r_hi + 1) if (w := _midline_run_width(mask, r, mid_col)) > 0.0]
     return float(np.median(widths)) if widths else 0.0
 
 

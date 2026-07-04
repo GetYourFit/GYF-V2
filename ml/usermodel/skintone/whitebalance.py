@@ -13,7 +13,9 @@ from __future__ import annotations
 import numpy as np
 
 
-def shades_of_gray(rgb: np.ndarray, power: float = 6.0, mask: np.ndarray | None = None) -> np.ndarray:
+def shades_of_gray(
+    rgb: np.ndarray, power: float = 6.0, mask: np.ndarray | None = None
+) -> np.ndarray:
     """Return ``rgb`` white-balanced via the Shades-of-Gray assumption.
 
     ``rgb``: (H, W, 3) in [0, 255]. ``power`` = the Minkowski norm order (1 ==

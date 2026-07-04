@@ -86,20 +86,26 @@ class _FakeEstimator:
 
 
 def test_estimate_skin_tone_scales_confidence_by_quality():
-    good = _FakeEstimator(SkinReadout(lab=(50.0, 8.0, 16.0), coverage=1.0, face_confidence=1.0, skin_pixels=900))
+    good = _FakeEstimator(
+        SkinReadout(lab=(50.0, 8.0, 16.0), coverage=1.0, face_confidence=1.0, skin_pixels=900)
+    )
     est = estimate_skin_tone(object(), good)
     assert est.skin_tone == "mst6"
     assert est.undertone == "warm"
     assert est.field_confidence["skin_tone"] > 0.4
 
-    poor = _FakeEstimator(SkinReadout(lab=(50.0, 8.0, 16.0), coverage=0.2, face_confidence=1.0, skin_pixels=40))
+    poor = _FakeEstimator(
+        SkinReadout(lab=(50.0, 8.0, 16.0), coverage=0.2, face_confidence=1.0, skin_pixels=40)
+    )
     est_poor = estimate_skin_tone(object(), poor)
     # Same tone, but quality (low coverage) honestly drags confidence down.
     assert est_poor.field_confidence["skin_tone"] < est.field_confidence["skin_tone"]
 
 
 def test_estimate_no_face_abstains():
-    none = _FakeEstimator(SkinReadout(lab=(0.0, 0.0, 0.0), coverage=0.0, face_confidence=0.0, skin_pixels=0))
+    none = _FakeEstimator(
+        SkinReadout(lab=(0.0, 0.0, 0.0), coverage=0.0, face_confidence=0.0, skin_pixels=0)
+    )
     est = estimate_skin_tone(object(), none)
     assert est.field_confidence["skin_tone"] == 0.0
 

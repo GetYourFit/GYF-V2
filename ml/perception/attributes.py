@@ -186,7 +186,9 @@ class AttributeExtractor:
         # calibrated, not near-uniform. Test doubles fall back to a sane default.
         return getattr(self._encoder, "logit_scale", DEFAULT_LOGIT_SCALE)
 
-    def _score(self, attribute: str, image_embedding: np.ndarray, scale: float) -> AttributePrediction:
+    def _score(
+        self, attribute: str, image_embedding: np.ndarray, scale: float
+    ) -> AttributePrediction:
         spec = self._specs[attribute]
         sims = self._label_embeddings(attribute) @ image_embedding
         probs = _softmax(scale * sims)
@@ -202,7 +204,9 @@ class AttributeExtractor:
         has no neckline). Category is always present.
         """
         scale = self._temperature
-        out: dict[str, AttributePrediction] = {CATEGORY: self._score(CATEGORY, image_embedding, scale)}
+        out: dict[str, AttributePrediction] = {
+            CATEGORY: self._score(CATEGORY, image_embedding, scale)
+        }
         slot = _CATEGORY_SLOT.get(out[CATEGORY].label, "unknown")
         for attribute, spec in self._specs.items():
             if attribute == CATEGORY:
