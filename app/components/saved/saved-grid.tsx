@@ -26,10 +26,21 @@ export function SavedGrid() {
   const [items, setItems] = useState<SavedItem[]>([]);
   const [status, setStatus] = useState<Status>("loading");
 
-  const fetchAll = useCallback(
-    () => Promise.all([browserApi().listSavedOutfits(), browserApi().listSaved()]),
-    [],
-  );
+  // Each list degrades independently — a failed items fetch must not blank the
+  // user's perfectly-loadable looks (and vice versa). Only both failing errors.
+  const fetchAll = useCallback(async () => {
+    const [looksRes, itemsRes] = await Promise.allSettled([
+      browserApi().listSavedOutfits(),
+      browserApi().listSaved(),
+    ]);
+    if (looksRes.status === "rejected" && itemsRes.status === "rejected") {
+      throw new Error("both saved lists failed");
+    }
+    return [
+      looksRes.status === "fulfilled" ? looksRes.value : [],
+      itemsRes.status === "fulfilled" ? itemsRes.value : [],
+    ] as const;
+  }, []);
 
   const load = useCallback(async () => {
     setStatus("loading");

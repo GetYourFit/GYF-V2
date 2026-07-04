@@ -26,6 +26,31 @@ function SectionHeader({ index, title }: { index: string; title: string }) {
   );
 }
 
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div role="alert" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      <EmptyState message="Couldn't load this list — check your connection" />
+      <button
+        type="button"
+        onClick={onRetry}
+        style={{
+          alignSelf: "flex-start",
+          padding: "0.5rem 1rem",
+          borderRadius: 999,
+          border: "1.5px solid #1c1a17",
+          background: "transparent",
+          color: "#1c1a17",
+          fontSize: "0.8rem",
+          fontWeight: 600,
+          cursor: "pointer",
+        }}
+      >
+        Try again
+      </button>
+    </div>
+  );
+}
+
 function EmptyState({ message }: { message: string }) {
   return (
     <div
@@ -63,8 +88,11 @@ function GridSkeleton({ count = 4 }: { count?: number }) {
 
 export function CollectionsClient() {
   const reduce = useReducedMotion();
-  const [savedItems, setSavedItems] = useState<SavedItem[] | null>(null);
-  const [savedOutfits, setSavedOutfits] = useState<SavedOutfit[] | null>(null);
+  // null = loading, "error" = fetch failed (distinct from a genuinely empty list,
+  // which must not masquerade as "nothing saved yet").
+  const [savedItems, setSavedItems] = useState<SavedItem[] | "error" | null>(null);
+  const [savedOutfits, setSavedOutfits] = useState<SavedOutfit[] | "error" | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -74,7 +102,7 @@ export function CollectionsClient() {
         if (active) setSavedItems(r);
       })
       .catch(() => {
-        if (active) setSavedItems([]);
+        if (active) setSavedItems("error");
       });
     browserApi()
       .listSavedOutfits()
@@ -82,12 +110,17 @@ export function CollectionsClient() {
         if (active) setSavedOutfits(r);
       })
       .catch(() => {
-        if (active) setSavedOutfits([]);
+        if (active) setSavedOutfits("error");
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
+  const retry = () => {
+    setSavedItems(null);
+    setSavedOutfits(null);
+    setReloadKey((k) => k + 1);
+  };
 
   return (
     <div
@@ -130,6 +163,8 @@ export function CollectionsClient() {
         <SectionHeader index="01" title="Saved pieces" />
         {savedItems === null ? (
           <GridSkeleton />
+        ) : savedItems === "error" ? (
+          <ErrorState onRetry={retry} />
         ) : savedItems.length === 0 ? (
           <EmptyState message="No saved pieces yet — explore to find your first" />
         ) : (
@@ -150,6 +185,8 @@ export function CollectionsClient() {
         <SectionHeader index="02" title="Saved outfits" />
         {savedOutfits === null ? (
           <GridSkeleton count={2} />
+        ) : savedOutfits === "error" ? (
+          <ErrorState onRetry={retry} />
         ) : savedOutfits.length === 0 ? (
           <EmptyState message="No outfits saved yet — build your first from the Stylist" />
         ) : (
@@ -159,16 +196,6 @@ export function CollectionsClient() {
             ))}
           </div>
         )}
-      </motion.section>
-
-      {/* Section 3 — Curated (placeholder) */}
-      <motion.section
-        initial={reduce ? false : { opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: EASE, delay: 0.24 }}
-      >
-        <SectionHeader index="03" title="Curated for you" />
-        <EmptyState message="Personalised collections coming soon" />
       </motion.section>
     </div>
   );

@@ -66,14 +66,28 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         }}
       >
         {item.image_url ? (
-          <motion.img
-            src={item.image_url}
-            alt={item.title}
-            loading="lazy"
-            whileHover={reduce ? undefined : { scale: 1.03 }}
-            transition={{ duration: 0.5, ease: EASE }}
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-          />
+          <>
+            <div className="skeleton" style={{ position: "absolute", inset: 0 }} aria-hidden />
+            <motion.img
+              src={item.image_url}
+              alt={item.title}
+              loading="lazy"
+              whileHover={reduce ? undefined : { scale: 1.03 }}
+              transition={{ duration: 0.5, ease: EASE }}
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+                opacity: 0,
+                transition: "opacity 0.35s ease",
+              }}
+              onLoad={(e) => {
+                e.currentTarget.style.opacity = "1";
+              }}
+            />
+          </>
         ) : (
           <div
             style={{

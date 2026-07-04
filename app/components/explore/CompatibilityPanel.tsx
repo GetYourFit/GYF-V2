@@ -15,10 +15,13 @@ const MONO: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
+// Honest tier framing (doctrine D6): these describe what the *score* means, not
+// a bespoke per-item analysis we don't have on this surface — the real per-item
+// reasoning lives in the pairing row and the stylist feed's explanations.
 const REASON: Record<string, string> = {
-  high: "This piece scores highly against your style profile — colour, silhouette, and occasion all align.",
-  mid: "A solid match for your wardrobe — pairs well with items you've already saved.",
-  low: "An exploratory pick — try it to help GYF learn more about your taste.",
+  high: "Strong match with your style profile based on its visual signals.",
+  mid: "Moderate match — worth a look alongside the pairings below.",
+  low: "Outside your usual profile — an exploratory pick if you want to branch out.",
 };
 
 export function CompatibilityPanel({ item }: Props) {
