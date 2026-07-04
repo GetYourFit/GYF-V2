@@ -19,7 +19,7 @@ const RIGHT_TABS = [
   { href: "/profile", Icon: NavProfile, label: "Profile", exact: false },
 ] as const;
 
-const ACCENT = "#d4607a";
+const ACCENT = "var(--secondary)";
 const MUTED = "#5c5650";
 
 export function BottomNav() {

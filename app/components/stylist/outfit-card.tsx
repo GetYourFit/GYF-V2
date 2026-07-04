@@ -89,7 +89,7 @@ export function OutfitCard({
               fontWeight: 600,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#d4607a",
+              color: "var(--secondary)",
             }}
           >
             Stylist&apos;s pick
@@ -110,7 +110,7 @@ export function OutfitCard({
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
               fontSize: "0.7rem",
               fontWeight: 700,
-              color: "#d4607a",
+              color: "var(--secondary)",
               letterSpacing: "0.06em",
             }}
           >
@@ -205,7 +205,7 @@ export function OutfitCard({
                         height: "100%",
                         fontFamily: "var(--font-body)",
                         fontSize: "0.6rem",
-                        color: "#9a9490",
+                        color: "var(--text-faint)",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
                         textAlign: "center",
@@ -240,7 +240,7 @@ export function OutfitCard({
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "0.7rem",
-                    color: "#9a9490",
+                    color: "var(--text-faint)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -329,7 +329,7 @@ export function OutfitCard({
               background: expanded ? "rgba(212,96,122,0.08)" : "rgba(0,0,0,0.04)",
               border: "none",
               borderRadius: "50%",
-              color: expanded ? "#d4607a" : "#9a9490",
+              color: expanded ? "var(--secondary)" : "var(--text-faint)",
               cursor: "pointer",
             }}
           >
@@ -352,14 +352,14 @@ export function OutfitCard({
               background: saved ? "rgba(212,96,122,0.12)" : "rgba(0,0,0,0.04)",
               border: "none",
               borderRadius: "50%",
-              color: saved ? "#d4607a" : "#9a9490",
+              color: saved ? "var(--secondary)" : "var(--text-faint)",
               cursor: "pointer",
             }}
           >
             <Bookmark
               size={18}
               aria-hidden
-              style={{ fill: saved ? "#d4607a" : "none", transition: "fill 0.2s" }}
+              style={{ fill: saved ? "var(--secondary)" : "none", transition: "fill 0.2s" }}
             />
           </motion.button>
 
@@ -379,7 +379,7 @@ export function OutfitCard({
               background: "rgba(0,0,0,0.04)",
               border: "none",
               borderRadius: "50%",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               cursor: "pointer",
             }}
           >
@@ -402,7 +402,7 @@ export function OutfitCard({
                 height: "44px",
                 background: "rgba(0,0,0,0.04)",
                 borderRadius: "50%",
-                color: "#9a9490",
+                color: "var(--text-faint)",
                 textDecoration: "none",
               }}
             >
@@ -428,7 +428,7 @@ export function OutfitCard({
               background: "rgba(0,0,0,0.04)",
               border: "none",
               borderRadius: "50%",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               cursor: "pointer",
             }}
           >

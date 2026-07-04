@@ -93,7 +93,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                 marginTop: "2.5rem",
                 width: "160px",
                 height: "1px",
-                background: "#d4607a",
+                background: "var(--secondary)",
                 transformOrigin: "left",
               }}
             />
@@ -145,7 +145,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                       fontWeight: 500,
                       letterSpacing: "0.05em",
                       textTransform: "uppercase",
-                      color: "#9a9490",
+                      color: "var(--text-faint)",
                       opacity: 0.7,
                       margin: 0,
                     }}
@@ -168,7 +168,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                   width: i === activeDot ? 20 : 6,
                   height: 6,
                   borderRadius: 3,
-                  background: i === activeDot ? "#d4607a" : "#9a9490",
+                  background: i === activeDot ? "var(--secondary)" : "var(--text-faint)",
                   display: "block",
                 }}
               />

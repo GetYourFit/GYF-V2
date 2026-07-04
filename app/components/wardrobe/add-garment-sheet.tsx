@@ -497,7 +497,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                                     alignItems: "center",
                                     justifyContent: "center",
                                     height: "100%",
-                                    color: "#9a9490",
+                                    color: "var(--text-faint)",
                                   }}
                                 >
                                   <Plus size={20} aria-hidden />
@@ -521,7 +521,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                       >
                         <Search
                           size={28}
-                          style={{ color: "#9a9490" }}
+                          style={{ color: "var(--text-faint)" }}
                           aria-hidden
                           strokeWidth={1.5}
                         />
@@ -540,7 +540,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                           style={{
                             fontFamily: "var(--font-body)",
                             fontSize: "0.8125rem",
-                            color: "#9a9490",
+                            color: "var(--text-faint)",
                             margin: 0,
                           }}
                         >

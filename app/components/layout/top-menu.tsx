@@ -295,7 +295,7 @@ export function TopMenu() {
                       fontWeight: 700,
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
-                      color: "#9a9490",
+                      color: "var(--text-faint)",
                       padding: "0.5rem 1.25rem 0.5rem",
                       margin: 0,
                     }}
@@ -367,7 +367,13 @@ export function TopMenu() {
                           <span style={{ fontSize: "1rem", fontWeight: 600, lineHeight: 1.2 }}>
                             {label}
                           </span>
-                          <span style={{ fontSize: "0.78rem", color: "#9a9490", lineHeight: 1.4 }}>
+                          <span
+                            style={{
+                              fontSize: "0.78rem",
+                              color: "var(--text-faint)",
+                              lineHeight: 1.4,
+                            }}
+                          >
                             {description}
                           </span>
                         </span>

@@ -12,7 +12,7 @@ import { WearItWithRow } from "./WearItWithRow";
 import type { SearchResult } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const ACCENT = "#d4607a";
+const ACCENT = "var(--secondary)";
 
 const MONO: React.CSSProperties = {
   fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
@@ -152,7 +152,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                   style={{
                     width: "40px",
                     height: "4px",
-                    background: "rgba(255,255,255,0.18)",
+                    background: "rgba(0,0,0,0.18)",
                     borderRadius: "999px",
                     position: "absolute",
                     left: "50%",
@@ -173,7 +173,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                     height: "44px",
                     background: "rgba(0,0,0,0.06)",
                     border: "1px solid rgba(0,0,0,0.10)",
-                    color: "#9a9490",
+                    color: "var(--text-faint)",
                     cursor: "pointer",
                     borderRadius: "999px",
                   }}
@@ -287,7 +287,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                       gap: "0.375rem",
                       padding: "0.875rem",
                       background: "rgba(0,0,0,0.06)",
-                      border: "1px solid rgba(255,255,255,0.12)",
+                      border: "1px solid rgba(0,0,0,0.12)",
                       color: addingToWardrobe ? "#5a5a65" : "#1c1a17",
                       ...MONO,
                       cursor: addingToWardrobe ? "not-allowed" : "pointer",

@@ -28,7 +28,7 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "0.65rem",
             fontWeight: 600,
-            color: "#d4607a",
+            color: "var(--secondary)",
           }}
         >
           {pct >= 75 ? "Strong match" : pct >= 50 ? "Good match" : "Exploring"}
@@ -38,7 +38,7 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
             fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
             fontSize: "0.6rem",
             fontWeight: 500,
-            color: "#9a9490",
+            color: "var(--text-faint)",
           }}
         >
           {pct}%
@@ -65,7 +65,7 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
           transition={
             reduce ? { duration: 0 } : { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }
           }
-          style={{ height: "100%", background: "#d4607a", borderRadius: "999px" }}
+          style={{ height: "100%", background: "var(--secondary)", borderRadius: "999px" }}
         />
       </div>
     </div>

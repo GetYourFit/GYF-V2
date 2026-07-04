@@ -55,7 +55,7 @@ export function TryOnSection({ outfit }: { outfit: Outfit }) {
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: "0.55rem",
-          color: "#9a9490",
+          color: "var(--text-faint)",
           letterSpacing: "0.08em",
           textTransform: "uppercase",
         }}
@@ -75,7 +75,7 @@ export function TryOnSection({ outfit }: { outfit: Outfit }) {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "0.55rem",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               letterSpacing: "0.06em",
               marginTop: "0.375rem",
             }}
@@ -118,9 +118,9 @@ export function TryOnSection({ outfit }: { outfit: Outfit }) {
           justifyContent: "center",
           gap: "0.5rem",
           minHeight: "44px",
-          border: "1px solid rgba(255,255,255,0.12)",
+          border: "1px solid rgba(0,0,0,0.12)",
           background: "transparent",
-          color: busy ? "#5c5650" : "#9a9490",
+          color: busy ? "#5c5650" : "var(--text-faint)",
           fontFamily: "var(--font-mono)",
           fontSize: "0.6rem",
           fontWeight: 500,
@@ -141,7 +141,7 @@ export function TryOnSection({ outfit }: { outfit: Outfit }) {
         style={{
           fontFamily: "var(--font-body)",
           fontSize: "0.6875rem",
-          color: "#9a9490",
+          color: "var(--text-faint)",
           margin: 0,
           lineHeight: 1.5,
         }}

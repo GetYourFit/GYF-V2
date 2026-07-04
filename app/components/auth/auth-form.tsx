@@ -89,7 +89,7 @@ function IndustrialInput({
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: focused ? "#1c1a17" : "#9a9490",
+          color: focused ? "#1c1a17" : "var(--text-faint)",
           transition: "color 0.2s",
         }}
       >
@@ -102,7 +102,7 @@ function IndustrialInput({
           style={{
             position: "absolute",
             left: 0,
-            color: focused ? "#1c1a17" : "#9a9490",
+            color: focused ? "#1c1a17" : "var(--text-faint)",
             transition: "color 0.2s",
             flexShrink: 0,
           }}
@@ -143,7 +143,7 @@ function IndustrialInput({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               padding: "0.25rem",
               display: "flex",
               alignItems: "center",
@@ -217,7 +217,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
             display: "flex",
             alignItems: "center",
             gap: "0.5rem",
@@ -229,7 +229,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               display: "inline-block",
               width: 24,
               height: 1,
-              background: "#d4607a",
+              background: "var(--secondary)",
               flexShrink: 0,
             }}
           />
@@ -260,7 +260,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           style={{
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "0.9375rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             margin: 0,
           }}
         >
@@ -384,7 +384,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.8125rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             textAlign: "center",
             margin: 0,
           }}

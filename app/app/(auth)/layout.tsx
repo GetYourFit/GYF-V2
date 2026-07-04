@@ -28,7 +28,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           position: "fixed",
           inset: 0,
           backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)",
+            "linear-gradient(rgba(0,0,0,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.015) 1px, transparent 1px)",
           backgroundSize: "40px 40px",
           pointerEvents: "none",
           zIndex: 0,
@@ -78,7 +78,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             fontWeight: 500,
             letterSpacing: "0.05em",
             textTransform: "uppercase",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             textAlign: "center",
           }}
         >

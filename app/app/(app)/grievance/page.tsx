@@ -105,7 +105,7 @@ export default function GrievancePage() {
             fontWeight: 600,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
             marginBottom: "0.5rem",
           }}
         >
@@ -147,7 +147,7 @@ export default function GrievancePage() {
               color: "#5c5650",
             }}
           >
-            Issue Type <span style={{ color: "#d4607a" }}>*</span>
+            Issue Type <span style={{ color: "var(--secondary)" }}>*</span>
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
             {ISSUE_TYPES.map((type) => {
@@ -188,7 +188,7 @@ export default function GrievancePage() {
               color: "#5c5650",
             }}
           >
-            Your Email <span style={{ color: "#d4607a" }}>*</span>
+            Your Email <span style={{ color: "var(--secondary)" }}>*</span>
           </label>
           <input
             id="g-email"
@@ -230,7 +230,7 @@ export default function GrievancePage() {
               color: "#5c5650",
             }}
           >
-            Describe the Issue <span style={{ color: "#d4607a" }}>*</span>
+            Describe the Issue <span style={{ color: "var(--secondary)" }}>*</span>
           </label>
           <textarea
             id="g-desc"
@@ -263,7 +263,7 @@ export default function GrievancePage() {
         </div>
 
         {/* Notice */}
-        <p style={{ fontSize: "0.75rem", color: "#9a9490", lineHeight: 1.5 }}>
+        <p style={{ fontSize: "0.75rem", color: "var(--text-faint)", lineHeight: 1.5 }}>
           All grievances are reviewed within 48 hours. For urgent matters, email us directly at{" "}
           <a href="mailto:gyf1ltd@gmail.com" style={{ color: "#1c1a17", fontWeight: 600 }}>
             gyf1ltd@gmail.com

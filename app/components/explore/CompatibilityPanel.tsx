@@ -39,15 +39,17 @@ export function CompatibilityPanel({ item }: Props) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <span style={{ display: "block", width: "16px", height: "1px", background: "#d4607a" }} />
-        <span style={{ ...MONO, color: "#d4607a" }}>Why this works</span>
+        <span
+          style={{ display: "block", width: "16px", height: "1px", background: "var(--secondary)" }}
+        />
+        <span style={{ ...MONO, color: "var(--secondary)" }}>Why this works</span>
       </div>
 
       <ConfidenceMeter value={item.score} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
         {item.color && (
-          <p style={{ ...MONO, color: "#9a9490", fontSize: "0.55rem" }}>
+          <p style={{ ...MONO, color: "var(--text-faint)", fontSize: "0.55rem" }}>
             Colour: <span style={{ color: "#1c1a17" }}>{item.color}</span>
           </p>
         )}
@@ -55,7 +57,7 @@ export function CompatibilityPanel({ item }: Props) {
           style={{
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "0.8125rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             lineHeight: 1.55,
             marginTop: "0.25rem",
           }}

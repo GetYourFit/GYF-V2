@@ -194,7 +194,7 @@ export function OutfitDetail({
                     fontSize: "0.6rem",
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "#d4607a",
+                    color: "var(--secondary)",
                   }}
                 >
                   N°{String(index + 1).padStart(2, "0")}
@@ -206,7 +206,7 @@ export function OutfitDetail({
                     fontSize: "0.6rem",
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: "#9a9490",
+                    color: "var(--text-faint)",
                     margin: 0,
                   }}
                 >
@@ -225,7 +225,7 @@ export function OutfitDetail({
                   height: "44px",
                   background: "transparent",
                   border: "none",
-                  color: "#9a9490",
+                  color: "var(--text-faint)",
                   cursor: "pointer",
                 }}
               >
@@ -275,7 +275,7 @@ export function OutfitDetail({
                           height: "100%",
                           fontFamily: "var(--font-mono)",
                           fontSize: "0.5rem",
-                          color: "#9a9490",
+                          color: "var(--text-faint)",
                           textTransform: "uppercase",
                           letterSpacing: "0.06em",
                           textAlign: "center",
@@ -295,7 +295,7 @@ export function OutfitDetail({
                         padding: "0.125rem 0.375rem",
                         fontFamily: "var(--font-mono)",
                         fontSize: "0.5rem",
-                        color: "#9a9490",
+                        color: "var(--text-faint)",
                         letterSpacing: "0.06em",
                         textTransform: "uppercase",
                       }}
@@ -362,7 +362,7 @@ export function OutfitDetail({
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: "0.55rem",
-                        color: "#9a9490",
+                        color: "var(--text-faint)",
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
                       }}
@@ -431,7 +431,7 @@ export function OutfitDetail({
                           style={{
                             fontFamily: "var(--font-mono)",
                             fontSize: "0.55rem",
-                            color: "#9a9490",
+                            color: "var(--text-faint)",
                             textTransform: "uppercase",
                             letterSpacing: "0.06em",
                             marginTop: "2px",
@@ -463,7 +463,7 @@ export function OutfitDetail({
                           style={{
                             fontFamily: "var(--font-mono)",
                             fontSize: "0.75rem",
-                            color: "#d4607a",
+                            color: "var(--secondary)",
                             flexShrink: 0,
                           }}
                         >
@@ -485,7 +485,7 @@ export function OutfitDetail({
                             height: "36px",
                             flexShrink: 0,
                             border: "1px solid rgba(0,0,0,0.10)",
-                            color: "#9a9490",
+                            color: "var(--text-faint)",
                             textDecoration: "none",
                           }}
                         >
@@ -534,9 +534,9 @@ export function OutfitDetail({
                   justifyContent: "center",
                   gap: "0.5rem",
                   minHeight: "48px",
-                  border: `1px solid ${saved ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.12)"}`,
+                  border: `1px solid ${saved ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.12)"}`,
                   background: saved ? "rgba(0,0,0,0.06)" : "transparent",
-                  color: saved ? "#ffffff" : "#9a9490",
+                  color: saved ? "var(--secondary)" : "var(--text-faint)",
                   fontFamily: "var(--font-mono)",
                   fontSize: "0.6rem",
                   fontWeight: 500,
@@ -550,7 +550,7 @@ export function OutfitDetail({
                 <Bookmark
                   size={14}
                   aria-hidden
-                  style={{ fill: saved ? "#ffffff" : "none", transition: "fill 0.2s" }}
+                  style={{ fill: saved ? "var(--secondary)" : "none", transition: "fill 0.2s" }}
                 />
                 {saved ? "Saved" : "Save look"}
               </motion.button>
@@ -639,7 +639,7 @@ function SwapButton({
           flexShrink: 0,
           border: "1px solid rgba(0,0,0,0.10)",
           background: open ? "rgba(212,96,122,0.08)" : "transparent",
-          color: open ? "#d4607a" : "#9a9490",
+          color: open ? "var(--secondary)" : "var(--text-faint)",
           cursor: "pointer",
         }}
       >
@@ -648,17 +648,35 @@ function SwapButton({
       {open && (
         <div style={{ flexBasis: "100%", display: "flex", gap: "0.5rem", paddingTop: "0.25rem" }}>
           {failed && (
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", color: "#9a9490" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.75rem",
+                color: "var(--text-faint)",
+              }}
+            >
               Couldn&apos;t load alternates right now.
             </span>
           )}
           {!failed && alts === null && (
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", color: "#9a9490" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.75rem",
+                color: "var(--text-faint)",
+              }}
+            >
               Finding pieces that keep the look…
             </span>
           )}
           {!failed && alts !== null && alts.length === 0 && (
-            <span style={{ fontFamily: "var(--font-body)", fontSize: "0.75rem", color: "#9a9490" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.75rem",
+                color: "var(--text-faint)",
+              }}
+            >
               No coherent alternates for this piece yet.
             </span>
           )}

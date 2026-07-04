@@ -286,7 +286,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           borderRadius: "16px",
         }}
       >
-        <RefreshCw size={24} aria-hidden style={{ color: "#9a9490" }} />
+        <RefreshCw size={24} aria-hidden style={{ color: "var(--text-faint)" }} />
         <div>
           <p
             style={{
@@ -301,7 +301,11 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           </p>
           <p
             role="alert"
-            style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.8125rem",
+              color: "var(--text-faint)",
+            }}
           >
             {error}
           </p>
@@ -315,7 +319,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
             gap: "0.375rem",
             padding: "0.5rem 1.25rem",
             background: "transparent",
-            border: "1px solid rgba(255,255,255,0.15)",
+            border: "1px solid rgba(0,0,0,0.15)",
             color: "#5c5650",
             fontFamily: "var(--font-mono)",
             fontSize: "0.6rem",
@@ -369,13 +373,13 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
             style={{
               position: "absolute",
               inset: "20px",
-              border: "1px solid rgba(255,255,255,0.15)",
+              border: "1px solid rgba(0,0,0,0.15)",
             }}
           />
           <SearchX
             size={20}
             aria-hidden
-            style={{ color: "#9a9490", position: "relative", zIndex: 1 }}
+            style={{ color: "var(--text-faint)", position: "relative", zIndex: 1 }}
           />
         </div>
         <div>
@@ -390,7 +394,13 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           >
             Nothing matches yet
           </p>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.8125rem",
+              color: "var(--text-faint)",
+            }}
+          >
             Try a different search or loosen your filters.
           </p>
         </div>
@@ -452,7 +462,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
             fontSize: "0.55rem",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             textAlign: "center",
             marginTop: "2.5rem",
           }}

@@ -21,7 +21,7 @@ export default function SavedPage() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
           }}
         >
           Saved

@@ -28,7 +28,7 @@ export default function Loading() {
           left: 0,
           right: 0,
           height: "2px",
-          background: "#d4607a",
+          background: "var(--secondary)",
           transformOrigin: "left",
         }}
       />
@@ -68,7 +68,7 @@ export default function Loading() {
             letterSpacing: "0.2em",
             textTransform: "uppercase",
             fontWeight: 600,
-            color: "#9a9490",
+            color: "var(--text-faint)",
             margin: 0,
           }}
         >

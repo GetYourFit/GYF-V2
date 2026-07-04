@@ -129,7 +129,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           style={{
             position: "absolute",
             left: "1rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             flexShrink: 0,
             pointerEvents: "none",
             zIndex: 1,
@@ -146,7 +146,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           style={{
             flex: 1,
             background: "#ffffff",
-            border: `1.5px solid ${focused ? "#d4607a" : "rgba(0,0,0,0.12)"}`,
+            border: `1.5px solid ${focused ? "var(--secondary)" : "rgba(0,0,0,0.12)"}`,
             outline: "none",
             borderRadius: "999px",
             padding: "0.75rem 2.5rem 0.75rem 3rem",
@@ -167,7 +167,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               right: "0.875rem",
               background: "none",
               border: "none",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               cursor: "pointer",
               padding: "0.25rem",
               display: "flex",
@@ -213,7 +213,11 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
       {/* Style chips row */}
       <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-        <SlidersHorizontal size={13} aria-hidden style={{ color: "#9a9490", flexShrink: 0 }} />
+        <SlidersHorizontal
+          size={13}
+          aria-hidden
+          style={{ color: "var(--text-faint)", flexShrink: 0 }}
+        />
         <div
           style={
             {
@@ -312,7 +316,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 border: "none",
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.6rem",
-                color: "#9a9490",
+                color: "var(--text-faint)",
                 letterSpacing: "0.06em",
                 textDecoration: "underline",
                 textUnderlineOffset: "3px",
@@ -339,7 +343,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               border: "none",
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               letterSpacing: "0.06em",
               textDecoration: "underline",
               textUnderlineOffset: "3px",

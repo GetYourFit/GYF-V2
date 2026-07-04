@@ -237,7 +237,7 @@ export function StylistFeed() {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
-              color: "#d4607a",
+              color: "var(--secondary)",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               marginBottom: "1rem",
@@ -261,7 +261,7 @@ export function StylistFeed() {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.875rem",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               marginBottom: "2rem",
             }}
           >
@@ -318,7 +318,7 @@ export function StylistFeed() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
           }}
         >
           Your stylist
@@ -382,7 +382,7 @@ export function StylistFeed() {
                 gap: "0.375rem",
                 background: "transparent",
                 border: "1px solid rgba(0,0,0,0.10)",
-                color: "#9a9490",
+                color: "var(--text-faint)",
                 padding: "0.375rem 0.75rem",
                 cursor: "pointer",
                 fontFamily: "var(--font-mono)",
@@ -421,7 +421,13 @@ export function StylistFeed() {
             >
               No complete looks for this just yet
             </p>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.875rem", color: "#9a9490" }}>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.875rem",
+                color: "var(--text-faint)",
+              }}
+            >
               Try a different occasion or clear your goal.
             </p>
           </motion.div>
@@ -505,7 +511,7 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: "0.55rem",
-          color: "#9a9490",
+          color: "var(--text-faint)",
           letterSpacing: "0.06em",
           textTransform: "uppercase",
         }}
@@ -518,7 +524,7 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "0.55rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             border: "1px solid rgba(0,0,0,0.10)",
             padding: "0.125rem 0.5rem",
             letterSpacing: "0.06em",
@@ -562,7 +568,7 @@ function UndoStrip({ index, delta, onUndo }: { index: number; delta: string; onU
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "0.6rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             letterSpacing: "0.06em",
             textTransform: "uppercase",
           }}

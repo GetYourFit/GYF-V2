@@ -29,7 +29,7 @@ export default function ContactPage() {
             fontWeight: 600,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
             marginBottom: "0.5rem",
           }}
         >
@@ -115,7 +115,7 @@ export default function ContactPage() {
                   fontWeight: 600,
                   letterSpacing: "0.07em",
                   textTransform: "uppercase",
-                  color: "#9a9490",
+                  color: "var(--text-faint)",
                   marginBottom: 2,
                 }}
               >

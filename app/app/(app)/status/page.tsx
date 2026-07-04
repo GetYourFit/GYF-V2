@@ -17,7 +17,7 @@ const STATE_STYLE: Record<string, { label: string; color: string; bg: string }> 
   beta: { label: "Beta", color: "#8a6d1a", bg: "rgba(138, 109, 26, 0.10)" },
   shadow: { label: "Shadow", color: "#5c5650", bg: "rgba(92, 86, 80, 0.10)" },
   degraded: { label: "Degraded", color: "#a04545", bg: "rgba(160, 69, 69, 0.10)" },
-  planned: { label: "Planned", color: "#9a9490", bg: "rgba(154, 148, 144, 0.12)" },
+  planned: { label: "Planned", color: "var(--text-faint)", bg: "rgba(154, 148, 144, 0.12)" },
 };
 
 const CAPABILITY_LABEL: Record<string, string> = {
@@ -63,7 +63,7 @@ export default function StatusPage() {
             fontWeight: 600,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
             marginBottom: "0.5rem",
           }}
         >
@@ -144,7 +144,7 @@ export default function StatusPage() {
             style={{
               marginTop: "1.5rem",
               fontSize: "0.7rem",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               letterSpacing: "0.02em",
             }}
           >

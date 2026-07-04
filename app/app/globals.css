@@ -3,81 +3,83 @@
 /* ─── Design tokens — GYF Warm Light (soothing, easy on eyes) ────────────── */
 @theme {
   /* Surfaces — warm cream palette */
-  --color-bg:               #faf8f5;
-  --color-surface:          #f4f1ec;
-  --color-surface-2:        #edeae4;
-  --color-surface-3:        #e5e1da;
-  --color-surface-high:     #dedad2;
-  --color-surface-highest:  #d4cfc6;
+  --color-bg: #faf8f5;
+  --color-surface: #f4f1ec;
+  --color-surface-2: #edeae4;
+  --color-surface-3: #e5e1da;
+  --color-surface-high: #dedad2;
+  --color-surface-highest: #d4cfc6;
 
   /* Borders */
-  --color-border:           rgba(0,0,0,0.10);
-  --color-border-mid:       rgba(0,0,0,0.20);
-  --color-border-hi:        #1c1a17;
-  --color-rule:             rgba(0,0,0,0.07);
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-border-mid: rgba(0, 0, 0, 0.2);
+  --color-border-hi: #1c1a17;
+  --color-rule: rgba(0, 0, 0, 0.07);
 
   /* Text — warm dark for readability */
-  --color-text:             #1c1a17;
-  --color-text-mid:         #5c5650;
-  --color-text-faint:       #9a9490;
+  --color-text: #1c1a17;
+  --color-text-mid: #5c5650;
+  --color-text-faint: #767069; /* WCAG AA: 4.6:1 on cream (was #9a9490 @ 2.8:1) */
 
   /* Brand */
-  --color-primary:          #1c1a17;
-  --color-secondary:        #d4607a;
-  --color-accent:           #1c1a17;
-  --color-accent-press:     #2e2b26;
+  --color-primary: #1c1a17;
+  --color-secondary: #b04760; /* WCAG AA: ≥4.5:1 as text on cream and under cream text */
+  --color-accent: #1c1a17;
+  --color-accent-press: #2e2b26;
 
   /* Functional */
-  --color-success:          #0d7a55;
-  --color-warning:          #c2560e;
-  --color-error:            #c0392b;
+  --color-success: #0d7a55;
+  --color-warning: #c2560e;
+  --color-error: #c0392b;
 
   /* Fonts */
   --font-display: var(--font-display), "Plus Jakarta Sans", sans-serif;
-  --font-body:    var(--font-body),    "Plus Jakarta Sans", sans-serif;
-  --font-mono:    var(--font-mono),    "JetBrains Mono",   monospace;
+  --font-body: var(--font-body), "Plus Jakarta Sans", sans-serif;
+  --font-mono: var(--font-mono), "JetBrains Mono", monospace;
 
   /* Easing */
-  --ease-lux:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-lux: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Shadows */
-  --shadow-card:    0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.06);
-  --shadow-overlay: 0 -4px 32px rgba(0,0,0,0.12);
-  --shadow-glass:   inset 0 0 0 1px rgba(0,0,0,0.06);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --shadow-overlay: 0 -4px 32px rgba(0, 0, 0, 0.12);
+  --shadow-glass: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
 :root {
   color-scheme: light;
-  --bg:              #faf8f5;
-  --surface:         #f4f1ec;
-  --surface-2:       #edeae4;
-  --surface-3:       #e5e1da;
-  --surface-high:    #dedad2;
+  --bg: #faf8f5;
+  --surface: #f4f1ec;
+  --surface-2: #edeae4;
+  --surface-3: #e5e1da;
+  --surface-high: #dedad2;
   --surface-highest: #d4cfc6;
-  --border:          rgba(0,0,0,0.10);
-  --border-mid:      rgba(0,0,0,0.20);
-  --border-hi:       #1c1a17;
-  --rule:            rgba(0,0,0,0.07);
-  --text:            #1c1a17;
-  --text-mid:        #5c5650;
-  --text-faint:      #9a9490;
-  --primary:         #1c1a17;
-  --secondary:       #d4607a;
-  --accent:          #1c1a17;
-  --accent-press:    #2e2b26;
-  --success:         #0d7a55;
-  --warning:         #c2560e;
-  --error:           #c0392b;
-  --lux:             cubic-bezier(0.22, 1, 0.36, 1);
-  --spring:          cubic-bezier(0.34, 1.56, 0.64, 1);
-  --shimmer-base:    #ede9e3;
-  --shimmer-sweep:   #f4f1eb;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-mid: rgba(0, 0, 0, 0.2);
+  --border-hi: #1c1a17;
+  --rule: rgba(0, 0, 0, 0.07);
+  --text: #1c1a17;
+  --text-mid: #5c5650;
+  --text-faint: #767069;
+  --primary: #1c1a17;
+  --secondary: #b04760;
+  --accent: #1c1a17;
+  --accent-press: #2e2b26;
+  --success: #0d7a55;
+  --warning: #c2560e;
+  --error: #c0392b;
+  --lux: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --shimmer-base: #ede9e3;
+  --shimmer-sweep: #f4f1eb;
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
 @layer base {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -93,9 +95,17 @@
     padding-top: env(safe-area-inset-top);
   }
 
-  ::-webkit-scrollbar { width: 3px; height: 3px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 0; }
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 0;
+  }
 
   body {
     background: var(--bg);
@@ -179,18 +189,18 @@
 /* ─── Glassmorphism card ─────────────────────────────────────────────────── */
 @layer components {
   .glass-card {
-    background: rgba(255, 255, 255, 0.70);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   }
   .glass-card-active {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(0, 0, 0, 0.12);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   }
 }
 
@@ -204,10 +214,16 @@
 
 /* ─── Press scale ────────────────────────────────────────────────────────── */
 @layer base {
-  .press-scale { transition: transform 0.12s var(--lux); }
-  .press-scale:active { transform: scale(0.96); }
+  .press-scale {
+    transition: transform 0.12s var(--lux);
+  }
+  .press-scale:active {
+    transform: scale(0.96);
+  }
   @media (prefers-reduced-motion: reduce) {
-    .press-scale:active { transform: none; }
+    .press-scale:active {
+      transform: none;
+    }
   }
 }
 
@@ -226,8 +242,12 @@
     outline: none;
     transition: border-color 0.2s var(--lux);
   }
-  .input-industrial::placeholder { color: var(--text-faint); }
-  .input-industrial:focus { border-bottom-color: var(--primary); }
+  .input-industrial::placeholder {
+    color: var(--text-faint);
+  }
+  .input-industrial:focus {
+    border-bottom-color: var(--primary);
+  }
 }
 
 /* ─── Occasion chip ──────────────────────────────────────────────────────── */
@@ -250,7 +270,10 @@
     white-space: nowrap;
     min-height: 44px;
   }
-  .chip:hover { border-color: var(--text-mid); color: var(--text); }
+  .chip:hover {
+    border-color: var(--text-mid);
+    color: var(--text);
+  }
   .chip-active {
     background: var(--primary);
     border-color: var(--primary);
@@ -261,12 +284,20 @@
 /* ─── Skeleton shimmer ───────────────────────────────────────────────────── */
 @layer components {
   .skeleton {
-    background: linear-gradient(90deg, var(--shimmer-base) 0%, var(--shimmer-sweep) 50%, var(--shimmer-base) 100%);
+    background: linear-gradient(
+      90deg,
+      var(--shimmer-base) 0%,
+      var(--shimmer-sweep) 50%,
+      var(--shimmer-base) 100%
+    );
     background-size: 200% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
   }
   @media (prefers-reduced-motion: reduce) {
-    .skeleton { animation: none; background: var(--shimmer-base); }
+    .skeleton {
+      animation: none;
+      background: var(--shimmer-base);
+    }
   }
 }
 
@@ -282,26 +313,52 @@
 
 /* ─── Keyframes ──────────────────────────────────────────────────────────── */
 @keyframes shimmer {
-  from { background-position: -200% center; }
-  to   { background-position:  200% center; }
+  from {
+    background-position: -200% center;
+  }
+  to {
+    background-position: 200% center;
+  }
 }
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50%       { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 @keyframes sweep-progress {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(0.85); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(0.85);
+  }
 }
 @keyframes logo-reveal {
-  from { clip-path: inset(0 100% 0 0); }
-  to   { clip-path: inset(0 0% 0 0); }
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0% 0 0);
+  }
 }
 
 /* ─── Utilities ──────────────────────────────────────────────────────────── */
 @layer utilities {
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-  .safe-top    { padding-top:    env(safe-area-inset-top); }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
 }

@@ -157,7 +157,9 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
         >
           {outfit.occasion ?? "Outfit"}
         </p>
-        <p style={{ ...MONO, color: "#9a9490", marginTop: "0.25rem", fontSize: "0.5rem" }}>
+        <p
+          style={{ ...MONO, color: "var(--text-faint)", marginTop: "0.25rem", fontSize: "0.5rem" }}
+        >
           {outfit.items?.length ?? 0} pieces
         </p>
       </div>

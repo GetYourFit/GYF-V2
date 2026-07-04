@@ -103,7 +103,7 @@ export function StylistControls({
           transition: "border-color 0.2s, box-shadow 0.2s",
         }}
         onFocus={(e) => {
-          (e.currentTarget as HTMLFormElement).style.borderColor = "#d4607a";
+          (e.currentTarget as HTMLFormElement).style.borderColor = "var(--secondary)";
           (e.currentTarget as HTMLFormElement).style.boxShadow = "0 0 0 3px rgba(212,96,122,0.12)";
         }}
         onBlur={(e) => {
@@ -150,7 +150,7 @@ export function StylistControls({
             background: goal.trim() && !busy ? "#1c1a17" : "rgba(0,0,0,0.08)",
             border: "none",
             borderRadius: "999px",
-            color: goal.trim() && !busy ? "#faf8f5" : "#9a9490",
+            color: goal.trim() && !busy ? "#faf8f5" : "var(--text-faint)",
             cursor: busy || !goal.trim() ? "not-allowed" : "pointer",
             opacity: busy || !goal.trim() ? 0.4 : 1,
             transition: "all 0.2s",

@@ -109,7 +109,7 @@ function Tile({ item }: { item: OutfitItem }) {
         style={{
           fontFamily: "var(--font-body)",
           fontSize: "0.6875rem",
-          color: "#9a9490",
+          color: "var(--text-faint)",
           overflow: "hidden",
           display: "-webkit-box",
           WebkitLineClamp: 2,
@@ -150,10 +150,12 @@ export function WearItWithRow({ itemId }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <span style={{ display: "block", width: "16px", height: "1px", background: "#d4607a" }} />
-        <span style={{ ...MONO, color: "#d4607a" }}>Complete the look</span>
+        <span
+          style={{ display: "block", width: "16px", height: "1px", background: "var(--secondary)" }}
+        />
+        <span style={{ ...MONO, color: "var(--secondary)" }}>Complete the look</span>
         {look && (
-          <span style={{ ...MONO, color: "#9a9490", marginLeft: "auto" }}>
+          <span style={{ ...MONO, color: "var(--text-faint)", marginLeft: "auto" }}>
             {Math.round(look.confidence * 100)}% match
           </span>
         )}

@@ -67,7 +67,7 @@ function MonoLabel({ children }: { children: React.ReactNode }) {
         fontWeight: 500,
         letterSpacing: "0.1em",
         textTransform: "uppercase" as const,
-        color: "#9a9490",
+        color: "var(--text-faint)",
         display: "block",
         marginBottom: "0.5rem",
       }}
@@ -107,7 +107,7 @@ function DarkSelect({
         padding: "0.625rem 0",
         fontFamily: "var(--font-body)",
         fontSize: "0.9375rem",
-        color: value ? "#1c1a17" : "#9a9490",
+        color: value ? "#1c1a17" : "var(--text-faint)",
         outline: "none",
         appearance: "none",
         WebkitAppearance: "none",
@@ -116,7 +116,7 @@ function DarkSelect({
         minHeight: "44px",
       }}
     >
-      <option value="" style={{ background: "#faf8f5", color: "#9a9490" }}>
+      <option value="" style={{ background: "#faf8f5", color: "var(--text-faint)" }}>
         {placeholder}
       </option>
       {options.map((o) => (
@@ -205,7 +205,7 @@ function FieldWrap({
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase" as const,
-            color: "#9a9490",
+            color: "var(--text-faint)",
             display: "block",
             marginBottom: "0.5rem",
           }}
@@ -370,7 +370,7 @@ export function OnboardingWizard() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
           }}
         >
           Step {String(step + 1).padStart(2, "0")} / {String(STEPS.length).padStart(2, "0")}
@@ -410,7 +410,7 @@ export function OnboardingWizard() {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: "#d4607a",
+                      background: "var(--secondary)",
                       display: "block",
                     }}
                   />
@@ -514,7 +514,7 @@ export function OnboardingWizard() {
                 background: "transparent",
                 border: "1px solid rgba(0,0,0,0.10)",
                 borderRadius: "999px",
-                color: "#9a9490",
+                color: "var(--text-faint)",
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.6rem",
                 fontWeight: 500,
@@ -543,7 +543,7 @@ export function OnboardingWizard() {
               minHeight: "44px",
               padding: "0 1.5rem",
               background: saving ? "rgba(0,0,0,0.10)" : "#1c1a17",
-              color: saving ? "#9a9490" : "#faf8f5",
+              color: saving ? "var(--text-faint)" : "#faf8f5",
               border: "none",
               borderRadius: "999px",
               fontFamily: "var(--font-mono)",
@@ -619,7 +619,7 @@ function EstimatedBadge() {
         fontSize: "0.5rem",
         letterSpacing: "0.08em",
         textTransform: "uppercase" as const,
-        color: "#d4607a",
+        color: "var(--secondary)",
         flexShrink: 0,
       }}
     >
@@ -649,7 +649,7 @@ function StepHeader({ title, hint }: { title: string; hint?: string }) {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.8125rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             marginTop: "0.375rem",
           }}
         >
@@ -744,9 +744,9 @@ function StepStyle({
                 style={{
                   minHeight: "36px",
                   padding: "0 0.875rem",
-                  border: `1px solid ${active ? "#d4607a" : "rgba(0,0,0,0.08)"}`,
+                  border: `1px solid ${active ? "var(--secondary)" : "rgba(0,0,0,0.08)"}`,
                   background: active ? "rgba(240,189,143,0.08)" : "transparent",
-                  color: active ? "#d4607a" : "#9a9490",
+                  color: active ? "var(--secondary)" : "var(--text-faint)",
                   fontFamily: "var(--font-mono)",
                   fontSize: "0.6rem",
                   fontWeight: 500,
@@ -852,7 +852,7 @@ function StepPrivacy({
                 width: "16px",
                 height: "16px",
                 flexShrink: 0,
-                accentColor: "#d4607a",
+                accentColor: "var(--secondary)",
                 cursor: c.required ? "not-allowed" : "pointer",
               }}
             />
@@ -875,7 +875,7 @@ function StepPrivacy({
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: "0.55rem",
-                      color: "#9a9490",
+                      color: "var(--text-faint)",
                       letterSpacing: "0.06em",
                       textTransform: "uppercase",
                       marginLeft: "0.5rem",
@@ -889,7 +889,7 @@ function StepPrivacy({
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: "0.75rem",
-                  color: "#9a9490",
+                  color: "var(--text-faint)",
                   display: "block",
                   marginTop: "0.25rem",
                 }}
@@ -931,7 +931,7 @@ function DeleteAccount() {
         padding: "0 0.5rem",
         background: "transparent",
         border: "none",
-        color: busy ? "#444748" : "#9a9490",
+        color: busy ? "#444748" : "var(--text-faint)",
         fontFamily: "var(--font-mono)",
         fontSize: "0.55rem",
         letterSpacing: "0.06em",
@@ -943,7 +943,7 @@ function DeleteAccount() {
         if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#c0392b";
       }}
       onMouseLeave={(e) => {
-        if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "#9a9490";
+        if (!busy) (e.currentTarget as HTMLButtonElement).style.color = "var(--text-faint)";
       }}
     >
       Delete account

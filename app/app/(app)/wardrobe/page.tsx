@@ -24,7 +24,7 @@ export default function WardrobePage() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
           }}
         >
           Wardrobe

@@ -37,7 +37,7 @@ export default function AppError({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "0.6rem",
-            color: "#d4607a",
+            color: "var(--secondary)",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
             marginBottom: "1rem",
@@ -61,7 +61,7 @@ export default function AppError({
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.875rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             marginBottom: "2rem",
           }}
         >

@@ -19,7 +19,7 @@ const MONO: React.CSSProperties = {
 function SectionHeader({ index, title }: { index: string; title: string }) {
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem", marginBottom: "1rem" }}>
-      <span style={{ ...MONO, fontSize: "0.5rem", color: "#d4607a" }}>{index}</span>
+      <span style={{ ...MONO, fontSize: "0.5rem", color: "var(--secondary)" }}>{index}</span>
       <span style={{ ...MONO, color: "#1c1a17", fontSize: "0.65rem" }}>{title}</span>
       <span style={{ flex: 1, height: "1px", background: "rgba(0,0,0,0.08)" }} />
     </div>
@@ -105,7 +105,7 @@ export function CollectionsClient() {
         transition={{ duration: 0.38, ease: EASE }}
         style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}
       >
-        <span style={{ ...MONO, color: "#d4607a" }}>Library</span>
+        <span style={{ ...MONO, color: "var(--secondary)" }}>Library</span>
         <h1
           style={{
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
