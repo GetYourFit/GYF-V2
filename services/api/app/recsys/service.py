@@ -37,7 +37,9 @@ logger = logging.getLogger("gyf")
 
 # How many candidates to pull per slot. Generous enough for real variety and MMR
 # diversity, bounded so the assembly cartesian product stays tractable.
-_CANDIDATES_PER_SLOT = 40
+# Pool depth per slot. Taste-ordered pools (candidates.py) make this the user's
+# nearest slice, so depth buys the composer diversity headroom (MMR/DPP prune it).
+_CANDIDATES_PER_SLOT = 80
 
 # How many recent engagements feed the taste vector. Recency decay handles older
 # ones; this just bounds the read.

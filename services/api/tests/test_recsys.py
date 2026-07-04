@@ -950,3 +950,42 @@ def test_cohesion_phrase_and_pattern_phrase_are_earned():
     cohesive = tuple(_with_embedding(it, (1.0, 0.0)) for it in (top, bottom, shoes))
     text = _explain(cohesive, conditioning.resolve(Profile(), "casual", None), 0.8, 0.9, 0.0)
     assert "one visual language" in text
+
+
+def test_candidate_pool_ordered_by_taste_when_signal_present():
+    """Pool selection is the ceiling: with a taste vector the pool must be the
+    user's nearest slice, not just the newest ingest (cold start keeps recency)."""
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    class _FakePool:
+        def __init__(self):
+            self.calls = []
+
+        def connection(self):
+            pool = self
+
+            class _Conn:
+                def execute(self, sql, params=None):
+                    pool.calls.append((sql, params))
+                    return iter([])
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    return False
+
+            return _Conn()
+
+    pool = _FakePool()
+    repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
+
+    repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=[0.1, 0.2])
+    sql, _ = pool.calls[-1]
+    assert "ORDER BY affinity DESC NULLS LAST" in sql
+
+    pool.calls.clear()
+    repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=None)
+    sql, _ = pool.calls[-1]
+    assert "ORDER BY i.created_at DESC" in sql
+    assert "affinity DESC" not in sql

@@ -144,10 +144,18 @@ WHERE i.category = ANY(%s)
   AND (%s::text[] IS NULL
        OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
        OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
-ORDER BY i.created_at DESC
+ORDER BY {order}
 LIMIT %s
 """
 )
+
+# Pool selection is the recommendation ceiling: the composer can only rank what
+# enters the pool. With a taste signal, the pool IS the user's nearest slice
+# (exact scan — the catalog is small enough that no ANN index/beam is involved,
+# so no ef_search/starvation concerns); items without an embedding sort last.
+# Cold start falls back to recency.
+_ORDER_BY_TASTE = "affinity DESC NULLS LAST, i.created_at DESC"
+_ORDER_BY_RECENCY = "i.created_at DESC"
 
 # Wardrobe anchors: the user owns these items, so no region/price predicates.
 _BY_IDS = _SELECT + "\nWHERE i.id = ANY(%s)\n"
@@ -179,7 +187,8 @@ class PostgresCandidateRepository:
         genders: frozenset[str] | None = None,
     ) -> dict[str, list[Candidate]]:
         affinity_expr = _AFFINITY_EXPR if taste_vector else "NULL"
-        sql = _CANDIDATES.format(affinity=affinity_expr)
+        order = _ORDER_BY_TASTE if taste_vector else _ORDER_BY_RECENCY
+        sql = _CANDIDATES.format(affinity=affinity_expr, order=order)
         # The affinity param (if any) is bound first — it appears before WHERE.
         prefix: tuple = (_pgvector(taste_vector),) if taste_vector else ()
         gender_list = sorted(genders) if genders else None
