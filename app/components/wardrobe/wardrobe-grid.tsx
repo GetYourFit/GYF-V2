@@ -96,7 +96,10 @@ export function WardrobeGrid() {
     [items],
   );
 
-  const visible = filter === ALL ? items : items.filter((i) => i.category === filter);
+  // A filter whose category vanished (last item removed) falls back to ALL —
+  // otherwise the user is stranded on an empty grid with no chip to clear.
+  const activeFilter = filter !== ALL && !categories.includes(filter) ? ALL : filter;
+  const visible = activeFilter === ALL ? items : items.filter((i) => i.category === activeFilter);
 
   if (status === "loading") return <Skeleton />;
   if (status === "error") {
@@ -143,7 +146,7 @@ export function WardrobeGrid() {
           aria-label="Filter by category"
         >
           {[ALL, ...categories].map((value) => {
-            const active = filter === value;
+            const active = activeFilter === value;
             const count =
               value === ALL ? items.length : items.filter((i) => i.category === value).length;
             return (
@@ -213,7 +216,7 @@ export function WardrobeGrid() {
           </div>
           <div className="text-center">
             <p className="t-title text-text">
-              {filter === ALL ? "Your wardrobe is empty" : `No ${filter} yet`}
+              {activeFilter === ALL ? "Your wardrobe is empty" : `No ${activeFilter} yet`}
             </p>
             <p className="t-caption mt-1 max-w-xs text-text-faint">
               Add garments you own — GYF styles around your real closet.
@@ -234,7 +237,7 @@ export function WardrobeGrid() {
               cursor: "pointer",
             }}
           >
-            {filter === ALL ? "Add your first garment" : "Add a garment"}
+            {activeFilter === ALL ? "Add your first garment" : "Add a garment"}
           </button>
         </motion.div>
       ) : (

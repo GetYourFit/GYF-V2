@@ -90,17 +90,20 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
 
   const query = [filters.q || "fashion", filters.occasion, filters.style].filter(Boolean).join(" ");
 
-  // The user's styling gender scopes the grid to their slice + unisex; loaded
-  // once, and its absence (signed-out edge, no profile) means no filter.
-  const [gender, setGender] = useState<string | null>(null);
+  // The user's styling gender scopes the grid to their slice + unisex.
+  // undefined = still resolving (the load effect waits, so the grid never
+  // flashes unfiltered results then refetches); null = resolved, no filter.
+  const [gender, setGender] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     let active = true;
     browserApi()
       .getProfile()
       .then((p) => {
-        if (active && p.gender && p.gender !== "unknown") setGender(p.gender);
+        if (active) setGender(p.gender && p.gender !== "unknown" ? p.gender : null);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) setGender(null);
+      });
     return () => {
       active = false;
     };
@@ -150,9 +153,9 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
     // scroll position instead of refetching from page 0. Runs in an effect
     // (not initial state) so server and client render identically.
     if (firstLoad.current) {
-      firstLoad.current = false;
       const cached = readCache<GridCache>(cacheKey);
       if (cached && cached.items.length > 0) {
+        firstLoad.current = false;
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setItems(cached.items);
         setPage(cached.page);
@@ -161,7 +164,12 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
         requestAnimationFrame(() => window.scrollTo(0, cached.scrollY));
         return;
       }
+      // No cache: wait for the gender to resolve so the first fetch is the
+      // right one (no unfiltered flash + immediate refetch).
+      if (gender === undefined) return;
+      firstLoad.current = false;
     }
+    if (gender === undefined) return;
     void loadPage(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.q, filters.occasion, filters.style, filters.maxPrice, filters.sort, gender]);
@@ -177,7 +185,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           items,
           page,
           hasMore,
-          gender,
+          gender: gender ?? null,
           scrollY: window.scrollY,
         } satisfies GridCache),
       );

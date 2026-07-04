@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Heart, Share2, Bookmark, Shirt } from "lucide-react";
 import { useState } from "react";
 import type { Post } from "@gyf/types";
+import { browserApi } from "@/lib/api-client";
 
 const LUX = [0.16, 1, 0.3, 1] as const;
 
@@ -39,12 +40,32 @@ export function PostCard({
   const author = authorOf(post.user_id);
   const [reacted, setReacted] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savePending, setSavePending] = useState(false);
   const [count, setCount] = useState(post.reaction_count);
   const [pending, setPending] = useState(false);
   const [burst, setBurst] = useState(0);
   const [captionExpanded, setCaptionExpanded] = useState(false);
 
   const heroImage = post.items.find((i) => i.image_url)?.image_url ?? null;
+
+  async function toggleSave() {
+    // One-way save (no unsave endpoint for looks yet); idempotent server-side.
+    if (saved || savePending || post.items.length === 0) return;
+    setSavePending(true);
+    setSaved(true);
+    try {
+      await browserApi().saveOutfit({
+        outfit_key: `post:${post.id}`,
+        item_ids: post.items.map((i) => i.item_id),
+        occasion: post.occasion ?? undefined,
+        explanation: post.caption ?? undefined,
+      });
+    } catch {
+      setSaved(false);
+    } finally {
+      setSavePending(false);
+    }
+  }
 
   async function react() {
     if (pending || reacted) return;
@@ -326,8 +347,8 @@ export function PostCard({
 
         <motion.button
           type="button"
-          aria-label="Save"
-          onClick={() => setSaved((v) => !v)}
+          aria-label={saved ? "Saved to your collections" : "Save this look"}
+          onClick={() => void toggleSave()}
           whileTap={reduceMotion ? undefined : { scale: 0.88 }}
           style={{
             display: "flex",
