@@ -234,6 +234,13 @@ class PostgresVectorSearchRepository:
                     "SELECT set_config('hnsw.ef_search', %s, true)",
                     (str(min(1000, max(40, depth))),),
                 )
+                # Post-filter starvation: WHERE clauses (gender/region/price) apply
+                # AFTER the ANN scan, so a selective filter can kill every candidate
+                # in the beam — e.g. "dress" + gender=men returned an empty first
+                # page while thousands of men's items matched. Iterative scan
+                # (pgvector >= 0.8) keeps walking the graph until the LIMIT is
+                # satisfied (bounded by hnsw.max_scan_tuples, default 20k).
+                conn.execute("SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true)")
             return [
                 SearchResult(
                     item_id=str(r[0]),

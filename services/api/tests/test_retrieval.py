@@ -25,7 +25,7 @@ class FakePool:
         pool = self
 
         class _Conn:
-            def execute(self, sql, params):
+            def execute(self, sql, params=None):
                 pool.calls.append((sql, params))
                 return iter(pool.rows)
 
@@ -96,7 +96,7 @@ class _FacetsPool:
         pool = self
 
         class _Conn:
-            def execute(self, sql, params):
+            def execute(self, sql, params=None):
                 pool.calls.append((sql, params))
 
                 class _Cur:
@@ -306,6 +306,8 @@ def test_ann_beam_scales_with_page_depth():
     beam_sql, beam_params = pool.calls[0]
     assert "hnsw.ef_search" in beam_sql
     assert beam_params == ("120",)
+    # selective WHERE filters starve a bounded beam — iterative scan must be on
+    assert any("hnsw.iterative_scan" in c[0] for c in pool.calls[:-1])
     # price sorts never touch the ANN scan; no beam call is made
     pool.calls.clear()
     repo.search_by_vector([0.1, 0.2], k=24, region=None, sort="price_asc")
