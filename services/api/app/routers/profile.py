@@ -22,7 +22,12 @@ from ..profile.account import AccountRepository
 from ..profile.models import ConsentInput, Profile, ProfileInput, profile_from_manual
 from ..profile.photo import BodyAdapter, SkinToneAdapter, profile_from_photo
 from ..profile.repository import ProfileRepository
-from ..profile.summary import ProfileSummary, SummaryRepository, summarize
+from ..profile.summary import (
+    ProfileSummary,
+    SummaryRepository,
+    fallback_display_name,
+    summarize,
+)
 from ..ratelimit import rate_limit
 
 router = APIRouter(tags=["profile"])
@@ -55,14 +60,21 @@ def upsert_profile(
     payload: ProfileInput,
     principal: Principal = Depends(require_active_principal),
     repo: ProfileRepository = Depends(get_profile_repo),
+    account_repo: AccountRepository = Depends(get_account_repo),
 ) -> Profile:
     """Manual onboarding / edit: validate, stamp confidences, persist, return it.
 
     Idempotent upsert keyed by the authenticated user — the same call updates an
     existing profile, so the always-editable-preferences requirement is satisfied.
+
+    ``display_name`` is identity, not styling: it is routed to the ``users`` row
+    (surviving profile erasure) and only touched when the client actually sent
+    the field — an omitted key never clears an existing name.
     """
     profile = profile_from_manual(payload)
     repo.upsert(principal.user_id, profile)
+    if "display_name" in payload.model_fields_set:
+        account_repo.set_display_name(principal.user_id, payload.display_name)
     return profile
 
 
@@ -189,13 +201,21 @@ def delete_account(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/profile/summary", summary="Profile stats & badges")
+@router.get("/profile/summary", summary="Profile stats, badges & identity")
 def profile_summary(
     principal: Principal = Depends(require_active_principal),
     repo: SummaryRepository = Depends(get_summary_repo),
+    account_repo: AccountRepository = Depends(get_account_repo),
 ) -> ProfileSummary:
-    """Stats (outfits made, items saved, wardrobe size, posts, reactions) + badges."""
-    return summarize(repo, principal.user_id)
+    """Stats (outfits made, items saved, wardrobe size, posts, reactions) + badges,
+    plus identity: the user-set display name (falling back to the email local-part),
+    email, and member-since date — all real account data, never invented."""
+    summary = summarize(repo, principal.user_id)
+    name, created_at = account_repo.get_identity(principal.user_id)
+    summary.display_name = name or fallback_display_name(principal.email)
+    summary.email = principal.email
+    summary.member_since = created_at.date().isoformat() if hasattr(created_at, "date") else None
+    return summary
 
 
 # --- Photo helpers (module-private) ----------------------------------------

@@ -9,6 +9,7 @@ so it is trivially testable and the thresholds live in one place. Behind a
 
 from __future__ import annotations
 
+import re
 from typing import Protocol
 
 from pydantic import BaseModel
@@ -33,9 +34,27 @@ class SummaryStats(BaseModel):
 
 
 class ProfileSummary(SummaryStats):
-    """Stats plus the badges they unlock."""
+    """Stats plus the badges they unlock, and who the profile belongs to."""
 
     badges: list[str] = []
+    # Identity (real data only): the user-set name — or a fallback derived from the
+    # email local-part — plus the account's email and join date. Never invented.
+    display_name: str | None = None
+    email: str | None = None
+    member_since: str | None = None  # ISO date (users.created_at)
+
+
+def fallback_display_name(email: str | None) -> str | None:
+    """A presentable name from the email local-part (``jane.doe`` -> ``Jane Doe``).
+
+    Honest fallback until the user sets a display name — derived from their own
+    account, never invented.
+    """
+    if not email or "@" not in email:
+        return None
+    local = email.split("@", 1)[0]
+    words = [w for w in re.split(r"[._\-+]+", local) if w]
+    return " ".join(w[:1].upper() + w[1:] for w in words) or None
 
 
 # Earned-badge thresholds (name -> predicate). Kept declarative so the rule set is
@@ -104,5 +123,6 @@ __all__ = [
     "SummaryRepository",
     "SummaryStats",
     "badges_for",
+    "fallback_display_name",
     "summarize",
 ]

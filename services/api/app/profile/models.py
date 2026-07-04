@@ -107,6 +107,18 @@ class ProfileInput(BaseModel):
     style_intent: list[str] = Field(default_factory=list)
     budget_range: BudgetRange | None = None
     occasion: str | None = None
+    # Identity, not styling: stored on ``users`` (survives profile erasure), so it
+    # never enters the Profile model or field_confidence — the router routes it to
+    # the account repository. Whitespace-only clears; >60 chars is a 422.
+    display_name: str | None = Field(default=None, max_length=60)
+
+    @field_validator("display_name", mode="before")
+    @classmethod
+    def _trim_display_name(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = str(v).strip()
+        return v or None
 
     @field_validator("skin_tone")
     @classmethod

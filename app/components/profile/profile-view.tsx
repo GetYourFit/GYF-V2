@@ -115,13 +115,33 @@ export function ProfileView() {
   );
 }
 
+/** A value is showable only when the user actually set it — never "unknown". */
+function isSet(value: string | null | undefined): value is string {
+  return Boolean(value) && value !== "unknown";
+}
+
+function memberSince(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const date = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
 function UserHero({ profile, summary }: { profile: Profile | null; summary: ProfileSummary }) {
-  const displayName = profile
-    ? titleCase(profile.skin_tone ? "My Style" : "Style Explorer")
-    : "Style Explorer";
-  const styleTag = profile?.style_intent?.length
-    ? profile.style_intent.map(titleCase).join(" · ")
-    : "Style Explorer";
+  const displayName = summary.display_name || "Style Explorer";
+  const since = memberSince(summary.member_since);
+
+  // Styling identity, straight from the user's own profile — only fields they set.
+  const identityChips = [
+    profile?.gender,
+    profile?.body_type,
+    profile?.skin_tone,
+    profile?.undertone ? `${profile.undertone} undertone` : null,
+    profile?.occasion,
+  ]
+    .filter(isSet)
+    .map(titleCase);
+  const intentChips = (profile?.style_intent ?? []).filter(isSet).map(titleCase);
 
   const stats = [
     { label: "Outfits", value: summary.outfits_made },
@@ -164,7 +184,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
             color: "#5c5650",
           }}
         >
-          G
+          {displayName.charAt(0).toUpperCase()}
         </span>
       </div>
 
@@ -182,22 +202,73 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
         {displayName}
       </p>
 
-      {/* Style tag */}
-      <span
-        style={{
-          background: "rgba(212,96,122,0.10)",
-          color: "#d4607a",
-          borderRadius: "999px",
-          padding: "0.25rem 0.875rem",
-          fontFamily: "var(--font-body)",
-          fontSize: "0.7rem",
-          fontWeight: 600,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-        }}
-      >
-        {styleTag}
-      </span>
+      {/* Member since + email — real account facts, shown only when known */}
+      {(since || summary.email) && (
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#9a9490",
+            margin: 0,
+            textAlign: "center",
+          }}
+        >
+          {[since ? `Member since ${since}` : null, summary.email].filter(Boolean).join("  ·  ")}
+        </p>
+      )}
+
+      {/* Styling identity — only what the user actually set, never "unknown" */}
+      {(identityChips.length > 0 || intentChips.length > 0) && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "0.5rem",
+            maxWidth: 360,
+          }}
+        >
+          {intentChips.map((chip) => (
+            <span
+              key={`intent-${chip}`}
+              style={{
+                background: "rgba(212,96,122,0.10)",
+                color: "#d4607a",
+                borderRadius: "999px",
+                padding: "0.25rem 0.875rem",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              {chip}
+            </span>
+          ))}
+          {identityChips.map((chip) => (
+            <span
+              key={`identity-${chip}`}
+              style={{
+                border: "1px solid rgba(0,0,0,0.12)",
+                color: "#5c5650",
+                borderRadius: "999px",
+                padding: "0.25rem 0.875rem",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.7rem",
+                fontWeight: 500,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}
+            >
+              {chip}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Stats row */}
       <div style={{ display: "flex", alignItems: "center", gap: 0, width: "100%", maxWidth: 320 }}>
@@ -240,7 +311,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "0.7rem",
-                color: "#9a9490",
+                color: "var(--text-faint)",
                 textTransform: "uppercase",
                 letterSpacing: "0.04em",
               }}
@@ -305,7 +376,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "#9a9490",
+          color: "var(--text-faint)",
         }}
       >
         {label}
@@ -376,7 +447,7 @@ function Badges({ badges }: { badges: string[] }) {
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: "#9a9490",
+          color: "var(--text-faint)",
         }}
       >
         Badges earned
@@ -436,7 +507,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.8125rem",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               maxWidth: "280px",
               lineHeight: 1.55,
             }}
@@ -453,7 +524,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
             justifyContent: "center",
             minHeight: "44px",
             padding: "0 2rem",
-            background: "#d4607a",
+            background: "var(--secondary)",
             color: "#ffffff",
             fontFamily: "var(--font-body)",
             fontSize: "0.875rem",
@@ -469,11 +540,13 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
   }
 
   const budget = profile.budget_range;
+  // "unknown" is an explicit non-answer — show the honest em-dash, not "Unknown".
+  const shown = (v: string | null | undefined) => (isSet(v) ? titleCase(v) : "—");
   const rows: Array<[string, string]> = [
-    ["Skin tone", titleCase(profile.skin_tone)],
-    ["Undertone", titleCase(profile.undertone)],
-    ["Body type", titleCase(profile.body_type)],
-    ["Occasion", titleCase(profile.occasion)],
+    ["Skin tone", shown(profile.skin_tone)],
+    ["Undertone", shown(profile.undertone)],
+    ["Body type", shown(profile.body_type)],
+    ["Occasion", shown(profile.occasion)],
     ["Style", profile.style_intent?.length ? profile.style_intent.map(titleCase).join(", ") : "—"],
     [
       "Budget",
@@ -493,7 +566,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
             fontWeight: 600,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "#9a9490",
+            color: "var(--text-faint)",
           }}
         >
           Style profile
@@ -503,7 +576,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.6rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             textDecoration: "underline",
             textUnderlineOffset: "3px",
           }}
@@ -537,7 +610,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
                 fontWeight: 500,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#9a9490",
+                color: "var(--text-faint)",
               }}
             >
               {label}
@@ -577,7 +650,7 @@ function AccountLink() {
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: "#9a9490",
+          color: "var(--text-faint)",
         }}
       >
         Account
@@ -598,7 +671,7 @@ function AccountLink() {
         onMouseEnter={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
           el.style.background = "#faf8f5";
-          el.style.borderColor = "rgba(255,255,255,0.14)";
+          el.style.borderColor = "rgba(0,0,0,0.14)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
@@ -617,11 +690,17 @@ function AccountLink() {
           >
             Privacy &amp; data
           </span>
-          <span style={{ fontFamily: "var(--font-body)", fontSize: "0.8125rem", color: "#9a9490" }}>
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.8125rem",
+              color: "var(--text-faint)",
+            }}
+          >
             Manage consent, download your data, sign out, or delete your account.
           </span>
         </span>
-        <ChevronRight size={18} aria-hidden style={{ flexShrink: 0, color: "#9a9490" }} />
+        <ChevronRight size={18} aria-hidden style={{ flexShrink: 0, color: "var(--text-faint)" }} />
       </Link>
     </section>
   );
@@ -655,7 +734,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
         style={{
           fontFamily: "var(--font-body)",
           fontSize: "0.8125rem",
-          color: "#9a9490",
+          color: "var(--text-faint)",
           marginBottom: "2rem",
         }}
       >
@@ -670,7 +749,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           justifyContent: "center",
           minHeight: "44px",
           padding: "0 1.5rem",
-          border: "1px solid rgba(255,255,255,0.2)",
+          border: "1px solid rgba(0,0,0,0.2)",
           background: "transparent",
           color: "#1c1a17",
           cursor: "pointer",

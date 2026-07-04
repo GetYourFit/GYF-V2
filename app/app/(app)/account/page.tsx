@@ -14,7 +14,7 @@ export default function AccountPage() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
             display: "block",
             marginBottom: "0.5rem",
           }}
@@ -38,7 +38,7 @@ export default function AccountPage() {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.875rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             margin: 0,
           }}
         >

@@ -14,7 +14,7 @@ export default function ProfilePage() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#d4607a",
+            color: "var(--secondary)",
             display: "block",
             marginBottom: "0.5rem",
           }}

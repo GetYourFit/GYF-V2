@@ -56,3 +56,39 @@ def test_summary_empty_for_new_user():
         assert body["badges"] == []
     finally:
         app.dependency_overrides.clear()
+
+
+# --- Identity (display name / email / member-since) -------------------------
+
+
+def test_fallback_display_name_from_email_local_part():
+    from app.profile.summary import fallback_display_name
+
+    assert fallback_display_name("jane.doe@example.com") == "Jane Doe"
+    assert fallback_display_name("atharv_m+test@gmail.com") == "Atharv M Test"
+    assert fallback_display_name(None) is None
+    assert fallback_display_name("not-an-email") is None
+
+
+def test_summary_includes_identity_with_email_fallback():
+    # Dev principal (open auth) has email dev@local; no stored display name yet →
+    # the summary derives a presentable name from the email local-part.
+    try:
+        body = _client(SummaryStats()).get("/profile/summary").json()
+        assert body["email"] == "dev@local"
+        assert body["display_name"] == "Dev"
+        assert body["member_since"] is None  # in-memory repo has no created_at
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_summary_prefers_stored_display_name():
+    account = InMemoryAccountRepository(existing={DEV_USER})
+    account.set_display_name(DEV_USER, "Atharv")
+    app.dependency_overrides[get_account_repo] = lambda: account
+    app.dependency_overrides[get_summary_repo] = lambda: InMemorySummaryRepository({})
+    try:
+        body = TestClient(app).get("/profile/summary").json()
+        assert body["display_name"] == "Atharv"
+    finally:
+        app.dependency_overrides.clear()

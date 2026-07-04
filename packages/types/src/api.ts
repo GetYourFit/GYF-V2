@@ -175,6 +175,10 @@ export interface paths {
          *
          *     Idempotent upsert keyed by the authenticated user — the same call updates an
          *     existing profile, so the always-editable-preferences requirement is satisfied.
+         *
+         *     ``display_name`` is identity, not styling: it is routed to the ``users`` row
+         *     (surviving profile erasure) and only touched when the client actually sent
+         *     the field — an omitted key never clears an existing name.
          */
         put: operations["upsert_profile_profile_put"];
         post?: never;
@@ -270,8 +274,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Profile stats & badges
-         * @description Stats (outfits made, items saved, wardrobe size, posts, reactions) + badges.
+         * Profile stats, badges & identity
+         * @description Stats (outfits made, items saved, wardrobe size, posts, reactions) + badges,
+         *     plus identity: the user-set display name (falling back to the email local-part),
+         *     email, and member-since date — all real account data, never invented.
          */
         get: operations["profile_summary_profile_summary_get"];
         put?: never;
@@ -328,6 +334,32 @@ export interface paths {
          *     item is unknown or the user has no profile yet.
          */
         get: operations["complete_look_outfits_complete_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outfits/alternates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Same-slot alternates for one garment in a look (swap-a-piece)
+         * @description Visually-coherent replacements for one piece of a recommended outfit.
+         *
+         *     Nearest neighbours of the garment's embedding, restricted to the same slot's
+         *     categories and the user's gender slice, hydrated to full outfit items with
+         *     affiliate-wrapped links (attributed to ``recommendation_id`` when given).
+         *     Every swap the client then reports (action=``swap``) is a labelled
+         *     compatibility example. 404s when the item is unknown.
+         */
+        get: operations["outfit_alternates_outfits_alternates_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1008,10 +1040,12 @@ export interface components {
             budget_range?: components["schemas"]["BudgetRange"] | null;
             /** Occasion */
             occasion?: string | null;
+            /** Display Name */
+            display_name?: string | null;
         };
         /**
          * ProfileSummary
-         * @description Stats plus the badges they unlock.
+         * @description Stats plus the badges they unlock, and who the profile belongs to.
          */
         ProfileSummary: {
             /**
@@ -1044,6 +1078,12 @@ export interface components {
              * @default []
              */
             badges: string[];
+            /** Display Name */
+            display_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Member Since */
+            member_since?: string | null;
         };
         /** ReactionInput */
         ReactionInput: {
@@ -1720,6 +1760,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OutfitRecommendation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    outfit_alternates_outfits_alternates_get: {
+        parameters: {
+            query: {
+                /** @description The garment being swapped out. */
+                item_id: string;
+                /** @description The slate the outfit came from — joins the swap to it. */
+                recommendation_id?: string | null;
+                /** @description How many alternates to return. */
+                k?: number;
+                /** @description Region code (e.g. IN). */
+                region?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["OutfitItem"][];
+                    };
                 };
             };
             /** @description Validation Error */

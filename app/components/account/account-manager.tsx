@@ -41,6 +41,9 @@ export function AccountManager() {
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [draft, setDraft] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+  const [savedName, setSavedName] = useState("");
+  const [nameDraft, setNameDraft] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -54,30 +57,38 @@ export function AccountManager() {
     };
   }, []);
 
+  const apply = useCallback((flags: Record<string, boolean>, name: string) => {
+    if (!mounted.current) return;
+    setSaved(flags);
+    setDraft(flags);
+    setSavedName(name);
+    setNameDraft(name);
+    setStatus("ready");
+  }, []);
+
+  const fetchData = useCallback(async (): Promise<[Record<string, boolean>, string]> => {
+    const api = browserApi();
+    const [flags, summary] = await Promise.all([
+      api.getConsent(),
+      api.getProfileSummary().catch(() => null),
+    ]);
+    return [flags, summary?.display_name ?? ""];
+  }, []);
+
   const load = useCallback(async () => {
     setStatus("loading");
     try {
-      const flags = await browserApi().getConsent();
-      if (!mounted.current) return;
-      setSaved(flags);
-      setDraft(flags);
-      setStatus("ready");
+      apply(...(await fetchData()));
     } catch {
       if (mounted.current) setStatus("error");
     }
-  }, []);
+  }, [apply, fetchData]);
 
   useEffect(() => {
-    browserApi()
-      .getConsent()
-      .then((flags) => {
-        if (!mounted.current) return;
-        setSaved(flags);
-        setDraft(flags);
-        setStatus("ready");
-      })
+    fetchData()
+      .then((d) => apply(...d))
       .catch(() => mounted.current && setStatus("error"));
-  }, []);
+  }, [apply, fetchData]);
 
   const confirmInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -104,6 +115,38 @@ export function AccountManager() {
       setSaving(false);
     }
   }, [draft, toast]);
+
+  const saveName = useCallback(async () => {
+    setSavingName(true);
+    try {
+      const api = browserApi();
+      // PUT /profile is a full upsert, so re-send the current style profile
+      // alongside the new name — an empty payload would blank the styling fields.
+      const p = await api.getProfile().catch(() => null);
+      await api.putProfile({
+        skin_tone: p?.skin_tone ?? null,
+        undertone: p?.undertone ?? null,
+        body_type: p?.body_type ?? null,
+        gender: p?.gender ?? null,
+        measurements: p?.measurements ?? {},
+        style_intent: p?.style_intent ?? [],
+        budget_range: p?.budget_range ?? null,
+        occasion: p?.occasion ?? null,
+        display_name: nameDraft.trim() || null,
+      });
+      setSavedName(nameDraft.trim());
+      setNameDraft(nameDraft.trim());
+      toast({
+        variant: "success",
+        title: "Name saved",
+        description: "Your profile now greets you properly.",
+      });
+    } catch {
+      toast({ variant: "error", title: "Couldn't save name", description: "Please try again." });
+    } finally {
+      setSavingName(false);
+    }
+  }, [nameDraft, toast]);
 
   const exportData = useCallback(async () => {
     setExporting(true);
@@ -186,8 +229,8 @@ export function AccountManager() {
       transition={{ duration: 0.35, ease: EASE }}
       style={{ display: "flex", flexDirection: "column", gap: "3rem" }}
     >
-      {/* ── Privacy controls ── */}
-      <section style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      {/* ── Display name ── */}
+      <section style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         <div>
           <p
             style={{
@@ -200,13 +243,93 @@ export function AccountManager() {
               marginBottom: "0.5rem",
             }}
           >
-            Privacy controls
+            Display name
           </p>
           <p
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.8125rem",
               color: "#9a9490",
+              lineHeight: 1.55,
+              maxWidth: "320px",
+            }}
+          >
+            How GYF greets you on your profile. Leave blank to use your email name.
+          </p>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem" }}>
+          <input
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            maxLength={60}
+            placeholder="Your name"
+            aria-label="Display name"
+            autoComplete="name"
+            style={{
+              maxWidth: "260px",
+              width: "100%",
+              minHeight: "44px",
+              background: "#faf8f5",
+              border: "1px solid rgba(0,0,0,0.10)",
+              color: "#1c1a17",
+              outline: "none",
+              padding: "0 1rem",
+              borderRadius: "999px",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.875rem",
+            }}
+          />
+          <button
+            type="button"
+            onClick={saveName}
+            disabled={savingName || nameDraft.trim() === savedName}
+            aria-busy={savingName}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "44px",
+              padding: "0 1.5rem",
+              background:
+                savingName || nameDraft.trim() === savedName ? "rgba(0,0,0,0.08)" : "#1c1a17",
+              color: savingName || nameDraft.trim() === savedName ? "#9a9490" : "#faf8f5",
+              border: "none",
+              borderRadius: "999px",
+              cursor: savingName || nameDraft.trim() === savedName ? "not-allowed" : "pointer",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.6rem",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              transition: "all 0.2s",
+            }}
+          >
+            {savingName ? "Saving…" : "Save name"}
+          </button>
+        </div>
+      </section>
+
+      {/* ── Privacy controls ── */}
+      <section style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        <div>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.55rem",
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "var(--text-faint)",
+              marginBottom: "0.5rem",
+            }}
+          >
+            Privacy controls
+          </p>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "0.8125rem",
+              color: "var(--text-faint)",
               lineHeight: 1.55,
             }}
           >
@@ -246,8 +369,8 @@ export function AccountManager() {
               justifyContent: "center",
               minHeight: "44px",
               padding: "0 1.5rem",
-              background: !dirty || saving ? "rgba(0,0,0,0.08)" : "#ffffff",
-              color: !dirty || saving ? "#9a9490" : "#faf8f5",
+              background: !dirty || saving ? "rgba(0,0,0,0.08)" : "var(--primary)",
+              color: !dirty || saving ? "var(--text-faint)" : "#faf8f5",
               border: "none",
               borderRadius: "999px",
               cursor: !dirty || saving ? "not-allowed" : "pointer",
@@ -267,7 +390,7 @@ export function AccountManager() {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.55rem",
-                color: "#d4607a",
+                color: "var(--secondary)",
                 letterSpacing: "0.06em",
               }}
             >
@@ -295,7 +418,7 @@ export function AccountManager() {
               fontWeight: 500,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               marginBottom: "0.5rem",
             }}
           >
@@ -305,7 +428,7 @@ export function AccountManager() {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.8125rem",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               lineHeight: 1.55,
               maxWidth: "320px",
             }}
@@ -326,7 +449,7 @@ export function AccountManager() {
             minHeight: "44px",
             padding: "0 1.5rem",
             alignSelf: "flex-start",
-            border: "1px solid rgba(255,255,255,0.15)",
+            border: "1px solid rgba(0,0,0,0.15)",
             background: "transparent",
             color: "#1c1a17",
             cursor: exporting ? "not-allowed" : "pointer",
@@ -360,7 +483,7 @@ export function AccountManager() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#9a9490",
+            color: "var(--text-faint)",
           }}
         >
           Account
@@ -377,7 +500,7 @@ export function AccountManager() {
                 justifyContent: "center",
                 minHeight: "44px",
                 padding: "0 1.5rem",
-                border: "1px solid rgba(255,255,255,0.2)",
+                border: "1px solid rgba(0,0,0,0.2)",
                 background: "transparent",
                 color: "#1c1a17",
                 cursor: "pointer",
@@ -507,7 +630,7 @@ export function AccountManager() {
                   cursor: "pointer",
                   fontFamily: "var(--font-mono)",
                   fontSize: "0.6rem",
-                  color: "#9a9490",
+                  color: "var(--text-faint)",
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",
                   minHeight: "44px",
@@ -524,7 +647,7 @@ export function AccountManager() {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.75rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             maxWidth: "320px",
             lineHeight: 1.5,
           }}
@@ -542,7 +665,7 @@ export function AccountManager() {
             fontWeight: 500,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             marginBottom: "0.5rem",
           }}
         >
@@ -611,7 +734,7 @@ function ConsentRow({
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.8125rem",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             lineHeight: 1.55,
             maxWidth: "280px",
           }}
@@ -635,7 +758,7 @@ function ConsentRow({
           width: "44px",
           height: "24px",
           alignItems: "center",
-          border: `1px solid ${checked ? "#d4607a" : "rgba(255,255,255,0.2)"}`,
+          border: `1px solid ${checked ? "var(--secondary)" : "rgba(0,0,0,0.2)"}`,
           background: checked ? "rgba(240,189,143,0.15)" : "transparent",
           cursor: "pointer",
           transition: "all 0.2s",
@@ -649,7 +772,7 @@ function ConsentRow({
             left: checked ? "calc(100% - 18px)" : "2px",
             width: "14px",
             height: "14px",
-            background: checked ? "#d4607a" : "#9a9490",
+            background: checked ? "var(--secondary)" : "var(--text-faint)",
             transition: "left 0.2s, background 0.2s",
           }}
         />
@@ -676,7 +799,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
         style={{
           fontFamily: "var(--font-body)",
           fontSize: "0.8125rem",
-          color: "#9a9490",
+          color: "var(--text-faint)",
           marginBottom: "2rem",
         }}
       >
@@ -691,7 +814,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           justifyContent: "center",
           minHeight: "44px",
           padding: "0 1.5rem",
-          border: "1px solid rgba(255,255,255,0.2)",
+          border: "1px solid rgba(0,0,0,0.2)",
           background: "transparent",
           color: "#1c1a17",
           cursor: "pointer",

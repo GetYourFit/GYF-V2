@@ -33,6 +33,8 @@ _ENSURE_USER = "INSERT INTO users (id) VALUES (%s) ON CONFLICT (id) DO NOTHING"
 _GET_CONSENT = "SELECT consent_flags FROM users WHERE id = %s"
 # Merge (not replace) so granting one consent never clears another.
 _UPDATE_CONSENT = "UPDATE users SET consent_flags = consent_flags || %s WHERE id = %s"
+_SET_DISPLAY_NAME = "UPDATE users SET display_name = %s WHERE id = %s"
+_GET_IDENTITY = "SELECT display_name, created_at FROM users WHERE id = %s"
 
 
 class AccountRepository(Protocol):
@@ -58,6 +60,14 @@ class AccountRepository(Protocol):
 
     def update_consent(self, user_id: str, flags: dict[str, bool]) -> dict[str, bool]:
         """Merge ``flags`` into the user's consent and return the merged result."""
+        ...
+
+    def set_display_name(self, user_id: str, name: str | None) -> None:
+        """Set (or clear, with ``None``) the user's display name."""
+        ...
+
+    def get_identity(self, user_id: str) -> tuple[str | None, object | None]:
+        """``(display_name, created_at)`` for the user; ``(None, None)`` if absent."""
         ...
 
 
@@ -101,6 +111,15 @@ class PostgresAccountRepository:
             conn.execute(_UPDATE_CONSENT, (json.dumps(flags), user_id))
         return self.get_consent(user_id)
 
+    def set_display_name(self, user_id: str, name: str | None) -> None:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            conn.execute(_SET_DISPLAY_NAME, (name, user_id))
+
+    def get_identity(self, user_id: str) -> tuple[str | None, object | None]:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            row = conn.execute(_GET_IDENTITY, (user_id,)).fetchone()
+        return (row[0], row[1]) if row else (None, None)
+
 
 class InMemoryAccountRepository:
     """Dict-backed repo for tests. Models tombstones and consent in memory."""
@@ -142,3 +161,13 @@ class InMemoryAccountRepository:
         user = self.users.setdefault(user_id, {"deleted": False, "consent": {}})
         user["consent"].update(flags)
         return dict(user["consent"])
+
+    def set_display_name(self, user_id: str, name: str | None) -> None:
+        user = self.users.setdefault(user_id, {"deleted": False, "consent": {}})
+        user["display_name"] = name
+
+    def get_identity(self, user_id: str) -> tuple[str | None, object | None]:
+        user = self.users.get(user_id)
+        if user is None:
+            return (None, None)
+        return (user.get("display_name"), user.get("created_at"))

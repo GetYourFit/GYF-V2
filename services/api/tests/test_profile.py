@@ -109,6 +109,32 @@ def test_put_profile_is_editable_idempotent_upsert():
         app.dependency_overrides.clear()
 
 
+def test_put_profile_sets_display_name_on_account():
+    accounts = InMemoryAccountRepository(existing={DEV_USER})
+    try:
+        client = _client(InMemoryProfileRepository(), accounts)
+        # trimmed on the way in
+        resp = client.put("/profile", json={"body_type": "oval", "display_name": "  Atharv  "})
+        assert resp.status_code == 200
+        assert accounts.get_identity(DEV_USER)[0] == "Atharv"
+        # omitted key never clears an existing name
+        client.put("/profile", json={"body_type": "hourglass"})
+        assert accounts.get_identity(DEV_USER)[0] == "Atharv"
+        # explicit null (and whitespace-only) clears
+        client.put("/profile", json={"display_name": "   "})
+        assert accounts.get_identity(DEV_USER)[0] is None
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_put_profile_rejects_overlong_display_name():
+    try:
+        resp = _client().put("/profile", json={"display_name": "x" * 61})
+        assert resp.status_code == 422
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_delete_profile_is_204_and_idempotent():
     repo = InMemoryProfileRepository()
     try:
