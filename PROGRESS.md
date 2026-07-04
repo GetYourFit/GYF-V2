@@ -568,3 +568,41 @@ editor.
 **Verified:** API pytest 251 ✓ ml pytest 78 ✓ ruff+format ✓ · web tsc/eslint/
 bun test 24/prettier ✓. Prod data: gender NULL 596→31, unknown category
 804→431 (all suppressed from retrieval).
+
+## 2026-07-04 (contd.) — v4 pass committed+deployed; support surface; Explore scroll unblocked
+
+**Ask:** embed straggler; verify+commit+push v4 pass; find & fix more; explain
+"few items in Explore" and the two Render deployments.
+
+**Straggler:** verified on prod — 9,161/9,161 embedded, 0 pending (the one
+zero-image row was deleted last pass; nothing left to embed).
+
+**v4 pass shipped** as six scoped commits (gender truth / cohesion / social
+entrypoint / profile identity / AA contrast / ml lint) after full green gate
+(API 251→256, ml 78, web 24, lint/format/typecheck). Live-verified on prod:
+migrations 0006→0009 applied on the very next deploy (entrypoint fix proven),
+authenticated smoke user gets 200 from /social/posts, /social/follows,
+/profile/summary with personalized display_name.
+
+**Explore "only a few items" — root cause found & fixed:** pgvector HNSW's
+default ef_search=40 caps every ANN scan at 40 candidates, so page 2
+(offset 24, k 24) returned 16 rows and infinite scroll dead-ended at item 40
+of 9,161. Fix: SET LOCAL hnsw.ef_search = k+offset (clamped 40..1000) per
+query; price sorts (btree order) skip the beam. Test asserts the beam scales.
+
+**Contact + grievance forms were fake** (showed "sent!" without transmitting —
+found by the polish-hunt agent). Now real: migration 0010 support_messages,
+POST /support/messages (auth, rate-limited 5/min, length-capped), forms show
+success only on 201 with sending/error states.
+
+**More polish:** saved page no longer blanks when one of two lists fails
+(Promise.allSettled); collections distinguishes fetch-error (retry button)
+from genuinely empty; dead "Curated for you — coming soon" shell removed;
+explore cards get skeleton shimmer + fade-in; CompatibilityPanel copy made
+honest (score-tier framing, not fake bespoke analysis — D6).
+
+**Two Render deployments:** render.yaml defines exactly ONE service (gyf-api).
+Two entries in the dashboard = either normal deploy _history_ (every push is a
+deploy) or a duplicate service created manually alongside the blueprint one —
+check which one serves gyf-api.onrender.com and suspend the other; it burns
+free-tier hours for nothing.
