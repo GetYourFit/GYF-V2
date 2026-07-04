@@ -34,21 +34,26 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
   const [submitting, setSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
 
+  const loadSeqRef = useRef(0);
+
   const loadLooks = useCallback(async () => {
+    const seq = ++loadSeqRef.current;
     setLoadingLooks(true);
     setFieldError(null);
     try {
       const res = await browserApi().listSavedOutfits();
+      if (seq !== loadSeqRef.current) return;
       setLooks(res);
       setSelected(res[0]?.id ?? null);
     } catch (e) {
+      if (seq !== loadSeqRef.current) return;
       toast({
         variant: "error",
         title: "Couldn't load your looks",
         description: e instanceof ApiError ? e.message : "Please try reopening this panel.",
       });
     } finally {
-      setLoadingLooks(false);
+      if (seq === loadSeqRef.current) setLoadingLooks(false);
     }
   }, [toast]);
 

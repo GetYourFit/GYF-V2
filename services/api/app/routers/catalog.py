@@ -48,7 +48,7 @@ def _genders(gender: str | None) -> frozenset[str] | None:
     return allowed if allowed != CATALOG_GENDERS else None
 
 
-@router.get("/items/facets")
+@router.get("/items/facets", dependencies=[Depends(rate_limit("facets", "rate_limit_search"))])
 def catalog_facets(
     region: str | None = None,
     repo: VectorSearchRepository = Depends(get_search_repo),

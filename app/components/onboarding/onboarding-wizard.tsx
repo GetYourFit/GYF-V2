@@ -19,6 +19,7 @@ import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import { mergeEstimated } from "@/lib/estimate";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   BODY_TYPES,
   CONSENT_OPTIONS,
@@ -906,6 +907,7 @@ function StepPrivacy({
 
 function DeleteAccount() {
   const router = useRouter();
+  const { toast } = useToast();
   const [busy, setBusy] = useState(false);
 
   async function onDelete() {
@@ -913,9 +915,13 @@ function DeleteAccount() {
     setBusy(true);
     try {
       await browserApi().deleteAccount();
-      router.push("/");
-    } finally {
+      await createSupabaseBrowserClient().auth.signOut();
+      toast({ variant: "success", title: "Account deleted", description: "Your data has been erased." });
+      router.push("/login");
+      router.refresh();
+    } catch {
       setBusy(false);
+      toast({ variant: "error", title: "Deletion failed", description: "Please try again." });
     }
   }
 

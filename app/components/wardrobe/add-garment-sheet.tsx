@@ -85,6 +85,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
   const reduce = useReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
+  const searchSeqRef = useRef(0);
 
   const [mode, setMode] = useState<Mode>("catalog");
   const [query, setQuery] = useState("");
@@ -167,15 +168,19 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
   async function runSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim()) return;
+    const seq = ++searchSeqRef.current;
     setPhase("searching");
     setError(null);
     try {
-      setResults(await browserApi().search(query.trim(), { k: 24 }));
+      const res = await browserApi().search(query.trim(), { k: 24 });
+      if (seq !== searchSeqRef.current) return;
+      setResults(res);
     } catch {
+      if (seq !== searchSeqRef.current) return;
       setError("Search unavailable. Try a custom entry instead.");
       setResults([]);
     } finally {
-      setPhase("done");
+      if (seq === searchSeqRef.current) setPhase("done");
     }
   }
 

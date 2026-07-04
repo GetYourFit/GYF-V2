@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 SCHEMA_VERSION = 1
 
@@ -37,6 +37,10 @@ class InteractionAction(str, Enum):
     # (scripts/sync_conversions.py), joined to its recommendation via the deeplink
     # subid. Never user-supplied — the ground-truth commerce label.
     PURCHASE = "purchase"
+
+
+# Trusted, server-emitted labels — never accepted from clients (see FeedbackRequest).
+_SERVER_ONLY_ACTIONS = frozenset({InteractionAction.IMPRESSION, InteractionAction.PURCHASE})
 
 
 class InteractionTarget(str, Enum):
@@ -80,11 +84,23 @@ class FeedbackRequest(BaseModel):
     target_type: InteractionTarget
     target_id: str
     action: InteractionAction
+    # Never consumed as a reward multiplier — taste math uses the server-side
+    # ACTION_REWARD table only. Client-controlled; must never be trusted.
     weight: float | None = None
     # Clients echo back the recommendation_id (and any served context) so a save/
     # skip on a recommended item joins to the slate it was shown in — the labelled
     # tuple the future ranker needs. Optional: organic actions carry no context.
     context: dict[str, object] = Field(default_factory=dict)
+
+    @field_validator("action")
+    @classmethod
+    def _organic_actions_only(cls, v: InteractionAction) -> InteractionAction:
+        """IMPRESSION is emitted by the recommender at serve time and PURCHASE is
+        synced from the affiliate network — both are trusted training labels, so a
+        client-forged one would poison the taste model and the IPS denominators."""
+        if v in _SERVER_ONLY_ACTIONS:
+            raise ValueError(f"action '{v.value}' is server-emitted, not client feedback")
+        return v
 
     def to_event(self, user_id: str) -> InteractionEvent:
         return InteractionEvent(

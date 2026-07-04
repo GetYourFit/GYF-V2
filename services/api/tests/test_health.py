@@ -69,3 +69,14 @@ def test_feedback_rejects_invalid_action():
         json={"target_type": "outfit", "target_id": "o1", "action": "nope"},
     )
     assert res.status_code == 422
+
+
+def test_feedback_rejects_server_only_actions():
+    # impression/purchase are trusted training labels (recommender-emitted /
+    # affiliate-synced); a client-forged one would poison the taste model.
+    for action in ("impression", "purchase"):
+        res = client.post(
+            "/feedback",
+            json={"target_type": "item", "target_id": "i1", "action": action},
+        )
+        assert res.status_code == 422, action

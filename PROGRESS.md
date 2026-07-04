@@ -666,3 +666,35 @@ local-state-only theater that reset on reload).
 (documented beta bounds, dormant), catalog ingest page caps (backstop).
 
 **Gate:** API 257 ✓ web 24 ✓ lint/format/typecheck ✓. Pushed a9c0050.
+
+## 2026-07-04 (contd.) — audit round 2: security/web/ML/DB lenses, all findings fixed
+
+**Ask:** another sweep with fresh lenses; fix everything found, verify on prod.
+Four auditors: security (full API, two passes), web correctness round 2,
+ML/recsys correctness, database/query health.
+
+**Security: CLEAN across the entire API** (auth, all routers, affiliate wrap,
+dynamic SQL, JWT, erasure, CORS, rate limits, tryon). One LOW applied:
+/items/facets now rate-limited like its sibling search endpoints.
+
+**ML HIGH (fixed):** /feedback accepted client-forged `purchase` (reward 1.5)
+and `impression` events — a poisoning vector for the taste model and future
+IPS/training labels. FeedbackRequest now 422s server-only actions; `weight`
+documented as never-trusted. Regression test added. Everything else in taste/
+signals/candidates/compose/conditioning audited clean (math, MMR, confidence
+all genuinely derived).
+
+**Web round 2 (fixed):** onboarding wizard's delete-account button swallowed
+errors and never signed out (session cookie survived deletion → 401 flicker /
+wizard re-prompt) — now mirrors the canonical /account flow; share-a-look
+sheet + add-garment search got the same stale-response guards as the rest of
+the app. All other satellite surfaces audited clean.
+
+**DB (fixed, migration 0011):** `social_posts.user_id` had NO index (seq scan
+on every /profile/summary and Following feed request) → composite
+(user_id, created_at DESC); `items.category` unindexed on the candidate-pool
+hot path → indexed. Erasure cascade traced end-to-end: complete. SET LOCAL
+scoping + pgbouncer compat confirmed sound. Known-open: RLS still
+defense-in-depth only (documented, app connects as owner).
+
+**Gate:** API 258 ✓ web 24 ✓ ruff/eslint/tsc/format ✓.
