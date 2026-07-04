@@ -30,6 +30,7 @@ from .recsys.taste import TasteRepository
 from .saved_outfits import SavedOutfitRepository
 from .sink import EventSink, get_sink
 from .social import SocialRepository
+from .support import SupportRepository
 from .wardrobe import WardrobeRepository
 
 # Process-wide event sink (local JSONL in dev; broker/Postgres-backed once infra
@@ -199,6 +200,12 @@ def get_social_repo() -> SocialRepository:
     from .social import PostgresSocialRepository
 
     return PostgresSocialRepository(settings.database_url)
+
+
+def get_support_repo() -> SupportRepository:
+    from .support import PostgresSupportRepository
+
+    return PostgresSupportRepository(settings.database_url)
 
 
 def get_summary_repo() -> SummaryRepository:

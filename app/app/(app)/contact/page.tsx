@@ -3,15 +3,27 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { PageContainer } from "@/components/layout/page-container";
+import { browserApi } from "@/lib/api-client";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const reduce = useReducedMotion();
+  const sent = status === "sent";
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSent(true);
+    setStatus("sending");
+    try {
+      await browserApi().submitSupportMessage({
+        kind: "contact",
+        message: `From ${form.name}: ${form.message}`,
+        reply_email: form.email,
+      });
+      setStatus("sent");
+    } catch {
+      setStatus("error");
+    }
   }
 
   return (
@@ -236,9 +248,16 @@ export default function ContactPage() {
                 }}
               />
             </div>
+            {status === "error" && (
+              <p role="alert" style={{ fontSize: "0.85rem", color: "var(--secondary)" }}>
+                Couldn&apos;t send your message — please try again.
+              </p>
+            )}
             <button
               type="submit"
+              disabled={status === "sending"}
               style={{
+                opacity: status === "sending" ? 0.6 : 1,
                 marginTop: "0.5rem",
                 height: 48,
                 borderRadius: 12,
@@ -258,7 +277,7 @@ export default function ContactPage() {
                 e.currentTarget.style.opacity = "1";
               }}
             >
-              Send Message
+              {status === "sending" ? "Sending…" : "Send Message"}
             </button>
           </form>
         )}

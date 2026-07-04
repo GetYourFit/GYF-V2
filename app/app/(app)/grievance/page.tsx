@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { browserApi } from "@/lib/api-client";
 import { motion, useReducedMotion } from "framer-motion";
 import { PageContainer } from "@/components/layout/page-container";
 
@@ -22,12 +23,26 @@ export default function GrievancePage() {
     email: "",
     attachmentName: "",
   });
-  const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sending" | "submitted" | "error">("idle");
   const reduce = useReducedMotion();
+  const submitted = status === "submitted";
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    setStatus("sending");
+    try {
+      await browserApi().submitSupportMessage({
+        kind: "grievance",
+        category: form.issueType || undefined,
+        message: form.attachmentName
+          ? `${form.description}\n\n[attachment offered: ${form.attachmentName}]`
+          : form.description,
+        reply_email: form.email,
+      });
+      setStatus("submitted");
+    } catch {
+      setStatus("error");
+    }
   }
 
   if (submitted) {
@@ -271,9 +286,14 @@ export default function GrievancePage() {
           .
         </p>
 
+        {status === "error" && (
+          <p role="alert" style={{ fontSize: "0.85rem", color: "var(--secondary)" }}>
+            Couldn&apos;t submit your report — please try again.
+          </p>
+        )}
         <button
           type="submit"
-          disabled={!form.issueType || !form.email || !form.description}
+          disabled={!form.issueType || !form.email || !form.description || status === "sending"}
           style={{
             height: 48,
             borderRadius: 12,
@@ -294,7 +314,7 @@ export default function GrievancePage() {
             if (!e.currentTarget.disabled) e.currentTarget.style.opacity = "1";
           }}
         >
-          Submit Grievance
+          {status === "sending" ? "Submitting…" : "Submit Grievance"}
         </button>
       </motion.form>
     </PageContainer>

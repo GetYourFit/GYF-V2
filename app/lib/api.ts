@@ -324,6 +324,16 @@ export class GyfApi {
     );
   }
 
+  /** Submit a contact or grievance message. Success is only shown on a 201. */
+  submitSupportMessage(input: {
+    kind: "contact" | "grievance";
+    category?: string;
+    message: string;
+    reply_email?: string;
+  }): Promise<{ id: string; status: string }> {
+    return this.request("POST", "/support/messages", input);
+  }
+
   // --- internals ---
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {

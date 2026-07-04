@@ -146,6 +146,7 @@ class Settings(BaseSettings):
     rate_limit_recommend: int = 60
     rate_limit_feedback: int = 60
     rate_limit_search: int = 60
+    rate_limit_support: int = 5
     rate_limit_default: int = 120
 
     @property
