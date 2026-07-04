@@ -636,3 +636,33 @@ Test asserts iterative_scan is set on ANN queries; price sorts still skip.
 men/women × offset 0/96 all 24/24); similar-items 12/12; latency uncorrelated
 with the filter (2.8–10s variance is free-tier host + embedder warmup, noted
 as a separate perf concern).
+
+## 2026-07-04 (contd.) — proactive bug sweep: pool selection, races, stranded states
+
+**Ask:** find more issues like the truncation/starvation bugs and fix them.
+Two audit agents (API silent-failures + web data-flow) + manual recsys read.
+
+**The big one (commit 3a761eb, independently confirmed by the API auditor):**
+candidate pools were `ORDER BY created_at DESC LIMIT 40` — the composer only
+ever saw the 40 _newest_ items per slot; taste affinity was computed but never
+decided pool membership, so personalization silently degraded to "reorder the
+latest ingest". Pools are now ordered by taste affinity when a signal exists
+(exact scan, no ANN involved), recency at cold start, depth 80. This is the
+likely root of "recommendations don't suit me" (feedback v4).
+
+**Web races (2519269):** social feed scope-switch and stylist feed
+apply/refresh had no stale-response guards — a slower earlier request could
+overwrite a newer one. Sequence counters added to both.
+
+**Web state traps (a9c0050):** Explore now waits for the profile gender before
+its first fetch (was: unfiltered flash + immediate refetch, and back-nav
+restore clobbered by the late gender resolve); wardrobe category filter falls
+back to All when its last item is removed (was: stranded empty state with no
+chip); the post bookmark now actually persists via saveOutfit (was
+local-state-only theater that reset on reload).
+
+**Reviewed clean:** compose top-k\*8 truncation (post-scoring, safe), all
+`noqa: BLE001` excepts (logged + honest abstain), flat LIMIT 500 lists
+(documented beta bounds, dormant), catalog ingest page caps (backstop).
+
+**Gate:** API 257 ✓ web 24 ✓ lint/format/typecheck ✓. Pushed a9c0050.
