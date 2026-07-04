@@ -616,3 +616,23 @@ also a stale leftover (web lives on Vercel) — left alone, autoDeploy off.
 **Live-verified after deploy:** migration 0010 applied; deep Explore pages now
 full (24/24 at offsets 24/96/192 — previously 16 then dead at 40); POST
 /support/messages returns 201 and the row lands in support_messages.
+
+## 2026-07-04 (contd.) — "can't see the men's catalogue" fixed: ANN post-filter starvation
+
+**Ask:** men's+unisex Explore missing items; troubleshoot, fix, verify on prod.
+
+**Root cause (second pgvector footgun today):** WHERE filters (gender/region/
+price) apply AFTER the HNSW scan, so a selective filter can annihilate the
+whole beam — reproduced live: `dress` + gender=men returned an EMPTY first
+page while 7,5k men's/unisex items existed. The gender mapping itself
+(men → men+unisex+unfaceted) was verified correct at every layer.
+
+**Fix (commit d55b2f9):** `SET LOCAL hnsw.iterative_scan = relaxed_order`
+(pgvector 0.8.0 confirmed on Supabase) alongside the depth-scaled ef_search —
+the index keeps walking until the page fills (bounded by max_scan_tuples 20k).
+Test asserts iterative_scan is set on ANN queries; price sorts still skip.
+
+**Prod-verified:** 16/16 sweep combos full (dress/shirt/saree/blazer ×
+men/women × offset 0/96 all 24/24); similar-items 12/12; latency uncorrelated
+with the filter (2.8–10s variance is free-tier host + embedder warmup, noted
+as a separate perf concern).
