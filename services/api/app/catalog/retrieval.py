@@ -151,7 +151,7 @@ class PostgresVectorSearchRepository:
         if categories:
             params.append(categories)
         params.extend([k, offset])
-        return self._run(sql, tuple(params))
+        return self._run(sql, tuple(params), depth=k + offset)
 
     def search_by_vector(
         self,
@@ -185,6 +185,7 @@ class PostgresVectorSearchRepository:
             order = "ORDER BY e.embedding <=> %s::vector"
             params.append(vec)
         params.extend([k, offset])
+        depth = k + offset if sort not in _SORT_CLAUSES else 0
         sql = f"""
         SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs
         FROM item_embeddings e
@@ -193,7 +194,7 @@ class PostgresVectorSearchRepository:
         {order}
         LIMIT %s OFFSET %s
         """
-        return self._run(sql, tuple(params))
+        return self._run(sql, tuple(params), depth=depth)
 
     def catalog_facets(self, region: str | None) -> CatalogFacets:
         # Facets MUST describe the *searchable* set, so this joins item_embeddings
@@ -221,8 +222,18 @@ class PostgresVectorSearchRepository:
             price_max=float(row[3]) if row[3] is not None else None,
         )
 
-    def _run(self, sql: str, params: tuple) -> list[SearchResult]:
+    def _run(self, sql: str, params: tuple, *, depth: int = 0) -> list[SearchResult]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            if depth:
+                # HNSW only surfaces ef_search candidates per scan (default 40), so a
+                # LIMIT/OFFSET page deeper than that silently truncates — infinite
+                # scroll would dead-end at item 40. Scale the beam to the page depth;
+                # SET LOCAL scopes it to this transaction. Capped: recall beyond the
+                # first ~1k neighbours isn't worth the scan cost on this surface.
+                conn.execute(
+                    "SELECT set_config('hnsw.ef_search', %s, true)",
+                    (str(min(1000, max(40, depth))),),
+                )
             return [
                 SearchResult(
                     item_id=str(r[0]),

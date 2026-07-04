@@ -43,7 +43,7 @@ def test_similar_sql_excludes_self_and_orders_by_distance():
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     results = repo.similar_to_item("11111111", k=5, region=None)
 
-    sql, params = pool.calls[0]
+    sql, params = pool.calls[-1]
     assert "e.item_id <> %s" in sql
     assert "ORDER BY e.embedding <=> q.embedding" in sql
     assert "LIMIT %s OFFSET %s" in sql
@@ -55,7 +55,7 @@ def test_region_filter_added_only_when_region_given():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     repo.search_by_vector([0.1, 0.2], k=3, region="IN")
-    sql, params = pool.calls[0]
+    sql, params = pool.calls[-1]
     assert "ANY(i.region_tags)" in sql
     assert "IN" in params
     assert params[-2] == 3  # limit
@@ -78,7 +78,7 @@ def test_max_price_adds_server_side_filter():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     repo.search_by_vector([0.1, 0.2], k=10, region="IN", offset=10, max_price=80.0)
-    sql, params = pool.calls[0]
+    sql, params = pool.calls[-1]
     assert "i.price IS NOT NULL AND i.price <= %s" in sql
     assert 80.0 in params
     assert "ANY(i.region_tags)" in sql
@@ -296,3 +296,17 @@ def test_search_endpoint_503_when_embedder_unavailable():
         assert resp.status_code == 503
     finally:
         app.dependency_overrides.clear()
+
+
+def test_ann_beam_scales_with_page_depth():
+    """HNSW ef_search must cover k+offset or deep pages silently truncate."""
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo.search_by_vector([0.1, 0.2], k=24, region=None, offset=96)
+    beam_sql, beam_params = pool.calls[0]
+    assert "hnsw.ef_search" in beam_sql
+    assert beam_params == ("120",)
+    # price sorts never touch the ANN scan; no beam call is made
+    pool.calls.clear()
+    repo.search_by_vector([0.1, 0.2], k=24, region=None, sort="price_asc")
+    assert not any("ef_search" in c[0] for c in pool.calls)
