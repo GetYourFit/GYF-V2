@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
@@ -48,7 +48,12 @@ export function SocialFeed() {
   const [follows, setFollows] = useState<ReadonlySet<string>>(new Set());
   const [viewerId, setViewerId] = useState<string | null>(null);
 
+  // A slower earlier request must never clobber a newer one (e.g. rapid
+  // Following → For you toggles); only the latest call may commit state.
+  const loadSeq = useRef(0);
+
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError(null);
     try {
@@ -60,13 +65,15 @@ export function SocialFeed() {
         api.listFollows().catch(() => [] as string[]),
         api.me().catch(() => null),
       ]);
+      if (seq !== loadSeq.current) return;
       setPosts(feed);
       setFollows(new Set(following));
       setViewerId(me?.user_id ?? null);
     } catch (e) {
+      if (seq !== loadSeq.current) return;
       setError(e instanceof ApiError ? e.message : "Could not load the feed. Tap retry.");
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }, [scope]);
 

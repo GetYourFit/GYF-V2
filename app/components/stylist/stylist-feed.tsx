@@ -28,7 +28,12 @@ export function StylistFeed() {
   const [saved, setSaved] = useState<Set<number>>(new Set());
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
 
+  // Competing loads (apply, pull-to-refresh, background revalidate) must not
+  // let a slower earlier response overwrite a newer one.
+  const loadSeq = useRef(0);
+
   const load = useCallback(async (q: StylistQuery, background = false) => {
+    const seq = ++loadSeq.current;
     if (!background) setLoading(true);
     setError(null);
     try {
@@ -38,6 +43,7 @@ export function StylistFeed() {
         k: 6,
       });
       writeCache(feedCacheKey(q), res);
+      if (seq !== loadSeq.current) return;
       // Never restack the feed under a mid-scroll user (§2.4): a background
       // refresh only swaps in when they're still at the top.
       if (background && window.scrollY > 120) return;
@@ -45,11 +51,12 @@ export function StylistFeed() {
       setSaved(new Set());
       setDismissed(new Set());
     } catch (e) {
+      if (seq !== loadSeq.current) return;
       if (e instanceof ApiError && e.isNotOnboarded) setNeedsOnboarding(true);
       else if (!background)
         setError(e instanceof Error ? e.message : "Could not reach your stylist.");
     } finally {
-      if (!background) setLoading(false);
+      if (!background && seq === loadSeq.current) setLoading(false);
     }
   }, []);
 
