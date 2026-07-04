@@ -217,7 +217,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                 style={{
                   width: 36,
                   height: 4,
-                  background: "rgba(255,255,255,0.15)",
+                  background: "rgba(0,0,0,0.15)",
                   borderRadius: 2,
                 }}
               />
@@ -241,7 +241,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   fontWeight: 500,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  color: "#d4607a",
+                  color: "var(--secondary)",
                   margin: 0,
                 }}
               >
@@ -259,7 +259,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   height: "44px",
                   background: "transparent",
                   border: "none",
-                  color: "#9a9490",
+                  color: "var(--text-faint)",
                   cursor: "pointer",
                 }}
               >
@@ -285,7 +285,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   fontSize: "0.6rem",
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: "#9a9490",
+                  color: "var(--text-faint)",
                   margin: 0,
                 }}
               >
@@ -315,7 +315,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "0.875rem",
-                    color: "#9a9490",
+                    color: "var(--text-faint)",
                     margin: 0,
                   }}
                 >
@@ -351,7 +351,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                           aspectRatio: "1/1",
                           overflow: "hidden",
                           background: "#faf8f5",
-                          border: `1px solid ${active ? "#d4607a" : "rgba(0,0,0,0.08)"}`,
+                          border: `1px solid ${active ? "var(--secondary)" : "rgba(0,0,0,0.08)"}`,
                           cursor: "pointer",
                           padding: 0,
                           outline: "none",
@@ -379,7 +379,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                               justifyContent: "center",
                               fontFamily: "var(--font-mono)",
                               fontSize: "0.55rem",
-                              color: "#9a9490",
+                              color: "var(--text-faint)",
                               textTransform: "uppercase",
                               letterSpacing: "0.06em",
                             }}
@@ -393,7 +393,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                             style={{
                               position: "absolute",
                               inset: 0,
-                              border: "2px solid #d4607a",
+                              border: "2px solid var(--secondary)",
                               pointerEvents: "none",
                             }}
                           />
@@ -413,7 +413,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                     fontSize: "0.6rem",
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: "#9a9490",
+                    color: "var(--text-faint)",
                   }}
                 >
                   Caption (optional)
@@ -432,7 +432,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                     resize: "none",
                     background: "transparent",
                     border: "none",
-                    borderBottom: "1px solid rgba(255,255,255,0.15)",
+                    borderBottom: "1px solid rgba(0,0,0,0.15)",
                     outline: "none",
                     padding: "0.625rem 0",
                     fontFamily: "var(--font-body)",
@@ -468,8 +468,8 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   marginTop: "auto",
                   width: "100%",
                   minHeight: "52px",
-                  background: submitting || !selected ? "rgba(0,0,0,0.10)" : "#ffffff",
-                  color: submitting || !selected ? "#9a9490" : "#faf8f5",
+                  background: submitting || !selected ? "rgba(0,0,0,0.10)" : "var(--primary)",
+                  color: submitting || !selected ? "var(--text-faint)" : "#faf8f5",
                   border: "none",
                   borderRadius: "999px",
                   fontFamily: "var(--font-mono)",

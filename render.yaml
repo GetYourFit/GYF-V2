@@ -18,7 +18,11 @@ services:
     dockerContext: .
     # Exec form (Render word-splits this — no shell, so no $PORT expansion).
     # Bind a fixed port; Render auto-detects the open port. 8000 matches EXPOSE.
-    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    # IMPORTANT: dockerCommand replaces the image ENTRYPOINT too, so run the
+    # migrate entrypoint explicitly — otherwise `alembic upgrade head` never
+    # runs on Render and the schema silently falls behind (this stranded prod
+    # at 0005 and 500'd /social/follows: no `follows` table).
+    dockerCommand: /app/services/api/docker-entrypoint.sh uvicorn app.main:app --host 0.0.0.0 --port 8000
     healthCheckPath: /health
     autoDeploy: true
     envVars:

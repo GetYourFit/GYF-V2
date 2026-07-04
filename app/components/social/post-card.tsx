@@ -156,7 +156,7 @@ export function PostCard({
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "0.75rem",
-                color: "#9a9490",
+                color: "var(--text-faint)",
                 margin: 0,
                 marginTop: "1px",
               }}
@@ -265,8 +265,8 @@ export function PostCard({
                 <Heart
                   size={72}
                   style={{
-                    fill: "#d4607a",
-                    color: "#d4607a",
+                    fill: "var(--secondary)",
+                    color: "var(--secondary)",
                     filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.3))",
                   }}
                 />
@@ -308,8 +308,8 @@ export function PostCard({
             size={18}
             aria-hidden
             style={{
-              color: reacted ? "#d4607a" : "#9a9490",
-              fill: reacted ? "#d4607a" : "none",
+              color: reacted ? "var(--secondary)" : "var(--text-faint)",
+              fill: reacted ? "var(--secondary)" : "none",
               transition: "all 0.2s",
             }}
           />
@@ -345,8 +345,8 @@ export function PostCard({
             size={18}
             aria-hidden
             style={{
-              color: saved ? "#d4607a" : "#9a9490",
-              fill: saved ? "#d4607a" : "none",
+              color: saved ? "var(--secondary)" : "var(--text-faint)",
+              fill: saved ? "var(--secondary)" : "none",
               transition: "all 0.2s",
             }}
           />
@@ -369,7 +369,7 @@ export function PostCard({
             minWidth: 44,
           }}
         >
-          <Share2 size={18} aria-hidden style={{ color: "#9a9490" }} />
+          <Share2 size={18} aria-hidden style={{ color: "var(--text-faint)" }} />
         </motion.button>
 
         {onDressLikeMe && (
@@ -429,7 +429,7 @@ export function PostCard({
                 padding: 0,
                 fontFamily: "var(--font-body)",
                 fontSize: "0.8125rem",
-                color: "#9a9490",
+                color: "var(--text-faint)",
                 cursor: "pointer",
                 marginTop: "0.25rem",
               }}

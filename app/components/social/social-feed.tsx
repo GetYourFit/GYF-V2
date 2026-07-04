@@ -52,17 +52,17 @@ export function SocialFeed() {
     setLoading(true);
     setError(null);
     try {
-      // Feed + follow list together: the follow list marks each author's button
-      // state, so rendering either without the other flashes wrong UI.
+      // The feed is the page; the follow list + viewer id only decorate the
+      // follow buttons. Best-effort them so their failure never blanks the feed.
       const api = browserApi();
       const [feed, following, me] = await Promise.all([
         api.socialFeed({ limit: 30, scope }),
-        api.listFollows(),
-        api.me(),
+        api.listFollows().catch(() => [] as string[]),
+        api.me().catch(() => null),
       ]);
       setPosts(feed);
       setFollows(new Set(following));
-      setViewerId(me.user_id);
+      setViewerId(me?.user_id ?? null);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load the feed. Tap retry.");
     } finally {
@@ -170,7 +170,7 @@ export function SocialFeed() {
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
               padding: "0.5rem 1.125rem",
-              background: "#d4607a",
+              background: "var(--secondary)",
               color: "#ffffff",
               borderRadius: "999px",
               border: "none",
@@ -338,7 +338,7 @@ export function SocialFeed() {
               onClick={() => setSheetOpen(true)}
               style={{
                 padding: "0.75rem 1.75rem",
-                background: "#d4607a",
+                background: "var(--secondary)",
                 color: "#ffffff",
                 borderRadius: "999px",
                 border: "none",
@@ -405,7 +405,7 @@ export function SocialFeed() {
           height: 52,
           alignItems: "center",
           justifyContent: "center",
-          background: "#d4607a",
+          background: "var(--secondary)",
           color: "#ffffff",
           borderRadius: "999px",
           border: "none",
