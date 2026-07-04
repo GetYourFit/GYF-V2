@@ -508,3 +508,63 @@ idempotent) — ~3× throughput. Progress 2,708/9,162 and climbing.
 skip actually taught the model — "dialing down <palette> looks like this" from
 the dismissed garments' real color signals (generic when no signal; never an
 invented claim). W3's §4.1 honest version.
+
+## 2026-07-04 (contd.) — feedback-v4 fix pass: gender, junk, cohesion, social, contrast, profile
+
+**Ask:** embed the last straggler; read gyf-feedback-v4.md and fix everything;
+find more issues; commit+push.
+
+**Backfill closed out:** 9,161/9,162 embedded; the one straggler had zero
+images (unembeddable) — deleted, it could only render as a broken card.
+
+**Gender truth (the "shows me women's wear" bug):** root cause was 596
+unfaceted items (NULL passes the gender filter by design) including obvious
+womenswear, plus feed mis-tags ("Rareism Women's …" tagged unisex). Fix at
+three layers: (1) `infer_gender` text rules in the shared taxonomy contract —
+explicit words override a wrong feed facet, garment words (saree, bralette)
+fill blanks, conflicts abstain; wired into ingest for all future feeds;
+(2) new `ml/pipelines/backfill_gender.py` — rules first, then zero-shot
+women/men against the *stored* SigLIP embeddings (no image refetch), floor
+0.70, honest abstention; run against prod: 171 ruled + 251 zero-shot +
+overrides, NULL 596→31. (3) tests both sides.
+
+**Catalog junk (found while spot-checking):** skateboard wheels, bearing
+cleaners, jewelry polluting Explore. Fixes: title-fallback classification at
+ingest (feeds carry junk category strings while the title says "Joggers");
+~15 new taxonomy synonyms (joggers/trouser/overshirt/co-ord/tank/muffler/…);
+prod reclassify pass recovered 373 real garments (unknown 804→431); remaining
+`unknown` rows are excluded from search/similar retrieval — unstylable items
+are never surfaced.
+
+**Composer got eyes (the "really dumb, can't tell what matches" complaint):**
+new style-cohesion score component — mean pairwise cosine of the items'
+perception embeddings (the signal that *sees* the garments; colour/formality
+arithmetic can't tell a varsity jacket from a blazer of the same hue), weights
+rebalanced 0.34/0.26/0.15/0.15/0.10, neutral prior pre-backfill. Explanations
+earn two new claims: statement-piece pattern play (exactly one patterned piece,
+all reads certain) and "one visual language" (cohesion ≥ 0.75).
+
+**Social page blank (prod):** root cause — `render.yaml`'s `dockerCommand`
+replaced the image ENTRYPOINT, so `alembic upgrade head` never ran on Render;
+prod lacked the `follows` table and `GET /social/follows` 500'd, and the
+client's `Promise.all` let that one failure blank the whole page. Fixed both:
+dockerCommand now runs the entrypoint (migrations 0006→0009 apply on next
+deploy), and follows/me are best-effort in the client — only a feed failure
+shows the error state.
+
+**Contrast (the "white button on white background"):** the light-theme pivot
+left noir-era hardcoded hexes in 40 files — three invisible primary CTAs
+(`#ffffff` bg + `#faf8f5` text ≈ 1:1), white-alpha borders on light surfaces,
+and two failing tokens (`--secondary` 3.3:1 → `#b04760`, `--text-faint` 2.8:1
+→ `#767069`). All tokenized to AA.
+
+**Profile page personal:** migration `0009_user_display_name` (users column,
+survives style-profile erasure); PUT /profile takes display_name (trim/60-cap,
+omitted key never clears); summary returns name + email + member-since with
+email-local-part fallback; header shows real name, member-since, styling-
+identity chips (only when set, never "unknown"), account gets a display-name
+editor.
+
+**Verified:** API pytest 251 ✓ ml pytest 78 ✓ ruff+format ✓ · web tsc/eslint/
+bun test 24/prettier ✓. Prod data: gender NULL 596→31, unknown category
+804→431 (all suppressed from retrieval).
