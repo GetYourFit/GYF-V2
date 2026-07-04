@@ -102,7 +102,7 @@ SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score, i.image_refs
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 CROSS JOIN (SELECT embedding FROM item_embeddings WHERE item_id = %s) q
-WHERE e.item_id <> %s {region} {gender} {category}
+WHERE e.item_id <> %s AND i.category <> 'unknown' {region} {gender} {category}
 ORDER BY e.embedding <=> q.embedding
 LIMIT %s OFFSET %s
 """
@@ -168,7 +168,9 @@ class PostgresVectorSearchRepository:
         # changes the ORDER BY, so a price-sorted page still carries honest
         # confidence. Params are assembled in clause order to stay positional.
         params: list[object] = [vec]  # score expression
-        where = "WHERE TRUE"
+        # Unknown-category rows are unstylable (no outfit slot) and are where
+        # feed junk (hardware, jewelry) concentrates — never surface them.
+        where = "WHERE i.category <> 'unknown'"
         if region:
             where += " " + _REGION_FILTER
             params.append(region)

@@ -57,6 +57,10 @@ class Candidate:
     owned: bool = False
     # Catalog gender facet (men / women / unisex), or ``None`` when unfaceted.
     gender: str | None = None
+    # L2-normalized perception embedding (SigLIP), or ``None`` pre-backfill.
+    # Powers the composer's style-cohesion signal: how much the garments share
+    # one visual language, beyond what colour/formality arithmetic can see.
+    embedding: tuple[float, ...] | None = None
 
 
 class CandidateRepository(Protocol):
@@ -125,7 +129,8 @@ SELECT
     i.attributes #>> '{{perception,attributes,pattern,certain}}'     AS pattern_certain,
     i.attributes #>> '{{perception,attributes,silhouette,certain}}'  AS silhouette_certain,
     i.attributes #>> '{{perception,attributes,fit,certain}}'         AS fit_certain,
-    i.attributes #>> '{{taxonomy,gender}}'                           AS gender
+    i.attributes #>> '{{taxonomy,gender}}'                           AS gender,
+    e.embedding::text                                                AS embedding
 FROM items i
 LEFT JOIN item_embeddings e ON e.item_id = i.id
 """
@@ -240,7 +245,15 @@ def _row_to_candidate(slot: str, row: tuple) -> Candidate:
         affinity=float(row[14]) if row[14] is not None else None,
         image_url=image_url_from_refs(row[15]),
         gender=row[20],
+        embedding=_parse_vector(row[21]) if len(row) > 21 else None,
     )
+
+
+def _parse_vector(text: str | None) -> tuple[float, ...] | None:
+    """Parse pgvector's text form ``[v1,v2,...]`` into a tuple, or ``None``."""
+    if not text:
+        return None
+    return tuple(float(x) for x in text.strip("[]").split(","))
 
 
 class InMemoryCandidateRepository:

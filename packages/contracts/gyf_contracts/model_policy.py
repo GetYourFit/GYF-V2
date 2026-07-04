@@ -63,9 +63,7 @@ def is_servable(card: ModelCard, *, require_eval: bool = True) -> tuple[bool, li
     if not card.commercial_ok:
         reasons.append(f"model license '{card.license}' is not commercial-OK")
     if not card.train_data_commercial_ok:
-        reasons.append(
-            f"training-data license '{card.train_data_license}' is not commercial-OK"
-        )
+        reasons.append(f"training-data license '{card.train_data_license}' is not commercial-OK")
     if require_eval and not card.eval_report:
         reasons.append("no eval report attached (engineering-doctrine D5)")
     return (not reasons, reasons)
@@ -81,9 +79,7 @@ def _coerce_card(d: dict) -> ModelCard:
         license=d["license"],
         lane=Lane(d["lane"]),
         commercial_ok=bool(d["commercial_ok"]),
-        train_data_commercial_ok=bool(
-            d.get("train_data_commercial_ok", d["commercial_ok"])
-        ),
+        train_data_commercial_ok=bool(d.get("train_data_commercial_ok", d["commercial_ok"])),
         train_data_license=d.get("train_data_license", "unknown"),
         eval_report=d.get("eval_report"),
         model_uri=d.get("model_uri"),

@@ -900,3 +900,53 @@ def test_alternates_endpoint_same_slot_and_order():
         assert client.get("/outfits/alternates?item_id=nope").status_code == 404
     finally:
         app.dependency_overrides.clear()
+
+
+# --- Style cohesion (perception-embedding agreement) -------------------------
+
+
+def _with_embedding(cand: Candidate, embedding: tuple[float, ...]) -> Candidate:
+    return Candidate(**{**cand.__dict__, "embedding": embedding})
+
+
+def test_style_cohesion_rewards_agreeing_embeddings():
+    from app.recsys.compose import _style_cohesion
+
+    a = _with_embedding(_item("t", "t_shirt", "top"), (1.0, 0.0))
+    close = _with_embedding(_item("b", "jeans", "bottom"), (0.8, 0.6))  # cos 0.8
+    far = _with_embedding(_item("b2", "jeans", "bottom"), (0.0, 1.0))  # cos 0.0
+    assert _style_cohesion((a, close)) == 1.0  # at/above the working band top
+    assert _style_cohesion((a, far)) == 0.0  # below the band floor
+    assert _style_cohesion((a, _item("b3", "jeans", "bottom"))) == 0.6  # neutral prior
+
+
+def test_style_cohesion_shapes_the_score():
+    from app.recsys import conditioning
+    from app.recsys.compose import score_outfit
+    from app.profile.models import Profile
+
+    constraints = conditioning.resolve(Profile(), "casual", None)
+    top = _item("t", "t_shirt", "top", lch=(50, 5, 0))
+    bottom = _item("b", "jeans", "bottom", lch=(40, 5, 250))
+    cohesive = (_with_embedding(top, (1.0, 0.0)), _with_embedding(bottom, (0.9, 0.436)))
+    clashing = (_with_embedding(top, (1.0, 0.0)), _with_embedding(bottom, (0.0, 1.0)))
+    assert score_outfit(cohesive, constraints)[0] > score_outfit(clashing, constraints)[0]
+
+
+def test_cohesion_phrase_and_pattern_phrase_are_earned():
+    from app.recsys import conditioning
+    from app.recsys.compose import _explain, _pattern_phrase
+    from app.profile.models import Profile
+
+    top = _item("t", "t_shirt", "top", pattern="striped")
+    bottom = _item("b", "jeans", "bottom", pattern="solid")
+    shoes = _item("s", "sneakers", "footwear", pattern="solid")
+    assert "statement piece" in _pattern_phrase((top, bottom, shoes))
+    # two patterned pieces -> no claim
+    assert _pattern_phrase((top, _item("b2", "jeans", "bottom", pattern="floral"), shoes)) == ""
+    # unknown pattern anywhere -> no claim
+    assert _pattern_phrase((top, bottom, _item("s2", "sneakers", "footwear"))) == ""
+
+    cohesive = tuple(_with_embedding(it, (1.0, 0.0)) for it in (top, bottom, shoes))
+    text = _explain(cohesive, conditioning.resolve(Profile(), "casual", None), 0.8, 0.9, 0.0)
+    assert "one visual language" in text

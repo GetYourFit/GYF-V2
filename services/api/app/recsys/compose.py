@@ -26,11 +26,14 @@ from .goals import Effect, GoalEffects, effects_for, goal_fit
 _NEUTRAL_CHROMA = 14.0
 
 # Score component weights. Colour harmony and occasion-appropriate formality are
-# the load-bearing signals; undertone flattery and aesthetic agreement refine.
-_W_COLOR = 0.40
-_W_FORMALITY = 0.30
-_W_UNDERTONE = 0.18
-_W_AESTHETIC = 0.12
+# the load-bearing signals; style cohesion (perception-embedding agreement — do
+# the garments share one visual language?) is the composer's eyes; undertone
+# flattery and aesthetic agreement refine.
+_W_COLOR = 0.34
+_W_FORMALITY = 0.26
+_W_COHESION = 0.15
+_W_UNDERTONE = 0.15
+_W_AESTHETIC = 0.10
 
 # MMR trade-off: how much to favour diversity over pure relevance when selecting
 # the final set (0 = relevance only, 1 = diversity only). 0.3 keeps quality first.
@@ -148,6 +151,37 @@ def _outfit_color_harmony(items: tuple[Candidate, ...]) -> float:
     return sum(scores) / len(scores)
 
 
+# --- Style cohesion (perception-embedding agreement) ------------------------
+
+# Observed cosine range between SigLIP fashion-product embeddings: garments that
+# photograph as one aesthetic sit near the top; unrelated pieces near the bottom.
+# Cross-category cosines never reach 1.0 (a shoe is not a shirt), so the raw
+# mean is rescaled onto [0, 1] against this working band.
+_COHESION_LOW, _COHESION_HIGH = 0.20, 0.80
+
+
+def _pair_cosine(a: tuple[float, ...], b: tuple[float, ...]) -> float:
+    return sum(x * y for x, y in zip(a, b))  # embeddings are L2-normalized
+
+
+def _style_cohesion(items: tuple[Candidate, ...]) -> float:
+    """How much the garments share one visual language, in [0, 1].
+
+    Mean pairwise cosine of the items' perception embeddings, rescaled to the
+    observed working band. This is the classic content-based outfit-compatibility
+    baseline (Polyvore-style) and the composer's only signal that *sees* the
+    garments — colour/formality arithmetic cannot tell a varsity jacket from a
+    blazer of the same hue. Returns a neutral prior when fewer than two items
+    carry an embedding (pre-backfill honesty; never punishes missing data).
+    """
+    embs = [it.embedding for it in items if it.embedding is not None]
+    if len(embs) < 2:
+        return 0.6
+    cosines = [_pair_cosine(a, b) for a, b in itertools.combinations(embs, 2)]
+    mean = sum(cosines) / len(cosines)
+    return max(0.0, min(1.0, (mean - _COHESION_LOW) / (_COHESION_HIGH - _COHESION_LOW)))
+
+
 # --- Formality coherence + occasion fit ------------------------------------
 
 
@@ -236,11 +270,13 @@ def score_outfit(
     """
     color = _outfit_color_harmony(items)
     formality = _formality_fit(items, constraints.target_formality)
+    cohesion = _style_cohesion(items)
     undertone = _undertone_fit(items, constraints.preferred_hues)
     aesthetic = _aesthetic_fit(items, constraints.preferred_aesthetics)
     content = (
         _W_COLOR * color
         + _W_FORMALITY * formality
+        + _W_COHESION * cohesion
         + _W_UNDERTONE * undertone
         + _W_AESTHETIC * aesthetic
     )
@@ -304,6 +340,11 @@ def _explain(
     occasion = _OCCASION_PHRASE.get(constraints.occasion, constraints.occasion)
     reason = _color_reason(items) if color >= 0.75 else "balanced tones"
     sentence = f"{pieces.capitalize()} — {reason}, styled for {occasion}."
+    sentence += _pattern_phrase(items)
+    if _style_cohesion(items) >= 0.75:
+        sentence += (
+            " The pieces share one visual language, so the look reads styled, not assembled."
+        )
     sentence += _undertone_phrase(items, constraints)
     if constraints.goals:
         if constraints.goals_from_body:
@@ -316,6 +357,22 @@ def _explain(
         sentence += " Matched to the styles you've been saving."
     sentence += _wardrobe_phrase(items, wardrobe)
     return sentence
+
+
+def _pattern_phrase(items: tuple[Candidate, ...]) -> str:
+    """Name the pattern play — only when perception is certain of every read.
+
+    Exactly one patterned piece against solids is the classic statement-piece
+    construction; that is the only pattern claim confident enough to make.
+    Multiple patterns or unknown reads say nothing rather than guess (D6).
+    """
+    known = [(it, it.pattern) for it in items if it.pattern is not None]
+    patterned = [(it, p) for it, p in known if p != "solid"]
+    if len(known) < 2 or len(patterned) != 1 or len(known) != len(items):
+        return ""
+    hero, pattern = patterned[0]
+    name = hero.category.replace("_", " ")
+    return f" The {pattern} {name} is the statement piece; everything else stays solid to let it breathe."
 
 
 def _undertone_phrase(items: tuple[Candidate, ...], constraints: Constraints) -> str:
