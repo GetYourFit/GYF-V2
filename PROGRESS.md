@@ -606,3 +606,13 @@ Two entries in the dashboard = either normal deploy _history_ (every push is a
 deploy) or a duplicate service created manually alongside the blueprint one —
 check which one serves gyf-api.onrender.com and suspend the other; it burns
 free-tier hours for nothing.
+
+**Two Render services resolved:** `gyf-api-46e6` was a Blueprint-sync duplicate
+(created 2026-07-02 when the name `gyf-api` was already taken) — both were
+auto-deploying from main. Suspended it via the Render API (reversible); the
+live service behind gyf-api.onrender.com is untouched. `gyf-web` on Render is
+also a stale leftover (web lives on Vercel) — left alone, autoDeploy off.
+
+**Live-verified after deploy:** migration 0010 applied; deep Explore pages now
+full (24/24 at offsets 24/96/192 — previously 16 then dead at 40); POST
+/support/messages returns 201 and the row lands in support_messages.
