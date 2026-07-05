@@ -679,7 +679,16 @@ function StepYou({
         hint="Helps GYF choose flattering colours and cuts. Everything is optional."
       />
       <PhotoUpload onEstimated={applyEstimated} />
-      <FieldWrap label="I'm shopping for">
+      <FieldWrap
+        label="I'm shopping for"
+        badge={
+          !form.gender ? (
+            <span style={{ fontSize: "0.7rem", color: "var(--text-faint)" }}>
+              strongest signal — unset shows every gender
+            </span>
+          ) : null
+        }
+      >
         <DarkSelect
           options={GENDERS}
           placeholder="No preference"

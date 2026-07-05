@@ -755,3 +755,41 @@ URLs → srcSet falls back to src). Applied at all 13 image call sites (grids
 double-width guard, passthrough, srcset shape).
 
 **Gate:** tsc ✓ web 28 ✓ eslint ✓ prettier ✓.
+
+## 2026-07-05 (contd. 3) — unlike/unsave, Explore slot diversity, real body/skin-tone conditioning
+
+**Asks:** (1) "cannot unlike or unselect"; (2) "Explore only shows tops";
+(3) "stylist picks don't follow the gender/skin tone/body type of my photo".
+Two Explore-agent traces + one implementation agent (recsys) ran in parallel.
+
+**(1) cb2ffe3 — reactions & post bookmarks are toggles now.** New
+DELETE /social/posts/{id}/react (idempotent, count clamped ≥0); the feed marks
+the viewer's reacted posts so hearts survive reload; double-tap stays
+like-only; the post bookmark unsaves via the saved-look id. Explore item
+bookmarks already toggled fine.
+
+**(2) 9c5a32f — Explore tops-only root cause:** default feed text-searched
+the literal word "fashion" → SigLIP embedding lands on tops; no category
+lever existed. Fix: /items/search?slot= taxonomy-driven hard filter (reuses
+\_CATEGORY_FILTER), slot chips in the filter bar, and the default browse now
+interleaves per-slot pages (top/bottom/full_body/footwear) so every page is
+diverse. Verified live on prod: q=fashion&slot=footwear → all shoes.
+
+**(3) ce61dac — conditioning was mostly theater; now real.** Trace found:
+gender = only strong signal (candidate-pool filter) but never photo-derived;
+skin_tone referenced NOWHERE in recsys; body_type a no-op for 4/6 types;
+personalization_strength ignored both. Fixes: inverted_triangle→SLIM effects;
+skin_tone MST depth → chroma-target color signal (\_W_SKIN_TONE=0.10, unknown
+= byte-identical no-op, explanation only when it scored);
+personalization_strength counts body_type+skin_tone (honest deflation).
+rectangle/hourglass deliberately unmapped (no honest fit in effect vocab).
+Onboarding gender select now flags itself as the strongest signal when unset.
+
+**Known-open (data/ML, not code):** photo cannot set gender (needs a Space
+gender head or required manual field); skin-tone fairness eval FAILS DoD
+(max_band_gap 3.2 vs ≤1.0 — needs real MST-labelled set before the surfaced
+tone is trustworthy); undertone neutral/olive still yields flat 0.6. The
+"GYF_BODY_REMOTE_URL must stay unset" memory was confirmed obsolete (remote
+GPU lane verified live 2026-07-03).
+
+**Gate:** API 264 ✓ web 28 ✓ ruff/eslint/tsc/prettier ✓. All pushed.
