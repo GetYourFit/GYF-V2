@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import type { SavedOutfit } from "@gyf/types";
 
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
-import { mediaUrl } from "@/lib/media";
+import { mediaSrcSet, mediaUrl } from "@/lib/media";
 
 interface SavedCardProps {
   look: SavedOutfit;
@@ -38,6 +38,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={src}
+                  srcSet={mediaSrcSet(item.image_url, 400)}
                   alt={item.title}
                   loading="lazy"
                   className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"

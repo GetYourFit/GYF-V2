@@ -11,7 +11,7 @@ import { SavedCard } from "@/components/saved/saved-card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
-import { mediaUrl } from "@/lib/media";
+import { mediaSrcSet, mediaUrl } from "@/lib/media";
 
 const lux = [0.16, 1, 0.3, 1] as const;
 const GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3";
@@ -191,6 +191,7 @@ function SavedItemCard({ item, onRemove }: { item: SavedItem; onRemove: () => vo
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={src}
+            srcSet={mediaSrcSet(item.image_url, 400)}
             alt={item.title}
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"

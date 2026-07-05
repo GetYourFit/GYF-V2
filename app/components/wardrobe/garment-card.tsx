@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Trash2, Shirt, Scissors, Wind, Footprints, Watch, Layers } from "lucide-react";
 
 import type { WardrobeItem } from "@gyf/types";
-import { mediaUrl } from "@/lib/media";
+import { mediaSrcSet, mediaUrl } from "@/lib/media";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -59,6 +59,7 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={src}
+            srcSet={mediaSrcSet(item.image_url, 400)}
             alt={item.title}
             loading="lazy"
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}

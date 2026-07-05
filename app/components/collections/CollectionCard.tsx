@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { mediaUrl } from "@/lib/media";
+import { mediaSrcSet, mediaUrl } from "@/lib/media";
 import type { SavedItem, SavedOutfit } from "@gyf/types";
 
 const MONO: React.CSSProperties = {
@@ -40,6 +40,7 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={src}
+            srcSet={mediaSrcSet(item.image_url, 400)}
             alt={item.title}
             loading="lazy"
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
@@ -121,6 +122,7 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={s}
+                    srcSet={mediaSrcSet(p.image_url, 400)}
                     alt={p.title}
                     loading="lazy"
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}

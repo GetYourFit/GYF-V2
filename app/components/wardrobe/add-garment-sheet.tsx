@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { SearchResult, WardrobeItemInput } from "@gyf/types";
 import { browserApi } from "@/lib/api-client";
-import { mediaUrl } from "@/lib/media";
+import { mediaSrcSet, mediaUrl } from "@/lib/media";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const FOCUSABLE =
@@ -486,6 +486,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={src}
+                                  srcSet={mediaSrcSet(r.image_url, 400)}
                                   alt={r.title}
                                   loading="lazy"
                                   style={{

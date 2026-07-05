@@ -5,7 +5,7 @@ import { Bookmark, X, ChevronDown, ChevronUp, ShoppingBag, Wand2 } from "lucide-
 import { useState } from "react";
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { OutfitDetail } from "@/components/stylist/outfit-detail";
-import { mediaUrl } from "@/lib/media";
+import { mediaSrcSet, mediaUrl } from "@/lib/media";
 import type { Outfit, OutfitItem } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -187,6 +187,7 @@ export function OutfitCard({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={src}
+                      srcSet={mediaSrcSet(item.image_url, 400)}
                       alt={`${item.title ?? ""} — ${item.category.replace(/_/g, " ")}`}
                       loading="lazy"
                       style={{

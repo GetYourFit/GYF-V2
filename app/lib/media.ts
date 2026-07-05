@@ -16,3 +16,13 @@ export function mediaUrl(path: string | null | undefined, width?: number): strin
   }
   return `${API_BASE}${path}`;
 }
+
+/** Density-descriptor srcset (1x/2x) for CDN-resizable images so retina screens
+ *  get a sharp thumbnail without doubling bytes for everyone else. Returns
+ *  undefined when the URL isn't CDN-resizable (srcSet falls back to src). */
+export function mediaSrcSet(path: string | null | undefined, width: number): string | undefined {
+  const x1 = mediaUrl(path, width);
+  const x2 = mediaUrl(path, width * 2);
+  if (!x1 || !x2 || x1 === x2) return undefined;
+  return `${x1} 1x, ${x2} 2x`;
+}

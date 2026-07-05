@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { TryOnSection } from "@/components/stylist/try-on-section";
 import { browserApi } from "@/lib/api-client";
-import { mediaUrl } from "@/lib/media";
+import { mediaSrcSet, mediaUrl } from "@/lib/media";
 import type { Outfit, OutfitItem } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -258,7 +258,8 @@ export function OutfitDetail({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={src}
-                        alt={`${item.title} — ${item.category.replace(/_/g, " ")}`}
+                        alt={`${item.title}
+                        srcSet={mediaSrcSet(item.image_url, 800)} — ${item.category.replace(/_/g, " ")}`}
                         style={{
                           width: "100%",
                           height: "100%",
@@ -706,6 +707,7 @@ function SwapButton({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={src}
+                      srcSet={mediaSrcSet(alt.image_url, 400)}
                       alt=""
                       style={{
                         width: "100%",
