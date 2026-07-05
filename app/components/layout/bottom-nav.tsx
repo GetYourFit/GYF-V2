@@ -127,8 +127,39 @@ export function BottomNav() {
           position: "relative",
         }}
       >
-        {/* Button itself carries the rotating color — a white inner disc
-            keeps the logo legible against every color in the cycle. */}
+        {/* Outer bloom — same color cycle as the ring, one shared transition
+            so both stay perfectly in sync, plus a slow breathing pulse. */}
+        <motion.div
+          aria-hidden
+          animate={
+            reduce
+              ? { backgroundColor: ROTATING_COLORS[0] }
+              : { backgroundColor: ROTATING_COLORS, scale: [1, 1.12, 1], opacity: [0.35, 0.55, 0.35] }
+          }
+          transition={
+            reduce
+              ? undefined
+              : {
+                  backgroundColor: {
+                    duration: ROTATING_COLORS.length * 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  },
+                  scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                  opacity: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                }
+          }
+          style={{
+            position: "absolute",
+            width: 60,
+            height: 60,
+            borderRadius: "50%",
+            filter: "blur(10px)",
+          }}
+        />
+
+        {/* Button itself carries the same rotating color — a white inner
+            disc keeps the logo legible against every color in the cycle. */}
         <motion.div
           whileTap={reduce ? undefined : { scale: 0.88 }}
           animate={
@@ -143,6 +174,7 @@ export function BottomNav() {
               : { duration: ROTATING_COLORS.length * 3, repeat: Infinity, ease: "easeInOut" },
           }}
           style={{
+            position: "relative",
             width: 44,
             height: 44,
             borderRadius: "50%",
