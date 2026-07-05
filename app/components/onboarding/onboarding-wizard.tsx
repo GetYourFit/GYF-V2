@@ -411,8 +411,10 @@ export function OnboardingWizard() {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: "var(--secondary)",
+                      background:
+                        "linear-gradient(90deg, var(--secondary) 0%, #f0bd8f 100%)",
                       display: "block",
+                      borderRadius: "999px",
                     }}
                   />
                 </button>
@@ -575,13 +577,15 @@ export function OnboardingWizard() {
             type="button"
             onClick={() => goTo(step + 1)}
             whileTap={{ scale: 0.97 }}
+            whileHover={{ y: -2, boxShadow: "0 6px 18px rgba(176,71,96,0.22)" }}
+            transition={{ type: "spring", stiffness: 500, damping: 28 }}
             style={{
               display: "flex",
               alignItems: "center",
               gap: "0.5rem",
               minHeight: "44px",
               padding: "0 1.5rem",
-              background: "#1c1a17",
+              background: "linear-gradient(135deg, #1c1a17 0%, #322a28 100%)",
               color: "#faf8f5",
               border: "none",
               borderRadius: "999px",

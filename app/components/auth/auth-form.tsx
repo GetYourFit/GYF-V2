@@ -89,8 +89,8 @@ function IndustrialInput({
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: focused ? "#1c1a17" : "var(--text-faint)",
-          transition: "color 0.2s",
+          color: focused ? "var(--secondary, #b04760)" : "var(--text-faint)",
+          transition: "color 0.25s ease",
         }}
       >
         {label}
@@ -102,8 +102,9 @@ function IndustrialInput({
           style={{
             position: "absolute",
             left: 0,
-            color: focused ? "#1c1a17" : "var(--text-faint)",
-            transition: "color 0.2s",
+            color: focused ? "var(--secondary, #b04760)" : "var(--text-faint)",
+            transition: "color 0.25s ease, transform 0.25s ease",
+            transform: focused ? "scale(1.1)" : "scale(1)",
             flexShrink: 0,
           }}
         />
@@ -121,14 +122,14 @@ function IndustrialInput({
             width: "100%",
             background: "transparent",
             border: "none",
-            borderBottom: `1px solid ${focused ? "#1c1a17" : "#444748"}`,
+            borderBottom: `1.5px solid ${focused ? "var(--secondary, #b04760)" : "#444748"}`,
             borderRadius: 0,
             padding: "0.75rem 2rem 0.75rem 1.75rem",
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "1rem",
             color: "#1c1a17",
             outline: "none",
-            transition: "border-color 0.2s",
+            transition: "border-color 0.25s ease",
             minHeight: "44px",
           }}
         />
@@ -223,11 +224,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
             gap: "0.5rem",
           }}
         >
-          <span
+          <motion.span
             aria-hidden
+            animate={{ width: [16, 24, 16] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: EASE }}
             style={{
               display: "inline-block",
-              width: 24,
               height: 1,
               background: "var(--secondary)",
               flexShrink: 0,
@@ -344,11 +346,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
           disabled={busy}
           aria-busy={busy}
           whileTap={reduce ? undefined : { scale: 0.97 }}
+          whileHover={reduce || busy ? undefined : { y: -2 }}
           transition={{ type: "spring", stiffness: 500, damping: 28 }}
           style={{
             width: "100%",
             minHeight: "52px",
-            background: busy ? "#444" : "#1c1a17",
+            background: busy
+              ? "#444"
+              : "linear-gradient(135deg, #1c1a17 0%, #322a28 100%)",
             color: "#faf8f5",
             border: "none",
             borderRadius: "16px",
@@ -362,7 +367,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
             alignItems: "center",
             justifyContent: "center",
             gap: "0.5rem",
-            transition: "background 0.2s",
+            boxShadow: busy ? "none" : "0 6px 20px rgba(176,71,96,0.22)",
+            transition: "background 0.2s, box-shadow 0.3s ease",
           }}
         >
           {busy ? (
@@ -393,9 +399,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <Link
             href={copy.altHref}
             style={{
-              color: "#5c5650",
+              color: "var(--secondary, #b04760)",
+              fontWeight: 600,
               textDecoration: "underline",
               textUnderlineOffset: "3px",
+              transition: "opacity 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.opacity = "0.7";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.opacity = "1";
             }}
           >
             {copy.altLabel}

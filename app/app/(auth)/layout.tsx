@@ -19,8 +19,52 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         alignItems: "center",
         justifyContent: "center",
         padding: "env(safe-area-inset-top) 1.5rem env(safe-area-inset-bottom)",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      {/* Soft ambient color blobs — soothing, slow drift */}
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, 24, 0], y: [0, 18, 0] }}
+        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          top: "-12%",
+          left: "-18%",
+          width: "60vw",
+          height: "60vw",
+          maxWidth: 420,
+          maxHeight: 420,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(176,71,96,0.14) 0%, rgba(176,71,96,0) 70%)",
+          filter: "blur(2px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <motion.div
+        aria-hidden
+        animate={{ x: [0, -20, 0], y: [0, -14, 0] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        style={{
+          position: "absolute",
+          bottom: "-14%",
+          right: "-16%",
+          width: "55vw",
+          height: "55vw",
+          maxWidth: 380,
+          maxHeight: 380,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(240,189,143,0.20) 0%, rgba(240,189,143,0) 70%)",
+          filter: "blur(2px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+
       {/* Subtle grid overlay for industrial texture */}
       <div
         aria-hidden
@@ -53,7 +97,17 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           transition={{ duration: 0.5, ease: EASE }}
           style={{ display: "flex", justifyContent: "center" }}
         >
-          <Link href="/" aria-label="GYF home">
+          <Link
+            href="/"
+            aria-label="GYF home"
+            style={{ display: "inline-block", transition: "transform 0.25s ease" }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.transform = "scale(1.04)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.transform = "scale(1)";
+            }}
+          >
             <GYFLogo width={150} />
           </Link>
         </motion.div>
