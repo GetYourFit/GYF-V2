@@ -25,7 +25,7 @@ const SLOT_ICONS: Record<string, React.ElementType> = {
 
 export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
   const reduce = useReducedMotion();
-  const src = mediaUrl(item.image_url);
+  const src = mediaUrl(item.image_url, 400);
   const SlotIcon = SLOT_ICONS[item.slot] ?? Layers;
 
   return (

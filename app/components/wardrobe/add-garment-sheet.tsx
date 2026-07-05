@@ -460,7 +460,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         }}
                       >
                         {results.map((r) => {
-                          const src = mediaUrl(r.image_url);
+                          const src = mediaUrl(r.image_url, 400);
                           return (
                             <motion.button
                               key={r.item_id}

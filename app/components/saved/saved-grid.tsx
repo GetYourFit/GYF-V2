@@ -182,7 +182,7 @@ function itemPrice(item: SavedItem): string | null {
 }
 
 function SavedItemCard({ item, onRemove }: { item: SavedItem; onRemove: () => void }) {
-  const src = mediaUrl(item.image_url);
+  const src = mediaUrl(item.image_url, 400);
   const price = itemPrice(item);
   return (
     <article className="group relative flex flex-col border border-border bg-surface transition-colors duration-300 hover:border-border-hi">

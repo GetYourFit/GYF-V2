@@ -18,7 +18,7 @@ interface SavedItemCardProps {
 
 export function SavedItemCard({ item }: SavedItemCardProps) {
   const reduce = useReducedMotion();
-  const src = mediaUrl(item.image_url);
+  const src = mediaUrl(item.image_url, 400);
 
   return (
     <motion.div
@@ -114,7 +114,7 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
       >
         {previews.length > 0 ? (
           previews.map((p) => {
-            const s = mediaUrl(p.image_url);
+            const s = mediaUrl(p.image_url, 400);
             return (
               <div key={p.item_id} style={{ overflow: "hidden", background: "#1a1a22" }}>
                 {s ? (

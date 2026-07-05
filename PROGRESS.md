@@ -698,3 +698,29 @@ scoping + pgbouncer compat confirmed sound. Known-open: RLS still
 defense-in-depth only (documented, app connects as owner).
 
 **Gate:** API 258 ✓ web 24 ✓ ruff/eslint/tsc/format ✓.
+
+## 2026-07-05 — perf batch (plan items 1, 3, 4) landed
+
+**Ask (2026-07-04):** plan and do perf items 1, 3, 4 from the latency review.
+
+**1 — CDN-sized images:** `mediaUrl()` gains a `width` hint; Shopify-hosted
+catalog photos get `?width=` appended so grids load ~30 KB thumbnails (400px)
+and detail views 800px instead of raw 300–600 KB originals. All 13 image call
+sites updated (grids 400, detail/hero 800); explore-card + post-card were
+bypassing mediaUrl entirely and now route through it.
+
+**3 — token reads off the supabase-js lock:** `browserApi()` now reads the
+access token straight from the @supabase/ssr cookie (shared parser extracted
+from the Edge middleware into `accessTokenFromCookies`), only falling back to
+a 3s-time-boxed `getSession()` when the token is missing/near expiry (that
+path drives the refresh exchange). Kills the 20s+ navigator.locks hang that
+made every API call stall. Bonus correctness: profile mutations
+(putProfile/uploadPhoto) now `clearViewCaches()` so back-nav can't repaint
+feeds built for the old gender/region/tastes.
+
+**4 — server round-trip cuts:** query-embedding LRU (512 entries) in
+`SiglipTextEmbedder` — Explore's default query no longer re-encodes per visit
+(seconds on CPU lane / a Space round-trip on remote); `/items/facets` sends
+`Cache-Control: public, max-age=3600` (facets change only on ingest).
+
+**Gate:** API 258 ✓ web 24 (vitest) ✓ ruff/eslint/tsc/prettier ✓.

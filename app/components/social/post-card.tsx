@@ -5,6 +5,7 @@ import { Heart, Share2, Bookmark, Shirt } from "lucide-react";
 import { useState } from "react";
 import type { Post } from "@gyf/types";
 import { browserApi } from "@/lib/api-client";
+import { mediaUrl } from "@/lib/media";
 
 const LUX = [0.16, 1, 0.3, 1] as const;
 
@@ -46,7 +47,7 @@ export function PostCard({
   const [burst, setBurst] = useState(0);
   const [captionExpanded, setCaptionExpanded] = useState(false);
 
-  const heroImage = post.items.find((i) => i.image_url)?.image_url ?? null;
+  const heroImage = mediaUrl(post.items.find((i) => i.image_url)?.image_url, 800);
 
   async function toggleSave() {
     // One-way save (no unsave endpoint for looks yet); idempotent server-side.

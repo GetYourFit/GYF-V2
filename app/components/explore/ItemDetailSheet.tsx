@@ -46,7 +46,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
   const reduce = useReducedMotion();
   const { toast } = useToast();
   const [addingToWardrobe, setAddingToWardrobe] = useState(false);
-  const src = item ? mediaUrl(item.image_url) : null;
+  const src = item ? mediaUrl(item.image_url, 800) : null;
   const price = item ? formatPrice(item.price, item.currency) : null;
 
   async function handleAddToWardrobe() {

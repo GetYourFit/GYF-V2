@@ -20,11 +20,20 @@ function decodeBase64Url(value: string): string {
  *  middleware runtime). Returns null when no well-formed session cookie is present
  *  — the caller then treats the request as anonymous. */
 export function readAccessToken(request: NextRequest, storageKey: string): string | null {
-  let encoded = request.cookies.get(storageKey)?.value;
+  return accessTokenFromCookies((name) => request.cookies.get(name)?.value, storageKey);
+}
+
+/** Core of {@link readAccessToken}, generic over the cookie jar so the browser
+ *  (document.cookie) and the Edge middleware (NextRequest) share one parser. */
+export function accessTokenFromCookies(
+  getCookie: (name: string) => string | undefined,
+  storageKey: string,
+): string | null {
+  let encoded = getCookie(storageKey);
   if (encoded === undefined) {
     const chunks: string[] = [];
     for (let i = 0; ; i += 1) {
-      const chunk = request.cookies.get(`${storageKey}.${i}`)?.value;
+      const chunk = getCookie(`${storageKey}.${i}`);
       if (chunk === undefined) break;
       chunks.push(chunk);
     }

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 
 from ..catalog.directory import ItemDirectory
@@ -50,12 +50,15 @@ def _genders(gender: str | None) -> frozenset[str] | None:
 
 @router.get("/items/facets", dependencies=[Depends(rate_limit("facets", "rate_limit_search"))])
 def catalog_facets(
+    response: Response,
     region: str | None = None,
     repo: VectorSearchRepository = Depends(get_search_repo),
 ) -> CatalogFacets:
     """Real filter ranges for the (region-scoped) catalog so the client only
     offers filters the data can satisfy — e.g. ``priced == 0`` tells Explore to
     hide the price control rather than present a slider that empties the grid."""
+    # Facets change only on catalog ingest — let the browser skip the round-trip.
+    response.headers["Cache-Control"] = "public, max-age=3600"
     return repo.catalog_facets(region)
 
 

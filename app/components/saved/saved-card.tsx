@@ -28,7 +28,7 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
       {/* Garment image strip */}
       <div className="flex gap-px bg-border">
         {look.items.map((item) => {
-          const src = mediaUrl(item.image_url);
+          const src = mediaUrl(item.image_url, 400);
           return (
             <div
               key={item.item_id}

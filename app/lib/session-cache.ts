@@ -17,3 +17,16 @@ export function writeCache(key: string, value: unknown) {
     // quota/private-mode: cache is best-effort
   }
 }
+
+/** Drop every cached view. Called after profile mutations: a cached feed/grid
+ *  was built for the OLD profile (gender, region, tastes) — repainting it on
+ *  back-nav would keep showing stale recommendations. */
+export function clearViewCaches() {
+  try {
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith("gyf:")) sessionStorage.removeItem(key);
+    }
+  } catch {
+    // best-effort
+  }
+}

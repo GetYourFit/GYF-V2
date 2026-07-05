@@ -27,8 +27,17 @@ class SiglipTextEmbedder:
         self._encoder = default_encoder()
 
     def embed_query(self, text: str) -> list[float]:
-        vec = self._encoder.encode_texts([text])[0]
-        return [float(x) for x in vec]
+        return list(_cached_query_vec(self._encoder, text))
+
+
+@lru_cache(maxsize=512)
+def _cached_query_vec(encoder, text: str) -> tuple[float, ...]:
+    """Query-embedding cache. One text encode costs seconds on the free-tier CPU
+    lane and a full Space round-trip on the remote lane — and Explore fires the
+    same default query on every visit. Cache the vector, not just the model.
+    Keyed on the encoder instance (a process-wide singleton) + query text;
+    tuple-valued so cached entries are immutable."""
+    return tuple(float(x) for x in encoder.encode_texts([text])[0])
 
 
 @lru_cache(maxsize=1)

@@ -242,7 +242,7 @@ export function OutfitDetail({
               }}
             >
               {outfit.items.map((item) => {
-                const src = mediaUrl(item.image_url);
+                const src = mediaUrl(item.image_url, 800);
                 return (
                   <div
                     key={item.item_id}
@@ -681,7 +681,7 @@ function SwapButton({
             </span>
           )}
           {alts?.map((alt) => {
-            const src = mediaUrl(alt.image_url);
+            const src = mediaUrl(alt.image_url, 400);
             return (
               <button
                 key={alt.item_id}

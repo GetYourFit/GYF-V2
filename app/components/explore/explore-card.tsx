@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 
 import type { SearchResult } from "@gyf/types";
+import { mediaUrl } from "@/lib/media";
 
 interface ExploreCardProps {
   item: SearchResult;
@@ -69,7 +70,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
           <>
             <div className="skeleton" style={{ position: "absolute", inset: 0 }} aria-hidden />
             <motion.img
-              src={item.image_url}
+              src={mediaUrl(item.image_url, 400) ?? undefined}
               alt={item.title}
               loading="lazy"
               whileHover={reduce ? undefined : { scale: 1.03 }}

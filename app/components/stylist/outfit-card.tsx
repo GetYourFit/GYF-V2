@@ -165,7 +165,7 @@ export function OutfitCard({
           }}
         >
           {outfit.items.map((item) => {
-            const src = mediaUrl(item.image_url);
+            const src = mediaUrl(item.image_url, 400);
             // No price tag on garments the user already owns — nothing to buy.
             const tag = item.owned ? null : price(item);
 

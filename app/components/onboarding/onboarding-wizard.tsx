@@ -916,7 +916,11 @@ function DeleteAccount() {
     try {
       await browserApi().deleteAccount();
       await createSupabaseBrowserClient().auth.signOut();
-      toast({ variant: "success", title: "Account deleted", description: "Your data has been erased." });
+      toast({
+        variant: "success",
+        title: "Account deleted",
+        description: "Your data has been erased.",
+      });
       router.push("/login");
       router.refresh();
     } catch {

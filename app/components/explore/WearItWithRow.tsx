@@ -47,7 +47,7 @@ function Skeleton() {
 }
 
 function Tile({ item }: { item: OutfitItem }) {
-  const src = mediaUrl(item.image_url);
+  const src = mediaUrl(item.image_url, 400);
   const price = formatPrice(item.price, item.currency);
   const open = () => {
     if (item.affiliate_url) window.open(item.affiliate_url, "_blank", "noopener,noreferrer");
