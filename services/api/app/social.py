@@ -34,6 +34,11 @@ INSERT INTO post_reactions (post_id, user_id, reaction) VALUES (%s, %s, %s)
 ON CONFLICT (post_id, user_id) DO NOTHING
 """
 _BUMP = "UPDATE social_posts SET reaction_count = reaction_count + 1 WHERE id = %s"
+_UNREACT = "DELETE FROM post_reactions WHERE post_id = %s AND user_id = %s"
+_UNBUMP = """
+UPDATE social_posts SET reaction_count = GREATEST(reaction_count - 1, 0) WHERE id = %s
+"""
+_REACTED = "SELECT post_id FROM post_reactions WHERE user_id = %s AND post_id = ANY(%s)"
 _FEED_BY_AUTHORS = """
 SELECT id, user_id, item_ids, caption, occasion, region, reaction_count, created_at
 FROM social_posts WHERE user_id = ANY(%s)
@@ -86,6 +91,8 @@ class Post(BaseModel):
     occasion: str | None = None
     region: str | None = None
     reaction_count: int = 0
+    reacted: bool = False
+    """Whether the *viewer* has reacted — lets the heart survive a reload."""
     items: list[SavedItem] = []
 
 
@@ -110,6 +117,14 @@ class SocialRepository(Protocol):
 
     def react(self, post_id: str, user_id: str, reaction: str) -> bool:
         """React once per (post, user). Returns True if newly reacted."""
+        ...
+
+    def unreact(self, post_id: str, user_id: str) -> bool:
+        """Remove the user's reaction. Idempotent; True if one was removed."""
+        ...
+
+    def reacted_post_ids(self, user_id: str, post_ids: list[str]) -> set[str]:
+        """Which of ``post_ids`` the user has reacted to (feed heart state)."""
         ...
 
     def follow(self, follower_id: str, followee_id: str) -> bool:
@@ -177,6 +192,21 @@ class PostgresSocialRepository:
                 conn.execute(_BUMP, (post_id,))
                 return True
             return False
+
+    def unreact(self, post_id: str, user_id: str) -> bool:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            cur = conn.execute(_UNREACT, (post_id, user_id))
+            if cur.rowcount > 0:
+                conn.execute(_UNBUMP, (post_id,))
+                return True
+            return False
+
+    def reacted_post_ids(self, user_id: str, post_ids: list[str]) -> set[str]:
+        if not post_ids:
+            return set()
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            rows = conn.execute(_REACTED, (user_id, post_ids)).fetchall()
+        return {str(r[0]) for r in rows}
 
     def follow(self, follower_id: str, followee_id: str) -> bool:
         from psycopg.errors import ForeignKeyViolation  # lazy, like the pool import
@@ -247,6 +277,17 @@ class InMemorySocialRepository:
         post.reaction_count += 1
         return True
 
+    def unreact(self, post_id: str, user_id: str) -> bool:
+        post = self.get(post_id)
+        if post is None or (post_id, user_id) not in self.reactions:
+            return False
+        self.reactions.discard((post_id, user_id))
+        post.reaction_count = max(post.reaction_count - 1, 0)
+        return True
+
+    def reacted_post_ids(self, user_id: str, post_ids: list[str]) -> set[str]:
+        return {pid for pid in post_ids if (pid, user_id) in self.reactions}
+
     def follow(self, follower_id: str, followee_id: str) -> bool:
         if self.known_users is not None and followee_id not in self.known_users:
             raise KeyError(followee_id)
@@ -278,8 +319,15 @@ def make_record(payload: PostInput, user_id: str) -> PostRecord:
     )
 
 
-def enrich_feed(records: list[PostRecord], directory: ItemDirectory) -> list[Post]:
-    """Enrich each post's look (item ids → display records) in one directory call."""
+def enrich_feed(
+    records: list[PostRecord],
+    directory: ItemDirectory,
+    reacted_ids: set[str] | None = None,
+) -> list[Post]:
+    """Enrich each post's look (item ids → display records) in one directory call.
+
+    ``reacted_ids`` marks which posts the *viewer* has reacted to so the client
+    can render (and toggle) the heart accurately across reloads."""
     all_ids = [i for r in records for i in r.item_ids]
     details = directory.lookup(all_ids) if all_ids else {}
     posts: list[Post] = []
@@ -307,6 +355,7 @@ def enrich_feed(records: list[PostRecord], directory: ItemDirectory) -> list[Pos
                 occasion=r.occasion,
                 region=r.region,
                 reaction_count=r.reaction_count,
+                reacted=r.id in reacted_ids if reacted_ids else False,
                 items=items,
             )
         )

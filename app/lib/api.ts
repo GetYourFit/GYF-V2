@@ -316,6 +316,11 @@ export class GyfApi {
     return this.request("POST", `/social/posts/${encodeURIComponent(postId)}/react`, { reaction });
   }
 
+  /** Remove the caller's reaction (idempotent 204). */
+  unreactToPost(postId: string): Promise<void> {
+    return this.request<void>("DELETE", `/social/posts/${encodeURIComponent(postId)}/react`);
+  }
+
   /** Re-render a post's look for the *caller* — never a blind copy. 404 if gone / not onboarded. */
   recreatePost(postId: string): Promise<OutfitRecommendation> {
     return this.request<OutfitRecommendation>(

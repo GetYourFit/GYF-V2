@@ -51,7 +51,9 @@ def social_feed(
 ) -> dict[str, list[Post]]:
     """Posts ranked by engagement then recency, each with its look rendered."""
     authors = repo.following(principal.user_id) if scope == "following" else None
-    return {"posts": enrich_feed(repo.feed(limit, offset, authors), directory)}
+    records = repo.feed(limit, offset, authors)
+    reacted = repo.reacted_post_ids(principal.user_id, [r.id for r in records])
+    return {"posts": enrich_feed(records, directory, reacted)}
 
 
 @router.post("/social/posts", status_code=201, summary="Share a look")
@@ -83,6 +85,22 @@ def react_to_post(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown post")
     newly = repo.react(post_id, principal.user_id, body.reaction)
     return {"post_id": post_id, "reacted": newly}
+
+
+@router.delete(
+    "/social/posts/{post_id}/react",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove a reaction",
+    dependencies=[Depends(rate_limit("feedback", "rate_limit_feedback"))],
+)
+def unreact_to_post(
+    post_id: str,
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+) -> Response:
+    """Un-react (idempotent: 204 whether or not a reaction existed)."""
+    repo.unreact(post_id, principal.user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.put(

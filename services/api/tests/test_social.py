@@ -70,6 +70,24 @@ def test_react_is_idempotent_and_bumps_count():
         app.dependency_overrides.clear()
 
 
+def test_unreact_removes_reaction_and_feed_marks_viewer_state():
+    repo = InMemorySocialRepository()
+    try:
+        client = _client(repo)
+        pid = client.post("/social/posts", json={"item_ids": ["item-1"]}).json()["id"]
+        client.post(f"/social/posts/{pid}/react", json={"reaction": "like"})
+        assert client.get("/social/posts").json()["posts"][0]["reacted"] is True
+
+        assert client.delete(f"/social/posts/{pid}/react").status_code == 204
+        assert repo.get(pid).reaction_count == 0
+        assert client.get("/social/posts").json()["posts"][0]["reacted"] is False
+        # idempotent: a second unreact is a 204 no-op and never goes negative
+        assert client.delete(f"/social/posts/{pid}/react").status_code == 204
+        assert repo.get(pid).reaction_count == 0
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_react_unknown_post_404s():
     try:
         client = _client()

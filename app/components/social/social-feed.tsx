@@ -128,6 +128,22 @@ export function SocialFeed() {
     [toast],
   );
 
+  const unreact = useCallback(
+    async (postId: string): Promise<void> => {
+      try {
+        await browserApi().unreactToPost(postId);
+      } catch (e) {
+        toast({
+          variant: "error",
+          title: "Couldn't remove the reaction",
+          description: e instanceof ApiError ? e.message : "Please try again in a moment.",
+        });
+        throw e;
+      }
+    },
+    [toast],
+  );
+
   const handleShared = useCallback(
     (text: string) => {
       toast({ variant: "success", title: "Shared", description: text });
@@ -380,6 +396,7 @@ export function SocialFeed() {
                   viewerId={viewerId}
                   followed={follows.has(post.user_id)}
                   onReact={react}
+                  onUnreact={unreact}
                   onShared={handleShared}
                   onToggleFollow={(userId) => void toggleFollow(userId)}
                 />

@@ -571,7 +571,11 @@ export interface paths {
          * @description React once per (post, user). 404 if the post does not exist.
          */
         post: operations["react_to_post_social_posts__post_id__react_post"];
-        delete?: never;
+        /**
+         * Remove a reaction
+         * @description Un-react (idempotent: 204 whether or not a reaction existed).
+         */
+        delete: operations["unreact_to_post_social_posts__post_id__react_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -644,6 +648,29 @@ export interface paths {
          *     404 if the caller has not onboarded.
          */
         post: operations["recreate_post_social_posts__post_id__recreate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/support/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a contact or grievance message
+         * @description Persist the message attributed to the authenticated user.
+         *
+         *     The success state the client shows is only earned by this 201 — the forms
+         *     never fake a sent state (CLAUDE.md §7.1 #12).
+         */
+        post: operations["create_support_message_support_messages_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -946,6 +973,11 @@ export interface components {
              */
             reaction_count: number;
             /**
+             * Reacted
+             * @default false
+             */
+            reacted: boolean;
+            /**
              * Items
              * @default []
              */
@@ -1209,6 +1241,20 @@ export interface components {
             color?: string | null;
             /** Buy Url */
             buy_url?: string | null;
+        };
+        /** SupportMessageRequest */
+        SupportMessageRequest: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "contact" | "grievance";
+            /** Category */
+            category?: string | null;
+            /** Message */
+            message: string;
+            /** Reply Email */
+            reply_email?: string | null;
         };
         /**
          * SystemStatus
@@ -2206,6 +2252,35 @@ export interface operations {
             };
         };
     };
+    unreact_to_post_social_posts__post_id__react_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     follow_user_social_follows__user_id__put: {
         parameters: {
             query?: never;
@@ -2308,6 +2383,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OutfitRecommendation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_support_message_support_messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
             /** @description Validation Error */

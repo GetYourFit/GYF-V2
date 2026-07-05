@@ -17,6 +17,7 @@ interface PostCardProps {
   /** Whether the viewer currently follows this post's author. */
   followed?: boolean;
   onReact?: (postId: string) => Promise<boolean>;
+  onUnreact?: (postId: string) => Promise<void>;
   onShared?: (text: string) => void;
   onDressLikeMe?: (post: Post) => void;
   onToggleFollow?: (userId: string) => void;
@@ -33,14 +34,16 @@ export function PostCard({
   viewerId,
   followed = false,
   onReact,
+  onUnreact,
   onShared,
   onDressLikeMe,
   onToggleFollow,
 }: PostCardProps) {
   const reduceMotion = useReducedMotion();
   const author = authorOf(post.user_id);
-  const [reacted, setReacted] = useState(false);
+  const [reacted, setReacted] = useState(post.reacted ?? false);
   const [saved, setSaved] = useState(false);
+  const [savedOutfitId, setSavedOutfitId] = useState<string | null>(null);
   const [savePending, setSavePending] = useState(false);
   const [count, setCount] = useState(post.reaction_count);
   const [pending, setPending] = useState(false);
@@ -51,17 +54,32 @@ export function PostCard({
   const heroImage = mediaUrl(heroPath, 800);
 
   async function toggleSave() {
-    // One-way save (no unsave endpoint for looks yet); idempotent server-side.
-    if (saved || savePending || post.items.length === 0) return;
+    // ponytail: saved state is per-session (fresh loads start unsaved) — the
+    // saved-looks page is the durable view; wire feed-level saved detection
+    // if users ask for it.
+    if (savePending || post.items.length === 0) return;
     setSavePending(true);
+    if (saved) {
+      setSaved(false);
+      try {
+        if (savedOutfitId) await browserApi().removeSavedOutfit(savedOutfitId);
+        setSavedOutfitId(null);
+      } catch {
+        setSaved(true);
+      } finally {
+        setSavePending(false);
+      }
+      return;
+    }
     setSaved(true);
     try {
-      await browserApi().saveOutfit({
+      const savedLook = await browserApi().saveOutfit({
         outfit_key: `post:${post.id}`,
         item_ids: post.items.map((i) => i.item_id),
         occasion: post.occasion ?? undefined,
         explanation: post.caption ?? undefined,
       });
+      setSavedOutfitId(savedLook.id);
     } catch {
       setSaved(false);
     } finally {
@@ -69,18 +87,29 @@ export function PostCard({
     }
   }
 
-  async function react() {
-    if (pending || reacted) return;
+  /** Toggle from the heart button; double-tap only ever likes (never un-likes). */
+  async function react(mode: "toggle" | "like" = "toggle") {
+    if (pending) return;
+    if (reacted && mode === "like") return;
     setPending(true);
+    if (reacted) {
+      setReacted(false);
+      setCount((n) => Math.max(0, n - 1));
+      try {
+        await onUnreact?.(post.id);
+      } catch {
+        setReacted(true);
+        setCount((n) => n + 1);
+      } finally {
+        setPending(false);
+      }
+      return;
+    }
     setReacted(true);
     setCount((n) => n + 1);
     setBurst((b) => b + 1);
     try {
-      const ok = onReact ? await onReact(post.id) : true;
-      if (!ok) {
-        setReacted(false);
-        setCount((n) => Math.max(0, n - 1));
-      }
+      if (onReact) await onReact(post.id);
     } catch {
       setReacted(false);
       setCount((n) => Math.max(0, n - 1));
@@ -221,7 +250,7 @@ export function PostCard({
       {heroImage && (
         <button
           type="button"
-          onDoubleClick={react}
+          onDoubleClick={() => void react("like")}
           aria-label="Double-tap to react"
           style={{
             position: "relative",
@@ -313,7 +342,7 @@ export function PostCard({
           type="button"
           aria-label={reacted ? "Reacted" : "React"}
           aria-pressed={reacted}
-          onClick={react}
+          onClick={() => void react("toggle")}
           disabled={pending}
           whileTap={reduceMotion ? undefined : { scale: 0.88 }}
           style={{
