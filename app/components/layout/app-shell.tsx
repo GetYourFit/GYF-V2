@@ -52,18 +52,18 @@ export function AppShell({ children }: AppShellProps) {
             aria-label="Get Your Fit home"
             style={{ display: "flex", justifyContent: "center", alignItems: "center" }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/assets/get-your-fit.png"
-              alt="Get Your Fit"
+            <span
               style={{
-                display: "block",
-                width: 180,
-                height: 32,
-                objectFit: "none",
-                objectPosition: "49% 42%",
+                fontSize: "1.05rem",
+                fontWeight: 800,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "#1c1a17",
+                whiteSpace: "nowrap",
               }}
-            />
+            >
+              Get Your Fit
+            </span>
           </Link>
 
           {/* Right — menu button */}

@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { NavExplore } from "@/components/icons/NavExplore";
 import { NavWardrobe } from "@/components/icons/NavWardrobe";
@@ -109,12 +110,12 @@ export function BottomNav() {
         );
       })}
 
-      {/* Centre wordmark — redirects to Stylist */}
+      {/* Centre logo — redirects to Stylist */}
       <Link
         href="/"
-        aria-label="GET YOUR FIT — Go to Stylist"
+        aria-label="GYF — Go to Stylist"
         style={{
-          flex: "0 0 96px",
+          flex: "0 0 64px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -122,24 +123,29 @@ export function BottomNav() {
           position: "relative",
         }}
       >
-        <motion.span
-          whileTap={reduce ? undefined : { scale: 0.94 }}
+        <motion.div
+          whileTap={reduce ? undefined : { scale: 0.88 }}
           transition={{ type: "spring", stiffness: 500, damping: 25 }}
           style={{
-            fontFamily: "var(--font-display-serif)",
-            fontSize: "0.72rem",
-            fontWeight: 600,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "#1a1714",
-            lineHeight: 1.2,
-            textAlign: "center",
-            display: "block",
-            userSelect: "none",
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: "#ffffff",
+            border: "1.5px solid rgba(0,0,0,0.10)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.10)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          GET<br />YOUR FIT
-        </motion.span>
+          <Image
+            src="/assets/logo.png"
+            alt="GYF"
+            width={139}
+            height={125}
+            style={{ width: 28, height: "auto" }}
+          />
+        </motion.div>
       </Link>
 
       {/* Right tabs */}
