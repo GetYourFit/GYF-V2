@@ -55,10 +55,11 @@ export function AppShell({ children }: AppShellProps) {
             <span
               style={{
                 fontFamily: "var(--font-display-serif)",
-                fontStyle: "italic",
-                fontSize: "1.3rem",
+                fontStyle: "normal",
+                fontSize: "1.05rem",
                 fontWeight: 600,
-                letterSpacing: "0.02em",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
                 color: "#1c1a17",
                 whiteSpace: "nowrap",
               }}

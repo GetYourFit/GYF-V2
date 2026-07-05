@@ -70,9 +70,10 @@ const CHIP_BASE: React.CSSProperties = {
 // group) reuses its category's color so "same utility = same color" holds.
 const FILTER_COLORS = {
   slot: "#b04760", // rose pink
-  occasion: "#3b5bab", // indigo
-  style: "#1f7a6c", // teal
-  price: "#7d4fa0", // plum
+  occasion: "#b8571f", // terracotta
+  style: "#6b7d3d", // olive
+  sort: "#8a5a2b", // warm brown
+  budget: "#a8791f", // ochre gold
 } as const;
 
 function chip(active: boolean, color: string = "#1c1a17"): React.CSSProperties {
@@ -316,17 +317,10 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           {priceEnabled && (
             <div
               style={{
+                position: "relative",
+                flexShrink: 0,
                 display: "flex",
                 alignItems: "center",
-                flexShrink: 0,
-                border: `1px solid ${
-                  filters.maxPrice || safeSort !== "relevance"
-                    ? FILTER_COLORS.price
-                    : "rgba(0,0,0,0.12)"
-                }`,
-                borderRadius: "999px",
-                background: "#ffffff",
-                overflow: "hidden",
               }}
             >
               <select
@@ -334,11 +328,15 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 value={safeSort}
                 onChange={(e) => set("sort", e.target.value as SortKey)}
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  borderRight: "1px solid rgba(0,0,0,0.1)",
-                  color: safeSort !== "relevance" ? FILTER_COLORS.price : "#5c5650",
-                  padding: "0.3rem 0.625rem",
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  background: "#ffffff",
+                  border: `1px solid ${
+                    safeSort !== "relevance" ? FILTER_COLORS.sort : "rgba(0,0,0,0.12)"
+                  }`,
+                  borderRadius: "999px",
+                  color: safeSort !== "relevance" ? FILTER_COLORS.sort : "#5c5650",
+                  padding: "0.3rem 1.5rem 0.3rem 0.75rem",
                   fontFamily: "var(--font-body)",
                   fontSize: "0.75rem",
                   fontWeight: 500,
@@ -347,34 +345,59 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 }}
               >
                 {sortOptions.map((o) => (
-                  <option key={o.value} value={o.value} style={{ background: "#faf8f5" }}>
+                  <option key={o.value} value={o.value} style={{ background: "#faf8f5", color: "#1c1a17" }}>
                     {o.label}
                   </option>
                 ))}
               </select>
-
-              <input
-                type="number"
-                inputMode="numeric"
-                aria-label="Maximum price"
-                placeholder={facets?.price_max ? `Max £${Math.ceil(facets.price_max)}` : "Max price"}
-                min={0}
-                max={facets?.price_max ?? undefined}
-                value={filters.maxPrice}
-                onChange={(e) => set("maxPrice", e.target.value)}
+              <svg
+                width={10}
+                height={10}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
                 style={{
-                  boxSizing: "border-box",
-                  width: "76px",
-                  background: "transparent",
-                  border: "none",
-                  color: filters.maxPrice ? FILTER_COLORS.price : "#5c5650",
-                  padding: "0.3rem 0.625rem",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "0.7rem",
-                  outline: "none",
+                  position: "absolute",
+                  right: "0.65rem",
+                  color: safeSort !== "relevance" ? FILTER_COLORS.sort : "#5c5650",
+                  pointerEvents: "none",
                 }}
-              />
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </div>
+          )}
+
+          {/* Budget — separated from sort into its own control */}
+          {priceEnabled && (
+            <input
+              type="number"
+              inputMode="numeric"
+              aria-label="Maximum price"
+              placeholder={facets?.price_max ? `Max £${Math.ceil(facets.price_max)}` : "Max price"}
+              min={0}
+              max={facets?.price_max ?? undefined}
+              value={filters.maxPrice}
+              onChange={(e) => set("maxPrice", e.target.value)}
+              style={{
+                boxSizing: "border-box",
+                width: "92px",
+                flexShrink: 0,
+                background: "#ffffff",
+                border: `1px solid ${filters.maxPrice ? FILTER_COLORS.budget : "rgba(0,0,0,0.12)"}`,
+                borderRadius: "999px",
+                color: filters.maxPrice ? FILTER_COLORS.budget : "#5c5650",
+                padding: "0.3rem 0.75rem",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.7rem",
+                fontWeight: 500,
+                outline: "none",
+              }}
+            />
           )}
 
           <div style={{ flex: 1 }} />
