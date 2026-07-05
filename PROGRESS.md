@@ -793,3 +793,29 @@ tone is trustworthy); undertone neutral/olive still yields flat 0.6. The
 GPU lane verified live 2026-07-03).
 
 **Gate:** API 264 ✓ web 28 ✓ ruff/eslint/tsc/prettier ✓. All pushed.
+
+## 2026-07-05 (contd. 4) — full-product audit (pull + 4-agent fan-out)
+
+**Ask:** pull latest and completely audit GYF. Pulled 8 UI commits (signature
+colors, sticky-search app-shell fix, filter collapse, nav-logo animation).
+Four parallel audit agents (product-completeness, API/security, web, ML/
+doctrine) + live prod probes. Assessment only — no fixes applied yet.
+
+**Top findings:** (1) skin-tone NOT shadow-gated — config default
+skin_tone_enabled=True, surfaced "beta" on prod while fairness eval fails DoD
+(gap 3.2 vs ≤1.0) AND ce61dac now feeds it into ranking; (2) serving-path
+photo models (retinaface-farl…, BiRefNet+RTMW) absent from models.registry
+→ license+promotion gates blind to them; (3) per-request ConnectionPool churn
+in dependencies.py (~5 pools per rec request, never closed) — Supabase
+conn-cap risk; (4) rate limits key on TCP peer → likely one global bucket
+behind Render unless GYF_TRUSTED_PROXIES set; (5) commit 96625e3 made <main>
+the scroll container but stylist-feed pull-to-refresh/restack-guard and
+explore scroll-restore still read window.scrollY (now always 0);
+(6) lint red: set-state-in-effect in filter-bar.tsx:107 (commit 2b3ad0a).
+Medium: unbounded social PostInput + /feedback context JSONB; dup Clear
+button when !priceEnabled&&hasActive; social feed ORDER BY lacks id tiebreak.
+
+**Verified clean/live:** prod API+web up, real prices live (~9,161 items —
+null-prices memory RESOLVED), price filter + slot filter verified live,
+affiliate wrapping live, auth/authz/SQLi/uploads/CORS clean, no mockups,
+API 264 ✓ ruff ✓ tsc ✓ web tests 28 ✓ (eslint RED, see 6).
