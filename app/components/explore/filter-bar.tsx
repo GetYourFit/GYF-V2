@@ -7,6 +7,7 @@ import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import type { CatalogFacets } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
+import { UI_COLORS } from "@/lib/ui-colors";
 
 type SortKey = "relevance" | "price_asc" | "price_desc";
 
@@ -64,17 +65,6 @@ const CHIP_BASE: React.CSSProperties = {
   background: "transparent",
   transition: "all 0.15s",
 };
-
-// One accent per filter category — every chip in a row shares its row's
-// color, and any other control tied to the same filter (e.g. the price
-// group) reuses its category's color so "same utility = same color" holds.
-const FILTER_COLORS = {
-  slot: "#b04760", // rose pink
-  occasion: "#b8571f", // terracotta
-  style: "#6b7d3d", // olive
-  sort: "#8a5a2b", // warm brown
-  budget: "#a8791f", // ochre gold
-} as const;
 
 function chip(active: boolean, color: string = "#1c1a17"): React.CSSProperties {
   return {
@@ -234,7 +224,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               onClick={() => set("slot", s.value)}
               whileTap={reduce ? undefined : { scale: 0.92 }}
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
-              style={chip(active, FILTER_COLORS.slot)}
+              style={chip(active, UI_COLORS.category)}
             >
               {s.label}
             </motion.button>
@@ -265,7 +255,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               onClick={() => set("occasion", occ.value)}
               whileTap={reduce ? undefined : { scale: 0.92 }}
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
-              style={chip(active, FILTER_COLORS.occasion)}
+              style={chip(active, UI_COLORS.occasion)}
             >
               {occ.label}
             </motion.button>
@@ -302,7 +292,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 onClick={() => set("style", s.value)}
                 whileTap={reduce ? undefined : { scale: 0.92 }}
                 transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                style={chip(active, FILTER_COLORS.style)}
+                style={chip(active, UI_COLORS.style)}
               >
                 {s.label}
               </motion.button>
@@ -332,10 +322,10 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                   WebkitAppearance: "none",
                   background: "#ffffff",
                   border: `1px solid ${
-                    safeSort !== "relevance" ? FILTER_COLORS.sort : "rgba(0,0,0,0.12)"
+                    safeSort !== "relevance" ? UI_COLORS.sort : "rgba(0,0,0,0.12)"
                   }`,
                   borderRadius: "999px",
-                  color: safeSort !== "relevance" ? FILTER_COLORS.sort : "#5c5650",
+                  color: safeSort !== "relevance" ? UI_COLORS.sort : "#5c5650",
                   padding: "0.3rem 1.5rem 0.3rem 0.75rem",
                   fontFamily: "var(--font-body)",
                   fontSize: "0.75rem",
@@ -363,7 +353,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 style={{
                   position: "absolute",
                   right: "0.65rem",
-                  color: safeSort !== "relevance" ? FILTER_COLORS.sort : "#5c5650",
+                  color: safeSort !== "relevance" ? UI_COLORS.sort : "#5c5650",
                   pointerEvents: "none",
                 }}
               >
@@ -388,9 +378,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 width: "92px",
                 flexShrink: 0,
                 background: "#ffffff",
-                border: `1px solid ${filters.maxPrice ? FILTER_COLORS.budget : "rgba(0,0,0,0.12)"}`,
+                border: `1px solid ${filters.maxPrice ? UI_COLORS.budget : "rgba(0,0,0,0.12)"}`,
                 borderRadius: "999px",
-                color: filters.maxPrice ? FILTER_COLORS.budget : "#5c5650",
+                color: filters.maxPrice ? UI_COLORS.budget : "#5c5650",
                 padding: "0.3rem 0.75rem",
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.7rem",

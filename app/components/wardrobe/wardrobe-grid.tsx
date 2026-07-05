@@ -8,6 +8,7 @@ import type { WardrobeItem, WardrobeItemInput } from "@gyf/types";
 
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
+import { UI_COLORS } from "@/lib/ui-colors";
 import { AddGarmentSheet } from "./add-garment-sheet";
 import { GarmentCard } from "./garment-card";
 
@@ -161,8 +162,8 @@ export function WardrobeGrid() {
                   fontSize: "0.8125rem",
                   fontWeight: 600,
                   borderRadius: "999px",
-                  border: `1.5px solid ${active ? "#1c1a17" : "rgba(0,0,0,0.12)"}`,
-                  background: active ? "#1c1a17" : "#ffffff",
+                  border: `1.5px solid ${active ? UI_COLORS.category : "rgba(0,0,0,0.12)"}`,
+                  background: active ? UI_COLORS.category : "#ffffff",
                   color: active ? "#faf8f5" : "#5c5650",
                   cursor: "pointer",
                   minHeight: "36px",

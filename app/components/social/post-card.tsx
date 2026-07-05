@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { Post } from "@gyf/types";
 import { browserApi } from "@/lib/api-client";
 import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { UI_COLORS } from "@/lib/ui-colors";
 
 const LUX = [0.16, 1, 0.3, 1] as const;
 
@@ -229,13 +230,13 @@ export function PostCard({
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
               padding: "0.35rem 0.875rem",
-              background: followed ? "#1c1a17" : "transparent",
-              border: "1.5px solid #1c1a17",
+              background: followed ? UI_COLORS.follow : "transparent",
+              border: `1.5px solid ${UI_COLORS.follow}`,
               borderRadius: "999px",
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
               fontSize: "0.75rem",
               fontWeight: 600,
-              color: followed ? "#faf8f5" : "#1c1a17",
+              color: followed ? "#faf8f5" : UI_COLORS.follow,
               cursor: "pointer",
               flexShrink: 0,
               transition: "background 0.2s, color 0.2s",

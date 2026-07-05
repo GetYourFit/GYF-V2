@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
+import { UI_COLORS } from "@/lib/ui-colors";
 import type { Post } from "@gyf/types";
 
 import { CreatePostSheet } from "./create-post-sheet";
@@ -227,8 +228,8 @@ export function SocialFeed() {
               style={{
                 padding: "0.4rem 1rem",
                 borderRadius: "999px",
-                border: `1px solid ${scope === key ? "#1c1a17" : "rgba(0,0,0,0.12)"}`,
-                background: scope === key ? "#1c1a17" : "transparent",
+                border: `1px solid ${scope === key ? UI_COLORS.mode : "rgba(0,0,0,0.12)"}`,
+                background: scope === key ? UI_COLORS.mode : "transparent",
                 color: scope === key ? "#faf8f5" : "#5c5650",
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                 fontSize: "0.8125rem",

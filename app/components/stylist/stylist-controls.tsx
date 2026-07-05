@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { OCCASIONS } from "@/lib/vocab";
+import { UI_COLORS } from "@/lib/ui-colors";
 
 export interface StylistQuery {
   goal: string;
@@ -74,8 +75,8 @@ export function StylistControls({
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                 fontSize: "0.8125rem",
                 fontWeight: 500,
-                border: `1px solid ${active ? "#1c1a17" : "rgba(0,0,0,0.12)"}`,
-                background: active ? "#1c1a17" : "#f4f1ec",
+                border: `1px solid ${active ? UI_COLORS.occasion : "rgba(0,0,0,0.12)"}`,
+                background: active ? UI_COLORS.occasion : "#f4f1ec",
                 color: active ? "#faf8f5" : "#5c5650",
                 borderRadius: "999px",
                 cursor: busy ? "not-allowed" : "pointer",

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { SearchResult, WardrobeItemInput } from "@gyf/types";
 import { browserApi } from "@/lib/api-client";
 import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { UI_COLORS } from "@/lib/ui-colors";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const FOCUSABLE =
@@ -351,8 +352,8 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                       fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                       fontSize: "0.875rem",
                       fontWeight: 600,
-                      border: `1.5px solid ${active ? "#1c1a17" : "rgba(0,0,0,0.12)"}`,
-                      background: active ? "#1c1a17" : "#ffffff",
+                      border: `1.5px solid ${active ? UI_COLORS.mode : "rgba(0,0,0,0.12)"}`,
+                      background: active ? UI_COLORS.mode : "#ffffff",
                       color: active ? "#faf8f5" : "#5c5650",
                       cursor: "pointer",
                       borderRadius: "999px",
