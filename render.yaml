@@ -40,8 +40,13 @@ services:
       # The manual field is always the fallback and every value stays editable.
       # Revert to "false" (shadow) if needed; flip to the validated default once the
       # fairness eval passes.
+      # RE-SHADOWED 2026-07-05: the earlier "true" override predates skin tone
+      # becoming a RANKING signal (ce61dac). With the fairness eval failing hard
+      # (max_band_gap 3.2 vs ≤1.0; per-band MAE up to 5.4/10 MST buckets), a
+      # photo-derived tone would now steer picks with near-random data. Manual
+      # skin tone still conditions ranking. Flip back once the eval passes.
       - key: GYF_SKIN_TONE_ENABLED
-        value: "true"
+        value: "false"
       # Affiliate attribution (Cuelinks channel id — public, not a secret): every
       # buy link wraps through linksredirect.com deeplinks with a subid tying
       # conversions back to the recommendation that drove them. The API token
