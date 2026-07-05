@@ -22,9 +22,43 @@ const RIGHT_TABS = [
 const ACCENT = "var(--secondary)";
 const MUTED = "#5c5650";
 
-// Colors the glow behind the centre logo cycles through — same warm palette
-// used for the explore filters, kept last so the loop wraps smoothly.
-const ROTATING_COLORS = ["#b04760", "#b8571f", "#6b7d3d", "#a8791f", "#b04760"];
+// Anchor hues from the app's warm palette (rose → terracotta → olive →
+// ochre) — interpolated below into a dense 64-step cycle so the logo
+// button's color rotation reads as a continuous drift rather than jumps.
+const PALETTE_ANCHORS = ["#b04760", "#b8571f", "#6b7d3d", "#a8791f"];
+
+function hexToRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function rgbToHex([r, g, b]: [number, number, number]): string {
+  const c = (v: number) => Math.round(v).toString(16).padStart(2, "0");
+  return `#${c(r)}${c(g)}${c(b)}`;
+}
+
+/** Evenly samples `count` colors around a cyclic loop through `anchors`. */
+function buildRotation(anchors: string[], count: number): string[] {
+  const rgbs = anchors.map(hexToRgb);
+  const out: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const pos = (i / count) * rgbs.length;
+    const idx = Math.floor(pos) % rgbs.length;
+    const next = (idx + 1) % rgbs.length;
+    const t = pos - Math.floor(pos);
+    const a = rgbs[idx];
+    const b = rgbs[next];
+    out.push(rgbToHex([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]));
+  }
+  out.push(out[0]); // repeat the first stop so the animation loop wraps smoothly
+  return out;
+}
+
+// Colors the centre logo button's ring + bloom cycle through.
+const ROTATING_COLORS = buildRotation(PALETTE_ANCHORS, 64);
+// Total seconds for one full lap of all 64 stops — independent of stop
+// count so adding more colors only makes the drift finer, not slower.
+const ROTATION_DURATION = 18;
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -141,7 +175,7 @@ export function BottomNav() {
               ? undefined
               : {
                   backgroundColor: {
-                    duration: ROTATING_COLORS.length * 3,
+                    duration: ROTATION_DURATION,
                     repeat: Infinity,
                     ease: "easeInOut",
                   },
@@ -171,7 +205,7 @@ export function BottomNav() {
             scale: { type: "spring", stiffness: 500, damping: 25 },
             backgroundColor: reduce
               ? undefined
-              : { duration: ROTATING_COLORS.length * 3, repeat: Infinity, ease: "easeInOut" },
+              : { duration: ROTATION_DURATION, repeat: Infinity, ease: "easeInOut" },
           }}
           style={{
             position: "relative",
