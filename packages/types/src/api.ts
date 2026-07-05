@@ -1513,6 +1513,8 @@ export interface operations {
                 sort?: "relevance" | "price_asc" | "price_desc";
                 /** @description Styling gender: results narrow to that slice + unisex. */
                 gender?: string | null;
+                /** @description Outfit slot: hard-filters results to that slot's garment categories (e.g. bottom = jeans/trousers/skirt/…). Null means all slots. */
+                slot?: ("top" | "bottom" | "full_body" | "outerwear" | "footwear" | "accessory") | null;
             };
             header?: never;
             path?: never;

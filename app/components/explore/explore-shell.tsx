@@ -81,6 +81,7 @@ function RotatingTip({ reduce }: { reduce: boolean | null }) {
 
 const DEFAULT_FILTERS: ExploreFilters = {
   q: "",
+  slot: "",
   occasion: "",
   style: "",
   maxPrice: "",

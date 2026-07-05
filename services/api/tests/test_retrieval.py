@@ -173,7 +173,15 @@ def test_search_text_embeds_query_then_searches():
 
     class FakeRepo:
         def search_by_vector(
-            self, embedding, k, region, offset=0, max_price=None, sort="relevance", genders=None
+            self,
+            embedding,
+            k,
+            region,
+            offset=0,
+            max_price=None,
+            sort="relevance",
+            genders=None,
+            categories=None,
         ):
             captured["embedding"] = embedding
             captured["offset"] = offset
@@ -199,7 +207,15 @@ class StubRepo:
         return [SearchResult("sibling", "Sibling Item", 0.88)]
 
     def search_by_vector(
-        self, embedding, k, region, offset=0, max_price=None, sort="relevance", genders=None
+        self,
+        embedding,
+        k,
+        region,
+        offset=0,
+        max_price=None,
+        sort="relevance",
+        genders=None,
+        categories=None,
     ):
         return [SearchResult("hit", "Search Hit", 0.77)]
 
@@ -263,10 +279,19 @@ def test_search_endpoint_validates_and_forwards_price_and_sort():
 
     class CapturingRepo:
         def search_by_vector(
-            self, embedding, k, region, offset=0, max_price=None, sort="relevance", genders=None
+            self,
+            embedding,
+            k,
+            region,
+            offset=0,
+            max_price=None,
+            sort="relevance",
+            genders=None,
+            categories=None,
         ):
             captured["max_price"] = max_price
             captured["sort"] = sort
+            captured["categories"] = categories
             return [SearchResult("hit", "Search Hit", 0.77)]
 
     app.dependency_overrides[get_search_repo] = lambda: CapturingRepo()
@@ -277,7 +302,14 @@ def test_search_endpoint_validates_and_forwards_price_and_sort():
         # valid combined filter + sort is accepted and reaches the repo
         resp = client.get("/items/search?q=dress&max_price=80&sort=price_asc")
         assert resp.status_code == 200
-        assert captured == {"max_price": 80.0, "sort": "price_asc"}
+        assert captured == {"max_price": 80.0, "sort": "price_asc", "categories": None}
+        # slot hard-filter maps to the taxonomy's categories for that slot
+        resp = client.get("/items/search?q=denim&slot=bottom")
+        assert resp.status_code == 200
+        assert "jeans" in captured["categories"] and "skirt" in captured["categories"]
+        assert "shoes" not in captured["categories"]
+        # unknown slot token is rejected before the handler runs
+        assert client.get("/items/search?q=denim&slot=hat").status_code == 422
         # invalid sort token is rejected before the handler runs
         assert client.get("/items/search?q=dress&sort=random").status_code == 422
         # out-of-range prices are rejected by the Query bounds

@@ -48,6 +48,15 @@ def _genders(gender: str | None) -> frozenset[str] | None:
     return allowed if allowed != CATALOG_GENDERS else None
 
 
+def _slot_categories(slot: str | None) -> list[str] | None:
+    """Canonical catalog categories for an outfit slot (taxonomy-driven)."""
+    if slot is None:
+        return None
+    from gyf_contracts.taxonomy import CATEGORIES  # single source of truth
+
+    return [c.name for c in CATEGORIES if c.slot == slot]
+
+
 @router.get("/items/facets", dependencies=[Depends(rate_limit("facets", "rate_limit_search"))])
 def catalog_facets(
     response: Response,
@@ -85,6 +94,13 @@ def search_items(
     gender: str | None = Query(
         None, description="Styling gender: results narrow to that slice + unisex."
     ),
+    slot: Literal["top", "bottom", "full_body", "outerwear", "footwear", "accessory"] | None = (
+        Query(
+            None,
+            description="Outfit slot: hard-filters results to that slot's garment "
+            "categories (e.g. bottom = jeans/trousers/skirt/…). Null means all slots.",
+        )
+    ),
     repo: VectorSearchRepository = Depends(get_search_repo),
     embedder: TextEmbedder = Depends(get_text_embedder),
     directory: ItemDirectory = Depends(get_item_directory),
@@ -107,6 +123,7 @@ def search_items(
             max_price=max_price,
             sort=sort,
             genders=_genders(gender),
+            categories=_slot_categories(slot),
         )
         return {"results": enrich_results(hits, directory)}
     except ImportError as exc:  # encoder backend not installed in this runtime

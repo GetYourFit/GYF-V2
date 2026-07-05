@@ -12,6 +12,7 @@ type SortKey = "relevance" | "price_asc" | "price_desc";
 
 export interface ExploreFilters {
   q: string;
+  slot: string;
   occasion: string;
   style: string;
   maxPrice: string;
@@ -31,7 +32,25 @@ const PRICE_SORTS: { value: SortKey; label: string }[] = [
   { value: "price_desc", label: "Price ↓" },
 ];
 
-const EMPTY: ExploreFilters = { q: "", occasion: "", style: "", maxPrice: "", sort: "relevance" };
+const EMPTY: ExploreFilters = {
+  q: "",
+  slot: "",
+  occasion: "",
+  style: "",
+  maxPrice: "",
+  sort: "relevance",
+};
+
+// Outfit-slot chips: a hard category filter server-side, so browsing "Bottoms"
+// can never be crowded out by the embedding's bias toward tops.
+const SLOTS: { value: string; label: string }[] = [
+  { value: "top", label: "Tops" },
+  { value: "bottom", label: "Bottoms" },
+  { value: "full_body", label: "Dresses & one-piece" },
+  { value: "outerwear", label: "Outerwear" },
+  { value: "footwear", label: "Footwear" },
+  { value: "accessory", label: "Accessories" },
+];
 
 const CHIP_BASE: React.CSSProperties = {
   flexShrink: 0,
@@ -96,6 +115,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   }
 
   const activeCount =
+    (filters.slot ? 1 : 0) +
     (filters.occasion ? 1 : 0) +
     (filters.style ? 1 : 0) +
     (priceEnabled && filters.maxPrice ? 1 : 0) +
@@ -182,6 +202,37 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       {/* Occasion chips */}
       <div
         aria-label="Filter by occasion"
+        style={
+          {
+            display: "flex",
+            gap: "0.375rem",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            paddingBottom: "2px",
+          } as React.CSSProperties
+        }
+      >
+        {[{ value: "", label: "Everything" }, ...SLOTS].map((s) => {
+          const active = filters.slot === s.value;
+          return (
+            <motion.button
+              key={`slot-${s.value}`}
+              type="button"
+              aria-pressed={active}
+              onClick={() => set("slot", s.value)}
+              whileTap={reduce ? undefined : { scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 500, damping: 28 }}
+              style={chip(active)}
+            >
+              {s.label}
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Occasion chips row */}
+      <div
         style={
           {
             display: "flex",

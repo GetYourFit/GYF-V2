@@ -79,6 +79,7 @@ class VectorSearchRepository(Protocol):
         max_price: float | None = None,
         sort: str = "relevance",
         genders: frozenset[str] | None = None,
+        categories: list[str] | None = None,
     ) -> list[SearchResult]: ...
 
     def catalog_facets(self, region: str | None) -> CatalogFacets: ...
@@ -162,6 +163,7 @@ class PostgresVectorSearchRepository:
         max_price: float | None = None,
         sort: str = "relevance",
         genders: frozenset[str] | None = None,
+        categories: list[str] | None = None,
     ) -> list[SearchResult]:
         vec = _pgvector(embedding)
         # The score column always reflects relevance to the query; `sort` only
@@ -180,6 +182,9 @@ class PostgresVectorSearchRepository:
         if genders:
             where += " " + _GENDER_FILTER
             params.append(sorted(genders))
+        if categories:
+            where += " " + _CATEGORY_FILTER
+            params.append(categories)
         order = _SORT_CLAUSES.get(sort)
         if order is None:  # relevance (default): nearest-neighbour by cosine distance
             order = "ORDER BY e.embedding <=> %s::vector"
@@ -262,6 +267,7 @@ def search_text(
     max_price: float | None = None,
     sort: str = "relevance",
     genders: frozenset[str] | None = None,
+    categories: list[str] | None = None,
 ) -> list[SearchResult]:
     """Embed a text query and return the matching items (relevance- or price-ordered)."""
     return repo.search_by_vector(
@@ -272,6 +278,7 @@ def search_text(
         max_price=max_price,
         sort=sort,
         genders=genders,
+        categories=categories,
     )
 
 

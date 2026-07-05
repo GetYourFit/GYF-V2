@@ -13,6 +13,20 @@ import type { ExploreFilters } from "./filter-bar";
 
 const PAGE_SIZE = 24;
 
+// The default (unqueried) browse interleaves these slots so no single garment
+// type monopolizes the grid. PAGE_SIZE must stay divisible by this length.
+const BROWSE_SLOTS = ["top", "bottom", "full_body", "footwear"] as const;
+
+/** Round-robin merge: [a1,b1,c1,d1,a2,b2,…] — keeps every slot visible up top. */
+function interleave<T>(lists: T[][]): T[] {
+  const out: T[] = [];
+  const longest = Math.max(...lists.map((l) => l.length));
+  for (let i = 0; i < longest; i++) {
+    for (const list of lists) if (i < list.length) out.push(list[i]);
+  }
+  return out;
+}
+
 interface GridCache {
   items: SearchResult[];
   page: number;
@@ -126,13 +140,32 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
       try {
         const api = browserApi();
         const maxPrice = filters.maxPrice ? Number(filters.maxPrice) : undefined;
-        const results = await api.search(query, {
-          k: PAGE_SIZE,
-          offset: pageNum * PAGE_SIZE,
+        const base = {
           ...(maxPrice != null && !Number.isNaN(maxPrice) ? { max_price: maxPrice } : {}),
           ...(gender ? { gender } : {}),
           sort: filters.sort,
-        });
+        };
+        let results: SearchResult[];
+        if (filters.slot || filters.q) {
+          results = await api.search(query, {
+            k: PAGE_SIZE,
+            offset: pageNum * PAGE_SIZE,
+            ...(filters.slot ? { slot: filters.slot } : {}),
+            ...base,
+          });
+        } else {
+          // Default browse (no search text, no slot chip): a single text search
+          // for the seed word is embedding-biased toward tops, so interleave one
+          // hard-filtered page per wearable slot instead — every page shows tops,
+          // bottoms, one-pieces AND footwear. Pagination advances per slot.
+          const per = PAGE_SIZE / BROWSE_SLOTS.length;
+          const pages = await Promise.all(
+            BROWSE_SLOTS.map((slot) =>
+              api.search(query, { k: per, offset: pageNum * per, slot, ...base }),
+            ),
+          );
+          results = interleave(pages);
+        }
         if (reset) setItems(results);
         else setItems((prev) => [...prev, ...results]);
         setPage(pageNum);
@@ -172,7 +205,15 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
     if (gender === undefined) return;
     void loadPage(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.q, filters.occasion, filters.style, filters.maxPrice, filters.sort, gender]);
+  }, [
+    filters.q,
+    filters.slot,
+    filters.occasion,
+    filters.style,
+    filters.maxPrice,
+    filters.sort,
+    gender,
+  ]);
 
   // Persist the grid + scroll position for back-nav restore.
   useEffect(() => {

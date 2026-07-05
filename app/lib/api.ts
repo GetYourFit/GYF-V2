@@ -83,6 +83,8 @@ export interface SearchParams {
   sort?: "relevance" | "price_asc" | "price_desc";
   /** Styling gender: results narrow to that slice + unisex (unfaceted items always pass). */
   gender?: string;
+  /** Outfit slot hard-filter: top | bottom | full_body | outerwear | footwear | accessory. */
+  slot?: string;
 }
 
 interface SearchResults {
