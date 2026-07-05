@@ -209,6 +209,7 @@ function FieldWrap({
             color: "var(--text-faint)",
             display: "block",
             marginBottom: "0.5rem",
+            whiteSpace: "nowrap",
           }}
         >
           {label}
@@ -700,7 +701,15 @@ function StepYou({
           onChange={(v) => set("gender", v)}
         />
       </FieldWrap>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem" }}>
+      {/* auto-fit: three columns squeeze labels/values illegibly on a 390px
+          viewport — let fields wrap to 2+1 (or stack) instead of truncating. */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          gap: "1.25rem",
+        }}
+      >
         <FieldWrap label="Skin tone" badge={estimated.has("skin_tone") ? <EstimatedBadge /> : null}>
           <DarkSelect
             options={SKIN_TONES}
@@ -799,7 +808,13 @@ function StepBudget({
   return (
     <>
       <StepHeader title="Budget" hint="Per garment, not per outfit." />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.25rem" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))",
+          gap: "1.25rem",
+        }}
+      >
         <FieldWrap label="Min">
           <DarkInput
             type="number"
