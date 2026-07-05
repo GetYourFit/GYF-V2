@@ -35,6 +35,8 @@ export function AppShell({ children }: AppShellProps) {
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           borderBottom: "1px solid rgba(0,0,0,0.06)",
+          transform: "translateZ(0)",
+          willChange: "transform",
         }}
       >
         <header
@@ -86,6 +88,13 @@ export function AppShell({ children }: AppShellProps) {
         style={{
           flex: 1,
           overflowY: "auto",
+          // iOS Safari needs this on the scroll container itself (not just
+          // body) to get momentum scrolling — without it, position:sticky
+          // children that also use backdrop-filter (the filter bar, the top
+          // header) can visually freeze mid-gesture until the scroll ends,
+          // reading as the search bar "getting stuck".
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
           paddingBottom: "calc(64px + env(safe-area-inset-bottom))",
           maxWidth: "390px",
           margin: "0 auto",

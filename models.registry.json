@@ -114,6 +114,32 @@
       "notes": "Non-commercial try-on baseline; research-lane reference only."
     },
     {
+      "name": "retinaface-farl-celebm",
+      "capability": "skin_tone_estimator",
+      "provider": "facer (FacePerceiver) / Microsoft (FaRL)",
+      "license": "MIT (facer package + FaRL code, both confirmed on FacePerceiver/facer and FacePerceiver/FaRL GitHub repos)",
+      "lane": "production",
+      "commercial_ok": true,
+      "train_data_commercial_ok": false,
+      "train_data_license": "RetinaFace detector weights are trained on WIDER FACE, whose license restricts use to non-commercial research purposes — the exact 'MIT code, non-commercial weights' trap D2 exists to catch. FaRL/CelebM parser training-data terms not yet independently re-verified.",
+      "eval_report": null,
+      "model_uri": "facer: retinaface/mobilenet detector + farl/celebm/448 parser",
+      "notes": "AUDIT GAP CLOSED (2026-07-05): this is the model actually running in FaceParsingSkinToneEstimator (ml/usermodel/skintone/estimator.py, model_version 'retinaface-farl-celebm-cielab-mst-v1') and feeding live ranking via conditioning.py — it was missing from this registry entirely, so the D2 license gate and CI (scripts/check_model_licenses.py) never saw it. commercial_ok=true is confirmed (package/code license); train_data_commercial_ok=false is a real, not-yet-resolved compliance flag on the WIDER FACE-trained detector, not a placeholder — swap the detector or get a legal opinion before treating this as clear. Also independently blocked by the skin-tone fairness eval (DoD gap 3.2 vs ≤1.0, see ml/usermodel/skintone/fairness_eval.py) and by the missing eval_report (D5)."
+    },
+    {
+      "name": "birefnet-rtmw-bodyshape",
+      "capability": "body_estimator",
+      "provider": "ZhengPeng7 (BiRefNet) / OpenMMLab (RTMW via rtmlib)",
+      "license": "MIT (BiRefNet, confirmed on ZhengPeng7/BiRefNet HF/GitHub) + Apache-2.0 (rtmlib, confirmed on Tau-J/rtmlib GitHub)",
+      "lane": "production",
+      "commercial_ok": true,
+      "train_data_commercial_ok": false,
+      "train_data_license": "RTMW keypoints are trained on COCO-WholeBody (CC-BY-4.0 — commercial-OK). BiRefNet's matting head is trained on DIS5K, whose provenance/commercial terms have not yet been independently re-verified for this pairing — flagged conservatively rather than assumed clean.",
+      "eval_report": null,
+      "model_uri": "hf://ZhengPeng7/BiRefNet + rtmlib Wholebody (RTMW)",
+      "notes": "AUDIT GAP CLOSED (2026-07-05): the model actually running in SilhouetteBodyAdapter (ml/usermodel/body/estimator.py, DEFAULT_MODEL_VERSION 'rtmw-birefnet-v1') and feeding body_type into conditioning.py's per-body-type styling effects — was missing from this registry, so the D2 gate never saw it. commercial_ok=true is confirmed (both package licenses); train_data_commercial_ok=false is pending DIS5K provenance confirmation, not a placeholder. sam-3d-body/mhr/anny above are the *research*-lane north-star candidates for a future M3 iteration; this is the model actually serving today. Also blocked by the missing eval_report (D5)."
+    },
+    {
       "name": "fashn-tryon-v1.6",
       "capability": "try_on",
       "provider": "FASHN AI",

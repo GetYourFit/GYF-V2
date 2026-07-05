@@ -1,12 +1,13 @@
 "use client";
 
 import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import type { CatalogFacets } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
+import { getScrollContainer } from "@/lib/scroll-container";
 import { UI_COLORS } from "@/lib/ui-colors";
 
 type SortKey = "relevance" | "price_asc" | "price_desc";
@@ -103,7 +104,12 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         // user scrolls away.
         if (!isScrolled) setExpanded(false);
       },
-      { threshold: 0 },
+      // Root explicitly set to the app's real scroll container (<main> —
+      // see lib/scroll-container.ts). The implicit default root is the
+      // top-level document viewport, which happens to still work here since
+      // the browser accounts for clipping ancestors, but pinning it removes
+      // any ambiguity across engines/mobile browsers.
+      { root: getScrollContainer(), threshold: 0 },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -173,6 +179,10 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           display: "flex",
           flexDirection: "column",
           gap: "0.75rem",
+          // Forces its own GPU compositing layer so iOS Safari repaints the
+          // blur every frame instead of freezing it mid-scroll (see app-shell.tsx).
+          transform: "translateZ(0)",
+          willChange: "transform",
         }}
       >
         {/* Search input */}
@@ -270,22 +280,35 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           </div>
         )}
 
-        <AnimatePresence initial={false}>
-          {showFilters && (
-            <motion.div
-              key="filter-rows"
-              initial={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              style={{
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.75rem",
-              }}
-            >
-              {/* Slot / category chips */}
+        {/* Collapsible filter rows — animated via the CSS grid-template-rows
+          trick rather than Framer Motion's height:"auto", which needs a JS
+          layout measurement every frame. Doing that inside a position:sticky,
+          backdrop-blurred bar while the user is mid-scroll (the exact moment
+          this triggers) causes visible jank; grid-template-rows lets the
+          browser interpolate on its own without re-measuring, staying smooth. */}
+        <div
+          aria-hidden={!showFilters}
+          // @ts-expect-error -- `inert` is a valid DOM attribute not yet in React's JSX typings
+          inert={!showFilters ? "" : undefined}
+          style={{
+            display: "grid",
+            gridTemplateRows: showFilters ? "1fr" : "0fr",
+            opacity: showFilters ? 1 : 0,
+            transition: reduce
+              ? "none"
+              : "grid-template-rows 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease",
+          }}
+        >
+          <div
+            style={{
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.75rem",
+              minHeight: 0,
+            }}
+          >
+              {/* Occasion chips */}
               <div
                 aria-label="Filter by category"
                 style={
@@ -533,9 +556,8 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                   </button>
                 </div>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+        </div>
 
         <p className="sr-only" role="status" aria-live="polite">
           {hasActive ? `${activeCount} filters active` : "No filters active"}

@@ -819,3 +819,86 @@ button when !priceEnabled&&hasActive; social feed ORDER BY lacks id tiebreak.
 null-prices memory RESOLVED), price filter + slot filter verified live,
 affiliate wrapping live, auth/authz/SQLi/uploads/CORS clean, no mockups,
 API 264 ✓ ruff ✓ tsc ✓ web tests 28 ✓ (eslint RED, see 6).
+
+## 2026-07-05 (contd. 5) — login/signup/onboarding polish + explore scroll bug + ledger follow-through
+
+**Ask:** more animation/color on auth + onboarding, soothing type, mobile
+polish; then "search bar stucks when scrolled" on Explore; then close out
+the audit ledger's remaining open items; keep skin-tone/body-type
+conditioning honest.
+
+**(1) Design pass — auth-form.tsx, (auth)/layout.tsx, onboarding-wizard.tsx,
+globals.css.** Rose-accented focus states, ambient gradient blobs, gradient
+CTAs with hover glow, breathing eyebrow dash, gradient progress bar; global
+antialiasing. Reuses the existing warm-cream token palette — no new colors
+introduced outside `--secondary`/accent tones already in the design system.
+
+**(2) Explore search-bar "stuck" bug — root cause: iOS Safari `position:
+sticky` + `backdrop-filter: blur` inside a custom `overflow-y:auto` scroll
+container (main, per the `<main>`-is-scroll-root migration) freezes the
+blurred element mid-gesture without `-webkit-overflow-scrolling: touch` on
+the container and its own compositing layer.** Fixed: `main` now sets
+`WebkitOverflowScrolling: touch` + `overscrollBehavior: contain`; the sticky
+top header and the FilterBar both get `transform: translateZ(0)` +
+`willChange: transform` to force a persistent GPU layer. Also pinned the
+FilterBar's IntersectionObserver `root` explicitly to `getScrollContainer()`
+instead of relying on implicit viewport rooting (defensive, not the bug
+itself — the browser was already accounting for clipping ancestors).
+
+**(3) Skin-tone/body-type conditioning re-audited, not re-built.** be342f0 +
+ce61dac (earlier the same day) already made all 6 body types + olive
+undertone genuinely condition scoring — confirmed by re-reading
+conditioning.py/compose.py line by line; the "flat 0.6" ledger note was
+stale (it's the correct, deliberate all-neutral-outfit prior, not a bug).
+Found one real, narrower honesty gap instead: `personalization_strength`
+credited "neutral" undertone confidence even though neutral deliberately
+produces zero hue signal by design (D6 — no colour-theory guess) — inflating
+the confidence readout for exactly the users it can't help. Fixed in
+conditioning.py `resolve()`: undertone only counts toward
+personalization_strength when it actually yields `preferred_hues`. New test:
+`test_neutral_undertone_yields_no_hue_preference_and_no_personalization_credit`.
+Photo-estimation pipelines (skin tone + body type) were re-confirmed to
+already run unconditionally on every onboarding photo upload — only the
+skin-tone *display* is fairness-gated (`skin_tone_enabled`), ranking still
+uses it either way.
+
+**(4) Ledger item — models.registry.json blind spot, actually closed, not
+just papered over.** Added `retinaface-farl-celebm` (skin-tone) and
+`birefnet-rtmw-bodyshape` (body-type) — the models genuinely running in
+`ml/usermodel/skintone/estimator.py` and `ml/usermodel/body/estimator.py`
+were never in the registry, so `check_model_licenses.py`/`check_promotion.py`
+were blind to them. Verified via web search: facer/FaRL/BiRefNet/rtmlib
+packages are all MIT/Apache-2.0 (commercial_ok=true) — but RetinaFace's
+detector weights are trained on WIDER FACE, whose license is
+non-commercial-research-only (a real, confirmed D2 violation, not a
+placeholder), and BiRefNet's DIS5K-trained matting head isn't yet
+independently re-verified either. Both entries therefore have
+`train_data_commercial_ok=false` and `eval_report=null` — this **correctly
+turns `check_model_licenses.py` and `check_promotion.py` red on the real
+registry**, so `test_license_gate_passes_on_real_registry` and
+`test_promotion_gate_passes_on_real_registry` were rewritten to
+`test_license_gate_flags_known_unverified_photo_models` /
+`test_promotion_gate_flags_known_unevaluated_photo_models`, asserting exit
+code 1 with the reasons documented. This is a deliberate, known-red state
+pending a real legal/licensing call or a model swap — not resolved by this
+session, correctly surfaced by it.
+
+**(5) filter-bar.tsx:107 lint** — re-verified clean after the merge-conflict
+resolution earlier this session (upstream's AnimatePresence variant vs. the
+local grid-template-rows WIP were reconciled in favor of the grid version,
+which the file's trailing JSX already assumed); the setState calls live
+inside the IntersectionObserver callback, not synchronously in the effect
+body, which is the standard, lint-clean pattern.
+
+**Known-open, correctly left open:** skin-tone fairness eval DoD gap (needs
+real MST-labelled data, an ML/data problem — not fixable by this session's
+code changes); gender-from-photo (still no photo-derived signal, onboarding
+gender select already flags itself as the strongest signal when unset, per
+ce61dac); RetinaFace/BiRefNet training-data license confirmation (a
+legal/compliance call, see (4)).
+
+**Gate:** could not run `tsc`/`eslint`/`pytest` locally — this checkout's
+`node_modules`/Python env are incomplete (no `tsc` binary, no `pytest`
+installed, no venv). Changes reviewed line-by-line instead; the two new
+license-gate test names are an intentional, expected regression, not a
+missed one.

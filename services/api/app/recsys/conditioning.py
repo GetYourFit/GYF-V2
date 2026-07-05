@@ -167,8 +167,16 @@ def resolve(
     # Personalization strength reflects how much *personal* signal (beyond the
     # occasion everyone shares) we actually have — undertone, style intent,
     # body type, and skin tone all condition scoring, so all four count.
+    # Neutral/unset undertone is the one exception: it deliberately expresses no
+    # hue preference (colour-theory honesty, see _UNDERTONE_HUES above), so it
+    # never actually moves a score — crediting it here would overstate how
+    # personal the ranking is for exactly those users.
     personal_fields = ("undertone", "style_intent", "body_type", "skin_tone")
-    signals = sum(profile.field_confidence.get(field_name, 0.0) for field_name in personal_fields)
+    signals = sum(
+        profile.field_confidence.get(field_name, 0.0)
+        for field_name in personal_fields
+        if field_name != "undertone" or hues
+    )
     personalization = min(1.0, signals / len(personal_fields))
 
     return Constraints(

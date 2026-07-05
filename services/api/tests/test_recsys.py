@@ -135,6 +135,17 @@ def test_undertone_drives_hue_preference_and_personalization():
     assert c.personalization_strength > 0.0
 
 
+def test_neutral_undertone_yields_no_hue_preference_and_no_personalization_credit():
+    """Neutral genuinely produces no hue signal (colour-theory honesty) — it
+    must not inflate personalization_strength for a signal that never moves a
+    score, or the confidence readout would overstate how personal the
+    ranking is for exactly the users it can least help."""
+    profile = Profile(undertone="neutral", field_confidence={"undertone": 1.0})
+    c = conditioning.resolve(profile, "casual", None)
+    assert c.preferred_hues == ()
+    assert c.personalization_strength == 0.0
+
+
 def test_budget_max_becomes_price_ceiling():
     profile = Profile(budget_range=BudgetRange(min=0, max=80, currency="USD"))
     c = conditioning.resolve(profile, "casual", None)
