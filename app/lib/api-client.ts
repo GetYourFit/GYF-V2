@@ -60,14 +60,21 @@ export function browserApi(): GyfApi {
     // Missing or near expiry: let supabase-js refresh, but never let its lock
     // hang the request — after 3s, fall back to the cookie token (a slightly
     // stale token that 401s beats an app that never fetches).
+    let timer: ReturnType<typeof setTimeout> | undefined;
     return Promise.race([
       getSessionToken(),
-      new Promise<string | null>((resolve) => setTimeout(() => resolve(token), 3_000)),
-    ]).catch(() => token);
+      new Promise<string | null>((resolve) => {
+        timer = setTimeout(() => resolve(token), 3_000);
+      }),
+    ])
+      .catch(() => token)
+      .finally(() => clearTimeout(timer));
   });
 
   // Profile mutations invalidate every cached view — a feed/grid cached for the
   // old profile (gender, region, body, tone) must not repaint on back-nav.
+  // (createApi returns a class instance — spread would drop prototype methods,
+  // so wrap by reassigning the two methods in place.)
   const putProfile = api.putProfile.bind(api);
   api.putProfile = async (input) => {
     const profile = await putProfile(input);

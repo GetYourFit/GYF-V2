@@ -58,6 +58,8 @@ def catalog_facets(
     offers filters the data can satisfy — e.g. ``priced == 0`` tells Explore to
     hide the price control rather than present a slider that empties the grid."""
     # Facets change only on catalog ingest — let the browser skip the round-trip.
+    # Assumes caches key on the full URL incl. ?region= (browsers do; Cloudflare
+    # passes this through DYNAMIC, i.e. uncached at the edge — verified 2026-07-05).
     response.headers["Cache-Control"] = "public, max-age=3600"
     return repo.catalog_facets(region)
 

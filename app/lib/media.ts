@@ -9,7 +9,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 export function mediaUrl(path: string | null | undefined, width?: number): string | null {
   if (!path) return null;
   if (path.startsWith("http://") || path.startsWith("https://")) {
-    if (width && path.includes("cdn.shopify.com")) {
+    if (width && path.includes("cdn.shopify.com") && !path.includes("width=")) {
       return `${path}${path.includes("?") ? "&" : "?"}width=${width}`;
     }
     return path;
