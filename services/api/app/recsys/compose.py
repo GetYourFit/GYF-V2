@@ -35,6 +35,11 @@ _W_COHESION = 0.15
 _W_UNDERTONE = 0.15
 _W_AESTHETIC = 0.10
 
+# How strongly the skin-tone depth signal re-weights the content score. Blended
+# after the weighted sum (like goals/wardrobe) and only when the user's MST label
+# is known, so the unknown-skin-tone path stays byte-identical.
+_W_SKIN_TONE = 0.10
+
 # MMR trade-off: how much to favour diversity over pure relevance when selecting
 # the final set (0 = relevance only, 1 = diversity only). 0.3 keeps quality first.
 _MMR_LAMBDA = 0.3
@@ -226,6 +231,34 @@ def _undertone_fit(items: tuple[Candidate, ...], preferred_hues: tuple[float, ..
     return sum(best) / len(best)
 
 
+def _skin_tone_depth(skin_tone: str | None) -> float | None:
+    """MST label ("mst1".."mst10") -> depth in [0, 1]; ``None`` when unknown."""
+    if not skin_tone or not skin_tone.startswith("mst"):
+        return None
+    try:
+        n = int(skin_tone[3:])
+    except ValueError:
+        return None
+    return (n - 1) / 9.0 if 1 <= n <= 10 else None
+
+
+def _skin_tone_fit(items: tuple[Candidate, ...], depth: float) -> float:
+    """How well the palette's colour intensity suits the skin-tone depth, in [0, 1].
+
+    Classic colour-analysis: deeper skin tones carry saturated, high-contrast
+    colour beautifully; lighter tones are flattered by softer, more muted colour.
+    The outfit's mean chroma (colour intensity) is compared to a depth-mapped
+    target — deliberately modest, never pushed to either extreme. An all-neutral
+    palette flatters every depth (same prior as :func:`_undertone_fit`).
+    """
+    colors = [it.lch for it in items if it.lch is not None and it.lch[1] >= _NEUTRAL_CHROMA]
+    if not colors:
+        return 0.6
+    intensity = sum(min(c / 60.0, 1.0) for _, c, _ in colors) / len(colors)
+    target = 0.3 + 0.5 * depth  # mst1 -> soft ~0.3, mst10 -> saturated ~0.8
+    return max(0.0, 1.0 - abs(intensity - target))
+
+
 def _aesthetic_fit(items: tuple[Candidate, ...], preferred: frozenset[str]) -> float:
     """Share of garments whose perceived aesthetic matches a preference."""
     if not preferred:
@@ -280,6 +313,9 @@ def score_outfit(
         + _W_UNDERTONE * undertone
         + _W_AESTHETIC * aesthetic
     )
+    depth = _skin_tone_depth(constraints.skin_tone)
+    if depth is not None:
+        content = (1.0 - _W_SKIN_TONE) * content + _W_SKIN_TONE * _skin_tone_fit(items, depth)
     affinity = _outfit_affinity(items)
     if taste_strength > 0.0 and affinity is not None:
         score = (1.0 - taste_strength) * content + taste_strength * affinity
@@ -346,6 +382,7 @@ def _explain(
             " The pieces share one visual language, so the look reads styled, not assembled."
         )
     sentence += _undertone_phrase(items, constraints)
+    sentence += _skin_tone_phrase(items, constraints)
     if constraints.goals:
         if constraints.goals_from_body:
             sentence += f" {_body_type_phrase(constraints)}"
@@ -392,15 +429,31 @@ def _undertone_phrase(items: tuple[Candidate, ...], constraints: Constraints) ->
     )
 
 
+def _skin_tone_phrase(items: tuple[Candidate, ...], constraints: Constraints) -> str:
+    """Name the skin-tone flattery — only when the palette genuinely delivers it.
+
+    Same honesty rule as :func:`_undertone_phrase` (D6): appears only when the
+    user gave an MST skin tone AND this look's colour intensity actually sits
+    near the depth-flattering target.
+    """
+    depth = _skin_tone_depth(constraints.skin_tone)
+    if depth is None or _skin_tone_fit(items, depth) < 0.75:
+        return ""
+    direction = "rich, saturated" if depth >= 0.5 else "soft, gentle"
+    return f" The {direction} colour intensity is chosen to complement your skin tone."
+
+
 # Human phrasing for the body types that carry default styling effects.
 _BODY_TYPE_LABEL: dict[str, str] = {
     "oval": "apple-shaped",
     "triangle": "pear-shaped",
+    "inverted_triangle": "broad-shouldered",
 }
 
 _BODY_GOAL_PHRASE: dict[Effect, str] = {
     Effect.ELONGATE: "an unbroken vertical line that lengthens your silhouette",
     Effect.BROADEN: "fuller, lighter pieces up top that balance your proportions",
+    Effect.SLIM: "dark, tailored lines that streamline your frame",
 }
 
 

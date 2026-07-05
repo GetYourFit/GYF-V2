@@ -57,11 +57,14 @@ _UNDERTONE_HUES: dict[str, tuple[float, ...]] = {
 
 # Body type -> default visual-effect goals (classic body-type styling), applied
 # only when the user set NO explicit NL goal — an explicit ask always wins.
-# Types with no clearly-flattering outfit-level lever (rectangle, hourglass,
-# inverted_triangle) get none: no guessing (D6).
+# Rectangle needs *curve creation* (waist definition) and hourglass is already
+# balanced — neither maps onto elongate/slim/broaden, so no default: no guessing (D6).
 _BODY_TYPE_EFFECTS: dict[str, frozenset[Effect]] = {
     "oval": frozenset({Effect.ELONGATE}),  # a vertical column flatters a fuller middle
     "triangle": frozenset({Effect.BROADEN}),  # fuller/lighter up top balances wider hips
+    # Shoulders wider than hips: dark, tailored, low-noise lines (the SLIM levers)
+    # de-emphasize the upper frame and streamline the V.
+    "inverted_triangle": frozenset({Effect.SLIM}),
 }
 
 _FOOTWEAR = "footwear"
@@ -108,6 +111,9 @@ class Constraints:
     # user never provided them — no claim is ever made without the signal.
     undertone: str | None = None
     body_type: str | None = None
+    # Monk Skin Tone depth label ("mst1".."mst10"); drives the colour-intensity
+    # preference in the composer. ``None`` when unknown — no claim, no effect.
+    skin_tone: str | None = None
     # True when ``goals`` were derived from the body type (no explicit NL goal):
     # the explanation then credits the body type, not a goal the user never set.
     goals_from_body: bool = False
@@ -153,12 +159,11 @@ def resolve(
         goals_from_body = True
 
     # Personalization strength reflects how much *personal* signal (beyond the
-    # occasion everyone shares) we actually have — undertone and style intent.
-    signals = sum(
-        profile.field_confidence.get(field_name, 0.0)
-        for field_name in ("undertone", "style_intent")
-    )
-    personalization = min(1.0, signals / 2.0)
+    # occasion everyone shares) we actually have — undertone, style intent,
+    # body type, and skin tone all condition scoring, so all four count.
+    personal_fields = ("undertone", "style_intent", "body_type", "skin_tone")
+    signals = sum(profile.field_confidence.get(field_name, 0.0) for field_name in personal_fields)
+    personalization = min(1.0, signals / len(personal_fields))
 
     return Constraints(
         occasion=chosen_occasion,
@@ -172,6 +177,7 @@ def resolve(
         goals=goals,
         undertone=undertone,
         body_type=body_type,
+        skin_tone=(profile.skin_tone or "").lower() or None,
         goals_from_body=goals_from_body,
     )
 

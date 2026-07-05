@@ -771,6 +771,83 @@ def test_no_body_type_means_no_default_goals():
     assert not c.goals
 
 
+def test_inverted_triangle_slims_and_changes_ranking():
+    c = conditioning.resolve(
+        Profile(occasion="casual", body_type="inverted_triangle"), "casual", None
+    )
+    assert c.goals == frozenset({Effect.SLIM}) and c.goals_from_body is True
+    base = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    assert not base.goals
+    dark_tailored = (
+        _item("t1", "shirt", "top", lch=(20.0, 5.0, 0.0), fit="tailored"),
+        _item("b1", "trousers", "bottom", lch=(22.0, 5.0, 0.0), fit="slim fit"),
+        _item("f1", "sneakers", "footwear", lch=(20.0, 5.0, 0.0)),
+    )
+    light_oversized = (
+        _item("t2", "t_shirt", "top", lch=(85.0, 40.0, 90.0), fit="oversized", pattern="graphic"),
+        _item("b2", "jeans", "bottom", lch=(80.0, 30.0, 40.0), fit="loose fit"),
+        _item("f2", "sneakers", "footwear", lch=(85.0, 30.0, 100.0)),
+    )
+    from app.recsys.goals import effects_for
+
+    with_body = [
+        score_outfit(o, c, goal_effects=effects_for(c.goals))[0]
+        for o in (dark_tailored, light_oversized)
+    ]
+    without = [score_outfit(o, base)[0] for o in (dark_tailored, light_oversized)]
+    # The SLIM default widens the dark-tailored look's margin over the light oversized one.
+    assert with_body[0] - with_body[1] > without[0] - without[1]
+
+
+def test_balanced_body_types_set_no_default_goals():
+    for body_type in ("rectangle", "hourglass"):
+        c = conditioning.resolve(Profile(occasion="casual", body_type=body_type), "casual", None)
+        assert not c.goals and c.goals_from_body is False
+
+
+def test_skin_tone_depth_changes_color_ordering():
+    saturated = (
+        _item("t1", "shirt", "top", lch=(50.0, 60.0, 30.0)),
+        _item("b1", "jeans", "bottom", lch=(45.0, 55.0, 40.0)),
+        _item("f1", "sneakers", "footwear", lch=(50.0, 60.0, 35.0)),
+    )
+    muted = (
+        _item("t2", "shirt", "top", lch=(60.0, 18.0, 30.0)),
+        _item("b2", "jeans", "bottom", lch=(55.0, 16.0, 40.0)),
+        _item("f2", "sneakers", "footwear", lch=(60.0, 18.0, 35.0)),
+    )
+    deep = conditioning.resolve(Profile(occasion="casual", skin_tone="mst9"), "casual", None)
+    light = conditioning.resolve(Profile(occasion="casual", skin_tone="mst2"), "casual", None)
+    assert deep.skin_tone == "mst9" and light.skin_tone == "mst2"
+    # Deeper skin tone favours the saturated palette; lighter favours the muted one.
+    assert score_outfit(saturated, deep)[0] > score_outfit(muted, deep)[0]
+    assert score_outfit(muted, light)[0] > score_outfit(saturated, light)[0]
+
+
+def test_unknown_skin_tone_leaves_score_unchanged():
+    outfit = (
+        _item("t1", "shirt", "top", lch=(50.0, 60.0, 30.0)),
+        _item("b1", "jeans", "bottom", lch=(45.0, 55.0, 40.0)),
+        _item("f1", "sneakers", "footwear", lch=(50.0, 60.0, 35.0)),
+    )
+    base = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    unknown = conditioning.resolve(Profile(occasion="casual", skin_tone="unknown"), "casual", None)
+    assert score_outfit(outfit, base) == score_outfit(outfit, unknown)
+
+
+def test_body_type_and_skin_tone_raise_personalization_strength():
+    thin = Profile(undertone="warm", field_confidence={"undertone": 1.0})
+    rich = Profile(
+        undertone="warm",
+        body_type="oval",
+        skin_tone="mst6",
+        field_confidence={"undertone": 1.0, "body_type": 0.8, "skin_tone": 0.9},
+    )
+    thin_c = conditioning.resolve(thin, "casual", None)
+    rich_c = conditioning.resolve(rich, "casual", None)
+    assert rich_c.personalization_strength > thin_c.personalization_strength
+
+
 def test_budget_phrase_appears_when_every_piece_fits():
     catalog = [
         _item("t1", "t_shirt", "top", price=500),
