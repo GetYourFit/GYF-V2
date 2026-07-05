@@ -22,6 +22,10 @@ const RIGHT_TABS = [
 const ACCENT = "var(--secondary)";
 const MUTED = "#5c5650";
 
+// Colors the glow behind the centre logo cycles through — same warm palette
+// used for the explore filters, kept last so the loop wraps smoothly.
+const ROTATING_COLORS = ["#b04760", "#b8571f", "#6b7d3d", "#a8791f", "#b04760"];
+
 export function BottomNav() {
   const pathname = usePathname();
   const reduce = useReducedMotion();
@@ -123,10 +127,35 @@ export function BottomNav() {
           position: "relative",
         }}
       >
+        {/* Rotating color glow — sits behind the white disc so the logo
+            stays fully legible while the accent cycles through the app's
+            palette. */}
+        <motion.div
+          aria-hidden
+          animate={
+            reduce
+              ? { backgroundColor: ROTATING_COLORS[0] }
+              : { backgroundColor: ROTATING_COLORS }
+          }
+          transition={
+            reduce
+              ? undefined
+              : { duration: ROTATING_COLORS.length * 3, repeat: Infinity, ease: "easeInOut" }
+          }
+          style={{
+            position: "absolute",
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            filter: "blur(6px)",
+            opacity: 0.55,
+          }}
+        />
         <motion.div
           whileTap={reduce ? undefined : { scale: 0.88 }}
           transition={{ type: "spring", stiffness: 500, damping: 25 }}
           style={{
+            position: "relative",
             width: 44,
             height: 44,
             borderRadius: "50%",
