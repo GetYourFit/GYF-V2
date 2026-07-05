@@ -751,7 +751,7 @@ thread-safe, ~10-20MB worst-case cache, no PII in facets).
 Closed the deferred review follow-up: `mediaSrcSet(path, width)` emits a
 1x/2x density srcset for Shopify-CDN images (undefined for non-resizable
 URLs → srcSet falls back to src). Applied at all 13 image call sites (grids
-400/800, detail 800/1600). media.test.ts added (7 cases: width append,
+400/800, detail 800/1600). media.test.ts added (4 cases: width append,
 double-width guard, passthrough, srcset shape).
 
-**Gate:** tsc ✓ web 31 ✓ eslint ✓ prettier ✓.
+**Gate:** tsc ✓ web 28 ✓ eslint ✓ prettier ✓.
