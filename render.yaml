@@ -45,8 +45,15 @@ services:
       # (max_band_gap 3.2 vs ≤1.0; per-band MAE up to 5.4/10 MST buckets), a
       # photo-derived tone would now steer picks with near-random data. Manual
       # skin tone still conditions ranking. Flip back once the eval passes.
+      # RE-ENABLED 2026-07-05 (owner-authorized, same session as the freeze
+      # above was revisited): owner directed that all ML functionality surface.
+      # Known risk accepted: the fairness eval still fails DoD, so the surfaced
+      # estimate can be wrong by several MST bands for some users — it remains
+      # an editable, honestly-confidence-scored pre-fill that never overwrites
+      # a manual value, and manual entry stays the fallback. Revert to "false"
+      # to re-shadow instantly; retire this override once the eval passes.
       - key: GYF_SKIN_TONE_ENABLED
-        value: "false"
+        value: "true"
       # Affiliate attribution (Cuelinks channel id — public, not a secret): every
       # buy link wraps through linksredirect.com deeplinks with a subid tying
       # conversions back to the recommendation that drove them. The API token
