@@ -127,53 +127,51 @@ export function BottomNav() {
           position: "relative",
         }}
       >
-        {/* Rotating color glow — sits behind the white disc so the logo
-            stays fully legible while the accent cycles through the app's
-            palette. */}
+        {/* Button itself carries the rotating color — a white inner disc
+            keeps the logo legible against every color in the cycle. */}
         <motion.div
-          aria-hidden
+          whileTap={reduce ? undefined : { scale: 0.88 }}
           animate={
             reduce
               ? { backgroundColor: ROTATING_COLORS[0] }
               : { backgroundColor: ROTATING_COLORS }
           }
-          transition={
-            reduce
+          transition={{
+            scale: { type: "spring", stiffness: 500, damping: 25 },
+            backgroundColor: reduce
               ? undefined
-              : { duration: ROTATING_COLORS.length * 3, repeat: Infinity, ease: "easeInOut" }
-          }
-          style={{
-            position: "absolute",
-            width: 52,
-            height: 52,
-            borderRadius: "50%",
-            filter: "blur(6px)",
-            opacity: 0.55,
+              : { duration: ROTATING_COLORS.length * 3, repeat: Infinity, ease: "easeInOut" },
           }}
-        />
-        <motion.div
-          whileTap={reduce ? undefined : { scale: 0.88 }}
-          transition={{ type: "spring", stiffness: 500, damping: 25 }}
           style={{
-            position: "relative",
             width: 44,
             height: 44,
             borderRadius: "50%",
-            background: "#ffffff",
             border: "1.5px solid rgba(0,0,0,0.10)",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.10)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.14)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Image
-            src="/assets/logo.png"
-            alt="GYF"
-            width={139}
-            height={125}
-            style={{ width: 28, height: "auto" }}
-          />
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Image
+              src="/assets/logo.png"
+              alt="GYF"
+              width={139}
+              height={125}
+              style={{ width: 22, height: "auto" }}
+            />
+          </div>
         </motion.div>
       </Link>
 
