@@ -65,11 +65,21 @@ const CHIP_BASE: React.CSSProperties = {
   transition: "all 0.15s",
 };
 
-function chip(active: boolean): React.CSSProperties {
+// One accent per filter category — every chip in a row shares its row's
+// color, and any other control tied to the same filter (e.g. the price
+// group) reuses its category's color so "same utility = same color" holds.
+const FILTER_COLORS = {
+  slot: "#b04760", // rose pink
+  occasion: "#3b5bab", // indigo
+  style: "#1f7a6c", // teal
+  price: "#7d4fa0", // plum
+} as const;
+
+function chip(active: boolean, color: string = "#1c1a17"): React.CSSProperties {
   return {
     ...CHIP_BASE,
-    border: active ? "1px solid #1c1a17" : "1px solid rgba(0,0,0,0.12)",
-    background: active ? "#1c1a17" : "#ffffff",
+    border: active ? `1px solid ${color}` : "1px solid rgba(0,0,0,0.12)",
+    background: active ? color : "#ffffff",
     color: active ? "#faf8f5" : "#5c5650",
   };
 }
@@ -223,7 +233,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               onClick={() => set("slot", s.value)}
               whileTap={reduce ? undefined : { scale: 0.92 }}
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
-              style={chip(active)}
+              style={chip(active, FILTER_COLORS.slot)}
             >
               {s.label}
             </motion.button>
@@ -254,7 +264,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               onClick={() => set("occasion", occ.value)}
               whileTap={reduce ? undefined : { scale: 0.92 }}
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
-              style={chip(active)}
+              style={chip(active, FILTER_COLORS.occasion)}
             >
               {occ.label}
             </motion.button>
@@ -291,7 +301,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 onClick={() => set("style", s.value)}
                 whileTap={reduce ? undefined : { scale: 0.92 }}
                 transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                style={chip(active)}
+                style={chip(active, FILTER_COLORS.style)}
               >
                 {s.label}
               </motion.button>
@@ -304,55 +314,67 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       {(priceEnabled || hasActive) && (
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
           {priceEnabled && (
-            <select
-              aria-label="Sort results"
-              value={safeSort}
-              onChange={(e) => set("sort", e.target.value as SortKey)}
+            <div
               style={{
-                background: "#ffffff",
-                border: "1px solid rgba(0,0,0,0.12)",
-                borderRadius: "999px",
-                color: "#5c5650",
-                padding: "0.3rem 0.75rem",
-                fontFamily: "var(--font-body)",
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
                 flexShrink: 0,
-                outline: "none",
+                border: `1px solid ${
+                  filters.maxPrice || safeSort !== "relevance"
+                    ? FILTER_COLORS.price
+                    : "rgba(0,0,0,0.12)"
+                }`,
+                borderRadius: "999px",
+                background: "#ffffff",
+                overflow: "hidden",
               }}
             >
-              {sortOptions.map((o) => (
-                <option key={o.value} value={o.value} style={{ background: "#faf8f5" }}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          )}
+              <select
+                aria-label="Sort results"
+                value={safeSort}
+                onChange={(e) => set("sort", e.target.value as SortKey)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  borderRight: "1px solid rgba(0,0,0,0.1)",
+                  color: safeSort !== "relevance" ? FILTER_COLORS.price : "#5c5650",
+                  padding: "0.3rem 0.625rem",
+                  fontFamily: "var(--font-body)",
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                {sortOptions.map((o) => (
+                  <option key={o.value} value={o.value} style={{ background: "#faf8f5" }}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
 
-          {priceEnabled && (
-            <input
-              type="number"
-              inputMode="numeric"
-              aria-label="Maximum price"
-              placeholder={facets?.price_max ? `Max £${Math.ceil(facets.price_max)}` : "Max price"}
-              min={0}
-              max={facets?.price_max ?? undefined}
-              value={filters.maxPrice}
-              onChange={(e) => set("maxPrice", e.target.value)}
-              style={{
-                width: "90px",
-                background: "#ffffff",
-                border: "1px solid rgba(0,0,0,0.12)",
-                borderRadius: "999px",
-                color: "#5c5650",
-                padding: "0.3rem 0.625rem",
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.7rem",
-                outline: "none",
-                flexShrink: 0,
-              }}
-            />
+              <input
+                type="number"
+                inputMode="numeric"
+                aria-label="Maximum price"
+                placeholder={facets?.price_max ? `Max £${Math.ceil(facets.price_max)}` : "Max price"}
+                min={0}
+                max={facets?.price_max ?? undefined}
+                value={filters.maxPrice}
+                onChange={(e) => set("maxPrice", e.target.value)}
+                style={{
+                  boxSizing: "border-box",
+                  width: "76px",
+                  background: "transparent",
+                  border: "none",
+                  color: filters.maxPrice ? FILTER_COLORS.price : "#5c5650",
+                  padding: "0.3rem 0.625rem",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.7rem",
+                  outline: "none",
+                }}
+              />
+            </div>
           )}
 
           <div style={{ flex: 1 }} />
