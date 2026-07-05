@@ -94,18 +94,20 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => setScrolled(!entry.isIntersecting), {
-      threshold: 0,
-    });
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        const isScrolled = !entry.isIntersecting;
+        setScrolled(isScrolled);
+        // Collapse fresh every time the bar returns to rest, so a filter
+        // dropped open mid-scroll doesn't stay stuck open next time the
+        // user scrolls away.
+        if (!isScrolled) setExpanded(false);
+      },
+      { threshold: 0 },
+    );
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-
-  // Collapse fresh every time scrolling starts again, so a filter dropped
-  // open mid-scroll doesn't stay stuck open next time the user scrolls away.
-  useEffect(() => {
-    if (!scrolled) setExpanded(false);
-  }, [scrolled]);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -283,9 +285,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 gap: "0.75rem",
               }}
             >
-              {/* Occasion chips */}
+              {/* Slot / category chips */}
               <div
-                aria-label="Filter by occasion"
+                aria-label="Filter by category"
                 style={
                   {
                     display: "flex",
@@ -317,6 +319,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
               {/* Occasion chips row */}
               <div
+                aria-label="Filter by occasion"
                 style={
                   {
                     display: "flex",
@@ -385,7 +388,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               </div>
 
               {/* Sort + price + clear — own row so they never collide with chips */}
-              {(priceEnabled || hasActive) && (
+              {priceEnabled && (
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                   {priceEnabled && (
                     <div

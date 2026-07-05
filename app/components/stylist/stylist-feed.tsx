@@ -10,6 +10,7 @@ import { StylistControls, type StylistQuery } from "@/components/stylist/stylist
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
+import { getScrollContainer } from "@/lib/scroll-container";
 import { readCache, writeCache } from "@/lib/session-cache";
 import type { InteractionAction, Outfit, OutfitItem, OutfitRecommendation } from "@gyf/types";
 
@@ -46,7 +47,7 @@ export function StylistFeed() {
       if (seq !== loadSeq.current) return;
       // Never restack the feed under a mid-scroll user (§2.4): a background
       // refresh only swaps in when they're still at the top.
-      if (background && window.scrollY > 120) return;
+      if (background && getScrollContainer().scrollTop > 120) return;
       setData(res);
       setSaved(new Set());
       setDismissed(new Set());
@@ -97,7 +98,7 @@ export function StylistFeed() {
   // Pull-to-refresh: a firm downward drag from the very top refetches the feed.
   const pullStartY = useRef<number | null>(null);
   function onTouchStart(e: React.TouchEvent) {
-    pullStartY.current = window.scrollY === 0 ? e.touches[0].clientY : null;
+    pullStartY.current = getScrollContainer().scrollTop === 0 ? e.touches[0].clientY : null;
   }
   function onTouchEnd(e: React.TouchEvent) {
     const start = pullStartY.current;

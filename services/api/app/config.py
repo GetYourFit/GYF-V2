@@ -75,10 +75,14 @@ class Settings(BaseSettings):
     # in BETA as an explicitly editable, honest-confidence ESTIMATE — never an
     # authority. It lands in onboarding as a pre-filled, user-correctable field
     # ("we estimated this — fix if wrong") and never overwrites a manual value.
-    # FOLLOW-UP (must precede GA): clear the full-MST fairness eval
-    # (usermodel.skintone.fairness_eval, gate max_band_gap ≤ 1.0) and record the
-    # report under eval-reports/. Set GYF_SKIN_TONE_ENABLED=false to re-shadow.
-    skin_tone_enabled: bool = True
+    # RE-SHADOWED 2026-07-05: the only fairness report
+    # (ml/eval-reports/skintone-fairness-mste-v1.json) fails the gate hard
+    # (max_band_gap 3.2 vs ≤ 1.0, per-band MAE up to 5.4/10 buckets) AND the
+    # photo-derived tone now feeds RANKING (recsys conditioning, ce61dac) — a
+    # near-random estimate must not steer picks or inflate confidence
+    # (invariants #1/#3). Flip via GYF_SKIN_TONE_ENABLED=true only after the
+    # full-MST fairness eval passes. Manual skin tone is unaffected.
+    skin_tone_enabled: bool = False
 
     @field_validator("body_remote_url", "skintone_remote_url", mode="after")
     @classmethod

@@ -92,6 +92,17 @@ class FeedbackRequest(BaseModel):
     # tuple the future ranker needs. Optional: organic actions carry no context.
     context: dict[str, object] = Field(default_factory=dict)
 
+    @field_validator("context")
+    @classmethod
+    def _bounded_context(cls, v: dict[str, object]) -> dict[str, object]:
+        """Persisted verbatim to JSONB — cap size so /feedback can't be used to
+        bloat the interactions table (a few KB is far beyond any legit slate echo)."""
+        import json
+
+        if len(v) > 32 or len(json.dumps(v, default=str)) > 4_096:
+            raise ValueError("context too large")
+        return v
+
     @field_validator("action")
     @classmethod
     def _organic_actions_only(cls, v: InteractionAction) -> InteractionAction:

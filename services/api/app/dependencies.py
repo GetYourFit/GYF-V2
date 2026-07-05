@@ -13,6 +13,8 @@ imports keep working unchanged.
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from fastapi import Depends, HTTPException, status
 
 from .auth import Principal, get_current_principal
@@ -39,6 +41,20 @@ from .wardrobe import WardrobeRepository
 sink = get_sink()
 
 
+@lru_cache(maxsize=4)
+def shared_pool(dsn: str):
+    """One process-wide Postgres pool shared by every repository.
+
+    Repositories accept an injectable ``pool``; without this, each provider built
+    its own ``ConnectionPool`` per request (~5 fresh TCP+auth handshakes to the
+    Supabase pooler per recommendation call, never closed). One pool caps total
+    connections and makes every authed request reuse warm connections.
+    """
+    from psycopg_pool import ConnectionPool
+
+    return ConnectionPool(dsn, min_size=1, max_size=10, open=True)
+
+
 # --- Readiness -------------------------------------------------------------
 
 
@@ -54,7 +70,9 @@ def get_search_repo() -> VectorSearchRepository:
     """The pgvector-backed retrieval repository (lazy connection pool)."""
     from .catalog.retrieval import PostgresVectorSearchRepository
 
-    return PostgresVectorSearchRepository(settings.database_url)
+    return PostgresVectorSearchRepository(
+        settings.database_url, pool=shared_pool(settings.database_url)
+    )
 
 
 def get_text_embedder() -> TextEmbedder:
@@ -78,7 +96,11 @@ def get_item_directory() -> ItemDirectory:
     from .affiliate import linker_from_settings
     from .catalog.directory import PostgresItemDirectory
 
-    return PostgresItemDirectory(settings.database_url, linker=linker_from_settings())
+    return PostgresItemDirectory(
+        settings.database_url,
+        linker=linker_from_settings(),
+        pool=shared_pool(settings.database_url),
+    )
 
 
 # --- Profile / account -----------------------------------------------------
@@ -88,14 +110,14 @@ def get_profile_repo() -> ProfileRepository:
     """The Postgres-backed profile repository (lazy connection pool)."""
     from .profile.repository import PostgresProfileRepository
 
-    return PostgresProfileRepository(settings.database_url)
+    return PostgresProfileRepository(settings.database_url, pool=shared_pool(settings.database_url))
 
 
 def get_account_repo() -> AccountRepository:
     """The Postgres-backed account repository (lazy connection pool)."""
     from .profile.account import PostgresAccountRepository
 
-    return PostgresAccountRepository(settings.database_url)
+    return PostgresAccountRepository(settings.database_url, pool=shared_pool(settings.database_url))
 
 
 def require_active_principal(
@@ -156,14 +178,16 @@ def get_candidate_repo() -> CandidateRepository:
     """The Postgres-backed candidate repository (lazy connection pool)."""
     from .recsys.candidates import PostgresCandidateRepository
 
-    return PostgresCandidateRepository(settings.database_url)
+    return PostgresCandidateRepository(
+        settings.database_url, pool=shared_pool(settings.database_url)
+    )
 
 
 def get_taste_repo() -> TasteRepository:
     """The Postgres-backed taste repository (lazy connection pool)."""
     from .recsys.taste import PostgresTasteRepository
 
-    return PostgresTasteRepository(settings.database_url)
+    return PostgresTasteRepository(settings.database_url, pool=shared_pool(settings.database_url))
 
 
 def get_event_sink() -> EventSink:
@@ -181,37 +205,43 @@ def get_event_sink() -> EventSink:
 def get_collection_repo() -> CollectionRepository:
     from .collections import PostgresCollectionRepository
 
-    return PostgresCollectionRepository(settings.database_url)
+    return PostgresCollectionRepository(
+        settings.database_url, pool=shared_pool(settings.database_url)
+    )
 
 
 def get_saved_outfit_repo() -> SavedOutfitRepository:
     from .saved_outfits import PostgresSavedOutfitRepository
 
-    return PostgresSavedOutfitRepository(settings.database_url)
+    return PostgresSavedOutfitRepository(
+        settings.database_url, pool=shared_pool(settings.database_url)
+    )
 
 
 def get_wardrobe_repo() -> WardrobeRepository:
     from .wardrobe import PostgresWardrobeRepository
 
-    return PostgresWardrobeRepository(settings.database_url)
+    return PostgresWardrobeRepository(
+        settings.database_url, pool=shared_pool(settings.database_url)
+    )
 
 
 def get_social_repo() -> SocialRepository:
     from .social import PostgresSocialRepository
 
-    return PostgresSocialRepository(settings.database_url)
+    return PostgresSocialRepository(settings.database_url, pool=shared_pool(settings.database_url))
 
 
 def get_support_repo() -> SupportRepository:
     from .support import PostgresSupportRepository
 
-    return PostgresSupportRepository(settings.database_url)
+    return PostgresSupportRepository(settings.database_url, pool=shared_pool(settings.database_url))
 
 
 def get_summary_repo() -> SummaryRepository:
     from .profile.summary import PostgresSummaryRepository
 
-    return PostgresSummaryRepository(settings.database_url)
+    return PostgresSummaryRepository(settings.database_url, pool=shared_pool(settings.database_url))
 
 
 def get_tryon_renderer():

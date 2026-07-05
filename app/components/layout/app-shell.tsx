@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { TopMenu } from "@/components/layout/top-menu";
+import { APP_SCROLL_ID } from "@/lib/scroll-container";
 
 interface AppShellProps {
   children: ReactNode;
@@ -81,6 +82,7 @@ export function AppShell({ children }: AppShellProps) {
       </div>
 
       <main
+        id={APP_SCROLL_ID}
         style={{
           flex: 1,
           overflowY: "auto",

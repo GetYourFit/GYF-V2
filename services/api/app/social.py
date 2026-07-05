@@ -23,7 +23,7 @@ VALUES (%s, %s, %s, %s, %s, %s, %s)
 """
 _FEED = """
 SELECT id, user_id, item_ids, caption, occasion, region, reaction_count, created_at
-FROM social_posts ORDER BY reaction_count DESC, created_at DESC LIMIT %s OFFSET %s
+FROM social_posts ORDER BY reaction_count DESC, created_at DESC, id LIMIT %s OFFSET %s
 """
 _GET = """
 SELECT id, user_id, item_ids, caption, occasion, region, reaction_count, created_at
@@ -42,7 +42,7 @@ _REACTED = "SELECT post_id FROM post_reactions WHERE user_id = %s AND post_id = 
 _FEED_BY_AUTHORS = """
 SELECT id, user_id, item_ids, caption, occasion, region, reaction_count, created_at
 FROM social_posts WHERE user_id = ANY(%s)
-ORDER BY reaction_count DESC, created_at DESC LIMIT %s OFFSET %s
+ORDER BY reaction_count DESC, created_at DESC, id LIMIT %s OFFSET %s
 """
 _FOLLOW = """
 INSERT INTO follows (follower_id, followee_id) VALUES (%s, %s)
@@ -58,15 +58,15 @@ SELECT followee_id FROM follows WHERE follower_id = %s ORDER BY created_at DESC 
 class PostInput(BaseModel):
     """Create a post: the look's item ids + an optional caption/context."""
 
-    item_ids: list[str] = Field(min_length=1)
-    caption: str | None = None
-    occasion: str | None = None
-    region: str | None = None
-    recommendation_id: str | None = None
+    item_ids: list[str] = Field(min_length=1, max_length=12)
+    caption: str | None = Field(default=None, max_length=1_000)
+    occasion: str | None = Field(default=None, max_length=64)
+    region: str | None = Field(default=None, max_length=64)
+    recommendation_id: str | None = Field(default=None, max_length=64)
 
 
 class ReactionInput(BaseModel):
-    reaction: str = "like"
+    reaction: str = Field(default="like", max_length=32)
 
 
 class PostRecord(BaseModel):

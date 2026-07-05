@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
+import { getScrollContainer } from "@/lib/scroll-container";
 import { readCache, writeCache } from "@/lib/session-cache";
 import type { SearchResult } from "@gyf/types";
 import { ExploreCard } from "./explore-card";
@@ -194,7 +195,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
         setPage(cached.page);
         setHasMore(cached.hasMore);
         setGender(cached.gender);
-        requestAnimationFrame(() => window.scrollTo(0, cached.scrollY));
+        requestAnimationFrame(() => getScrollContainer().scrollTo(0, cached.scrollY));
         return;
       }
       // No cache: wait for the gender to resolve so the first fetch is the
@@ -218,6 +219,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   // Persist the grid + scroll position for back-nav restore.
   useEffect(() => {
     if (items.length === 0) return;
+    const scroller = getScrollContainer();
     let raf = 0;
     const save = () => {
       cancelAnimationFrame(raf);
@@ -227,15 +229,15 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           page,
           hasMore,
           gender: gender ?? null,
-          scrollY: window.scrollY,
+          scrollY: scroller.scrollTop,
         } satisfies GridCache),
       );
     };
     save();
-    window.addEventListener("scroll", save, { passive: true });
+    scroller.addEventListener("scroll", save, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", save);
+      scroller.removeEventListener("scroll", save);
     };
   }, [cacheKey, items, page, hasMore, gender]);
 

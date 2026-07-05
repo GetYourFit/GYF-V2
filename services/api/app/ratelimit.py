@@ -76,11 +76,28 @@ def _client_id(request: Request) -> str:
     otherwise a client could spoof XFF to mint unlimited identities and bypass the
     limit. With no trusted proxy configured we always key on the real socket peer."""
     peer = request.client.host if request.client else "unknown"
-    if peer in settings.trusted_proxy_set:
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        if peer in settings.trusted_proxy_set:
             return f"ip:{forwarded.split(',')[0].strip()}"
+        # Behind a platform ingress (private/loopback peer, e.g. Render), the
+        # RIGHTMOST hop was appended by the platform proxy itself — the real
+        # client, unspoofable — while the leftmost can be client-forged. Without
+        # this, every user hashes to the ingress IP and per-route limits become
+        # one global bucket.
+        if _is_private(peer):
+            return f"ip:{forwarded.split(',')[-1].strip()}"
     return f"ip:{peer}"
+
+
+def _is_private(host: str) -> bool:
+    import ipaddress
+
+    try:
+        addr = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return addr.is_private or addr.is_loopback
 
 
 def rate_limit(route: str, limit_attr: str) -> object:

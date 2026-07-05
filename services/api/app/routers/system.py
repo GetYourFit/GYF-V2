@@ -104,7 +104,11 @@ class InMemorySystemStatsRepository:
 
 
 def get_system_stats_repo() -> SystemStatsRepository:
-    return PostgresSystemStatsRepository(settings.database_url)
+    from ..dependencies import shared_pool
+
+    return PostgresSystemStatsRepository(
+        settings.database_url, pool=shared_pool(settings.database_url)
+    )
 
 
 def _runtime_installed(module: str) -> bool:
