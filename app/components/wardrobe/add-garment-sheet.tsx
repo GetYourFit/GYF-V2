@@ -58,7 +58,7 @@ const LABEL: React.CSSProperties = {
 const BTN_PRIMARY: React.CSSProperties = {
   flex: 1,
   minHeight: "48px",
-  background: "#1c1a17",
+  background: UI_COLORS.wardrobe,
   color: "#faf8f5",
   border: "none",
   borderRadius: "999px",
@@ -405,7 +405,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         justifyContent: "center",
                         width: 48,
                         height: 48,
-                        background: "#1c1a17",
+                        background: UI_COLORS.wardrobe,
                         border: "none",
                         borderRadius: "999px",
                         color: "#faf8f5",

@@ -121,7 +121,7 @@ export function WardrobeGrid() {
           onClick={() => void load()}
           style={{
             padding: "0.75rem 2rem",
-            background: "#1c1a17",
+            background: UI_COLORS.wardrobe,
             color: "#faf8f5",
             border: "none",
             borderRadius: "999px",
@@ -187,7 +187,7 @@ export function WardrobeGrid() {
             gap: "0.375rem",
             padding: "0.5rem 1.25rem",
             minHeight: "40px",
-            background: "#1c1a17",
+            background: UI_COLORS.wardrobe,
             color: "#faf8f5",
             border: "none",
             borderRadius: "999px",
@@ -228,7 +228,7 @@ export function WardrobeGrid() {
             onClick={() => setSheetOpen(true)}
             style={{
               padding: "0.75rem 2rem",
-              background: "#1c1a17",
+              background: UI_COLORS.wardrobe,
               color: "#faf8f5",
               border: "none",
               borderRadius: "999px",
