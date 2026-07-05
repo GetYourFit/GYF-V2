@@ -230,13 +230,13 @@ export function PostCard({
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
               padding: "0.35rem 0.875rem",
-              background: followed ? UI_COLORS.follow : "transparent",
-              border: `1.5px solid ${UI_COLORS.follow}`,
+              background: followed ? UI_COLORS.social : "transparent",
+              border: `1.5px solid ${UI_COLORS.social}`,
               borderRadius: "999px",
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
               fontSize: "0.75rem",
               fontWeight: 600,
-              color: followed ? "#faf8f5" : UI_COLORS.follow,
+              color: followed ? "#faf8f5" : UI_COLORS.social,
               cursor: "pointer",
               flexShrink: 0,
               transition: "background 0.2s, color 0.2s",

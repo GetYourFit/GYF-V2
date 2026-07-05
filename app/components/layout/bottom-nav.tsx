@@ -8,18 +8,27 @@ import { NavExplore } from "@/components/icons/NavExplore";
 import { NavWardrobe } from "@/components/icons/NavWardrobe";
 import { NavSocial } from "@/components/icons/NavSocial";
 import { NavProfile } from "@/components/icons/NavProfile";
+import { UI_COLORS } from "@/lib/ui-colors";
 
+// Each tab's active color matches that page's own signature color (see
+// app/lib/ui-colors.ts), so the nav tab and the buttons on the page it
+// leads to always read as the same color story.
 const LEFT_TABS = [
-  { href: "/explore", Icon: NavExplore, label: "Explore", exact: false },
-  { href: "/wardrobe", Icon: NavWardrobe, label: "Wardrobe", exact: false },
+  { href: "/explore", Icon: NavExplore, label: "Explore", exact: false, color: UI_COLORS.explore },
+  {
+    href: "/wardrobe",
+    Icon: NavWardrobe,
+    label: "Wardrobe",
+    exact: false,
+    color: UI_COLORS.wardrobe,
+  },
 ] as const;
 
 const RIGHT_TABS = [
-  { href: "/social", Icon: NavSocial, label: "Social", exact: false },
-  { href: "/profile", Icon: NavProfile, label: "Profile", exact: false },
+  { href: "/social", Icon: NavSocial, label: "Social", exact: false, color: UI_COLORS.social },
+  { href: "/profile", Icon: NavProfile, label: "Profile", exact: false, color: UI_COLORS.profile },
 ] as const;
 
-const ACCENT = "var(--secondary)";
 const MUTED = "#5c5650";
 
 // Anchor hues from the app's warm palette (rose → terracotta → olive →
@@ -85,7 +94,7 @@ export function BottomNav() {
       }}
     >
       {/* Left tabs */}
-      {LEFT_TABS.map(({ href, Icon, label, exact }) => {
+      {LEFT_TABS.map(({ href, Icon, label, exact, color }) => {
         const active = exact ? pathname === href : pathname.startsWith(href);
         return (
           <Link
@@ -102,7 +111,7 @@ export function BottomNav() {
               gap: "0.25rem",
               height: "64px",
               position: "relative",
-              color: active ? ACCENT : MUTED,
+              color: active ? color : MUTED,
               textDecoration: "none",
               minWidth: "44px",
               transition: "color 0.2s",
@@ -110,7 +119,7 @@ export function BottomNav() {
           >
             {active && (
               <motion.span
-                layoutId={reduce ? undefined : "nav-indicator"}
+                layoutId={reduce ? undefined : "nav-indicator-left"}
                 transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 aria-hidden
                 style={{
@@ -120,7 +129,7 @@ export function BottomNav() {
                   transform: "translateX(-50%)",
                   width: 20,
                   height: 2,
-                  background: ACCENT,
+                  background: color,
                   borderRadius: "0 0 2px 2px",
                 }}
               />
@@ -138,7 +147,7 @@ export function BottomNav() {
                 fontWeight: 600,
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
-                color: active ? ACCENT : MUTED,
+                color: active ? color : MUTED,
                 lineHeight: 1,
               }}
             >
@@ -242,7 +251,7 @@ export function BottomNav() {
       </Link>
 
       {/* Right tabs */}
-      {RIGHT_TABS.map(({ href, Icon, label }) => {
+      {RIGHT_TABS.map(({ href, Icon, label, color }) => {
         const active = pathname.startsWith(href);
         return (
           <Link
@@ -259,7 +268,7 @@ export function BottomNav() {
               gap: "0.25rem",
               height: "64px",
               position: "relative",
-              color: active ? ACCENT : MUTED,
+              color: active ? color : MUTED,
               textDecoration: "none",
               minWidth: "44px",
               transition: "color 0.2s",
@@ -267,7 +276,7 @@ export function BottomNav() {
           >
             {active && (
               <motion.span
-                layoutId={reduce ? undefined : "nav-indicator"}
+                layoutId={reduce ? undefined : "nav-indicator-right"}
                 transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 aria-hidden
                 style={{
@@ -277,7 +286,7 @@ export function BottomNav() {
                   transform: "translateX(-50%)",
                   width: 20,
                   height: 2,
-                  background: ACCENT,
+                  background: color,
                   borderRadius: "0 0 2px 2px",
                 }}
               />
@@ -295,7 +304,7 @@ export function BottomNav() {
                 fontWeight: 600,
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
-                color: active ? ACCENT : MUTED,
+                color: active ? color : MUTED,
                 lineHeight: 1,
               }}
             >

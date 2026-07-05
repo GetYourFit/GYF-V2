@@ -130,7 +130,11 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
     <div
       style={{
         position: "sticky",
-        top: 0,
+        // The app header is also sticky at top:0 with a higher z-index —
+        // without this offset the two would occupy the same spot and the
+        // header would render on top, making the search bar appear to slide
+        // away/get swallowed as soon as it reached the top of the scroll.
+        top: "calc(env(safe-area-inset-top) + 56px)",
         zIndex: 20,
         background: "rgba(250,248,245,0.95)",
         backdropFilter: "blur(20px)",

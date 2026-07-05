@@ -1,22 +1,23 @@
-// Shared accent colors for interactive controls across the app. Every
-// control tied to the same underlying utility (e.g. "filter by category",
-// "switch view mode") reuses the same color, wherever it appears, so the
-// same action always reads the same way.
+// Shared accent colors for interactive controls across the app.
+//
+// Explore is the one page with several internal filter categories, so it
+// keeps its own multi-hue set (category/occasion/style/sort/budget) with one
+// color per category. Every other page gets a single signature color used
+// for *every* interactive control on that page — and that same color is
+// mirrored by that page's bottom-nav tab, so the whole page (nav tab +
+// on-page buttons) reads as one color story, and no two pages share a hue.
 export const UI_COLORS = {
-  // Category / slot / type filters — explore's Tops/Bottoms row, wardrobe's
-  // category filter.
+  // ── Explore — one hue per filter category ──
   category: "#b04760", // rose
-  // Occasion filters — explore + stylist occasion chips.
   occasion: "#b8571f", // terracotta
-  // Style / aesthetic filters — explore's style chips.
   style: "#6b7d3d", // olive
-  // Sort controls — explore's sort dropdown.
   sort: "#8a5a2b", // brown
-  // Budget / price controls — explore's max-price input.
   budget: "#a8791f", // ochre gold
-  // Two-way mode/scope toggles — add-garment catalog/custom, social feed
-  // scope (For you / Following).
-  mode: "#8a5a2b", // brown (shares sort's hue — both are "pick a mode" controls)
-  // Social follow action.
-  follow: "#8a3a3a", // brick
+
+  // ── Per-page signature colors (also used by that page's bottom-nav tab) ──
+  explore: "#b04760", // rose — same as `category`, explore's flagship hue
+  wardrobe: "#a2532e", // burnt sienna
+  stylist: "#5f7a52", // sage green
+  social: "#c9962f", // warm mustard
+  profile: "#7a4a63", // dusty mauve
 } as const;

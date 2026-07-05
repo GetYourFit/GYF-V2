@@ -228,8 +228,8 @@ export function SocialFeed() {
               style={{
                 padding: "0.4rem 1rem",
                 borderRadius: "999px",
-                border: `1px solid ${scope === key ? UI_COLORS.mode : "rgba(0,0,0,0.12)"}`,
-                background: scope === key ? UI_COLORS.mode : "transparent",
+                border: `1px solid ${scope === key ? UI_COLORS.social : "rgba(0,0,0,0.12)"}`,
+                background: scope === key ? UI_COLORS.social : "transparent",
                 color: scope === key ? "#faf8f5" : "#5c5650",
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                 fontSize: "0.8125rem",
