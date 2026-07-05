@@ -48,23 +48,29 @@ _ETHNIC_OCCASIONS: frozenset[str] = frozenset({"wedding", "festive"})
 
 # Undertone -> preferred CIELAB hue-angle centres (degrees). Warm undertones are
 # flattered by warm hues (reds/oranges/yellows), cool by cool hues (blues/greens/
-# purples). Neutral/olive/unknown express no preference (empty). This is the
-# colour-theory half of "what looks good on *you*" at cold start.
+# purples). Olive (green-leaning warm) suits earthy warms, olive greens, and
+# teals. Neutral/unknown express no preference (empty) — genuinely flattered by
+# both families, so constraining would be a guess, not colour theory (D6).
 _UNDERTONE_HUES: dict[str, tuple[float, ...]] = {
     "warm": (40.0, 75.0, 100.0),  # red-orange, orange, yellow
     "cool": (180.0, 270.0, 320.0),  # cyan-green, blue, purple
+    "olive": (55.0, 110.0, 165.0),  # warm earth, olive green, teal
 }
 
 # Body type -> default visual-effect goals (classic body-type styling), applied
 # only when the user set NO explicit NL goal — an explicit ask always wins.
-# Rectangle needs *curve creation* (waist definition) and hourglass is already
-# balanced — neither maps onto elongate/slim/broaden, so no default: no guessing (D6).
+# All six taxonomy types now carry an honest default, so stating a body type
+# always conditions the look (complete + consistent, CLAUDE.md §2).
 _BODY_TYPE_EFFECTS: dict[str, frozenset[Effect]] = {
     "oval": frozenset({Effect.ELONGATE}),  # a vertical column flatters a fuller middle
     "triangle": frozenset({Effect.BROADEN}),  # fuller/lighter up top balances wider hips
     # Shoulders wider than hips: dark, tailored, low-noise lines (the SLIM levers)
     # de-emphasize the upper frame and streamline the V.
     "inverted_triangle": frozenset({Effect.SLIM}),
+    # Rectangle creates a waistline; hourglass keeps its natural one — the same
+    # DEFINE levers (waist-marking cuts, no boxy volume) serve both honestly.
+    "rectangle": frozenset({Effect.DEFINE}),
+    "hourglass": frozenset({Effect.DEFINE}),
 }
 
 _FOOTWEAR = "footwear"

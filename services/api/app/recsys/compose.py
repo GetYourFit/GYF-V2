@@ -448,12 +448,15 @@ _BODY_TYPE_LABEL: dict[str, str] = {
     "oval": "apple-shaped",
     "triangle": "pear-shaped",
     "inverted_triangle": "broad-shouldered",
+    "rectangle": "straight-lined",
+    "hourglass": "hourglass",
 }
 
 _BODY_GOAL_PHRASE: dict[Effect, str] = {
     Effect.ELONGATE: "an unbroken vertical line that lengthens your silhouette",
     Effect.BROADEN: "fuller, lighter pieces up top that balance your proportions",
     Effect.SLIM: "dark, tailored lines that streamline your frame",
+    Effect.DEFINE: "fitted, waist-marking cuts that define your shape",
 }
 
 
@@ -501,6 +504,7 @@ _GOAL_PHRASE: dict[Effect, str] = {
     Effect.ELONGATE: "styled as an unbroken vertical column to make you look taller",
     Effect.SLIM: "kept dark and tailored for a slimming line",
     Effect.BROADEN: "shaped with fuller, lighter pieces up top to look broader",
+    Effect.DEFINE: "cut close and waist-marking to define your shape",
 }
 
 

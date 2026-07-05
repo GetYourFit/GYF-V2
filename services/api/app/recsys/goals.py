@@ -40,6 +40,7 @@ class Effect(str, Enum):
     ELONGATE = "elongate"  # look taller — an unbroken vertical column
     SLIM = "slim"  # look slimmer — dark, monochrome, tailored
     BROADEN = "broaden"  # look broader — lighter/brighter on top, fuller cuts
+    DEFINE = "define"  # define the waist — fitted, waist-marking cuts over boxy volume
 
 
 # Free-text synonyms -> effect. Matched as whole words against the lowercased
@@ -53,6 +54,9 @@ _KEYWORDS: dict[Effect, frozenset[str]] = {
     ),
     Effect.BROADEN: frozenset(
         {"broad", "broader", "broaden", "wider", "fuller", "bigger", "muscular", "buff", "bulkier"}
+    ),
+    Effect.DEFINE: frozenset(
+        {"curvy", "curvier", "curves", "waist", "waisted", "hourglass", "defined", "definition"}
     ),
 }
 
@@ -130,6 +134,17 @@ _EFFECT_TABLE: dict[Effect, _Row] = {
         prefer_cuts=frozenset({"boxy", "wide-leg", "oversized", "loose fit", "a-line"}),
         penalize_cuts=frozenset({"skinny", "bodycon"}),
         prefer_patterns=frozenset({"graphic", "checked", "striped", "horizontal"}),
+        penalize_patterns=frozenset(),
+    ),
+    # Waist definition: cuts that mark or follow the waistline (classic rectangle/
+    # hourglass styling); boxy volume erases the line it exists to create. Colour
+    # and pattern are not definition levers, so both stay unconstrained.
+    Effect.DEFINE: _Row(
+        target_lightness=None,
+        monochrome=False,
+        prefer_cuts=frozenset({"bodycon", "a-line", "tailored", "slim fit"}),
+        penalize_cuts=frozenset({"boxy", "oversized", "loose fit"}),
+        prefer_patterns=frozenset(),
         penalize_patterns=frozenset(),
     ),
 }

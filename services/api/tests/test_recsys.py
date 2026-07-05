@@ -799,10 +799,39 @@ def test_inverted_triangle_slims_and_changes_ranking():
     assert with_body[0] - with_body[1] > without[0] - without[1]
 
 
-def test_balanced_body_types_set_no_default_goals():
+def test_rectangle_and_hourglass_default_to_define():
+    """Every taxonomy body type now conditions the look: rectangle creates a
+    waistline, hourglass keeps its natural one — both via the DEFINE levers."""
     for body_type in ("rectangle", "hourglass"):
         c = conditioning.resolve(Profile(occasion="casual", body_type=body_type), "casual", None)
-        assert not c.goals and c.goals_from_body is False
+        assert c.goals == frozenset({Effect.DEFINE}) and c.goals_from_body is True
+
+
+def test_define_prefers_fitted_over_boxy():
+    c = conditioning.resolve(Profile(occasion="casual", body_type="rectangle"), "casual", None)
+    from app.recsys.goals import effects_for
+
+    fitted = (
+        _item("t1", "shirt", "top", lch=(50.0, 20.0, 30.0), fit="slim fit"),
+        _item("b1", "trousers", "bottom", lch=(45.0, 20.0, 40.0), silhouette="tailored"),
+        _item("f1", "sneakers", "footwear", lch=(50.0, 20.0, 35.0)),
+    )
+    boxy = (
+        _item("t2", "t_shirt", "top", lch=(50.0, 20.0, 30.0), fit="oversized"),
+        _item("b2", "jeans", "bottom", lch=(45.0, 20.0, 40.0), silhouette="boxy"),
+        _item("f2", "sneakers", "footwear", lch=(50.0, 20.0, 35.0)),
+    )
+    effects = effects_for(c.goals)
+    fitted_score = score_outfit(fitted, c, goal_effects=effects)[0]
+    boxy_score = score_outfit(boxy, c, goal_effects=effects)[0]
+    assert fitted_score > boxy_score
+
+
+def test_olive_undertone_expresses_hue_preference():
+    c = conditioning.resolve(Profile(occasion="casual", undertone="olive"), "casual", None)
+    assert c.preferred_hues  # earthy warms / olive greens / teals
+    neutral = conditioning.resolve(Profile(occasion="casual", undertone="neutral"), "casual", None)
+    assert not neutral.preferred_hues  # neutral honestly stays unconstrained
 
 
 def test_skin_tone_depth_changes_color_ordering():
