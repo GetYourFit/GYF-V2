@@ -12,7 +12,12 @@ export function AppShell({ children }: AppShellProps) {
     <div
       style={{
         display: "flex",
-        minHeight: "100dvh",
+        // Fixed height (not minHeight) so this container never grows past
+        // the viewport — that's what makes <main>'s overflowY:auto the
+        // actual scroll container instead of the page/body. Without it,
+        // main just grows to fit content, body scrolls instead, and the
+        // header + sticky filter bar end up fighting for the same top:0.
+        height: "100dvh",
         flexDirection: "column",
         background: "#faf8f5",
         color: "#1c1a17",
