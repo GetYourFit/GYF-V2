@@ -163,7 +163,7 @@ export function OutfitDetail({
               maxWidth: "390px",
               maxHeight: "92dvh",
               overflowY: "auto",
-              background: "#0a0b0e",
+              background: "#faf8f5",
               borderTop: "1px solid rgba(0,0,0,0.10)",
               outline: "none",
               display: "flex",
@@ -181,7 +181,7 @@ export function OutfitDetail({
                 justifyContent: "space-between",
                 gap: "1rem",
                 padding: "1rem 1.25rem",
-                background: "rgba(10,11,14,0.95)",
+                background: "rgba(250,248,245,0.95)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
                 borderBottom: "1px solid rgba(0,0,0,0.06)",
@@ -258,8 +258,8 @@ export function OutfitDetail({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={src}
-                        alt={`${item.title}
-                        srcSet={mediaSrcSet(item.image_url, 800)} — ${item.category.replace(/_/g, " ")}`}
+                        srcSet={mediaSrcSet(item.image_url, 800)}
+                        alt={`${item.title} — ${item.category.replace(/_/g, " ")}`}
                         style={{
                           width: "100%",
                           height: "100%",
@@ -352,7 +352,7 @@ export function OutfitDetail({
                   <div
                     key={label}
                     style={{
-                      background: "#0a0b0e",
+                      background: "#ffffff",
                       padding: "0.875rem 1rem",
                       display: "flex",
                       flexDirection: "column",
@@ -516,7 +516,7 @@ export function OutfitDetail({
                 alignItems: "center",
                 gap: "0.5rem",
                 padding: "0.875rem 1.25rem calc(0.875rem + env(safe-area-inset-bottom))",
-                background: "rgba(10,11,14,0.95)",
+                background: "rgba(250,248,245,0.95)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
                 borderTop: "1px solid rgba(0,0,0,0.06)",
