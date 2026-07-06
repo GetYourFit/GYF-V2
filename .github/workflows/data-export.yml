@@ -54,6 +54,27 @@ jobs:
           GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
         run: uv run --extra postgres python -m app.catalog.ingest --provider shopify
 
+      - name: Cache encoder weights
+        if: steps.gate.outputs.configured == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ml/.hf-cache
+          key: hf-cache-encoder-v1
+
+      - name: Embed new items (perception backfill — idempotent, resumable)
+        if: steps.gate.outputs.configured == 'true'
+        working-directory: ml
+        env:
+          GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
+          # Optional: remote ZeroGPU lane; unset → local CPU SigLIP baseline
+          # (invariant #5 — a working baseline behind every port).
+          GYF_ENCODER_REMOTE_URL: ${{ secrets.GYF_ENCODER_REMOTE_URL }}
+          GYF_HF_TOKEN: ${{ secrets.GYF_HF_TOKEN }}
+          HF_HOME: ${{ github.workspace }}/ml/.hf-cache
+        run: |
+          uv run --extra postgres --extra remote --extra perception \
+            python -m pipelines.backfill --limit 3000
+
       - name: Sync Cuelinks conversions into the spine
         if: steps.gate.outputs.configured == 'true'
         env:

@@ -15,9 +15,11 @@ logic is unit-testable with an in-memory repo (mirrors the injectable pool on
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import hashlib
 import json
 import logging
+from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Protocol
@@ -112,6 +114,10 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
 class IngestResult:
     seen: int = 0
     written: int = 0
+    # Raw feed strings that still classified to ``unknown`` after the title
+    # fallback → occurrence count. The taxonomy grows from this evidence, not
+    # guesswork: every run reports exactly the vocabulary it failed to place.
+    unknown_categories: Counter[str] = dataclasses.field(default_factory=Counter)
 
 
 class ItemRepository(Protocol):
@@ -126,6 +132,8 @@ def ingest(source: FeedSource, repo: ItemRepository) -> IngestResult:
     for raw in source.fetch():
         item = normalize(raw, provider=source.provider, license=source.license)
         result.seen += 1
+        if item.category == "unknown":
+            result.unknown_categories[raw.category.strip() or raw.title.strip()] += 1
         if repo.upsert(item):
             result.written += 1
     return result
@@ -260,8 +268,16 @@ def main(argv: Iterable[str] | None = None) -> None:
 
     if args.provider == "shopify":
         results = ingest_shopify_roster(repo)
+        unknowns: Counter[str] = Counter()
         for provider, result in results.items():
             print(f"ingest: seen={result.seen} written={result.written} provider={provider}")
+            unknowns.update(result.unknown_categories)
+        if unknowns:
+            print(
+                "taxonomy triage — top unclassified feed vocabulary (add synonyms for real garments):"
+            )
+            for raw, count in unknowns.most_common(15):
+                print(f"  {count:5d}  {raw}")
         return
 
     if not args.path or not args.license:

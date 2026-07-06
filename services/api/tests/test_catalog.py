@@ -120,6 +120,22 @@ def test_ingest_is_idempotent(tmp_path: Path):
     assert len(repo.items) == 2  # duplicate collapsed by dedupe_key
 
 
+def test_ingest_reports_unclassified_vocabulary(tmp_path: Path):
+    catalog = tmp_path / "catalog.jsonl"
+    rows = [
+        RawFeedItem(title="Handwoven Tote", retailer_id="1", category="Bag"),
+        RawFeedItem(title="Silver Jhumka", retailer_id="2", category="Bag"),
+        RawFeedItem(title="Classic Tee", retailer_id="3", category="tee"),
+    ]
+    catalog.write_text("\n".join(r.model_dump_json() for r in rows), encoding="utf-8")
+
+    result = ing.ingest(
+        OpenDatasetSource(catalog, provider="ds", license="research"),
+        InMemoryItemRepository(),
+    )
+    assert result.unknown_categories == {"Bag": 2}  # classified rows never counted
+
+
 # --- persistence SQL (no live DB) ---
 
 
