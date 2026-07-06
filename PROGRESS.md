@@ -902,3 +902,21 @@ legal/compliance call, see (4)).
 installed, no venv). Changes reviewed line-by-line instead; the two new
 license-gate test names are an intentional, expected regression, not a
 missed one.
+
+## 2026-07-06 — ship-readiness assessment + stray fix
+
+**Ask:** pull latest; is GYF ready for public shipping; wants more Explore
+products + more stylist picks; accuracy/consistency/robustness; "doesn't yet
+feel like a daily-driver stylist app — what's left, how to proceed?"
+
+**Done:** pulled 4 upstream commits (99db717..); committed+pushed stray
+working-tree fix `1292b6c` (outfit-detail: corrupted alt/srcSet attribute
+repaired, 3 leftover dark backgrounds → light theme; tsc/eslint/prettier ✓).
+
+**Verdict delivered (no new audit — 2026-07-05 4-agent audit is 1 day old):**
+soft-launch-ready, NOT daily-driver-ready. Blockers ranked: catalog
+breadth/freshness (real retail feed), photo-path honesty (gender-from-photo,
+skin-tone fairness DoD, RetinaFace/BiRefNet license call), try-on lane flip
+(FASHN credits), retention loop (daily hook), eval-gated accuracy program
+(M8.5 + online metrics). Plan appended in session reply; execution next
+session on user's pick.
