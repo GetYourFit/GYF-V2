@@ -60,4 +60,20 @@ MERCHANTS: list[Merchant] = [
     Merchant(brand="Neeman's", domain="neemans.com"),
     Merchant(brand="Comet", domain="wearcomet.com", default_category="sneakers"),
     Merchant(brand="Monkstory", domain="www.monkstory.com", audience="men"),
+    # Ethnic & festive wear (region-aware requirement: sarees, kurtas, lehengas —
+    # verified live 2026-07-06). Junk product_types (e.g. "Ready to Wear",
+    # "jewellery") fall through to title classification; non-garment rows land on
+    # ``unknown`` and stay out of outfit slots by construction.
+    Merchant(brand="Suta", domain="suta.in", audience="women"),
+    Merchant(brand="Libas", domain="www.libas.in", audience="women"),
+    Merchant(brand="Bunaai", domain="bunaai.com", audience="women"),
+    Merchant(brand="Aachho", domain="aachho.com", audience="women"),
+    Merchant(brand="House of Chikankari", domain="www.houseofchikankari.in", audience="women"),
+    # Streetwear / casual (verified live 2026-07-06).
+    Merchant(brand="Nobero", domain="nobero.com"),
+    Merchant(brand="Powerlook", domain="powerlook.in", audience="men"),
+    Merchant(brand="Campus Sutra", domain="campussutra.com"),
+    Merchant(brand="Veirdo", domain="veirdo.in"),
+    # Sneakers (footwear depth — verified live 2026-07-06).
+    Merchant(brand="Gully Labs", domain="gullylabs.com"),
 ]

@@ -25,6 +25,13 @@ def test_classify_canonical_and_synonyms():
     assert classify("denim").name == "jeans"
 
 
+def test_classify_coord_set_spellings():
+    # Real feeds spell co-ord sets every which way (Freakins "Co-Ords",
+    # bunaai "Coordset", aachho "Coord Set") — all one full-look garment.
+    for raw in ("Co-Ords", "CO-ORD SET", "Coord Set", "Coordset", "coords"):
+        assert classify(raw).name == "dress", raw
+
+
 def test_classify_region_facet():
     saree = classify("Saree")
     assert saree.name == "saree"

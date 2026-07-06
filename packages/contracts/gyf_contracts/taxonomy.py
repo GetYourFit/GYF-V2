@@ -121,6 +121,10 @@ _SYNONYMS: dict[str, str] = {
     "jumpsuit": "dress",
     "co ord set": "dress",
     "co ord": "dress",
+    # Real feeds spell it every which way: "Coord Set", "CO-ORD SET", "Coordset".
+    "coord set": "dress",
+    "coord": "dress",
+    "coordset": "dress",
     "gown": "dress",
     "frock": "dress",
     "blazer": "jacket",
