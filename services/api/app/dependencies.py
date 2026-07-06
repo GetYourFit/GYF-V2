@@ -247,8 +247,9 @@ def get_summary_repo() -> SummaryRepository:
 def get_tryon_renderer():
     """The configured TryOnRenderer port (M9, doctrine D1/D2).
 
-    ``GYF_TRYON_PROVIDER=fashn`` + ``GYF_FASHN_API_KEY`` activate the licensed
-    beta lane; anything else returns the always-available abstaining baseline
+    ``GYF_TRYON_PROVIDER=fashn`` + ``GYF_FASHN_API_KEY``, or
+    ``GYF_TRYON_PROVIDER=fal-kolors`` + ``GYF_FAL_API_KEY``, activate a licensed
+    lane; anything else returns the always-available abstaining baseline
     (invariant #5) so the endpoint stays honest instead of erroring.
     """
     from .tryon import NullTryOnRenderer
@@ -257,4 +258,8 @@ def get_tryon_renderer():
         from .tryon.fashn import FashnTryOnRenderer
 
         return FashnTryOnRenderer(settings.fashn_api_key, mode=settings.tryon_mode)
+    if settings.tryon_provider == "fal-kolors" and settings.fal_api_key:
+        from .tryon.fal_kolors import FalKolorsTryOnRenderer
+
+        return FalKolorsTryOnRenderer(settings.fal_api_key)
     return NullTryOnRenderer()

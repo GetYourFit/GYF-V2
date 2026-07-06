@@ -19,6 +19,7 @@ from app.dependencies import (
 from app.profile.account import InMemoryAccountRepository
 from app.tryon import NullTryOnRenderer, TryOnGarment, TryOnRender
 from app.tryon.fashn import FashnTryOnRenderer
+from app.tryon.fal_kolors import FalKolorsTryOnRenderer
 
 DEV_USER = "00000000-0000-0000-0000-000000000001"
 
@@ -135,6 +136,78 @@ def test_fashn_total_failure_abstains():
     transport = _FakeTransport(fail_on_run=1)
     render = _renderer(transport).render(b"person", _garments(_TOP))
     assert render.abstained and "failed" in render.reason
+
+
+# --- fal.ai Kling Kolors adapter (fake transport — no credits, no network) ----
+
+
+class _FakeFalTransport:
+    """Scripted fal queue API: records submits, completes each in one poll."""
+
+    def __init__(self, fail_on_run: int | None = None) -> None:
+        self.runs: list[dict] = []
+        self._fail_on_run = fail_on_run
+
+    def __call__(self, method: str, url: str, payload: dict | None) -> dict:
+        if method == "POST":
+            self.runs.append(payload)
+            return {"request_id": f"req-{len(self.runs)}"}
+        if url.endswith("/status"):
+            failed = self._fail_on_run == len(self.runs)
+            return {
+                "status": "FAILED" if failed else "COMPLETED",
+                "error": "PoseError" if failed else None,
+            }
+        return {"image": {"url": "data:image/png;base64," + _PNG_B64}}
+
+
+def _fal_renderer(transport) -> FalKolorsTryOnRenderer:
+    return FalKolorsTryOnRenderer("key", transport=transport, sleep=lambda _s: None)
+
+
+def test_fal_kolors_composes_sequentially_and_decays_confidence():
+    transport = _FakeFalTransport()
+    render = _fal_renderer(transport).render(b"person", _garments(_TOP, _BOTTOM))
+    assert not render.abstained
+    assert render.rendered_slots == ("top", "bottom")
+    # Pass 2's person image must be pass 1's OUTPUT — sequential composition.
+    assert transport.runs[1]["human_image_url"] == "data:image/png;base64," + _PNG_B64
+    assert transport.runs[0]["garment_image_url"] == _TOP.image_url
+    assert render.confidence == round(0.8 * 0.9, 3)
+    assert render.model_version == "kling-kolors-vto-v1.5"
+
+
+def test_fal_kolors_skips_footwear_and_abstains_on_nothing_renderable():
+    transport = _FakeFalTransport()
+    render = _fal_renderer(transport).render(b"person", _garments(_TOP, _SHOES))
+    assert render.rendered_slots == ("top",) and len(transport.runs) == 1
+    assert _fal_renderer(_FakeFalTransport()).render(b"p", _garments(_SHOES)).abstained
+
+
+def test_fal_kolors_partial_failure_returns_honest_partial():
+    transport = _FakeFalTransport(fail_on_run=2)
+    render = _fal_renderer(transport).render(b"person", _garments(_TOP, _BOTTOM))
+    assert not render.abstained
+    assert render.rendered_slots == ("top",)
+    assert "could not be rendered" in render.reason
+
+
+def test_fal_kolors_total_failure_abstains():
+    render = _fal_renderer(_FakeFalTransport(fail_on_run=1)).render(b"p", _garments(_TOP))
+    assert render.abstained and "failed" in render.reason
+
+
+def test_tryon_provider_selection_covers_both_licensed_lanes(monkeypatch):
+    from app import dependencies as deps
+
+    monkeypatch.setattr(deps.settings, "tryon_provider", "fal-kolors")
+    monkeypatch.setattr(deps.settings, "fal_api_key", "k")
+    assert isinstance(deps.get_tryon_renderer(), FalKolorsTryOnRenderer)
+    monkeypatch.setattr(deps.settings, "tryon_provider", "fashn")
+    monkeypatch.setattr(deps.settings, "fashn_api_key", "k")
+    assert isinstance(deps.get_tryon_renderer(), FashnTryOnRenderer)
+    monkeypatch.setattr(deps.settings, "fashn_api_key", "")
+    assert isinstance(deps.get_tryon_renderer(), NullTryOnRenderer)
 
 
 # --- POST /tryon endpoint -----------------------------------------------------
