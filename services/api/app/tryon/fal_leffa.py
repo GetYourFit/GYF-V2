@@ -1,24 +1,31 @@
-"""fal.ai Kling Kolors adapter for the TryOnRenderer port — licensed at inference (D2).
+"""fal.ai Leffa adapter for the TryOnRenderer port — licensed at inference (D2).
 
-Kling's Kolors Virtual Try-On v1.5, hosted on fal.ai, is an alternative
-rendering lane to FASHN: proprietary weights served pay-per-image with
-commercial use of outputs permitted (fal model page labels the endpoint
-"Commercial use"; ~$0.07/render). Contract (fal queue REST convention):
-POST ``queue.fal.run/{model}`` submits → ``{request_id}``; GET
-``…/requests/{id}/status`` polls; GET ``…/requests/{id}`` fetches the result.
+Leffa (Meta, arXiv 2412.08486) is fal.ai's hosted commercial VTON endpoint —
+selected over FASHN and over fal's own Kling Kolors endpoint after a live
+license/infra research pass (2026-07-06): fal badges this endpoint "Commercial
+use" and, unlike most of the space, that badge checks out independently —
+Leffa's own GitHub license is genuinely MIT (not a repackaged CC-BY-NC
+research checkpoint wearing a commercial sticker, the trap several other
+hosted VTON models fall into). It is also the fastest lane surveyed (~6s a
+render on A100-class hardware) and — deliberately — the exact architecture
+GYF would retrain in-house later on its own merchant on-model photos (D4/D2
+"own-it-later"): renting Leffa now and training Leffa's own conditioning
+stack on real data later is one continuous path, not a vendor swap.
 
-The model dresses ONE garment per call (no explicit category — Kolors infers
-placement from the garment image), so a full look composes sequentially like
-the FASHN lane: top onto the person, bottom onto that result. Footwear is not
-supported and is honestly skipped (``rendered_slots`` says exactly what the
-image shows). Person imagery crosses the wire as a base64 data URI and the
-render is fetched back immediately; fal's hosted output file is short-lived
-vendor storage, mirroring FASHN's 72h auto-delete posture (D8 — the router
-never persists any of it).
+Contract (fal queue REST convention): POST ``queue.fal.run/{model}`` submits
+→ ``{request_id}``; GET ``…/requests/{id}/status`` polls; GET
+``…/requests/{id}`` fetches ``{"image": {"url": ...}}``. Unlike Kolors, Leffa
+takes an explicit ``garment_type`` enum (upper_body/lower_body/dresses) rather
+than inferring placement from the image — a better fit for GYF's own
+taxonomy-driven honesty (D6): the adapter never guesses where a garment goes.
 
-Confidence calibration matches the FASHN adapter deliberately: the numbers
-describe *sequential composition* (artifact compounding per pass), which is a
-property of the lane shape, not the vendor.
+Dresses to the person go one garment per call, so a full look composes
+sequentially like the FASHN lane: top onto the person, bottom onto that
+result. Footwear is not supported by any VTON vendor surveyed and is
+honestly skipped (``rendered_slots`` says exactly what the image shows).
+Person imagery crosses the wire as a base64 data URI (D8 — the router never
+persists any of it; fal's hosted result file is short-lived vendor storage,
+matching the posture of GYF's other rendering lane).
 
 Transport is injectable (``(method, url, payload) -> dict``) so the adapter is
 fully unit-testable without credits; the default uses stdlib urllib.
@@ -35,13 +42,18 @@ from typing import Callable, Sequence
 
 from .renderer import TryOnGarment, TryOnRender
 
-_MODEL_PATH = "fal-ai/kling/v1-5/kolors-virtual-try-on"
+_MODEL_PATH = "fal-ai/leffa/virtual-tryon"
 _QUEUE_BASE = f"https://queue.fal.run/{_MODEL_PATH}"
-MODEL_VERSION = "kling-kolors-vto-v1.5"
+MODEL_VERSION = "fal-leffa-vto-v1"
 
-# Kolors places the garment itself — no category parameter — but only tops,
-# bottoms, and one-piece garments render credibly. Footwear: honestly skipped.
-_RENDERABLE_SLOTS = ("one_piece", "top", "bottom")
+# recsys slot -> Leffa's garment_type enum. Footwear has no category: skipped.
+_SLOT_GARMENT_TYPE = {
+    "top": "upper_body",
+    "bottom": "lower_body",
+    "one_piece": "dresses",
+}
+# The slot order garments are layered in (a top rendered first anchors the fit).
+_SLOT_ORDER = ("one_piece", "top", "bottom")
 
 _FIRST_PASS_CONFIDENCE = 0.8
 _SEQUENTIAL_DECAY = 0.9
@@ -75,8 +87,8 @@ def _fetch_bytes(url: str, timeout_s: float = 30.0) -> bytes:
         return resp.read()
 
 
-class FalKolorsTryOnRenderer:
-    """TryOnRenderer port adapter over fal.ai's hosted Kling Kolors VTO."""
+class FalLeffaTryOnRenderer:
+    """TryOnRenderer port adapter over fal.ai's hosted Leffa VTO."""
 
     def __init__(
         self,
@@ -94,7 +106,12 @@ class FalKolorsTryOnRenderer:
         self._sleep = sleep
 
     def render(self, person_png: bytes, garments: Sequence[TryOnGarment]) -> TryOnRender:
-        ordered = [g for slot in _RENDERABLE_SLOTS for g in garments if g.slot == slot]
+        ordered = [
+            g
+            for slot in _SLOT_ORDER
+            for g in garments
+            if g.slot in _SLOT_GARMENT_TYPE and g.slot == slot
+        ]
         if not ordered:
             return TryOnRender(
                 image_png=None,
@@ -141,6 +158,7 @@ class FalKolorsTryOnRenderer:
             {
                 "human_image_url": person_image,
                 "garment_image_url": garment.image_url,
+                "garment_type": _SLOT_GARMENT_TYPE[garment.slot],
             },
         )
         request_id = run["request_id"]

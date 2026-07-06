@@ -140,6 +140,19 @@
       "notes": "AUDIT GAP CLOSED (2026-07-05): the model actually running in SilhouetteBodyAdapter (ml/usermodel/body/estimator.py, DEFAULT_MODEL_VERSION 'rtmw-birefnet-v1') and feeding body_type into conditioning.py's per-body-type styling effects — was missing from this registry, so the D2 gate never saw it. commercial_ok=true is confirmed (both package licenses); train_data_commercial_ok=false is pending DIS5K provenance confirmation, not a placeholder. sam-3d-body/mhr/anny above are the *research*-lane north-star candidates for a future M3 iteration; this is the model actually serving today. Also blocked by the missing eval_report (D5)."
     },
     {
+      "name": "fal-leffa-vto-v1",
+      "capability": "try_on",
+      "provider": "fal.ai (hosting Leffa \u2014 Meta, arXiv 2412.08486)",
+      "license": "MIT (Leffa's own GitHub license, independently verified \u2014 franciszzj/Leffa/LICENSE \u2014 not just fal's commercial-use badge, which several adjacent VTON listings mislabel)",
+      "lane": "research",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "Vendor-hosted inference (licensed model at inference \u2014 doctrine D2 beta lane; no weights ever touch GYF infra). Note: Leffa's OWN released checkpoint (if ever self-hosted instead of rented) is a VITON-HD/DressCode derivative \u2014 CC-BY-NC \u2014 and would NOT be commercial-clean; only fal's hosted inference is used here, never the checkpoint.",
+      "eval_report": null,
+      "model_uri": "fal-ai/leffa/virtual-tryon (queue.fal.run)",
+      "notes": "M9 PRIMARY try-on lane (2026-07-06 license/infra research pass selected this over FASHN and over fal's own Kling Kolors endpoint: fastest surveyed at ~6s/render, and MIT code license means it is also the correct architecture to retrain in-house later on real merchant on-model photos \u2014 doctrine D4 \u2014 so renting now and owning later is one continuous model lineage, not a vendor swap). Behind the TryOnRenderer port; explicit garment_type (upper_body/lower_body/dresses) rather than inferred placement \u2014 no guessing (D6). One garment per call \u2014 the adapter composes top\u2192bottom sequentially; footwear unsupported and honestly skipped. PROMOTION (D5): buy fal credits, render the eval look-set, record eval-reports/tryon-fal-leffa-v1.json, flip lane to production, then set GYF_TRYON_PROVIDER=fal-leffa + GYF_FAL_API_KEY. Until then the NullTryOnRenderer baseline serves (abstains honestly)."
+    },
+    {
       "name": "fashn-tryon-v1.6",
       "capability": "try_on",
       "provider": "FASHN AI",
@@ -150,7 +163,7 @@
       "train_data_license": "Vendor-proprietary (licensed model at inference \u2014 doctrine D2 beta lane; no weights ever touch GYF infra)",
       "eval_report": null,
       "model_uri": "https://api.fashn.ai/v1 (model_name=tryon-v1.6)",
-      "notes": "M9 beta try-on lane behind the TryOnRenderer port (licensed hosted model at inference \u2014 doctrine D2; no weights ever touch GYF infra; 72h vendor auto-delete + return_base64 keeps generated user imagery off vendor storage, D8). One garment per call \u2014 the adapter composes top\u2192bottom sequentially; footwear unsupported and honestly skipped. PROMOTION (D5): buy API credits, render the eval look-set, record eval-reports/tryon-fashn-v1.json, flip lane to production, then set GYF_TRYON_PROVIDER=fashn + GYF_FASHN_API_KEY. Until then the NullTryOnRenderer baseline serves (abstains honestly). Own-it-later: permissive architecture trained on brand on-model photos behind the same port."
+      "notes": "M9 alternate try-on lane behind the TryOnRenderer port (superseded as the primary pick by fal-leffa-vto-v1 on 2026-07-06 \u2014 kept wired as a second commercial-clean vendor, not removed). Licensed hosted model at inference \u2014 doctrine D2; no weights ever touch GYF infra; 72h vendor auto-delete + return_base64 keeps generated user imagery off vendor storage, D8. One garment per call \u2014 the adapter composes top\u2192bottom sequentially; footwear unsupported and honestly skipped. PROMOTION (D5): buy API credits, render the eval look-set, record eval-reports/tryon-fashn-v1.json, flip lane to production, then set GYF_TRYON_PROVIDER=fashn + GYF_FASHN_API_KEY. Until then the NullTryOnRenderer baseline serves (abstains honestly)."
     }
   ]
 }

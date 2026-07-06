@@ -77,13 +77,18 @@ services:
         sync: false
       - key: GYF_HF_TOKEN
         sync: false
-      # Virtual try-on (M9): the licensed rendering lane. Set BOTH in the dashboard
-      # once FASHN credits are purchased AND the D5 eval report is recorded (see
-      # models.registry.json fashn-tryon-v1.6 notes). Unset = the endpoint abstains
-      # honestly and the surface still works.
-      #   GYF_TRYON_PROVIDER = fashn
-      #   GYF_FASHN_API_KEY  = <fashn.ai → Settings → API>
+      # Virtual try-on (M9): the licensed rendering lane. Primary pick (2026-07-06
+      # license/infra research pass, see models.registry.json fal-leffa-vto-v1
+      # notes): fal.ai hosting Leffa (MIT-licensed, independently verified — not
+      # just badge-trusted). Set both once fal credits are purchased AND the D5
+      # eval report is recorded. Unset = the endpoint abstains honestly and the
+      # surface still works.
+      #   GYF_TRYON_PROVIDER = fal-leffa
+      #   GYF_FAL_API_KEY    = <fal.ai dashboard → Keys>
+      # Alternate lane: GYF_TRYON_PROVIDER=fashn + GYF_FASHN_API_KEY.
       - key: GYF_TRYON_PROVIDER
+        sync: false
+      - key: GYF_FAL_API_KEY
         sync: false
       - key: GYF_FASHN_API_KEY
         sync: false

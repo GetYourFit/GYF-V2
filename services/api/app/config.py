@@ -112,13 +112,14 @@ class Settings(BaseSettings):
     cuelinks_api_token: str = ""
 
     # --- Virtual try-on (M9, doctrine D2: licensed model at inference) ---
-    # Rendering lane provider: "fashn" | "fal-kolors" (licensed lanes) or ""
-    # (unset = the NullTryOnRenderer baseline abstains honestly; the surface
-    # still works).
+    # Rendering lane provider: "fal-leffa" (primary — MIT-licensed Leffa model,
+    # hosted on fal.ai; see models.registry.json) | "fashn" (alternate licensed
+    # lane) or "" (unset = the NullTryOnRenderer baseline abstains honestly;
+    # the surface still works).
     tryon_provider: str = ""
     # FASHN API key (fashn.ai → Settings → API). Secret; never committed.
     fashn_api_key: str = ""
-    # fal.ai API key (fal.ai dashboard → Keys) for the Kling Kolors lane. Secret.
+    # fal.ai API key (fal.ai dashboard → Keys) for the Leffa lane. Secret.
     fal_api_key: str = ""
     # Vendor quality mode: "performance" (~5s/garment) | "balanced" (~8s) |
     # "quality" (~15s). Cost is identical (1 credit/image) — this trades latency.
