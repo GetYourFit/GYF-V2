@@ -1040,3 +1040,34 @@ later.
 
 **Next:** deep multi-angle audit of the rest of GYF (explicitly requested,
 "using skills and loops") — in progress, separate report to follow.
+
+### 2026-07-07 — GYF Flutter frontend kicked off (new repo: ../gyf_app)
+
+**Ask:** "start building the frontend from the plan" (`../Front/16_IMPLEMENTATION_PLAN.md`).
+
+**Done:** New standalone Flutter project at `../gyf_app` (own git repo, commit 6dbf8d7).
+Flutter 3.44.5 stable installed at `../.tooling/flutter`; sandbox blocks `$HOME` writes,
+so all invocations go through `../.tooling/gyf-flutter` wrapper (redirects HOME/PUB_CACHE).
+Phase 0 complete: full design-token layer (GyfPalette + semantic GyfColorScheme
+ThemeExtension light/dark, typography scale, 8-pt spacing, radius/shadow/blur/opacity/
+z-index, canonical 02-Part-5 motion table, haptic tokens + rules, breakpoints) and
+ThemeData for both themes built 100% from tokens (250 ms animated theme switch).
+Phase 1 started: HapticService (sole haptic gateway, throttling + user levels, unit-tested),
+ThemeManager (persisted), AccessibilityManager, AnimationManager (reduced-motion gate),
+GoRouter StatefulShellRoute with the 5 canonical tabs (per-tab state preservation, deep-link
+fallback), internal /gallery component gallery, first primitives (GyfPrimaryButton,
+GyfEmptyState, GyfSkeleton shimmer). `flutter analyze` clean; 7/7 tests green.
+
+**Next:** rest of §5.3 component library + golden tests → Phase 2 (splash/onboarding/auth).
+
+### 2026-07-07 (later) — gyf_app Phase 1 component library batch (commit 5f47985)
+
+Built §5.3 batch: secondary/ghost/icon buttons, GyfTextField (visible label, 6px/180ms
+error shake + error haptic, password toggle, success state), GyfSearchField, badges
+(status/confidence/price), GyfWishlistButton (pulse 1.0→1.15→1.0 + success haptic; fixed
+a real lazy-AnimationController-in-dispose bug caught by tests), GyfPressableCard base
+(0.97/120ms press contract), GyfProductCard, GyfOutfitCard, GyfFilterChip (AI-suggested
++ removable variants), GyfChatBubble (4 states incl. custom AI-thinking dots — no generic
+spinners) + GyfPromptChip, GyfOverlays (sheet/dialog/toast single entry points),
+GyfErrorState (6 variants, every one with a recovery action). Gallery shows everything.
+>>>>>>> 8d9f417 (docs(progress): log gyf_app Flutter frontend Phase 0–1 sessions; add logo asset)
