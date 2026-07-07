@@ -7,11 +7,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    // Signed-in, onboarded state so the splash decision tree lands on Home.
+    SharedPreferences.setMockInitialValues({
+      'gyf.onboarding_complete': true,
+      'gyf.signed_in': true,
+    });
   });
 
   testWidgets('boots to Home with all five tabs', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: GyfApp()));
+    // Ride the 900 ms splash timeline, then the navigation to Home.
+    await tester.pump(const Duration(milliseconds: 950));
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Home'), findsOneWidget);
@@ -24,6 +30,8 @@ void main() {
 
   testWidgets('tab switching reaches each pillar screen', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: GyfApp()));
+    // Ride the 900 ms splash timeline, then the navigation to Home.
+    await tester.pump(const Duration(milliseconds: 950));
     await tester.pump(const Duration(milliseconds: 400));
 
     await tester.tap(find.text('Wardrobe'));
@@ -37,6 +45,8 @@ void main() {
 
   testWidgets('theme extension resolves in both brightnesses', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: GyfApp()));
+    // Ride the 900 ms splash timeline, then the navigation to Home.
+    await tester.pump(const Duration(milliseconds: 950));
     await tester.pump(const Duration(milliseconds: 400));
 
     final context = tester.element(find.text('Home'));
