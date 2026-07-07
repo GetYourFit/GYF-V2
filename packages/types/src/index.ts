@@ -36,9 +36,6 @@ export type SaveOutfitRequest = components["schemas"]["SaveOutfitRequest"];
 export type SystemStatus = components["schemas"]["SystemStatus"];
 export type Capability = components["schemas"]["Capability"];
 
-/** Virtual try-on (M9): a render on the user's photo, or an honest abstention. */
-export type TryOnResponse = components["schemas"]["TryOnResponse"];
-
 /** Interaction actions captured as the behavioral event spine. */
 export const INTERACTION_ACTIONS = [
   "view",
@@ -48,7 +45,6 @@ export const INTERACTION_ACTIONS = [
   "react",
   "share",
   "follow",
-  "tryon",
   "swap",
 ] as const;
 export type InteractionAction = (typeof INTERACTION_ACTIONS)[number];

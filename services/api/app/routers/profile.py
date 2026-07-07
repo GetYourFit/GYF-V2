@@ -104,8 +104,7 @@ async def upsert_profile_from_photo(
     """Estimate skin tone + undertone and body type from one photo, merge into the profile.
 
     Consent-gated (`data_processing` required). The image is processed **in memory
-    and is ephemeral** — bytes are never logged and never persisted here (durable,
-    consented photo storage arrives with try-on). Each module **abstains** if its ml
+    and is ephemeral** — bytes are never logged and never persisted here. Each module **abstains** if its ml
     runtime is unavailable, so the endpoint still succeeds with whatever ran; the
     manual `PUT /profile` is always the fallback. Skin-tone is held in **shadow**
     (computed, not surfaced) until the fairness gate flips `skin_tone_enabled`.

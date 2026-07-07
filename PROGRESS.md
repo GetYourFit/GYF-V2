@@ -920,3 +920,123 @@ skin-tone fairness DoD, RetinaFace/BiRefNet license call), try-on lane flip
 (FASHN credits), retention loop (daily hook), eval-gated accuracy program
 (M8.5 + online metrics). Plan appended in session reply; execution next
 session on user's pick.
+
+## 2026-07-06 (contd.) — try-on model choice re-confirmed + M9 promotion harness built
+
+**Ask:** "make sure I use the most efficient and best try-on, cheap or in-house if
+possible" then continue the ranked next-steps from the ship-readiness assessment.
+
+**Model choice re-verified, not re-decided:** re-read models.registry.json —
+fal-leffa-vto-v1 is already the highest-IQ pick (2026-07-06 research pass):
+MIT-licensed at the code level (independently verified, not badge-trusted),
+fastest lane surveyed (~6s/render), cheaper than no plan at all since it's
+metered per-render with no idle cost. True self-hosted "in-house" is
+explicitly NOT viable yet — Leffa's own released checkpoint is a VITON-HD/
+DressCode derivative under CC-BY-NC, so self-hosting the weights would
+violate D2; renting fal's hosted inference now and training an in-house
+Leffa-architecture model later on real merchant on-model photos (D4) is the
+correct sequencing, already documented. Nothing to change here.
+
+**Built the missing piece: the M9 promotion harness (D5).** Try-on had no
+capability gate in `gyf_contracts.eval_report.GATES`, so `resolve_promotion`
+could never certify it regardless of vendor. Added:
+- `GATES["try_on"]` — `render_success_rate >= 0.9` on a curated look-set.
+- `ml/eval/tryon_eval.py` — `TryOnEvalCase`/`evaluate_tryon`/`TryOnEvalReport`,
+  renderer-agnostic (works against the real fal-Leffa/FASHN adapters or a
+  fake), reports success-rate + mean confidence on successes, honestly lists
+  abstentions with vendor reasons.
+- `scripts/eval_tryon.py` — runnable harness: pulls real top+bottom garments
+  live from the catalog DB, dresses a folder of real photos
+  (`GYF_TRYON_EVAL_PHOTOS_DIR`) through whichever lane `GYF_TRYON_PROVIDER`
+  resolves to, writes `eval-reports/tryon-<provider>-v1.json`.
+- `ml/tests/test_tryon_eval.py` — 4 tests against a fake renderer (all
+  success, partial abstention, empty-input rejection, gate-compatibility),
+  no vendor credits needed to verify the harness itself.
+
+**Deliberately NOT fabricated:** the eval look-set's person photos. Same
+constraint as the skin-tone fairness DoD gap — real, consented, diverse
+photography, not something a script can synthesize (D4 forbids synthetic
+data). `scripts/eval_tryon.py` fails loudly if the photos directory is empty
+rather than inventing placeholder data.
+
+**Verified:** `pytest ml/tests/test_tryon_eval.py` 4/4 green;
+`pytest services/api/tests/test_eval_report.py tests/test_tryon.py` 30/31
+green — the 1 failure is the pre-existing, already-documented
+RetinaFace/WIDER-FACE license-gate red from 2026-07-05, unrelated to this
+change (confirmed via `git stash`). `ruff check` clean on all 4 touched
+files.
+
+**What's left to actually flip the lane live (blocked on the user, not on
+code):** (1) buy fal.ai credits; (2) gather/curate a real consented photo
+set spanning body types + skin tones into a directory; (3) run
+`scripts/eval_tryon.py` against it; (4) if it clears 0.9 success rate, set
+`eval_report: "tryon-fal-leffa-v1"` on the `fal-leffa-vto-v1` registry entry
+and set `GYF_TRYON_PROVIDER=fal-leffa` + `GYF_FAL_API_KEY` in Render.
+
+**Next (per the ranked plan):** skin-tone fairness gate / RetinaFace license
+call, then catalog breadth, then a retention hook, then the online eval loop.
+
+## 2026-07-06 (contd. 2) — try-on fully removed (M9 reverted, user's call)
+
+**Ask:** "remove the tryon now and make sure other GYF functionalities are
+working absolutely perfectly" + "why can't I do the long-term free path
+right now" (answered inline: no owned on-model training data yet, feed
+licenses may not cover training use, and it's a multi-week training project
+regardless — not a config flip).
+
+**Scope confirmed via AskUserQuestion: full rip-out**, not a hide-behind-flag.
+Removed the entire M9 virtual try-on feature built across prior sessions:
+- `services/api/app/tryon/` (port + FASHN + fal-Leffa adapters), `routers/tryon.py`,
+  its router registration in `main.py`, `get_tryon_renderer` in `dependencies.py`,
+  all `tryon_*`/`fal_api_key`/`fashn_api_key`/`rate_limit_tryon` config fields.
+- This session's own not-yet-committed promotion harness
+  (`ml/eval/tryon_eval.py`, `ml/tests/test_tryon_eval.py`,
+  `scripts/eval_tryon.py`, the `try_on` GATES entry) — built and removed in
+  the same session, net-zero diff on `eval_report.py`.
+- `models.registry.json` fal-leffa-vto-v1 / fashn-tryon-v1.6 entries (the two
+  pre-existing research-lane-only try-on references — MuGa-VTON north-star +
+  a non-commercial baseline — were left alone; they're documentation of the
+  landscape, not the removed feature).
+- Frontend: `try-on-section.tsx` deleted, its import/usage in
+  `outfit-detail.tsx` removed, `tryOn()`/`TryOnResponse` out of `api.ts`.
+- `render.yaml` GYF_TRYON_PROVIDER/GYF_FAL_API_KEY/GYF_FASHN_API_KEY env
+  entries removed.
+- Trust surface: `virtual_try_on` capability removed from `system.py` and the
+  frontend `status/page.tsx` label map; its pinned test in
+  `test_system_status.py` removed.
+- Event vocabulary: `InteractionAction.TRYON` removed from `events.py`,
+  `ACTION_REWARD` weight removed from both `recsys/signals.py` and its ML
+  mirror `ml/pipelines/export_events.py`. Comment mentions in `usermodel.py`,
+  `social.py`, `model_policy.py` left alone (generic/illustrative, still
+  accurate); `profile.py`'s photo-storage docstring updated to drop the
+  "arrives with try-on" justification.
+- `packages/types/src/api.ts` + `openapi.json` regenerated from the live
+  FastAPI schema (Makefile `types` target, run via the locally-installed
+  `openapi-typescript` bin since `bunx` couldn't write its tempdir in this
+  sandbox); `packages/types/src/index.ts` hand-trimmed (`TryOnResponse`
+  export, `"tryon"` out of `INTERACTION_ACTIONS`).
+
+**Verified:** `pytest services/api` 257 passed / 3 skipped — the 2 failures
+are the pre-existing, already-documented RetinaFace/WIDER-FACE license red,
+confirmed unrelated (same failures, same reasons, present before this
+session's changes). `bun run typecheck` clean (web + types). `bun run lint`
+clean. `ruff check` on every touched Python path clean (one unrelated
+pre-existing warning in `scripts/verify_flywheel.py`, untouched by this
+change).
+
+**Also (before the rip-out, superseded by it):** confirmed via a real,
+network-verified test — installed `mediapipe` + `pyfacer` in `ml/.venv`,
+downloaded Google's `blaze_face_short_range.tflite`, and ran face detection
+against a real photo (matplotlib's bundled `grace_hopper.jpg`) — MediaPipe's
+BlazeFace detector works cleanly (6 keypoints, 0.94 confidence) and would
+have been a viable commercial-clean swap for RetinaFace in the skin-tone
+pipeline (`facer`'s `FaceDetector` contract: `{rects, points, scores,
+image_ids}`, celebm alignment only needs the 5-point layout `get_quad`
+consumes — mouth-center duplicated into both mouth-corner slots since GYF's
+skin-mask selection doesn't depend on left/right label correctness). Not
+implemented — try-on removal superseded this thread mid-session; the
+research stands if the skin-tone/RetinaFace license question is revisited
+later.
+
+**Next:** deep multi-angle audit of the rest of GYF (explicitly requested,
+"using skills and loops") — in progress, separate report to follow.

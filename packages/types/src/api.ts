@@ -206,8 +206,7 @@ export interface paths {
          * @description Estimate skin tone + undertone and body type from one photo, merge into the profile.
          *
          *     Consent-gated (`data_processing` required). The image is processed **in memory
-         *     and is ephemeral** — bytes are never logged and never persisted here (durable,
-         *     consented photo storage arrives with try-on). Each module **abstains** if its ml
+         *     and is ephemeral** — bytes are never logged and never persisted here. Each module **abstains** if its ml
          *     runtime is unavailable, so the endpoint still succeeds with whatever ran; the
          *     manual `PUT /profile` is always the fallback. Skin-tone is held in **shadow**
          *     (computed, not surfaced) until the fairness gate flips `skin_tone_enabled`.
@@ -701,44 +700,10 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/tryon": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Render an outfit on the user's photo
-         * @description Dress the uploaded photo in the given garments (top/bottom; footwear is
-         *     phased in per the roadmap). Consent-gated; the photo is ephemeral.
-         */
-        post: operations["try_on_tryon_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** Body_try_on_tryon_post */
-        Body_try_on_tryon_post: {
-            /**
-             * Photo
-             * @description A clear, front-facing photo of the user.
-             */
-            photo: string;
-            /**
-             * Item Ids
-             * @description Comma-separated catalog item ids of the look.
-             */
-            item_ids: string;
-        };
         /** Body_upsert_profile_from_photo_profile_photo_post */
         Body_upsert_profile_from_photo_profile_photo_post: {
             /**
@@ -854,7 +819,7 @@ export interface components {
          * InteractionAction
          * @enum {string}
          */
-        InteractionAction: "view" | "save" | "cart" | "skip" | "react" | "share" | "follow" | "tryon" | "swap" | "impression" | "purchase";
+        InteractionAction: "view" | "save" | "cart" | "skip" | "react" | "share" | "follow" | "swap" | "impression" | "purchase";
         /**
          * InteractionTarget
          * @enum {string}
@@ -1275,22 +1240,6 @@ export interface components {
             catalog: components["schemas"]["CatalogHealth"];
             /** Event Sink */
             event_sink: string;
-        };
-        /**
-         * TryOnResponse
-         * @description A render or an honest abstention — never a fabricated image.
-         */
-        TryOnResponse: {
-            /** Image B64 */
-            image_b64: string | null;
-            /** Confidence */
-            confidence: number;
-            /** Model Version */
-            model_version: string;
-            /** Rendered Slots */
-            rendered_slots: string[];
-            /** Reason */
-            reason: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -2449,39 +2398,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemStatus"];
-                };
-            };
-        };
-    };
-    try_on_tryon_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_try_on_tryon_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TryOnResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

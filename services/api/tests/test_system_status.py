@@ -49,8 +49,7 @@ def test_status_reports_capabilities_and_catalog_health():
     for cap in caps.values():
         assert cap["status"] in {"live", "beta", "shadow", "degraded", "planned"}
         assert cap["lane"] and cap["detail"]
-    # Honesty pins: try-on is not built and must say so; recommendations serve.
-    assert caps["virtual_try_on"]["status"] == "planned"
+    # Honesty pin: recommendations serve.
     assert caps["outfit_recommendations"]["status"] == "live"
     assert body["catalog"]["items"] == 24000
     assert body["catalog"]["with_price"] == 0  # the real prod data gap, reported

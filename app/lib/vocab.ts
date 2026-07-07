@@ -88,7 +88,7 @@ export const CONSENT_OPTIONS: Array<Option & { required?: boolean; description: 
   {
     value: "photo_storage",
     label: "Store photos I upload",
-    description: "For the photo body-type / skin-tone modules and try-on (coming soon).",
+    description: "For the photo body-type / skin-tone modules.",
   },
   {
     value: "marketing",

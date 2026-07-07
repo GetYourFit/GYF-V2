@@ -6,7 +6,6 @@ import { AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
-import { TryOnSection } from "@/components/stylist/try-on-section";
 import { browserApi } from "@/lib/api-client";
 import { mediaSrcSet, mediaUrl } from "@/lib/media";
 import type { Outfit, OutfitItem } from "@gyf/types";
@@ -332,9 +331,6 @@ export function OutfitDetail({
 
               {/* Confidence */}
               <ConfidenceMeter value={outfit.confidence} />
-
-              {/* Virtual try-on (M9) */}
-              <TryOnSection outfit={outfit} />
 
               {/* Signal grid */}
               <div

@@ -242,27 +242,3 @@ def get_summary_repo() -> SummaryRepository:
     from .profile.summary import PostgresSummaryRepository
 
     return PostgresSummaryRepository(settings.database_url, pool=shared_pool(settings.database_url))
-
-
-def get_tryon_renderer():
-    """The configured TryOnRenderer port (M9, doctrine D1/D2).
-
-    ``GYF_TRYON_PROVIDER=fal-leffa`` + ``GYF_FAL_API_KEY`` activates the primary
-    licensed lane (MIT-licensed Leffa model, hosted on fal.ai — chosen over
-    FASHN and over fal's own Kling Kolors endpoint after a 2026-07-06 license/
-    infra research pass, see models.registry.json); ``GYF_TRYON_PROVIDER=fashn``
-    + ``GYF_FASHN_API_KEY`` activates the alternate lane. Anything else returns
-    the always-available abstaining baseline (invariant #5) so the endpoint
-    stays honest instead of erroring.
-    """
-    from .tryon import NullTryOnRenderer
-
-    if settings.tryon_provider == "fal-leffa" and settings.fal_api_key:
-        from .tryon.fal_leffa import FalLeffaTryOnRenderer
-
-        return FalLeffaTryOnRenderer(settings.fal_api_key)
-    if settings.tryon_provider == "fashn" and settings.fashn_api_key:
-        from .tryon.fashn import FashnTryOnRenderer
-
-        return FashnTryOnRenderer(settings.fashn_api_key, mode=settings.tryon_mode)
-    return NullTryOnRenderer()
