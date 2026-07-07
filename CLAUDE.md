@@ -63,7 +63,7 @@ GetYourFit-New/
 **The honest gaps (requirements not yet met — see the 2026-07-02 audit):**
 1. **Virtual try-on (M9) is MISSING** — no `TryOnRenderer` port, no UI, no router; only event vocabulary exists. It is a headline Phase-1 feature.
 2. **Affiliate attribution is MISSING** — buy is a raw `buy_url` redirect; no affiliate wrapping/attribution. Cuelinks signup is on hold pending channel verification (contact email now published in-app); prod catalog prices are null until a real feed lands, which keeps the price filter inert.
-3. **Photo onboarding is DEGRADED on prod** — body-type and skin-tone modules abstain (no GPU runtime wired on Render); skin-tone additionally shadow-gated (⚠️ fairness eval) — manual path is the live fallback, as designed.
+3. **Photo onboarding is DEGRADED on prod** — body-type and skin-tone modules abstain (no GPU runtime wired on Render); both are also correctly `research`-lane in `models.registry.json` (not just shadow-gated) because their training-data licenses (WIDER FACE / DIS5K) aren't yet confirmed commercial-clean, and skin-tone additionally fails its fairness eval — manual path is the live fallback, as designed. Promotion checklist (per-model) lives in the registry's `notes` field.
 4. **Trust/ops surface (M8.5) PARTIAL** — per-rec confidence ships; no operator-facing live-vs-shadow status view.
 
 **Done since the audit:** follow-graph ✅ (follow/unfollow endpoints, Following feed, 2026-07-02) and **wardrobe-aware recommendations ✅** (closet-anchored styling: owned garments join the candidate pools as anchors, new pieces scored for versatility against the owned palette, "You own this" badges, 2026-07-03).

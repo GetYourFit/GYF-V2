@@ -22,20 +22,16 @@ def _load(script: str):
     return mod
 
 
-def test_license_gate_flags_known_unverified_photo_models():
-    """The real registry is intentionally red right now (not a test bug).
-
-    2026-07-05 audit: retinaface-farl-celebm (skin tone) and birefnet-rtmw-bodyshape
-    (body type) are the models actually running in the serving path (see
-    ml/usermodel/skintone/estimator.py, ml/usermodel/body/estimator.py) but their
-    *training-data* licenses (WIDER FACE / DIS5K) are not yet confirmed
-    commercial-clean — exactly the 'MIT code, non-commercial weights' trap D2
-    exists to catch. This test proves the gate honestly reports both, rather than
-    asserting a false all-clear. Fix by getting legal confirmation (or swapping the
-    model) and flipping train_data_commercial_ok, not by loosening this assertion.
+def test_license_gate_passes_on_real_registry():
+    """2026-07-07: retinaface-farl-celebm and birefnet-rtmw-bodyshape were mistagged
+    'production' while failing their own gate (unverified training-data license, no
+    eval report) — the mistagging, not a code bug, is what turned this red. Both are
+    shadow/abstained in prod (never reach the served ranking path), so 'research' lane
+    now accurately reflects reality. See models.registry.json notes for the promotion
+    checklist back to production.
     """
     gate = _load("check_model_licenses")
-    assert gate.main(["x", str(_ROOT / "models.registry.json")]) == 1
+    assert gate.main(["x", str(_ROOT / "models.registry.json")]) == 0
 
 
 def test_license_gate_fails_on_production_non_commercial(tmp_path):
@@ -62,13 +58,14 @@ def test_license_gate_fails_on_production_non_commercial(tmp_path):
     assert gate.main(["x", str(bad)]) == 1  # a leaked NC model in production → CI red
 
 
-def test_promotion_gate_flags_known_unevaluated_photo_models():
-    """Same real-registry gap as the license gate (D5, not D2): neither photo model
-    has an eval_report yet, so the promotion gate must also honestly redline them —
-    see test_license_gate_flags_known_unverified_photo_models for the full context.
+def test_promotion_gate_passes_on_real_registry():
+    """Same fix as test_license_gate_passes_on_real_registry (D5, not D2): with the
+    photo models correctly tagged research-lane, the promotion gate only needs to
+    check the actual production lane (google-siglip2-base), which has a passing
+    eval_report.
     """
     gate = _load("check_promotion")
-    assert gate.main(["x", str(_ROOT / "models.registry.json"), str(_ROOT / "eval-reports")]) == 1
+    assert gate.main(["x", str(_ROOT / "models.registry.json"), str(_ROOT / "eval-reports")]) == 0
 
 
 def test_promotion_gate_fails_on_subthreshold_report(tmp_path):
