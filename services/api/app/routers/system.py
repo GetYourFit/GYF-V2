@@ -181,6 +181,22 @@ def _photo_module(remote_url: str, name: str) -> Capability:
     )
 
 
+def _price_coverage_detail(catalog: CatalogHealth) -> str:
+    """One honest sentence on real price-feed coverage, derived from live counts.
+
+    Never a hardcoded "pending" — this is exactly the kind of status string that
+    goes stale the moment the underlying data catches up (it did: catalog is now
+    fully priced), so it must be computed from the same aggregate the ``catalog``
+    field reports.
+    """
+    if not catalog.items:
+        return "price coverage unknown."
+    if catalog.with_price == catalog.items:
+        return "real price feeds cover the full catalog."
+    pct = round(100 * (catalog.with_price or 0) / catalog.items)
+    return f"real price feeds cover {pct}% of the catalog."
+
+
 @router.get("/system/status", summary="What is live, experimental, degraded, or planned")
 def system_status(
     stats: SystemStatsRepository = Depends(get_system_stats_repo),
@@ -229,7 +245,7 @@ def system_status(
             lane="cuelinks",
             detail=(
                 "Buy links wrap through Cuelinks deeplinks with per-recommendation "
-                "attribution (subid = recommendation_id); real price feeds pending."
+                f"attribution (subid = recommendation_id); {_price_coverage_detail(catalog)}"
             ),
         )
         if settings.cuelinks_cid
@@ -238,7 +254,7 @@ def system_status(
             lane="manual-fallback",
             detail=(
                 "Buy links redirect to retailers without affiliate attribution; "
-                "real price feeds pending."
+                f"{_price_coverage_detail(catalog)}"
             ),
         ),
     }

@@ -19,6 +19,16 @@ on:
   schedule:
     - cron: "30 22 * * *" # nightly, 04:00 IST
   workflow_dispatch:
+    inputs:
+      backfill_limit:
+        description: "Max items to embed this run (catch-up runs can go higher than the nightly default)"
+        required: false
+        default: "8000"
+      skip_ingest:
+        description: "Skip the Shopify catalog refresh (~65min) — for same-day repeat backfill-only catch-up runs"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -41,6 +51,13 @@ jobs:
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
+          # Scheduled runs always ingest; manual runs can opt out for a fast backfill-only pass.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.skip_ingest }}" = "true" ]; then
+            echo "run_ingest=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_ingest=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "backfill_limit=${{ inputs.backfill_limit || '8000' }}" >> "$GITHUB_OUTPUT"
 
       - uses: astral-sh/setup-uv@v5
         if: steps.gate.outputs.configured == 'true'
@@ -48,7 +65,7 @@ jobs:
           python-version: "3.12"
 
       - name: Refresh the Shopify merchant catalogs (real products, prices, stock)
-        if: steps.gate.outputs.configured == 'true'
+        if: steps.gate.outputs.configured == 'true' && steps.gate.outputs.run_ingest == 'true'
         working-directory: services/api
         env:
           GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
@@ -73,7 +90,7 @@ jobs:
           HF_HOME: ${{ github.workspace }}/ml/.hf-cache
         run: |
           uv run --extra postgres --extra remote --extra perception \
-            python -m pipelines.backfill --limit 3000
+            python -m pipelines.backfill --limit ${{ steps.gate.outputs.backfill_limit }}
 
       - name: Sync Cuelinks conversions into the spine
         if: steps.gate.outputs.configured == 'true'

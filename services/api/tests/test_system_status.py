@@ -74,3 +74,21 @@ def test_text_search_reports_remote_gpu_lane(monkeypatch):
     monkeypatch.setenv("GYF_ENCODER_REMOTE_URL", "https://GetYourFit-gyf-gpu.hf.space")
     cap = _get().json()["capabilities"]["text_search"]
     assert cap["status"] == "live" and cap["lane"] == "remote-gpu"
+
+
+def test_affiliate_detail_reports_partial_price_coverage():
+    stats = InMemorySystemStatsRepository(
+        CatalogHealth(items=53651, with_embedding=12161, with_price=9161, with_image=53651)
+    )
+    detail = _get(stats=stats).json()["capabilities"]["affiliate_commerce"]["detail"]
+    assert "17%" in detail
+    assert "pending" not in detail  # never a stale hardcoded claim
+
+
+def test_affiliate_detail_reports_full_price_coverage():
+    stats = InMemorySystemStatsRepository(
+        CatalogHealth(items=53651, with_embedding=12161, with_price=53651, with_image=53651)
+    )
+    detail = _get(stats=stats).json()["capabilities"]["affiliate_commerce"]["detail"]
+    assert "full catalog" in detail
+    assert "pending" not in detail
