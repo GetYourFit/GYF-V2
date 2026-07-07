@@ -2,6 +2,7 @@
 /// file, never individual widget files.
 library;
 
+export 'gyf_app_bar.dart';
 export 'gyf_badge.dart';
 export 'gyf_card.dart';
 export 'gyf_chat_bubble.dart';

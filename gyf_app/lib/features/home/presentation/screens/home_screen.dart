@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/design_tokens/design_tokens.dart';
-import '../../../../core/widgets/gyf_skeleton.dart';
+import '../../../../core/services/haptic_service.dart';
+import '../../../../core/widgets/gyf_widgets.dart';
+import '../../data/mock_home_repository.dart';
 
-/// Home — AI Fashion Hub (05_SCREEN_SPECIFICATIONS Part 3).
-/// Placeholder shell: greeting + search + skeleton feed. The full
-/// section stack (AI Hero Recommendation, Today's Picks, …) lands in
-/// Phase 3.1.
-class HomeScreen extends StatelessWidget {
+/// Home — AI Fashion Hub (05 Part 3, plan §7.1). Greeting → search →
+/// AI Hero Recommendation → collection sections via the §5.6 Expandable
+/// Collection Grid. 5-state matrix: the feed provider drives
+/// loading/success/error; pull-to-refresh re-fetches.
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   String _greeting() {
@@ -18,36 +21,119 @@ class HomeScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
+    final feed = ref.watch(homeFeedProvider);
+
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(GyfSpacing.marginStandard),
-        children: [
-          Text(_greeting(), style: text.headlineSmall),
-          const SizedBox(height: GyfSpacing.s4),
-          Text('What should I wear today?', style: text.bodyMedium),
-          const SizedBox(height: GyfSpacing.s16),
-          const TextField(
-            decoration: InputDecoration(
-              hintText: 'Search styles, brands, outfits',
-              prefixIcon: Icon(Icons.search),
+      child: RefreshIndicator(
+        onRefresh: () async {
+          ref.read(hapticServiceProvider).emit(GyfHaptic.selection);
+          ref.invalidate(homeFeedProvider);
+          await ref.read(homeFeedProvider.future);
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(GyfSpacing.marginStandard),
+          children: [
+            Text(_greeting(), style: text.headlineSmall),
+            const SizedBox(height: GyfSpacing.s4),
+            Text('What should I wear today?', style: text.bodyMedium),
+            const SizedBox(height: GyfSpacing.s16),
+            GyfSearchField(
+              hint: 'Search styles, brands, outfits',
+              onSubmitted: (_) {},
             ),
-          ),
-          const SizedBox(height: GyfSpacing.s24),
-          // Hero recommendation placeholder — mirrors final card layout.
-          const GyfSkeleton(height: 220),
-          const SizedBox(height: GyfSpacing.s16),
-          const GyfSkeleton(width: 160, height: GyfSpacing.s20),
-          const SizedBox(height: GyfSpacing.s12),
-          const Row(
-            children: [
-              Expanded(child: GyfSkeleton(height: 180)),
-              SizedBox(width: GyfSpacing.s12),
-              Expanded(child: GyfSkeleton(height: 180)),
-            ],
-          ),
-        ],
+            const SizedBox(height: GyfSpacing.s24),
+            ...feed.when(
+              loading: () => const [
+                // Skeletons mirror the final layout — never spinners.
+                GyfSkeleton(height: 180),
+                SizedBox(height: GyfSpacing.s16),
+                GyfSkeleton(height: 320),
+              ],
+              error: (_, __) => [
+                GyfErrorState(
+                  variant: GyfErrorVariant.retry,
+                  onPrimary: () => ref.invalidate(homeFeedProvider),
+                ),
+              ],
+              data: (data) => [
+                _HeroRecommendationCard(hero: data.hero),
+                for (final collection in data.collections) ...[
+                  const SizedBox(height: GyfSpacing.s16),
+                  GyfExpandableCollectionGrid(
+                    title: collection.title,
+                    subtitle: collection.subtitle,
+                    compatibilityScore: collection.compatibility,
+                    updatedLabel: 'Updated today',
+                    products: collection.products,
+                    onSavedChanged: (_, saved) {
+                      if (saved) {
+                        ref.read(hapticServiceProvider).emit(GyfHaptic.success);
+                      }
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// AI Hero Recommendation — hero card with AI explanation + confidence.
+class _HeroRecommendationCard extends ConsumerWidget {
+  const _HeroRecommendationCard({required this.hero});
+
+  final HeroRecommendation hero;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).extension<GyfColorScheme>()!;
+    return GyfPressableCard(
+      onTap: () {},
+      semanticLabel:
+          'Today’s recommendation: ${hero.headline}, ${hero.confidence} '
+          'percent match',
+      child: Container(
+        padding: const EdgeInsets.all(GyfSpacing.s20),
+        decoration: BoxDecoration(gradient: colors.aiGradient),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome,
+                  color: colors.textInverse,
+                  size: GyfIconSize.sm,
+                ),
+                const SizedBox(width: GyfSpacing.s8),
+                Text(
+                  'Today’s look',
+                  style:
+                      GyfTypography.caption.copyWith(color: colors.textInverse),
+                ),
+                const Spacer(),
+                GyfConfidenceBadge(percent: hero.confidence),
+              ],
+            ),
+            const SizedBox(height: GyfSpacing.s12),
+            Text(
+              hero.headline,
+              style: GyfTypography.title.copyWith(color: colors.textInverse),
+            ),
+            const SizedBox(height: GyfSpacing.s8),
+            Text(
+              hero.reason,
+              style:
+                  GyfTypography.bodySmall.copyWith(color: colors.textInverse),
+            ),
+          ],
+        ),
       ),
     );
   }

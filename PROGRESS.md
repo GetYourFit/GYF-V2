@@ -1099,3 +1099,21 @@ Collection Grid, gates Phase 3), source-doc index row, Phase 3 Home wired to
 
 **Next:** golden tests + GyfAppBar (deferred from §5.3) → Phase 3 Home.
 Consider creating a GitHub remote for gyf_app so its commits push.
+
+### 2026-07-07 (night) — gyf_app merged into GYF-V2; goldens, GyfAppBar, Phase 3 Home
+
+**Directive (durable):** all commits push to GetYourFit/GYF-V2 only. gyf_app was
+subtree-merged into `GYF-V2/gyf_app` (history preserved, commit f75575c); the old
+standalone repo renamed to `../gyf_app_standalone_backup` — retired, never edit.
+Flutter wrapper now runs as `../../.tooling/gyf-flutter` from `GYF-V2/gyf_app`.
+
+**Done this batch:** GyfAppBar (standard/large-sliver/transparent); first golden
+tests (component sampler light+dark, `test/goldens/`); Phase 3.1 Home v1 — mocked
+HomeRepository/FutureProvider feed, AI Hero Recommendation card (gradient +
+confidence + reason), Today's Picks + Trending This Week as §5.6 Expandable
+Collection Grids, pull-to-refresh (selection haptic), skeleton loading (no
+spinners), error state with retry. 41/41 tests green; analyze clean.
+
+**Next Home v1 gaps (per 05 Part 3):** quick actions row, Continue Journey,
+Brands/Editorial/Recently Viewed sections, staggered entrance motion, offline
+cached-feed banner, analytics hooks. Then §7.2 Discover/Search.
