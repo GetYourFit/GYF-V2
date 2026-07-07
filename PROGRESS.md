@@ -1071,3 +1071,31 @@ a real lazy-AnimationController-in-dispose bug caught by tests), GyfPressableCar
 spinners) + GyfPromptChip, GyfOverlays (sheet/dialog/toast single entry points),
 GyfErrorState (6 variants, every one with a recovery action). Gallery shows everything.
 analyze clean; 18/18 tests. New directive: push commits after every phase completion.
+
+### 2026-07-07 (evening) — gyf_app Phase 2 + Expandable Collection Grid; plan updated
+
+**Ask:** "continue the build"; then "I added one more file in Front — read it and
+update the implementation plan also."
+
+**gyf_app commits (local — no remote configured yet):**
+- `f4cac17` Phase 2 + remaining §5.3 inputs: GyfOtpField/GyfSlider/
+  GyfSteppedProgress, SessionManager (persisted splash decision tree),
+  SplashScreen (900 ms token timeline, reduced-motion skip), onboarding
+  S006–S020 (resumable step, budget slider, describe-instead photo path,
+  StyleDNA reveal heavy haptic), full auth flow (Welcome/Login/Register/
+  OTP+countdown/Forgot/New/Success, mocked repo, canonical UX-writing copy,
+  back preserves input). Fixed real AuthState.copyWith bug (clearErrors
+  swallowed same-call errors).
+- `6309517` GyfExpandableCollectionGrid per the new
+  `Front/FEATURE_EXPANDABLE_COLLECTION_GRID.md` spec: in-place expand
+  (never navigate), 40–50 ms staggered card reveal, quick-preview sheet,
+  skeleton/empty/error states, a11y expanded-state announcement; fixed
+  another lazy-AnimationController-in-dispose bug + a GridView aspect-ratio
+  overflow (row extents now computed from card anatomy). Gallery updated.
+
+**Plan updated:** `Front/16_IMPLEMENTATION_PLAN.md` — new §5.6 (Expandable
+Collection Grid, gates Phase 3), source-doc index row, Phase 3 Home wired to
+§5.6. 38/38 tests green; analyze clean.
+
+**Next:** golden tests + GyfAppBar (deferred from §5.3) → Phase 3 Home.
+Consider creating a GitHub remote for gyf_app so its commits push.
