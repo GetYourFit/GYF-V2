@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/design_tokens/design_tokens.dart';
@@ -44,6 +45,8 @@ class HomeScreen extends ConsumerWidget {
               hint: 'Search styles, brands, outfits',
               onSubmitted: (_) {},
             ),
+            const SizedBox(height: GyfSpacing.s16),
+            const _QuickActionsRow(),
             const SizedBox(height: GyfSpacing.s24),
             ...feed.when(
               loading: () => const [
@@ -60,7 +63,9 @@ class HomeScreen extends ConsumerWidget {
               ],
               data: (data) => [
                 _HeroRecommendationCard(hero: data.hero),
-                for (final collection in data.collections) ...[
+                const SizedBox(height: GyfSpacing.s16),
+                _ContinueJourneyCard(journey: data.continueJourney),
+                for (final (i, collection) in data.collections.indexed) ...[
                   const SizedBox(height: GyfSpacing.s16),
                   GyfExpandableCollectionGrid(
                     title: collection.title,
@@ -73,7 +78,10 @@ class HomeScreen extends ConsumerWidget {
                         ref.read(hapticServiceProvider).emit(GyfHaptic.success);
                       }
                     },
-                  ),
+                  )
+                      .animate(delay: GyfMotion.stagger * (i + 1))
+                      .fadeIn(duration: GyfMotion.medium, curve: GyfCurve.enter)
+                      .slideY(begin: 0.04, duration: GyfMotion.medium),
                 ],
               ],
             ),
@@ -131,6 +139,94 @@ class _HeroRecommendationCard extends ConsumerWidget {
               hero.reason,
               style:
                   GyfTypography.bodySmall.copyWith(color: colors.textInverse),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Quick actions (05 Part 3): the three flagship shortcuts.
+class _QuickActionsRow extends StatelessWidget {
+  const _QuickActionsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<GyfColorScheme>()!;
+    return Row(
+      children: [
+        for (final (icon, label) in [
+          (Icons.photo_camera_outlined, 'Outfit check'),
+          (Icons.checkroom_outlined, 'Add clothing'),
+          (Icons.auto_awesome, 'Ask AI'),
+        ]) ...[
+          if (label != 'Outfit check') const SizedBox(width: GyfSpacing.s8),
+          Expanded(
+            child: GyfPressableCard(
+              onTap: () {},
+              semanticLabel: label,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: GyfSpacing.s12,
+                ),
+                child: Column(
+                  children: [
+                    Icon(icon, color: colors.primary, size: GyfIconSize.sm),
+                    const SizedBox(height: GyfSpacing.s4),
+                    Text(
+                      label,
+                      style: GyfTypography.caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Continue Journey — resume the last incomplete flow.
+class _ContinueJourneyCard extends StatelessWidget {
+  const _ContinueJourneyCard({required this.journey});
+
+  final ContinueJourney journey;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<GyfColorScheme>()!;
+    return GyfPressableCard(
+      onTap: () {},
+      semanticLabel: 'Continue: ${journey.title}',
+      child: Padding(
+        padding: const EdgeInsets.all(GyfSpacing.s16),
+        child: Row(
+          children: [
+            Icon(Icons.play_circle_outline, color: colors.primary),
+            const SizedBox(width: GyfSpacing.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(journey.title, style: GyfTypography.label),
+                  const SizedBox(height: GyfSpacing.s2),
+                  Text(
+                    journey.subtitle,
+                    style: GyfTypography.caption
+                        .copyWith(color: colors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: colors.textTertiary,
+              size: GyfIconSize.sm,
             ),
           ],
         ),

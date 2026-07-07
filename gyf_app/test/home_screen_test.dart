@@ -28,5 +28,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Trending This Week'), findsOneWidget);
+    // Let the staggered entrance animations finish their timers.
+    await tester.pumpAndSettle();
   });
 }

@@ -26,6 +26,8 @@ void main() {
     expect(find.text('Wardrobe'), findsOneWidget);
     expect(find.text('Profile'), findsOneWidget);
     expect(find.text('What should I wear today?'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('tab switching reaches each pillar screen', (tester) async {
@@ -41,6 +43,8 @@ void main() {
     await tester.tap(find.text('Profile'));
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Appearance'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('theme extension resolves in both brightnesses', (tester) async {
@@ -52,5 +56,7 @@ void main() {
     final context = tester.element(find.text('Home'));
     final colors = Theme.of(context).extension<GyfColorScheme>();
     expect(colors, isNotNull);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
   });
 }

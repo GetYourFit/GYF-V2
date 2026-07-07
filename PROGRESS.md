@@ -1117,3 +1117,15 @@ spinners), error state with retry. 41/41 tests green; analyze clean.
 **Next Home v1 gaps (per 05 Part 3):** quick actions row, Continue Journey,
 Brands/Editorial/Recently Viewed sections, staggered entrance motion, offline
 cached-feed banner, analytics hooks. Then §7.2 Discover/Search.
+
+### 2026-07-07 (late) — Home v1 spec gaps + mobile-frame web demo; deployed
+
+Flutter web enabled; app deployed to Vercel project `gyf-app`
+(https://gyf-app.vercel.app, manual deploy — no CI yet). New `_MobileFrame`:
+on viewports > tablet breakpoint the app renders in a centered 430 px
+phone frame so the web demo matches the mobile experience. Home v1 gaps
+closed per 05 Part 3: quick actions row (Outfit check / Add clothing /
+Ask AI), Continue Journey card, Recently Viewed collection, staggered
+section entrance (flutter_animate, motion tokens). Removed stray
+flutter-create widget_test.dart. 41/41 tests; analyze clean.
+Remaining Home gaps: offline cached-feed banner, analytics hooks.
