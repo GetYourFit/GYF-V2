@@ -6,6 +6,7 @@ import { UploadCloud, X, CheckCircle } from "lucide-react";
 
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
+import { FIELD_LABELS, type EstimatedField } from "@/lib/estimate";
 import type { Profile } from "@gyf/types";
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
@@ -13,7 +14,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 interface PhotoUploadProps {
-  onEstimated: (profile: Profile) => string[];
+  onEstimated: (profile: Profile) => { applied: string[]; missing: EstimatedField[] };
 }
 
 export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
@@ -25,6 +26,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [estimated, setEstimated] = useState<string[]>([]);
+  const [missingFields, setMissingFields] = useState<EstimatedField[]>([]);
   const [missed, setMissed] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
@@ -32,6 +34,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
     setError(null);
     setDone(false);
     setEstimated([]);
+    setMissingFields([]);
     setMissed(false);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     if (!next) {
@@ -63,8 +66,9 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
       const api = browserApi();
       await api.putConsent({ flags: { data_processing: true } });
       const profile = await api.uploadPhoto(file);
-      const applied = onEstimated(profile);
+      const { applied, missing } = onEstimated(profile);
       setEstimated(applied);
+      setMissingFields(missing);
       setMissed(applied.length === 0);
       setDone(true);
     } catch (e) {
@@ -228,7 +232,9 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             }}
           >
             <CheckCircle size={14} aria-hidden />
-            Estimated {estimated.join(" & ")} — review and edit below.
+            {missingFields.length === 0
+              ? `Estimated ${estimated.join(" & ")} — review and edit below.`
+              : `Estimated ${estimated.join(" & ")} — couldn't read ${missingFields.map((f) => FIELD_LABELS[f]).join(" & ")} from this photo, set it manually below.`}
           </motion.p>
         )}
         {done && missed && (

@@ -17,13 +17,13 @@ const VALID: Record<EstimatedField, ReadonlySet<string>> = {
   body_type: new Set(BODY_TYPES.map((o) => o.value)),
 };
 
-const LABELS: Record<EstimatedField, string> = {
+export const FIELD_LABELS: Record<EstimatedField, string> = {
   skin_tone: "skin tone",
   undertone: "undertone",
   body_type: "body type",
 };
 
-type EstimatedField = "skin_tone" | "undertone" | "body_type";
+export type EstimatedField = "skin_tone" | "undertone" | "body_type";
 const FIELDS: EstimatedField[] = ["skin_tone", "undertone", "body_type"];
 
 export interface EstimateMerge {
@@ -31,6 +31,14 @@ export interface EstimateMerge {
   patch: Partial<ProfileInput>;
   /** Human labels of the fields that were applied (for the "Estimated …" message). */
   applied: string[];
+  /**
+   * Fields the photo module didn't produce a usable value for on this attempt —
+   * e.g. body_type when the photo has no full body in frame. Distinct from fields
+   * simply never attempted: only populated after an actual photo upload, so the
+   * form can point at exactly which field needs manual input instead of leaving
+   * a silently-empty Select next to a message that claims partial success.
+   */
+  missing: EstimatedField[];
 }
 
 /** Fold a photo-estimated profile into a form patch, keeping only vocab-valid values
@@ -38,12 +46,15 @@ export interface EstimateMerge {
 export function mergeEstimated(profile: Profile): EstimateMerge {
   const patch: Partial<ProfileInput> = {};
   const applied: string[] = [];
+  const missing: EstimatedField[] = [];
 
   for (const field of FIELDS) {
     const value = profile[field];
     if (typeof value === "string" && VALID[field].has(value)) {
       patch[field] = value;
-      applied.push(LABELS[field]);
+      applied.push(FIELD_LABELS[field]);
+    } else {
+      missing.push(field);
     }
   }
 
@@ -52,5 +63,5 @@ export function mergeEstimated(profile: Profile): EstimateMerge {
     patch.measurements = profile.measurements;
   }
 
-  return { patch, applied };
+  return { patch, applied, missing };
 }

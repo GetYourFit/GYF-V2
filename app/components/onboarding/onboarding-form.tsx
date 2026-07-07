@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
-import { mergeEstimated } from "@/lib/estimate";
+import { mergeEstimated, type EstimatedField } from "@/lib/estimate";
 import {
   BODY_TYPES,
   CONSENT_OPTIONS,
@@ -41,6 +41,7 @@ export function OnboardingForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [photoMissed, setPhotoMissed] = useState<EstimatedField[]>([]);
 
   useEffect(() => {
     const api = browserApi();
@@ -73,6 +74,7 @@ export function OnboardingForm() {
   function set<K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) {
     setForm((f) => ({ ...f, [key]: value }));
     setSaved(false);
+    setPhotoMissed((m) => m.filter((f) => f !== key));
   }
 
   function toggleStyle(value: string) {
@@ -83,11 +85,12 @@ export function OnboardingForm() {
     );
   }
 
-  function applyEstimated(profile: Profile): string[] {
-    const { patch, applied } = mergeEstimated(profile);
+  function applyEstimated(profile: Profile) {
+    const { patch, applied, missing } = mergeEstimated(profile);
     setForm((f) => ({ ...f, ...patch }));
+    setPhotoMissed(missing);
     setSaved(false);
-    return applied;
+    return { applied, missing };
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -125,7 +128,14 @@ export function OnboardingForm() {
 
       <Section title="You" hint="Helps GYF choose flattering colours and cuts.">
         <PhotoUpload onEstimated={applyEstimated} />
-        <Field label="Skin tone">
+        <Field
+          label="Skin tone"
+          hint={
+            photoMissed.includes("skin_tone")
+              ? "Couldn't detect this from your photo — set it manually."
+              : undefined
+          }
+        >
           {(p) => (
             <Select
               {...p}
@@ -135,7 +145,14 @@ export function OnboardingForm() {
             />
           )}
         </Field>
-        <Field label="Undertone">
+        <Field
+          label="Undertone"
+          hint={
+            photoMissed.includes("undertone")
+              ? "Couldn't detect this from your photo — set it manually."
+              : undefined
+          }
+        >
           {(p) => (
             <Select
               {...p}
@@ -145,7 +162,14 @@ export function OnboardingForm() {
             />
           )}
         </Field>
-        <Field label="Body type">
+        <Field
+          label="Body type"
+          hint={
+            photoMissed.includes("body_type")
+              ? "Couldn't detect a full body in your photo — set it manually."
+              : undefined
+          }
+        >
           {(p) => (
             <Select
               {...p}

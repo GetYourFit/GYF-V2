@@ -114,7 +114,18 @@ def to_pgvector(embedding: list[float]) -> str:
 
 
 def default_image_loader(ref: str) -> Image:
-    """Load an image from an http(s) URL or a local path (lazy stdlib import)."""
+    """Load an image from an http(s) URL or a local path (lazy stdlib import).
+
+    ``Image.open`` only reads the header — it doesn't decode pixels, so a
+    truncated body (a real, observed failure mode in merchant image feeds)
+    opens successfully and only raises later, deep in whatever encodes it
+    (``image_to_b64_png``, a local encoder's preprocessing, ...). That's past
+    every per-item guard this pipeline has (``_first_loadable``'s except,
+    the "one bad image ref must not stop the backfill" contract), so it took
+    down an entire in-progress GH Actions run rather than skipping one item.
+    Forcing the real decode here, at the one place with a try/except built
+    for exactly this, is the fix — not a guard bolted on somewhere downstream.
+    """
     from io import BytesIO
     from urllib.request import urlopen
 
@@ -122,8 +133,11 @@ def default_image_loader(ref: str) -> Image:
 
     if ref.startswith(("http://", "https://")):
         with urlopen(ref, timeout=30) as resp:  # noqa: S310 — feed image URLs
-            return PILImage.open(BytesIO(resp.read()))
-    return PILImage.open(ref)
+            image = PILImage.open(BytesIO(resp.read()))
+    else:
+        image = PILImage.open(ref)
+    image.load()
+    return image
 
 
 # Module-level SQL so tests can assert against it without a live DB.

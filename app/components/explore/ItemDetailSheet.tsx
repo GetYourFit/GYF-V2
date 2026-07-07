@@ -201,6 +201,8 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                     src={src}
                     srcSet={item ? mediaSrcSet(item.image_url, 800) : undefined}
                     alt={item.title}
+                    loading="lazy"
+                    decoding="async"
                     style={{
                       width: "100%",
                       height: "100%",

@@ -18,7 +18,7 @@ import { PhotoUpload } from "@/components/onboarding/photo-upload";
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
-import { mergeEstimated } from "@/lib/estimate";
+import { mergeEstimated, FIELD_LABELS } from "@/lib/estimate";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   BODY_TYPES,
@@ -176,10 +176,12 @@ function DarkInput({
 function FieldWrap({
   label,
   badge,
+  hint,
   children,
 }: {
   label: string;
   badge?: React.ReactNode;
+  hint?: string;
   children: React.ReactNode;
 }) {
   // Generate a stable id and associate the visible label with the wrapped
@@ -217,6 +219,17 @@ function FieldWrap({
         {badge}
       </div>
       {control}
+      {hint && (
+        <p
+          style={{
+            fontSize: "0.7rem",
+            color: "var(--text-faint)",
+            marginTop: "0.375rem",
+          }}
+        >
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -236,6 +249,7 @@ export function OnboardingWizard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [estimated, setEstimated] = useState<Set<EstimatedKey>>(new Set());
+  const [missed, setMissed] = useState<Set<EstimatedKey>>(new Set());
 
   useEffect(() => {
     const api = browserApi();
@@ -274,6 +288,12 @@ export function OnboardingWizard() {
       next.delete(key as EstimatedKey);
       return next;
     });
+    setMissed((prev) => {
+      if (!prev.has(key as EstimatedKey)) return prev;
+      const next = new Set(prev);
+      next.delete(key as EstimatedKey);
+      return next;
+    });
   }
 
   function toggleStyle(value: string) {
@@ -284,12 +304,13 @@ export function OnboardingWizard() {
     );
   }
 
-  function applyEstimated(profile: Profile): string[] {
-    const { patch, applied } = mergeEstimated(profile);
+  function applyEstimated(profile: Profile) {
+    const { patch, applied, missing } = mergeEstimated(profile);
     setForm((f) => ({ ...f, ...patch }));
     const filled = ESTIMATED_KEYS.filter((k) => patch[k] != null);
     setEstimated(new Set(filled));
-    return applied;
+    setMissed(new Set(missing));
+    return { applied, missing };
   }
 
   function goTo(next: number) {
@@ -460,6 +481,7 @@ export function OnboardingWizard() {
                 set={set}
                 applyEstimated={applyEstimated}
                 estimated={estimated}
+                missed={missed}
               />
             )}
             {currentStepId === "style" && (
@@ -671,11 +693,13 @@ function StepYou({
   set,
   applyEstimated,
   estimated,
+  missed,
 }: {
   form: ProfileInput;
   set: <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) => void;
-  applyEstimated: (profile: Profile) => string[];
+  applyEstimated: (profile: Profile) => { applied: string[]; missing: EstimatedKey[] };
   estimated: Set<EstimatedKey>;
+  missed: Set<EstimatedKey>;
 }) {
   return (
     <>
@@ -710,21 +734,33 @@ function StepYou({
           gap: "1.25rem",
         }}
       >
-        <FieldWrap label="Skin tone" badge={estimated.has("skin_tone") ? <EstimatedBadge /> : null}>
+        <FieldWrap
+          label="Skin tone"
+          badge={estimated.has("skin_tone") ? <EstimatedBadge /> : null}
+          hint={missed.has("skin_tone") ? `Couldn't detect ${FIELD_LABELS.skin_tone} from your photo.` : undefined}
+        >
           <DarkSelect
             options={SKIN_TONES}
             value={form.skin_tone ?? ""}
             onChange={(v) => set("skin_tone", v)}
           />
         </FieldWrap>
-        <FieldWrap label="Undertone" badge={estimated.has("undertone") ? <EstimatedBadge /> : null}>
+        <FieldWrap
+          label="Undertone"
+          badge={estimated.has("undertone") ? <EstimatedBadge /> : null}
+          hint={missed.has("undertone") ? `Couldn't detect ${FIELD_LABELS.undertone} from your photo.` : undefined}
+        >
           <DarkSelect
             options={UNDERTONES}
             value={form.undertone ?? ""}
             onChange={(v) => set("undertone", v)}
           />
         </FieldWrap>
-        <FieldWrap label="Body type" badge={estimated.has("body_type") ? <EstimatedBadge /> : null}>
+        <FieldWrap
+          label="Body type"
+          badge={estimated.has("body_type") ? <EstimatedBadge /> : null}
+          hint={missed.has("body_type") ? "Couldn't detect a full body in your photo." : undefined}
+        >
           <DarkSelect
             options={BODY_TYPES}
             value={form.body_type ?? ""}

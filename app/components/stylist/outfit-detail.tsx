@@ -259,6 +259,8 @@ export function OutfitDetail({
                         src={src}
                         srcSet={mediaSrcSet(item.image_url, 800)}
                         alt={`${item.title} — ${item.category.replace(/_/g, " ")}`}
+                        loading="lazy"
+                        decoding="async"
                         style={{
                           width: "100%",
                           height: "100%",
@@ -705,6 +707,8 @@ function SwapButton({
                       src={src}
                       srcSet={mediaSrcSet(alt.image_url, 400)}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       style={{
                         width: "100%",
                         height: "100%",

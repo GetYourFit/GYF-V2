@@ -368,6 +368,8 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                           <img
                             src={img}
                             alt=""
+                            loading="lazy"
+                            decoding="async"
                             style={{
                               width: "100%",
                               height: "100%",

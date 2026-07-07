@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@/lib/api";
+import type { EstimatedField } from "@/lib/estimate";
 
 import { PhotoUpload } from "./photo-upload";
 
@@ -39,9 +40,10 @@ describe("PhotoUpload", () => {
 
   it("estimates and reports the merged profile on success", async () => {
     uploadPhoto.mockResolvedValueOnce({ body_type: "hourglass", source: "photo" });
-    // onEstimated returns the human labels actually adopted; the component reads
-    // `.length` on it to decide the status message, so it must return an array.
-    const onEstimated = vi.fn(() => ["body type"]);
+    // onEstimated returns the human labels actually adopted plus any fields the
+    // photo module couldn't produce; the component reads both to compose the
+    // status message.
+    const onEstimated = vi.fn(() => ({ applied: ["body type"], missing: [] as EstimatedField[] }));
     render(<PhotoUpload onEstimated={onEstimated} />);
     pickFile("image/png");
     fireEvent.click(screen.getByRole("button", { name: /estimate from photo/i }));
@@ -52,6 +54,21 @@ describe("PhotoUpload", () => {
       }),
     );
     expect(screen.getByRole("status")).toHaveTextContent(/estimated/i);
+  });
+
+  it("names the specific field it couldn't read on a partial estimate", async () => {
+    uploadPhoto.mockResolvedValueOnce({ skin_tone: "mst5", source: "photo" });
+    const onEstimated = vi.fn(() => ({
+      applied: ["skin tone"],
+      missing: ["body_type"] as EstimatedField[],
+    }));
+    render(<PhotoUpload onEstimated={onEstimated} />);
+    pickFile("image/png");
+    fireEvent.click(screen.getByRole("button", { name: /estimate from photo/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(/body type/i),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(/set it manually/i);
   });
 
   it("degrades honestly when the photo modules are unavailable (503)", async () => {
