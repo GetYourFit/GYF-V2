@@ -120,6 +120,43 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
               ],
             ),
           ]),
+          _section('Expandable collection grid', [
+            GyfExpandableCollectionGrid(
+              title: 'Summer Essentials',
+              subtitle: 'Perfect for warm weather and your neutral wardrobe.',
+              compatibilityScore: 94,
+              updatedLabel: 'Updated today',
+              products: [
+                for (var i = 0; i < 10; i++)
+                  GyfCollectionProduct(
+                    brand: 'Uniqlo',
+                    name: 'Linen shirt ${i + 1}',
+                    price: '₹1,999',
+                    matchPercent: 95 - i * 3,
+                    aiReason: 'Complements items you already own.',
+                    sizes: const ['S', 'M', 'L'],
+                  ),
+              ],
+              onSavedChanged: (_, __) {},
+            ),
+            const GyfExpandableCollectionGrid(
+              title: 'Loading collection',
+              products: [],
+              status: GyfCollectionStatus.loading,
+            ),
+            GyfExpandableCollectionGrid(
+              title: 'Empty collection',
+              products: const [],
+              status: GyfCollectionStatus.empty,
+              onGenerate: () {},
+            ),
+            GyfExpandableCollectionGrid(
+              title: 'Broken collection',
+              products: const [],
+              status: GyfCollectionStatus.error,
+              onRetry: () {},
+            ),
+          ]),
           _section('Cards', [
             SizedBox(
               width: 220,

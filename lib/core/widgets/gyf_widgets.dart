@@ -7,6 +7,7 @@ export 'gyf_card.dart';
 export 'gyf_chat_bubble.dart';
 export 'gyf_empty_state.dart';
 export 'gyf_error_state.dart';
+export 'gyf_expandable_collection_grid.dart';
 export 'gyf_filter_chip.dart';
 export 'gyf_otp_field.dart';
 export 'gyf_outfit_card.dart';
