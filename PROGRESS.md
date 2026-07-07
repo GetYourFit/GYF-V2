@@ -1070,4 +1070,4 @@ a real lazy-AnimationController-in-dispose bug caught by tests), GyfPressableCar
 + removable variants), GyfChatBubble (4 states incl. custom AI-thinking dots — no generic
 spinners) + GyfPromptChip, GyfOverlays (sheet/dialog/toast single entry points),
 GyfErrorState (6 variants, every one with a recovery action). Gallery shows everything.
->>>>>>> 8d9f417 (docs(progress): log gyf_app Flutter frontend Phase 0–1 sessions; add logo asset)
+analyze clean; 18/18 tests. New directive: push commits after every phase completion.
