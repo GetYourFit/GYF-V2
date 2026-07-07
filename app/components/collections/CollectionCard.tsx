@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import Image from "next/image";
+import { mediaUrl } from "@/lib/media";
 import type { SavedItem, SavedOutfit } from "@gyf/types";
 
 const MONO: React.CSSProperties = {
@@ -35,15 +36,16 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
         overflow: "hidden",
       }}
     >
-      <div style={{ aspectRatio: "3/4", background: "#1a1a22", overflow: "hidden" }}>
+      <div
+        style={{ position: "relative", aspectRatio: "3/4", background: "#1a1a22", overflow: "hidden" }}
+      >
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={src}
-            srcSet={mediaSrcSet(item.image_url, 400)}
             alt={item.title}
-            loading="lazy"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            fill
+            sizes="(max-width: 640px) 45vw, 220px"
+            style={{ objectFit: "cover" }}
           />
         ) : (
           <div
@@ -117,16 +119,12 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
           previews.map((p) => {
             const s = mediaUrl(p.image_url, 400);
             return (
-              <div key={p.item_id} style={{ overflow: "hidden", background: "#1a1a22" }}>
+              <div
+                key={p.item_id}
+                style={{ position: "relative", overflow: "hidden", background: "#1a1a22" }}
+              >
                 {s ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={s}
-                    srcSet={mediaSrcSet(p.image_url, 400)}
-                    alt={p.title}
-                    loading="lazy"
-                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                  />
+                  <Image src={s} alt={p.title} fill sizes="50vw" style={{ objectFit: "cover" }} />
                 ) : null}
               </div>
             );

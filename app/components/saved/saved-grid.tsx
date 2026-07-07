@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ExternalLink, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -11,7 +12,7 @@ import { SavedCard } from "@/components/saved/saved-card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
-import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@/lib/media";
 
 const lux = [0.16, 1, 0.3, 1] as const;
 const GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3";
@@ -188,13 +189,12 @@ function SavedItemCard({ item, onRemove }: { item: SavedItem; onRemove: () => vo
     <article className="group relative flex flex-col border border-border bg-surface transition-colors duration-300 hover:border-border-hi">
       <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={src}
-            srcSet={mediaSrcSet(item.image_url, 400)}
             alt={item.title}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) 50vw, 220px"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center t-mono text-text-faint">

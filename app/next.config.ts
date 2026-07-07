@@ -32,6 +32,20 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  images: {
+    // Every real image source in the app, and nothing else (next/image refuses
+    // any host not listed here): merchant product photos all come through
+    // Shopify's shared CDN (confirmed: every catalog item across all ~22
+    // merchants resolves to cdn.shopify.com — one host, not a per-merchant
+    // allowlist that goes stale as merchants are added), user-uploaded media
+    // lives in the Supabase storage bucket, and the local API serves /media
+    // in dev.
+    remotePatterns: [
+      { protocol: "https", hostname: "cdn.shopify.com" },
+      { protocol: "https", hostname: "*.supabase.co" },
+      { protocol: "http", hostname: "localhost" },
+    ],
+  },
 };
 
 export default nextConfig;

@@ -3,11 +3,12 @@
 import { Bookmark, ExternalLink, Repeat2, X } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { browserApi } from "@/lib/api-client";
-import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@/lib/media";
 import type { Outfit, OutfitItem } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -254,19 +255,12 @@ export function OutfitDetail({
                     }}
                   >
                     {src ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={src}
-                        srcSet={mediaSrcSet(item.image_url, 800)}
                         alt={`${item.title} — ${item.category.replace(/_/g, " ")}`}
-                        loading="lazy"
-                        decoding="async"
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          display: "block",
-                        }}
+                        fill
+                        sizes="(max-width: 640px) 33vw, 250px"
+                        style={{ objectFit: "cover" }}
                       />
                     ) : (
                       <div
@@ -700,22 +694,9 @@ function SwapButton({
                   overflow: "hidden",
                 }}
               >
-                <div style={{ aspectRatio: "3/4", overflow: "hidden" }}>
+                <div style={{ position: "relative", aspectRatio: "3/4", overflow: "hidden" }}>
                   {src ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={src}
-                      srcSet={mediaSrcSet(alt.image_url, 400)}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
-                    />
+                    <Image src={src} alt="" fill sizes="96px" style={{ objectFit: "cover" }} />
                   ) : null}
                 </div>
                 <span

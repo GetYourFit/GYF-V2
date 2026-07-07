@@ -2,11 +2,12 @@
 
 import { Trash2, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 import type { SavedOutfit } from "@gyf/types";
 
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
-import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@/lib/media";
 
 interface SavedCardProps {
   look: SavedOutfit;
@@ -35,13 +36,12 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
               className="relative aspect-[3/4] flex-1 overflow-hidden bg-surface-2"
             >
               {src ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={src}
-                  srcSet={mediaSrcSet(item.image_url, 400)}
                   alt={item.title}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                  fill
+                  sizes="(max-width: 640px) 33vw, 200px"
+                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center t-mono text-text-faint">

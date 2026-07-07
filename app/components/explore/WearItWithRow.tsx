@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { browserApi } from "@/lib/api-client";
-import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@/lib/media";
 import type { Outfit, OutfitItem } from "@gyf/types";
 
 interface Props {
@@ -73,6 +74,7 @@ function Tile({ item }: { item: OutfitItem }) {
     >
       <div
         style={{
+          position: "relative",
           aspectRatio: "3/4",
           width: "100%",
           background: "#1a1a22",
@@ -82,13 +84,12 @@ function Tile({ item }: { item: OutfitItem }) {
         }}
       >
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={src}
-            srcSet={mediaSrcSet(item.image_url, 400)}
             alt={item.title}
-            loading="lazy"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            fill
+            sizes="(max-width: 640px) 40vw, 180px"
+            style={{ objectFit: "cover" }}
           />
         ) : (
           <div

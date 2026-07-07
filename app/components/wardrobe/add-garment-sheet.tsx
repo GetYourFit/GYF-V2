@@ -2,11 +2,12 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Search, X, Plus } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { SearchResult, WardrobeItemInput } from "@gyf/types";
 import { browserApi } from "@/lib/api-client";
-import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@/lib/media";
 import { UI_COLORS } from "@/lib/ui-colors";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -484,18 +485,12 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                               }}
                             >
                               {src ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
+                                <Image
                                   src={src}
-                                  srcSet={mediaSrcSet(r.image_url, 400)}
                                   alt={r.title}
-                                  loading="lazy"
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                    display: "block",
-                                  }}
+                                  fill
+                                  sizes="(max-width: 640px) 33vw, 160px"
+                                  style={{ objectFit: "cover" }}
                                 />
                               ) : (
                                 <div

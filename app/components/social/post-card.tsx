@@ -2,10 +2,11 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Heart, Share2, Bookmark, Shirt } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import type { Post } from "@gyf/types";
 import { browserApi } from "@/lib/api-client";
-import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@/lib/media";
 import { UI_COLORS } from "@/lib/ui-colors";
 
 const LUX = [0.16, 1, 0.3, 1] as const;
@@ -265,19 +266,12 @@ export function PostCard({
             display: "block",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={heroImage}
-            srcSet={mediaSrcSet(heroPath, 800)}
             alt={post.caption ?? "A styled outfit"}
-            loading="lazy"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block",
-              transition: "transform 0.5s ease",
-            }}
+            fill
+            sizes="(max-width: 640px) 100vw, 500px"
+            style={{ objectFit: "cover", transition: "transform 0.5s ease" }}
           />
           {post.occasion && (
             <span

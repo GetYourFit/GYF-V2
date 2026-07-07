@@ -2,10 +2,11 @@
 
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { Bookmark, X, ChevronDown, ChevronUp, ShoppingBag, Wand2 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { OutfitDetail } from "@/components/stylist/outfit-detail";
-import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@/lib/media";
 import type { Outfit, OutfitItem } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -184,18 +185,12 @@ export function OutfitCard({
                   }}
                 >
                   {src ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={src}
-                      srcSet={mediaSrcSet(item.image_url, 400)}
                       alt={`${item.title ?? ""} — ${item.category.replace(/_/g, " ")}`}
-                      loading="lazy"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
+                      fill
+                      sizes="(max-width: 640px) 33vw, 180px"
+                      style={{ objectFit: "cover" }}
                     />
                   ) : (
                     <div

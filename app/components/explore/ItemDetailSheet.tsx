@@ -2,10 +2,11 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X, ArrowUpRight, Plus } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 import { browserApi } from "@/lib/api-client";
-import { mediaSrcSet, mediaUrl } from "@/lib/media";
+import { mediaUrl } from "@/lib/media";
 import { useToast } from "@/components/ui/toast";
 import { CompatibilityPanel } from "./CompatibilityPanel";
 import { WearItWithRow } from "./WearItWithRow";
@@ -196,20 +197,12 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                 }}
               >
                 {src ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={src}
-                    srcSet={item ? mediaSrcSet(item.image_url, 800) : undefined}
-                    alt={item.title}
-                    loading="lazy"
-                    decoding="async"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block",
-                      borderRadius: "16px",
-                    }}
+                    alt={item?.title ?? ""}
+                    fill
+                    sizes="(max-width: 640px) 90vw, 480px"
+                    style={{ objectFit: "cover", borderRadius: "16px" }}
                   />
                 ) : (
                   <div

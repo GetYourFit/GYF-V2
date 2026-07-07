@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { useToast } from "@/components/ui/toast";
@@ -364,17 +365,13 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                         }}
                       >
                         {img ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <Image
                             src={img}
                             alt=""
-                            loading="lazy"
-                            decoding="async"
+                            fill
+                            sizes="33vw"
                             style={{
-                              width: "100%",
-                              height: "100%",
                               objectFit: "cover",
-                              display: "block",
                             }}
                           />
                         ) : (
