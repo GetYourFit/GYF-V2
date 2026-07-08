@@ -248,7 +248,10 @@ class _GyfExpandableCollectionGridState
         final itemWidth =
             (constraints.maxWidth - GyfSpacing.s12 * (widget.columns - 1)) /
                 widget.columns;
-        final extent = itemWidth * 4 / 3 + 168;
+        // 168 is the bare text-block estimate; cards showing the AI
+        // match badge (matchPercent) need a bit more headroom or they
+        // clip by a hair at narrow widths — 184 keeps a safety margin.
+        final extent = itemWidth * 4 / 3 + 184;
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
