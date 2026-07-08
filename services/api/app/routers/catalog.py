@@ -80,7 +80,10 @@ def catalog_facets(
 def search_items(
     response: Response,
     q: str = Query(..., min_length=1),
-    k: int = Query(10, ge=1, le=50),
+    # le=100: the Canvas Explorer's initial cluster load requests k=64 (one
+    # big interleaved page across 4 slots) — was capped at 50, so that
+    # request 422'd and the canvas rendered nothing.
+    k: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0, le=10_000),
     region: str | None = None,
     max_price: float | None = Query(
