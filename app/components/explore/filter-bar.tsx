@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, X, SlidersHorizontal, ChevronDown, Grip } from "lucide-react";
+import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
@@ -10,6 +10,33 @@ import type { CatalogFacets } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import { getScrollContainer } from "@/lib/scroll-container";
 import { UI_COLORS } from "@/lib/ui-colors";
+
+// Flower-cluster icon (Ref3, top-left) for the canvas explorer entry point —
+// five petals slowly orbiting the center, still under reduced motion.
+function CanvasFlowerIcon({ reduce }: { reduce: boolean | null }) {
+  const petals = [0, 72, 144, 216, 288];
+  return (
+    <motion.svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      animate={reduce ? undefined : { rotate: 360 }}
+      transition={reduce ? undefined : { duration: 6, repeat: Infinity, ease: "linear" }}
+    >
+      {petals.map((deg) => (
+        <circle
+          key={deg}
+          cx={12 + Math.sin((deg * Math.PI) / 180) * 6}
+          cy={12 - Math.cos((deg * Math.PI) / 180) * 6}
+          r={3}
+          fill="currentColor"
+        />
+      ))}
+      <circle cx={12} cy={12} r={2.25} fill="currentColor" />
+    </motion.svg>
+  );
+}
 
 type SortKey = "relevance" | "price_asc" | "price_desc";
 
@@ -286,7 +313,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               justifyContent: "center",
             }}
           >
-            <Grip size={18} aria-hidden />
+            <CanvasFlowerIcon reduce={reduce} />
           </Link>
         </div>
 

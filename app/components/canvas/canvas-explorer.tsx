@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { browserApi } from "@/lib/api-client";
 import { colorNameToCss } from "@/lib/color-name";
 import { mediaUrl } from "@/lib/media";
+import { BottomNav } from "@/components/layout/bottom-nav";
+import { ItemDetailSheet } from "@/components/explore/ItemDetailSheet";
 import type { SearchResult } from "@gyf/types";
 
 // Zoom bounds and step sizes (button click / wheel notch).
@@ -22,20 +24,29 @@ const PINCH_ZOOM_SPEED = 1; // multiplier on the raw distance ratio
 const LOAD_MORE_MARGIN = 700;
 const PAGE_SIZE = 32;
 
+// A single click is deferred this long so a following second click can
+// cancel it and fire the double-click action instead.
+const CLICK_ARBITRATION_MS = 260;
+
+// How long the canvas must sit still before the bottom nav floats back in.
+const NAV_IDLE_MS = 350;
+
 /*
  * Canvas Explorer — Cosmos-style infinite cluster view (Ref2).
  *
  * The whole catalog slice is laid out as one tightly-packed masonry cluster
  * on a free 2D plane. The user pans (drag / swipe with momentum) and zooms
  * (wheel, pinch, or the +/- buttons). In the default browse (no item
- * selected) panning near the edge streams in another page, so the cluster
- * reads as infinite rather than a fixed bounded grid.
+ * selected) panning near the edge streams in another page — with skeleton
+ * placeholders already occupying the space just beyond the loaded edge —
+ * so the cluster reads as infinite rather than a fixed bounded grid.
  *
- * Click behavior — one gesture, no ambiguity:
- *  - Click/tap a tile → reclusters the canvas around that item (loads
- *    visually similar pieces) and tints the page background to the
- *    garment's catalog color.
- *  - Drag → pans the canvas; never triggers a recluster.
+ * Click behavior:
+ *  - Single click/tap a tile → reclusters the canvas around that item
+ *    (loads visually similar pieces) and tints the background to its color.
+ *  - Double click/tap the same tile → zooms it to the centerpiece position
+ *    and drops down its info sheet (view / buy / save).
+ *  - Drag → pans the canvas; never triggers either click action.
  */
 
 const CELL = 44; // layout grid unit, px
@@ -58,6 +69,12 @@ function hash01(id: string, salt = 0): number {
     h = Math.imul(h, 16777619);
   }
   return ((h >>> 0) % 1000) / 1000;
+}
+
+/** A placeholder "item" purely for skeleton layout — never rendered as a
+ *  real tile, never clickable, carries no catalog data. */
+function skeletonItem(id: string): SearchResult {
+  return { item_id: id, title: "", score: 0 } as SearchResult;
 }
 
 /**
@@ -120,6 +137,26 @@ function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[]
   return tiles;
 }
 
+/** Pulsing placeholder tile — same shape/positioning as a real tile, no
+ *  image, no click handlers. */
+function SkeletonTile({ tile, index }: { tile: Tile; index: number }) {
+  return (
+    <motion.div
+      aria-hidden
+      animate={{ opacity: [0.35, 0.6, 0.35] }}
+      transition={{ duration: 1.3, delay: index * 0.03, repeat: Infinity, repeatType: "reverse" }}
+      style={{
+        position: "absolute",
+        left: tile.x,
+        top: tile.y,
+        width: tile.w,
+        height: tile.h,
+        background: "var(--surface-2)",
+      }}
+    />
+  );
+}
+
 const BROWSE_SLOTS = ["top", "bottom", "full_body", "footwear"] as const;
 
 export function CanvasExplorer() {
@@ -128,9 +165,12 @@ export function CanvasExplorer() {
   const [items, setItems] = useState<SearchResult[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0); // keys re-cluster animations
   const [bgColor, setBgColor] = useState<string | null>(null);
+  const [detailItem, setDetailItem] = useState<SearchResult | null>(null);
+  const [navCollapsed, setNavCollapsed] = useState(false);
 
   // Infinite browse (default view only — a recluster around a selection is
   // a fixed similar-items set, not paginated).
@@ -138,6 +178,18 @@ export function CanvasExplorer() {
   const offsetRef = useRef(0);
   const hasMoreRef = useRef(true);
   const loadingMoreRef = useRef(false);
+
+  // Single vs. double click arbitration, per the current pointer sequence.
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Bottom nav auto-hide: collapse the instant panning starts, bring it
+  // back once the canvas has been still for NAV_IDLE_MS.
+  const navIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notifyActivity = useCallback(() => {
+    setNavCollapsed(true);
+    if (navIdleTimerRef.current) clearTimeout(navIdleTimerRef.current);
+    navIdleTimerRef.current = setTimeout(() => setNavCollapsed(false), NAV_IDLE_MS);
+  }, []);
 
   // Pan + zoom state live in refs; the transform is written imperatively so
   // panning/zooming never re-renders React (60fps requirement).
@@ -183,6 +235,7 @@ export function CanvasExplorer() {
     setLoading(true);
     setError(null);
     setBgColor(null);
+    setDetailItem(null);
     try {
       const api = browserApi();
       let gender: string | undefined;
@@ -222,11 +275,14 @@ export function CanvasExplorer() {
   }, [loadInitial]);
 
   // Stream in another page as the user pans toward the edge of the loaded
-  // cluster — only in the default browse, never mid-recluster.
+  // cluster — only in the default browse, never mid-recluster. Skeleton
+  // tiles already occupy the space just beyond the edge (see
+  // skeletonExtraTiles below), so this never reads as a hard wall.
   const loadMore = useCallback(async () => {
     if (selectedId !== null) return;
     if (loadingMoreRef.current || !hasMoreRef.current) return;
     loadingMoreRef.current = true;
+    setLoadingMore(true);
     try {
       const api = browserApi();
       const results = await api.search("fashion", {
@@ -248,11 +304,11 @@ export function CanvasExplorer() {
       // Silent: infinite-scroll fetches are best-effort, not a user action.
     } finally {
       loadingMoreRef.current = false;
+      setLoadingMore(false);
     }
   }, [selectedId]);
 
-  // Click a tile → cluster similar items around it, tint the background to
-  // its color. One gesture, immediate, no arbitration delay.
+  // Single click → cluster similar items around it, tint the background.
   const selectItem = useCallback(async (item: SearchResult) => {
     setSelectedId(item.item_id);
     setBgColor(colorNameToCss(item.color));
@@ -273,7 +329,37 @@ export function CanvasExplorer() {
     }
   }, []);
 
+  // Double click → zoom the tile to centerpiece size in place (no
+  // network — it's already in `items`) and drop down its info sheet.
+  const openDetail = useCallback((item: SearchResult) => {
+    setSelectedId(item.item_id);
+    setBgColor(colorNameToCss(item.color));
+    setDetailItem(item);
+  }, []);
+
+  const closeDetail = useCallback(() => {
+    setDetailItem(null);
+    setSelectedId(null);
+    setBgColor(null);
+  }, []);
+
   const tiles = useMemo(() => layoutCluster(items, selectedId), [items, selectedId]);
+
+  // Skeleton continuation for the initial load (blank canvas otherwise) and
+  // for infinite-scroll fetches (placeholders already sit past the loaded
+  // edge, so panning never hits a visible wall while the next page loads).
+  const initialSkeletonTiles = useMemo(
+    () => layoutCluster(Array.from({ length: 24 }, (_, i) => skeletonItem(`skeleton-init-${i}`)), null),
+    [],
+  );
+  const extraSkeletonTiles = useMemo(() => {
+    if (!loadingMore) return [];
+    const withPlaceholders = layoutCluster(
+      [...items, ...Array.from({ length: 10 }, (_, i) => skeletonItem(`skeleton-more-${i}`))],
+      selectedId,
+    );
+    return withPlaceholders.slice(items.length);
+  }, [loadingMore, items, selectedId]);
 
   // Content bounds clamp the pan so the cluster can never be lost off-screen.
   const bounds = useMemo(() => {
@@ -379,6 +465,7 @@ export function CanvasExplorer() {
         const ratio = (dist / pinch.current.startDist) * PINCH_ZOOM_SPEED;
         scaleRef.current = clampScale(pinch.current.startScale * ratio);
         applyPan();
+        notifyActivity();
         return;
       }
       const p = pointer.current;
@@ -392,14 +479,17 @@ export function CanvasExplorer() {
       p.lastX = e.clientX;
       p.lastY = e.clientY;
       p.lastT = now;
-      if (Math.abs(e.clientX - p.startX) + Math.abs(e.clientY - p.startY) > 8) p.moved = true;
+      if (Math.abs(e.clientX - p.startX) + Math.abs(e.clientY - p.startY) > 8) {
+        p.moved = true;
+        notifyActivity();
+      }
       pan.current.x += dx;
       pan.current.y += dy;
       clampPan();
       applyPan();
       maybeLoadMore();
     },
-    [applyPan, clampPan, maybeLoadMore],
+    [applyPan, clampPan, maybeLoadMore, notifyActivity],
   );
 
   const onPointerUp = useCallback(
@@ -436,22 +526,46 @@ export function CanvasExplorer() {
     (e: React.WheelEvent) => {
       scaleRef.current = clampScale(scaleRef.current - e.deltaY * WHEEL_ZOOM_SPEED);
       applyPan();
+      notifyActivity();
     },
-    [applyPan],
+    [applyPan, notifyActivity],
   );
 
   const wasDrag = () => pointer.current?.moved ?? false;
 
+  const onTileClick = useCallback(
+    (item: SearchResult) => {
+      if (wasDrag()) return;
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = setTimeout(() => {
+        clickTimerRef.current = null;
+        navigator.vibrate?.(8); // light tick — single action confirmed
+        void selectItem(item);
+      }, CLICK_ARBITRATION_MS);
+    },
+    [selectItem],
+  );
+
+  const onTileDoubleClick = useCallback(
+    (item: SearchResult) => {
+      if (wasDrag()) return;
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+        clickTimerRef.current = null;
+      }
+      navigator.vibrate?.([10, 30, 10]); // double pulse — zoom + info
+      openDetail(item);
+    },
+    [openDetail],
+  );
+
   return (
     <div
       role="region"
-      aria-label="Canvas explorer — drag to pan, pinch or scroll to zoom, tap an item to see similar pieces"
+      aria-label="Canvas explorer — drag to pan, pinch or scroll to zoom, click an item to see similar pieces, double-click for details"
       style={{
         position: "fixed",
         inset: 0,
-        // Above the persistent bottom nav (z-40) and top header (z-30) with
-        // a comfortable margin, below the toast layer (z-100) so save/error
-        // toasts still surface above the canvas.
         zIndex: 60,
         background: bgColor ?? "var(--bg)",
         transition: "background-color 0.45s ease",
@@ -480,6 +594,10 @@ export function CanvasExplorer() {
           willChange: "transform",
         }}
       >
+        {loading &&
+          items.length === 0 &&
+          initialSkeletonTiles.map((t, i) => <SkeletonTile key={t.item.item_id} tile={t} index={i} />)}
+
         {tiles.map((t, i) => (
           <motion.button
             key={`${generation}:${t.item.item_id}`}
@@ -493,11 +611,8 @@ export function CanvasExplorer() {
               delay: Math.min(i * 0.006, 0.12),
               ease: [0.22, 1, 0.36, 1],
             }}
-            onClick={() => {
-              if (wasDrag()) return;
-              navigator.vibrate?.(8); // light tick — confirms the tap registered
-              void selectItem(t.item);
-            }}
+            onClick={() => onTileClick(t.item)}
+            onDoubleClick={() => onTileDoubleClick(t.item)}
             style={{
               position: "absolute",
               left: t.x,
@@ -518,6 +633,7 @@ export function CanvasExplorer() {
                 src={mediaUrl(t.item.image_url, t.selected ? 800 : 400) ?? undefined}
                 alt=""
                 loading="lazy"
+                decoding="async"
                 draggable={false}
                 style={{
                   width: "100%",
@@ -529,6 +645,10 @@ export function CanvasExplorer() {
               />
             )}
           </motion.button>
+        ))}
+
+        {extraSkeletonTiles.map((t, i) => (
+          <SkeletonTile key={t.item.item_id} tile={t} index={i} />
         ))}
       </div>
 
@@ -611,30 +731,6 @@ export function CanvasExplorer() {
         </button>
       </div>
 
-      {/* Loading pulse */}
-      {loading && (
-        <div
-          aria-busy
-          style={{
-            position: "fixed",
-            bottom: "calc(2rem + env(safe-area-inset-bottom))",
-            left: "50%",
-            transform: "translateX(-50%)",
-            padding: "0.5rem 1.25rem",
-            borderRadius: 999,
-            background: "var(--surface-2)",
-            color: "var(--text-mid)",
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.6rem",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            zIndex: 46,
-          }}
-        >
-          Loading
-        </div>
-      )}
-
       {/* Error */}
       {error && !loading && (
         <div
@@ -674,6 +770,10 @@ export function CanvasExplorer() {
           </button>
         </div>
       )}
+
+      <ItemDetailSheet item={detailItem} onClose={closeDetail} />
+
+      <BottomNav collapsed={navCollapsed} />
     </div>
   );
 }

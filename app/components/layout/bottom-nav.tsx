@@ -67,19 +67,32 @@ function Tab({
   );
 }
 
-export function BottomNav() {
+interface BottomNavProps {
+  /** Collapses the pill out of view (e.g. while the host page is actively
+   *  scrolling/panning) — it reappears once this flips back to false. Every
+   *  other page renders the nav plain (defaults to always-visible). */
+  collapsed?: boolean;
+}
+
+export function BottomNav({ collapsed = false }: BottomNavProps) {
   const pathname = usePathname();
   const reduce = useReducedMotion();
 
   return (
-    <nav
+    <motion.nav
       aria-label="Primary navigation"
+      animate={
+        reduce
+          ? { opacity: collapsed ? 0 : 1 }
+          : { y: collapsed ? 96 : 0, opacity: collapsed ? 0 : 1, scale: collapsed ? 0.92 : 1 }
+      }
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       style={{
         position: "fixed",
         bottom: "calc(1.125rem + env(safe-area-inset-bottom))",
         zIndex: 40,
         left: "50%",
-        transform: "translateX(-50%)",
+        x: "-50%",
         display: "flex",
         alignItems: "center",
         gap: "0.25rem",
@@ -90,6 +103,7 @@ export function BottomNav() {
         border: "1px solid var(--rule)",
         borderRadius: 999,
         boxShadow: "var(--shadow-float)",
+        pointerEvents: collapsed ? "none" : "auto",
       }}
     >
       {LEFT_TABS.map(({ href, Icon, label }) => (
@@ -155,6 +169,6 @@ export function BottomNav() {
           reduce={reduce}
         />
       ))}
-    </nav>
+    </motion.nav>
   );
 }
