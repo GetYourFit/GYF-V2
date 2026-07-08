@@ -49,17 +49,32 @@ def _rgb_to_lab(rgb: np.ndarray) -> np.ndarray:
 
 # Upper-bound hue angles (degrees) in CIELAB hab space, calibrated against
 # representative swatches (red ~36, orange ~69, yellow ~100, green ~143,
-# blue ~300, purple ~321, pink ~353).
+# blue ~300, purple ~321, pink ~353). Each base hue maps to three names picked
+# by lightness — dark/mid/light — so the grid's background tint (driven by
+# app/lib/color-name.ts, which already has entries for all of these) actually
+# distinguishes e.g. navy from sky blue instead of calling both "blue".
 _HUE_NAMES = [
-    (50, "red"),
-    (85, "orange"),
-    (120, "yellow"),
-    (165, "green"),
-    (250, "cyan"),
-    (310, "blue"),
-    (340, "purple"),
-    (360, "pink"),
+    (50, ("maroon", "red", "coral")),
+    (85, ("rust", "orange", "peach")),
+    (120, ("mustard", "yellow", "cream")),
+    (165, ("forest", "green", "mint")),
+    (250, ("teal", "cyan", "aqua")),
+    (310, ("navy", "blue", "sky blue")),
+    (340, ("plum", "purple", "lavender")),
+    (360, ("berry", "pink", "blush")),
 ]
+
+# A mid-lightness near-neutral still carries warmth worth naming instead of
+# flattening every non-black/white neutral to "gray" (e.g. a warm mid gray
+# reads as taupe).
+_NEUTRAL_WARM_HUE_RANGE = (20, 100)  # hab degrees spanning red through yellow
+
+
+def hue_name_for_lch(hue_deg: float, chroma: float, lightness: float) -> str:
+    """Public entry point for :func:`_hue_name` — lets callers that already
+    have a stored LCh triple (e.g. the recolor pipeline) rename a color
+    without recomputing it from the source image."""
+    return _hue_name(hue_deg, chroma, lightness)
 
 
 def _hue_name(hue_deg: float, chroma: float, lightness: float) -> str:
@@ -68,10 +83,19 @@ def _hue_name(hue_deg: float, chroma: float, lightness: float) -> str:
             return "black"
         if lightness > 80:
             return "white"
-        return "gray"
-    for upper, name in _HUE_NAMES:
+        warm = _NEUTRAL_WARM_HUE_RANGE[0] <= hue_deg < _NEUTRAL_WARM_HUE_RANGE[1]
+        return "taupe" if warm else "gray"
+    for upper, (dark, mid, light) in _HUE_NAMES:
         if hue_deg < upper:
-            return name
+            # Dark threshold sits below the achromatic "black" cutoff's
+            # lightness (25) so a truly near-black chromatic color (deep navy,
+            # oxblood) still reads as its own name rather than colliding with
+            # the neutral "black" bucket above.
+            if lightness < 25:
+                return dark
+            if lightness > 70:
+                return light
+            return mid
     return "red"
 
 

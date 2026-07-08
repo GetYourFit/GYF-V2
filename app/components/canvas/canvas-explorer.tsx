@@ -270,13 +270,21 @@ export function CanvasExplorer() {
         `scale(${scaleRef.current})`;
   }, []);
 
-  const zoomBy = useCallback(
-    (delta: number) => {
-      scaleRef.current = clampScale(scaleRef.current + delta);
-      applyPan();
-    },
-    [applyPan],
-  );
+  // Rescale while keeping the plane point under `anchor` (a screen-space
+  // point, e.g. the pinch midpoint or cursor) visually fixed — otherwise
+  // zooming yanks the content away from wherever the user's fingers/cursor
+  // actually are, which is what reads as "jerky" pinch-zoom.
+  const zoomAt = useCallback((anchorX: number, anchorY: number, nextScale: number) => {
+    const clamped = clampScale(nextScale);
+    const prevScale = scaleRef.current;
+    if (clamped === prevScale) return;
+    const dx = anchorX - window.innerWidth / 2;
+    const dy = anchorY - window.innerHeight / 2;
+    const ratio = clamped / prevScale;
+    pan.current.x = dx * (1 - ratio) + pan.current.x * ratio;
+    pan.current.y = dy * (1 - ratio) + pan.current.y * ratio;
+    scaleRef.current = clamped;
+  }, []);
 
   const loadInitial = useCallback(async () => {
     setLoading(true);
@@ -428,6 +436,15 @@ export function CanvasExplorer() {
     pan.current.y = Math.min(-bounds.minY, Math.max(-bounds.maxY, pan.current.y));
   }, [bounds, selectedId]);
 
+  const zoomBy = useCallback(
+    (delta: number) => {
+      zoomAt(window.innerWidth / 2, window.innerHeight / 2, scaleRef.current + delta);
+      clampPan();
+      applyPan();
+    },
+    [applyPan, zoomAt, clampPan],
+  );
+
   // Distance from the current pan position to the nearest loaded edge, in
   // screen px (accounting for zoom) — triggers loadMore() within margin.
   const maybeLoadMore = useCallback(() => {
@@ -479,7 +496,10 @@ export function CanvasExplorer() {
         pointer.current = null;
         const pts = [...activePointers.current.values()];
         const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-        pinch.current = { startDist: dist || 1, startScale: scaleRef.current };
+        // Floor the reference distance so two fingers landing close together
+        // (common on a quick pinch start) doesn't make the zoom ratio
+        // hyper-sensitive to the first few pixels of movement.
+        pinch.current = { startDist: Math.max(dist, 40), startScale: scaleRef.current };
         return;
       }
       if (activePointers.current.size > 2) return;
@@ -509,7 +529,10 @@ export function CanvasExplorer() {
         const pts = [...activePointers.current.values()];
         const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
         const ratio = (dist / pinch.current.startDist) * PINCH_ZOOM_SPEED;
-        scaleRef.current = clampScale(pinch.current.startScale * ratio);
+        const midX = (pts[0].x + pts[1].x) / 2;
+        const midY = (pts[0].y + pts[1].y) / 2;
+        zoomAt(midX, midY, pinch.current.startScale * ratio);
+        clampPan();
         applyPan();
         notifyActivity();
         return;
@@ -535,7 +558,7 @@ export function CanvasExplorer() {
       applyPan();
       maybeLoadMore();
     },
-    [applyPan, clampPan, maybeLoadMore, notifyActivity],
+    [applyPan, clampPan, maybeLoadMore, notifyActivity, zoomAt],
   );
 
   const onPointerUp = useCallback(
@@ -570,11 +593,12 @@ export function CanvasExplorer() {
 
   const onWheel = useCallback(
     (e: React.WheelEvent) => {
-      scaleRef.current = clampScale(scaleRef.current - e.deltaY * WHEEL_ZOOM_SPEED);
+      zoomAt(e.clientX, e.clientY, scaleRef.current - e.deltaY * WHEEL_ZOOM_SPEED);
+      clampPan();
       applyPan();
       notifyActivity();
     },
-    [applyPan, notifyActivity],
+    [applyPan, clampPan, notifyActivity, zoomAt],
   );
 
   const wasDrag = () => pointer.current?.moved ?? false;
