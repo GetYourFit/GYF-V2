@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { browserApi } from "@/lib/api-client";
 import { colorNameToCss } from "@/lib/color-name";
-import { mediaUrl } from "@/lib/media";
+import { mediaSrcSet, mediaUrl } from "@/lib/media";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { ItemDetailSheet } from "@/components/explore/ItemDetailSheet";
 import type { SearchResult } from "@gyf/types";
@@ -30,6 +30,23 @@ const CLICK_ARBITRATION_MS = 260;
 
 // How long the canvas must sit still before the bottom nav floats back in.
 const NAV_IDLE_MS = 350;
+
+// The gendered-search personalization needs the profile fetch, but it's a
+// full network round trip that shouldn't gate the first paint — cap the
+// wait and fall back to an ungendered browse if it's slow. The result is
+// memoized module-wide so returning to Canvas later in the same session
+// (e.g. via the back button) never re-pays this round trip at all.
+const PROFILE_WAIT_MS = 500;
+let genderPromise: Promise<string | undefined> | null = null;
+function getGender(api: ReturnType<typeof browserApi>): Promise<string | undefined> {
+  if (!genderPromise) {
+    genderPromise = api
+      .getProfile()
+      .then((p) => (p.gender && p.gender !== "unknown" ? p.gender : undefined))
+      .catch(() => undefined);
+  }
+  return genderPromise;
+}
 
 /*
  * Canvas Explorer — Cosmos-style infinite cluster view (Ref2).
@@ -137,6 +154,37 @@ function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[]
   return tiles;
 }
 
+/** A tile's image, faded in on load rather than popping in the instant the
+ *  browser decodes it — reads as smoother even though load time is the same.
+ *  `eager` (first screenful) skips lazy-loading and gets loading priority so
+ *  the initial grid paints tiles instead of sitting on placeholders. */
+function TileImage({ src, srcSet, eager }: { src: string; srcSet?: string; eager: boolean }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <img
+      src={src}
+      srcSet={srcSet}
+      sizes={srcSet ? "(min-width: 0px) 50vw" : undefined}
+      alt=""
+      loading={eager ? "eager" : "lazy"}
+      // @ts-expect-error -- fetchPriority isn't yet in the React DOM types we build against.
+      fetchPriority={eager ? "high" : "auto"}
+      decoding="async"
+      draggable={false}
+      onLoad={() => setLoaded(true)}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        display: "block",
+        pointerEvents: "none",
+        opacity: loaded ? 1 : 0,
+        transition: "opacity 0.25s ease",
+      }}
+    />
+  );
+}
+
 /** Pulsing placeholder tile — same shape/positioning as a real tile, no
  *  image, no click handlers. */
 function SkeletonTile({ tile, index }: { tile: Tile; index: number }) {
@@ -238,13 +286,12 @@ export function CanvasExplorer() {
     setDetailItem(null);
     try {
       const api = browserApi();
-      let gender: string | undefined;
-      try {
-        const p = await api.getProfile();
-        gender = p.gender && p.gender !== "unknown" ? p.gender : undefined;
-      } catch {
-        /* anonymous browse is fine */
-      }
+      // Race the (possibly cached) profile lookup against a short timeout so
+      // a slow /profile call never delays the first tiles painting.
+      const gender = await Promise.race([
+        getGender(api),
+        new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), PROFILE_WAIT_MS)),
+      ]);
       genderRef.current = gender;
       // One embed, one round trip: the server interleaves all slots itself
       // (was N separate searches, each re-embedding the same query text).
@@ -628,22 +675,19 @@ export function CanvasExplorer() {
               WebkitTapHighlightColor: "transparent",
             }}
           >
-            {t.item.image_url && (
-              <img
-                src={mediaUrl(t.item.image_url, t.selected ? 800 : 400) ?? undefined}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable={false}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  display: "block",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
+            {t.item.image_url &&
+              (() => {
+                const width = t.selected ? 800 : 400;
+                const src = mediaUrl(t.item.image_url, width);
+                if (!src) return null;
+                return (
+                  <TileImage
+                    src={src}
+                    srcSet={mediaSrcSet(t.item.image_url, width)}
+                    eager={i < 12}
+                  />
+                );
+              })()}
           </motion.button>
         ))}
 
@@ -656,7 +700,11 @@ export function CanvasExplorer() {
       <button
         type="button"
         aria-label="Back"
-        onClick={() => (selectedId ? void loadInitial() : router.back())}
+        onClick={() => {
+          navigator.vibrate?.(8);
+          if (selectedId) void loadInitial();
+          else router.back();
+        }}
         style={{
           position: "fixed",
           top: "calc(1rem + env(safe-area-inset-top))",
@@ -695,7 +743,10 @@ export function CanvasExplorer() {
         <button
           type="button"
           aria-label="Zoom in"
-          onClick={() => zoomBy(BUTTON_ZOOM_STEP)}
+          onClick={() => {
+            navigator.vibrate?.(6);
+            zoomBy(BUTTON_ZOOM_STEP);
+          }}
           style={{
             width: 44,
             height: 44,
@@ -714,7 +765,10 @@ export function CanvasExplorer() {
         <button
           type="button"
           aria-label="Zoom out"
-          onClick={() => zoomBy(-BUTTON_ZOOM_STEP)}
+          onClick={() => {
+            navigator.vibrate?.(6);
+            zoomBy(-BUTTON_ZOOM_STEP);
+          }}
           style={{
             width: 44,
             height: 44,
