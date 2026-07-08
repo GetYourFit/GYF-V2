@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { TopMenu } from "@/components/layout/top-menu";
 import { APP_SCROLL_ID } from "@/lib/scroll-container";
@@ -8,6 +11,12 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  // Explore renders its own TopMenu inline in the search bar (in place of
+  // the canvas-open button, which moved inside the search pill) — the
+  // floating copy here would just duplicate it on that one page.
+  const pathname = usePathname();
+  const hideFloatingMenu = pathname === "/explore";
+
   return (
     <div
       style={{
@@ -26,16 +35,18 @@ export function AppShell({ children }: AppShellProps) {
       {/* No top brand header/bar — just the menu button, floating over the
           content like the canvas back/zoom controls, so it survives without
           claiming a dedicated header strip. */}
-      <div
-        style={{
-          position: "fixed",
-          top: "calc(0.75rem + env(safe-area-inset-top))",
-          right: "1rem",
-          zIndex: 30,
-        }}
-      >
-        <TopMenu />
-      </div>
+      {!hideFloatingMenu && (
+        <div
+          style={{
+            position: "fixed",
+            top: "calc(0.75rem + env(safe-area-inset-top))",
+            right: "1rem",
+            zIndex: 30,
+          }}
+        >
+          <TopMenu />
+        </div>
+      )}
 
       <main
         id={APP_SCROLL_ID}

@@ -10,6 +10,8 @@ import type { CatalogFacets } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import { getScrollContainer } from "@/lib/scroll-container";
 import { UI_COLORS } from "@/lib/ui-colors";
+import { currencySymbol } from "@/lib/format";
+import { TopMenu } from "@/components/layout/top-menu";
 
 // Flower-cluster icon (Ref3, top-left) for the canvas explorer entry point —
 // five petals slowly orbiting the center, still under reduced motion.
@@ -129,6 +131,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   }, [reduce]);
   const placeholder = SEARCH_HINTS[hintIndex];
   const [facets, setFacets] = useState<CatalogFacets | null>(null);
+  const [currency, setCurrency] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const filtersRef = useRef(filters);
   const onChangeRef = useRef(onChange);
@@ -184,6 +187,24 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       })
       .catch((err) => {
         console.error("[FilterBar] facets fetch failed", err);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Budget filter reflects whatever currency the user set on their profile
+  // (budget_range.currency) rather than a hardcoded symbol — anonymous
+  // browsing (no profile) just keeps the USD default.
+  useEffect(() => {
+    let active = true;
+    browserApi()
+      .getProfile()
+      .then((p) => {
+        if (active) setCurrency(p.budget_range?.currency ?? null);
+      })
+      .catch(() => {
+        /* anonymous browse: default currency is fine */
       });
     return () => {
       active = false;
@@ -264,7 +285,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 border: `1.5px solid ${focused ? "var(--secondary)" : "var(--border)"}`,
                 outline: "none",
                 borderRadius: "999px",
-                padding: "0.75rem 2.5rem 0.75rem 3rem",
+                padding: filters.q ? "0.75rem 4.75rem 0.75rem 3rem" : "0.75rem 3rem",
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                 fontSize: "0.9375rem",
                 color: "var(--text)",
@@ -281,7 +302,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 onClick={() => set("q", "")}
                 style={{
                   position: "absolute",
-                  right: "0.875rem",
+                  right: "2.75rem",
                   background: "none",
                   border: "none",
                   color: "var(--text-faint)",
@@ -294,27 +315,42 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 <X size={14} aria-hidden />
               </button>
             )}
+
+            {/* Canvas explorer — pan the whole collection (Ref1/Ref2), now
+              living inside the search pill instead of its own circle. */}
+            <Link
+              href="/canvas"
+              aria-label="Open canvas explorer"
+              style={{
+                position: "absolute",
+                right: "0.625rem",
+                width: 32,
+                height: 32,
+                flexShrink: 0,
+                borderRadius: "50%",
+                color: "var(--text)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <CanvasFlowerIcon reduce={reduce} />
+            </Link>
           </div>
 
-          {/* Canvas explorer — pan the whole collection (Ref1/Ref2) */}
-          <Link
-            href="/canvas"
-            aria-label="Open canvas explorer"
+          {/* 3-dot menu — takes the outer slot the canvas button vacated */}
+          <div
             style={{
               width: 44,
               height: 44,
               flexShrink: 0,
-              borderRadius: "50%",
-              background: "var(--surface-2)",
-              border: "1.5px solid var(--border)",
-              color: "var(--text)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <CanvasFlowerIcon reduce={reduce} />
-          </Link>
+            <TopMenu />
+          </div>
         </div>
 
         {/* Collapse toggle — only appears once stuck to the top, letting the
@@ -556,7 +592,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                     inputMode="numeric"
                     aria-label="Maximum price"
                     placeholder={
-                      facets?.price_max ? `Max £${Math.ceil(facets.price_max)}` : "Max price"
+                      facets?.price_max
+                        ? `Max ${currencySymbol(currency)}${Math.ceil(facets.price_max)}`
+                        : "Max price"
                     }
                     min={0}
                     max={facets?.price_max ?? undefined}

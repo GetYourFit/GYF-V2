@@ -15,3 +15,10 @@ export function formatPrice(price?: number | null, currency?: string | null): st
     return `${currency ?? "$"}${Math.round(price)}`;
   }
 }
+
+/** Bare symbol for a currency code, for spots that need just the glyph
+ *  (input placeholders, prefixes) rather than a fully formatted amount. */
+const CURRENCY_SYMBOLS: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", INR: "₹" };
+export function currencySymbol(currency?: string | null): string {
+  return CURRENCY_SYMBOLS[currency ?? "USD"] ?? currency ?? "$";
+}
