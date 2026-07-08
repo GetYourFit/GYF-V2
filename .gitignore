@@ -51,8 +51,8 @@ crash.log
 *.ckpt
 *.pt
 *.safetensors
-data/
-models/
+/data/
+/models/
 .cache/
 .tools/
 
