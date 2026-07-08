@@ -345,11 +345,14 @@ export function CanvasExplorer() {
     (item: SearchResult) => {
       pressFiredLongRef.current = false;
       clearPressTimer();
+      // Immediate light tick on every touch/press-down — confirms the tap
+      // registered before we know yet whether it's a tap, double-tap, or hold.
+      navigator.vibrate?.(4);
       pressTimerRef.current = setTimeout(() => {
         pressTimerRef.current = null;
         if (pointer.current?.moved) return;
         pressFiredLongRef.current = true;
-        navigator.vibrate?.(10);
+        navigator.vibrate?.(15); // longer, single pulse = "saved"
         toggleSave(item);
       }, LONG_PRESS_MS);
     },
@@ -360,10 +363,17 @@ export function CanvasExplorer() {
     clearPressTimer();
   }, [clearPressTimer]);
 
-  // Single tap → open the info/buy sheet (deferred, cancellable by a second
-  // tap) and tint the page background to the garment's color. Double tap on
-  // the same tile within DOUBLE_TAP_MS → recluster around it. A long press
-  // that already fired is not also a click.
+  /*
+   * Tile click reference — how the three gestures are told apart:
+   *  - Single click/tap  → open that item's info + buy sheet, tint the
+   *    canvas background to the garment's color.
+   *  - Double click/tap (same tile, within 300ms) → recluster the canvas
+   *    around that item, showing visually similar pieces.
+   *  - Press and hold (500ms, no drag) → save/unsave the item.
+   *  - Drag on a tile (or anywhere on the canvas) → pans the canvas; a
+   *    drag never triggers any of the above, and a long-press is cancelled
+   *    the moment it turns into a drag.
+   */
   const onTileTap = useCallback(
     (item: SearchResult) => {
       if (pressFiredLongRef.current) {
@@ -378,12 +388,14 @@ export function CanvasExplorer() {
           clearTimeout(clickTimerRef.current);
           clickTimerRef.current = null;
         }
+        navigator.vibrate?.([8, 40, 8]); // double pulse = recluster
         void selectItem(item);
         return;
       }
       lastTapRef.current = { id: item.item_id, time: now };
       clickTimerRef.current = setTimeout(() => {
         clickTimerRef.current = null;
+        navigator.vibrate?.(8); // single short pulse = opening info
         setDetailItem(item);
         setBgColor(colorNameToCss(item.color));
       }, DOUBLE_TAP_MS);
@@ -609,6 +621,7 @@ export function CanvasExplorer() {
             aria-label={t.item.title}
             initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
+            whileTap={reduce ? undefined : { scale: 0.94 }}
             transition={{
               duration: 0.35,
               delay: Math.min(i * 0.018, 0.5),
