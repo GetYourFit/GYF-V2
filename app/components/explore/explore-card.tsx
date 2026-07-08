@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 
 import type { SearchResult } from "@gyf/types";
+import { formatPrice } from "@/lib/format";
 import { mediaSrcSet, mediaUrl } from "@/lib/media";
 
 interface ExploreCardProps {
@@ -12,19 +13,6 @@ interface ExploreCardProps {
   saved: boolean;
   onSave: (item: SearchResult) => void;
   onSelect?: (item: SearchResult) => void;
-}
-
-function formatPrice(price?: number | null, currency?: string | null): string | null {
-  if (price == null) return null;
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currency ?? "USD",
-      maximumFractionDigits: 0,
-    }).format(price);
-  } catch {
-    return `${currency ?? "$"}${Math.round(price)}`;
-  }
 }
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];

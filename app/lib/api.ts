@@ -13,6 +13,7 @@ import type {
   FeedbackRequest,
   OutfitItem,
   OutfitRecommendation,
+  ModelRegistryStatus,
   Post,
   PostInput,
   Profile,
@@ -271,6 +272,12 @@ export class GyfApi {
   /** What is live, experimental (beta/shadow), degraded, or planned. Public. */
   systemStatus(): Promise<SystemStatus> {
     return this.request<SystemStatus>("GET", "/system/status");
+  }
+
+  /** Operator view: every model, its lane, and whether it may serve — the same
+   *  verdict the CI license gate enforces. Public (names/licenses only). */
+  systemModels(): Promise<ModelRegistryStatus> {
+    return this.request<ModelRegistryStatus>("GET", "/system/models");
   }
 
   // --- Social (shared looks) ---

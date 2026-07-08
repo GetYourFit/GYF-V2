@@ -36,6 +36,10 @@ export type SaveOutfitRequest = components["schemas"]["SaveOutfitRequest"];
 export type SystemStatus = components["schemas"]["SystemStatus"];
 export type Capability = components["schemas"]["Capability"];
 
+/** Operator surface (M8.5): per-model lane + serve-eligibility from the registry. */
+export type ModelRegistryStatus = components["schemas"]["ModelRegistryStatus"];
+export type ModelStatus = components["schemas"]["ModelStatus"];
+
 /** Interaction actions captured as the behavioral event spine. */
 export const INTERACTION_ACTIONS = [
   "view",
@@ -64,10 +68,4 @@ export interface InteractionEvent {
   weight?: number;
   /** ISO-8601 timestamp. */
   ts: string;
-}
-
-export type HealthStatus = "ok" | "degraded";
-export interface HealthResponse {
-  status: HealthStatus;
-  service: string;
 }

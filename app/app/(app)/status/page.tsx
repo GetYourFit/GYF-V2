@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { PageContainer } from "@/components/layout/page-container";
 import { browserApi } from "@/lib/api-client";
-import type { SystemStatus } from "@gyf/types";
+import type { ModelRegistryStatus, SystemStatus } from "@gyf/types";
 
 const STATE_STYLE: Record<string, { label: string; color: string; bg: string }> = {
   live: { label: "Live", color: "#1c6b3c", bg: "rgba(28, 107, 60, 0.10)" },
@@ -30,12 +30,14 @@ const CAPABILITY_LABEL: Record<string, string> = {
 
 export default function StatusPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [models, setModels] = useState<ModelRegistryStatus | null>(null);
   const [failed, setFailed] = useState(false);
   const reduce = useReducedMotion();
 
   useEffect(() => {
     let cancelled = false;
-    browserApi()
+    const api = browserApi();
+    api
       .systemStatus()
       .then((s) => {
         if (!cancelled) setStatus(s);
@@ -43,6 +45,13 @@ export default function StatusPage() {
       .catch(() => {
         if (!cancelled) setFailed(true);
       });
+    // Operator model view is best-effort: its absence never fails the page.
+    api
+      .systemModels()
+      .then((m) => {
+        if (!cancelled) setModels(m);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -153,6 +162,89 @@ export default function StatusPage() {
           </p>
         </>
       )}
+
+      {models?.available && models.models.length > 0 && <ModelLanes models={models.models} />}
     </PageContainer>
+  );
+}
+
+/** Operator surface: every model behind a capability port, its lane, and — when
+ *  it can't serve — the honest reason it's held back. Same verdict as the CI
+ *  license gate, so this can never disagree with the build. */
+function ModelLanes({ models }: { models: ModelRegistryStatus["models"] }) {
+  const production = models.filter((m) => m.lane === "production");
+  const research = models.filter((m) => m.lane !== "production");
+
+  const row = (m: ModelRegistryStatus["models"][number]) => (
+    <li
+      key={m.name}
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        gap: "0.75rem",
+        padding: "0.75rem 0",
+        borderBottom: "1px solid var(--rule)",
+      }}
+    >
+      <span
+        style={{
+          fontSize: "0.6rem",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          color: m.servable ? "#1c6b3c" : "var(--text-faint)",
+          background: m.servable ? "rgba(28, 107, 60, 0.10)" : "rgba(154, 148, 144, 0.12)",
+          borderRadius: "999px",
+          padding: "0.25rem 0.6rem",
+          flexShrink: 0,
+          minWidth: "4.5rem",
+          textAlign: "center",
+        }}
+      >
+        {m.servable ? "Serving" : "Held"}
+      </span>
+      <span style={{ display: "flex", flexDirection: "column", gap: "0.15rem", minWidth: 0 }}>
+        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text)" }}>
+          {m.name}{" "}
+          <span style={{ fontWeight: 400, color: "var(--text-faint)" }}>· {m.capability}</span>
+        </span>
+        <span style={{ fontSize: "0.78rem", color: "var(--text-mid)", lineHeight: 1.5 }}>
+          {m.provider} · {m.license}
+          {m.blockers.length > 0 && ` — held: ${m.blockers.join("; ")}`}
+        </span>
+      </span>
+    </li>
+  );
+
+  return (
+    <section style={{ marginTop: "2.5rem" }}>
+      <h2
+        style={{
+          fontSize: "0.7rem",
+          fontWeight: 600,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "var(--secondary)",
+          marginBottom: "0.5rem",
+        }}
+      >
+        Models &amp; lanes
+      </h2>
+      <p
+        style={{
+          fontSize: "0.8rem",
+          color: "var(--text-mid)",
+          lineHeight: 1.6,
+          marginBottom: "1rem",
+        }}
+      >
+        Every model GYF can load and whether it may serve — the same license/lane gate enforced in
+        CI. Research-lane models are offline north-stars, never in the live path.
+      </p>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        {production.map(row)}
+        {research.map(row)}
+      </ul>
+    </section>
   );
 }

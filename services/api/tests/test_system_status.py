@@ -92,3 +92,38 @@ def test_affiliate_detail_reports_full_price_coverage():
     detail = _get(stats=stats).json()["capabilities"]["affiliate_commerce"]["detail"]
     assert "full catalog" in detail
     assert "pending" not in detail
+
+
+# ── Operator model-status surface (M8.5) ─────────────────────────────────────
+
+
+def test_model_registry_status_mirrors_the_ci_gate():
+    """The operator view must agree with the real registry + CI license gate."""
+    resp = TestClient(app).get("/system/models")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["available"] is True  # registry is bundled in the repo/test tree
+    models = {m["name"]: m for m in body["models"]}
+    assert models, "registry should surface at least the production encoder"
+
+    # The promoted production encoder is servable; research-lane models are not,
+    # and each reports the honest reason — identical to check_model_licenses.py.
+    prod = models["google-siglip2-base"]
+    assert prod["lane"] == "production"
+    assert prod["servable"] is True
+    assert prod["blockers"] == []
+
+    for m in body["models"]:
+        if m["lane"] == "research":
+            assert m["servable"] is False
+            assert any("not production" in b for b in m["blockers"])
+
+
+def test_model_registry_status_reports_missing_registry_honestly(monkeypatch):
+    """A minimal serving image without the registry says so, never 500s or lies."""
+    import app.routers.system as system_module
+
+    monkeypatch.setattr(system_module, "_find_registry_root", lambda: None)
+    resp = TestClient(app).get("/system/models")
+    assert resp.status_code == 200
+    assert resp.json() == {"available": False, "models": []}

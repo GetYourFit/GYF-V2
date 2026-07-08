@@ -700,6 +700,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Operator view: per-model lane + serve-eligibility (M8.5)
+         * @description Per-model lane + serve-eligibility, from the same gate CI enforces.
+         *
+         *     Research-lane models report ``servable=False`` with the honest reason
+         *     (``lane is 'research', not production``) — so an operator sees exactly what
+         *     is in the serving path, what is held back as an offline north-star, and why.
+         */
+        get: operations["model_registry_status_system_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -825,6 +849,41 @@ export interface components {
          * @enum {string}
          */
         InteractionTarget: "item" | "outfit" | "post" | "user";
+        /**
+         * ModelRegistryStatus
+         * @description Operator view of every model GYF can load and its serve-eligibility.
+         *
+         *     ``available`` is False when the registry isn't bundled in this image (a
+         *     minimal serving build) — reported honestly rather than pretended present.
+         */
+        ModelRegistryStatus: {
+            /** Available */
+            available: boolean;
+            /** Models */
+            models: components["schemas"]["ModelStatus"][];
+        };
+        /**
+         * ModelStatus
+         * @description One model behind a capability port: its lane and serve-eligibility.
+         */
+        ModelStatus: {
+            /** Name */
+            name: string;
+            /** Capability */
+            capability: string;
+            /** Provider */
+            provider: string;
+            /** Lane */
+            lane: string;
+            /** License */
+            license: string;
+            /** Servable */
+            servable: boolean;
+            /** Blockers */
+            blockers: string[];
+            /** Eval Report */
+            eval_report: string | null;
+        };
         /**
          * Outfit
          * @description A complete, explained, scored look.
@@ -1464,6 +1523,8 @@ export interface operations {
                 gender?: string | null;
                 /** @description Outfit slot: hard-filters results to that slot's garment categories (e.g. bottom = jeans/trousers/skirt/…). Null means all slots. */
                 slot?: ("top" | "bottom" | "full_body" | "outerwear" | "footwear" | "accessory") | null;
+                /** @description Comma-separated outfit slots (e.g. 'top,bottom,full_body,footwear'): one embed, one page per slot, round-robin interleaved into a single response. For multi-slot default browse — replaces N client-side search calls with one. Mutually exclusive with `slot`; `k` is the total page size, split evenly. */
+                slots?: string | null;
             };
             header?: never;
             path?: never;
@@ -2398,6 +2459,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemStatus"];
+                };
+            };
+        };
+    };
+    model_registry_status_system_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelRegistryStatus"];
                 };
             };
         };

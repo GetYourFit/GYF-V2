@@ -8,9 +8,6 @@ export const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-// Also used as display font — same family, heavy weight
-export const jakartaDisplay = jakarta;
-
 export const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -26,12 +23,3 @@ export const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   display: "swap",
 });
-
-// Legacy aliases kept so existing imports don't break
-export const playfair = jakarta;
-export const inter = jakarta;
-export const fraunces = jakarta;
-export const fragmentMono = jetbrainsMono;
-
-// Alias used in layout
-export { jakarta as display };

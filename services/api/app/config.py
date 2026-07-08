@@ -9,7 +9,6 @@ class Settings(BaseSettings):
 
     env: str = "local"
     database_url: str = "postgresql://postgres:postgres@localhost:5432/gyf"
-    redis_url: str = "redis://localhost:6379/0"
     event_broker_url: str = "localhost:9092"
     # Event sink backend: "local" (append-only JSONL) or "kafka" (Kafka/Redpanda).
     event_sink: str = "local"
@@ -139,7 +138,6 @@ class Settings(BaseSettings):
     rate_limit_feedback: int = 60
     rate_limit_search: int = 60
     rate_limit_support: int = 5
-    rate_limit_default: int = 120
 
     @property
     def cors_origins(self) -> list[str]:

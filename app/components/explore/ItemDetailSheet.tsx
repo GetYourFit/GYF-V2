@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { browserApi } from "@/lib/api-client";
+import { formatPrice } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
 import { useToast } from "@/components/ui/toast";
 import { CompatibilityPanel } from "./CompatibilityPanel";
@@ -22,19 +23,6 @@ const MONO: React.CSSProperties = {
   letterSpacing: "0.1em",
   textTransform: "uppercase",
 };
-
-function formatPrice(price?: number | null, currency?: string | null): string | null {
-  if (price == null) return null;
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currency ?? "USD",
-      maximumFractionDigits: 0,
-    }).format(price);
-  } catch {
-    return `${currency ?? "$"}${Math.round(price)}`;
-  }
-}
 
 interface Props {
   /** The selected item, or `null` when closed. Kept mounted so the sheet can

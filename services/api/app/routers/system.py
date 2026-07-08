@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 from fastapi import APIRouter, Depends
+from gyf_contracts.model_policy import is_servable, load_registry
 from pydantic import BaseModel
 
 from ..config import settings
@@ -268,10 +269,94 @@ def system_status(
     )
 
 
+# ── Operator surface: per-model lane + serve-eligibility (M8.5) ──────────────
+# The /system/status endpoint above is the *user*-facing capability report. This
+# is the *operator*-facing one the M8.5 audit flagged missing: which specific
+# models GYF can load, which lane each is in, and whether it may enter the
+# serving path — derived from models.registry.json via the SAME is_servable()
+# gate scripts/check_model_licenses.py enforces in CI, so the live view can
+# never disagree with the build gate (one source of truth, engineering-doctrine
+# D2/D5). No secrets: model names, licenses, and lanes are already public in the
+# repo. Never 500 — a missing registry is itself an honestly-reported state.
+
+
+class ModelStatus(BaseModel):
+    """One model behind a capability port: its lane and serve-eligibility."""
+
+    name: str
+    capability: str  # the port it plugs into: encoder, body_estimator, try_on, …
+    provider: str
+    lane: str  # "production" (serving path) | "research" (offline north-star)
+    license: str
+    # Passes the doctrine license+lane+eval gate (is_servable, require_eval=True) —
+    # identical verdict to the CI license gate.
+    servable: bool
+    blockers: list[str]  # why it may not serve yet; empty when servable
+    eval_report: str | None
+
+
+class ModelRegistryStatus(BaseModel):
+    """Operator view of every model GYF can load and its serve-eligibility.
+
+    ``available`` is False when the registry isn't bundled in this image (a
+    minimal serving build) — reported honestly rather than pretended present.
+    """
+
+    available: bool
+    models: list[ModelStatus]
+
+
+def _find_registry_root() -> Path | None:
+    """Locate the repo root (dir holding models.registry.json), walking up from
+    this file. None when the registry isn't bundled — reported, never guessed."""
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "models.registry.json").is_file():
+            return parent
+    return None
+
+
+@router.get(
+    "/system/models",
+    summary="Operator view: per-model lane + serve-eligibility (M8.5)",
+)
+def model_registry_status() -> ModelRegistryStatus:
+    """Per-model lane + serve-eligibility, from the same gate CI enforces.
+
+    Research-lane models report ``servable=False`` with the honest reason
+    (``lane is 'research', not production``) — so an operator sees exactly what
+    is in the serving path, what is held back as an offline north-star, and why.
+    """
+    root = _find_registry_root()
+    if root is None:
+        return ModelRegistryStatus(available=False, models=[])
+    try:
+        cards = load_registry(root / "models.registry.json")
+    except Exception:  # noqa: BLE001 — the trust surface must never 500
+        return ModelRegistryStatus(available=False, models=[])
+    models = []
+    for c in sorted(cards, key=lambda x: (x.lane.value, x.capability, x.name)):
+        ok, reasons = is_servable(c)
+        models.append(
+            ModelStatus(
+                name=c.name,
+                capability=c.capability,
+                provider=c.provider,
+                lane=c.lane.value,
+                license=c.license,
+                servable=ok,
+                blockers=reasons,
+                eval_report=c.eval_report,
+            )
+        )
+    return ModelRegistryStatus(available=True, models=models)
+
+
 __all__ = [
     "Capability",
     "CatalogHealth",
     "InMemorySystemStatsRepository",
+    "ModelRegistryStatus",
+    "ModelStatus",
     "PostgresSystemStatsRepository",
     "SystemStatsRepository",
     "SystemStatus",
