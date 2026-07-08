@@ -7,7 +7,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
-import { UI_COLORS } from "@/lib/ui-colors";
 import type { Post } from "@gyf/types";
 
 import { CreatePostSheet } from "./create-post-sheet";
@@ -167,80 +166,66 @@ export function SocialFeed() {
   return (
     <>
       <div style={{ maxWidth: "430px", margin: "0 auto", padding: "1.25rem 1rem" }}>
-        {/* Feed header */}
+        {/* Header — one row: scope tabs (Ref3 "For You / Following") on the
+            left, a single icon-only create action on the right. No separate
+            page title, no second CTA — Ref3 never doubles up a control. */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: "1.25rem",
+            marginBottom: "1.5rem",
           }}
         >
-          <h1
-            style={{
-              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: "var(--text)",
-              margin: 0,
-            }}
-          >
-            Community
-          </h1>
+          <div role="group" aria-label="Feed scope" style={{ display: "flex", gap: "1.5rem" }}>
+            {(
+              [
+                { key: "all", label: "For you" },
+                { key: "following", label: "Following" },
+              ] as const
+            ).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={scope === key}
+                onClick={() => setScope(key)}
+                style={{
+                  padding: 0,
+                  border: "none",
+                  background: "none",
+                  color: scope === key ? "var(--text)" : "var(--text-faint)",
+                  fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+                  fontSize: "1.0625rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "color 0.2s",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <motion.button
             type="button"
+            aria-label="Share a look"
             onClick={() => setSheetOpen(true)}
-            whileTap={reduceMotion ? undefined : { scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.88 }}
+            transition={{ type: "spring", stiffness: 500, damping: 28 }}
             style={{
-              padding: "0.5rem 1.125rem",
-              background: "var(--accent)",
-              color: "var(--on-accent)",
-              borderRadius: "999px",
-              border: "none",
-              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-              fontSize: "0.875rem",
-              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 36,
+              height: 36,
+              background: "none",
+              border: "1px solid var(--border)",
+              borderRadius: "50%",
+              color: "var(--text)",
               cursor: "pointer",
             }}
           >
-            Share a look
+            <Plus size={18} aria-hidden />
           </motion.button>
-        </div>
-
-        {/* Scope toggle — global feed vs. authors the user follows */}
-        <div
-          role="group"
-          aria-label="Feed scope"
-          style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem" }}
-        >
-          {(
-            [
-              { key: "all", label: "For you" },
-              { key: "following", label: "Following" },
-            ] as const
-          ).map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={scope === key}
-              onClick={() => setScope(key)}
-              style={{
-                padding: "0.4rem 1rem",
-                borderRadius: "999px",
-                border: `1px solid ${scope === key ? UI_COLORS.social : "var(--border)"}`,
-                background: scope === key ? UI_COLORS.social : "transparent",
-                color: scope === key ? "var(--bg)" : "var(--text-mid)",
-                fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-                fontSize: "0.8125rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-            >
-              {label}
-            </button>
-          ))}
         </div>
 
         {loading && (
@@ -412,40 +397,6 @@ export function SocialFeed() {
           </ul>
         )}
       </div>
-
-      {/* FAB — create post. Offset clears the bottom nav + iOS safe area. */}
-      <motion.button
-        type="button"
-        aria-label="Share a look"
-        onClick={() => setSheetOpen(true)}
-        initial={reduceMotion ? false : { scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={
-          reduceMotion
-            ? { duration: 0.2 }
-            : { type: "spring", stiffness: 380, damping: 26, delay: 0.35 }
-        }
-        whileTap={reduceMotion ? undefined : { scale: 0.88 }}
-        style={{
-          position: "fixed",
-          bottom: "calc(5.5rem + env(safe-area-inset-bottom))",
-          right: "1.25rem",
-          zIndex: 30,
-          display: "flex",
-          width: 52,
-          height: 52,
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--accent)",
-          color: "var(--on-accent)",
-          borderRadius: "999px",
-          border: "none",
-          boxShadow: "0 4px 20px rgba(255,255,255,0.40)",
-          cursor: "pointer",
-        }}
-      >
-        <Plus size={22} aria-hidden />
-      </motion.button>
 
       <CreatePostSheet
         open={sheetOpen}

@@ -193,12 +193,14 @@ function UserHero({
   return (
     <div
       style={{
-        background: "linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%)",
-        padding: "2.5rem 1.5rem 1.5rem",
+        // Flat near-black, no gradient — the Cosmos reference (Ref1-4) never
+        // decorates a hero panel; negative space and typography carry it.
+        background: "var(--bg)",
+        padding: "3rem 1.5rem 1.5rem",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "1rem",
+        gap: "1.125rem",
       }}
     >
       {/* Avatar — tap to upload/replace a profile picture; the same photo
@@ -322,8 +324,8 @@ function UserHero({
             <span
               key={`intent-${chip}`}
               style={{
-                background: "var(--border)",
-                color: "#d4607a",
+                background: "var(--text)",
+                color: "var(--on-accent)",
                 borderRadius: "999px",
                 padding: "0.25rem 0.875rem",
                 fontFamily: "var(--font-body)",
@@ -477,21 +479,11 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
     gap: "0.375rem",
     background: "var(--bg)",
     padding: "1rem",
-    transition: "background 0.2s",
     textDecoration: "none",
   };
 
   return href ? (
-    <Link
-      href={href}
-      style={cellStyle}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.background = "var(--bg)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.background = "var(--bg)";
-      }}
-    >
+    <Link href={href} style={cellStyle}>
       {inner}
     </Link>
   ) : (
@@ -753,17 +745,6 @@ function AccountLink() {
           background: "var(--bg)",
           padding: "1.25rem",
           textDecoration: "none",
-          transition: "background 0.2s, border-color 0.2s",
-        }}
-        onMouseEnter={(e) => {
-          const el = e.currentTarget as HTMLAnchorElement;
-          el.style.background = "var(--bg)";
-          el.style.borderColor = "var(--border)";
-        }}
-        onMouseLeave={(e) => {
-          const el = e.currentTarget as HTMLAnchorElement;
-          el.style.background = "var(--bg)";
-          el.style.borderColor = "var(--border)";
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
