@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, X, SlidersHorizontal, ChevronDown, Sparkles } from "lucide-react";
+import { Search, X, SlidersHorizontal, ChevronDown, Grip } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
@@ -286,7 +286,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               justifyContent: "center",
             }}
           >
-            <Sparkles size={18} aria-hidden />
+            <Grip size={18} aria-hidden />
           </Link>
         </div>
 

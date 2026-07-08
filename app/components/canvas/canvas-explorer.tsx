@@ -260,7 +260,10 @@ export function CanvasExplorer() {
     setError(null);
     pan.current = { x: 0, y: 0 }; // recenter on the selection
     try {
-      const similar = await browserApi().search(item.title, { k: 48 });
+      // 24, not 48: half the payload and half the tiles to lay out/paint —
+      // a recluster should feel instant, and 24 similar pieces is already
+      // plenty to fill the screen.
+      const similar = await browserApi().search(item.title, { k: 24 });
       setItems([item, ...similar.filter((s) => s.item_id !== item.item_id)]);
       setGeneration((g) => g + 1);
     } catch (e) {
@@ -486,8 +489,8 @@ export function CanvasExplorer() {
             animate={{ opacity: 1, scale: 1 }}
             whileTap={reduce ? undefined : { scale: 0.96 }}
             transition={{
-              duration: 0.22,
-              delay: Math.min(i * 0.01, 0.3),
+              duration: 0.15,
+              delay: Math.min(i * 0.006, 0.12),
               ease: [0.22, 1, 0.36, 1],
             }}
             onClick={() => {
