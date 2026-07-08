@@ -1,11 +1,12 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Minus, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { browserApi } from "@/lib/api-client";
+import { colorNameToCss } from "@/lib/color-name";
 import { mediaUrl } from "@/lib/media";
 import { useToast } from "@/components/ui/toast";
 import { ItemDetailSheet } from "@/components/explore/ItemDetailSheet";
@@ -16,14 +17,29 @@ import type { SearchResult } from "@gyf/types";
 const LONG_PRESS_MS = 500;
 const DOUBLE_TAP_MS = 300;
 
+// Zoom bounds and step sizes (button click / wheel notch).
+const MIN_SCALE = 0.5;
+const MAX_SCALE = 2.5;
+const WHEEL_ZOOM_SPEED = 0.0015;
+const BUTTON_ZOOM_STEP = 0.2;
+const PINCH_ZOOM_SPEED = 1; // multiplier on the raw distance ratio
+
+// Infinite browse: fetch another page once the pan gets this close to the
+// current cluster's edge, so new tiles arrive before the user hits a wall.
+const LOAD_MORE_MARGIN = 700;
+const PAGE_SIZE = 32;
+
 /*
  * Canvas Explorer — Cosmos-style infinite cluster view (Ref1/Ref2).
  *
  * The whole catalog slice is laid out as one irregular masonry cluster on a
  * free 2D plane. The user pans in every direction (drag / swipe with
- * momentum). Tapping a tile re-clusters the canvas around that item: similar
- * items are fetched and arranged around the selected tile, which sits
- * enlarged at the center.
+ * momentum) and zooms (wheel, pinch, or the +/- buttons). In the default
+ * browse (no item selected) panning near the edge streams in another page,
+ * so the cluster reads as infinite rather than a fixed bounded grid.
+ * Single-tapping a tile opens its info/buy sheet and tints the page
+ * background to the garment's color; double-tapping reclusters the canvas
+ * around that item; a long press saves it.
  */
 
 const CELL = 44; // layout grid unit, px
@@ -51,7 +67,10 @@ function hash01(id: string, salt = 0): number {
 /**
  * Place tiles on an occupancy grid along an expanding spiral from the
  * center — the organic "cluster" arrangement of Ref1/Ref2. Tile spans vary
- * per item (2–4 columns wide, portrait-leaning heights).
+ * per item (2–4 columns wide, portrait-leaning heights). Pure function of
+ * array order: appending new items to the end never reshuffles tiles
+ * already placed for earlier items, which is what lets loadMore() grow the
+ * cluster outward without the existing layout jumping.
  */
 function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[] {
   const occupied = new Set<string>();
@@ -67,9 +86,11 @@ function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[]
       for (let iy = 0; iy < ch; iy++) occupied.add(`${cx + ix},${cy + iy}`);
   };
 
-  // Spiral of candidate anchor cells around the origin.
+  // Spiral of candidate anchor cells around the origin. Radius scales with
+  // item count so a growing (infinite-load) cluster always has room.
+  const maxRadius = Math.max(46, Math.ceil(Math.sqrt(items.length) * 6));
   const spiral: Array<[number, number]> = [[0, 0]];
-  for (let r = 1; r < 46; r++) {
+  for (let r = 1; r < maxRadius; r++) {
     for (let ix = -r; ix <= r; ix++) spiral.push([ix, -r], [ix, r]);
     for (let iy = -r + 1; iy <= r - 1; iy++) spiral.push([-r, iy], [r, iy]);
   }
@@ -116,6 +137,14 @@ export function CanvasExplorer() {
   const [generation, setGeneration] = useState(0); // keys re-cluster animations
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [detailItem, setDetailItem] = useState<SearchResult | null>(null);
+  const [bgColor, setBgColor] = useState<string | null>(null);
+
+  // Infinite browse (default view only — a recluster around a selection is
+  // a fixed similar-items set, not paginated).
+  const genderRef = useRef<string | undefined>(undefined);
+  const offsetRef = useRef(0);
+  const hasMoreRef = useRef(true);
+  const loadingMoreRef = useRef(false);
 
   // Per-tile tap arbitration: a long press (held, no drag) saves the item; a
   // double-tap on the same tile within DOUBLE_TAP_MS reclusters around it; a
@@ -126,10 +155,11 @@ export function CanvasExplorer() {
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
 
-  // Pan state lives in refs; the transform is written imperatively so panning
-  // never re-renders React (60fps requirement).
+  // Pan + zoom state live in refs; the transform is written imperatively so
+  // panning/zooming never re-renders React (60fps requirement).
   const planeRef = useRef<HTMLDivElement>(null);
   const pan = useRef({ x: 0, y: 0 });
+  const scaleRef = useRef(1);
   const pointer = useRef<{
     id: number;
     startX: number;
@@ -143,11 +173,27 @@ export function CanvasExplorer() {
   } | null>(null);
   const momentum = useRef(0);
 
+  // Active pointers (for pinch-to-zoom), keyed by pointerId.
+  const activePointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ startDist: number; startScale: number } | null>(null);
+
+  const clampScale = (s: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
+
   const applyPan = useCallback(() => {
     const el = planeRef.current;
     if (el)
-      el.style.transform = `translate3d(calc(50vw + ${pan.current.x}px), calc(50dvh + ${pan.current.y}px), 0)`;
+      el.style.transform =
+        `translate3d(calc(50vw + ${pan.current.x}px), calc(50dvh + ${pan.current.y}px), 0) ` +
+        `scale(${scaleRef.current})`;
   }, []);
+
+  const zoomBy = useCallback(
+    (delta: number) => {
+      scaleRef.current = clampScale(scaleRef.current + delta);
+      applyPan();
+    },
+    [applyPan],
+  );
 
   const loadInitial = useCallback(async () => {
     setLoading(true);
@@ -161,6 +207,7 @@ export function CanvasExplorer() {
       } catch {
         /* anonymous browse is fine */
       }
+      genderRef.current = gender;
       // One embed, one round trip: the server interleaves all slots itself
       // (was N separate searches, each re-embedding the same query text).
       const results = await api.search("fashion", {
@@ -171,6 +218,10 @@ export function CanvasExplorer() {
       setItems(results);
       setSelectedId(null);
       setGeneration((g) => g + 1);
+      offsetRef.current = results.length;
+      hasMoreRef.current = results.length === 64;
+      pan.current = { x: 0, y: 0 };
+      scaleRef.current = 1;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load the canvas.");
     } finally {
@@ -184,6 +235,36 @@ export function CanvasExplorer() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadInitial();
   }, [loadInitial]);
+
+  // Stream in another page as the user pans toward the edge of the loaded
+  // cluster — only in the default browse, never mid-recluster.
+  const loadMore = useCallback(async () => {
+    if (selectedId !== null) return;
+    if (loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
+    try {
+      const api = browserApi();
+      const results = await api.search("fashion", {
+        k: PAGE_SIZE,
+        offset: offsetRef.current,
+        slots: BROWSE_SLOTS.join(","),
+        ...(genderRef.current ? { gender: genderRef.current } : {}),
+      });
+      offsetRef.current += PAGE_SIZE;
+      hasMoreRef.current = results.length === PAGE_SIZE;
+      if (results.length > 0) {
+        setItems((prev) => {
+          const known = new Set(prev.map((it) => it.item_id));
+          const fresh = results.filter((it) => !known.has(it.item_id));
+          return fresh.length ? [...prev, ...fresh] : prev;
+        });
+      }
+    } catch {
+      // Silent: infinite-scroll fetches are best-effort, not a user action.
+    } finally {
+      loadingMoreRef.current = false;
+    }
+  }, [selectedId]);
 
   // Tap a tile → cluster similar items around it.
   const selectItem = useCallback(async (item: SearchResult) => {
@@ -280,8 +361,9 @@ export function CanvasExplorer() {
   }, [clearPressTimer]);
 
   // Single tap → open the info/buy sheet (deferred, cancellable by a second
-  // tap). Double tap on the same tile within DOUBLE_TAP_MS → recluster
-  // around it. A long press that already fired is not also a click.
+  // tap) and tint the page background to the garment's color. Double tap on
+  // the same tile within DOUBLE_TAP_MS → recluster around it. A long press
+  // that already fired is not also a click.
   const onTileTap = useCallback(
     (item: SearchResult) => {
       if (pressFiredLongRef.current) {
@@ -303,10 +385,16 @@ export function CanvasExplorer() {
       clickTimerRef.current = setTimeout(() => {
         clickTimerRef.current = null;
         setDetailItem(item);
+        setBgColor(colorNameToCss(item.color));
       }, DOUBLE_TAP_MS);
     },
     [selectItem],
   );
+
+  const closeDetail = useCallback(() => {
+    setDetailItem(null);
+    setBgColor(null);
+  }, []);
 
   const tiles = useMemo(() => layoutCluster(items, selectedId), [items, selectedId]);
 
@@ -323,13 +411,33 @@ export function CanvasExplorer() {
   }, [tiles]);
 
   const clampPan = useCallback(() => {
-    // Keep the viewport center inside the cluster bounding box.
+    // Keep the viewport center inside the cluster bounding box — except
+    // while there's more to stream in, where a hard wall would break the
+    // "infinite" feel; loadMore() below fires well before the true edge.
+    if (hasMoreRef.current && selectedId === null) return;
     pan.current.x = Math.min(-bounds.minX, Math.max(-bounds.maxX, pan.current.x));
     pan.current.y = Math.min(-bounds.minY, Math.max(-bounds.maxY, pan.current.y));
-  }, [bounds]);
+  }, [bounds, selectedId]);
+
+  // Distance from the current pan position to the nearest loaded edge, in
+  // screen px (accounting for zoom) — triggers loadMore() within margin.
+  const maybeLoadMore = useCallback(() => {
+    if (selectedId !== null || !hasMoreRef.current || loadingMoreRef.current) return;
+    const scale = scaleRef.current;
+    const distLeft = (-pan.current.x - bounds.minX) * scale;
+    const distRight = (bounds.maxX - -pan.current.x) * scale;
+    const distTop = (-pan.current.y - bounds.minY) * scale;
+    const distBottom = (bounds.maxY - -pan.current.y) * scale;
+    if (
+      Math.min(distLeft, distRight, distTop, distBottom) < LOAD_MORE_MARGIN
+    ) {
+      void loadMore();
+    }
+  }, [bounds, loadMore, selectedId]);
 
   useEffect(() => {
     applyPan(); // recenter after re-cluster
+    maybeLoadMore(); // a fresh/grown cluster may already be near its own edge
   });
 
   const stopMomentum = useCallback(() => cancelAnimationFrame(momentum.current), []);
@@ -347,15 +455,27 @@ export function CanvasExplorer() {
         pan.current.y += cvy * 16;
         clampPan();
         applyPan();
+        maybeLoadMore();
         momentum.current = requestAnimationFrame(step);
       };
       momentum.current = requestAnimationFrame(step);
     },
-    [applyPan, clampPan, reduce],
+    [applyPan, clampPan, maybeLoadMore, reduce],
   );
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activePointers.current.size === 2) {
+        // Second finger down → switch to pinch-zoom, pause single-pointer pan.
+        stopMomentum();
+        pointer.current = null;
+        const pts = [...activePointers.current.values()];
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        pinch.current = { startDist: dist || 1, startScale: scaleRef.current };
+        return;
+      }
+      if (activePointers.current.size > 2) return;
       stopMomentum();
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       pointer.current = {
@@ -375,6 +495,17 @@ export function CanvasExplorer() {
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
+      if (activePointers.current.has(e.pointerId)) {
+        activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+      if (pinch.current && activePointers.current.size === 2) {
+        const pts = [...activePointers.current.values()];
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const ratio = (dist / pinch.current.startDist) * PINCH_ZOOM_SPEED;
+        scaleRef.current = clampScale(pinch.current.startScale * ratio);
+        applyPan();
+        return;
+      }
       const p = pointer.current;
       if (!p || p.id !== e.pointerId) return;
       const dx = e.clientX - p.lastX;
@@ -391,12 +522,33 @@ export function CanvasExplorer() {
       pan.current.y += dy;
       clampPan();
       applyPan();
+      maybeLoadMore();
     },
-    [applyPan, clampPan],
+    [applyPan, clampPan, maybeLoadMore],
   );
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
+      activePointers.current.delete(e.pointerId);
+      if (activePointers.current.size < 2) pinch.current = null;
+      // Down to exactly one finger after a pinch — resume single-pointer pan
+      // from wherever that finger currently is, instead of requiring a
+      // fresh press.
+      if (activePointers.current.size === 1 && !pointer.current) {
+        const [[id, pt]] = [...activePointers.current.entries()];
+        pointer.current = {
+          id,
+          startX: pt.x,
+          startY: pt.y,
+          lastX: pt.x,
+          lastY: pt.y,
+          lastT: performance.now(),
+          vx: 0,
+          vy: 0,
+          moved: false,
+        };
+        return;
+      }
       const p = pointer.current;
       if (!p || p.id !== e.pointerId) return;
       pointer.current = null;
@@ -405,17 +557,26 @@ export function CanvasExplorer() {
     [startMomentum],
   );
 
+  const onWheel = useCallback(
+    (e: React.WheelEvent) => {
+      scaleRef.current = clampScale(scaleRef.current - e.deltaY * WHEEL_ZOOM_SPEED);
+      applyPan();
+    },
+    [applyPan],
+  );
+
   const wasDrag = () => pointer.current?.moved ?? false;
 
   return (
     <div
       role="region"
-      aria-label="Canvas explorer — drag to pan, tap an item to see similar pieces"
+      aria-label="Canvas explorer — drag to pan, pinch or scroll to zoom, tap an item to see similar pieces"
       style={{
         position: "fixed",
         inset: 0,
         zIndex: 45,
-        background: "var(--bg)",
+        background: bgColor ?? "var(--bg)",
+        transition: "background-color 0.45s ease",
         overflow: "hidden",
         touchAction: "none",
         cursor: "grab",
@@ -426,8 +587,9 @@ export function CanvasExplorer() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onWheel={onWheel}
     >
-      {/* The plane — everything on it pans together */}
+      {/* The plane — everything on it pans + zooms together */}
       <div
         ref={planeRef}
         style={{
@@ -436,7 +598,7 @@ export function CanvasExplorer() {
           left: 0,
           width: 0,
           height: 0,
-          transform: "translate3d(50vw, 50dvh, 0)",
+          transform: "translate3d(50vw, 50dvh, 0) scale(1)",
           willChange: "transform",
         }}
       >
@@ -517,6 +679,60 @@ export function CanvasExplorer() {
         <ArrowLeft size={20} aria-hidden />
       </button>
 
+      {/* Zoom controls — floating stack, bottom-right */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "calc(1rem + env(safe-area-inset-bottom))",
+          right: "1rem",
+          display: "flex",
+          flexDirection: "column",
+          zIndex: 46,
+          borderRadius: 999,
+          overflow: "hidden",
+          border: "1px solid var(--border)",
+          background: "var(--surface-high)",
+        }}
+      >
+        <button
+          type="button"
+          aria-label="Zoom in"
+          onClick={() => zoomBy(BUTTON_ZOOM_STEP)}
+          style={{
+            width: 44,
+            height: 44,
+            border: "none",
+            borderBottom: "1px solid var(--border)",
+            background: "transparent",
+            color: "var(--text)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <Plus size={18} aria-hidden />
+        </button>
+        <button
+          type="button"
+          aria-label="Zoom out"
+          onClick={() => zoomBy(-BUTTON_ZOOM_STEP)}
+          style={{
+            width: 44,
+            height: 44,
+            border: "none",
+            background: "transparent",
+            color: "var(--text)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
+        >
+          <Minus size={18} aria-hidden />
+        </button>
+      </div>
+
       {/* Loading pulse */}
       {loading && (
         <div
@@ -581,7 +797,7 @@ export function CanvasExplorer() {
         </div>
       )}
 
-      <ItemDetailSheet item={detailItem} onClose={() => setDetailItem(null)} />
+      <ItemDetailSheet item={detailItem} onClose={closeDetail} />
     </div>
   );
 }
