@@ -72,13 +72,13 @@ export function OutfitCard({
           else if (info.offset.x < -120) onDismiss();
         }}
         style={{
-          background: "#ffffff",
-          border: pick ? "1px solid rgba(212,96,122,0.45)" : "1px solid rgba(0,0,0,0.08)",
+          background: "var(--surface-2)",
+          border: pick ? "1px solid var(--text-faint)" : "1px solid var(--rule)",
           borderRadius: "20px",
           overflow: "hidden",
           cursor: "default",
           willChange: "transform",
-          boxShadow: pick ? "0 4px 24px rgba(212,96,122,0.14)" : "0 2px 16px rgba(0,0,0,0.06)",
+          boxShadow: pick ? "0 4px 24px rgba(255,255,255,0.14)" : "0 2px 16px rgba(0,0,0,0.06)",
         }}
       >
         {pick && (
@@ -143,7 +143,7 @@ export function OutfitCard({
               fontSize: "0.9rem",
               fontStyle: "italic",
               lineHeight: 1.5,
-              color: "#5c5650",
+              color: "var(--text-mid)",
               margin: 0,
               display: "-webkit-box",
               WebkitLineClamp: expanded ? undefined : 2,
@@ -179,7 +179,7 @@ export function OutfitCard({
                   style={{
                     position: "relative",
                     aspectRatio: "3/4",
-                    background: "#f4f1ec",
+                    background: "var(--surface)",
                     borderRadius: "12px",
                     overflow: "hidden",
                   }}
@@ -222,8 +222,8 @@ export function OutfitCard({
                         fontWeight: 600,
                         textTransform: "uppercase",
                         letterSpacing: "0.08em",
-                        color: "#f7f4ef",
-                        background: "rgba(28, 26, 23, 0.82)",
+                        color: "var(--surface)",
+                        background: "rgba(0,0,0,0.82)",
                         borderRadius: "999px",
                         padding: "0.2rem 0.5rem",
                       }}
@@ -250,7 +250,7 @@ export function OutfitCard({
                       fontFamily: "var(--font-body)",
                       fontSize: "0.75rem",
                       fontWeight: 600,
-                      color: "#1c1a17",
+                      color: "var(--text)",
                     }}
                   >
                     {tag}
@@ -277,8 +277,8 @@ export function OutfitCard({
                   padding: "0.875rem 1.25rem",
                   margin: "0.75rem 1.25rem 0",
                   borderRadius: "12px",
-                  background: "rgba(212,96,122,0.06)",
-                  border: "1px solid rgba(212,96,122,0.12)",
+                  background: "var(--rule)",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <p
@@ -286,7 +286,7 @@ export function OutfitCard({
                     fontFamily: "var(--font-body)",
                     fontSize: "0.8125rem",
                     lineHeight: 1.6,
-                    color: "#5c5650",
+                    color: "var(--text-mid)",
                     margin: 0,
                   }}
                 >
@@ -305,7 +305,7 @@ export function OutfitCard({
             justifyContent: "space-between",
             padding: "1rem 1.25rem",
             marginTop: "0.75rem",
-            borderTop: "1px solid rgba(0,0,0,0.06)",
+            borderTop: "1px solid var(--rule)",
           }}
         >
           {/* Expand toggle */}
@@ -322,7 +322,7 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: expanded ? "rgba(212,96,122,0.08)" : "rgba(0,0,0,0.04)",
+              background: expanded ? "var(--rule)" : "var(--rule)",
               border: "none",
               borderRadius: "50%",
               color: expanded ? "var(--secondary)" : "var(--text-faint)",
@@ -345,7 +345,7 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: saved ? "rgba(212,96,122,0.12)" : "rgba(0,0,0,0.04)",
+              background: saved ? "var(--border)" : "var(--rule)",
               border: "none",
               borderRadius: "50%",
               color: saved ? "var(--secondary)" : "var(--text-faint)",
@@ -372,7 +372,7 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: "rgba(0,0,0,0.04)",
+              background: "var(--rule)",
               border: "none",
               borderRadius: "50%",
               color: "var(--text-faint)",
@@ -396,7 +396,7 @@ export function OutfitCard({
                 justifyContent: "center",
                 width: "44px",
                 height: "44px",
-                background: "rgba(0,0,0,0.04)",
+                background: "var(--rule)",
                 borderRadius: "50%",
                 color: "var(--text-faint)",
                 textDecoration: "none",
@@ -421,7 +421,7 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: "rgba(0,0,0,0.04)",
+              background: "var(--rule)",
               border: "none",
               borderRadius: "50%",
               color: "var(--text-faint)",

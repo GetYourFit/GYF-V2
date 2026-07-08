@@ -15,7 +15,7 @@ import type { SystemStatus } from "@gyf/types";
 const STATE_STYLE: Record<string, { label: string; color: string; bg: string }> = {
   live: { label: "Live", color: "#1c6b3c", bg: "rgba(28, 107, 60, 0.10)" },
   beta: { label: "Beta", color: "#8a6d1a", bg: "rgba(138, 109, 26, 0.10)" },
-  shadow: { label: "Shadow", color: "#5c5650", bg: "rgba(92, 86, 80, 0.10)" },
+  shadow: { label: "Shadow", color: "var(--text-mid)", bg: "rgba(92, 86, 80, 0.10)" },
   degraded: { label: "Degraded", color: "#a04545", bg: "rgba(160, 69, 69, 0.10)" },
   planned: { label: "Planned", color: "var(--text-faint)", bg: "rgba(154, 148, 144, 0.12)" },
 };
@@ -73,14 +73,14 @@ export default function StatusPage() {
             fontSize: "clamp(1.75rem, 5vw, 2.5rem)",
             fontWeight: 800,
             letterSpacing: "-0.03em",
-            color: "#1c1a17",
+            color: "var(--text)",
             lineHeight: 1.1,
             marginBottom: "0.75rem",
           }}
         >
           System status
         </h1>
-        <p style={{ fontSize: "0.9rem", color: "#5c5650", lineHeight: 1.65 }}>
+        <p style={{ fontSize: "0.9rem", color: "var(--text-mid)", lineHeight: 1.65 }}>
           What&rsquo;s live, what&rsquo;s experimental, and what isn&rsquo;t built yet — reported
           from the system&rsquo;s real state, never marketing.
         </p>
@@ -106,7 +106,7 @@ export default function StatusPage() {
                     alignItems: "baseline",
                     gap: "0.75rem",
                     padding: "0.9rem 0",
-                    borderBottom: "1px solid rgba(0,0,0,0.06)",
+                    borderBottom: "1px solid var(--rule)",
                   }}
                 >
                   <span
@@ -127,10 +127,10 @@ export default function StatusPage() {
                     {style.label}
                   </span>
                   <span style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1c1a17" }}>
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--text)" }}>
                       {CAPABILITY_LABEL[key] ?? key.replace(/_/g, " ")}
                     </span>
-                    <span style={{ fontSize: "0.8rem", color: "#5c5650", lineHeight: 1.5 }}>
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-mid)", lineHeight: 1.5 }}>
                       {cap.detail}
                     </span>
                   </span>

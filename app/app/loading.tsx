@@ -10,7 +10,7 @@ export default function Loading() {
         position: "fixed",
         inset: 0,
         zIndex: 9000,
-        background: "#faf8f5",
+        background: "var(--bg)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -52,6 +52,7 @@ export default function Loading() {
           height={125}
           priority
           style={{
+                filter: "var(--logo-filter)",
             width: "160px",
             height: "auto",
           }}

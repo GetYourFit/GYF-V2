@@ -13,7 +13,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <main
       style={{
         minHeight: "100dvh",
-        background: "#faf8f5",
+        background: "var(--bg)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -38,7 +38,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           maxHeight: 420,
           borderRadius: "50%",
           background:
-            "radial-gradient(circle, rgba(176,71,96,0.14) 0%, rgba(176,71,96,0) 70%)",
+            "radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%)",
           filter: "blur(2px)",
           pointerEvents: "none",
           zIndex: 0,
@@ -58,7 +58,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           maxHeight: 380,
           borderRadius: "50%",
           background:
-            "radial-gradient(circle, rgba(240,189,143,0.20) 0%, rgba(240,189,143,0) 70%)",
+            "radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%)",
           filter: "blur(2px)",
           pointerEvents: "none",
           zIndex: 0,
@@ -140,7 +140,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <br />
           <span style={{ textTransform: "none", letterSpacing: "normal" }}>
             Contact us:{" "}
-            <a href={CONTACT_MAILTO} style={{ color: "#5c5650", textDecoration: "underline" }}>
+            <a href={CONTACT_MAILTO} style={{ color: "var(--text-mid)", textDecoration: "underline" }}>
               {CONTACT_EMAIL}
             </a>
           </span>

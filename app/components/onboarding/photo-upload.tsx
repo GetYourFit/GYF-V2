@@ -134,8 +134,8 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           justifyContent: "center",
           gap: "0.75rem",
           padding: previewUrl ? "0" : "2rem 1rem",
-          background: dragActive ? "rgba(240,189,143,0.04)" : "rgba(0,0,0,0.03)",
-          border: `1px dashed ${dragActive ? "var(--secondary)" : "rgba(0,0,0,0.12)"}`,
+          background: dragActive ? "var(--rule)" : "var(--rule)",
+          border: `1px dashed ${dragActive ? "var(--secondary)" : "var(--border)"}`,
           cursor: "pointer",
           transition: "all 0.2s",
           textAlign: "center",
@@ -152,7 +152,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           />
         ) : (
           <>
-            <UploadCloud size={28} aria-hidden style={{ color: "#444748" }} />
+            <UploadCloud size={28} aria-hidden style={{ color: "var(--text-mid)" }} />
             <span
               style={{
                 fontFamily: "var(--font-body)",
@@ -160,13 +160,13 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
                 color: "var(--text-faint)",
               }}
             >
-              <span style={{ color: "#5c5650" }}>Choose a photo</span> or drag it here
+              <span style={{ color: "var(--text-mid)" }}>Choose a photo</span> or drag it here
             </span>
             <span
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.55rem",
-                color: "#444748",
+                color: "var(--text-mid)",
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
               }}
@@ -206,7 +206,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.8125rem",
-              color: "#c0392b",
+              color: "var(--error)",
               margin: 0,
             }}
           >
@@ -272,8 +272,8 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             gap: "0.375rem",
             height: "40px",
             padding: "0 1rem",
-            background: file && !busy ? "var(--primary)" : "rgba(0,0,0,0.06)",
-            color: file && !busy ? "#faf8f5" : "var(--text-faint)",
+            background: file && !busy ? "var(--primary)" : "var(--rule)",
+            color: file && !busy ? "var(--bg)" : "var(--text-faint)",
             border: "none",
             borderRadius: "999px",
             fontFamily: "var(--font-mono)",

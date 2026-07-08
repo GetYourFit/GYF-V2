@@ -163,8 +163,8 @@ export function OutfitDetail({
               maxWidth: "390px",
               maxHeight: "92dvh",
               overflowY: "auto",
-              background: "#faf8f5",
-              borderTop: "1px solid rgba(0,0,0,0.10)",
+              background: "var(--bg)",
+              borderTop: "1px solid var(--border)",
               outline: "none",
               display: "flex",
               flexDirection: "column",
@@ -181,10 +181,10 @@ export function OutfitDetail({
                 justifyContent: "space-between",
                 gap: "1rem",
                 padding: "1rem 1.25rem",
-                background: "rgba(250,248,245,0.95)",
+                background: "var(--chrome)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
-                borderBottom: "1px solid rgba(0,0,0,0.06)",
+                borderBottom: "1px solid var(--rule)",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -238,7 +238,7 @@ export function OutfitDetail({
               style={{
                 display: "flex",
                 gap: "1px",
-                background: "rgba(0,0,0,0.04)",
+                background: "var(--rule)",
               }}
             >
               {outfit.items.map((item) => {
@@ -251,7 +251,7 @@ export function OutfitDetail({
                       flex: 1,
                       aspectRatio: "3/4",
                       overflow: "hidden",
-                      background: "#faf8f5",
+                      background: "var(--bg)",
                     }}
                   >
                     {src ? (
@@ -318,7 +318,7 @@ export function OutfitDetail({
                   fontFamily: "var(--font-body)",
                   fontSize: "0.9375rem",
                   lineHeight: 1.65,
-                  color: "#5c5650",
+                  color: "var(--text-mid)",
                   margin: 0,
                 }}
               >
@@ -334,7 +334,7 @@ export function OutfitDetail({
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
                   gap: "1px",
-                  background: "rgba(0,0,0,0.04)",
+                  background: "var(--rule)",
                 }}
               >
                 {[
@@ -344,7 +344,7 @@ export function OutfitDetail({
                   <div
                     key={label}
                     style={{
-                      background: "#ffffff",
+                      background: "var(--surface-2)",
                       padding: "0.875rem 1rem",
                       display: "flex",
                       flexDirection: "column",
@@ -367,7 +367,7 @@ export function OutfitDetail({
                         fontFamily: "var(--font-mono)",
                         fontSize: "1rem",
                         fontWeight: 600,
-                        color: "#1c1a17",
+                        color: "var(--text)",
                         letterSpacing: "0.02em",
                       }}
                     >
@@ -385,7 +385,7 @@ export function OutfitDetail({
                   padding: 0,
                   display: "flex",
                   flexDirection: "column",
-                  borderTop: "1px solid rgba(0,0,0,0.06)",
+                  borderTop: "1px solid var(--rule)",
                   paddingTop: "1rem",
                   gap: "0",
                 }}
@@ -402,7 +402,7 @@ export function OutfitDetail({
                         alignItems: "center",
                         gap: "0.75rem",
                         padding: "0.75rem 0",
-                        borderBottom: "1px solid rgba(0,0,0,0.06)",
+                        borderBottom: "1px solid var(--rule)",
                       }}
                     >
                       <div
@@ -412,7 +412,7 @@ export function OutfitDetail({
                           style={{
                             fontFamily: "var(--font-body)",
                             fontSize: "0.8125rem",
-                            color: "#1c1a17",
+                            color: "var(--text)",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
@@ -441,8 +441,8 @@ export function OutfitDetail({
                             fontWeight: 600,
                             textTransform: "uppercase",
                             letterSpacing: "0.08em",
-                            color: "#f7f4ef",
-                            background: "rgba(28, 26, 23, 0.82)",
+                            color: "var(--surface)",
+                            background: "rgba(0,0,0,0.82)",
                             borderRadius: "999px",
                             padding: "0.25rem 0.55rem",
                             flexShrink: 0,
@@ -477,7 +477,7 @@ export function OutfitDetail({
                             width: "36px",
                             height: "36px",
                             flexShrink: 0,
-                            border: "1px solid rgba(0,0,0,0.10)",
+                            border: "1px solid var(--border)",
                             color: "var(--text-faint)",
                             textDecoration: "none",
                           }}
@@ -508,10 +508,10 @@ export function OutfitDetail({
                 alignItems: "center",
                 gap: "0.5rem",
                 padding: "0.875rem 1.25rem calc(0.875rem + env(safe-area-inset-bottom))",
-                background: "rgba(250,248,245,0.95)",
+                background: "var(--chrome)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
-                borderTop: "1px solid rgba(0,0,0,0.06)",
+                borderTop: "1px solid var(--rule)",
               }}
             >
               <motion.button
@@ -527,8 +527,8 @@ export function OutfitDetail({
                   justifyContent: "center",
                   gap: "0.5rem",
                   minHeight: "48px",
-                  border: `1px solid ${saved ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.12)"}`,
-                  background: saved ? "rgba(0,0,0,0.06)" : "transparent",
+                  border: `1px solid ${saved ? "rgba(0,0,0,0.3)" : "var(--border)"}`,
+                  background: saved ? "var(--rule)" : "transparent",
                   color: saved ? "var(--secondary)" : "var(--text-faint)",
                   fontFamily: "var(--font-mono)",
                   fontSize: "0.6rem",
@@ -561,8 +561,8 @@ export function OutfitDetail({
                     justifyContent: "center",
                     gap: "0.5rem",
                     minHeight: "48px",
-                    background: "#1c1a17",
-                    color: "#faf8f5",
+                    background: "var(--text)",
+                    color: "var(--bg)",
                     fontFamily: "var(--font-mono)",
                     fontSize: "0.6rem",
                     fontWeight: 500,
@@ -630,8 +630,8 @@ function SwapButton({
           width: "36px",
           height: "36px",
           flexShrink: 0,
-          border: "1px solid rgba(0,0,0,0.10)",
-          background: open ? "rgba(212,96,122,0.08)" : "transparent",
+          border: "1px solid var(--border)",
+          background: open ? "var(--rule)" : "transparent",
           color: open ? "var(--secondary)" : "var(--text-faint)",
           cursor: "pointer",
         }}
@@ -688,8 +688,8 @@ function SwapButton({
                   flex: 1,
                   maxWidth: "96px",
                   padding: 0,
-                  border: "1px solid rgba(0,0,0,0.10)",
-                  background: "#faf8f5",
+                  border: "1px solid var(--border)",
+                  background: "var(--bg)",
                   cursor: "pointer",
                   overflow: "hidden",
                 }}
@@ -705,7 +705,7 @@ function SwapButton({
                     padding: "0.25rem 0.375rem",
                     fontFamily: "var(--font-body)",
                     fontSize: "0.625rem",
-                    color: "#1c1a17",
+                    color: "var(--text)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",

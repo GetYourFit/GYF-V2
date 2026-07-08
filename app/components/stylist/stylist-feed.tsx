@@ -258,7 +258,7 @@ export function StylistFeed() {
               fontFamily: "var(--font-body)",
               fontSize: "1.25rem",
               fontWeight: 700,
-              color: "#1c1a17",
+              color: "var(--text)",
               lineHeight: 1.25,
               marginBottom: "0.75rem",
             }}
@@ -283,8 +283,8 @@ export function StylistFeed() {
               justifyContent: "center",
               minHeight: "48px",
               padding: "0 2rem",
-              background: "#1c1a17",
-              color: "#faf8f5",
+              background: "var(--text)",
+              color: "var(--bg)",
               fontFamily: "var(--font-mono)",
               fontSize: "0.6rem",
               fontWeight: 600,
@@ -338,12 +338,12 @@ export function StylistFeed() {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#1c1a17",
+            color: "var(--text)",
             margin: 0,
           }}
         >
           Complete looks,{" "}
-          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#5c5650" }}>made for you</em>
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "var(--text-mid)" }}>made for you</em>
         </h1>
         {data && <StatusLine data={data} />}
       </motion.header>
@@ -375,7 +375,7 @@ export function StylistFeed() {
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "0.8125rem",
-                color: "#c0392b",
+                color: "var(--error)",
               }}
             >
               {error}
@@ -389,7 +389,7 @@ export function StylistFeed() {
                 alignItems: "center",
                 gap: "0.375rem",
                 background: "transparent",
-                border: "1px solid rgba(0,0,0,0.10)",
+                border: "1px solid var(--border)",
                 color: "var(--text-faint)",
                 padding: "0.375rem 0.75rem",
                 cursor: "pointer",
@@ -423,7 +423,7 @@ export function StylistFeed() {
                 fontFamily: "var(--font-body)",
                 fontSize: "1rem",
                 fontWeight: 600,
-                color: "#1c1a17",
+                color: "var(--text)",
                 marginBottom: "0.5rem",
               }}
             >
@@ -533,7 +533,7 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
             fontFamily: "var(--font-mono)",
             fontSize: "0.55rem",
             color: "var(--text-faint)",
-            border: "1px solid rgba(0,0,0,0.10)",
+            border: "1px solid var(--border)",
             padding: "0.125rem 0.5rem",
             letterSpacing: "0.06em",
             textTransform: "uppercase",
@@ -567,8 +567,8 @@ function UndoStrip({ index, delta, onUndo }: { index: number; delta: string; onU
         justifyContent: "space-between",
         minHeight: "72px",
         padding: "1rem",
-        border: "1px dashed rgba(0,0,0,0.10)",
-        background: "rgba(0,0,0,0.03)",
+        border: "1px dashed var(--border)",
+        background: "var(--rule)",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", minWidth: 0 }}>
@@ -587,7 +587,7 @@ function UndoStrip({ index, delta, onUndo }: { index: number; delta: string; onU
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.75rem",
-            color: "#5c5650",
+            color: "var(--text-mid)",
           }}
         >
           {delta}
@@ -601,7 +601,7 @@ function UndoStrip({ index, delta, onUndo }: { index: number; delta: string; onU
           border: "none",
           fontFamily: "var(--font-mono)",
           fontSize: "0.6rem",
-          color: "#5c5650",
+          color: "var(--text-mid)",
           letterSpacing: "0.06em",
           textTransform: "uppercase",
           textDecoration: "underline",
@@ -631,13 +631,13 @@ function SkeletonGrid() {
           animate={{ opacity: [0, 0.6, 0.4] }}
           transition={{ duration: 1.4, delay: i * 0.1, repeat: Infinity, repeatType: "reverse" }}
           style={{
-            border: "1px solid rgba(0,0,0,0.06)",
-            background: "rgba(0,0,0,0.03)",
+            border: "1px solid var(--rule)",
+            background: "var(--rule)",
             borderRadius: "16px",
             overflow: "hidden",
           }}
         >
-          <div style={{ aspectRatio: "16/9", background: "rgba(0,0,0,0.06)" }} />
+          <div style={{ aspectRatio: "16/9", background: "var(--rule)" }} />
           <div
             style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}
           >
@@ -645,7 +645,7 @@ function SkeletonGrid() {
               style={{
                 height: "10px",
                 width: "60%",
-                background: "rgba(0,0,0,0.06)",
+                background: "var(--rule)",
                 borderRadius: "999px",
               }}
             />
@@ -653,7 +653,7 @@ function SkeletonGrid() {
               style={{
                 height: "8px",
                 width: "40%",
-                background: "rgba(0,0,0,0.06)",
+                background: "var(--rule)",
                 borderRadius: "999px",
               }}
             />

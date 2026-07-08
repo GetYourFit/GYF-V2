@@ -31,7 +31,7 @@ export function AppIntro() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "#ffffff",
+            background: "var(--surface-2)",
           }}
         >
           <motion.div
@@ -48,6 +48,7 @@ export function AppIntro() {
               height={600}
               priority
               style={{
+                filter: "var(--logo-filter)",
                 width: "clamp(180px, 40vw, 240px)",
                 height: "auto",
                 objectFit: "contain",

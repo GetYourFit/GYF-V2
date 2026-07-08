@@ -7,7 +7,7 @@ interface GYFMarkProps {
   invert?: boolean;
 }
 
-export function GYFMark({ size = 40, className, invert = false }: GYFMarkProps) {
+export function GYFMark({ size = 40, className }: GYFMarkProps) {
   return (
     <Image
       src="/assets/logo.png"
@@ -19,7 +19,7 @@ export function GYFMark({ size = 40, className, invert = false }: GYFMarkProps) 
       style={{
         width: size,
         height: size,
-        filter: invert ? "brightness(0) invert(1)" : undefined,
+        filter: "var(--logo-filter)",
       }}
     />
   );

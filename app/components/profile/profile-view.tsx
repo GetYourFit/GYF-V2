@@ -153,7 +153,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
   return (
     <div
       style={{
-        background: "linear-gradient(135deg, #f4f1ec 0%, #faf8f5 100%)",
+        background: "linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%)",
         padding: "2.5rem 1.5rem 1.5rem",
         display: "flex",
         flexDirection: "column",
@@ -167,11 +167,11 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
           width: 88,
           height: 88,
           borderRadius: "50%",
-          background: "#edeae4",
+          background: "var(--surface-2)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          border: "3px solid #ffffff",
+          border: "3px solid var(--surface-3)",
           boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
           flexShrink: 0,
         }}
@@ -181,7 +181,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
             fontFamily: "var(--font-body)",
             fontSize: "2rem",
             fontWeight: 700,
-            color: "#5c5650",
+            color: "var(--text-mid)",
           }}
         >
           {displayName.charAt(0).toUpperCase()}
@@ -194,7 +194,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
           fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
           fontSize: "1.375rem",
           fontWeight: 700,
-          color: "#1c1a17",
+          color: "var(--text)",
           margin: 0,
           textAlign: "center",
         }}
@@ -211,7 +211,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
             fontWeight: 500,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
-            color: "#9a9490",
+            color: "var(--text-faint)",
             margin: 0,
             textAlign: "center",
           }}
@@ -235,7 +235,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
             <span
               key={`intent-${chip}`}
               style={{
-                background: "rgba(212,96,122,0.10)",
+                background: "var(--border)",
                 color: "#d4607a",
                 borderRadius: "999px",
                 padding: "0.25rem 0.875rem",
@@ -253,8 +253,8 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
             <span
               key={`identity-${chip}`}
               style={{
-                border: "1px solid rgba(0,0,0,0.12)",
-                color: "#5c5650",
+                border: "1px solid var(--border)",
+                color: "var(--text-mid)",
                 borderRadius: "999px",
                 padding: "0.25rem 0.875rem",
                 fontFamily: "var(--font-body)",
@@ -293,7 +293,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
                   transform: "translateY(-50%)",
                   width: 1,
                   height: "2rem",
-                  background: "rgba(0,0,0,0.10)",
+                  background: "var(--border)",
                 }}
               />
             )}
@@ -302,7 +302,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
                 fontFamily: "var(--font-body)",
                 fontSize: "1.25rem",
                 fontWeight: 700,
-                color: "#1c1a17",
+                color: "var(--text)",
               }}
             >
               {s.value}
@@ -334,12 +334,12 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
           width: "100%",
           maxWidth: 200,
           background: "transparent",
-          border: "1.5px solid #1c1a17",
+          border: "1.5px solid var(--text)",
           borderRadius: "999px",
           fontFamily: "var(--font-body)",
           fontSize: "0.875rem",
           fontWeight: 600,
-          color: "#1c1a17",
+          color: "var(--text)",
           textDecoration: "none",
         }}
       >
@@ -362,7 +362,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
           fontFamily: "var(--font-body)",
           fontSize: "clamp(1.5rem, 6vw, 2rem)",
           fontWeight: 800,
-          color: "#1c1a17",
+          color: "var(--text)",
           fontVariantNumeric: "tabular-nums",
           lineHeight: 1,
         }}
@@ -388,7 +388,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
     display: "flex",
     flexDirection: "column",
     gap: "0.375rem",
-    background: "#faf8f5",
+    background: "var(--bg)",
     padding: "1rem",
     transition: "background 0.2s",
     textDecoration: "none",
@@ -399,10 +399,10 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
       href={href}
       style={cellStyle}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.background = "#faf8f5";
+        (e.currentTarget as HTMLAnchorElement).style.background = "var(--bg)";
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.background = "#faf8f5";
+        (e.currentTarget as HTMLAnchorElement).style.background = "var(--bg)";
       }}
     >
       {inner}
@@ -427,7 +427,7 @@ function Stats({ summary }: { summary: ProfileSummary }) {
         display: "grid",
         gridTemplateColumns: "repeat(3, 1fr)",
         gap: "1px",
-        background: "rgba(0,0,0,0.06)",
+        background: "var(--rule)",
       }}
     >
       {items.map((item) => (
@@ -459,14 +459,14 @@ function Badges({ badges }: { badges: string[] }) {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              border: "1px solid rgba(0,0,0,0.10)",
+              border: "1px solid var(--border)",
               padding: "0.375rem 0.875rem",
               fontFamily: "var(--font-body)",
               fontSize: "0.6rem",
               fontWeight: 500,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#5c5650",
+              color: "var(--text-mid)",
             }}
           >
             {b}
@@ -486,8 +486,8 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           flexDirection: "column",
           alignItems: "flex-start",
           gap: "1.25rem",
-          border: "1px solid rgba(0,0,0,0.10)",
-          background: "#faf8f5",
+          border: "1px solid var(--border)",
+          background: "var(--bg)",
           padding: "1.5rem",
         }}
       >
@@ -497,7 +497,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
               fontFamily: "var(--font-body)",
               fontSize: "1.125rem",
               fontWeight: 700,
-              color: "#1c1a17",
+              color: "var(--text)",
               marginBottom: "0.5rem",
             }}
           >
@@ -524,8 +524,8 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
             justifyContent: "center",
             minHeight: "44px",
             padding: "0 2rem",
-            background: "var(--secondary)",
-            color: "#ffffff",
+            background: "var(--accent)",
+            color: "var(--on-accent)",
             fontFamily: "var(--font-body)",
             fontSize: "0.875rem",
             fontWeight: 600,
@@ -589,7 +589,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "1px",
-          background: "rgba(0,0,0,0.06)",
+          background: "var(--rule)",
         }}
       >
         {rows.map(([label, value]) => (
@@ -599,7 +599,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
               display: "flex",
               flexDirection: "column",
               gap: "0.375rem",
-              background: "#faf8f5",
+              background: "var(--bg)",
               padding: "1rem",
             }}
           >
@@ -619,7 +619,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "0.875rem",
-                color: "#1c1a17",
+                color: "var(--text)",
                 margin: 0,
               }}
             >
@@ -639,7 +639,7 @@ function AccountLink() {
         display: "flex",
         flexDirection: "column",
         gap: "1rem",
-        borderTop: "1px solid rgba(0,0,0,0.10)",
+        borderTop: "1px solid var(--border)",
         paddingTop: "2rem",
       }}
     >
@@ -662,21 +662,21 @@ function AccountLink() {
           alignItems: "center",
           justifyContent: "space-between",
           gap: "1rem",
-          border: "1px solid rgba(0,0,0,0.10)",
-          background: "#faf8f5",
+          border: "1px solid var(--border)",
+          background: "var(--bg)",
           padding: "1.25rem",
           textDecoration: "none",
           transition: "background 0.2s, border-color 0.2s",
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
-          el.style.background = "#faf8f5";
-          el.style.borderColor = "rgba(0,0,0,0.14)";
+          el.style.background = "var(--bg)";
+          el.style.borderColor = "var(--border)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
-          el.style.background = "#faf8f5";
-          el.style.borderColor = "rgba(0,0,0,0.10)";
+          el.style.background = "var(--bg)";
+          el.style.borderColor = "var(--border)";
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -685,7 +685,7 @@ function AccountLink() {
               fontFamily: "var(--font-body)",
               fontSize: "0.9375rem",
               fontWeight: 600,
-              color: "#1c1a17",
+              color: "var(--text)",
             }}
           >
             Privacy &amp; data
@@ -724,7 +724,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           fontFamily: "var(--font-body)",
           fontSize: "1.125rem",
           fontWeight: 700,
-          color: "#1c1a17",
+          color: "var(--text)",
           marginBottom: "0.75rem",
         }}
       >
@@ -749,9 +749,9 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           justifyContent: "center",
           minHeight: "44px",
           padding: "0 1.5rem",
-          border: "1px solid rgba(0,0,0,0.2)",
+          border: "1px solid var(--border-mid)",
           background: "transparent",
-          color: "#1c1a17",
+          color: "var(--text)",
           cursor: "pointer",
           fontFamily: "var(--font-body)",
           fontSize: "0.6rem",
@@ -774,11 +774,11 @@ function ProfileSkeleton() {
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
           gap: "1px",
-          background: "rgba(0,0,0,0.06)",
+          background: "var(--rule)",
         }}
       >
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={`stat-${i}`} style={{ height: "80px", background: "#faf8f5", opacity: 0.6 }} />
+          <div key={`stat-${i}`} style={{ height: "80px", background: "var(--bg)", opacity: 0.6 }} />
         ))}
       </div>
       <div
@@ -786,11 +786,11 @@ function ProfileSkeleton() {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "1px",
-          background: "rgba(0,0,0,0.06)",
+          background: "var(--rule)",
         }}
       >
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={`row-${i}`} style={{ height: "64px", background: "#faf8f5", opacity: 0.6 }} />
+          <div key={`row-${i}`} style={{ height: "64px", background: "var(--bg)", opacity: 0.6 }} />
         ))}
       </div>
     </div>

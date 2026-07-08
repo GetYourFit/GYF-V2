@@ -52,14 +52,14 @@ export default function ContactPage() {
             fontSize: "clamp(1.75rem, 5vw, 2.5rem)",
             fontWeight: 800,
             letterSpacing: "-0.03em",
-            color: "#1c1a17",
+            color: "var(--text)",
             lineHeight: 1.1,
             marginBottom: "0.75rem",
           }}
         >
           Contact Us
         </h1>
-        <p style={{ fontSize: "0.9rem", color: "#5c5650", lineHeight: 1.65 }}>
+        <p style={{ fontSize: "0.9rem", color: "var(--text-mid)", lineHeight: 1.65 }}>
           We&apos;d love to hear from you. Reach out and we&apos;ll get back to you within 24 hours.
         </p>
       </motion.div>
@@ -99,9 +99,9 @@ export default function ContactPage() {
               alignItems: "center",
               gap: "0.875rem",
               padding: "1rem",
-              background: "#f4f1ec",
+              background: "var(--surface)",
               borderRadius: 12,
-              border: "1px solid rgba(0,0,0,0.06)",
+              border: "1px solid var(--rule)",
             }}
           >
             <span
@@ -109,12 +109,12 @@ export default function ContactPage() {
                 width: 38,
                 height: 38,
                 borderRadius: 10,
-                background: "#ffffff",
-                border: "1px solid rgba(0,0,0,0.08)",
+                background: "var(--surface-2)",
+                border: "1px solid var(--rule)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#5c5650",
+                color: "var(--text-mid)",
                 flexShrink: 0,
               }}
             >
@@ -133,7 +133,7 @@ export default function ContactPage() {
               >
                 {label}
               </p>
-              <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "#1c1a17" }}>{value}</p>
+              <p style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--text)" }}>{value}</p>
             </div>
           </div>
         ))}
@@ -149,15 +149,15 @@ export default function ContactPage() {
           <div
             style={{
               padding: "1.5rem",
-              background: "#f4f1ec",
+              background: "var(--surface)",
               borderRadius: 14,
-              border: "1px solid rgba(0,0,0,0.06)",
+              border: "1px solid var(--rule)",
               textAlign: "center",
             }}
           >
             <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>✓</div>
-            <p style={{ fontWeight: 700, color: "#1c1a17", marginBottom: 4 }}>Message sent!</p>
-            <p style={{ fontSize: "0.85rem", color: "#5c5650" }}>
+            <p style={{ fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>Message sent!</p>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-mid)" }}>
               We&apos;ll get back to you within 24 hours.
             </p>
           </div>
@@ -175,7 +175,7 @@ export default function ContactPage() {
                     fontWeight: 600,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: "#5c5650",
+                    color: "var(--text-mid)",
                   }}
                 >
                   {field === "name" ? "Your Name" : "Email Address"}
@@ -191,18 +191,18 @@ export default function ContactPage() {
                     padding: "0 0.875rem",
                     background: "transparent",
                     border: "none",
-                    borderBottom: "1.5px solid rgba(0,0,0,0.18)",
+                    borderBottom: "1.5px solid var(--border)",
                     borderRadius: 0,
                     fontSize: "0.9375rem",
-                    color: "#1c1a17",
+                    color: "var(--text)",
                     outline: "none",
                     transition: "border-color 0.2s",
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderBottomColor = "#1c1a17";
+                    e.currentTarget.style.borderBottomColor = "var(--text)";
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderBottomColor = "rgba(0,0,0,0.18)";
+                    e.currentTarget.style.borderBottomColor = "var(--border)";
                   }}
                 />
               </div>
@@ -215,7 +215,7 @@ export default function ContactPage() {
                   fontWeight: 600,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: "#5c5650",
+                  color: "var(--text-mid)",
                 }}
               >
                 Message
@@ -230,10 +230,10 @@ export default function ContactPage() {
                   padding: "0.75rem 0",
                   background: "transparent",
                   border: "none",
-                  borderBottom: "1.5px solid rgba(0,0,0,0.18)",
+                  borderBottom: "1.5px solid var(--border)",
                   borderRadius: 0,
                   fontSize: "0.9375rem",
-                  color: "#1c1a17",
+                  color: "var(--text)",
                   outline: "none",
                   resize: "none",
                   lineHeight: 1.6,
@@ -241,10 +241,10 @@ export default function ContactPage() {
                   fontFamily: "inherit",
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderBottomColor = "#1c1a17";
+                  e.currentTarget.style.borderBottomColor = "var(--text)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderBottomColor = "rgba(0,0,0,0.18)";
+                  e.currentTarget.style.borderBottomColor = "var(--border)";
                 }}
               />
             </div>
@@ -261,8 +261,8 @@ export default function ContactPage() {
                 marginTop: "0.5rem",
                 height: 48,
                 borderRadius: 12,
-                background: "#1c1a17",
-                color: "#faf8f5",
+                background: "var(--text)",
+                color: "var(--bg)",
                 fontWeight: 700,
                 fontSize: "0.875rem",
                 letterSpacing: "0.04em",
