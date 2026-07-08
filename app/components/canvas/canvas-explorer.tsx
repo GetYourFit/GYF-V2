@@ -7,7 +7,14 @@ import { useRouter } from "next/navigation";
 
 import { browserApi } from "@/lib/api-client";
 import { mediaUrl } from "@/lib/media";
+import { useToast } from "@/components/ui/toast";
+import { ItemDetailSheet } from "@/components/explore/ItemDetailSheet";
 import type { SearchResult } from "@gyf/types";
+
+// Tile gesture timings: hold this long without moving = long-press (save);
+// two taps on the same tile within this window = double-tap (recluster).
+const LONG_PRESS_MS = 500;
+const DOUBLE_TAP_MS = 300;
 
 /*
  * Canvas Explorer — Cosmos-style infinite cluster view (Ref1/Ref2).
@@ -101,11 +108,23 @@ const BROWSE_SLOTS = ["top", "bottom", "full_body", "footwear"] as const;
 export function CanvasExplorer() {
   const router = useRouter();
   const reduce = useReducedMotion();
+  const { toast } = useToast();
   const [items, setItems] = useState<SearchResult[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0); // keys re-cluster animations
+  const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [detailItem, setDetailItem] = useState<SearchResult | null>(null);
+
+  // Per-tile tap arbitration: a long press (held, no drag) saves the item; a
+  // double-tap on the same tile within DOUBLE_TAP_MS reclusters around it; a
+  // plain single tap opens the info/buy sheet. The single-tap action is
+  // deferred by DOUBLE_TAP_MS so a following second tap can cancel it.
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressFiredLongRef = useRef(false);
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTapRef = useRef<{ id: string; time: number } | null>(null);
 
   // Pan state lives in refs; the transform is written imperatively so panning
   // never re-renders React (60fps requirement).
@@ -182,6 +201,112 @@ export function CanvasExplorer() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    browserApi()
+      .listSaved()
+      .then((rows) => {
+        if (active) setSaved(new Set(rows.map((r) => r.item_id)));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const toggleSave = useCallback(
+    (item: SearchResult) => {
+      const wasSaved = saved.has(item.item_id);
+      setSaved((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.delete(item.item_id);
+        else next.add(item.item_id);
+        return next;
+      });
+      const api = browserApi();
+      const op = wasSaved ? api.unsaveItem(item.item_id) : api.saveItem(item.item_id);
+      op.then(() => {
+        toast(
+          wasSaved
+            ? { title: "Removed from saved", variant: "info" }
+            : { title: "Saved", description: item.title, variant: "success" },
+        );
+      }).catch(() => {
+        setSaved((prev) => {
+          const next = new Set(prev);
+          if (wasSaved) next.add(item.item_id);
+          else next.delete(item.item_id);
+          return next;
+        });
+        toast({
+          title: wasSaved ? "Couldn't remove that" : "Couldn't save that",
+          description: "Please try again.",
+          variant: "error",
+        });
+      });
+    },
+    [saved, toast],
+  );
+
+  const clearPressTimer = useCallback(() => {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+  }, []);
+
+  // Held down, no drag yet → arm the long-press. If the pointer moves past
+  // the drag threshold before it fires, onPointerUp's wasDrag() check below
+  // means the eventual click is ignored anyway, but the timer itself must
+  // still be cancelled so the save doesn't fire under a pan.
+  const onTileDown = useCallback(
+    (item: SearchResult) => {
+      pressFiredLongRef.current = false;
+      clearPressTimer();
+      pressTimerRef.current = setTimeout(() => {
+        pressTimerRef.current = null;
+        if (pointer.current?.moved) return;
+        pressFiredLongRef.current = true;
+        navigator.vibrate?.(10);
+        toggleSave(item);
+      }, LONG_PRESS_MS);
+    },
+    [clearPressTimer, toggleSave],
+  );
+
+  const onTileUp = useCallback(() => {
+    clearPressTimer();
+  }, [clearPressTimer]);
+
+  // Single tap → open the info/buy sheet (deferred, cancellable by a second
+  // tap). Double tap on the same tile within DOUBLE_TAP_MS → recluster
+  // around it. A long press that already fired is not also a click.
+  const onTileTap = useCallback(
+    (item: SearchResult) => {
+      if (pressFiredLongRef.current) {
+        pressFiredLongRef.current = false;
+        return;
+      }
+      const last = lastTapRef.current;
+      const now = performance.now();
+      if (last && last.id === item.item_id && now - last.time < DOUBLE_TAP_MS) {
+        lastTapRef.current = null;
+        if (clickTimerRef.current) {
+          clearTimeout(clickTimerRef.current);
+          clickTimerRef.current = null;
+        }
+        void selectItem(item);
+        return;
+      }
+      lastTapRef.current = { id: item.item_id, time: now };
+      clickTimerRef.current = setTimeout(() => {
+        clickTimerRef.current = null;
+        setDetailItem(item);
+      }, DOUBLE_TAP_MS);
+    },
+    [selectItem],
+  );
 
   const tiles = useMemo(() => layoutCluster(items, selectedId), [items, selectedId]);
 
@@ -327,8 +452,11 @@ export function CanvasExplorer() {
               delay: Math.min(i * 0.018, 0.5),
               ease: [0.22, 1, 0.36, 1],
             }}
+            onPointerDown={() => onTileDown(t.item)}
+            onPointerUp={onTileUp}
+            onPointerCancel={onTileUp}
             onClick={() => {
-              if (!wasDrag() && !t.selected) void selectItem(t.item);
+              if (!wasDrag()) onTileTap(t.item);
             }}
             style={{
               position: "absolute",
@@ -452,6 +580,8 @@ export function CanvasExplorer() {
           </button>
         </div>
       )}
+
+      <ItemDetailSheet item={detailItem} onClose={() => setDetailItem(null)} />
     </div>
   );
 }
