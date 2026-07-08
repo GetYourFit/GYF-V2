@@ -8,14 +8,7 @@ import { useRouter } from "next/navigation";
 import { browserApi } from "@/lib/api-client";
 import { colorNameToCss } from "@/lib/color-name";
 import { mediaUrl } from "@/lib/media";
-import { useToast } from "@/components/ui/toast";
-import { ItemDetailSheet } from "@/components/explore/ItemDetailSheet";
 import type { SearchResult } from "@gyf/types";
-
-// Tile gesture timings: hold this long without moving = long-press (save);
-// two taps on the same tile within this window = double-tap (recluster).
-const LONG_PRESS_MS = 500;
-const DOUBLE_TAP_MS = 300;
 
 // Zoom bounds and step sizes (button click / wheel notch).
 const MIN_SCALE = 0.5;
@@ -30,20 +23,23 @@ const LOAD_MORE_MARGIN = 700;
 const PAGE_SIZE = 32;
 
 /*
- * Canvas Explorer — Cosmos-style infinite cluster view (Ref1/Ref2).
+ * Canvas Explorer — Cosmos-style infinite cluster view (Ref2).
  *
- * The whole catalog slice is laid out as one irregular masonry cluster on a
- * free 2D plane. The user pans in every direction (drag / swipe with
- * momentum) and zooms (wheel, pinch, or the +/- buttons). In the default
- * browse (no item selected) panning near the edge streams in another page,
- * so the cluster reads as infinite rather than a fixed bounded grid.
- * Single-tapping a tile opens its info/buy sheet and tints the page
- * background to the garment's color; double-tapping reclusters the canvas
- * around that item; a long press saves it.
+ * The whole catalog slice is laid out as one tightly-packed masonry cluster
+ * on a free 2D plane. The user pans (drag / swipe with momentum) and zooms
+ * (wheel, pinch, or the +/- buttons). In the default browse (no item
+ * selected) panning near the edge streams in another page, so the cluster
+ * reads as infinite rather than a fixed bounded grid.
+ *
+ * Click behavior — one gesture, no ambiguity:
+ *  - Click/tap a tile → reclusters the canvas around that item (loads
+ *    visually similar pieces) and tints the page background to the
+ *    garment's catalog color.
+ *  - Drag → pans the canvas; never triggers a recluster.
  */
 
 const CELL = 44; // layout grid unit, px
-const GAP = 10; // visual gap between tiles, px
+const GAP = 3; // visual gap between tiles — tight, Ref2-style packing
 
 interface Tile {
   item: SearchResult;
@@ -66,8 +62,8 @@ function hash01(id: string, salt = 0): number {
 
 /**
  * Place tiles on an occupancy grid along an expanding spiral from the
- * center — the organic "cluster" arrangement of Ref1/Ref2. Tile spans vary
- * per item (2–4 columns wide, portrait-leaning heights). Pure function of
+ * center — the organic "cluster" arrangement of Ref2. Tile spans vary per
+ * item (2–4 columns wide, portrait-leaning heights). Pure function of
  * array order: appending new items to the end never reshuffles tiles
  * already placed for earlier items, which is what lets loadMore() grow the
  * cluster outward without the existing layout jumping.
@@ -129,14 +125,11 @@ const BROWSE_SLOTS = ["top", "bottom", "full_body", "footwear"] as const;
 export function CanvasExplorer() {
   const router = useRouter();
   const reduce = useReducedMotion();
-  const { toast } = useToast();
   const [items, setItems] = useState<SearchResult[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0); // keys re-cluster animations
-  const [saved, setSaved] = useState<Set<string>>(new Set());
-  const [detailItem, setDetailItem] = useState<SearchResult | null>(null);
   const [bgColor, setBgColor] = useState<string | null>(null);
 
   // Infinite browse (default view only — a recluster around a selection is
@@ -145,15 +138,6 @@ export function CanvasExplorer() {
   const offsetRef = useRef(0);
   const hasMoreRef = useRef(true);
   const loadingMoreRef = useRef(false);
-
-  // Per-tile tap arbitration: a long press (held, no drag) saves the item; a
-  // double-tap on the same tile within DOUBLE_TAP_MS reclusters around it; a
-  // plain single tap opens the info/buy sheet. The single-tap action is
-  // deferred by DOUBLE_TAP_MS so a following second tap can cancel it.
-  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pressFiredLongRef = useRef(false);
-  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastTapRef = useRef<{ id: string; time: number } | null>(null);
 
   // Pan + zoom state live in refs; the transform is written imperatively so
   // panning/zooming never re-renders React (60fps requirement).
@@ -198,6 +182,7 @@ export function CanvasExplorer() {
   const loadInitial = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setBgColor(null);
     try {
       const api = browserApi();
       let gender: string | undefined;
@@ -266,9 +251,11 @@ export function CanvasExplorer() {
     }
   }, [selectedId]);
 
-  // Tap a tile → cluster similar items around it.
+  // Click a tile → cluster similar items around it, tint the background to
+  // its color. One gesture, immediate, no arbitration delay.
   const selectItem = useCallback(async (item: SearchResult) => {
     setSelectedId(item.item_id);
+    setBgColor(colorNameToCss(item.color));
     setLoading(true);
     setError(null);
     pan.current = { x: 0, y: 0 }; // recenter on the selection
@@ -281,131 +268,6 @@ export function CanvasExplorer() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    browserApi()
-      .listSaved()
-      .then((rows) => {
-        if (active) setSaved(new Set(rows.map((r) => r.item_id)));
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const toggleSave = useCallback(
-    (item: SearchResult) => {
-      const wasSaved = saved.has(item.item_id);
-      setSaved((prev) => {
-        const next = new Set(prev);
-        if (wasSaved) next.delete(item.item_id);
-        else next.add(item.item_id);
-        return next;
-      });
-      const api = browserApi();
-      const op = wasSaved ? api.unsaveItem(item.item_id) : api.saveItem(item.item_id);
-      op.then(() => {
-        toast(
-          wasSaved
-            ? { title: "Removed from saved", variant: "info" }
-            : { title: "Saved", description: item.title, variant: "success" },
-        );
-      }).catch(() => {
-        setSaved((prev) => {
-          const next = new Set(prev);
-          if (wasSaved) next.add(item.item_id);
-          else next.delete(item.item_id);
-          return next;
-        });
-        toast({
-          title: wasSaved ? "Couldn't remove that" : "Couldn't save that",
-          description: "Please try again.",
-          variant: "error",
-        });
-      });
-    },
-    [saved, toast],
-  );
-
-  const clearPressTimer = useCallback(() => {
-    if (pressTimerRef.current) {
-      clearTimeout(pressTimerRef.current);
-      pressTimerRef.current = null;
-    }
-  }, []);
-
-  // Held down, no drag yet → arm the long-press. If the pointer moves past
-  // the drag threshold before it fires, onPointerUp's wasDrag() check below
-  // means the eventual click is ignored anyway, but the timer itself must
-  // still be cancelled so the save doesn't fire under a pan.
-  const onTileDown = useCallback(
-    (item: SearchResult) => {
-      pressFiredLongRef.current = false;
-      clearPressTimer();
-      // Immediate light tick on every touch/press-down — confirms the tap
-      // registered before we know yet whether it's a tap, double-tap, or hold.
-      navigator.vibrate?.(4);
-      pressTimerRef.current = setTimeout(() => {
-        pressTimerRef.current = null;
-        if (pointer.current?.moved) return;
-        pressFiredLongRef.current = true;
-        navigator.vibrate?.(15); // longer, single pulse = "saved"
-        toggleSave(item);
-      }, LONG_PRESS_MS);
-    },
-    [clearPressTimer, toggleSave],
-  );
-
-  const onTileUp = useCallback(() => {
-    clearPressTimer();
-  }, [clearPressTimer]);
-
-  /*
-   * Tile click reference — how the three gestures are told apart:
-   *  - Single click/tap  → open that item's info + buy sheet, tint the
-   *    canvas background to the garment's color.
-   *  - Double click/tap (same tile, within 300ms) → recluster the canvas
-   *    around that item, showing visually similar pieces.
-   *  - Press and hold (500ms, no drag) → save/unsave the item.
-   *  - Drag on a tile (or anywhere on the canvas) → pans the canvas; a
-   *    drag never triggers any of the above, and a long-press is cancelled
-   *    the moment it turns into a drag.
-   */
-  const onTileTap = useCallback(
-    (item: SearchResult) => {
-      if (pressFiredLongRef.current) {
-        pressFiredLongRef.current = false;
-        return;
-      }
-      const last = lastTapRef.current;
-      const now = performance.now();
-      if (last && last.id === item.item_id && now - last.time < DOUBLE_TAP_MS) {
-        lastTapRef.current = null;
-        if (clickTimerRef.current) {
-          clearTimeout(clickTimerRef.current);
-          clickTimerRef.current = null;
-        }
-        navigator.vibrate?.([8, 40, 8]); // double pulse = recluster
-        void selectItem(item);
-        return;
-      }
-      lastTapRef.current = { id: item.item_id, time: now };
-      clickTimerRef.current = setTimeout(() => {
-        clickTimerRef.current = null;
-        navigator.vibrate?.(8); // single short pulse = opening info
-        setDetailItem(item);
-        setBgColor(colorNameToCss(item.color));
-      }, DOUBLE_TAP_MS);
-    },
-    [selectItem],
-  );
-
-  const closeDetail = useCallback(() => {
-    setDetailItem(null);
-    setBgColor(null);
   }, []);
 
   const tiles = useMemo(() => layoutCluster(items, selectedId), [items, selectedId]);
@@ -440,9 +302,7 @@ export function CanvasExplorer() {
     const distRight = (bounds.maxX - -pan.current.x) * scale;
     const distTop = (-pan.current.y - bounds.minY) * scale;
     const distBottom = (bounds.maxY - -pan.current.y) * scale;
-    if (
-      Math.min(distLeft, distRight, distTop, distBottom) < LOAD_MORE_MARGIN
-    ) {
+    if (Math.min(distLeft, distRight, distTop, distBottom) < LOAD_MORE_MARGIN) {
       void loadMore();
     }
   }, [bounds, loadMore, selectedId]);
@@ -622,19 +482,18 @@ export function CanvasExplorer() {
             key={`${generation}:${t.item.item_id}`}
             type="button"
             aria-label={t.item.title}
-            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            whileTap={reduce ? undefined : { scale: 0.94 }}
+            whileTap={reduce ? undefined : { scale: 0.96 }}
             transition={{
-              duration: 0.35,
-              delay: Math.min(i * 0.018, 0.5),
+              duration: 0.22,
+              delay: Math.min(i * 0.01, 0.3),
               ease: [0.22, 1, 0.36, 1],
             }}
-            onPointerDown={() => onTileDown(t.item)}
-            onPointerUp={onTileUp}
-            onPointerCancel={onTileUp}
             onClick={() => {
-              if (!wasDrag()) onTileTap(t.item);
+              if (wasDrag()) return;
+              navigator.vibrate?.(8); // light tick — confirms the tap registered
+              void selectItem(t.item);
             }}
             style={{
               position: "absolute",
@@ -644,7 +503,7 @@ export function CanvasExplorer() {
               height: t.h,
               padding: 0,
               border: t.selected ? "1.5px solid var(--border-hi)" : "none",
-              borderRadius: 10,
+              borderRadius: 0,
               overflow: "hidden",
               background: "var(--surface)",
               cursor: "pointer",
@@ -812,8 +671,6 @@ export function CanvasExplorer() {
           </button>
         </div>
       )}
-
-      <ItemDetailSheet item={detailItem} onClose={closeDetail} />
     </div>
   );
 }
