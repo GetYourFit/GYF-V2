@@ -150,10 +150,12 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           // hard-filtered page per wearable slot instead — every page shows tops,
           // bottoms, one-pieces AND footwear. The server does the embed once and
           // interleaves all slots in one round trip (was 4 separate searches).
-          const per = PAGE_SIZE / BROWSE_SLOTS.length;
+          // offset is the GLOBAL count already shown (pageNum * PAGE_SIZE); the
+          // server divides it by the slot count to advance each slot's own page,
+          // so successive pages never re-request the same per-slot rows.
           results = await api.search(query, {
             k: PAGE_SIZE,
-            offset: pageNum * per,
+            offset: pageNum * PAGE_SIZE,
             slots: BROWSE_SLOTS.join(","),
             ...base,
           });

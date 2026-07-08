@@ -78,16 +78,17 @@ def run_backfill(
         if not loaded:
             continue
         results = perceptor.perceive_batch([image for _, image in loaded])
+        # Count what is actually persisted, not len(loaded): zip() truncates to
+        # the shorter side, so a perceptor that returned fewer results than images
+        # would save fewer — processed must reflect the saves, never overcount.
+        saved = [(item.item_id, perception) for (item, _), perception in zip(loaded, results)]
         save_batch = getattr(store, "save_batch", None)
         if save_batch is not None:
-            save_batch(
-                [(item.item_id, perception) for (item, _), perception in zip(loaded, results)],
-                model_version,
-            )
+            save_batch(saved, model_version)
         else:
-            for (item, _), perception in zip(loaded, results):
-                store.save(item.item_id, perception, model_version)
-        result.processed += len(loaded)
+            for item_id, perception in saved:
+                store.save(item_id, perception, model_version)
+        result.processed += len(saved)
     return result
 
 

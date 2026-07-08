@@ -10,7 +10,10 @@ class Settings(BaseSettings):
     env: str = "local"
     database_url: str = "postgresql://postgres:postgres@localhost:5432/gyf"
     event_broker_url: str = "localhost:9092"
-    # Event sink backend: "local" (append-only JSONL) or "kafka" (Kafka/Redpanda).
+    # Event sink backend: "local" (append-only JSONL), "postgres" (the behavioral
+    # spine that feeds the learning flywheel — prod default), or "kafka"
+    # (Kafka/Redpanda). See sink.py: prod must set GYF_EVENT_SINK=postgres or the
+    # flywheel captures nothing.
     event_sink: str = "local"
     event_topic: str = "gyf.interactions"
 
