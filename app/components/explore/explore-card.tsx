@@ -38,7 +38,9 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         flexDirection: "column",
         background: "var(--surface-2)",
         border: "1px solid var(--rule)",
-        borderRadius: "16px",
+        // Sharp corners (Ref1–4 masonry language) — images are the whole
+        // tile here, so the card itself stays unrounded.
+        borderRadius: 0,
         overflow: "hidden",
         cursor: onSelect ? "pointer" : "default",
         boxShadow: "0 2px 12px rgba(0,0,0,0.06)",

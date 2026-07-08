@@ -38,7 +38,7 @@ function CardSkeleton({ i }: { i: number }) {
         flexDirection: "column",
         background: "var(--rule)",
         border: "1px solid var(--rule)",
-        borderRadius: "16px",
+        borderRadius: 0,
         overflow: "hidden",
       }}
     >

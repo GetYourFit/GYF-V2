@@ -180,7 +180,8 @@ export function OutfitCard({
                     position: "relative",
                     aspectRatio: "3/4",
                     background: "var(--surface)",
-                    borderRadius: "12px",
+                    // Sharp corners (Ref1–4 masonry language).
+                    borderRadius: 0,
                     overflow: "hidden",
                   }}
                 >
