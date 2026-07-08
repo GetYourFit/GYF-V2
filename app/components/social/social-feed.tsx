@@ -228,7 +228,7 @@ export function SocialFeed() {
               style={{
                 padding: "0.4rem 1rem",
                 borderRadius: "999px",
-                border: `1px solid ${scope === key ? UI_COLORS.social : "rgba(255,255,255,0.12)"}`,
+                border: `1px solid ${scope === key ? UI_COLORS.social : "var(--border)"}`,
                 background: scope === key ? UI_COLORS.social : "transparent",
                 color: scope === key ? "var(--bg)" : "var(--text-mid)",
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
@@ -251,7 +251,7 @@ export function SocialFeed() {
                 style={{
                   background: "var(--surface-2)",
                   borderRadius: "20px",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: "1px solid var(--rule)",
                   overflow: "hidden",
                 }}
               >

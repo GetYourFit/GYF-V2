@@ -73,7 +73,7 @@ export function OutfitCard({
         }}
         style={{
           background: "var(--surface-2)",
-          border: pick ? "1px solid rgba(255,255,255,0.45)" : "1px solid rgba(255,255,255,0.08)",
+          border: pick ? "1px solid var(--text-faint)" : "1px solid var(--rule)",
           borderRadius: "20px",
           overflow: "hidden",
           cursor: "default",
@@ -277,8 +277,8 @@ export function OutfitCard({
                   padding: "0.875rem 1.25rem",
                   margin: "0.75rem 1.25rem 0",
                   borderRadius: "12px",
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: "var(--rule)",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <p
@@ -305,7 +305,7 @@ export function OutfitCard({
             justifyContent: "space-between",
             padding: "1rem 1.25rem",
             marginTop: "0.75rem",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
+            borderTop: "1px solid var(--rule)",
           }}
         >
           {/* Expand toggle */}
@@ -322,7 +322,7 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: expanded ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
+              background: expanded ? "var(--rule)" : "var(--rule)",
               border: "none",
               borderRadius: "50%",
               color: expanded ? "var(--secondary)" : "var(--text-faint)",
@@ -345,7 +345,7 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: saved ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)",
+              background: saved ? "var(--border)" : "var(--rule)",
               border: "none",
               borderRadius: "50%",
               color: saved ? "var(--secondary)" : "var(--text-faint)",
@@ -372,7 +372,7 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: "rgba(255,255,255,0.04)",
+              background: "var(--rule)",
               border: "none",
               borderRadius: "50%",
               color: "var(--text-faint)",
@@ -396,7 +396,7 @@ export function OutfitCard({
                 justifyContent: "center",
                 width: "44px",
                 height: "44px",
-                background: "rgba(255,255,255,0.04)",
+                background: "var(--rule)",
                 borderRadius: "50%",
                 color: "var(--text-faint)",
                 textDecoration: "none",
@@ -421,7 +421,7 @@ export function OutfitCard({
               justifyContent: "center",
               width: "44px",
               height: "44px",
-              background: "rgba(255,255,255,0.04)",
+              background: "var(--rule)",
               border: "none",
               borderRadius: "50%",
               color: "var(--text-faint)",

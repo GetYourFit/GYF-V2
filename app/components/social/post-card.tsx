@@ -150,7 +150,7 @@ export function PostCard({
         background: "var(--surface-2)",
         borderRadius: "20px",
         boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid var(--rule)",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
@@ -501,7 +501,7 @@ export function PostCard({
                 background: "var(--surface)",
                 borderRadius: "999px",
                 padding: "0.25rem 0.75rem",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: "1px solid var(--rule)",
               }}
             >
               {item.title}

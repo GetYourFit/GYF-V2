@@ -41,7 +41,7 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
         display: "flex",
         flexDirection: "column",
         background: "var(--surface-2)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid var(--rule)",
         borderRadius: "16px",
         overflow: "hidden",
         boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
@@ -93,7 +93,7 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
             alignItems: "center",
             justifyContent: "center",
             background: "rgba(0,0,0,0.7)",
-            border: "1px solid rgba(255,255,255,0.10)",
+            border: "1px solid var(--border)",
             borderRadius: "16px",
             color: "var(--text-faint)",
             cursor: "pointer",
@@ -112,7 +112,7 @@ export function GarmentCard({ item, index = 0, onRemove }: GarmentCardProps) {
               width: "14px",
               height: "14px",
               background: item.color,
-              border: "1px solid rgba(255,255,255,0.2)",
+              border: "1px solid var(--border-mid)",
             }}
             title={item.color}
             aria-hidden

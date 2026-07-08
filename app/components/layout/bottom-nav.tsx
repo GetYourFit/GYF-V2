@@ -22,8 +22,8 @@ const RIGHT_TABS = [
   { href: "/profile", Icon: NavProfile, label: "Profile" },
 ] as const;
 
-const ACTIVE = "#ffffff";
-const MUTED = "rgba(255,255,255,0.45)";
+const ACTIVE = "var(--text)";
+const MUTED = "var(--text-faint)";
 
 function Tab({
   href,
@@ -84,12 +84,12 @@ export function BottomNav() {
         alignItems: "center",
         gap: "0.25rem",
         padding: "0.375rem 0.625rem",
-        background: "rgba(28,28,30,0.92)",
+        background: "var(--chrome-strong)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid var(--rule)",
         borderRadius: 999,
-        boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
+        boxShadow: "var(--shadow-float)",
       }}
     >
       {LEFT_TABS.map(({ href, Icon, label }) => (
@@ -123,7 +123,7 @@ export function BottomNav() {
             width: 40,
             height: 40,
             borderRadius: "50%",
-            background: pathname === "/" ? "#ffffff" : "rgba(255,255,255,0.12)",
+            background: pathname === "/" ? "var(--text)" : "var(--border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -139,7 +139,7 @@ export function BottomNav() {
               width: 22,
               height: "auto",
               // Black mark on the active white disc, white mark otherwise.
-              filter: pathname === "/" ? "brightness(0)" : "brightness(0) invert(1)",
+              filter: pathname === "/" ? "var(--logo-filter-inverse)" : "var(--logo-filter)",
             }}
           />
         </motion.div>

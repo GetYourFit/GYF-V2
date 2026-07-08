@@ -57,7 +57,7 @@ export default function GrievancePage() {
             padding: "2rem 1.5rem",
             background: "var(--surface)",
             borderRadius: 16,
-            border: "1px solid rgba(255,255,255,0.06)",
+            border: "1px solid var(--rule)",
             textAlign: "center",
           }}
         >
@@ -175,7 +175,7 @@ export default function GrievancePage() {
                   style={{
                     padding: "0.375rem 0.875rem",
                     borderRadius: 999,
-                    border: active ? "1.5px solid var(--text)" : "1.5px solid rgba(255,255,255,0.14)",
+                    border: active ? "1.5px solid var(--text)" : "1.5px solid var(--border)",
                     background: active ? "var(--text)" : "transparent",
                     color: active ? "var(--bg)" : "var(--text-mid)",
                     fontSize: "0.8rem",
@@ -217,7 +217,7 @@ export default function GrievancePage() {
               padding: "0 0",
               background: "transparent",
               border: "none",
-              borderBottom: "1.5px solid rgba(255,255,255,0.18)",
+              borderBottom: "1.5px solid var(--border)",
               borderRadius: 0,
               fontSize: "0.9375rem",
               color: "var(--text)",
@@ -228,7 +228,7 @@ export default function GrievancePage() {
               e.currentTarget.style.borderBottomColor = "var(--text)";
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)";
+              e.currentTarget.style.borderBottomColor = "var(--border)";
             }}
           />
         </div>
@@ -258,7 +258,7 @@ export default function GrievancePage() {
               padding: "0.75rem 0",
               background: "transparent",
               border: "none",
-              borderBottom: "1.5px solid rgba(255,255,255,0.18)",
+              borderBottom: "1.5px solid var(--border)",
               borderRadius: 0,
               fontSize: "0.9375rem",
               color: "var(--text)",
@@ -272,7 +272,7 @@ export default function GrievancePage() {
               e.currentTarget.style.borderBottomColor = "var(--text)";
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)";
+              e.currentTarget.style.borderBottomColor = "var(--border)";
             }}
           />
         </div>

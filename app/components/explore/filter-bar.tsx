@@ -194,10 +194,10 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           // gap and no overlap.
           top: 0,
           zIndex: 20,
-          background: "rgba(10,10,10,0.95)",
+          background: "var(--chrome)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "1px solid var(--rule)",
           padding: "0.75rem 1rem",
           display: "flex",
           flexDirection: "column",
@@ -236,7 +236,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             style={{
               flex: 1,
               background: "var(--surface-2)",
-              border: `1.5px solid ${focused ? "var(--secondary)" : "rgba(255,255,255,0.12)"}`,
+              border: `1.5px solid ${focused ? "var(--secondary)" : "var(--border)"}`,
               outline: "none",
               borderRadius: "999px",
               padding: "0.75rem 2.5rem 0.75rem 3rem",
@@ -279,7 +279,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               flexShrink: 0,
               borderRadius: "50%",
               background: "var(--surface-2)",
-              border: "1.5px solid rgba(255,255,255,0.12)",
+              border: "1.5px solid var(--border)",
               color: "var(--text)",
               display: "flex",
               alignItems: "center",
@@ -304,7 +304,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 width: 30,
                 height: 18,
                 borderRadius: "0 0 12px 12px",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid var(--border)",
                 borderTop: "none",
                 background: "var(--surface-2)",
                 color: UI_COLORS.category,
@@ -478,7 +478,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                           WebkitAppearance: "none",
                           background: "var(--surface-2)",
                           border: `1px solid ${
-                            safeSort !== "relevance" ? UI_COLORS.sort : "rgba(255,255,255,0.12)"
+                            safeSort !== "relevance" ? UI_COLORS.sort : "var(--border)"
                           }`,
                           borderRadius: "999px",
                           color: safeSort !== "relevance" ? UI_COLORS.sort : "var(--text-mid)",
@@ -540,7 +540,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                         width: "92px",
                         flexShrink: 0,
                         background: "var(--surface-2)",
-                        border: `1px solid ${filters.maxPrice ? UI_COLORS.budget : "rgba(255,255,255,0.12)"}`,
+                        border: `1px solid ${filters.maxPrice ? UI_COLORS.budget : "var(--border)"}`,
                         borderRadius: "999px",
                         color: filters.maxPrice ? UI_COLORS.budget : "var(--text-mid)",
                         padding: "0.3rem 0.75rem",

@@ -23,7 +23,7 @@ export function GYFLogo({ width = 120, className, style, invert = true }: GYFLog
       style={{
         width,
         height: "auto",
-        filter: invert ? "brightness(0) invert(1)" : undefined,
+        filter: invert ? "var(--logo-filter)" : undefined,
         ...style,
       }}
     />

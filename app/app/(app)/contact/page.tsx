@@ -101,7 +101,7 @@ export default function ContactPage() {
               padding: "1rem",
               background: "var(--surface)",
               borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.06)",
+              border: "1px solid var(--rule)",
             }}
           >
             <span
@@ -110,7 +110,7 @@ export default function ContactPage() {
                 height: 38,
                 borderRadius: 10,
                 background: "var(--surface-2)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: "1px solid var(--rule)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -151,7 +151,7 @@ export default function ContactPage() {
               padding: "1.5rem",
               background: "var(--surface)",
               borderRadius: 14,
-              border: "1px solid rgba(255,255,255,0.06)",
+              border: "1px solid var(--rule)",
               textAlign: "center",
             }}
           >
@@ -191,7 +191,7 @@ export default function ContactPage() {
                     padding: "0 0.875rem",
                     background: "transparent",
                     border: "none",
-                    borderBottom: "1.5px solid rgba(255,255,255,0.18)",
+                    borderBottom: "1.5px solid var(--border)",
                     borderRadius: 0,
                     fontSize: "0.9375rem",
                     color: "var(--text)",
@@ -202,7 +202,7 @@ export default function ContactPage() {
                     e.currentTarget.style.borderBottomColor = "var(--text)";
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)";
+                    e.currentTarget.style.borderBottomColor = "var(--border)";
                   }}
                 />
               </div>
@@ -230,7 +230,7 @@ export default function ContactPage() {
                   padding: "0.75rem 0",
                   background: "transparent",
                   border: "none",
-                  borderBottom: "1.5px solid rgba(255,255,255,0.18)",
+                  borderBottom: "1.5px solid var(--border)",
                   borderRadius: 0,
                   fontSize: "0.9375rem",
                   color: "var(--text)",
@@ -244,7 +244,7 @@ export default function ContactPage() {
                   e.currentTarget.style.borderBottomColor = "var(--text)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)";
+                  e.currentTarget.style.borderBottomColor = "var(--border)";
                 }}
               />
             </div>

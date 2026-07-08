@@ -30,10 +30,10 @@ export function CompatibilityPanel({ item }: Props) {
   return (
     <div
       style={{
-        background: "rgba(255,255,255,0.04)",
+        background: "var(--rule)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.10)",
+        border: "1px solid var(--border)",
         borderRadius: "16px",
         padding: "1rem",
         display: "flex",

@@ -48,7 +48,7 @@ export function AppIntro() {
               height={600}
               priority
               style={{
-                filter: "brightness(0) invert(1)",
+                filter: "var(--logo-filter)",
                 width: "clamp(180px, 40vw, 240px)",
                 height: "auto",
                 objectFit: "contain",

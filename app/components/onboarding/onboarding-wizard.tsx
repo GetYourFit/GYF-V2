@@ -362,7 +362,7 @@ export function OnboardingWizard() {
             style={{
               height: "12px",
               width: `${w}%`,
-              background: "rgba(255,255,255,0.06)",
+              background: "var(--rule)",
               borderRadius: "999px",
             }}
           />
@@ -522,7 +522,7 @@ export function OnboardingWizard() {
           alignItems: "center",
           justifyContent: "space-between",
           gap: "0.75rem",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderTop: "1px solid var(--rule)",
           paddingTop: "1.5rem",
         }}
       >
@@ -538,7 +538,7 @@ export function OnboardingWizard() {
                 minHeight: "44px",
                 padding: "0 1rem",
                 background: "transparent",
-                border: "1px solid rgba(255,255,255,0.10)",
+                border: "1px solid var(--border)",
                 borderRadius: "999px",
                 color: "var(--text-faint)",
                 fontFamily: "var(--font-mono)",
@@ -568,7 +568,7 @@ export function OnboardingWizard() {
               gap: "0.5rem",
               minHeight: "44px",
               padding: "0 1.5rem",
-              background: saving ? "rgba(255,255,255,0.10)" : "var(--text)",
+              background: saving ? "var(--border)" : "var(--text)",
               color: saving ? "var(--text-faint)" : "var(--bg)",
               border: "none",
               borderRadius: "999px",
@@ -641,7 +641,7 @@ function EstimatedBadge() {
         display: "inline-flex",
         alignItems: "center",
         gap: "0.25rem",
-        border: "1px solid rgba(255,255,255,0.4)",
+        border: "1px solid var(--border-mid)",
         padding: "0.125rem 0.5rem",
         fontFamily: "var(--font-mono)",
         fontSize: "0.5rem",
@@ -803,8 +803,8 @@ function StepStyle({
                 style={{
                   minHeight: "36px",
                   padding: "0 0.875rem",
-                  border: `1px solid ${active ? "var(--secondary)" : "rgba(255,255,255,0.08)"}`,
-                  background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                  border: `1px solid ${active ? "var(--secondary)" : "var(--rule)"}`,
+                  background: active ? "var(--rule)" : "transparent",
                   color: active ? "var(--secondary)" : "var(--text-faint)",
                   fontFamily: "var(--font-mono)",
                   fontSize: "0.6rem",

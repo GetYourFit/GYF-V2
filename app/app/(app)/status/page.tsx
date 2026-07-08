@@ -106,7 +106,7 @@ export default function StatusPage() {
                     alignItems: "baseline",
                     gap: "0.75rem",
                     padding: "0.9rem 0",
-                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                    borderBottom: "1px solid var(--rule)",
                   }}
                 >
                   <span

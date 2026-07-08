@@ -389,7 +389,7 @@ export function StylistFeed() {
                 alignItems: "center",
                 gap: "0.375rem",
                 background: "transparent",
-                border: "1px solid rgba(255,255,255,0.10)",
+                border: "1px solid var(--border)",
                 color: "var(--text-faint)",
                 padding: "0.375rem 0.75rem",
                 cursor: "pointer",
@@ -533,7 +533,7 @@ function StatusLine({ data }: { data: OutfitRecommendation }) {
             fontFamily: "var(--font-mono)",
             fontSize: "0.55rem",
             color: "var(--text-faint)",
-            border: "1px solid rgba(255,255,255,0.10)",
+            border: "1px solid var(--border)",
             padding: "0.125rem 0.5rem",
             letterSpacing: "0.06em",
             textTransform: "uppercase",
@@ -567,8 +567,8 @@ function UndoStrip({ index, delta, onUndo }: { index: number; delta: string; onU
         justifyContent: "space-between",
         minHeight: "72px",
         padding: "1rem",
-        border: "1px dashed rgba(255,255,255,0.10)",
-        background: "rgba(255,255,255,0.03)",
+        border: "1px dashed var(--border)",
+        background: "var(--rule)",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", minWidth: 0 }}>
@@ -631,13 +631,13 @@ function SkeletonGrid() {
           animate={{ opacity: [0, 0.6, 0.4] }}
           transition={{ duration: 1.4, delay: i * 0.1, repeat: Infinity, repeatType: "reverse" }}
           style={{
-            border: "1px solid rgba(255,255,255,0.06)",
-            background: "rgba(255,255,255,0.03)",
+            border: "1px solid var(--rule)",
+            background: "var(--rule)",
             borderRadius: "16px",
             overflow: "hidden",
           }}
         >
-          <div style={{ aspectRatio: "16/9", background: "rgba(255,255,255,0.06)" }} />
+          <div style={{ aspectRatio: "16/9", background: "var(--rule)" }} />
           <div
             style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}
           >
@@ -645,7 +645,7 @@ function SkeletonGrid() {
               style={{
                 height: "10px",
                 width: "60%",
-                background: "rgba(255,255,255,0.06)",
+                background: "var(--rule)",
                 borderRadius: "999px",
               }}
             />
@@ -653,7 +653,7 @@ function SkeletonGrid() {
               style={{
                 height: "8px",
                 width: "40%",
-                background: "rgba(255,255,255,0.06)",
+                background: "var(--rule)",
                 borderRadius: "999px",
               }}
             />

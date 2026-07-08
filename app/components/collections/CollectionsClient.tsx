@@ -21,7 +21,7 @@ function SectionHeader({ index, title }: { index: string; title: string }) {
     <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem", marginBottom: "1rem" }}>
       <span style={{ ...MONO, fontSize: "0.5rem", color: "var(--secondary)" }}>{index}</span>
       <span style={{ ...MONO, color: "var(--text)", fontSize: "0.65rem" }}>{title}</span>
-      <span style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+      <span style={{ flex: 1, height: "1px", background: "var(--rule)" }} />
     </div>
   );
 }
@@ -59,8 +59,8 @@ function EmptyState({ message }: { message: string }) {
         alignItems: "center",
         justifyContent: "center",
         padding: "2rem",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px dashed rgba(255,255,255,0.10)",
+        background: "var(--rule)",
+        border: "1px dashed var(--border)",
         borderRadius: "16px",
       }}
     >
@@ -79,7 +79,7 @@ function GridSkeleton({ count = 4 }: { count?: number }) {
           key={i}
           animate={{ opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 1.4, delay: i * 0.08, repeat: Infinity }}
-          style={{ aspectRatio: "3/4", background: "rgba(255,255,255,0.04)", borderRadius: "16px" }}
+          style={{ aspectRatio: "3/4", background: "var(--rule)", borderRadius: "16px" }}
         />
       ))}
     </div>

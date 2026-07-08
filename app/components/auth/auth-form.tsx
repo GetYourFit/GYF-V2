@@ -315,8 +315,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
         style={{
           width: "100%",
           minHeight: "56px",
-          background: canSubmit ? "#ffffff" : "var(--surface-high)",
-          color: canSubmit ? "#000000" : "var(--text-faint)",
+          background: canSubmit ? "var(--accent)" : "var(--surface-high)",
+          color: canSubmit ? "var(--on-accent)" : "var(--text-faint)",
           border: "none",
           borderRadius: 999,
           fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",

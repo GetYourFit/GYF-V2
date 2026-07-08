@@ -54,7 +54,7 @@ export function ConfidenceMeter({ value }: ConfidenceMeterProps) {
         style={{
           height: "3px",
           width: "100%",
-          background: "rgba(255,255,255,0.08)",
+          background: "var(--rule)",
           overflow: "hidden",
           borderRadius: "999px",
         }}

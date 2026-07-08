@@ -19,7 +19,7 @@ export function GYFMark({ size = 40, className }: GYFMarkProps) {
       style={{
         width: size,
         height: size,
-        filter: "brightness(0) invert(1)",
+        filter: "var(--logo-filter)",
       }}
     />
   );

@@ -162,7 +162,7 @@ export function WardrobeGrid() {
                   fontSize: "0.8125rem",
                   fontWeight: 600,
                   borderRadius: "999px",
-                  border: `1.5px solid ${active ? UI_COLORS.wardrobe : "rgba(255,255,255,0.12)"}`,
+                  border: `1.5px solid ${active ? UI_COLORS.wardrobe : "var(--border)"}`,
                   background: active ? UI_COLORS.wardrobe : "var(--surface-2)",
                   color: active ? "var(--bg)" : "var(--text-mid)",
                   cursor: "pointer",

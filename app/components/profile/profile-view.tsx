@@ -235,7 +235,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
             <span
               key={`intent-${chip}`}
               style={{
-                background: "rgba(255,255,255,0.10)",
+                background: "var(--border)",
                 color: "#d4607a",
                 borderRadius: "999px",
                 padding: "0.25rem 0.875rem",
@@ -253,7 +253,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
             <span
               key={`identity-${chip}`}
               style={{
-                border: "1px solid rgba(255,255,255,0.12)",
+                border: "1px solid var(--border)",
                 color: "var(--text-mid)",
                 borderRadius: "999px",
                 padding: "0.25rem 0.875rem",
@@ -293,7 +293,7 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
                   transform: "translateY(-50%)",
                   width: 1,
                   height: "2rem",
-                  background: "rgba(255,255,255,0.10)",
+                  background: "var(--border)",
                 }}
               />
             )}
@@ -427,7 +427,7 @@ function Stats({ summary }: { summary: ProfileSummary }) {
         display: "grid",
         gridTemplateColumns: "repeat(3, 1fr)",
         gap: "1px",
-        background: "rgba(255,255,255,0.06)",
+        background: "var(--rule)",
       }}
     >
       {items.map((item) => (
@@ -459,7 +459,7 @@ function Badges({ badges }: { badges: string[] }) {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              border: "1px solid rgba(255,255,255,0.10)",
+              border: "1px solid var(--border)",
               padding: "0.375rem 0.875rem",
               fontFamily: "var(--font-body)",
               fontSize: "0.6rem",
@@ -486,7 +486,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           flexDirection: "column",
           alignItems: "flex-start",
           gap: "1.25rem",
-          border: "1px solid rgba(255,255,255,0.10)",
+          border: "1px solid var(--border)",
           background: "var(--bg)",
           padding: "1.5rem",
         }}
@@ -589,7 +589,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "1px",
-          background: "rgba(255,255,255,0.06)",
+          background: "var(--rule)",
         }}
       >
         {rows.map(([label, value]) => (
@@ -639,7 +639,7 @@ function AccountLink() {
         display: "flex",
         flexDirection: "column",
         gap: "1rem",
-        borderTop: "1px solid rgba(255,255,255,0.10)",
+        borderTop: "1px solid var(--border)",
         paddingTop: "2rem",
       }}
     >
@@ -662,7 +662,7 @@ function AccountLink() {
           alignItems: "center",
           justifyContent: "space-between",
           gap: "1rem",
-          border: "1px solid rgba(255,255,255,0.10)",
+          border: "1px solid var(--border)",
           background: "var(--bg)",
           padding: "1.25rem",
           textDecoration: "none",
@@ -671,12 +671,12 @@ function AccountLink() {
         onMouseEnter={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
           el.style.background = "var(--bg)";
-          el.style.borderColor = "rgba(255,255,255,0.14)";
+          el.style.borderColor = "var(--border)";
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget as HTMLAnchorElement;
           el.style.background = "var(--bg)";
-          el.style.borderColor = "rgba(255,255,255,0.10)";
+          el.style.borderColor = "var(--border)";
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -749,7 +749,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           justifyContent: "center",
           minHeight: "44px",
           padding: "0 1.5rem",
-          border: "1px solid rgba(255,255,255,0.2)",
+          border: "1px solid var(--border-mid)",
           background: "transparent",
           color: "var(--text)",
           cursor: "pointer",
@@ -774,7 +774,7 @@ function ProfileSkeleton() {
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
           gap: "1px",
-          background: "rgba(255,255,255,0.06)",
+          background: "var(--rule)",
         }}
       >
         {Array.from({ length: 5 }).map((_, i) => (
@@ -786,7 +786,7 @@ function ProfileSkeleton() {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "1px",
-          background: "rgba(255,255,255,0.06)",
+          background: "var(--rule)",
         }}
       >
         {Array.from({ length: 6 }).map((_, i) => (

@@ -74,6 +74,47 @@
   --on-accent: #000000;
   --shimmer-base: #161616;
   --shimmer-sweep: #222224;
+  /* Logo mark recolor: white on dark, black on light. --logo-filter-inverse
+     is for marks sitting on an accent (var(--text)) disc. */
+  --logo-filter: brightness(0) invert(1);
+  --logo-filter-inverse: brightness(0);
+  /* Translucent chrome (headers, pill nav) derived from the theme. */
+  --chrome: rgba(10, 10, 10, 0.92);
+  --chrome-strong: rgba(28, 28, 30, 0.92);
+  --shadow-float: 0 8px 32px rgba(0, 0, 0, 0.55);
+}
+
+/* ─── Light theme — same Cosmos structure, inverted values ───────────────── */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f4f4f5;
+  --surface-2: #ececee;
+  --surface-3: #e2e2e4;
+  --surface-high: #d8d8da;
+  --surface-highest: #c8c8cc;
+  --border: rgba(0, 0, 0, 0.12);
+  --border-mid: rgba(0, 0, 0, 0.24);
+  --border-hi: #111112;
+  --rule: rgba(0, 0, 0, 0.08);
+  --text: #111112;
+  --text-mid: #55555a;
+  --text-faint: #6e6e73;
+  --primary: #111112;
+  --secondary: #55555a;
+  --accent: #111112;
+  --accent-press: #2c2c2e;
+  --success: #0d7a55;
+  --warning: #c2560e;
+  --error: #c0392b;
+  --on-accent: #ffffff;
+  --shimmer-base: #ececee;
+  --shimmer-sweep: #f6f6f7;
+  --logo-filter: brightness(0);
+  --logo-filter-inverse: brightness(0) invert(1);
+  --chrome: rgba(255, 255, 255, 0.92);
+  --chrome-strong: rgba(244, 244, 245, 0.92);
+  --shadow-float: 0 8px 32px rgba(0, 0, 0, 0.16);
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */

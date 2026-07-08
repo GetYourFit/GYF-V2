@@ -344,7 +344,7 @@ export function CanvasExplorer() {
               width: t.w,
               height: t.h,
               padding: 0,
-              border: t.selected ? "1.5px solid rgba(255,255,255,0.85)" : "none",
+              border: t.selected ? "1.5px solid var(--border-hi)" : "none",
               borderRadius: 10,
               overflow: "hidden",
               background: "var(--surface)",

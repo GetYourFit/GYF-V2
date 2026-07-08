@@ -270,7 +270,7 @@ export function AccountManager() {
               width: "100%",
               minHeight: "44px",
               background: "var(--bg)",
-              border: "1px solid rgba(255,255,255,0.10)",
+              border: "1px solid var(--border)",
               color: "var(--text)",
               outline: "none",
               padding: "0 1rem",
@@ -291,7 +291,7 @@ export function AccountManager() {
               minHeight: "44px",
               padding: "0 1.5rem",
               background:
-                savingName || nameDraft.trim() === savedName ? "rgba(255,255,255,0.08)" : "var(--text)",
+                savingName || nameDraft.trim() === savedName ? "var(--rule)" : "var(--text)",
               color: savingName || nameDraft.trim() === savedName ? "var(--text-faint)" : "var(--bg)",
               border: "none",
               borderRadius: "999px",
@@ -342,7 +342,7 @@ export function AccountManager() {
             listStyle: "none",
             margin: 0,
             padding: 0,
-            border: "1px solid rgba(255,255,255,0.10)",
+            border: "1px solid var(--border)",
             background: "var(--bg)",
           }}
         >
@@ -369,7 +369,7 @@ export function AccountManager() {
               justifyContent: "center",
               minHeight: "44px",
               padding: "0 1.5rem",
-              background: !dirty || saving ? "rgba(255,255,255,0.08)" : "var(--primary)",
+              background: !dirty || saving ? "var(--rule)" : "var(--primary)",
               color: !dirty || saving ? "var(--text-faint)" : "var(--bg)",
               border: "none",
               borderRadius: "999px",
@@ -406,7 +406,7 @@ export function AccountManager() {
           display: "flex",
           flexDirection: "column",
           gap: "1rem",
-          borderTop: "1px solid rgba(255,255,255,0.10)",
+          borderTop: "1px solid var(--border)",
           paddingTop: "2rem",
         }}
       >
@@ -449,7 +449,7 @@ export function AccountManager() {
             minHeight: "44px",
             padding: "0 1.5rem",
             alignSelf: "flex-start",
-            border: "1px solid rgba(255,255,255,0.15)",
+            border: "1px solid var(--border)",
             background: "transparent",
             color: "var(--text)",
             cursor: exporting ? "not-allowed" : "pointer",
@@ -472,7 +472,7 @@ export function AccountManager() {
           display: "flex",
           flexDirection: "column",
           gap: "1rem",
-          borderTop: "1px solid rgba(255,255,255,0.10)",
+          borderTop: "1px solid var(--border)",
           paddingTop: "2rem",
         }}
       >
@@ -500,7 +500,7 @@ export function AccountManager() {
                 justifyContent: "center",
                 minHeight: "44px",
                 padding: "0 1.5rem",
-                border: "1px solid rgba(255,255,255,0.2)",
+                border: "1px solid var(--border-mid)",
                 background: "transparent",
                 color: "var(--text)",
                 cursor: "pointer",
@@ -714,7 +714,7 @@ function ConsentRow({
         justifyContent: "space-between",
         gap: "1.25rem",
         padding: "1.25rem",
-        borderTop: first ? "none" : "1px solid rgba(255,255,255,0.06)",
+        borderTop: first ? "none" : "1px solid var(--rule)",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
@@ -758,8 +758,8 @@ function ConsentRow({
           width: "44px",
           height: "24px",
           alignItems: "center",
-          border: `1px solid ${checked ? "var(--secondary)" : "rgba(255,255,255,0.2)"}`,
-          background: checked ? "rgba(255,255,255,0.15)" : "transparent",
+          border: `1px solid ${checked ? "var(--secondary)" : "var(--border-mid)"}`,
+          background: checked ? "var(--border)" : "transparent",
           cursor: "pointer",
           transition: "all 0.2s",
           borderRadius: "999px",
@@ -814,7 +814,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           justifyContent: "center",
           minHeight: "44px",
           padding: "0 1.5rem",
-          border: "1px solid rgba(255,255,255,0.2)",
+          border: "1px solid var(--border-mid)",
           background: "transparent",
           color: "var(--text)",
           cursor: "pointer",
@@ -840,24 +840,24 @@ function AccountSkeleton() {
           style={{
             height: "12px",
             width: "160px",
-            background: "rgba(255,255,255,0.06)",
+            background: "var(--rule)",
             borderRadius: "999px",
           }}
         />
-        <div style={{ border: "1px solid rgba(255,255,255,0.10)" }}>
+        <div style={{ border: "1px solid var(--border)" }}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={`row-${i}`}
               style={{
                 height: "96px",
-                background: "rgba(255,255,255,0.04)",
-                borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.06)",
+                background: "var(--rule)",
+                borderTop: i === 0 ? "none" : "1px solid var(--rule)",
               }}
             />
           ))}
         </div>
       </div>
-      <div style={{ height: "112px", background: "rgba(255,255,255,0.04)", borderRadius: "999px" }} />
+      <div style={{ height: "112px", background: "var(--rule)", borderRadius: "999px" }} />
     </div>
   );
 }

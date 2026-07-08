@@ -26,16 +26,22 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "var(--bg)",
+  themeColor: "#000000",
 };
+
+// Runs before paint: applies the persisted theme so there is no flash of the
+// wrong theme. No attribute = dark (the default Cosmos look).
+const THEME_INIT = `try{var t=localStorage.getItem("gyf-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
       className={`${jakarta.variable} ${jetbrainsMono.variable} ${cormorant.variable}`}
+      suppressHydrationWarning
     >
       <body>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <SplashScreen />
         {children}
       </body>

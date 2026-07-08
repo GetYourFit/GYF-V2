@@ -208,7 +208,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
               maxHeight: "88dvh",
               background: "var(--bg)",
               borderRadius: "20px 20px 0 0",
-              borderTop: "1px solid rgba(255,255,255,0.10)",
+              borderTop: "1px solid var(--border)",
               outline: "none",
               display: "flex",
               flexDirection: "column",
@@ -223,7 +223,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                 style={{
                   width: 36,
                   height: 4,
-                  background: "rgba(255,255,255,0.15)",
+                  background: "var(--border)",
                   borderRadius: 2,
                 }}
               />
@@ -236,7 +236,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "0.75rem 1.25rem",
-                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                borderBottom: "1px solid var(--rule)",
               }}
             >
               <p
@@ -309,7 +309,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                       key={i}
                       animate={{ opacity: [0.3, 0.6, 0.3] }}
                       transition={{ duration: 1.4, delay: i * 0.15, repeat: Infinity }}
-                      style={{ aspectRatio: "1/1", background: "rgba(255,255,255,0.06)" }}
+                      style={{ aspectRatio: "1/1", background: "var(--rule)" }}
                     />
                   ))}
                 </div>
@@ -357,7 +357,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                           aspectRatio: "1/1",
                           overflow: "hidden",
                           background: "var(--bg)",
-                          border: `1px solid ${active ? "var(--secondary)" : "rgba(255,255,255,0.08)"}`,
+                          border: `1px solid ${active ? "var(--secondary)" : "var(--rule)"}`,
                           cursor: "pointer",
                           padding: 0,
                           outline: "none",
@@ -436,7 +436,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                     resize: "none",
                     background: "transparent",
                     border: "none",
-                    borderBottom: "1px solid rgba(255,255,255,0.15)",
+                    borderBottom: "1px solid var(--border)",
                     outline: "none",
                     padding: "0.625rem 0",
                     fontFamily: "var(--font-body)",
@@ -472,7 +472,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   marginTop: "auto",
                   width: "100%",
                   minHeight: "52px",
-                  background: submitting || !selected ? "rgba(255,255,255,0.10)" : "var(--primary)",
+                  background: submitting || !selected ? "var(--border)" : "var(--primary)",
                   color: submitting || !selected ? "var(--text-faint)" : "var(--bg)",
                   border: "none",
                   borderRadius: "999px",

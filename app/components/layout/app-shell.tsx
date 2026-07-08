@@ -31,10 +31,10 @@ export function AppShell({ children }: AppShellProps) {
           position: "sticky",
           top: 0,
           zIndex: 30,
-          background: "rgba(10,10,10,0.92)",
+          background: "var(--chrome)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "1px solid var(--rule)",
           transform: "translateZ(0)",
           willChange: "transform",
         }}
@@ -95,7 +95,7 @@ export function AppShell({ children }: AppShellProps) {
           // reading as the search bar "getting stuck".
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
-          paddingBottom: "calc(64px + env(safe-area-inset-bottom))",
+          paddingBottom: "calc(104px + env(safe-area-inset-bottom))",
           maxWidth: "390px",
           margin: "0 auto",
           width: "100%",

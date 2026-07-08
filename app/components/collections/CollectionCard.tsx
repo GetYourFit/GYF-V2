@@ -28,10 +28,10 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: "rgba(255,255,255,0.03)",
+        background: "var(--rule)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid var(--rule)",
         borderRadius: "16px",
         overflow: "hidden",
       }}
@@ -97,10 +97,10 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: "rgba(255,255,255,0.03)",
+        background: "var(--rule)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid var(--rule)",
         borderRadius: "16px",
         overflow: "hidden",
       }}
@@ -144,7 +144,7 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
             No items
           </div>
         )}
-        {previews.length === 1 && <div style={{ background: "rgba(255,255,255,0.02)" }} />}
+        {previews.length === 1 && <div style={{ background: "var(--rule)" }} />}
       </div>
       <div style={{ padding: "0.625rem" }}>
         <p

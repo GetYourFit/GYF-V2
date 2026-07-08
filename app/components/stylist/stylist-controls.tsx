@@ -75,7 +75,7 @@ export function StylistControls({
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                 fontSize: "0.8125rem",
                 fontWeight: 500,
-                border: `1px solid ${active ? UI_COLORS.stylist : "rgba(255,255,255,0.12)"}`,
+                border: `1px solid ${active ? UI_COLORS.stylist : "var(--border)"}`,
                 background: active ? UI_COLORS.stylist : "var(--surface)",
                 color: active ? "var(--bg)" : "var(--text-mid)",
                 borderRadius: "999px",
@@ -98,7 +98,7 @@ export function StylistControls({
           position: "relative",
           display: "flex",
           alignItems: "center",
-          border: "1.5px solid rgba(255,255,255,0.15)",
+          border: "1.5px solid var(--border)",
           borderRadius: "999px",
           background: "var(--surface-2)",
           transition: "border-color 0.2s, box-shadow 0.2s",
@@ -109,7 +109,7 @@ export function StylistControls({
         }}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-            (e.currentTarget as HTMLFormElement).style.borderColor = "rgba(255,255,255,0.15)";
+            (e.currentTarget as HTMLFormElement).style.borderColor = "var(--border)";
             (e.currentTarget as HTMLFormElement).style.boxShadow = "none";
           }
         }}
@@ -148,7 +148,7 @@ export function StylistControls({
             justifyContent: "center",
             width: "36px",
             height: "36px",
-            background: goal.trim() && !busy ? "var(--text)" : "rgba(255,255,255,0.08)",
+            background: goal.trim() && !busy ? "var(--text)" : "var(--rule)",
             border: "none",
             borderRadius: "999px",
             color: goal.trim() && !busy ? "var(--bg)" : "var(--text-faint)",
