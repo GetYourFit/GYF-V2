@@ -114,7 +114,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                 position: "relative",
                 pointerEvents: "auto",
                 width: "100%",
-                maxWidth: "390px",
+                maxWidth: "430px",
                 maxHeight: "92dvh",
                 background: "var(--bg)",
                 borderTop: "1px solid var(--rule)",

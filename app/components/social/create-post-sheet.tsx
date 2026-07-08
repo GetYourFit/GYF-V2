@@ -204,7 +204,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
               position: "relative",
               zIndex: 10,
               width: "100%",
-              maxWidth: "390px",
+              maxWidth: "430px",
               maxHeight: "88dvh",
               background: "var(--bg)",
               borderRadius: "20px 20px 0 0",

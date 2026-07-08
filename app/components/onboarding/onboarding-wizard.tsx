@@ -728,7 +728,7 @@ function StepYou({
           onChange={(v) => set("gender", v)}
         />
       </FieldWrap>
-      {/* auto-fit: three columns squeeze labels/values illegibly on a 390px
+      {/* auto-fit: three columns squeeze labels/values illegibly on a 430px
           viewport — let fields wrap to 2+1 (or stack) instead of truncating. */}
       <div
         style={{

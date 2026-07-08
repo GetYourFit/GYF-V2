@@ -10,7 +10,7 @@ export default function SocialPage() {
   return (
     <div
       style={{
-        maxWidth: "390px",
+        maxWidth: "430px",
         margin: "0 auto",
         width: "100%",
       }}

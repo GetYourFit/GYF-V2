@@ -145,7 +145,7 @@ export function OutfitDetail({
             }}
           />
 
-          {/* Panel — bottom sheet, max 390px */}
+          {/* Panel — bottom sheet, max 430px */}
           <motion.div
             ref={panelRef}
             role="dialog"
@@ -160,7 +160,7 @@ export function OutfitDetail({
               position: "relative",
               zIndex: 10,
               width: "100%",
-              maxWidth: "390px",
+              maxWidth: "430px",
               maxHeight: "92dvh",
               overflowY: "auto",
               background: "var(--bg)",

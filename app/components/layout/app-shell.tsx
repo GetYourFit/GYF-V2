@@ -46,7 +46,7 @@ export function AppShell({ children }: AppShellProps) {
             height: "56px",
             alignItems: "center",
             padding: "0 1rem",
-            maxWidth: "390px",
+            maxWidth: "430px",
             margin: "0 auto",
             width: "100%",
           }}
@@ -96,7 +96,7 @@ export function AppShell({ children }: AppShellProps) {
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
           paddingBottom: "calc(104px + env(safe-area-inset-bottom))",
-          maxWidth: "390px",
+          maxWidth: "430px",
           margin: "0 auto",
           width: "100%",
         }}

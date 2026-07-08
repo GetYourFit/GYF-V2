@@ -586,7 +586,10 @@ export function CanvasExplorer() {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 45,
+        // Above the persistent bottom nav (z-40) and top header (z-30) with
+        // a comfortable margin, below the toast layer (z-100) so save/error
+        // toasts still surface above the canvas.
+        zIndex: 60,
         background: bgColor ?? "var(--bg)",
         transition: "background-color 0.45s ease",
         overflow: "hidden",

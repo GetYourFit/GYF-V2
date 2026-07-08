@@ -82,7 +82,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           position: "relative",
           zIndex: 1,
           width: "100%",
-          maxWidth: "390px",
+          maxWidth: "430px",
           display: "flex",
           flexDirection: "column",
           gap: "2.5rem",

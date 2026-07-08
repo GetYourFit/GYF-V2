@@ -266,7 +266,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
               position: "relative",
               zIndex: 10,
               width: "100%",
-              maxWidth: "390px",
+              maxWidth: "430px",
               maxHeight: "88dvh",
               background: "var(--bg)",
               borderRadius: "24px 24px 0 0",

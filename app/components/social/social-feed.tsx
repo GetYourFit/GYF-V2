@@ -166,7 +166,7 @@ export function SocialFeed() {
 
   return (
     <>
-      <div style={{ maxWidth: "390px", margin: "0 auto", padding: "1.25rem 1rem" }}>
+      <div style={{ maxWidth: "430px", margin: "0 auto", padding: "1.25rem 1rem" }}>
         {/* Feed header */}
         <div
           style={{

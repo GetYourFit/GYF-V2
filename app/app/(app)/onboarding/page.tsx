@@ -20,7 +20,7 @@ export default function OnboardingPage() {
       <div
         style={{
           width: "100%",
-          maxWidth: "390px",
+          maxWidth: "430px",
           padding: "1.5rem 1.5rem 1rem",
           display: "flex",
           alignItems: "center",
@@ -45,7 +45,7 @@ export default function OnboardingPage() {
       <div
         style={{
           width: "100%",
-          maxWidth: "390px",
+          maxWidth: "430px",
           padding: "0 1.5rem",
           flex: 1,
         }}
