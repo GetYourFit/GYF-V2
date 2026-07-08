@@ -4,10 +4,12 @@ import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { NavExplore } from "@/components/icons/NavExplore";
 import { NavWardrobe } from "@/components/icons/NavWardrobe";
 import { NavSocial } from "@/components/icons/NavSocial";
 import { NavProfile } from "@/components/icons/NavProfile";
+import { browserApi } from "@/lib/api-client";
 
 // Cosmos-style floating pill nav (Ref3): icon-only, fully rounded, hovering
 // over the content instead of docking to the screen edge. Monochrome —
@@ -31,12 +33,16 @@ function Tab({
   label,
   active,
   reduce,
+  avatarUrl,
 }: {
   href: string;
   Icon: (props: { size?: number; strokeWidth?: number }) => React.ReactNode;
   label: string;
   active: boolean;
   reduce: boolean | null;
+  /** Once the user has set a profile picture, it replaces the default
+   *  glyph on the Profile tab — this stays undefined for every other tab. */
+  avatarUrl?: string | null;
 }) {
   return (
     <Link
@@ -61,7 +67,31 @@ function Tab({
         transition={{ type: "spring", stiffness: 600, damping: 30 }}
         style={{ display: "flex" }}
       >
-        <Icon size={22} strokeWidth={active ? 2 : 1.6} />
+        {avatarUrl ? (
+          <span
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
+              overflow: "hidden",
+              display: "block",
+              border: active ? "1.5px solid var(--text)" : "1.5px solid transparent",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- external
+                Supabase Storage URL; next/image would need it in remotePatterns
+                per-user, and this is a tiny 24px nav glyph, not a content image */}
+            <img
+              src={avatarUrl}
+              alt=""
+              width={24}
+              height={24}
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            />
+          </span>
+        ) : (
+          <Icon size={22} strokeWidth={active ? 2 : 1.6} />
+        )}
       </motion.div>
     </Link>
   );
@@ -77,6 +107,22 @@ interface BottomNavProps {
 export function BottomNav({ collapsed = false }: BottomNavProps) {
   const pathname = usePathname();
   const reduce = useReducedMotion();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    browserApi()
+      .getProfileSummary()
+      .then((summary) => {
+        if (active) setAvatarUrl(summary.avatar_url ?? null);
+      })
+      .catch(() => {
+        // Unauthenticated or offline — the nav just shows the default glyph.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <motion.nav
@@ -167,6 +213,7 @@ export function BottomNav({ collapsed = false }: BottomNavProps) {
           label={label}
           active={pathname.startsWith(href)}
           reduce={reduce}
+          avatarUrl={href === "/profile" ? avatarUrl : undefined}
         />
       ))}
     </motion.nav>

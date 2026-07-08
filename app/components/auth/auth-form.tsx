@@ -6,8 +6,11 @@ import { useState, type FormEvent } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { browserApi } from "@/lib/api-client";
+import { COUNTRY_CODES, DEFAULT_COUNTRY_CODE } from "@/lib/country-codes";
 
 type Mode = "login" | "signup";
+type SignupStep = "credentials" | "identity";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -136,7 +139,37 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const canSubmit = email.length > 0 && password.length >= 6 && !busy;
+  // Signup only: a second step collects name + phone once the account
+  // itself exists (it needs an authed session to save, via PUT /profile).
+  // Both fields are optional — onboarding never blocks on a field the user
+  // skips, same policy as the rest of profile setup.
+  const [step, setStep] = useState<SignupStep>("credentials");
+  const [fullName, setFullName] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState(DEFAULT_COUNTRY_CODE);
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const canSubmit =
+    step === "credentials" ? email.length > 0 && password.length >= 6 && !busy : !busy;
+
+  async function finishSignup(next: string) {
+    const trimmedName = fullName.trim();
+    const trimmedPhone = phoneNumber.trim();
+    if (trimmedName || trimmedPhone) {
+      try {
+        await browserApi().putProfile({
+          ...(trimmedName ? { display_name: trimmedName } : {}),
+          ...(trimmedPhone
+            ? { phone_country_code: phoneCountryCode, phone_number: trimmedPhone }
+            : {}),
+        });
+      } catch {
+        // Best-effort: never block entry into the app over the identity step —
+        // the profile page lets the user set/retry these later.
+      }
+    }
+    await waitForGuardToAccept(next);
+    window.location.assign(next);
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -144,6 +177,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
     setNotice(null);
     setBusy(true);
     try {
+      if (mode === "signup" && step === "identity") {
+        await finishSignup(next);
+        return;
+      }
       const supabase = createSupabaseBrowserClient();
       if (mode === "signup") {
         const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
@@ -152,10 +189,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
           setNotice("Check your email to confirm your account, then sign in.");
           return;
         }
-      } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError) throw signInError;
+        // Session exists immediately (no email confirmation required) — collect
+        // name + phone before entering the app instead of redirecting now.
+        setStep("identity");
+        return;
       }
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) throw signInError;
       await waitForGuardToAccept(next);
       window.location.assign(next);
     } catch (err) {
@@ -178,22 +218,24 @@ export function AuthForm({ mode }: { mode: Mode }) {
       }}
     >
       {/* Mode switch — top-right, Ref6 */}
-      <Link
-        href={copy.altHref}
-        style={{
-          position: "fixed",
-          top: "calc(1.25rem + env(safe-area-inset-top))",
-          right: "1.5rem",
-          zIndex: 10,
-          fontFamily: "var(--font-body)",
-          fontSize: "1rem",
-          fontWeight: 500,
-          color: "var(--text-mid)",
-          textDecoration: "none",
-        }}
-      >
-        {copy.altLabel}
-      </Link>
+      {step === "credentials" && (
+        <Link
+          href={copy.altHref}
+          style={{
+            position: "fixed",
+            top: "calc(1.25rem + env(safe-area-inset-top))",
+            right: "1.5rem",
+            zIndex: 10,
+            fontFamily: "var(--font-body)",
+            fontSize: "1rem",
+            fontWeight: 500,
+            color: "var(--text-mid)",
+            textDecoration: "none",
+          }}
+        >
+          {copy.altLabel}
+        </Link>
+      )}
 
       {/* Centered header, Ref5/Ref6 */}
       <motion.div
@@ -218,7 +260,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             margin: 0,
           }}
         >
-          {copy.title}
+          {step === "identity" ? "Tell us who you are" : copy.title}
         </h1>
         <p
           style={{
@@ -228,7 +270,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             margin: 0,
           }}
         >
-          {copy.subtitle}
+          {step === "identity" ? "Your name and phone number (optional)" : copy.subtitle}
         </p>
       </motion.div>
 
@@ -245,25 +287,91 @@ export function AuthForm({ mode }: { mode: Mode }) {
           gap: "1.75rem",
         }}
       >
-        <GhostInput
-          type="email"
-          value={email}
-          onChange={setEmail}
-          autoComplete="email"
-          placeholder="Email address"
-          required
-          big
-        />
-        <GhostInput
-          type="password"
-          value={password}
-          onChange={setPassword}
-          autoComplete={mode === "signup" ? "new-password" : "current-password"}
-          placeholder="Password"
-          required
-          minLength={6}
-        />
+        {step === "credentials" ? (
+          <>
+            <GhostInput
+              type="email"
+              value={email}
+              onChange={setEmail}
+              autoComplete="email"
+              placeholder="Email address"
+              required
+              big
+            />
+            <GhostInput
+              type="password"
+              value={password}
+              onChange={setPassword}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              placeholder="Password"
+              required
+              minLength={6}
+            />
+          </>
+        ) : (
+          <>
+            <GhostInput
+              type="text"
+              value={fullName}
+              onChange={setFullName}
+              autoComplete="name"
+              placeholder="Full name"
+              big
+            />
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <select
+                value={phoneCountryCode}
+                onChange={(e) => setPhoneCountryCode(e.target.value)}
+                aria-label="Country code"
+                style={{
+                  background: "var(--surface-high)",
+                  color: "var(--text)",
+                  border: "none",
+                  borderRadius: 999,
+                  padding: "0.625rem 0.75rem",
+                  fontFamily: "var(--font-body)",
+                  fontSize: "1rem",
+                  fontWeight: 500,
+                }}
+              >
+                {COUNTRY_CODES.map((c) => (
+                  <option key={c.iso2} value={c.code}>
+                    {c.code} {c.iso2}
+                  </option>
+                ))}
+              </select>
+              <div style={{ flex: 1 }}>
+                <GhostInput
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={setPhoneNumber}
+                  autoComplete="tel-national"
+                  placeholder="Phone number"
+                />
+              </div>
+            </div>
+          </>
+        )}
       </motion.div>
+
+      {step === "identity" && (
+        <button
+          type="button"
+          onClick={() => void finishSignup(next)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--text-faint)",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.9375rem",
+            textAlign: "center",
+            cursor: "pointer",
+            padding: "0.5rem",
+          }}
+        >
+          Skip for now
+        </button>
+      )}
 
       {/* Error / notice */}
       <AnimatePresence>
@@ -326,7 +434,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           transition: "background 0.2s, color 0.2s",
         }}
       >
-        {busy ? "Working…" : copy.cta}
+        {busy ? "Working…" : step === "identity" ? "Finish" : copy.cta}
       </motion.button>
     </form>
   );

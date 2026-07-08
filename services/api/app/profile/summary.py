@@ -42,6 +42,10 @@ class ProfileSummary(SummaryStats):
     display_name: str | None = None
     email: str | None = None
     member_since: str | None = None  # ISO date (users.created_at)
+    phone_country_code: str | None = None
+    phone_number: str | None = None
+    # The bottom nav swaps its default profile glyph for this once set.
+    avatar_url: str | None = None
 
 
 def fallback_display_name(email: str | None) -> str | None:

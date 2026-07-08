@@ -75,6 +75,15 @@ def upsert_profile(
     repo.upsert(principal.user_id, profile)
     if "display_name" in payload.model_fields_set:
         account_repo.set_display_name(principal.user_id, payload.display_name)
+    if "phone_country_code" in payload.model_fields_set or "phone_number" in payload.model_fields_set:
+        country_code, number = account_repo.get_phone(principal.user_id)
+        if "phone_country_code" in payload.model_fields_set:
+            country_code = payload.phone_country_code
+        if "phone_number" in payload.model_fields_set:
+            number = payload.phone_number
+        account_repo.set_phone(principal.user_id, country_code, number)
+    if "avatar_url" in payload.model_fields_set:
+        account_repo.set_avatar_url(principal.user_id, payload.avatar_url)
     return profile
 
 
@@ -214,6 +223,8 @@ def profile_summary(
     summary.display_name = name or fallback_display_name(principal.email)
     summary.email = principal.email
     summary.member_since = created_at.date().isoformat() if hasattr(created_at, "date") else None
+    summary.phone_country_code, summary.phone_number = account_repo.get_phone(principal.user_id)
+    summary.avatar_url = account_repo.get_avatar_url(principal.user_id)
     return summary
 
 

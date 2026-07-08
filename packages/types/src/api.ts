@@ -1098,6 +1098,12 @@ export interface components {
             occasion?: string | null;
             /** Display Name */
             display_name?: string | null;
+            /** Phone Country Code */
+            phone_country_code?: string | null;
+            /** Phone Number */
+            phone_number?: string | null;
+            /** Avatar Url */
+            avatar_url?: string | null;
         };
         /**
          * ProfileSummary
@@ -1140,6 +1146,12 @@ export interface components {
             email?: string | null;
             /** Member Since */
             member_since?: string | null;
+            /** Phone Country Code */
+            phone_country_code?: string | null;
+            /** Phone Number */
+            phone_number?: string | null;
+            /** Avatar Url */
+            avatar_url?: string | null;
         };
         /** ReactionInput */
         ReactionInput: {

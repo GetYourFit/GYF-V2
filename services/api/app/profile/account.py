@@ -35,6 +35,10 @@ _GET_CONSENT = "SELECT consent_flags FROM users WHERE id = %s"
 _UPDATE_CONSENT = "UPDATE users SET consent_flags = consent_flags || %s WHERE id = %s"
 _SET_DISPLAY_NAME = "UPDATE users SET display_name = %s WHERE id = %s"
 _GET_IDENTITY = "SELECT display_name, created_at FROM users WHERE id = %s"
+_SET_PHONE = "UPDATE users SET phone_country_code = %s, phone_number = %s WHERE id = %s"
+_GET_PHONE = "SELECT phone_country_code, phone_number FROM users WHERE id = %s"
+_SET_AVATAR_URL = "UPDATE users SET avatar_url = %s WHERE id = %s"
+_GET_AVATAR_URL = "SELECT avatar_url FROM users WHERE id = %s"
 
 
 class AccountRepository(Protocol):
@@ -68,6 +72,22 @@ class AccountRepository(Protocol):
 
     def get_identity(self, user_id: str) -> tuple[str | None, object | None]:
         """``(display_name, created_at)`` for the user; ``(None, None)`` if absent."""
+        ...
+
+    def set_phone(self, user_id: str, country_code: str | None, number: str | None) -> None:
+        """Set (or clear, with ``None``) the user's phone country code + number."""
+        ...
+
+    def get_phone(self, user_id: str) -> tuple[str | None, str | None]:
+        """``(country_code, number)`` for the user; ``(None, None)`` if absent."""
+        ...
+
+    def set_avatar_url(self, user_id: str, url: str | None) -> None:
+        """Set (or clear, with ``None``) the user's profile picture URL."""
+        ...
+
+    def get_avatar_url(self, user_id: str) -> str | None:
+        """The user's profile picture URL, or ``None`` if unset/absent."""
         ...
 
 
@@ -120,6 +140,24 @@ class PostgresAccountRepository:
             row = conn.execute(_GET_IDENTITY, (user_id,)).fetchone()
         return (row[0], row[1]) if row else (None, None)
 
+    def set_phone(self, user_id: str, country_code: str | None, number: str | None) -> None:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            conn.execute(_SET_PHONE, (country_code, number, user_id))
+
+    def get_phone(self, user_id: str) -> tuple[str | None, str | None]:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            row = conn.execute(_GET_PHONE, (user_id,)).fetchone()
+        return (row[0], row[1]) if row else (None, None)
+
+    def set_avatar_url(self, user_id: str, url: str | None) -> None:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            conn.execute(_SET_AVATAR_URL, (url, user_id))
+
+    def get_avatar_url(self, user_id: str) -> str | None:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            row = conn.execute(_GET_AVATAR_URL, (user_id,)).fetchone()
+        return row[0] if row else None
+
 
 class InMemoryAccountRepository:
     """Dict-backed repo for tests. Models tombstones and consent in memory."""
@@ -171,3 +209,22 @@ class InMemoryAccountRepository:
         if user is None:
             return (None, None)
         return (user.get("display_name"), user.get("created_at"))
+
+    def set_phone(self, user_id: str, country_code: str | None, number: str | None) -> None:
+        user = self.users.setdefault(user_id, {"deleted": False, "consent": {}})
+        user["phone_country_code"] = country_code
+        user["phone_number"] = number
+
+    def get_phone(self, user_id: str) -> tuple[str | None, str | None]:
+        user = self.users.get(user_id)
+        if user is None:
+            return (None, None)
+        return (user.get("phone_country_code"), user.get("phone_number"))
+
+    def set_avatar_url(self, user_id: str, url: str | None) -> None:
+        user = self.users.setdefault(user_id, {"deleted": False, "consent": {}})
+        user["avatar_url"] = url
+
+    def get_avatar_url(self, user_id: str) -> str | None:
+        user = self.users.get(user_id)
+        return user.get("avatar_url") if user else None

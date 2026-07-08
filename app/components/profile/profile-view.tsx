@@ -104,7 +104,13 @@ export function ProfileView() {
       transition={{ duration: 0.35, ease: EASE }}
       style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
     >
-      <UserHero profile={data.profile} summary={data.summary} />
+      <UserHero
+        profile={data.profile}
+        summary={data.summary}
+        onAvatarChange={(avatar_url) =>
+          setData((d) => (d ? { ...d, summary: { ...d.summary, avatar_url } } : d))
+        }
+      />
       <div style={{ padding: "0 1rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
         <Stats summary={data.summary} />
         {data.summary.badges.length > 0 && <Badges badges={data.summary.badges} />}
@@ -127,9 +133,43 @@ function memberSince(iso: string | null | undefined): string | null {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-function UserHero({ profile, summary }: { profile: Profile | null; summary: ProfileSummary }) {
+function UserHero({
+  profile,
+  summary,
+  onAvatarChange,
+}: {
+  profile: Profile | null;
+  summary: ProfileSummary;
+  onAvatarChange: (url: string) => void;
+}) {
   const displayName = summary.display_name || "Style Explorer";
   const since = memberSince(summary.member_since);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const onPickPhoto = useCallback(
+    async (file: File) => {
+      setUploading(true);
+      try {
+        const { uploadAvatar } = await import("@/lib/avatar-upload");
+        const { createSupabaseBrowserClient } = await import("@/lib/supabase/client");
+        const supabase = createSupabaseBrowserClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not signed in");
+        const url = await uploadAvatar(file, user.id);
+        await browserApi().putProfile({ avatar_url: url });
+        onAvatarChange(url);
+      } catch {
+        // Best-effort — the avatar circle just keeps showing initials/the
+        // previous photo; the user can retry from the same control.
+      } finally {
+        setUploading(false);
+      }
+    },
+    [onAvatarChange],
+  );
 
   // Styling identity, straight from the user's own profile — only fields they set.
   const identityChips = [
@@ -161,9 +201,15 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
         gap: "1rem",
       }}
     >
-      {/* Avatar */}
-      <div
+      {/* Avatar — tap to upload/replace a profile picture; the same photo
+          then replaces the default glyph on the bottom nav's Profile tab. */}
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        aria-label={summary.avatar_url ? "Change profile picture" : "Add profile picture"}
+        disabled={uploading}
         style={{
+          position: "relative",
           width: 88,
           height: 88,
           borderRadius: "50%",
@@ -174,19 +220,60 @@ function UserHero({ profile, summary }: { profile: Profile | null; summary: Prof
           border: "3px solid var(--surface-3)",
           boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
           flexShrink: 0,
+          padding: 0,
+          cursor: uploading ? "default" : "pointer",
+          overflow: "hidden",
         }}
       >
+        {summary.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element -- external Supabase Storage URL
+          <img
+            src={summary.avatar_url}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        ) : (
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "2rem",
+              fontWeight: 700,
+              color: "var(--text-mid)",
+            }}
+          >
+            {displayName.charAt(0).toUpperCase()}
+          </span>
+        )}
         <span
+          aria-hidden
           style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "2rem",
-            fontWeight: 700,
-            color: "var(--text-mid)",
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            padding: "0.25rem",
+            background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent 60%)",
+            opacity: uploading ? 1 : 0,
+            transition: "opacity 0.15s",
           }}
         >
-          {displayName.charAt(0).toUpperCase()}
+          <span style={{ fontSize: "0.625rem", color: "#fff", fontFamily: "var(--font-mono)" }}>
+            {uploading ? "Uploading…" : ""}
+          </span>
         </span>
-      </div>
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) void onPickPhoto(file);
+        }}
+      />
 
       {/* Name */}
       <p

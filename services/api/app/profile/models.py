@@ -16,6 +16,7 @@ values are coerced to ``unknown`` rather than rejected.
 
 from __future__ import annotations
 
+import re
 from typing import Annotated
 
 from gyf_contracts.usermodel import (
@@ -111,14 +112,37 @@ class ProfileInput(BaseModel):
     # never enters the Profile model or field_confidence — the router routes it to
     # the account repository. Whitespace-only clears; >60 chars is a 422.
     display_name: str | None = Field(default=None, max_length=60)
+    # Also identity, also routed to `users` by the router (never entering
+    # Profile/field_confidence): phone is collected at signup as a country
+    # code (E.164 calling code, e.g. "+1") plus a national number, kept
+    # separate so the UI can re-render a country picker without re-parsing a
+    # combined string. avatar_url is metadata only — the client uploads the
+    # image directly to Supabase Storage and only sends us the resulting URL.
+    phone_country_code: str | None = Field(default=None, max_length=5)
+    phone_number: str | None = Field(default=None, max_length=20)
+    avatar_url: str | None = Field(default=None, max_length=2048)
 
-    @field_validator("display_name", mode="before")
+    @field_validator("display_name", "phone_number", "avatar_url", mode="before")
     @classmethod
     def _trim_display_name(cls, v: str | None) -> str | None:
         if v is None:
             return None
         v = str(v).strip()
         return v or None
+
+    @field_validator("phone_country_code", mode="before")
+    @classmethod
+    def _normalize_country_code(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = str(v).strip()
+        if not v:
+            return None
+        if not v.startswith("+"):
+            v = "+" + v
+        if not re.fullmatch(r"\+[1-9][0-9]{0,3}", v):
+            raise ValueError("phone_country_code must be an E.164 calling code, e.g. '+1'")
+        return v
 
     @field_validator("skin_tone")
     @classmethod
