@@ -100,6 +100,15 @@ function skeletonItem(id: string): SearchResult {
   return { item_id: id, title: "", score: 0 } as SearchResult;
 }
 
+interface ClusterLayout {
+  tiles: Tile[];
+  occupied: Set<string>;
+  minCx: number;
+  maxCx: number;
+  minCy: number;
+  maxCy: number;
+}
+
 /**
  * Place tiles on an occupancy grid along an expanding spiral from the
  * center — the organic "cluster" arrangement of Ref2. Tile spans vary per
@@ -107,10 +116,20 @@ function skeletonItem(id: string): SearchResult {
  * array order: appending new items to the end never reshuffles tiles
  * already placed for earlier items, which is what lets loadMore() grow the
  * cluster outward without the existing layout jumping.
+ *
+ * Also returns the occupancy set and its cell bounds — the spiral-anchor
+ * placement is greedy, not an exhaustive bin-pack, so it can leave small
+ * holes between irregularly-sized tiles even inside a fully "loaded"
+ * region. The caller (fillerRects) uses these to paper over exactly those
+ * holes so the grid never shows raw background within its own bounds.
  */
-function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[] {
+function layoutCluster(items: SearchResult[], selectedId: string | null): ClusterLayout {
   const occupied = new Set<string>();
   const tiles: Tile[] = [];
+  let minCx = 0;
+  let maxCx = 0;
+  let minCy = 0;
+  let maxCy = 0;
 
   const fits = (cx: number, cy: number, cw: number, ch: number) => {
     for (let ix = 0; ix < cw; ix++)
@@ -120,6 +139,10 @@ function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[]
   const claim = (cx: number, cy: number, cw: number, ch: number) => {
     for (let ix = 0; ix < cw; ix++)
       for (let iy = 0; iy < ch; iy++) occupied.add(`${cx + ix},${cy + iy}`);
+    minCx = Math.min(minCx, cx);
+    maxCx = Math.max(maxCx, cx + cw - 1);
+    minCy = Math.min(minCy, cy);
+    maxCy = Math.max(maxCy, cy + ch - 1);
   };
 
   // Spiral of candidate anchor cells around the origin. Radius scales with
@@ -157,7 +180,48 @@ function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[]
     }
     if (!placed) break; // spiral exhausted — enough tiles on screen anyway
   }
-  return tiles;
+  return { tiles, occupied, minCx, maxCx, minCy, maxCy };
+}
+
+/** A filler block: same box shape as a Tile, no item behind it. */
+interface FillerRect {
+  key: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Every occupancy-grid cell inside the cluster's own bounds that no tile
+ * claimed — the packer's leftover holes — merged into per-row runs (one
+ * filler box per contiguous empty stretch) so a sparse cluster doesn't cost
+ * one DOM node per empty cell. Rendered as inert textured blocks so the grid
+ * reads as fully tiled (Ref2) instead of showing the raw canvas background
+ * through the gaps.
+ */
+function fillerRects(layout: ClusterLayout): FillerRect[] {
+  const { occupied, minCx, maxCx, minCy, maxCy } = layout;
+  if (minCx > maxCx || minCy > maxCy) return [];
+  const rects: FillerRect[] = [];
+  for (let cy = minCy; cy <= maxCy; cy++) {
+    let runStart: number | null = null;
+    for (let cx = minCx; cx <= maxCx + 1; cx++) {
+      const empty = cx <= maxCx && !occupied.has(`${cx},${cy}`);
+      if (empty && runStart === null) runStart = cx;
+      if (!empty && runStart !== null) {
+        rects.push({
+          key: `${runStart},${cy}`,
+          x: runStart * CELL,
+          y: cy * CELL,
+          w: (cx - runStart) * CELL - GAP,
+          h: CELL - GAP,
+        });
+        runStart = null;
+      }
+    }
+  }
+  return rects;
 }
 
 /** A tile's image, faded in on load rather than popping in the instant the
@@ -209,6 +273,26 @@ function SkeletonTile({ tile, index }: { tile: Tile; index: number }) {
         background:
           "linear-gradient(135deg, var(--surface-2) 0%, var(--rule) 50%, var(--surface-2) 100%)",
         filter: "blur(10px)",
+      }}
+    />
+  );
+}
+
+/** Static (non-pulsing) textured block filling a packing hole inside the
+ *  cluster's own bounds — distinct from SkeletonTile (which signals "more is
+ *  loading") since a filler is permanent, not a loading state. */
+function FillerBlock({ rect }: { rect: FillerRect }) {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "absolute",
+        left: rect.x,
+        top: rect.y,
+        width: rect.w,
+        height: rect.h,
+        background: "var(--surface-2)",
+        opacity: 0.5,
       }}
     />
   );
@@ -407,13 +491,20 @@ export function CanvasExplorer() {
     setBgColor(null);
   }, []);
 
-  const tiles = useMemo(() => layoutCluster(items, selectedId), [items, selectedId]);
+  const cluster = useMemo(() => layoutCluster(items, selectedId), [items, selectedId]);
+  const tiles = cluster.tiles;
+  // Packing holes inside the cluster's own bounds — rendered as inert
+  // textured blocks so the grid reads as fully tiled (Ref2), never showing
+  // raw canvas background between irregularly-sized tiles.
+  const fillerTiles = useMemo(() => fillerRects(cluster), [cluster]);
 
   // Skeleton continuation for the initial load (blank canvas otherwise) and
   // for infinite-scroll fetches (placeholders already sit past the loaded
   // edge, so panning never hits a visible wall while the next page loads).
   const initialSkeletonTiles = useMemo(
-    () => layoutCluster(Array.from({ length: 24 }, (_, i) => skeletonItem(`skeleton-init-${i}`)), null),
+    () =>
+      layoutCluster(Array.from({ length: 24 }, (_, i) => skeletonItem(`skeleton-init-${i}`)), null)
+        .tiles,
     [],
   );
   const extraSkeletonTiles = useMemo(() => {
@@ -425,7 +516,7 @@ export function CanvasExplorer() {
       ],
       selectedId,
     );
-    return withPlaceholders.slice(items.length);
+    return withPlaceholders.tiles.slice(items.length);
   }, [loadingMore, items, selectedId]);
 
   // Content bounds clamp the pan so the cluster can never be lost off-screen.
@@ -680,6 +771,10 @@ export function CanvasExplorer() {
         {loading &&
           items.length === 0 &&
           initialSkeletonTiles.map((t, i) => <SkeletonTile key={t.item.item_id} tile={t} index={i} />)}
+
+        {fillerTiles.map((rect) => (
+          <FillerBlock key={rect.key} rect={rect} />
+        ))}
 
         {tiles.map((t, i) => (
           <motion.button
