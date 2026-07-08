@@ -52,6 +52,7 @@ export default function Loading() {
           height={125}
           priority
           style={{
+                filter: "brightness(0) invert(1)",
             width: "160px",
             height: "auto",
           }}

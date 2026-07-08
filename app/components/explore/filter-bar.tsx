@@ -68,17 +68,39 @@ const CHIP_BASE: React.CSSProperties = {
   transition: "all 0.15s",
 };
 
-function chip(active: boolean, color: string = "var(--text)"): React.CSSProperties {
+// Ref4: filter chips read as quiet text tabs — the active one is white with
+// a hairline underline, everything else recedes. Monochrome, no pills.
+function chip(active: boolean, _color: string = "var(--text)"): React.CSSProperties {
   return {
     ...CHIP_BASE,
-    border: active ? `1px solid ${color}` : "1px solid rgba(255,255,255,0.12)",
-    background: active ? color : "var(--surface-2)",
-    color: active ? "var(--bg)" : "var(--text-mid)",
+    border: "none",
+    borderRadius: 0,
+    background: "transparent",
+    color: active ? "var(--text)" : "var(--text-faint)",
+    fontWeight: active ? 700 : 500,
+    boxShadow: active ? "inset 0 -2px 0 var(--text)" : "none",
   };
 }
 
+// Ref4: rotating search hints shown inside the bar ("Try 'archival fashion'").
+const SEARCH_HINTS = [
+  "Try 'archival fashion'",
+  "Try 'linen summer looks'",
+  "Try 'minimal monochrome'",
+  "Try 'office capsule'",
+  "Try 'quiet luxury'",
+  "Try 'streetwear staples'",
+];
+
 export function FilterBar({ filters, onChange }: FilterBarProps) {
   const reduce = useReducedMotion();
+  const [hintIndex, setHintIndex] = useState(0);
+  useEffect(() => {
+    if (reduce) return;
+    const id = setInterval(() => setHintIndex((i) => (i + 1) % SEARCH_HINTS.length), 4000);
+    return () => clearInterval(id);
+  }, [reduce]);
+  const placeholder = SEARCH_HINTS[hintIndex];
   const [facets, setFacets] = useState<CatalogFacets | null>(null);
   const [focused, setFocused] = useState(false);
   const filtersRef = useRef(filters);
@@ -205,7 +227,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           />
           <input
             type="search"
-            placeholder="Search garments…"
+            placeholder={placeholder}
             value={filters.q}
             onChange={(e: ChangeEvent<HTMLInputElement>) => set("q", e.target.value)}
             onFocus={() => setFocused(true)}

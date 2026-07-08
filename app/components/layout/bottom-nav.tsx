@@ -8,66 +8,64 @@ import { NavExplore } from "@/components/icons/NavExplore";
 import { NavWardrobe } from "@/components/icons/NavWardrobe";
 import { NavSocial } from "@/components/icons/NavSocial";
 import { NavProfile } from "@/components/icons/NavProfile";
-import { UI_COLORS } from "@/lib/ui-colors";
 
-// Each tab's active color matches that page's own signature color (see
-// app/lib/ui-colors.ts), so the nav tab and the buttons on the page it
-// leads to always read as the same color story.
+// Cosmos-style floating pill nav (Ref3): icon-only, fully rounded, hovering
+// over the content instead of docking to the screen edge. Monochrome —
+// the active tab is white, everything else recedes.
 const LEFT_TABS = [
-  { href: "/explore", Icon: NavExplore, label: "Explore", exact: false, color: UI_COLORS.explore },
-  {
-    href: "/wardrobe",
-    Icon: NavWardrobe,
-    label: "Wardrobe",
-    exact: false,
-    color: UI_COLORS.wardrobe,
-  },
+  { href: "/explore", Icon: NavExplore, label: "Explore" },
+  { href: "/wardrobe", Icon: NavWardrobe, label: "Wardrobe" },
 ] as const;
 
 const RIGHT_TABS = [
-  { href: "/social", Icon: NavSocial, label: "Social", exact: false, color: UI_COLORS.social },
-  { href: "/profile", Icon: NavProfile, label: "Profile", exact: false, color: UI_COLORS.profile },
+  { href: "/social", Icon: NavSocial, label: "Social" },
+  { href: "/profile", Icon: NavProfile, label: "Profile" },
 ] as const;
 
-const MUTED = "var(--text-mid)";
+const ACTIVE = "#ffffff";
+const MUTED = "rgba(255,255,255,0.45)";
 
-// Anchor hues from the app's warm palette (rose → terracotta → olive →
-// ochre) — interpolated below into a dense 64-step cycle so the logo
-// button's color rotation reads as a continuous drift rather than jumps.
-const PALETTE_ANCHORS = ["var(--text)", "#b8571f", "#6b7d3d", "#a8791f"];
-
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+function Tab({
+  href,
+  Icon,
+  label,
+  active,
+  reduce,
+}: {
+  href: string;
+  Icon: (props: { size?: number; strokeWidth?: number }) => React.ReactNode;
+  label: string;
+  active: boolean;
+  reduce: boolean | null;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      aria-label={label}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 48,
+        height: 48,
+        borderRadius: "50%",
+        color: active ? ACTIVE : MUTED,
+        textDecoration: "none",
+        transition: "color 0.2s",
+        position: "relative",
+      }}
+    >
+      <motion.div
+        whileTap={reduce ? undefined : { scale: 0.82 }}
+        transition={{ type: "spring", stiffness: 600, damping: 30 }}
+        style={{ display: "flex" }}
+      >
+        <Icon size={22} strokeWidth={active ? 2 : 1.6} />
+      </motion.div>
+    </Link>
+  );
 }
-
-function rgbToHex([r, g, b]: [number, number, number]): string {
-  const c = (v: number) => Math.round(v).toString(16).padStart(2, "0");
-  return `#${c(r)}${c(g)}${c(b)}`;
-}
-
-/** Evenly samples `count` colors around a cyclic loop through `anchors`. */
-function buildRotation(anchors: string[], count: number): string[] {
-  const rgbs = anchors.map(hexToRgb);
-  const out: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const pos = (i / count) * rgbs.length;
-    const idx = Math.floor(pos) % rgbs.length;
-    const next = (idx + 1) % rgbs.length;
-    const t = pos - Math.floor(pos);
-    const a = rgbs[idx];
-    const b = rgbs[next];
-    out.push(rgbToHex([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]));
-  }
-  out.push(out[0]); // repeat the first stop so the animation loop wraps smoothly
-  return out;
-}
-
-// Colors the centre logo button's ring + bloom cycle through.
-const ROTATING_COLORS = buildRotation(PALETTE_ANCHORS, 64);
-// Total seconds for one full lap of all 64 stops — independent of stop
-// count so adding more colors only makes the drift finer, not slower.
-const ROTATION_DURATION = 18;
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -78,241 +76,85 @@ export function BottomNav() {
       aria-label="Primary navigation"
       style={{
         position: "fixed",
-        bottom: 0,
+        bottom: "calc(1.125rem + env(safe-area-inset-bottom))",
         zIndex: 40,
         left: "50%",
         transform: "translateX(-50%)",
-        paddingBottom: "env(safe-area-inset-bottom)",
-        background: "rgba(10,10,10,0.94)",
+        display: "flex",
+        alignItems: "center",
+        gap: "0.25rem",
+        padding: "0.375rem 0.625rem",
+        background: "rgba(28,28,30,0.92)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
-        display: "flex",
-        maxWidth: "390px",
-        width: "100%",
-        borderRadius: "16px 16px 0 0",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 999,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
       }}
     >
-      {/* Left tabs */}
-      {LEFT_TABS.map(({ href, Icon, label, exact, color }) => {
-        const active = exact ? pathname === href : pathname.startsWith(href);
-        return (
-          <Link
-            key={href}
-            href={href}
-            aria-current={active ? "page" : undefined}
-            aria-label={label}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.25rem",
-              height: "64px",
-              position: "relative",
-              color: active ? color : MUTED,
-              textDecoration: "none",
-              minWidth: "44px",
-              transition: "color 0.2s",
-            }}
-          >
-            {active && (
-              <motion.span
-                layoutId={reduce ? undefined : "nav-indicator-left"}
-                transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  width: 20,
-                  height: 2,
-                  background: color,
-                  borderRadius: "0 0 2px 2px",
-                }}
-              />
-            )}
-            <motion.div
-              whileTap={reduce ? undefined : { scale: 0.82 }}
-              transition={{ type: "spring", stiffness: 600, damping: 30 }}
-            >
-              <Icon size={22} strokeWidth={active ? 2 : 1.5} />
-            </motion.div>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "0.55rem",
-                fontWeight: 600,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                color: active ? color : MUTED,
-                lineHeight: 1,
-              }}
-            >
-              {label}
-            </span>
-          </Link>
-        );
-      })}
+      {LEFT_TABS.map(({ href, Icon, label }) => (
+        <Tab
+          key={href}
+          href={href}
+          Icon={Icon}
+          label={label}
+          active={pathname.startsWith(href)}
+          reduce={reduce}
+        />
+      ))}
 
-      {/* Centre logo — redirects to Stylist */}
+      {/* Centre logo — Stylist home */}
       <Link
         href="/"
         aria-label="GYF — Go to Stylist"
+        aria-current={pathname === "/" ? "page" : undefined}
         style={{
-          flex: "0 0 64px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          height: "64px",
-          position: "relative",
+          width: 48,
+          height: 48,
         }}
       >
-        {/* Outer bloom — same color cycle as the ring, one shared transition
-            so both stay perfectly in sync, plus a slow breathing pulse. */}
-        <motion.div
-          aria-hidden
-          animate={
-            reduce
-              ? { backgroundColor: ROTATING_COLORS[0] }
-              : { backgroundColor: ROTATING_COLORS, scale: [1, 1.12, 1], opacity: [0.35, 0.55, 0.35] }
-          }
-          transition={
-            reduce
-              ? undefined
-              : {
-                  backgroundColor: {
-                    duration: ROTATION_DURATION,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  },
-                  scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-                  opacity: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-                }
-          }
-          style={{
-            position: "absolute",
-            width: 60,
-            height: 60,
-            borderRadius: "50%",
-            filter: "blur(10px)",
-          }}
-        />
-
-        {/* Button itself carries the same rotating color — a white inner
-            disc keeps the logo legible against every color in the cycle. */}
         <motion.div
           whileTap={reduce ? undefined : { scale: 0.88 }}
-          animate={
-            reduce
-              ? { backgroundColor: ROTATING_COLORS[0] }
-              : { backgroundColor: ROTATING_COLORS }
-          }
-          transition={{
-            scale: { type: "spring", stiffness: 500, damping: 25 },
-            backgroundColor: reduce
-              ? undefined
-              : { duration: ROTATION_DURATION, repeat: Infinity, ease: "easeInOut" },
-          }}
+          transition={{ type: "spring", stiffness: 500, damping: 25 }}
           style={{
-            position: "relative",
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             borderRadius: "50%",
-            border: "1.5px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.14)",
+            background: pathname === "/" ? "#ffffff" : "rgba(255,255,255,0.12)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            transition: "background 0.2s",
           }}
         >
-          <div
+          <Image
+            src="/assets/logo.png"
+            alt="GYF"
+            width={139}
+            height={125}
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "var(--surface-2)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              width: 22,
+              height: "auto",
+              // Black mark on the active white disc, white mark otherwise.
+              filter: pathname === "/" ? "brightness(0)" : "brightness(0) invert(1)",
             }}
-          >
-            <Image
-              src="/assets/logo.png"
-              alt="GYF"
-              width={139}
-              height={125}
-              style={{ width: 22, height: "auto" }}
-            />
-          </div>
+          />
         </motion.div>
       </Link>
 
-      {/* Right tabs */}
-      {RIGHT_TABS.map(({ href, Icon, label, color }) => {
-        const active = pathname.startsWith(href);
-        return (
-          <Link
-            key={href}
-            href={href}
-            aria-current={active ? "page" : undefined}
-            aria-label={label}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.25rem",
-              height: "64px",
-              position: "relative",
-              color: active ? color : MUTED,
-              textDecoration: "none",
-              minWidth: "44px",
-              transition: "color 0.2s",
-            }}
-          >
-            {active && (
-              <motion.span
-                layoutId={reduce ? undefined : "nav-indicator-right"}
-                transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  width: 20,
-                  height: 2,
-                  background: color,
-                  borderRadius: "0 0 2px 2px",
-                }}
-              />
-            )}
-            <motion.div
-              whileTap={reduce ? undefined : { scale: 0.82 }}
-              transition={{ type: "spring", stiffness: 600, damping: 30 }}
-            >
-              <Icon size={22} strokeWidth={active ? 2 : 1.5} />
-            </motion.div>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "0.55rem",
-                fontWeight: 600,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                color: active ? color : MUTED,
-                lineHeight: 1,
-              }}
-            >
-              {label}
-            </span>
-          </Link>
-        );
-      })}
+      {RIGHT_TABS.map(({ href, Icon, label }) => (
+        <Tab
+          key={href}
+          href={href}
+          Icon={Icon}
+          label={label}
+          active={pathname.startsWith(href)}
+          reduce={reduce}
+        />
+      ))}
     </nav>
   );
 }

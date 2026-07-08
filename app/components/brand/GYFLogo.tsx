@@ -7,11 +7,11 @@ interface GYFLogoProps {
   width?: number;
   className?: string;
   style?: CSSProperties;
-  /** Pass true when rendering on a dark background — inverts to white */
+  /** White logo on the dark theme — pass false only on a light surface. */
   invert?: boolean;
 }
 
-export function GYFLogo({ width = 120, className, style, invert = false }: GYFLogoProps) {
+export function GYFLogo({ width = 120, className, style, invert = true }: GYFLogoProps) {
   return (
     <Image
       src="/assets/logo.png"
