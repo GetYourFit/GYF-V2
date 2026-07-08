@@ -41,7 +41,9 @@ export default function WardrobePage() {
           }}
         >
           Your closet,{" "}
-          <em style={{ fontStyle: "italic", fontWeight: 300, color: "var(--text-mid)" }}>digitised.</em>
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "var(--text-mid)" }}>
+            digitised.
+          </em>
         </h1>
       </header>
       <WardrobeGrid />

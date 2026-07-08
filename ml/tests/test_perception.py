@@ -199,6 +199,33 @@ class InMemoryBackfillStore:
         self.saved[item_id] = result
 
 
+class InMemoryBatchBackfillStore(InMemoryBackfillStore):
+    """Adds a bulk path so tests can assert run_backfill prefers it over save()."""
+
+    def __init__(self, items: list[PendingItem]) -> None:
+        super().__init__(items)
+        self.batch_calls: list[int] = []
+
+    def save(self, item_id, result, model_version) -> None:  # pragma: no cover - must not run
+        raise AssertionError("run_backfill must prefer save_batch when available")
+
+    def save_batch(self, results, model_version) -> None:
+        self.batch_calls.append(len(results))
+        for item_id, result in results:
+            self.saved[item_id] = result
+
+
+def test_backfill_prefers_save_batch_over_per_item_save():
+    items = [PendingItem("a", ["ok"]), PendingItem("b", ["ok"])]
+    store = InMemoryBatchBackfillStore(items)
+
+    result = run_backfill(store, Perceptor(FakeEncoder()), lambda r: _solid_image(), "v1")
+
+    assert result.processed == 2
+    assert store.batch_calls == [2]  # one bulk call, not two per-item calls
+    assert set(store.saved) == {"a", "b"}
+
+
 def test_backfill_processes_loadable_and_skips_broken(monkeypatch):
     items = [
         PendingItem("a", ["ok-a"]),

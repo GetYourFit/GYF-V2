@@ -343,7 +343,9 @@ export function StylistFeed() {
           }}
         >
           Complete looks,{" "}
-          <em style={{ fontStyle: "italic", fontWeight: 300, color: "var(--text-mid)" }}>made for you</em>
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "var(--text-mid)" }}>
+            made for you
+          </em>
         </h1>
         {data && <StatusLine data={data} />}
       </motion.header>

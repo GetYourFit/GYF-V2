@@ -292,7 +292,8 @@ export function AccountManager() {
               padding: "0 1.5rem",
               background:
                 savingName || nameDraft.trim() === savedName ? "var(--rule)" : "var(--text)",
-              color: savingName || nameDraft.trim() === savedName ? "var(--text-faint)" : "var(--bg)",
+              color:
+                savingName || nameDraft.trim() === savedName ? "var(--text-faint)" : "var(--bg)",
               border: "none",
               borderRadius: "999px",
               cursor: savingName || nameDraft.trim() === savedName ? "not-allowed" : "pointer",
@@ -562,8 +563,8 @@ export function AccountManager() {
             >
               This permanently erases your profile, saved looks, wardrobe, and posts. It can&apos;t
               be undone. Type{" "}
-              <span style={{ fontFamily: "var(--font-mono)", color: "var(--error)" }}>DELETE</span> to
-              confirm.
+              <span style={{ fontFamily: "var(--font-mono)", color: "var(--error)" }}>DELETE</span>{" "}
+              to confirm.
             </p>
             <input
               ref={confirmInputRef}
@@ -601,7 +602,9 @@ export function AccountManager() {
                   minHeight: "44px",
                   padding: "0 1.5rem",
                   background:
-                    confirmText === "DELETE" && !deleting ? "var(--error)" : "rgba(255,180,171,0.12)",
+                    confirmText === "DELETE" && !deleting
+                      ? "var(--error)"
+                      : "rgba(255,180,171,0.12)",
                   color: confirmText === "DELETE" && !deleting ? "var(--bg)" : "var(--error)",
                   border: "none",
                   borderRadius: "999px",

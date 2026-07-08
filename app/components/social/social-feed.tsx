@@ -293,7 +293,13 @@ export function SocialFeed() {
               textAlign: "center",
             }}
           >
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", color: "var(--text-mid)" }}>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "0.9375rem",
+                color: "var(--text-mid)",
+              }}
+            >
               {error}
             </p>
             <button

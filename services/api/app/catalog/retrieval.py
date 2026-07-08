@@ -282,6 +282,47 @@ def search_text(
     )
 
 
+def search_text_multi_slot(
+    repo: VectorSearchRepository,
+    embedder: TextEmbedder,
+    query: str,
+    per_slot_k: int,
+    region: str | None,
+    offset: int,
+    slot_categories: list[list[str]],
+    max_price: float | None = None,
+    sort: str = "relevance",
+    genders: frozenset[str] | None = None,
+) -> list[SearchResult]:
+    """One embed, one page per slot, round-robin interleaved.
+
+    Replaces N browser round trips (one per outfit slot) — each re-embedding the
+    same query text — with a single embed shared across N cheap DB scans, so a
+    default browse page costs one remote encoder call instead of N.
+    """
+    embedding = embedder.embed_query(query)
+    per_slot = [
+        repo.search_by_vector(
+            embedding,
+            per_slot_k,
+            region,
+            offset,
+            max_price=max_price,
+            sort=sort,
+            genders=genders,
+            categories=categories,
+        )
+        for categories in slot_categories
+    ]
+    longest = max((len(s) for s in per_slot), default=0)
+    out: list[SearchResult] = []
+    for i in range(longest):
+        for slot in per_slot:
+            if i < len(slot):
+                out.append(slot[i])
+    return out
+
+
 def enrich_results(results: list[SearchResult], directory: ItemDirectory) -> list[SearchResult]:
     """Attach real commerce fields (price/currency/colour/buy_url) to search hits.
 

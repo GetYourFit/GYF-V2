@@ -15,6 +15,7 @@ from ..catalog.retrieval import (
     VectorSearchRepository,
     enrich_results,
     search_text,
+    search_text_multi_slot,
 )
 from ..dependencies import get_item_directory, get_search_repo, get_text_embedder
 from ..ratelimit import rate_limit
@@ -27,6 +28,7 @@ router = APIRouter(tags=["catalog"])
     dependencies=[Depends(rate_limit("similar", "rate_limit_search"))],
 )
 def similar_items(
+    response: Response,
     item_id: str,
     k: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0, le=10_000),
@@ -38,6 +40,7 @@ def similar_items(
     directory: ItemDirectory = Depends(get_item_directory),
 ) -> dict[str, list[SearchResult]]:
     """Visually-similar items (nearest neighbours of the item's embedding)."""
+    response.headers["Cache-Control"] = "public, max-age=30"
     hits = repo.similar_to_item(item_id, k, region, offset, genders=_genders(gender))
     return {"results": enrich_results(hits, directory)}
 
@@ -75,6 +78,7 @@ def catalog_facets(
 
 @router.get("/items/search", dependencies=[Depends(rate_limit("search", "rate_limit_search"))])
 def search_items(
+    response: Response,
     q: str = Query(..., min_length=1),
     k: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0, le=10_000),
@@ -101,6 +105,13 @@ def search_items(
             "categories (e.g. bottom = jeans/trousers/skirt/…). Null means all slots.",
         )
     ),
+    slots: str | None = Query(
+        None,
+        description="Comma-separated outfit slots (e.g. 'top,bottom,full_body,footwear'): "
+        "one embed, one page per slot, round-robin interleaved into a single response. "
+        "For multi-slot default browse — replaces N client-side search calls with one. "
+        "Mutually exclusive with `slot`; `k` is the total page size, split evenly.",
+    ),
     repo: VectorSearchRepository = Depends(get_search_repo),
     embedder: TextEmbedder = Depends(get_text_embedder),
     directory: ItemDirectory = Depends(get_item_directory),
@@ -112,19 +123,36 @@ def search_items(
     raises when we actually embed. Convert that into the same honest 503 the
     construction-time path returns, never a 500 that pretends the search broke.
     """
+    response.headers["Cache-Control"] = "public, max-age=30"
     try:
-        hits = search_text(
-            repo,
-            embedder,
-            q,
-            k,
-            region,
-            offset,
-            max_price=max_price,
-            sort=sort,
-            genders=_genders(gender),
-            categories=_slot_categories(slot),
-        )
+        if slots:
+            slot_list = [s.strip() for s in slots.split(",") if s.strip()]
+            per_slot_k = max(1, k // len(slot_list))
+            hits = search_text_multi_slot(
+                repo,
+                embedder,
+                q,
+                per_slot_k,
+                region,
+                offset // len(slot_list),
+                [_slot_categories(s) or [] for s in slot_list],
+                max_price=max_price,
+                sort=sort,
+                genders=_genders(gender),
+            )
+        else:
+            hits = search_text(
+                repo,
+                embedder,
+                q,
+                k,
+                region,
+                offset,
+                max_price=max_price,
+                sort=sort,
+                genders=_genders(gender),
+                categories=_slot_categories(slot),
+            )
         return {"results": enrich_results(hits, directory)}
     except ImportError as exc:  # encoder backend not installed in this runtime
         raise HTTPException(status_code=503, detail="text search unavailable") from exc

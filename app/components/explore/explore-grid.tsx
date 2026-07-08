@@ -18,16 +18,6 @@ const PAGE_SIZE = 24;
 // type monopolizes the grid. PAGE_SIZE must stay divisible by this length.
 const BROWSE_SLOTS = ["top", "bottom", "full_body", "footwear"] as const;
 
-/** Round-robin merge: [a1,b1,c1,d1,a2,b2,…] — keeps every slot visible up top. */
-function interleave<T>(lists: T[][]): T[] {
-  const out: T[] = [];
-  const longest = Math.max(...lists.map((l) => l.length));
-  for (let i = 0; i < longest; i++) {
-    for (const list of lists) if (i < list.length) out.push(list[i]);
-  }
-  return out;
-}
-
 interface GridCache {
   items: SearchResult[];
   page: number;
@@ -158,14 +148,15 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           // Default browse (no search text, no slot chip): a single text search
           // for the seed word is embedding-biased toward tops, so interleave one
           // hard-filtered page per wearable slot instead — every page shows tops,
-          // bottoms, one-pieces AND footwear. Pagination advances per slot.
+          // bottoms, one-pieces AND footwear. The server does the embed once and
+          // interleaves all slots in one round trip (was 4 separate searches).
           const per = PAGE_SIZE / BROWSE_SLOTS.length;
-          const pages = await Promise.all(
-            BROWSE_SLOTS.map((slot) =>
-              api.search(query, { k: per, offset: pageNum * per, slot, ...base }),
-            ),
-          );
-          results = interleave(pages);
+          results = await api.search(query, {
+            k: PAGE_SIZE,
+            offset: pageNum * per,
+            slots: BROWSE_SLOTS.join(","),
+            ...base,
+          });
         }
         if (reset) setItems(results);
         else setItems((prev) => [...prev, ...results]);
@@ -417,9 +408,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           }}
         >
           <div style={{ position: "absolute", inset: 0, border: "1px solid var(--rule)" }} />
-          <div
-            style={{ position: "absolute", inset: "10px", border: "1px solid var(--border)" }}
-          />
+          <div style={{ position: "absolute", inset: "10px", border: "1px solid var(--border)" }} />
           <div
             style={{
               position: "absolute",

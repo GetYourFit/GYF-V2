@@ -84,6 +84,9 @@ export interface SearchParams {
   gender?: string;
   /** Outfit slot hard-filter: top | bottom | full_body | outerwear | footwear | accessory. */
   slot?: string;
+  /** Comma-separated slots: one embed, one page per slot, interleaved server-side.
+   *  Mutually exclusive with `slot` — use for multi-slot default browse. */
+  slots?: string;
 }
 
 interface SearchResults {

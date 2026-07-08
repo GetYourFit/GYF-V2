@@ -13,11 +13,9 @@ tested. Colour is reasoned in CIELAB/LCh (perceptually uniform), never sRGB.
 
 from __future__ import annotations
 
-import hashlib
 import itertools
 import math
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
 
 from .candidates import Candidate
 from .conditioning import Constraints, formality_rank

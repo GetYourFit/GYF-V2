@@ -778,7 +778,10 @@ function ProfileSkeleton() {
         }}
       >
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={`stat-${i}`} style={{ height: "80px", background: "var(--bg)", opacity: 0.6 }} />
+          <div
+            key={`stat-${i}`}
+            style={{ height: "80px", background: "var(--bg)", opacity: 0.6 }}
+          />
         ))}
       </div>
       <div

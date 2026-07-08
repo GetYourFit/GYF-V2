@@ -65,9 +65,7 @@ describe("PhotoUpload", () => {
     render(<PhotoUpload onEstimated={onEstimated} />);
     pickFile("image/png");
     fireEvent.click(screen.getByRole("button", { name: /estimate from photo/i }));
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(/body type/i),
-    );
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/body type/i));
     expect(screen.getByRole("status")).toHaveTextContent(/set it manually/i);
   });
 

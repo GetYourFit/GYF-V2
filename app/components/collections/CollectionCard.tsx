@@ -37,7 +37,12 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
       }}
     >
       <div
-        style={{ position: "relative", aspectRatio: "3/4", background: "#1a1a22", overflow: "hidden" }}
+        style={{
+          position: "relative",
+          aspectRatio: "3/4",
+          background: "#1a1a22",
+          overflow: "hidden",
+        }}
       >
         {src ? (
           <Image

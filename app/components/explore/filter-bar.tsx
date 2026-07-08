@@ -70,7 +70,7 @@ const CHIP_BASE: React.CSSProperties = {
 
 // Ref4: filter chips read as quiet text tabs — the active one is white with
 // a hairline underline, everything else recedes. Monochrome, no pills.
-function chip(active: boolean, _color: string = "var(--text)"): React.CSSProperties {
+function chip(active: boolean): React.CSSProperties {
   return {
     ...CHIP_BASE,
     border: "none",
@@ -210,63 +210,63 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
       >
         {/* Search input + canvas entry */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-          <div
-            style={{ position: "relative", display: "flex", alignItems: "center", flex: 1 }}
-          >
-          <Search
-            size={16}
-            aria-hidden
-            style={{
-              position: "absolute",
-              left: "1rem",
-              color: "var(--text-faint)",
-              flexShrink: 0,
-              pointerEvents: "none",
-              zIndex: 1,
-            }}
-          />
-          <input
-            type="search"
-            placeholder={placeholder}
-            value={filters.q}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => set("q", e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            aria-label="Search garments"
-            style={{
-              flex: 1,
-              background: "var(--surface-2)",
-              border: `1.5px solid ${focused ? "var(--secondary)" : "var(--border)"}`,
-              outline: "none",
-              borderRadius: "999px",
-              padding: "0.75rem 2.5rem 0.75rem 3rem",
-              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-              fontSize: "0.9375rem",
-              color: "var(--text)",
-              boxShadow: focused ? "0 0 0 3px rgba(255,255,255,0.12)" : "0 2px 8px rgba(0,0,0,0.06)",
-              transition: "border-color 0.2s, box-shadow 0.2s",
-            }}
-          />
-          {filters.q && (
-            <button
-              type="button"
-              aria-label="Clear search"
-              onClick={() => set("q", "")}
+          <div style={{ position: "relative", display: "flex", alignItems: "center", flex: 1 }}>
+            <Search
+              size={16}
+              aria-hidden
               style={{
                 position: "absolute",
-                right: "0.875rem",
-                background: "none",
-                border: "none",
+                left: "1rem",
                 color: "var(--text-faint)",
-                cursor: "pointer",
-                padding: "0.25rem",
-                display: "flex",
-                alignItems: "center",
+                flexShrink: 0,
+                pointerEvents: "none",
+                zIndex: 1,
               }}
-            >
-              <X size={14} aria-hidden />
-            </button>
-          )}
+            />
+            <input
+              type="search"
+              placeholder={placeholder}
+              value={filters.q}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => set("q", e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              aria-label="Search garments"
+              style={{
+                flex: 1,
+                background: "var(--surface-2)",
+                border: `1.5px solid ${focused ? "var(--secondary)" : "var(--border)"}`,
+                outline: "none",
+                borderRadius: "999px",
+                padding: "0.75rem 2.5rem 0.75rem 3rem",
+                fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+                fontSize: "0.9375rem",
+                color: "var(--text)",
+                boxShadow: focused
+                  ? "0 0 0 3px rgba(255,255,255,0.12)"
+                  : "0 2px 8px rgba(0,0,0,0.06)",
+                transition: "border-color 0.2s, box-shadow 0.2s",
+              }}
+            />
+            {filters.q && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => set("q", "")}
+                style={{
+                  position: "absolute",
+                  right: "0.875rem",
+                  background: "none",
+                  border: "none",
+                  color: "var(--text-faint)",
+                  cursor: "pointer",
+                  padding: "0.25rem",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <X size={14} aria-hidden />
+              </button>
+            )}
           </div>
 
           {/* Canvas explorer — pan the whole collection (Ref1/Ref2) */}
@@ -355,9 +355,78 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               minHeight: 0,
             }}
           >
-              {/* Occasion chips */}
+            {/* Occasion chips */}
+            <div
+              aria-label="Filter by category"
+              style={
+                {
+                  display: "flex",
+                  gap: "0.375rem",
+                  overflowX: "auto",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  paddingBottom: "2px",
+                } as React.CSSProperties
+              }
+            >
+              {[{ value: "", label: "Everything" }, ...SLOTS].map((s) => {
+                const active = filters.slot === s.value;
+                return (
+                  <motion.button
+                    key={`slot-${s.value}`}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => set("slot", s.value)}
+                    whileTap={reduce ? undefined : { scale: 0.92 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                    style={chip(active)}
+                  >
+                    {s.label}
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* Occasion chips row */}
+            <div
+              aria-label="Filter by occasion"
+              style={
+                {
+                  display: "flex",
+                  gap: "0.375rem",
+                  overflowX: "auto",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  paddingBottom: "2px",
+                } as React.CSSProperties
+              }
+            >
+              {allOccasions.map((occ) => {
+                const active = filters.occasion === occ.value;
+                return (
+                  <motion.button
+                    key={occ.value}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => set("occasion", occ.value)}
+                    whileTap={reduce ? undefined : { scale: 0.92 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                    style={chip(active)}
+                  >
+                    {occ.label}
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* Style chips row */}
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <SlidersHorizontal
+                size={13}
+                aria-hidden
+                style={{ color: "var(--text-faint)", flexShrink: 0 }}
+              />
               <div
-                aria-label="Filter by category"
                 style={
                   {
                     display: "flex",
@@ -365,223 +434,127 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                     overflowX: "auto",
                     scrollbarWidth: "none",
                     msOverflowStyle: "none",
-                    paddingBottom: "2px",
+                    flex: 1,
                   } as React.CSSProperties
                 }
               >
-                {[{ value: "", label: "Everything" }, ...SLOTS].map((s) => {
-                  const active = filters.slot === s.value;
+                {allStyles.map((s) => {
+                  const active = filters.style === s.value;
                   return (
                     <motion.button
-                      key={`slot-${s.value}`}
+                      key={s.value}
                       type="button"
                       aria-pressed={active}
-                      onClick={() => set("slot", s.value)}
+                      onClick={() => set("style", s.value)}
                       whileTap={reduce ? undefined : { scale: 0.92 }}
                       transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                      style={chip(active, UI_COLORS.category)}
+                      style={chip(active)}
                     >
                       {s.label}
                     </motion.button>
                   );
                 })}
               </div>
+            </div>
 
-              {/* Occasion chips row */}
-              <div
-                aria-label="Filter by occasion"
-                style={
-                  {
-                    display: "flex",
-                    gap: "0.375rem",
-                    overflowX: "auto",
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                    paddingBottom: "2px",
-                  } as React.CSSProperties
-                }
-              >
-                {allOccasions.map((occ) => {
-                  const active = filters.occasion === occ.value;
-                  return (
-                    <motion.button
-                      key={occ.value}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => set("occasion", occ.value)}
-                      whileTap={reduce ? undefined : { scale: 0.92 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                      style={chip(active, UI_COLORS.occasion)}
-                    >
-                      {occ.label}
-                    </motion.button>
-                  );
-                })}
-              </div>
-
-              {/* Style chips row */}
+            {/* Sort + price + clear — own row so they never collide with chips */}
+            {priceEnabled && (
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <SlidersHorizontal
-                  size={13}
-                  aria-hidden
-                  style={{ color: "var(--text-faint)", flexShrink: 0 }}
-                />
-                <div
-                  style={
-                    {
+                {priceEnabled && (
+                  <div
+                    style={{
+                      position: "relative",
+                      flexShrink: 0,
                       display: "flex",
-                      gap: "0.375rem",
-                      overflowX: "auto",
-                      scrollbarWidth: "none",
-                      msOverflowStyle: "none",
-                      flex: 1,
-                    } as React.CSSProperties
-                  }
-                >
-                  {allStyles.map((s) => {
-                    const active = filters.style === s.value;
-                    return (
-                      <motion.button
-                        key={s.value}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => set("style", s.value)}
-                        whileTap={reduce ? undefined : { scale: 0.92 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                        style={chip(active, UI_COLORS.style)}
-                      >
-                        {s.label}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Sort + price + clear — own row so they never collide with chips */}
-              {priceEnabled && (
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                  {priceEnabled && (
-                    <div
+                      alignItems: "center",
+                    }}
+                  >
+                    <select
+                      aria-label="Sort results"
+                      value={safeSort}
+                      onChange={(e) => set("sort", e.target.value as SortKey)}
                       style={{
-                        position: "relative",
-                        flexShrink: 0,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <select
-                        aria-label="Sort results"
-                        value={safeSort}
-                        onChange={(e) => set("sort", e.target.value as SortKey)}
-                        style={{
-                          appearance: "none",
-                          WebkitAppearance: "none",
-                          background: "var(--surface-2)",
-                          border: `1px solid ${
-                            safeSort !== "relevance" ? UI_COLORS.sort : "var(--border)"
-                          }`,
-                          borderRadius: "999px",
-                          color: safeSort !== "relevance" ? UI_COLORS.sort : "var(--text-mid)",
-                          padding: "0.3rem 1.5rem 0.3rem 0.75rem",
-                          fontFamily: "var(--font-body)",
-                          fontSize: "0.75rem",
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          outline: "none",
-                        }}
-                      >
-                        {sortOptions.map((o) => (
-                          <option
-                            key={o.value}
-                            value={o.value}
-                            style={{ background: "var(--bg)", color: "var(--text)" }}
-                          >
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                      <svg
-                        width={10}
-                        height={10}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                        style={{
-                          position: "absolute",
-                          right: "0.65rem",
-                          color: safeSort !== "relevance" ? UI_COLORS.sort : "var(--text-mid)",
-                          pointerEvents: "none",
-                        }}
-                      >
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </div>
-                  )}
-
-                  {/* Budget — separated from sort into its own control */}
-                  {priceEnabled && (
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      aria-label="Maximum price"
-                      placeholder={
-                        facets?.price_max ? `Max £${Math.ceil(facets.price_max)}` : "Max price"
-                      }
-                      min={0}
-                      max={facets?.price_max ?? undefined}
-                      value={filters.maxPrice}
-                      onChange={(e) => set("maxPrice", e.target.value)}
-                      style={{
-                        boxSizing: "border-box",
-                        width: "92px",
-                        flexShrink: 0,
+                        appearance: "none",
+                        WebkitAppearance: "none",
                         background: "var(--surface-2)",
-                        border: `1px solid ${filters.maxPrice ? UI_COLORS.budget : "var(--border)"}`,
+                        border: `1px solid ${
+                          safeSort !== "relevance" ? UI_COLORS.sort : "var(--border)"
+                        }`,
                         borderRadius: "999px",
-                        color: filters.maxPrice ? UI_COLORS.budget : "var(--text-mid)",
-                        padding: "0.3rem 0.75rem",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "0.7rem",
+                        color: safeSort !== "relevance" ? UI_COLORS.sort : "var(--text-mid)",
+                        padding: "0.3rem 1.5rem 0.3rem 0.75rem",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "0.75rem",
                         fontWeight: 500,
+                        cursor: "pointer",
                         outline: "none",
                       }}
-                    />
-                  )}
-
-                  <div style={{ flex: 1 }} />
-
-                  {hasActive && (
-                    <button
-                      type="button"
-                      onClick={() => onChange(EMPTY)}
-                      aria-label={`Clear ${activeCount} active ${activeCount === 1 ? "filter" : "filters"}`}
+                    >
+                      {sortOptions.map((o) => (
+                        <option
+                          key={o.value}
+                          value={o.value}
+                          style={{ background: "var(--bg)", color: "var(--text)" }}
+                        >
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <svg
+                      width={10}
+                      height={10}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
                       style={{
-                        background: "none",
-                        border: "none",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "0.6rem",
-                        color: "var(--text-faint)",
-                        letterSpacing: "0.06em",
-                        textDecoration: "underline",
-                        textUnderlineOffset: "3px",
-                        cursor: "pointer",
-                        flexShrink: 0,
-                        padding: "0.25rem",
+                        position: "absolute",
+                        right: "0.65rem",
+                        color: safeSort !== "relevance" ? UI_COLORS.sort : "var(--text-mid)",
+                        pointerEvents: "none",
                       }}
                     >
-                      Clear ({activeCount})
-                    </button>
-                  )}
-                </div>
-              )}
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
+                )}
 
-              {/* Clear-only row when price controls are hidden but filters are active */}
-              {!priceEnabled && hasActive && (
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                {/* Budget — separated from sort into its own control */}
+                {priceEnabled && (
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    aria-label="Maximum price"
+                    placeholder={
+                      facets?.price_max ? `Max £${Math.ceil(facets.price_max)}` : "Max price"
+                    }
+                    min={0}
+                    max={facets?.price_max ?? undefined}
+                    value={filters.maxPrice}
+                    onChange={(e) => set("maxPrice", e.target.value)}
+                    style={{
+                      boxSizing: "border-box",
+                      width: "92px",
+                      flexShrink: 0,
+                      background: "var(--surface-2)",
+                      border: `1px solid ${filters.maxPrice ? UI_COLORS.budget : "var(--border)"}`,
+                      borderRadius: "999px",
+                      color: filters.maxPrice ? UI_COLORS.budget : "var(--text-mid)",
+                      padding: "0.3rem 0.75rem",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "0.7rem",
+                      fontWeight: 500,
+                      outline: "none",
+                    }}
+                  />
+                )}
+
+                <div style={{ flex: 1 }} />
+
+                {hasActive && (
                   <button
                     type="button"
                     onClick={() => onChange(EMPTY)}
@@ -596,13 +569,40 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                       textDecoration: "underline",
                       textUnderlineOffset: "3px",
                       cursor: "pointer",
+                      flexShrink: 0,
                       padding: "0.25rem",
                     }}
                   >
                     Clear ({activeCount})
                   </button>
-                </div>
-              )}
+                )}
+              </div>
+            )}
+
+            {/* Clear-only row when price controls are hidden but filters are active */}
+            {!priceEnabled && hasActive && (
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => onChange(EMPTY)}
+                  aria-label={`Clear ${activeCount} active ${activeCount === 1 ? "filter" : "filters"}`}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.6rem",
+                    color: "var(--text-faint)",
+                    letterSpacing: "0.06em",
+                    textDecoration: "underline",
+                    textUnderlineOffset: "3px",
+                    cursor: "pointer",
+                    padding: "0.25rem",
+                  }}
+                >
+                  Clear ({activeCount})
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

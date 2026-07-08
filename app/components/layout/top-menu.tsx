@@ -80,6 +80,9 @@ function currentTheme(): Theme {
 function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("dark");
   useEffect(() => {
+    // Reads `document` (client-only, already set by layout.tsx's pre-paint
+    // inline script) — cannot be a lazy useState initializer under SSR.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(currentTheme());
   }, []);
 
@@ -402,8 +405,7 @@ export function TopMenu() {
                           minHeight: 64,
                         }}
                         onTouchStart={(e) => {
-                          (e.currentTarget as HTMLAnchorElement).style.background =
-                            "var(--rule)";
+                          (e.currentTarget as HTMLAnchorElement).style.background = "var(--rule)";
                         }}
                         onTouchEnd={(e) => {
                           setTimeout(() => {
@@ -411,8 +413,7 @@ export function TopMenu() {
                           }, 150);
                         }}
                         onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLAnchorElement).style.background =
-                            "var(--rule)";
+                          (e.currentTarget as HTMLAnchorElement).style.background = "var(--rule)";
                         }}
                         onMouseLeave={(e) => {
                           (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
@@ -448,7 +449,13 @@ export function TopMenu() {
                             {description}
                           </span>
                         </span>
-                        <span style={{ marginLeft: "auto", color: "var(--surface-highest)", flexShrink: 0 }}>
+                        <span
+                          style={{
+                            marginLeft: "auto",
+                            color: "var(--surface-highest)",
+                            flexShrink: 0,
+                          }}
+                        >
                           <svg
                             width={16}
                             height={16}

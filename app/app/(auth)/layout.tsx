@@ -37,8 +37,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           maxWidth: 420,
           maxHeight: 420,
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%)",
+          background: "radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%)",
           filter: "blur(2px)",
           pointerEvents: "none",
           zIndex: 0,
@@ -57,8 +56,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           maxWidth: 380,
           maxHeight: 380,
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%)",
+          background: "radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%)",
           filter: "blur(2px)",
           pointerEvents: "none",
           zIndex: 0,
@@ -140,7 +138,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <br />
           <span style={{ textTransform: "none", letterSpacing: "normal" }}>
             Contact us:{" "}
-            <a href={CONTACT_MAILTO} style={{ color: "var(--text-mid)", textDecoration: "underline" }}>
+            <a
+              href={CONTACT_MAILTO}
+              style={{ color: "var(--text-mid)", textDecoration: "underline" }}
+            >
               {CONTACT_EMAIL}
             </a>
           </span>

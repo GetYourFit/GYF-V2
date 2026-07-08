@@ -280,9 +280,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
           >
             {/* Drag handle */}
             <div style={{ display: "flex", justifyContent: "center", padding: "0.75rem 0 0" }}>
-              <div
-                style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)" }}
-              />
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--border)" }} />
             </div>
 
             {/* Header */}
@@ -449,7 +447,11 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                             key={i}
                             animate={{ opacity: [0.3, 0.6, 0.3] }}
                             transition={{ duration: 1.4, delay: i * 0.08, repeat: Infinity }}
-                            style={{ aspectRatio: "3/4", background: "var(--surface-2)", borderRadius: 12 }}
+                            style={{
+                              aspectRatio: "3/4",
+                              background: "var(--surface-2)",
+                              borderRadius: 12,
+                            }}
                           />
                         ))}
                       </div>

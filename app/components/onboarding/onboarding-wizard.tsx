@@ -121,7 +121,11 @@ function DarkSelect({
         {placeholder}
       </option>
       {options.map((o) => (
-        <option key={o.value} value={o.value} style={{ background: "var(--bg)", color: "var(--text)" }}>
+        <option
+          key={o.value}
+          value={o.value}
+          style={{ background: "var(--bg)", color: "var(--text)" }}
+        >
           {o.label}
         </option>
       ))}
@@ -433,8 +437,7 @@ export function OnboardingWizard() {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background:
-                        "linear-gradient(90deg, var(--secondary) 0%, #f0bd8f 100%)",
+                      background: "linear-gradient(90deg, var(--secondary) 0%, #f0bd8f 100%)",
                       display: "block",
                       borderRadius: "999px",
                     }}
@@ -737,7 +740,11 @@ function StepYou({
         <FieldWrap
           label="Skin tone"
           badge={estimated.has("skin_tone") ? <EstimatedBadge /> : null}
-          hint={missed.has("skin_tone") ? `Couldn't detect ${FIELD_LABELS.skin_tone} from your photo.` : undefined}
+          hint={
+            missed.has("skin_tone")
+              ? `Couldn't detect ${FIELD_LABELS.skin_tone} from your photo.`
+              : undefined
+          }
         >
           <DarkSelect
             options={SKIN_TONES}
@@ -748,7 +755,11 @@ function StepYou({
         <FieldWrap
           label="Undertone"
           badge={estimated.has("undertone") ? <EstimatedBadge /> : null}
-          hint={missed.has("undertone") ? `Couldn't detect ${FIELD_LABELS.undertone} from your photo.` : undefined}
+          hint={
+            missed.has("undertone")
+              ? `Couldn't detect ${FIELD_LABELS.undertone} from your photo.`
+              : undefined
+          }
         >
           <DarkSelect
             options={UNDERTONES}

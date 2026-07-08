@@ -8,7 +8,6 @@ import { ExploreGrid } from "./explore-grid";
 import { ItemDetailSheet } from "./ItemDetailSheet";
 import type { SearchResult } from "@gyf/types";
 
-
 const DEFAULT_FILTERS: ExploreFilters = {
   q: "",
   slot: "",

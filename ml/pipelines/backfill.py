@@ -40,6 +40,13 @@ class BackfillStore(Protocol):
 
     def save(self, item_id: str, result: PerceptionResult, model_version: str) -> None: ...
 
+    def save_batch(self, results: list[tuple[str, PerceptionResult]], model_version: str) -> None:
+        """Persist a whole perception batch. Optional: stores without a bulk path
+        (e.g. the in-memory test double) can omit it — ``run_backfill`` falls back
+        to per-item ``save``. ``PostgresBackfillStore`` overrides this to replace
+        2N per-item round trips with 2 multi-row statements per batch."""
+        ...
+
 
 @dataclass
 class BackfillResult:
@@ -54,8 +61,8 @@ def run_backfill(
     model_version: str,
     *,
     limit: int | None = None,
-    batch_size: int = 16,
-    io_workers: int = 8,
+    batch_size: int = 32,
+    io_workers: int = 16,
 ) -> BackfillResult:
     """Perceive and persist every pending item, in parallel-loaded GPU batches.
 
@@ -71,9 +78,16 @@ def run_backfill(
         if not loaded:
             continue
         results = perceptor.perceive_batch([image for _, image in loaded])
-        for (item, _), perception in zip(loaded, results):
-            store.save(item.item_id, perception, model_version)
-            result.processed += 1
+        save_batch = getattr(store, "save_batch", None)
+        if save_batch is not None:
+            save_batch(
+                [(item.item_id, perception) for (item, _), perception in zip(loaded, results)],
+                model_version,
+            )
+        else:
+            for (item, _), perception in zip(loaded, results):
+                store.save(item.item_id, perception, model_version)
+        result.processed += len(loaded)
     return result
 
 
@@ -151,14 +165,6 @@ WHERE jsonb_array_length(i.image_refs) > 0
   )
 """
 _ORDER = "ORDER BY i.created_at\n"
-_UPSERT_EMBEDDING = """
-INSERT INTO item_embeddings (item_id, embedding, model_version)
-VALUES (%s, %s::vector, %s)
-ON CONFLICT (item_id) DO UPDATE SET
-    embedding = EXCLUDED.embedding,
-    model_version = EXCLUDED.model_version
-"""
-_MERGE_ATTRIBUTES = "UPDATE items SET attributes = attributes || %s WHERE id = %s"
 
 
 class PostgresBackfillStore:
@@ -189,16 +195,44 @@ class PostgresBackfillStore:
                 yield PendingItem(item_id=str(row[0]), image_refs=list(row[1]))
 
     def save(self, item_id: str, result: PerceptionResult, model_version: str) -> None:
+        self.save_batch([(item_id, result)], model_version)
+
+    def save_batch(self, results: list[tuple[str, PerceptionResult]], model_version: str) -> None:
+        """One multi-row upsert + one multi-row update per batch, instead of 2
+        round trips per item — the nightly ~8k-item run drops from ~16k
+        sequential DB round trips to ~2 per batch."""
         import json
+
+        if not results:
+            return
+        embed_placeholders = ", ".join("(%s, %s::vector, %s)" for _ in results)
+        embed_params: list[object] = []
+        for item_id, result in results:
+            embed_params.extend([item_id, to_pgvector(result.embedding), model_version])
+
+        attr_placeholders = ", ".join("(%s, %s::jsonb)" for _ in results)
+        attr_params: list[object] = []
+        for item_id, result in results:
+            attr_params.extend([item_id, json.dumps(result.attributes_block(model_version))])
 
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             conn.execute(
-                _UPSERT_EMBEDDING,
-                (item_id, to_pgvector(result.embedding), model_version),
+                f"""
+                INSERT INTO item_embeddings (item_id, embedding, model_version)
+                VALUES {embed_placeholders}
+                ON CONFLICT (item_id) DO UPDATE SET
+                    embedding = EXCLUDED.embedding,
+                    model_version = EXCLUDED.model_version
+                """,
+                tuple(embed_params),
             )
             conn.execute(
-                _MERGE_ATTRIBUTES,
-                (json.dumps(result.attributes_block(model_version)), item_id),
+                f"""
+                UPDATE items AS i SET attributes = i.attributes || v.attrs
+                FROM (VALUES {attr_placeholders}) AS v(id, attrs)
+                WHERE i.id::text = v.id
+                """,
+                tuple(attr_params),
             )
 
 

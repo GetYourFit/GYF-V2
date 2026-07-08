@@ -71,9 +71,7 @@ function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[]
     const selected = item.item_id === selectedId;
     // Spans in grid cells: selected tile is the big centerpiece.
     const cw = selected ? 6 : 3 + Math.floor(hash01(item.item_id) * 3); // 3–5
-    const ch = selected
-      ? 8
-      : Math.round(cw * (1.15 + hash01(item.item_id, 7) * 0.35)); // portrait-ish
+    const ch = selected ? 8 : Math.round(cw * (1.15 + hash01(item.item_id, 7) * 0.35)); // portrait-ish
     let placed = false;
     for (const [sx, sy] of spiral) {
       // Center the span on the candidate cell.
@@ -99,14 +97,6 @@ function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[]
 }
 
 const BROWSE_SLOTS = ["top", "bottom", "full_body", "footwear"] as const;
-
-function interleave<T>(lists: T[][]): T[] {
-  const out: T[] = [];
-  const longest = Math.max(0, ...lists.map((l) => l.length));
-  for (let i = 0; i < longest; i++)
-    for (const list of lists) if (i < list.length) out.push(list[i]);
-  return out;
-}
 
 export function CanvasExplorer() {
   const router = useRouter();
@@ -152,12 +142,14 @@ export function CanvasExplorer() {
       } catch {
         /* anonymous browse is fine */
       }
-      const pages = await Promise.all(
-        BROWSE_SLOTS.map((slot) =>
-          api.search("fashion", { k: 16, slot, ...(gender ? { gender } : {}) }),
-        ),
-      );
-      setItems(interleave(pages));
+      // One embed, one round trip: the server interleaves all slots itself
+      // (was N separate searches, each re-embedding the same query text).
+      const results = await api.search("fashion", {
+        k: 64,
+        slots: BROWSE_SLOTS.join(","),
+        ...(gender ? { gender } : {}),
+      });
+      setItems(results);
       setSelectedId(null);
       setGeneration((g) => g + 1);
     } catch (e) {
@@ -168,6 +160,9 @@ export function CanvasExplorer() {
   }, []);
 
   useEffect(() => {
+    // Fetch-on-mount: loadInitial's setLoading(true) runs synchronously before
+    // its first await, which the lint rule sees as a direct effect setState.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadInitial();
   }, [loadInitial]);
 
@@ -325,9 +320,7 @@ export function CanvasExplorer() {
             key={`${generation}:${t.item.item_id}`}
             type="button"
             aria-label={t.item.title}
-            initial={
-              reduce ? { opacity: 0 } : { opacity: 0, scale: 0.92 }
-            }
+            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{
               duration: 0.35,
