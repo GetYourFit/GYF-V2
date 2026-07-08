@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { TopMenu } from "@/components/layout/top-menu";
@@ -24,63 +23,18 @@ export function AppShell({ children }: AppShellProps) {
         color: "var(--text)",
       }}
     >
-      {/* Top brand header */}
+      {/* No top brand header/bar — just the menu button, floating over the
+          content like the canvas back/zoom controls, so it survives without
+          claiming a dedicated header strip. */}
       <div
         style={{
-          paddingTop: "env(safe-area-inset-top)",
-          position: "sticky",
-          top: 0,
+          position: "fixed",
+          top: "calc(0.75rem + env(safe-area-inset-top))",
+          right: "1rem",
           zIndex: 30,
-          background: "var(--chrome)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid var(--rule)",
-          transform: "translateZ(0)",
-          willChange: "transform",
         }}
       >
-        <header
-          style={{
-            display: "grid",
-            gridTemplateColumns: "44px 1fr 44px",
-            height: "56px",
-            alignItems: "center",
-            padding: "0 1rem",
-            maxWidth: "430px",
-            margin: "0 auto",
-            width: "100%",
-          }}
-        >
-          {/* Left — empty spacer balancing the right menu button */}
-          <div />
-
-          {/* Centre — wordmark, perfectly centred */}
-          <Link
-            href="/"
-            aria-label="Get Your Fit home"
-            style={{ display: "flex", justifyContent: "center", alignItems: "center" }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--font-display-serif)",
-                fontStyle: "normal",
-                fontSize: "1.05rem",
-                fontWeight: 600,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "var(--text)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Get Your Fit
-            </span>
-          </Link>
-
-          {/* Right — menu button */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <TopMenu />
-          </div>
-        </header>
+        <TopMenu />
       </div>
 
       <main

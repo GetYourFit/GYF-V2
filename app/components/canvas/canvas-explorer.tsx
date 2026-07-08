@@ -167,7 +167,6 @@ function TileImage({ src, srcSet, eager }: { src: string; srcSet?: string; eager
       sizes={srcSet ? "(min-width: 0px) 50vw" : undefined}
       alt=""
       loading={eager ? "eager" : "lazy"}
-      // @ts-expect-error -- fetchPriority isn't yet in the React DOM types we build against.
       fetchPriority={eager ? "high" : "auto"}
       decoding="async"
       draggable={false}
