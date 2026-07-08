@@ -30,6 +30,15 @@ services:
         value: production
       - key: GYF_AUTH_DISABLED
         value: "false"
+      # Behavioral event sink. MUST be "postgres" in prod: the default "local"
+      # writes JSONL to Render's EPHEMERAL disk, wiped on every deploy — so the
+      # learning flywheel (saves/skips/carts/clicks, the compounding moat + the
+      # B2B data product) would silently capture NOTHING. Postgres persists to the
+      # `interactions` spine (migrations 0001/0003) over GYF_DATABASE_URL. Not a
+      # secret — a routing choice, so pinned here in version control, not the
+      # dashboard, to make the launch-critical default impossible to forget.
+      - key: GYF_EVENT_SINK
+        value: postgres
       # Catalog images are served from a public Supabase Storage bucket (the
       # local /media mount is absent on Render), so image_url points at the CDN.
       - key: GYF_MEDIA_BASE_URL
