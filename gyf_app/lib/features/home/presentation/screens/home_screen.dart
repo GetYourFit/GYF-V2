@@ -120,13 +120,28 @@ class _HeroRecommendationCard extends ConsumerWidget {
                   size: GyfIconSize.sm,
                 ),
                 const SizedBox(width: GyfSpacing.s8),
-                Text(
-                  'Today’s look',
-                  style:
-                      GyfTypography.caption.copyWith(color: colors.textInverse),
+                Expanded(
+                  child: Text(
+                    'Today’s look',
+                    style: GyfTypography.caption
+                        .copyWith(color: colors.textInverse),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                const Spacer(),
-                GyfConfidenceBadge(percent: hero.confidence),
+                const SizedBox(width: GyfSpacing.s8),
+                // Flexible+FittedBox: the badge's own text (percent +
+                // quality label) can be wider than the space left on
+                // the narrowest phones — scale it down rather than
+                // overflow. Flexible is required for FittedBox to
+                // actually receive a bounded width from the Row.
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: GyfConfidenceBadge(percent: hero.confidence),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: GyfSpacing.s12),

@@ -415,7 +415,16 @@ class _CollectionHeader extends StatelessWidget {
               ),
               if (compatibilityScore != null) ...[
                 const SizedBox(width: GyfSpacing.s8),
-                GyfConfidenceBadge(percent: compatibilityScore!),
+                // Flexible+FittedBox: badge text can be wider than the
+                // space left on the narrowest phones — scale down
+                // instead of overflowing.
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: GyfConfidenceBadge(percent: compatibilityScore!),
+                  ),
+                ),
               ],
               if (showExpandButton) ...[
                 const SizedBox(width: GyfSpacing.s8),

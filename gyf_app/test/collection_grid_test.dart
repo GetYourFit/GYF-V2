@@ -92,6 +92,25 @@ void main() {
       expect(retried, isTrue);
     });
 
+    testWidgets('header with compatibility badge does not overflow at 320px',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        host(
+          GyfExpandableCollectionGrid(
+            title: 'Summer Essentials',
+            subtitle: 'Curated for warm weather',
+            compatibilityScore: 94,
+            updatedLabel: 'Updated today',
+            products: products(4),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('header announces item count and state to a11y',
         (tester) async {
       final handle = tester.ensureSemantics();

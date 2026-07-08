@@ -31,4 +31,24 @@ void main() {
     // Let the staggered entrance animations finish their timers.
     await tester.pumpAndSettle();
   });
+
+  testWidgets('hero card header does not overflow at narrow mobile widths',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: GyfTheme.light(),
+          home: const Scaffold(body: HomeScreen()),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+  });
 }
