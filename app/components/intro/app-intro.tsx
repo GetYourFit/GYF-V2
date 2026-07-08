@@ -31,7 +31,7 @@ export function AppIntro() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "#ffffff",
+            background: "var(--surface-2)",
           }}
         >
           <motion.div

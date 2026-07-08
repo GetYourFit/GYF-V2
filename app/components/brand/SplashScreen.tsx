@@ -66,7 +66,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "#faf8f5",
+            background: "var(--bg)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -132,7 +132,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                       fontSize: "0.875rem",
                       fontWeight: 400,
                       lineHeight: 1.6,
-                      color: "#5c5650",
+                      color: "var(--text-mid)",
                       margin: 0,
                     }}
                   >

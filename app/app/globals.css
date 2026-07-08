@@ -1,36 +1,36 @@
 @import "tailwindcss";
 
-/* ─── Design tokens — GYF Warm Light (soothing, easy on eyes) ────────────── */
+/* ─── Design tokens — GYF Cosmos Dark (image-first, chrome-less) ─────────── */
 @theme {
-  /* Surfaces — warm cream palette */
-  --color-bg: #faf8f5;
-  --color-surface: #f4f1ec;
-  --color-surface-2: #edeae4;
-  --color-surface-3: #e5e1da;
-  --color-surface-high: #dedad2;
-  --color-surface-highest: #d4cfc6;
+  /* Surfaces — near-black canvas; images carry the color */
+  --color-bg: #000000;
+  --color-surface: #141414;
+  --color-surface-2: #1c1c1e;
+  --color-surface-3: #242426;
+  --color-surface-high: #2c2c2e;
+  --color-surface-highest: #38383a;
 
   /* Borders */
-  --color-border: rgba(0, 0, 0, 0.1);
-  --color-border-mid: rgba(0, 0, 0, 0.2);
-  --color-border-hi: #1c1a17;
-  --color-rule: rgba(0, 0, 0, 0.07);
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-mid: rgba(255, 255, 255, 0.24);
+  --color-border-hi: #f5f5f4;
+  --color-rule: rgba(255, 255, 255, 0.08);
 
-  /* Text — warm dark for readability */
-  --color-text: #1c1a17;
-  --color-text-mid: #5c5650;
-  --color-text-faint: #767069; /* WCAG AA: 4.6:1 on cream (was #9a9490 @ 2.8:1) */
+  /* Text — white hierarchy on black */
+  --color-text: #f5f5f4;
+  --color-text-mid: #a1a1a6;
+  --color-text-faint: #8e8e93; /* WCAG AA: ≥4.5:1 on black */
 
-  /* Brand */
-  --color-primary: #1c1a17;
-  --color-secondary: #b04760; /* WCAG AA: ≥4.5:1 as text on cream and under cream text */
-  --color-accent: #1c1a17;
-  --color-accent-press: #2e2b26;
+  /* Brand — monochrome; white is the action color */
+  --color-primary: #ffffff;
+  --color-secondary: #a1a1a6;
+  --color-accent: #ffffff;
+  --color-accent-press: #d6d6d6;
 
   /* Functional */
-  --color-success: #0d7a55;
-  --color-warning: #c2560e;
-  --color-error: #c0392b;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
 
   /* Fonts */
   --font-display: var(--font-display), "Plus Jakarta Sans", sans-serif;
@@ -41,38 +41,39 @@
   --ease-lux: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* Shadows */
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  --shadow-overlay: 0 -4px 32px rgba(0, 0, 0, 0.12);
-  --shadow-glass: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  /* Shadows — Cosmos has no visible card shadows; keep hairline rings only */
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-overlay: 0 -4px 32px rgba(0, 0, 0, 0.6);
+  --shadow-glass: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 :root {
-  color-scheme: light;
-  --bg: #faf8f5;
-  --surface: #f4f1ec;
-  --surface-2: #edeae4;
-  --surface-3: #e5e1da;
-  --surface-high: #dedad2;
-  --surface-highest: #d4cfc6;
-  --border: rgba(0, 0, 0, 0.1);
-  --border-mid: rgba(0, 0, 0, 0.2);
-  --border-hi: #1c1a17;
-  --rule: rgba(0, 0, 0, 0.07);
-  --text: #1c1a17;
-  --text-mid: #5c5650;
-  --text-faint: #767069;
-  --primary: #1c1a17;
-  --secondary: #b04760;
-  --accent: #1c1a17;
-  --accent-press: #2e2b26;
-  --success: #0d7a55;
-  --warning: #c2560e;
-  --error: #c0392b;
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #141414;
+  --surface-2: #1c1c1e;
+  --surface-3: #242426;
+  --surface-high: #2c2c2e;
+  --surface-highest: #38383a;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-mid: rgba(255, 255, 255, 0.24);
+  --border-hi: #f5f5f4;
+  --rule: rgba(255, 255, 255, 0.08);
+  --text: #f5f5f4;
+  --text-mid: #a1a1a6;
+  --text-faint: #8e8e93;
+  --primary: #ffffff;
+  --secondary: #a1a1a6;
+  --accent: #ffffff;
+  --accent-press: #d6d6d6;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
   --lux: cubic-bezier(0.22, 1, 0.36, 1);
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --shimmer-base: #ede9e3;
-  --shimmer-sweep: #f4f1eb;
+  --on-accent: #000000;
+  --shimmer-base: #161616;
+  --shimmer-sweep: #222224;
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
@@ -192,18 +193,18 @@
 /* ─── Glassmorphism card ─────────────────────────────────────────────────── */
 @layer components {
   .glass-card {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(20, 20, 20, 0.7);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: none;
   }
   .glass-card-active {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(28, 28, 30, 0.85);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: none;
   }
 }
 
@@ -280,7 +281,7 @@
   .chip-active {
     background: var(--primary);
     border-color: var(--primary);
-    color: #faf8f5;
+    color: var(--on-accent);
   }
 }
 

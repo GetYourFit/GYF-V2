@@ -21,7 +21,7 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body style={{ margin: 0, background: "#faf8f5", fontFamily: "system-ui, sans-serif" }}>
+      <body style={{ margin: 0, background: "var(--bg)", fontFamily: "system-ui, sans-serif" }}>
         <div
           style={{
             display: "flex",
@@ -55,14 +55,14 @@ export default function GlobalError({
               style={{
                 fontSize: "1.25rem",
                 fontWeight: 700,
-                color: "#1c1a17",
+                color: "var(--text)",
                 lineHeight: 1.25,
                 marginBottom: "0.75rem",
               }}
             >
               GYF hit a snag loading
             </p>
-            <p style={{ fontSize: "0.875rem", color: "#5c5650", marginBottom: "2rem" }}>
+            <p style={{ fontSize: "0.875rem", color: "var(--text-mid)", marginBottom: "2rem" }}>
               Try reloading — if it keeps happening, come back in a moment.
             </p>
             <button
@@ -74,8 +74,8 @@ export default function GlobalError({
                 justifyContent: "center",
                 minHeight: "48px",
                 padding: "0 2rem",
-                background: "#1c1a17",
-                color: "#faf8f5",
+                background: "var(--text)",
+                color: "var(--bg)",
                 border: "none",
                 cursor: "pointer",
                 fontSize: "0.7rem",

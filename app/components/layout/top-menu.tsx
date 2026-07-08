@@ -160,13 +160,13 @@ export function TopMenu() {
           height: 38,
           borderRadius: "50%",
           border: "1px solid",
-          borderColor: open ? "rgba(0,0,0,0.14)" : "transparent",
-          background: open ? "rgba(0,0,0,0.06)" : "transparent",
+          borderColor: open ? "rgba(255,255,255,0.14)" : "transparent",
+          background: open ? "rgba(255,255,255,0.06)" : "transparent",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
-          color: "#1c1a17",
+          color: "var(--text)",
           WebkitTapHighlightColor: "transparent",
           flexShrink: 0,
           outline: "none",
@@ -222,7 +222,7 @@ export function TopMenu() {
                     position: "fixed",
                     inset: 0,
                     zIndex: 40,
-                    background: "rgba(28,26,23,0.4)",
+                    background: "rgba(0,0,0,0.4)",
                     backdropFilter: "blur(3px)",
                     WebkitBackdropFilter: "blur(3px)",
                     touchAction: "none",
@@ -261,7 +261,7 @@ export function TopMenu() {
                     width: "100%",
                     maxWidth: 390,
                     zIndex: 50,
-                    background: "rgba(250,248,245,0.98)",
+                    background: "rgba(10,10,10,0.98)",
                     backdropFilter: "blur(28px)",
                     WebkitBackdropFilter: "blur(28px)",
                     borderRadius: "20px 20px 0 0",
@@ -283,7 +283,7 @@ export function TopMenu() {
                         width: 36,
                         height: 4,
                         borderRadius: 99,
-                        background: "rgba(0,0,0,0.14)",
+                        background: "rgba(255,255,255,0.14)",
                       }}
                     />
                   </div>
@@ -323,16 +323,16 @@ export function TopMenu() {
                           gap: "1rem",
                           padding: "0.875rem 1.25rem",
                           textDecoration: "none",
-                          color: "#1c1a17",
+                          color: "var(--text)",
                           borderBottom:
-                            i < MENU_ITEMS.length - 1 ? "1px solid rgba(0,0,0,0.06)" : "none",
+                            i < MENU_ITEMS.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
                           WebkitTapHighlightColor: "transparent",
                           transition: "background 0.1s",
                           minHeight: 64,
                         }}
                         onTouchStart={(e) => {
                           (e.currentTarget as HTMLAnchorElement).style.background =
-                            "rgba(0,0,0,0.05)";
+                            "rgba(255,255,255,0.05)";
                         }}
                         onTouchEnd={(e) => {
                           setTimeout(() => {
@@ -341,7 +341,7 @@ export function TopMenu() {
                         }}
                         onMouseEnter={(e) => {
                           (e.currentTarget as HTMLAnchorElement).style.background =
-                            "rgba(0,0,0,0.04)";
+                            "rgba(255,255,255,0.04)";
                         }}
                         onMouseLeave={(e) => {
                           (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
@@ -352,13 +352,13 @@ export function TopMenu() {
                             width: 44,
                             height: 44,
                             borderRadius: 13,
-                            background: "#f4f1ec",
-                            border: "1px solid rgba(0,0,0,0.08)",
+                            background: "var(--surface)",
+                            border: "1px solid rgba(255,255,255,0.08)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             flexShrink: 0,
-                            color: "#5c5650",
+                            color: "var(--text-mid)",
                           }}
                         >
                           {icon}
@@ -377,7 +377,7 @@ export function TopMenu() {
                             {description}
                           </span>
                         </span>
-                        <span style={{ marginLeft: "auto", color: "#c5c0b8", flexShrink: 0 }}>
+                        <span style={{ marginLeft: "auto", color: "var(--surface-highest)", flexShrink: 0 }}>
                           <svg
                             width={16}
                             height={16}

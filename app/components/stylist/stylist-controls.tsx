@@ -75,9 +75,9 @@ export function StylistControls({
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                 fontSize: "0.8125rem",
                 fontWeight: 500,
-                border: `1px solid ${active ? UI_COLORS.stylist : "rgba(0,0,0,0.12)"}`,
-                background: active ? UI_COLORS.stylist : "#f4f1ec",
-                color: active ? "#faf8f5" : "#5c5650",
+                border: `1px solid ${active ? UI_COLORS.stylist : "rgba(255,255,255,0.12)"}`,
+                background: active ? UI_COLORS.stylist : "var(--surface)",
+                color: active ? "var(--bg)" : "var(--text-mid)",
                 borderRadius: "999px",
                 cursor: busy ? "not-allowed" : "pointer",
                 opacity: busy ? 0.5 : 1,
@@ -98,18 +98,18 @@ export function StylistControls({
           position: "relative",
           display: "flex",
           alignItems: "center",
-          border: "1.5px solid rgba(0,0,0,0.15)",
+          border: "1.5px solid rgba(255,255,255,0.15)",
           borderRadius: "999px",
-          background: "#ffffff",
+          background: "var(--surface-2)",
           transition: "border-color 0.2s, box-shadow 0.2s",
         }}
         onFocus={(e) => {
           (e.currentTarget as HTMLFormElement).style.borderColor = "var(--secondary)";
-          (e.currentTarget as HTMLFormElement).style.boxShadow = "0 0 0 3px rgba(212,96,122,0.12)";
+          (e.currentTarget as HTMLFormElement).style.boxShadow = "0 0 0 3px rgba(255,255,255,0.12)";
         }}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-            (e.currentTarget as HTMLFormElement).style.borderColor = "rgba(0,0,0,0.15)";
+            (e.currentTarget as HTMLFormElement).style.borderColor = "rgba(255,255,255,0.15)";
             (e.currentTarget as HTMLFormElement).style.boxShadow = "none";
           }
         }}
@@ -131,7 +131,7 @@ export function StylistControls({
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "16px",
             fontStyle: "italic",
-            color: "#1c1a17",
+            color: "var(--text)",
             minHeight: "48px",
             opacity: busy ? 0.5 : 1,
           }}
@@ -148,10 +148,10 @@ export function StylistControls({
             justifyContent: "center",
             width: "36px",
             height: "36px",
-            background: goal.trim() && !busy ? "#1c1a17" : "rgba(0,0,0,0.08)",
+            background: goal.trim() && !busy ? "var(--text)" : "rgba(255,255,255,0.08)",
             border: "none",
             borderRadius: "999px",
-            color: goal.trim() && !busy ? "#faf8f5" : "var(--text-faint)",
+            color: goal.trim() && !busy ? "var(--bg)" : "var(--text-faint)",
             cursor: busy || !goal.trim() ? "not-allowed" : "pointer",
             opacity: busy || !goal.trim() ? 0.4 : 1,
             transition: "all 0.2s",

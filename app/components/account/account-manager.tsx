@@ -239,7 +239,7 @@ export function AccountManager() {
               fontWeight: 500,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               marginBottom: "0.5rem",
             }}
           >
@@ -249,7 +249,7 @@ export function AccountManager() {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.8125rem",
-              color: "#9a9490",
+              color: "var(--text-faint)",
               lineHeight: 1.55,
               maxWidth: "320px",
             }}
@@ -269,9 +269,9 @@ export function AccountManager() {
               maxWidth: "260px",
               width: "100%",
               minHeight: "44px",
-              background: "#faf8f5",
-              border: "1px solid rgba(0,0,0,0.10)",
-              color: "#1c1a17",
+              background: "var(--bg)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              color: "var(--text)",
               outline: "none",
               padding: "0 1rem",
               borderRadius: "999px",
@@ -291,8 +291,8 @@ export function AccountManager() {
               minHeight: "44px",
               padding: "0 1.5rem",
               background:
-                savingName || nameDraft.trim() === savedName ? "rgba(0,0,0,0.08)" : "#1c1a17",
-              color: savingName || nameDraft.trim() === savedName ? "#9a9490" : "#faf8f5",
+                savingName || nameDraft.trim() === savedName ? "rgba(255,255,255,0.08)" : "var(--text)",
+              color: savingName || nameDraft.trim() === savedName ? "var(--text-faint)" : "var(--bg)",
               border: "none",
               borderRadius: "999px",
               cursor: savingName || nameDraft.trim() === savedName ? "not-allowed" : "pointer",
@@ -342,8 +342,8 @@ export function AccountManager() {
             listStyle: "none",
             margin: 0,
             padding: 0,
-            border: "1px solid rgba(0,0,0,0.10)",
-            background: "#faf8f5",
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "var(--bg)",
           }}
         >
           {CONSENT_FLAGS.map((flag, i) => (
@@ -369,8 +369,8 @@ export function AccountManager() {
               justifyContent: "center",
               minHeight: "44px",
               padding: "0 1.5rem",
-              background: !dirty || saving ? "rgba(0,0,0,0.08)" : "var(--primary)",
-              color: !dirty || saving ? "var(--text-faint)" : "#faf8f5",
+              background: !dirty || saving ? "rgba(255,255,255,0.08)" : "var(--primary)",
+              color: !dirty || saving ? "var(--text-faint)" : "var(--bg)",
               border: "none",
               borderRadius: "999px",
               cursor: !dirty || saving ? "not-allowed" : "pointer",
@@ -406,7 +406,7 @@ export function AccountManager() {
           display: "flex",
           flexDirection: "column",
           gap: "1rem",
-          borderTop: "1px solid rgba(0,0,0,0.10)",
+          borderTop: "1px solid rgba(255,255,255,0.10)",
           paddingTop: "2rem",
         }}
       >
@@ -449,9 +449,9 @@ export function AccountManager() {
             minHeight: "44px",
             padding: "0 1.5rem",
             alignSelf: "flex-start",
-            border: "1px solid rgba(0,0,0,0.15)",
+            border: "1px solid rgba(255,255,255,0.15)",
             background: "transparent",
-            color: "#1c1a17",
+            color: "var(--text)",
             cursor: exporting ? "not-allowed" : "pointer",
             fontFamily: "var(--font-mono)",
             fontSize: "0.6rem",
@@ -472,7 +472,7 @@ export function AccountManager() {
           display: "flex",
           flexDirection: "column",
           gap: "1rem",
-          borderTop: "1px solid rgba(0,0,0,0.10)",
+          borderTop: "1px solid rgba(255,255,255,0.10)",
           paddingTop: "2rem",
         }}
       >
@@ -500,9 +500,9 @@ export function AccountManager() {
                 justifyContent: "center",
                 minHeight: "44px",
                 padding: "0 1.5rem",
-                border: "1px solid rgba(0,0,0,0.2)",
+                border: "1px solid rgba(255,255,255,0.2)",
                 background: "transparent",
-                color: "#1c1a17",
+                color: "var(--text)",
                 cursor: "pointer",
                 borderRadius: "999px",
                 fontFamily: "var(--font-mono)",
@@ -525,7 +525,7 @@ export function AccountManager() {
                 padding: "0 1.5rem",
                 border: "1px solid rgba(255,180,171,0.3)",
                 background: "transparent",
-                color: "#c0392b",
+                color: "var(--error)",
                 cursor: "pointer",
                 borderRadius: "999px",
                 fontFamily: "var(--font-mono)",
@@ -555,14 +555,14 @@ export function AccountManager() {
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "0.875rem",
-                color: "#5c5650",
+                color: "var(--text-mid)",
                 lineHeight: 1.6,
                 margin: 0,
               }}
             >
               This permanently erases your profile, saved looks, wardrobe, and posts. It can&apos;t
               be undone. Type{" "}
-              <span style={{ fontFamily: "var(--font-mono)", color: "#c0392b" }}>DELETE</span> to
+              <span style={{ fontFamily: "var(--font-mono)", color: "var(--error)" }}>DELETE</span> to
               confirm.
             </p>
             <input
@@ -578,7 +578,7 @@ export function AccountManager() {
                 background: "transparent",
                 border: "none",
                 borderBottom: "1px solid rgba(255,180,171,0.4)",
-                color: "#c0392b",
+                color: "var(--error)",
                 outline: "none",
                 padding: "0.5rem 0",
                 fontFamily: "var(--font-mono)",
@@ -601,8 +601,8 @@ export function AccountManager() {
                   minHeight: "44px",
                   padding: "0 1.5rem",
                   background:
-                    confirmText === "DELETE" && !deleting ? "#c0392b" : "rgba(255,180,171,0.12)",
-                  color: confirmText === "DELETE" && !deleting ? "#faf8f5" : "#c0392b",
+                    confirmText === "DELETE" && !deleting ? "var(--error)" : "rgba(255,180,171,0.12)",
+                  color: confirmText === "DELETE" && !deleting ? "var(--bg)" : "var(--error)",
                   border: "none",
                   borderRadius: "999px",
                   cursor: deleting || confirmText !== "DELETE" ? "not-allowed" : "pointer",
@@ -675,13 +675,13 @@ export function AccountManager() {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.875rem",
-            color: "#5c5650",
+            color: "var(--text-mid)",
             lineHeight: 1.6,
             margin: 0,
           }}
         >
           Questions, feedback, or partnership enquiries? Reach us at{" "}
-          <a href={CONTACT_MAILTO} style={{ color: "#1c1a17", textDecoration: "underline" }}>
+          <a href={CONTACT_MAILTO} style={{ color: "var(--text)", textDecoration: "underline" }}>
             {CONTACT_EMAIL}
           </a>
           .
@@ -714,7 +714,7 @@ function ConsentRow({
         justifyContent: "space-between",
         gap: "1.25rem",
         padding: "1.25rem",
-        borderTop: first ? "none" : "1px solid rgba(0,0,0,0.06)",
+        borderTop: first ? "none" : "1px solid rgba(255,255,255,0.06)",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
@@ -724,7 +724,7 @@ function ConsentRow({
             fontFamily: "var(--font-body)",
             fontSize: "0.9375rem",
             fontWeight: 600,
-            color: "#1c1a17",
+            color: "var(--text)",
           }}
         >
           {title}
@@ -758,8 +758,8 @@ function ConsentRow({
           width: "44px",
           height: "24px",
           alignItems: "center",
-          border: `1px solid ${checked ? "var(--secondary)" : "rgba(0,0,0,0.2)"}`,
-          background: checked ? "rgba(240,189,143,0.15)" : "transparent",
+          border: `1px solid ${checked ? "var(--secondary)" : "rgba(255,255,255,0.2)"}`,
+          background: checked ? "rgba(255,255,255,0.15)" : "transparent",
           cursor: "pointer",
           transition: "all 0.2s",
           borderRadius: "999px",
@@ -789,7 +789,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           fontFamily: "var(--font-body)",
           fontSize: "1.125rem",
           fontWeight: 700,
-          color: "#1c1a17",
+          color: "var(--text)",
           marginBottom: "0.75rem",
         }}
       >
@@ -814,9 +814,9 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           justifyContent: "center",
           minHeight: "44px",
           padding: "0 1.5rem",
-          border: "1px solid rgba(0,0,0,0.2)",
+          border: "1px solid rgba(255,255,255,0.2)",
           background: "transparent",
-          color: "#1c1a17",
+          color: "var(--text)",
           cursor: "pointer",
           borderRadius: "999px",
           fontFamily: "var(--font-mono)",
@@ -840,24 +840,24 @@ function AccountSkeleton() {
           style={{
             height: "12px",
             width: "160px",
-            background: "rgba(0,0,0,0.06)",
+            background: "rgba(255,255,255,0.06)",
             borderRadius: "999px",
           }}
         />
-        <div style={{ border: "1px solid rgba(0,0,0,0.10)" }}>
+        <div style={{ border: "1px solid rgba(255,255,255,0.10)" }}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={`row-${i}`}
               style={{
                 height: "96px",
-                background: "rgba(0,0,0,0.04)",
-                borderTop: i === 0 ? "none" : "1px solid rgba(0,0,0,0.06)",
+                background: "rgba(255,255,255,0.04)",
+                borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.06)",
               }}
             />
           ))}
         </div>
       </div>
-      <div style={{ height: "112px", background: "rgba(0,0,0,0.04)", borderRadius: "999px" }} />
+      <div style={{ height: "112px", background: "rgba(255,255,255,0.04)", borderRadius: "999px" }} />
     </div>
   );
 }

@@ -29,12 +29,12 @@ const RIGHT_TABS = [
   { href: "/profile", Icon: NavProfile, label: "Profile", exact: false, color: UI_COLORS.profile },
 ] as const;
 
-const MUTED = "#5c5650";
+const MUTED = "var(--text-mid)";
 
 // Anchor hues from the app's warm palette (rose → terracotta → olive →
 // ochre) — interpolated below into a dense 64-step cycle so the logo
 // button's color rotation reads as a continuous drift rather than jumps.
-const PALETTE_ANCHORS = ["#b04760", "#b8571f", "#6b7d3d", "#a8791f"];
+const PALETTE_ANCHORS = ["var(--text)", "#b8571f", "#6b7d3d", "#a8791f"];
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
@@ -83,10 +83,10 @@ export function BottomNav() {
         left: "50%",
         transform: "translateX(-50%)",
         paddingBottom: "env(safe-area-inset-bottom)",
-        background: "rgba(250,248,245,0.94)",
+        background: "rgba(10,10,10,0.94)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        borderTop: "1px solid rgba(0,0,0,0.08)",
+        borderTop: "1px solid rgba(255,255,255,0.08)",
         display: "flex",
         maxWidth: "390px",
         width: "100%",
@@ -221,7 +221,7 @@ export function BottomNav() {
             width: 44,
             height: 44,
             borderRadius: "50%",
-            border: "1.5px solid rgba(0,0,0,0.10)",
+            border: "1.5px solid rgba(255,255,255,0.10)",
             boxShadow: "0 2px 12px rgba(0,0,0,0.14)",
             display: "flex",
             alignItems: "center",
@@ -233,7 +233,7 @@ export function BottomNav() {
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: "#ffffff",
+              background: "var(--surface-2)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

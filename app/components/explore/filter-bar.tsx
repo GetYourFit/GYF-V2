@@ -1,7 +1,8 @@
 "use client";
 
-import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Search, X, SlidersHorizontal, ChevronDown, Sparkles } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
@@ -67,12 +68,12 @@ const CHIP_BASE: React.CSSProperties = {
   transition: "all 0.15s",
 };
 
-function chip(active: boolean, color: string = "#1c1a17"): React.CSSProperties {
+function chip(active: boolean, color: string = "var(--text)"): React.CSSProperties {
   return {
     ...CHIP_BASE,
-    border: active ? `1px solid ${color}` : "1px solid rgba(0,0,0,0.12)",
-    background: active ? color : "#ffffff",
-    color: active ? "#faf8f5" : "#5c5650",
+    border: active ? `1px solid ${color}` : "1px solid rgba(255,255,255,0.12)",
+    background: active ? color : "var(--surface-2)",
+    color: active ? "var(--bg)" : "var(--text-mid)",
   };
 }
 
@@ -171,10 +172,10 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           // gap and no overlap.
           top: 0,
           zIndex: 20,
-          background: "rgba(250,248,245,0.95)",
+          background: "rgba(10,10,10,0.95)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(0,0,0,0.06)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
           padding: "0.75rem 1rem",
           display: "flex",
           flexDirection: "column",
@@ -185,8 +186,11 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           willChange: "transform",
         }}
       >
-        {/* Search input */}
-        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        {/* Search input + canvas entry */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+          <div
+            style={{ position: "relative", display: "flex", alignItems: "center", flex: 1 }}
+          >
           <Search
             size={16}
             aria-hidden
@@ -209,15 +213,15 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             aria-label="Search garments"
             style={{
               flex: 1,
-              background: "#ffffff",
-              border: `1.5px solid ${focused ? "var(--secondary)" : "rgba(0,0,0,0.12)"}`,
+              background: "var(--surface-2)",
+              border: `1.5px solid ${focused ? "var(--secondary)" : "rgba(255,255,255,0.12)"}`,
               outline: "none",
               borderRadius: "999px",
               padding: "0.75rem 2.5rem 0.75rem 3rem",
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
               fontSize: "0.9375rem",
-              color: "#1c1a17",
-              boxShadow: focused ? "0 0 0 3px rgba(212,96,122,0.12)" : "0 2px 8px rgba(0,0,0,0.06)",
+              color: "var(--text)",
+              boxShadow: focused ? "0 0 0 3px rgba(255,255,255,0.12)" : "0 2px 8px rgba(0,0,0,0.06)",
               transition: "border-color 0.2s, box-shadow 0.2s",
             }}
           />
@@ -241,6 +245,27 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               <X size={14} aria-hidden />
             </button>
           )}
+          </div>
+
+          {/* Canvas explorer — pan the whole collection (Ref1/Ref2) */}
+          <Link
+            href="/canvas"
+            aria-label="Open canvas explorer"
+            style={{
+              width: 44,
+              height: 44,
+              flexShrink: 0,
+              borderRadius: "50%",
+              background: "var(--surface-2)",
+              border: "1.5px solid rgba(255,255,255,0.12)",
+              color: "var(--text)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Sparkles size={18} aria-hidden />
+          </Link>
         </div>
 
         {/* Collapse toggle — only appears once stuck to the top, letting the
@@ -257,9 +282,9 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 width: 30,
                 height: 18,
                 borderRadius: "0 0 12px 12px",
-                border: "1px solid rgba(0,0,0,0.1)",
+                border: "1px solid rgba(255,255,255,0.1)",
                 borderTop: "none",
-                background: "#ffffff",
+                background: "var(--surface-2)",
                 color: UI_COLORS.category,
                 display: "flex",
                 alignItems: "center",
@@ -429,12 +454,12 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                         style={{
                           appearance: "none",
                           WebkitAppearance: "none",
-                          background: "#ffffff",
+                          background: "var(--surface-2)",
                           border: `1px solid ${
-                            safeSort !== "relevance" ? UI_COLORS.sort : "rgba(0,0,0,0.12)"
+                            safeSort !== "relevance" ? UI_COLORS.sort : "rgba(255,255,255,0.12)"
                           }`,
                           borderRadius: "999px",
-                          color: safeSort !== "relevance" ? UI_COLORS.sort : "#5c5650",
+                          color: safeSort !== "relevance" ? UI_COLORS.sort : "var(--text-mid)",
                           padding: "0.3rem 1.5rem 0.3rem 0.75rem",
                           fontFamily: "var(--font-body)",
                           fontSize: "0.75rem",
@@ -447,7 +472,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                           <option
                             key={o.value}
                             value={o.value}
-                            style={{ background: "#faf8f5", color: "#1c1a17" }}
+                            style={{ background: "var(--bg)", color: "var(--text)" }}
                           >
                             {o.label}
                           </option>
@@ -466,7 +491,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                         style={{
                           position: "absolute",
                           right: "0.65rem",
-                          color: safeSort !== "relevance" ? UI_COLORS.sort : "#5c5650",
+                          color: safeSort !== "relevance" ? UI_COLORS.sort : "var(--text-mid)",
                           pointerEvents: "none",
                         }}
                       >
@@ -492,10 +517,10 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                         boxSizing: "border-box",
                         width: "92px",
                         flexShrink: 0,
-                        background: "#ffffff",
-                        border: `1px solid ${filters.maxPrice ? UI_COLORS.budget : "rgba(0,0,0,0.12)"}`,
+                        background: "var(--surface-2)",
+                        border: `1px solid ${filters.maxPrice ? UI_COLORS.budget : "rgba(255,255,255,0.12)"}`,
                         borderRadius: "999px",
-                        color: filters.maxPrice ? UI_COLORS.budget : "#5c5650",
+                        color: filters.maxPrice ? UI_COLORS.budget : "var(--text-mid)",
                         padding: "0.3rem 0.75rem",
                         fontFamily: "var(--font-mono)",
                         fontSize: "0.7rem",

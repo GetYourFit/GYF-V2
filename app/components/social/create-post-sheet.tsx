@@ -206,9 +206,9 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
               width: "100%",
               maxWidth: "390px",
               maxHeight: "88dvh",
-              background: "#faf8f5",
+              background: "var(--bg)",
               borderRadius: "20px 20px 0 0",
-              borderTop: "1px solid rgba(0,0,0,0.10)",
+              borderTop: "1px solid rgba(255,255,255,0.10)",
               outline: "none",
               display: "flex",
               flexDirection: "column",
@@ -223,7 +223,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                 style={{
                   width: 36,
                   height: 4,
-                  background: "rgba(0,0,0,0.15)",
+                  background: "rgba(255,255,255,0.15)",
                   borderRadius: 2,
                 }}
               />
@@ -236,7 +236,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "0.75rem 1.25rem",
-                borderBottom: "1px solid rgba(0,0,0,0.06)",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
               }}
             >
               <p
@@ -309,7 +309,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                       key={i}
                       animate={{ opacity: [0.3, 0.6, 0.3] }}
                       transition={{ duration: 1.4, delay: i * 0.15, repeat: Infinity }}
-                      style={{ aspectRatio: "1/1", background: "rgba(0,0,0,0.06)" }}
+                      style={{ aspectRatio: "1/1", background: "rgba(255,255,255,0.06)" }}
                     />
                   ))}
                 </div>
@@ -356,8 +356,8 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                           position: "relative",
                           aspectRatio: "1/1",
                           overflow: "hidden",
-                          background: "#faf8f5",
-                          border: `1px solid ${active ? "var(--secondary)" : "rgba(0,0,0,0.08)"}`,
+                          background: "var(--bg)",
+                          border: `1px solid ${active ? "var(--secondary)" : "rgba(255,255,255,0.08)"}`,
                           cursor: "pointer",
                           padding: 0,
                           outline: "none",
@@ -436,12 +436,12 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                     resize: "none",
                     background: "transparent",
                     border: "none",
-                    borderBottom: "1px solid rgba(0,0,0,0.15)",
+                    borderBottom: "1px solid rgba(255,255,255,0.15)",
                     outline: "none",
                     padding: "0.625rem 0",
                     fontFamily: "var(--font-body)",
                     fontSize: "0.9375rem",
-                    color: "#1c1a17",
+                    color: "var(--text)",
                     boxSizing: "border-box",
                   }}
                 />
@@ -454,7 +454,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: "0.8125rem",
-                    color: "#c0392b",
+                    color: "var(--error)",
                     margin: 0,
                   }}
                 >
@@ -472,8 +472,8 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
                   marginTop: "auto",
                   width: "100%",
                   minHeight: "52px",
-                  background: submitting || !selected ? "rgba(0,0,0,0.10)" : "var(--primary)",
-                  color: submitting || !selected ? "var(--text-faint)" : "#faf8f5",
+                  background: submitting || !selected ? "rgba(255,255,255,0.10)" : "var(--primary)",
+                  color: submitting || !selected ? "var(--text-faint)" : "var(--bg)",
                   border: "none",
                   borderRadius: "999px",
                   fontFamily: "var(--font-mono)",

@@ -55,9 +55,9 @@ export default function GrievancePage() {
           style={{
             marginTop: "2rem",
             padding: "2rem 1.5rem",
-            background: "#f4f1ec",
+            background: "var(--surface)",
             borderRadius: 16,
-            border: "1px solid rgba(0,0,0,0.06)",
+            border: "1px solid rgba(255,255,255,0.06)",
             textAlign: "center",
           }}
         >
@@ -66,7 +66,7 @@ export default function GrievancePage() {
               width: 56,
               height: 56,
               borderRadius: "50%",
-              background: "#1c1a17",
+              background: "var(--text)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -78,7 +78,7 @@ export default function GrievancePage() {
               height={24}
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#faf8f5"
+              stroke="var(--bg)"
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -90,15 +90,15 @@ export default function GrievancePage() {
             style={{
               fontSize: "1.25rem",
               fontWeight: 700,
-              color: "#1c1a17",
+              color: "var(--text)",
               marginBottom: "0.5rem",
             }}
           >
             Grievance Submitted
           </h2>
-          <p style={{ fontSize: "0.875rem", color: "#5c5650", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-mid)", lineHeight: 1.6 }}>
             We&apos;ve received your report and will review it within 48 hours. You&apos;ll hear
-            from us at <strong style={{ color: "#1c1a17" }}>{form.email}</strong>.
+            from us at <strong style={{ color: "var(--text)" }}>{form.email}</strong>.
           </p>
         </motion.div>
       </PageContainer>
@@ -131,14 +131,14 @@ export default function GrievancePage() {
             fontSize: "clamp(1.75rem, 5vw, 2.5rem)",
             fontWeight: 800,
             letterSpacing: "-0.03em",
-            color: "#1c1a17",
+            color: "var(--text)",
             lineHeight: 1.1,
             marginBottom: "0.75rem",
           }}
         >
           Grievance
         </h1>
-        <p style={{ fontSize: "0.9rem", color: "#5c5650", lineHeight: 1.65 }}>
+        <p style={{ fontSize: "0.9rem", color: "var(--text-mid)", lineHeight: 1.65 }}>
           Tell us what went wrong and we&apos;ll make it right. Every report is reviewed by our
           team.
         </p>
@@ -159,7 +159,7 @@ export default function GrievancePage() {
               fontWeight: 600,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#5c5650",
+              color: "var(--text-mid)",
             }}
           >
             Issue Type <span style={{ color: "var(--secondary)" }}>*</span>
@@ -175,9 +175,9 @@ export default function GrievancePage() {
                   style={{
                     padding: "0.375rem 0.875rem",
                     borderRadius: 999,
-                    border: active ? "1.5px solid #1c1a17" : "1.5px solid rgba(0,0,0,0.14)",
-                    background: active ? "#1c1a17" : "transparent",
-                    color: active ? "#faf8f5" : "#5c5650",
+                    border: active ? "1.5px solid var(--text)" : "1.5px solid rgba(255,255,255,0.14)",
+                    background: active ? "var(--text)" : "transparent",
+                    color: active ? "var(--bg)" : "var(--text-mid)",
                     fontSize: "0.8rem",
                     fontWeight: 600,
                     cursor: "pointer",
@@ -200,7 +200,7 @@ export default function GrievancePage() {
               fontWeight: 600,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#5c5650",
+              color: "var(--text-mid)",
             }}
           >
             Your Email <span style={{ color: "var(--secondary)" }}>*</span>
@@ -217,18 +217,18 @@ export default function GrievancePage() {
               padding: "0 0",
               background: "transparent",
               border: "none",
-              borderBottom: "1.5px solid rgba(0,0,0,0.18)",
+              borderBottom: "1.5px solid rgba(255,255,255,0.18)",
               borderRadius: 0,
               fontSize: "0.9375rem",
-              color: "#1c1a17",
+              color: "var(--text)",
               outline: "none",
               transition: "border-color 0.2s",
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderBottomColor = "#1c1a17";
+              e.currentTarget.style.borderBottomColor = "var(--text)";
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderBottomColor = "rgba(0,0,0,0.18)";
+              e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)";
             }}
           />
         </div>
@@ -242,7 +242,7 @@ export default function GrievancePage() {
               fontWeight: 600,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#5c5650",
+              color: "var(--text-mid)",
             }}
           >
             Describe the Issue <span style={{ color: "var(--secondary)" }}>*</span>
@@ -258,10 +258,10 @@ export default function GrievancePage() {
               padding: "0.75rem 0",
               background: "transparent",
               border: "none",
-              borderBottom: "1.5px solid rgba(0,0,0,0.18)",
+              borderBottom: "1.5px solid rgba(255,255,255,0.18)",
               borderRadius: 0,
               fontSize: "0.9375rem",
-              color: "#1c1a17",
+              color: "var(--text)",
               outline: "none",
               resize: "none",
               lineHeight: 1.6,
@@ -269,10 +269,10 @@ export default function GrievancePage() {
               fontFamily: "inherit",
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderBottomColor = "#1c1a17";
+              e.currentTarget.style.borderBottomColor = "var(--text)";
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderBottomColor = "rgba(0,0,0,0.18)";
+              e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)";
             }}
           />
         </div>
@@ -280,7 +280,7 @@ export default function GrievancePage() {
         {/* Notice */}
         <p style={{ fontSize: "0.75rem", color: "var(--text-faint)", lineHeight: 1.5 }}>
           All grievances are reviewed within 48 hours. For urgent matters, email us directly at{" "}
-          <a href="mailto:gyf1ltd@gmail.com" style={{ color: "#1c1a17", fontWeight: 600 }}>
+          <a href="mailto:gyf1ltd@gmail.com" style={{ color: "var(--text)", fontWeight: 600 }}>
             gyf1ltd@gmail.com
           </a>
           .
@@ -297,8 +297,8 @@ export default function GrievancePage() {
           style={{
             height: 48,
             borderRadius: 12,
-            background: "#1c1a17",
-            color: "#faf8f5",
+            background: "var(--text)",
+            color: "var(--bg)",
             fontWeight: 700,
             fontSize: "0.875rem",
             letterSpacing: "0.04em",

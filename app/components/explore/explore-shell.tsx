@@ -42,7 +42,7 @@ function RotatingTip({ reduce }: { reduce: boolean | null }) {
     fontStyle: "italic",
     lineHeight: 1.25,
     letterSpacing: "0.01em",
-    color: "#1c1a17",
+    color: "var(--text)",
     margin: 0,
   };
 

@@ -35,14 +35,14 @@ type SearchPhase = "idle" | "searching" | "done";
 /* ── Shared style tokens ── */
 const INPUT: React.CSSProperties = {
   width: "100%",
-  background: "#ffffff",
-  border: "1.5px solid rgba(0,0,0,0.12)",
+  background: "var(--surface-2)",
+  border: "1.5px solid rgba(255,255,255,0.12)",
   borderRadius: "12px",
   outline: "none",
   padding: "0.875rem 1rem",
   fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
   fontSize: "16px",
-  color: "#1c1a17",
+  color: "var(--text)",
   minHeight: "48px",
   transition: "border-color 0.2s",
 };
@@ -51,7 +51,7 @@ const LABEL: React.CSSProperties = {
   fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
   fontSize: "0.8125rem",
   fontWeight: 600,
-  color: "#1c1a17",
+  color: "var(--text)",
   display: "block",
   marginBottom: "0.5rem",
 };
@@ -60,7 +60,7 @@ const BTN_PRIMARY: React.CSSProperties = {
   flex: 1,
   minHeight: "48px",
   background: UI_COLORS.wardrobe,
-  color: "#faf8f5",
+  color: "var(--bg)",
   border: "none",
   borderRadius: "999px",
   fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
@@ -74,9 +74,9 @@ const BTN_GHOST: React.CSSProperties = {
   minHeight: "48px",
   padding: "0 1.5rem",
   background: "transparent",
-  border: "1.5px solid rgba(0,0,0,0.12)",
+  border: "1.5px solid rgba(255,255,255,0.12)",
   borderRadius: "999px",
-  color: "#5c5650",
+  color: "var(--text-mid)",
   fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
   fontSize: "0.9rem",
   fontWeight: 500,
@@ -268,9 +268,9 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
               width: "100%",
               maxWidth: "390px",
               maxHeight: "88dvh",
-              background: "#faf8f5",
+              background: "var(--bg)",
               borderRadius: "24px 24px 0 0",
-              borderTop: "1px solid rgba(0,0,0,0.08)",
+              borderTop: "1px solid rgba(255,255,255,0.08)",
               boxShadow: "0 -8px 40px rgba(0,0,0,0.12)",
               outline: "none",
               display: "flex",
@@ -281,7 +281,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
             {/* Drag handle */}
             <div style={{ display: "flex", justifyContent: "center", padding: "0.75rem 0 0" }}>
               <div
-                style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(0,0,0,0.14)" }}
+                style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.14)" }}
               />
             </div>
 
@@ -300,7 +300,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                   fontFamily: "var(--font-body)",
                   fontSize: "1.125rem",
                   fontWeight: 700,
-                  color: "#1c1a17",
+                  color: "var(--text)",
                   margin: 0,
                 }}
               >
@@ -316,10 +316,10 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                   justifyContent: "center",
                   width: 44,
                   height: 44,
-                  background: "rgba(0,0,0,0.06)",
+                  background: "rgba(255,255,255,0.06)",
                   border: "none",
                   borderRadius: "50%",
-                  color: "#5c5650",
+                  color: "var(--text-mid)",
                   cursor: "pointer",
                 }}
               >
@@ -353,9 +353,9 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                       fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                       fontSize: "0.875rem",
                       fontWeight: 600,
-                      border: `1.5px solid ${active ? UI_COLORS.wardrobe : "rgba(0,0,0,0.12)"}`,
-                      background: active ? UI_COLORS.wardrobe : "#ffffff",
-                      color: active ? "#faf8f5" : "#5c5650",
+                      border: `1.5px solid ${active ? UI_COLORS.wardrobe : "rgba(255,255,255,0.12)"}`,
+                      background: active ? UI_COLORS.wardrobe : "var(--surface-2)",
+                      color: active ? "var(--bg)" : "var(--text-mid)",
                       cursor: "pointer",
                       borderRadius: "999px",
                       minHeight: "40px",
@@ -369,7 +369,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
             </div>
 
             {/* Divider */}
-            <div style={{ height: 1, background: "rgba(0,0,0,0.07)", flexShrink: 0 }} />
+            <div style={{ height: 1, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
 
             {/* Body */}
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
@@ -383,7 +383,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                       gap: "0.625rem",
                       alignItems: "center",
                       padding: "1rem 1.25rem",
-                      borderBottom: "1px solid rgba(0,0,0,0.06)",
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
                       flexShrink: 0,
                     }}
                   >
@@ -409,7 +409,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         background: UI_COLORS.wardrobe,
                         border: "none",
                         borderRadius: "999px",
-                        color: "#faf8f5",
+                        color: "var(--bg)",
                         cursor: phase === "searching" ? "not-allowed" : "pointer",
                         opacity: phase === "searching" ? 0.5 : 1,
                         flexShrink: 0,
@@ -426,7 +426,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         padding: "0.75rem 1.25rem",
                         fontFamily: "var(--font-body)",
                         fontSize: "0.8125rem",
-                        color: "#c0392b",
+                        color: "var(--error)",
                         margin: 0,
                       }}
                     >
@@ -449,7 +449,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                             key={i}
                             animate={{ opacity: [0.3, 0.6, 0.3] }}
                             transition={{ duration: 1.4, delay: i * 0.08, repeat: Infinity }}
-                            style={{ aspectRatio: "3/4", background: "#edeae4", borderRadius: 12 }}
+                            style={{ aspectRatio: "3/4", background: "var(--surface-2)", borderRadius: 12 }}
                           />
                         ))}
                       </div>
@@ -476,7 +476,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                                 position: "relative",
                                 aspectRatio: "3/4",
                                 overflow: "hidden",
-                                background: "#f4f1ec",
+                                background: "var(--surface)",
                                 border: "none",
                                 borderRadius: 12,
                                 cursor: busy ? "not-allowed" : "pointer",
@@ -532,7 +532,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                             fontFamily: "var(--font-body)",
                             fontSize: "0.9375rem",
                             fontWeight: 600,
-                            color: "#1c1a17",
+                            color: "var(--text)",
                             margin: 0,
                           }}
                         >
@@ -596,7 +596,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                         <option
                           key={o.value}
                           value={o.value}
-                          style={{ background: "#ffffff", color: "#1c1a17" }}
+                          style={{ background: "var(--surface-2)", color: "var(--text)" }}
                         >
                           {o.label}
                         </option>
@@ -610,7 +610,7 @@ export function AddGarmentSheet({ open, onClose, onAdd }: AddGarmentSheetProps) 
                       style={{
                         fontFamily: "var(--font-body)",
                         fontSize: "0.8125rem",
-                        color: "#c0392b",
+                        color: "var(--error)",
                         margin: 0,
                       }}
                     >

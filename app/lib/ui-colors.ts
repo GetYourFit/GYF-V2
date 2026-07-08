@@ -8,16 +8,16 @@
 // on-page buttons) reads as one color story, and no two pages share a hue.
 export const UI_COLORS = {
   // ── Explore — one hue per filter category ──
-  category: "#b04760", // rose
-  occasion: "#b8571f", // terracotta
-  style: "#6b7d3d", // olive
-  sort: "#8a5a2b", // brown
-  budget: "#a8791f", // ochre gold
+  category: "#ffffff", // rose
+  occasion: "#ffffff", // terracotta
+  style: "#ffffff", // olive
+  sort: "#ffffff", // brown
+  budget: "#ffffff", // ochre gold
 
   // ── Per-page signature colors (also used by that page's bottom-nav tab) ──
-  explore: "#b04760", // rose — same as `category`, explore's flagship hue
-  wardrobe: "#a2532e", // burnt sienna
-  stylist: "#5f7a52", // sage green
-  social: "#c9962f", // warm mustard
-  profile: "#7a4a63", // dusty mauve
+  explore: "#ffffff", // rose — same as `category`, explore's flagship hue
+  wardrobe: "#ffffff", // burnt sienna
+  stylist: "#ffffff", // sage green
+  social: "#ffffff", // warm mustard
+  profile: "#ffffff", // dusty mauve
 } as const;

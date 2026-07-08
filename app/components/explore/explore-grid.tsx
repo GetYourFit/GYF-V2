@@ -46,19 +46,19 @@ function CardSkeleton({ i }: { i: number }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: "rgba(0,0,0,0.03)",
-        border: "1px solid rgba(0,0,0,0.04)",
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.04)",
         borderRadius: "16px",
         overflow: "hidden",
       }}
     >
-      <div style={{ aspectRatio: "3/4", background: "rgba(0,0,0,0.06)" }} />
+      <div style={{ aspectRatio: "3/4", background: "rgba(255,255,255,0.06)" }} />
       <div style={{ padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         <div
           style={{
             height: "10px",
             width: "80%",
-            background: "rgba(0,0,0,0.06)",
+            background: "rgba(255,255,255,0.06)",
             borderRadius: "999px",
           }}
         />
@@ -66,7 +66,7 @@ function CardSkeleton({ i }: { i: number }) {
           style={{
             height: "8px",
             width: "40%",
-            background: "rgba(0,0,0,0.06)",
+            background: "rgba(255,255,255,0.06)",
             borderRadius: "999px",
           }}
         />
@@ -332,8 +332,8 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           gap: "1.25rem",
           padding: "4rem 1.5rem",
           textAlign: "center",
-          border: "1px solid rgba(0,0,0,0.06)",
-          background: "rgba(0,0,0,0.03)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(255,255,255,0.03)",
           borderRadius: "16px",
         }}
       >
@@ -344,7 +344,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
               fontFamily: "var(--font-body)",
               fontSize: "0.9375rem",
               fontWeight: 600,
-              color: "#1c1a17",
+              color: "var(--text)",
               marginBottom: "0.375rem",
             }}
           >
@@ -370,8 +370,8 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
             gap: "0.375rem",
             padding: "0.5rem 1.25rem",
             background: "transparent",
-            border: "1px solid rgba(0,0,0,0.15)",
-            color: "#5c5650",
+            border: "1px solid rgba(255,255,255,0.15)",
+            color: "var(--text-mid)",
             fontFamily: "var(--font-mono)",
             fontSize: "0.6rem",
             letterSpacing: "0.08em",
@@ -402,7 +402,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           gap: "1.5rem",
           padding: "4rem 1.5rem",
           textAlign: "center",
-          border: "1px solid rgba(0,0,0,0.06)",
+          border: "1px solid rgba(255,255,255,0.06)",
           borderRadius: "16px",
         }}
       >
@@ -416,15 +416,15 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
             justifyContent: "center",
           }}
         >
-          <div style={{ position: "absolute", inset: 0, border: "1px solid rgba(0,0,0,0.06)" }} />
+          <div style={{ position: "absolute", inset: 0, border: "1px solid rgba(255,255,255,0.06)" }} />
           <div
-            style={{ position: "absolute", inset: "10px", border: "1px solid rgba(0,0,0,0.10)" }}
+            style={{ position: "absolute", inset: "10px", border: "1px solid rgba(255,255,255,0.10)" }}
           />
           <div
             style={{
               position: "absolute",
               inset: "20px",
-              border: "1px solid rgba(0,0,0,0.15)",
+              border: "1px solid rgba(255,255,255,0.15)",
             }}
           />
           <SearchX
@@ -439,7 +439,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
               fontFamily: "var(--font-body)",
               fontSize: "0.9375rem",
               fontWeight: 600,
-              color: "#1c1a17",
+              color: "var(--text)",
               marginBottom: "0.375rem",
             }}
           >
@@ -496,7 +496,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.8125rem",
-            color: "#c0392b",
+            color: "var(--error)",
             textAlign: "center",
             marginTop: "1.5rem",
           }}

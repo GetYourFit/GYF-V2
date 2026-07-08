@@ -36,12 +36,12 @@ export default function WardrobePage() {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#1c1a17",
+            color: "var(--text)",
             margin: 0,
           }}
         >
           Your closet,{" "}
-          <em style={{ fontStyle: "italic", fontWeight: 300, color: "#5c5650" }}>digitised.</em>
+          <em style={{ fontStyle: "italic", fontWeight: 300, color: "var(--text-mid)" }}>digitised.</em>
         </h1>
       </header>
       <WardrobeGrid />

@@ -147,10 +147,10 @@ export function PostCard({
       }}
       style={{
         listStyle: "none",
-        background: "#ffffff",
+        background: "var(--surface-2)",
         borderRadius: "20px",
         boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid rgba(255,255,255,0.08)",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
@@ -170,12 +170,12 @@ export function PostCard({
             width: 40,
             height: 40,
             borderRadius: "50%",
-            background: "#f4f1ec",
+            background: "var(--surface)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            border: "2px solid #ffffff",
+            border: "2px solid var(--surface-3)",
             boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
           }}
         >
@@ -184,7 +184,7 @@ export function PostCard({
               fontFamily: "var(--font-body)",
               fontSize: "1rem",
               fontWeight: 700,
-              color: "#5c5650",
+              color: "var(--text-mid)",
             }}
           >
             {author.initial}
@@ -196,7 +196,7 @@ export function PostCard({
               fontFamily: "var(--font-body)",
               fontSize: "0.9rem",
               fontWeight: 600,
-              color: "#1c1a17",
+              color: "var(--text)",
               margin: 0,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -237,7 +237,7 @@ export function PostCard({
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
               fontSize: "0.75rem",
               fontWeight: 600,
-              color: followed ? "#faf8f5" : UI_COLORS.social,
+              color: followed ? "var(--bg)" : UI_COLORS.social,
               cursor: "pointer",
               flexShrink: 0,
               transition: "background 0.2s, color 0.2s",
@@ -259,7 +259,7 @@ export function PostCard({
             aspectRatio: "4/5",
             width: "100%",
             overflow: "hidden",
-            background: "#f4f1ec",
+            background: "var(--surface)",
             border: "none",
             padding: 0,
             cursor: "pointer",
@@ -280,7 +280,7 @@ export function PostCard({
                 top: "0.75rem",
                 left: "0.75rem",
                 background: "rgba(255,255,255,0.90)",
-                color: "#5c5650",
+                color: "var(--text-mid)",
                 fontFamily: "var(--font-body)",
                 fontSize: "0.7rem",
                 fontWeight: 600,
@@ -365,7 +365,7 @@ export function PostCard({
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.8125rem",
-              color: reacted ? "#1c1a17" : "#5c5650",
+              color: reacted ? "var(--text)" : "var(--text-mid)",
             }}
           >
             {count}
@@ -433,12 +433,12 @@ export function PostCard({
               gap: "0.375rem",
               padding: "0.4rem 0.875rem",
               background: "transparent",
-              border: "1.5px solid #1c1a17",
+              border: "1.5px solid var(--text)",
               borderRadius: "999px",
               fontFamily: "var(--font-body)",
               fontSize: "0.75rem",
               fontWeight: 600,
-              color: "#1c1a17",
+              color: "var(--text)",
               cursor: "pointer",
             }}
           >
@@ -455,7 +455,7 @@ export function PostCard({
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.875rem",
-              color: "#1c1a17",
+              color: "var(--text)",
               lineHeight: 1.5,
               margin: 0,
               display: "-webkit-box",
@@ -497,11 +497,11 @@ export function PostCard({
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: "0.75rem",
-                color: "#5c5650",
-                background: "#f4f1ec",
+                color: "var(--text-mid)",
+                background: "var(--surface)",
                 borderRadius: "999px",
                 padding: "0.25rem 0.75rem",
-                border: "1px solid rgba(0,0,0,0.08)",
+                border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
               {item.title}

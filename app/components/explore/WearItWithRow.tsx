@@ -34,12 +34,12 @@ function formatPrice(price?: number | null, currency?: string | null): string | 
 function Skeleton() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", flex: 1 }}>
-      <div style={{ aspectRatio: "3/4", background: "rgba(0,0,0,0.04)", borderRadius: "12px" }} />
+      <div style={{ aspectRatio: "3/4", background: "rgba(255,255,255,0.04)", borderRadius: "12px" }} />
       <div
         style={{
           height: "8px",
           width: "70%",
-          background: "rgba(0,0,0,0.04)",
+          background: "rgba(255,255,255,0.04)",
           borderRadius: "999px",
         }}
       />
@@ -80,7 +80,7 @@ function Tile({ item }: { item: OutfitItem }) {
           background: "#1a1a22",
           borderRadius: "12px",
           overflow: "hidden",
-          border: "1px solid rgba(0,0,0,0.08)",
+          border: "1px solid rgba(255,255,255,0.08)",
         }}
       >
         {src ? (
@@ -100,7 +100,7 @@ function Tile({ item }: { item: OutfitItem }) {
               height: "100%",
               ...MONO,
               fontSize: "0.5rem",
-              color: "#5a5a65",
+              color: "var(--text-mid)",
             }}
           >
             No image
@@ -168,7 +168,7 @@ export function WearItWithRow({ itemId }: Props) {
           <Skeleton />
         </div>
       ) : look === null || pairings.length === 0 ? (
-        <p style={{ ...MONO, color: "#5a5a65", fontSize: "0.55rem" }}>
+        <p style={{ ...MONO, color: "var(--text-mid)", fontSize: "0.55rem" }}>
           No complete look available for this piece yet
         </p>
       ) : (

@@ -181,7 +181,7 @@ export function SocialFeed() {
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
               fontSize: "1.5rem",
               fontWeight: 700,
-              color: "#1c1a17",
+              color: "var(--text)",
               margin: 0,
             }}
           >
@@ -194,8 +194,8 @@ export function SocialFeed() {
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             style={{
               padding: "0.5rem 1.125rem",
-              background: "var(--secondary)",
-              color: "#ffffff",
+              background: "var(--accent)",
+              color: "var(--on-accent)",
               borderRadius: "999px",
               border: "none",
               fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
@@ -228,9 +228,9 @@ export function SocialFeed() {
               style={{
                 padding: "0.4rem 1rem",
                 borderRadius: "999px",
-                border: `1px solid ${scope === key ? UI_COLORS.social : "rgba(0,0,0,0.12)"}`,
+                border: `1px solid ${scope === key ? UI_COLORS.social : "rgba(255,255,255,0.12)"}`,
                 background: scope === key ? UI_COLORS.social : "transparent",
-                color: scope === key ? "#faf8f5" : "#5c5650",
+                color: scope === key ? "var(--bg)" : "var(--text-mid)",
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                 fontSize: "0.8125rem",
                 fontWeight: 600,
@@ -249,9 +249,9 @@ export function SocialFeed() {
               <div
                 key={i}
                 style={{
-                  background: "#ffffff",
+                  background: "var(--surface-2)",
                   borderRadius: "20px",
-                  border: "1px solid rgba(0,0,0,0.08)",
+                  border: "1px solid rgba(255,255,255,0.08)",
                   overflow: "hidden",
                 }}
               >
@@ -293,7 +293,7 @@ export function SocialFeed() {
               textAlign: "center",
             }}
           >
-            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", color: "#5c5650" }}>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: "0.9375rem", color: "var(--text-mid)" }}>
               {error}
             </p>
             <button
@@ -301,8 +301,8 @@ export function SocialFeed() {
               onClick={() => void load()}
               style={{
                 padding: "0.75rem 1.75rem",
-                background: "#1c1a17",
-                color: "#faf8f5",
+                background: "var(--text)",
+                color: "var(--bg)",
                 borderRadius: "999px",
                 border: "none",
                 fontFamily: "var(--font-body)",
@@ -337,7 +337,7 @@ export function SocialFeed() {
                   fontFamily: "var(--font-body)",
                   fontSize: "1.125rem",
                   fontWeight: 700,
-                  color: "#1c1a17",
+                  color: "var(--text)",
                   margin: 0,
                 }}
               >
@@ -347,7 +347,7 @@ export function SocialFeed() {
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: "0.875rem",
-                  color: "#5c5650",
+                  color: "var(--text-mid)",
                   maxWidth: "280px",
                   margin: 0,
                 }}
@@ -362,8 +362,8 @@ export function SocialFeed() {
               onClick={() => setSheetOpen(true)}
               style={{
                 padding: "0.75rem 1.75rem",
-                background: "var(--secondary)",
-                color: "#ffffff",
+                background: "var(--accent)",
+                color: "var(--on-accent)",
                 borderRadius: "999px",
                 border: "none",
                 fontFamily: "var(--font-body)",
@@ -430,11 +430,11 @@ export function SocialFeed() {
           height: 52,
           alignItems: "center",
           justifyContent: "center",
-          background: "var(--secondary)",
-          color: "#ffffff",
+          background: "var(--accent)",
+          color: "var(--on-accent)",
           borderRadius: "999px",
           border: "none",
-          boxShadow: "0 4px 20px rgba(212,96,122,0.40)",
+          boxShadow: "0 4px 20px rgba(255,255,255,0.40)",
           cursor: "pointer",
         }}
       >

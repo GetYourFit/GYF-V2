@@ -20,8 +20,8 @@ export function AppShell({ children }: AppShellProps) {
         // header + sticky filter bar end up fighting for the same top:0.
         height: "100dvh",
         flexDirection: "column",
-        background: "#faf8f5",
-        color: "#1c1a17",
+        background: "var(--bg)",
+        color: "var(--text)",
       }}
     >
       {/* Top brand header */}
@@ -31,10 +31,10 @@ export function AppShell({ children }: AppShellProps) {
           position: "sticky",
           top: 0,
           zIndex: 30,
-          background: "rgba(250,248,245,0.92)",
+          background: "rgba(10,10,10,0.92)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(0,0,0,0.06)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
           transform: "translateZ(0)",
           willChange: "transform",
         }}
@@ -68,7 +68,7 @@ export function AppShell({ children }: AppShellProps) {
                 fontWeight: 600,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#1c1a17",
+                color: "var(--text)",
                 whiteSpace: "nowrap",
               }}
             >

@@ -28,10 +28,10 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: "rgba(0,0,0,0.03)",
+        background: "rgba(255,255,255,0.03)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid rgba(255,255,255,0.08)",
         borderRadius: "16px",
         overflow: "hidden",
       }}
@@ -55,7 +55,7 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
               justifyContent: "center",
               height: "100%",
               ...MONO,
-              color: "#5a5a65",
+              color: "var(--text-mid)",
             }}
           >
             No image
@@ -67,7 +67,7 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.6875rem",
-            color: "#1c1a17",
+            color: "var(--text)",
             overflow: "hidden",
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -97,10 +97,10 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
       style={{
         display: "flex",
         flexDirection: "column",
-        background: "rgba(0,0,0,0.03)",
+        background: "rgba(255,255,255,0.03)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(0,0,0,0.08)",
+        border: "1px solid rgba(255,255,255,0.08)",
         borderRadius: "16px",
         overflow: "hidden",
       }}
@@ -138,20 +138,20 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
               justifyContent: "center",
               height: "100%",
               ...MONO,
-              color: "#5a5a65",
+              color: "var(--text-mid)",
             }}
           >
             No items
           </div>
         )}
-        {previews.length === 1 && <div style={{ background: "rgba(0,0,0,0.02)" }} />}
+        {previews.length === 1 && <div style={{ background: "rgba(255,255,255,0.02)" }} />}
       </div>
       <div style={{ padding: "0.625rem" }}>
         <p
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "0.6875rem",
-            color: "#1c1a17",
+            color: "var(--text)",
             margin: 0,
           }}
         >

@@ -89,7 +89,7 @@ function IndustrialInput({
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: focused ? "var(--secondary, #b04760)" : "var(--text-faint)",
+          color: focused ? "var(--secondary, var(--text))" : "var(--text-faint)",
           transition: "color 0.25s ease",
         }}
       >
@@ -102,7 +102,7 @@ function IndustrialInput({
           style={{
             position: "absolute",
             left: 0,
-            color: focused ? "var(--secondary, #b04760)" : "var(--text-faint)",
+            color: focused ? "var(--secondary, var(--text))" : "var(--text-faint)",
             transition: "color 0.25s ease, transform 0.25s ease",
             transform: focused ? "scale(1.1)" : "scale(1)",
             flexShrink: 0,
@@ -122,12 +122,12 @@ function IndustrialInput({
             width: "100%",
             background: "transparent",
             border: "none",
-            borderBottom: `1.5px solid ${focused ? "var(--secondary, #b04760)" : "#444748"}`,
+            borderBottom: `1.5px solid ${focused ? "var(--secondary, var(--text))" : "var(--text-mid)"}`,
             borderRadius: 0,
             padding: "0.75rem 2rem 0.75rem 1.75rem",
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
             fontSize: "1rem",
-            color: "#1c1a17",
+            color: "var(--text)",
             outline: "none",
             transition: "border-color 0.25s ease",
             minHeight: "44px",
@@ -231,7 +231,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             style={{
               display: "inline-block",
               height: 1,
-              background: "var(--secondary)",
+              background: "var(--accent)",
               flexShrink: 0,
             }}
           />
@@ -248,7 +248,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#1c1a17",
+            color: "var(--text)",
             margin: 0,
           }}
         >
@@ -308,7 +308,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             style={{
               fontFamily: "var(--font-body)",
               fontSize: "0.875rem",
-              color: "#c0392b",
+              color: "var(--error)",
               margin: 0,
             }}
           >
@@ -353,8 +353,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
             minHeight: "52px",
             background: busy
               ? "#444"
-              : "linear-gradient(135deg, #1c1a17 0%, #322a28 100%)",
-            color: "#faf8f5",
+              : "linear-gradient(135deg, var(--text) 0%, #322a28 100%)",
+            color: "var(--bg)",
             border: "none",
             borderRadius: "16px",
             fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
@@ -367,7 +367,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             alignItems: "center",
             justifyContent: "center",
             gap: "0.5rem",
-            boxShadow: busy ? "none" : "0 6px 20px rgba(176,71,96,0.22)",
+            boxShadow: busy ? "none" : "0 6px 20px rgba(255,255,255,0.22)",
             transition: "background 0.2s, box-shadow 0.3s ease",
           }}
         >
@@ -399,7 +399,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <Link
             href={copy.altHref}
             style={{
-              color: "var(--secondary, #b04760)",
+              color: "var(--secondary, var(--text))",
               fontWeight: 600,
               textDecoration: "underline",
               textUnderlineOffset: "3px",

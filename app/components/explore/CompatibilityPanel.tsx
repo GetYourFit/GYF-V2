@@ -30,10 +30,10 @@ export function CompatibilityPanel({ item }: Props) {
   return (
     <div
       style={{
-        background: "rgba(0,0,0,0.04)",
+        background: "rgba(255,255,255,0.04)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(0,0,0,0.10)",
+        border: "1px solid rgba(255,255,255,0.10)",
         borderRadius: "16px",
         padding: "1rem",
         display: "flex",
@@ -53,7 +53,7 @@ export function CompatibilityPanel({ item }: Props) {
       <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
         {item.color && (
           <p style={{ ...MONO, color: "var(--text-faint)", fontSize: "0.55rem" }}>
-            Colour: <span style={{ color: "#1c1a17" }}>{item.color}</span>
+            Colour: <span style={{ color: "var(--text)" }}>{item.color}</span>
           </p>
         )}
         <p

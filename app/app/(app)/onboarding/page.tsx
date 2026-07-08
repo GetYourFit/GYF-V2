@@ -9,7 +9,7 @@ export default function OnboardingPage() {
     <div
       style={{
         minHeight: "100dvh",
-        background: "#faf8f5",
+        background: "var(--bg)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -32,7 +32,7 @@ export default function OnboardingPage() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "0.55rem",
-            color: "#5a5a65",
+            color: "var(--text-mid)",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}

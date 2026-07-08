@@ -28,7 +28,7 @@ export default function ProfilePage() {
             fontWeight: 800,
             lineHeight: 1.1,
             letterSpacing: "-0.03em",
-            color: "#1c1a17",
+            color: "var(--text)",
             margin: 0,
           }}
         >

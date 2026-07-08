@@ -48,8 +48,8 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        background: "#ffffff",
-        border: "1px solid rgba(0,0,0,0.08)",
+        background: "var(--surface-2)",
+        border: "1px solid rgba(255,255,255,0.08)",
         borderRadius: "16px",
         overflow: "hidden",
         cursor: onSelect ? "pointer" : "default",
@@ -63,7 +63,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
           position: "relative",
           aspectRatio: "3/4",
           overflow: "hidden",
-          background: "#faf8f5",
+          background: "var(--bg)",
         }}
       >
         {item.image_url ? (
@@ -128,7 +128,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
             width: "36px",
             height: "36px",
             background: "rgba(255,255,255,0.92)",
-            border: `1px solid ${saved ? "var(--secondary)" : "rgba(0,0,0,0.10)"}`,
+            border: `1px solid ${saved ? "var(--secondary)" : "rgba(255,255,255,0.10)"}`,
             color: saved ? "var(--secondary)" : "var(--text-faint)",
             cursor: "pointer",
             borderRadius: "999px",
@@ -146,7 +146,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
             fontFamily: "var(--font-body)",
             fontSize: "0.875rem",
             fontWeight: 600,
-            color: "#1c1a17",
+            color: "var(--text)",
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
