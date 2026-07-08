@@ -12,7 +12,7 @@ import type { SearchResult } from "@gyf/types";
 import { ExploreCard } from "./explore-card";
 import type { ExploreFilters } from "./filter-bar";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 32;
 
 // The default (unqueried) browse interleaves these slots so no single garment
 // type monopolizes the grid. PAGE_SIZE must stay divisible by this length.
@@ -247,7 +247,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
     if (!el) return;
     // 600px lookahead ≈ prefetching the next page well before the user hits
     // the bottom (§3.4) — pages arrive before the scroll does on 4G.
-    const obs = new IntersectionObserver(onIntersect, { rootMargin: "600px" });
+    const obs = new IntersectionObserver(onIntersect, { rootMargin: "1000px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, [onIntersect]);
@@ -474,7 +474,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           aria-busy
           aria-label="Loading more items"
         >
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <CardSkeleton key={i} i={i} />
           ))}
         </div>

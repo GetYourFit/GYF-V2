@@ -233,11 +233,16 @@ class PostgresVectorSearchRepository:
                 # HNSW only surfaces ef_search candidates per scan (default 40), so a
                 # LIMIT/OFFSET page deeper than that silently truncates — infinite
                 # scroll would dead-end at item 40. Scale the beam to the page depth;
-                # SET LOCAL scopes it to this transaction. Capped: recall beyond the
-                # first ~1k neighbours isn't worth the scan cost on this surface.
+                # SET LOCAL scopes it to this transaction. Capped at 6000, not 1000:
+                # Explore/Canvas are meant to feel like an endless browse over the
+                # whole ~27k-item catalog, and a 1k beam was cutting every query
+                # (worse per-slot on Canvas, which splits k across 4 slots) off
+                # long before a real "end of results" — this raises how deep
+                # infinite scroll can go before the ANN scan runs dry, at the cost
+                # of a slower query on the deepest pages.
                 conn.execute(
                     "SELECT set_config('hnsw.ef_search', %s, true)",
-                    (str(min(1000, max(40, depth))),),
+                    (str(min(6000, max(40, depth))),),
                 )
                 # Post-filter starvation: WHERE clauses (gender/region/price) apply
                 # AFTER the ANN scan, so a selective filter can kill every candidate

@@ -21,8 +21,14 @@ const PINCH_ZOOM_SPEED = 1; // multiplier on the raw distance ratio
 
 // Infinite browse: fetch another page once the pan gets this close to the
 // current cluster's edge, so new tiles arrive before the user hits a wall.
-const LOAD_MORE_MARGIN = 700;
-const PAGE_SIZE = 32;
+const LOAD_MORE_MARGIN = 1200;
+const PAGE_SIZE = 48;
+
+// How many skeleton tiles sit past the loaded edge while the next page
+// streams in — a bigger buffer means panning has to go further before it can
+// ever see a hard, unfilled boundary, which is what actually reads as
+// "infinite" rather than "a grid that ends."
+const EXTRA_SKELETON_COUNT = 24;
 
 // A single click is deferred this long so a following second click can
 // cancel it and fire the double-click action instead.
@@ -185,12 +191,14 @@ function TileImage({ src, srcSet, eager }: { src: string; srcSet?: string; eager
 }
 
 /** Pulsing placeholder tile — same shape/positioning as a real tile, no
- *  image, no click handlers. */
+ *  image, no click handlers. Blurred rather than a flat block so the loaded
+ *  edge of the cluster reads as an out-of-focus continuation of more content
+ *  (the "infinite grid" feel) instead of a visible boundary. */
 function SkeletonTile({ tile, index }: { tile: Tile; index: number }) {
   return (
     <motion.div
       aria-hidden
-      animate={{ opacity: [0.35, 0.6, 0.35] }}
+      animate={{ opacity: [0.25, 0.5, 0.25] }}
       transition={{ duration: 1.3, delay: index * 0.03, repeat: Infinity, repeatType: "reverse" }}
       style={{
         position: "absolute",
@@ -198,7 +206,9 @@ function SkeletonTile({ tile, index }: { tile: Tile; index: number }) {
         top: tile.y,
         width: tile.w,
         height: tile.h,
-        background: "var(--surface-2)",
+        background:
+          "linear-gradient(135deg, var(--surface-2) 0%, var(--rule) 50%, var(--surface-2) 100%)",
+        filter: "blur(10px)",
       }}
     />
   );
@@ -303,7 +313,7 @@ export function CanvasExplorer() {
       // One embed, one round trip: the server interleaves all slots itself
       // (was N separate searches, each re-embedding the same query text).
       const results = await api.search("fashion", {
-        k: 64,
+        k: 96,
         slots: BROWSE_SLOTS.join(","),
         ...(gender ? { gender } : {}),
       });
@@ -311,7 +321,7 @@ export function CanvasExplorer() {
       setSelectedId(null);
       setGeneration((g) => g + 1);
       offsetRef.current = results.length;
-      hasMoreRef.current = results.length === 64;
+      hasMoreRef.current = results.length === 96;
       pan.current = { x: 0, y: 0 };
       scaleRef.current = 1;
     } catch (e) {
@@ -409,7 +419,10 @@ export function CanvasExplorer() {
   const extraSkeletonTiles = useMemo(() => {
     if (!loadingMore) return [];
     const withPlaceholders = layoutCluster(
-      [...items, ...Array.from({ length: 10 }, (_, i) => skeletonItem(`skeleton-more-${i}`))],
+      [
+        ...items,
+        ...Array.from({ length: EXTRA_SKELETON_COUNT }, (_, i) => skeletonItem(`skeleton-more-${i}`)),
+      ],
       selectedId,
     );
     return withPlaceholders.slice(items.length);
