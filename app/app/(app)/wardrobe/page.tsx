@@ -19,29 +19,30 @@ export default function WardrobePage() {
       <header style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.6rem",
-            fontWeight: 500,
-            letterSpacing: "0.1em",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.8125rem",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "var(--secondary)",
+            color: "var(--text-mid)",
           }}
         >
           Wardrobe
         </span>
         <h1
           style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "clamp(1.625rem, 7vw, 2.25rem)",
-            fontWeight: 800,
-            lineHeight: 1.1,
-            letterSpacing: "-0.03em",
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(2.25rem, 9vw, 3rem)",
+            fontWeight: 600,
+            fontStyle: "italic",
+            lineHeight: 1.05,
+            letterSpacing: "-0.01em",
             color: "var(--text)",
             margin: 0,
           }}
         >
           Your closet,{" "}
-          <em style={{ fontStyle: "italic", fontWeight: 300, color: "var(--text-mid)" }}>
+          <em style={{ fontStyle: "italic", fontWeight: 400, color: "var(--text-mid)" }}>
             digitised.
           </em>
         </h1>

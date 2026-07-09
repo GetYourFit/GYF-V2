@@ -20,12 +20,12 @@ export default function SocialPage() {
         <span
           style={{
             display: "block",
-            fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-            fontSize: "0.6rem",
-            fontWeight: 500,
-            letterSpacing: "0.1em",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.8125rem",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "var(--secondary)",
+            color: "var(--text-mid)",
             marginBottom: "0.5rem",
           }}
         >

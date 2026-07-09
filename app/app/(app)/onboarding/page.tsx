@@ -30,8 +30,9 @@ export default function OnboardingPage() {
         <GYFLogo width={120} />
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.55rem",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.75rem",
+            fontWeight: 700,
             color: "var(--text-mid)",
             letterSpacing: "0.1em",
             textTransform: "uppercase",

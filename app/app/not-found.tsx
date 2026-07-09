@@ -22,10 +22,11 @@ export default function NotFound() {
       >
         <p
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.6rem",
-            color: "var(--secondary)",
-            letterSpacing: "0.1em",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.8125rem",
+            fontWeight: 700,
+            color: "var(--text-mid)",
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             marginBottom: "1rem",
           }}

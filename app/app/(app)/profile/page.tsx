@@ -9,12 +9,12 @@ export default function ProfilePage() {
       <header style={{ marginBottom: "2rem" }}>
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.6rem",
-            fontWeight: 500,
-            letterSpacing: "0.1em",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.8125rem",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "var(--secondary)",
+            color: "var(--text-mid)",
             display: "block",
             marginBottom: "0.5rem",
           }}
