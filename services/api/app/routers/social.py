@@ -56,7 +56,12 @@ def social_feed(
     return {"posts": enrich_feed(records, directory, reacted)}
 
 
-@router.post("/social/posts", status_code=201, summary="Share a look")
+@router.post(
+    "/social/posts",
+    status_code=201,
+    summary="Share a look",
+    dependencies=[Depends(rate_limit("social_post", "rate_limit_mutation"))],
+)
 def create_post(
     body: PostInput,
     principal: Principal = Depends(require_active_principal),

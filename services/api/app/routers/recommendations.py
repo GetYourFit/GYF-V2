@@ -38,6 +38,7 @@ router = APIRouter(tags=["recommendations"])
 def recommend_outfits(
     occasion: str | None = Query(
         None,
+        max_length=64,
         description="What you're dressing for. Overrides your profile's stored occasion.",
         openapi_examples={
             "casual": {"summary": "Casual", "value": "casual"},
@@ -48,7 +49,7 @@ def recommend_outfits(
     ),
     k: int = Query(5, ge=1, le=20, description="How many outfits to return."),
     region: str | None = Query(
-        None, description="Region code (e.g. IN) for culture-aware garments."
+        None, max_length=64, description="Region code (e.g. IN) for culture-aware garments."
     ),
     goal: str | None = Query(
         None,
@@ -111,11 +112,13 @@ def recommend_outfits(
 def complete_look(
     item_id: str = Query(..., description="Catalog item every returned outfit is built around."),
     occasion: str | None = Query(
-        None, description="What you're dressing for. Overrides your profile's stored occasion."
+        None,
+        max_length=64,
+        description="What you're dressing for. Overrides your profile's stored occasion.",
     ),
     k: int = Query(3, ge=1, le=10, description="How many completed looks to return."),
     region: str | None = Query(
-        None, description="Region code (e.g. IN) for culture-aware garments."
+        None, max_length=64, description="Region code (e.g. IN) for culture-aware garments."
     ),
     goal: str | None = Query(
         None, max_length=200, description="Free-text styling goal (taller / slimmer / broader)."
@@ -167,7 +170,7 @@ def outfit_alternates(
         None, description="The slate the outfit came from — joins the swap to it."
     ),
     k: int = Query(3, ge=1, le=6, description="How many alternates to return."),
-    region: str | None = Query(None, description="Region code (e.g. IN)."),
+    region: str | None = Query(None, max_length=64, description="Region code (e.g. IN)."),
     principal: Principal = Depends(require_active_principal),
     profile_repo: ProfileRepository = Depends(get_profile_repo),
     candidates: CandidateRepository = Depends(get_candidate_repo),

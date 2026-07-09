@@ -33,7 +33,7 @@ def similar_items(
     item_id: str,
     k: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0, le=10_000),
-    region: str | None = None,
+    region: str | None = Query(None, max_length=64),
     gender: str | None = Query(
         None, description="Styling gender: results narrow to that slice + unisex."
     ),
@@ -64,7 +64,7 @@ def _slot_categories(slot: str | None) -> list[str] | None:
 @router.get("/items/facets", dependencies=[Depends(rate_limit("facets", "rate_limit_search"))])
 def catalog_facets(
     response: Response,
-    region: str | None = None,
+    region: str | None = Query(None, max_length=64),
     repo: VectorSearchRepository = Depends(get_search_repo),
 ) -> CatalogFacets:
     """Real filter ranges for the (region-scoped) catalog so the client only
@@ -82,7 +82,7 @@ def browse_items(
     response: Response,
     k: int = Query(24, ge=1, le=50),
     offset: int = Query(0, ge=0, le=10_000),
-    region: str | None = None,
+    region: str | None = Query(None, max_length=64),
     gender: str | None = Query(
         None, description="Styling gender: results narrow to that slice + unisex."
     ),
@@ -128,7 +128,7 @@ def search_items(
     # request 422'd and the canvas rendered nothing.
     k: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0, le=10_000),
-    region: str | None = None,
+    region: str | None = Query(None, max_length=64),
     max_price: float | None = Query(
         None,
         ge=0,

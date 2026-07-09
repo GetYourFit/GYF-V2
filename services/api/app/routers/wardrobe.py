@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from ..auth import Principal
 from ..catalog.directory import ItemDirectory
 from ..dependencies import get_item_directory, get_wardrobe_repo, require_active_principal
+from ..ratelimit import rate_limit
 from ..wardrobe import (
     WardrobeItem,
     WardrobeItemInput,
@@ -17,8 +18,15 @@ from ..wardrobe import (
 
 router = APIRouter(tags=["wardrobe"])
 
+_MUTATION_LIMIT = Depends(rate_limit("wardrobe", "rate_limit_mutation"))
 
-@router.post("/wardrobe/items", status_code=201, summary="Add an owned garment")
+
+@router.post(
+    "/wardrobe/items",
+    status_code=201,
+    summary="Add an owned garment",
+    dependencies=[_MUTATION_LIMIT],
+)
 def add_wardrobe_item(
     body: WardrobeItemInput,
     principal: Principal = Depends(require_active_principal),
@@ -52,6 +60,7 @@ def list_wardrobe(
     "/wardrobe/items/{wardrobe_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Remove a wardrobe garment",
+    dependencies=[_MUTATION_LIMIT],
 )
 def remove_wardrobe_item(
     wardrobe_id: str,

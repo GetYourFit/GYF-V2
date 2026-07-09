@@ -99,7 +99,8 @@ class VectorSearchRepository(Protocol):
 
 # pgvector cosine distance (`<=>`) in [0, 2]; similarity = 1 - distance. A region
 # filter, when present, keeps region-neutral items ('{}') and items tagged for it.
-_REGION_FILTER = "AND (i.region_tags = '{}' OR %s = ANY(i.region_tags))"
+# `@> ARRAY[..]` (not `%s = ANY(col)`) so the GIN index on region_tags is usable.
+_REGION_FILTER = "AND (i.region_tags = '{}' OR i.region_tags @> ARRAY[%s]::text[])"
 
 # A gender filter keeps unfaceted items (no taxonomy gender) and items whose
 # facet is in the allowed set — gendered relevance, never a wall.

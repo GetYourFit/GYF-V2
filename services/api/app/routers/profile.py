@@ -55,7 +55,7 @@ def read_profile(
     return profile
 
 
-@router.put("/profile")
+@router.put("/profile", dependencies=[Depends(rate_limit("profile", "rate_limit_mutation"))])
 def upsert_profile(
     payload: ProfileInput,
     principal: Principal = Depends(require_active_principal),
@@ -120,7 +120,8 @@ async def upsert_profile_from_photo(
     Every estimated field stays editable and never overwrites a higher-confidence
     manual value.
     """
-    if not account_repo.get_consent(principal.user_id).get("data_processing", False):
+    consent = await run_in_threadpool(account_repo.get_consent, principal.user_id)
+    if not consent.get("data_processing", False):
         raise HTTPException(status_code=403, detail="data_processing consent required")
 
     if photo.content_type not in _ACCEPTED_PHOTO_TYPES:
@@ -157,9 +158,11 @@ async def upsert_profile_from_photo(
     # the fairness eval and the flag is flipped.
     surfaced_skin = skin if settings.skin_tone_enabled else None
 
-    existing = profile_repo.get(principal.user_id)
+    # Sync psycopg calls — offload to the threadpool like the decode/estimate above,
+    # or they block the event loop (this is the only async route) for the DB round trip.
+    existing = await run_in_threadpool(profile_repo.get, principal.user_id)
     profile = profile_from_photo(skin=surfaced_skin, body=body, existing=existing)
-    profile_repo.upsert(principal.user_id, profile)
+    await run_in_threadpool(profile_repo.upsert, principal.user_id, profile)
 
     # Observability at the decision point (no PII — only which modules ran, the coarse
     # outcome, and adoption confidences). Lets a "fields didn't fill" report be diagnosed
@@ -188,7 +191,7 @@ def read_consent(
     return repo.get_consent(principal.user_id)
 
 
-@router.put("/consent")
+@router.put("/consent", dependencies=[Depends(rate_limit("consent", "rate_limit_mutation"))])
 def update_consent(
     payload: ConsentInput,
     principal: Principal = Depends(require_active_principal),

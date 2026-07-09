@@ -18,6 +18,7 @@ from ..dependencies import (
     get_saved_outfit_repo,
     require_active_principal,
 )
+from ..ratelimit import rate_limit
 from ..saved_outfits import (
     SavedOutfit,
     SavedOutfitRepository,
@@ -27,8 +28,14 @@ from ..saved_outfits import (
 
 router = APIRouter(tags=["collections"])
 
+# Per-client cap on authenticated writes — blunts unbounded row-writing from one
+# account without ever tripping normal use.
+_MUTATION_LIMIT = Depends(rate_limit("collections", "rate_limit_mutation"))
 
-@router.post("/collections", status_code=201, summary="Save an item")
+
+@router.post(
+    "/collections", status_code=201, summary="Save an item", dependencies=[_MUTATION_LIMIT]
+)
 def save_to_collection(
     body: SaveItemRequest,
     principal: Principal = Depends(require_active_principal),
@@ -61,6 +68,7 @@ def list_collection(
     "/collections/{item_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Unsave an item",
+    dependencies=[_MUTATION_LIMIT],
 )
 def remove_from_collection(
     item_id: str,
@@ -72,7 +80,12 @@ def remove_from_collection(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/collections/outfits", status_code=201, summary="Save a whole look")
+@router.post(
+    "/collections/outfits",
+    status_code=201,
+    summary="Save a whole look",
+    dependencies=[_MUTATION_LIMIT],
+)
 def save_outfit(
     body: SaveOutfitRequest,
     principal: Principal = Depends(require_active_principal),
@@ -104,6 +117,7 @@ def list_saved_outfits(
     "/collections/outfits/{outfit_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Unsave a look",
+    dependencies=[_MUTATION_LIMIT],
 )
 def remove_saved_outfit(
     outfit_id: str,

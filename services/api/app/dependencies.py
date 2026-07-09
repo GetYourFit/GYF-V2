@@ -35,12 +35,6 @@ from .social import SocialRepository
 from .support import SupportRepository
 from .wardrobe import WardrobeRepository
 
-# Process-wide event sink (local JSONL in dev; broker/Postgres-backed once infra
-# is provisioned). A module attribute so tests can monkeypatch
-# ``app.dependencies.sink`` and ``get_event_sink`` picks the replacement up.
-sink = get_sink()
-
-
 @lru_cache(maxsize=4)
 def shared_pool(dsn: str):
     """One process-wide Postgres pool shared by every repository.
@@ -52,7 +46,17 @@ def shared_pool(dsn: str):
     """
     from psycopg_pool import ConnectionPool
 
-    return ConnectionPool(dsn, min_size=1, max_size=10, open=True)
+    return ConnectionPool(dsn, min_size=1, max_size=settings.db_pool_max_size, open=True)
+
+
+# Process-wide event sink (local JSONL in dev; broker/Postgres-backed once infra
+# is provisioned). A module attribute so tests can monkeypatch
+# ``app.dependencies.sink`` and ``get_event_sink`` picks the replacement up. The
+# Postgres sink reuses the shared pool (defined above) instead of opening its own,
+# so total connections stay bounded by db_pool_max_size, not pool + sink separately.
+sink = get_sink(
+    pool=shared_pool(settings.database_url) if settings.event_sink == "postgres" else None
+)
 
 
 # --- Readiness -------------------------------------------------------------

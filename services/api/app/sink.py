@@ -91,10 +91,14 @@ class PostgresSink:
             )
 
 
-def get_sink() -> EventSink:
-    """Resolve the configured sink from settings."""
+def get_sink(pool: object | None = None) -> EventSink:
+    """Resolve the configured sink from settings.
+
+    ``pool`` (when given) is the process-wide shared pool the Postgres sink reuses
+    instead of opening its own — keeps total connections bounded.
+    """
     if settings.event_sink == "kafka":
         return KafkaSink(settings.event_broker_url, settings.event_topic)
     if settings.event_sink == "postgres":
-        return PostgresSink(settings.database_url)
+        return PostgresSink(settings.database_url, pool=pool)
     return LocalFileSink()

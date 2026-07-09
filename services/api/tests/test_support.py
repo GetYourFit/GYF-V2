@@ -69,3 +69,34 @@ def test_rejects_bad_email() -> None:
         json={"kind": "contact", "message": "x", "reply_email": "not-an-email"},
     )
     assert resp.status_code == 422
+
+
+def test_postgres_repo_accepts_shared_pool_and_inserts() -> None:
+    """Regression: dependencies constructs PostgresSupportRepository(dsn, pool=...);
+    the old __init__(database_url) took no pool, so every real /support call 500'd
+    (the in-memory fake above hid it). This exercises the real repo against a fake
+    pool — asserts the pool kwarg is accepted and create() runs the INSERT on it."""
+    from app.support import PostgresSupportRepository
+
+    calls: list[tuple[str, tuple]] = []
+
+    class _Conn:
+        def execute(self, sql, params=None):
+            calls.append((sql, params))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    class _Pool:
+        def connection(self):
+            return _Conn()
+
+    repo = PostgresSupportRepository("postgresql://unused", pool=_Pool())
+    mid = repo.create("u-1", SupportMessageRequest(kind="contact", message="hi"))
+    assert mid
+    assert len(calls) == 1
+    assert "INSERT INTO support_messages" in calls[0][0]
+    assert calls[0][1][1] == "u-1"  # user_id bound

@@ -56,7 +56,7 @@ def test_region_filter_added_only_when_region_given():
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     repo.search_by_vector([0.1, 0.2], k=3, region="IN")
     sql, params = pool.calls[-1]
-    assert "ANY(i.region_tags)" in sql
+    assert "i.region_tags @> ARRAY[%s]::text[]" in sql
     assert "IN" in params
     assert params[-2] == 3  # limit
     assert params[-1] == 0  # offset
@@ -81,7 +81,7 @@ def test_max_price_adds_server_side_filter():
     sql, params = pool.calls[-1]
     assert "i.price IS NOT NULL AND i.price <= %s" in sql
     assert 80.0 in params
-    assert "ANY(i.region_tags)" in sql
+    assert "i.region_tags @> ARRAY[%s]::text[]" in sql
     assert params[-2:] == (10, 10)  # limit, offset
 
 
@@ -134,7 +134,7 @@ def test_catalog_facets_priced_zero_yields_null_range_and_region_bind():
     facets = repo.catalog_facets(region="IN")
     assert facets == CatalogFacets(total=900, priced=0, price_min=None, price_max=None)
     sql, params = pool.calls[0]
-    assert "ANY(i.region_tags)" in sql  # region filter applied
+    assert "i.region_tags @> ARRAY[%s]::text[]" in sql  # region filter applied
     assert params == ("IN",)
 
 

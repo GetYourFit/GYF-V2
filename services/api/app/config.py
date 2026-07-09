@@ -58,6 +58,12 @@ class Settings(BaseSettings):
     # least this many days, leaving a recovery window before data is irreversible.
     account_deletion_grace_days: int = 30
 
+    # Max connections in the process-wide Postgres pool every repository shares.
+    # Sync routes run on Starlette's threadpool (default 40 concurrent), so under
+    # load more coroutines can want a connection than this caps — tune up (DB tier
+    # permitting) as beta traffic grows. Env: GYF_DB_POOL_MAX_SIZE.
+    db_pool_max_size: int = 10
+
     # --- Photo onboarding (P1-B Cycles 2 & 3) ---
     # Max accepted upload size for POST /profile/photo (bytes); larger is rejected
     # before decode so an oversized image can't exhaust memory. Default 10 MiB.
@@ -141,6 +147,10 @@ class Settings(BaseSettings):
     rate_limit_feedback: int = 60
     rate_limit_search: int = 60
     rate_limit_support: int = 5
+    # Authenticated writes to user-owned resources (saves, wardrobe, posts, profile,
+    # consent). Generous — normal use never trips — but caps unbounded row-writing /
+    # public-feed spam from a single account. One key covers every such mutation.
+    rate_limit_mutation: int = 120
 
     @property
     def cors_origins(self) -> list[str]:

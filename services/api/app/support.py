@@ -34,14 +34,16 @@ class SupportRepository(Protocol):
 
 
 class PostgresSupportRepository:
-    def __init__(self, database_url: str) -> None:
-        self._url = database_url
+    def __init__(self, dsn: str, pool: object | None = None) -> None:
+        if pool is None:
+            from psycopg_pool import ConnectionPool  # lazy: only when used
+
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+        self._pool = pool
 
     def create(self, user_id: str, req: SupportMessageRequest) -> str:
-        import psycopg
-
         message_id = str(uuid.uuid4())
-        with psycopg.connect(self._url) as conn:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
             conn.execute(
                 _CREATE,
                 (message_id, user_id, req.kind, req.category, req.message, req.reply_email),
