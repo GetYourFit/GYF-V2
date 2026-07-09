@@ -1129,3 +1129,40 @@ Ask AI), Continue Journey card, Recently Viewed collection, staggered
 section entrance (flutter_animate, motion tokens). Removed stray
 flutter-create widget_test.dart. 41/41 tests; analyze clean.
 Remaining Home gaps: offline cached-feed banner, analytics hooks.
+
+### 2026-07-09 — Catalog/app performance + FAANG-bar audit (5 parallel reviewers)
+
+**Ask:** fix the 5 ranked root causes of slow catalog fetches, then a full
+FAANG/top-AI-standard audit via subagents; use ecc + ponytail; commit + push.
+
+**Shipped (4 commits, pushed to main):**
+- `a68b44d` perf(catalog): `/items/browse` relational feed (zero ML, tens of ms,
+  survives cold GPU); canvas recluster uses stored embedding via `/similar` (no
+  title re-embed); Cache-Control on browse/facets/search/similar; CORS preflight
+  max-age 600s→24h; session-scoped `getProfile` memo shared across surfaces;
+  keepalive workflow (Render cold-start stopgap).
+- `f58b33e` perf+security(api): **migration 0013** — partial composite index
+  matching `_BROWSE`'s ORDER BY + GIN on region_tags + gender-path expression
+  index (browse was full-sorting ~27k rows/call, unindexed); region filter
+  rewritten to `@> ARRAY[%s]` so GIN is usable; `db_pool_max_size` env-tunable +
+  Postgres sink reuses shared pool; `/profile/photo` sync psycopg calls moved off
+  the event loop (run_in_threadpool); **fixed always-500 support repo** (took no
+  `pool` but deps passed one — contact/grievance forms were broken; regression
+  test added); rate limits on all authed writes; max_length on region/occasion.
+- `2a8394b` perf+a11y(explore): eager/high-priority above-fold images + `sizes=50vw`;
+  keyboard-accessible cards; memoized ExploreCard + stable toggleSave; Explore
+  first paint no longer blocks on cold getProfile (500ms cap, matches Canvas).
+- `86da716` fix(canvas): cluster-token guard against out-of-order recluster loads.
+
+**Audit verdict:** backend well-hardened (no injection/IDOR/SSRF/secret findings).
+ponytail: repo lean; only real cut = `Reference/gyf_app_standalone_backup/` (67
+tracked files, git already versions it) — needs user OK to delete.
+
+**Deferred follow-ups (real, bigger/riskier — NOT the stated perf complaint):**
+- Batch impression INSERTs (~40 serial round-trips per /recommend) into one multi-row INSERT.
+- `candidates_by_slot` N per-slot queries → one windowed `category = ANY(...)` query.
+- Keyset (cursor) pagination for deep browse pages (OFFSET cost grows with depth).
+- Thread AbortController signal through `api.request` + request-id guard on explore reset.
+- DOM virtualization for explore/canvas grids past ~100 items.
+- HNSW recall@k benchmark for m/ef_construction (currently pgvector defaults).
+- Rate limiter per-replica → needs Redis for a global limit (tracked W7).
