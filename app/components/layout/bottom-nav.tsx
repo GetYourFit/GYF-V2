@@ -112,9 +112,14 @@ interface BottomNavProps {
    *  scrolling/panning) — it reappears once this flips back to false. Every
    *  other page renders the nav plain (defaults to always-visible). */
   collapsed?: boolean;
+  /** Swaps the pill from its resting Liquid Glass material to a solid,
+   *  near-opaque chrome while the host page is actively scrolling — legible
+   *  over fast-moving content — then eases back to glass once scrolling
+   *  settles. See .liquid-nav[data-solid] in globals.css for the transition. */
+  solid?: boolean;
 }
 
-export function BottomNav({ collapsed = false }: BottomNavProps) {
+export function BottomNav({ collapsed = false, solid = false }: BottomNavProps) {
   const pathname = usePathname();
   const reduce = useReducedMotion();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -144,6 +149,7 @@ export function BottomNav({ collapsed = false }: BottomNavProps) {
     <motion.nav
       aria-label="Primary navigation"
       className="liquid-nav"
+      data-solid={solid}
       animate={
         reduce
           ? { opacity: collapsed ? 0 : 1 }

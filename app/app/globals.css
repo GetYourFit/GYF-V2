@@ -1,36 +1,45 @@
 @import "tailwindcss";
 
 /* ─── Design tokens — GYF Cosmos Dark (image-first, chrome-less) ─────────── */
+/* These --color-* tokens power Tailwind utilities (text-text, bg-surface,
+   border-border, ...). They alias the theme-switchable plain vars declared
+   below (--text, --surface, --border, ...) rather than duplicating literal
+   values, so every component using a Tailwind color utility repaints on
+   [data-theme="light"] exactly like components using inline var(--text)
+   styles do — previously these were hardcoded to the same dark-mode
+   literals with no light override, so every Tailwind-utility consumer
+   (the whole components/ui/* kit, saved/wardrobe/social pages, ...) stayed
+   dark-only regardless of the theme toggle. */
 @theme {
   /* Surfaces — near-black canvas; images carry the color */
-  --color-bg: #000000;
-  --color-surface: #141414;
-  --color-surface-2: #1c1c1e;
-  --color-surface-3: #242426;
-  --color-surface-high: #2c2c2e;
-  --color-surface-highest: #38383a;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-high: var(--surface-high);
+  --color-surface-highest: var(--surface-highest);
 
   /* Borders */
-  --color-border: rgba(255, 255, 255, 0.12);
-  --color-border-mid: rgba(255, 255, 255, 0.24);
-  --color-border-hi: #f5f5f4;
-  --color-rule: rgba(255, 255, 255, 0.08);
+  --color-border: var(--border);
+  --color-border-mid: var(--border-mid);
+  --color-border-hi: var(--border-hi);
+  --color-rule: var(--rule);
 
-  /* Text — white hierarchy on black */
-  --color-text: #f5f5f4;
-  --color-text-mid: #a1a1a6;
-  --color-text-faint: #8e8e93; /* WCAG AA: ≥4.5:1 on black */
+  /* Text — white hierarchy on black (dark), inverted on light */
+  --color-text: var(--text);
+  --color-text-mid: var(--text-mid);
+  --color-text-faint: var(--text-faint); /* WCAG AA: ≥4.5:1 on bg */
 
-  /* Brand — monochrome; white is the action color */
-  --color-primary: #ffffff;
-  --color-secondary: #a1a1a6;
-  --color-accent: #ffffff;
-  --color-accent-press: #d6d6d6;
+  /* Brand — monochrome; the theme's ink color is the action color */
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-accent-press: var(--accent-press);
 
   /* Functional */
-  --color-success: #34d399;
-  --color-warning: #fbbf24;
-  --color-error: #f87171;
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
 
   /* Fonts */
   --font-display: var(--font-display-serif), "Cormorant Garamond", serif;
@@ -256,6 +265,21 @@
       var(--shadow-float),
       inset 0 1px 0 var(--glass-specular-top),
       inset 0 -1px 0 var(--glass-specular-bottom);
+    transition:
+      background 0.4s var(--lux),
+      backdrop-filter 0.4s var(--lux),
+      -webkit-backdrop-filter 0.4s var(--lux);
+  }
+
+  /* Solid state — while the host page is actively scrolling (see
+     BottomNav's `solid` prop), the pill trades translucent Liquid Glass for
+     a near-opaque chrome so it stays legible over fast-moving content, then
+     eases back to glass once scrolling settles. Same box-shadow/border in
+     both states so only the material itself crossfades. */
+  .liquid-nav[data-solid="true"] {
+    background: var(--chrome-strong);
+    backdrop-filter: blur(12px) saturate(120%);
+    -webkit-backdrop-filter: blur(12px) saturate(120%);
   }
 
   .liquid-nav::before {
@@ -266,6 +290,11 @@
     background: linear-gradient(180deg, var(--glass-specular-top) 0%, transparent 55%);
     mix-blend-mode: overlay;
     pointer-events: none;
+    transition: opacity 0.4s var(--lux);
+  }
+
+  .liquid-nav[data-solid="true"]::before {
+    opacity: 0;
   }
 
   .liquid-glass-indicator {

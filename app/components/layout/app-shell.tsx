@@ -1,10 +1,15 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { TopMenu } from "@/components/layout/top-menu";
 import { APP_SCROLL_ID } from "@/lib/scroll-container";
+
+// How long the scroll container must sit still before the nav pill eases
+// back from its solid, actively-scrolling material to resting Liquid Glass.
+const SCROLL_IDLE_MS = 300;
 
 interface AppShellProps {
   children: ReactNode;
@@ -16,6 +21,27 @@ export function AppShell({ children }: AppShellProps) {
   // floating copy here would just duplicate it on that one page.
   const pathname = usePathname();
   const hideFloatingMenu = pathname === "/explore";
+
+  // Bottom nav material: solid chrome while the page is actively scrolling
+  // (legible over fast-moving content), Liquid Glass once it settles.
+  const mainRef = useRef<HTMLElement>(null);
+  const [scrolling, setScrolling] = useState(false);
+  const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      setScrolling(true);
+      if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
+      scrollIdleTimerRef.current = setTimeout(() => setScrolling(false), SCROLL_IDLE_MS);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
+    };
+  }, []);
 
   return (
     <div
@@ -49,6 +75,7 @@ export function AppShell({ children }: AppShellProps) {
       )}
 
       <main
+        ref={mainRef}
         id={APP_SCROLL_ID}
         style={{
           flex: 1,
@@ -69,7 +96,7 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </main>
 
-      <BottomNav />
+      <BottomNav solid={scrolling} />
     </div>
   );
 }
