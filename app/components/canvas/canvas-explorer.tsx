@@ -310,9 +310,9 @@ export function CanvasExplorer() {
         new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), PROFILE_WAIT_MS)),
       ]);
       genderRef.current = gender;
-      // One embed, one round trip: the server interleaves all slots itself
-      // (was N separate searches, each re-embedding the same query text).
-      const results = await api.search("fashion", {
+      // Cheap catalogue read — no text embed, no vector scan, no ML runtime, so
+      // the canvas fills in tens of ms and works even when the GPU lane is cold.
+      const results = await api.browse({
         k: 96,
         slots: BROWSE_SLOTS.join(","),
         ...(gender ? { gender } : {}),
@@ -349,7 +349,7 @@ export function CanvasExplorer() {
     setLoadingMore(true);
     try {
       const api = browserApi();
-      const results = await api.search("fashion", {
+      const results = await api.browse({
         k: PAGE_SIZE,
         offset: offsetRef.current,
         slots: BROWSE_SLOTS.join(","),
@@ -382,8 +382,11 @@ export function CanvasExplorer() {
     try {
       // 24, not 48: half the payload and half the tiles to lay out/paint —
       // a recluster should feel instant, and 24 similar pieces is already
-      // plenty to fill the screen.
-      const similar = await browserApi().search(item.title, { k: 24 });
+      // plenty to fill the screen. Use the item's STORED embedding (vector-to-
+      // vector) — NOT search(item.title), which re-embedded the title through the
+      // SigLIP transformer on every click (seconds of CPU/GPU per recluster, and
+      // the query cache never hit since every title differs).
+      const similar = await browserApi().similar(item.item_id, { k: 24 });
       setItems([item, ...similar.filter((s) => s.item_id !== item.item_id)]);
       setGeneration((g) => g + 1);
     } catch (e) {
@@ -413,7 +416,11 @@ export function CanvasExplorer() {
   // for infinite-scroll fetches (placeholders already sit past the loaded
   // edge, so panning never hits a visible wall while the next page loads).
   const initialSkeletonTiles = useMemo(
-    () => layoutCluster(Array.from({ length: 24 }, (_, i) => skeletonItem(`skeleton-init-${i}`)), null),
+    () =>
+      layoutCluster(
+        Array.from({ length: 24 }, (_, i) => skeletonItem(`skeleton-init-${i}`)),
+        null,
+      ),
     [],
   );
   const extraSkeletonTiles = useMemo(() => {
@@ -679,7 +686,9 @@ export function CanvasExplorer() {
       >
         {loading &&
           items.length === 0 &&
-          initialSkeletonTiles.map((t, i) => <SkeletonTile key={t.item.item_id} tile={t} index={i} />)}
+          initialSkeletonTiles.map((t, i) => (
+            <SkeletonTile key={t.item.item_id} tile={t} index={i} />
+          ))}
 
         {tiles.map((t, i) => (
           <motion.button

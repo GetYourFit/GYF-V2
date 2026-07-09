@@ -132,6 +132,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/items/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse Items
+         * @description Empty-state Explore feed — a cheap catalogue page, NO text embedding and NO
+         *     vector scan (unlike /items/search). The default browse view isn't a real query,
+         *     so paying a multi-second SigLIP embed + HNSW scan for a generic seed was pure
+         *     waste that also 500'd the grid whenever the GPU lane was cold. This serves in
+         *     tens of ms from a plain relational read and needs no ML runtime at all, so the
+         *     grid fills instantly and stays up even when the encoder is down. Priced items
+         *     with images lead; ``offset`` is the global count shown, split across slots.
+         */
+        get: operations["browse_items_items_browse_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/items/search": {
         parameters: {
             query?: never;
@@ -1507,6 +1533,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogFacets"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browse_items_items_browse_get: {
+        parameters: {
+            query?: {
+                k?: number;
+                offset?: number;
+                region?: string | null;
+                /** @description Styling gender: results narrow to that slice + unisex. */
+                gender?: string | null;
+                /** @description Comma-separated outfit slots to interleave (e.g. 'top,bottom,full_body,footwear'). Omit for a single mixed page. */
+                slots?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["SearchResult"][];
+                    };
                 };
             };
             /** @description Validation Error */

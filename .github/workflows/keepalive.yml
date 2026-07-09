@@ -1,0 +1,38 @@
+# Keep the free-tier Render API warm — STOPGAP for the cold-start tax.
+#
+# Render's free web service spins down after ~15 min idle and cold-starts in
+# 30–60s on the next request, so the first user after any lull waits ~a minute
+# for items to load. Pinging /health every ~10 min keeps the instance warm.
+#
+# This is a bandaid, NOT the fix: GitHub's scheduled runs are best-effort and can
+# be delayed 10–30 min under load, so cold starts still slip through. The real fix
+# is moving the API off an auto-sleeping tier (a paid Render instance, Fly.io with
+# min-machines=1, etc.). Tracked as the top infra item.
+name: keepalive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every ~10 min (GitHub may delay under load)
+  workflow_dispatch: {} # allow manual "wake it now"
+
+# Never let overlapping pings pile up if a run is slow.
+concurrency:
+  group: keepalive
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping API health
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 70 \
+              https://gyf-api.onrender.com/health || echo "000")
+            echo "attempt $i -> HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          echo "health check did not return 200 after retries" >&2
+          exit 1

@@ -111,6 +111,11 @@ if settings.cors_origins or settings.allowed_origin_regex:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        # Cross-origin + Authorization header forces a CORS preflight before every
+        # first request. Cache it 24h (Starlette default is 600s) so a returning
+        # user pays the extra round trip once a day, not every 10 min — one less
+        # thing stacked on top of a cold Render instance.
+        max_age=86_400,
     )
     # Log the effective allow-list at startup so a CORS preflight 404 is diagnosable
     # from the deploy logs (vs. silently guessing which origin is missing).

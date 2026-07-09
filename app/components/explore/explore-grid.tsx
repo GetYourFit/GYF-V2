@@ -136,8 +136,24 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           ...(gender ? { gender } : {}),
           sort: filters.sort,
         };
+        // Pure empty state = no query, no slot chip, no price/sort filter. Only
+        // then use the cheap /items/browse (no ML). The moment ANY filter is set,
+        // fall back to vector search, which honours max_price + sort (browse can't).
+        const plainBrowse =
+          !filters.q && !filters.slot && !filters.maxPrice && filters.sort === "relevance";
         let results: SearchResult[];
-        if (filters.slot || filters.q) {
+        if (plainBrowse) {
+          // NOT a real query, so never pay a text embed + vector scan (5–18s on the
+          // free tier; 500'd the grid when the GPU lane was cold). Plain catalogue
+          // read — tens of ms, no ML — interleaved across slots. offset is the
+          // GLOBAL count shown (pageNum * PAGE_SIZE); the server splits it per slot.
+          results = await api.browse({
+            k: PAGE_SIZE,
+            offset: pageNum * PAGE_SIZE,
+            slots: BROWSE_SLOTS.join(","),
+            ...(gender ? { gender } : {}),
+          });
+        } else if (filters.slot || filters.q) {
           results = await api.search(query, {
             k: PAGE_SIZE,
             offset: pageNum * PAGE_SIZE,
@@ -145,14 +161,8 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
             ...base,
           });
         } else {
-          // Default browse (no search text, no slot chip): a single text search
-          // for the seed word is embedding-biased toward tops, so interleave one
-          // hard-filtered page per wearable slot instead — every page shows tops,
-          // bottoms, one-pieces AND footwear. The server does the embed once and
-          // interleaves all slots in one round trip (was 4 separate searches).
-          // offset is the GLOBAL count already shown (pageNum * PAGE_SIZE); the
-          // server divides it by the slot count to advance each slot's own page,
-          // so successive pages never re-request the same per-slot rows.
+          // No query/slot but a price or sort filter is set → multi-slot vector
+          // search that honours the filter (browse doesn't support max_price/sort).
           results = await api.search(query, {
             k: PAGE_SIZE,
             offset: pageNum * PAGE_SIZE,

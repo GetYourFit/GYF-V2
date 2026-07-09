@@ -27,6 +27,11 @@ class _CapturingRepo:
         self.calls.append((cats, offset))
         return [SearchResult(item_id=f"{cats}-{offset}", title="x", score=1.0)]
 
+    def browse(self, categories, k, region, offset=0, genders=None):
+        cats = tuple(categories or ())
+        self.calls.append((cats, offset))
+        return [SearchResult(item_id=f"{cats}-{offset}", title="x", score=0.0)]
+
     def similar_to_item(self, *a, **k):  # pragma: no cover - unused here
         return []
 
@@ -44,13 +49,13 @@ class _EmptyDirectory:
         return {}
 
 
-def _call(query_string: str) -> tuple[_CapturingRepo, object]:
+def _call(query_string: str, path: str = "/items/search") -> tuple[_CapturingRepo, object]:
     repo = _CapturingRepo()
     app.dependency_overrides[get_search_repo] = lambda: repo
     app.dependency_overrides[get_text_embedder] = _FakeEmbedder
     app.dependency_overrides[get_item_directory] = _EmptyDirectory
     try:
-        resp = TestClient(app).get(f"/items/search{query_string}")
+        resp = TestClient(app).get(f"{path}{query_string}")
     finally:
         app.dependency_overrides.clear()
     return repo, resp
@@ -69,3 +74,20 @@ def test_page_one_advances_each_slot_by_its_own_page_not_by_one():
     repo, resp = _call("?q=fashion&slots=top,bottom,full_body,footwear&k=24&offset=24")
     assert resp.status_code == 200
     assert all(offset == 6 for _cats, offset in repo.calls), repo.calls
+
+
+def test_browse_endpoint_embeds_nothing_and_splits_offset_per_slot():
+    # /items/browse must NOT call the embedder (no _FakeEmbedder.embed_query) and
+    # must advance each slot by its own page: global offset 24 / 4 slots => 6.
+    repo, resp = _call("?slots=top,bottom,full_body,footwear&k=24&offset=24", path="/items/browse")
+    assert resp.status_code == 200
+    assert len(repo.calls) == 4
+    assert all(offset == 6 for _cats, offset in repo.calls), repo.calls
+    assert resp.headers["Cache-Control"] == "public, max-age=60"
+
+
+def test_browse_endpoint_single_page_without_slots():
+    repo, resp = _call("?k=24&offset=0", path="/items/browse")
+    assert resp.status_code == 200
+    assert len(repo.calls) == 1  # one mixed page, no per-slot fan-out
+    assert repo.calls[0][1] == 0

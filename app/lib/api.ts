@@ -194,6 +194,15 @@ export class GyfApi {
     return this.request<SearchResults>("GET", `/items/search${query}`).then((r) => r.results);
   }
 
+  /** Empty-state catalogue feed — NO text embedding, NO vector scan (unlike
+   *  `search`). Serves in tens of ms and works even when the ML lane is cold, so
+   *  the default Explore/canvas grid fills instantly. Use for the unqueried view;
+   *  switch to `search` the moment the user types a real query. */
+  browse(params: Omit<SearchParams, "sort" | "max_price"> = {}): Promise<SearchResult[]> {
+    const query = toQuery({ ...params });
+    return this.request<SearchResults>("GET", `/items/browse${query}`).then((r) => r.results);
+  }
+
   /** Available catalog filter ranges (price coverage + min/max) for the optional
    *  region. Drives which filters Explore renders. */
   facets(region?: string): Promise<CatalogFacets> {

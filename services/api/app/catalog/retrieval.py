@@ -82,6 +82,18 @@ class VectorSearchRepository(Protocol):
         categories: list[str] | None = None,
     ) -> list[SearchResult]: ...
 
+    def browse(
+        self,
+        categories: list[str] | None,
+        k: int,
+        region: str | None,
+        offset: int = 0,
+        genders: frozenset[str] | None = None,
+    ) -> list[SearchResult]:
+        """Cheap catalogue page for the empty-state feed — no embedding, no vector
+        scan. ``categories`` restricts to one slot's garments; None = all slots."""
+        ...
+
     def catalog_facets(self, region: str | None) -> CatalogFacets: ...
 
 
@@ -97,6 +109,20 @@ _GENDER_FILTER = (
 )
 
 _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
+
+# Default-browse query: NO embedding, NO vector scan. The empty-state Explore feed
+# ("fashion") isn't a real query — running a remote-GPU text embed + HNSW scan for
+# it cost 5–18s on the free tier and 500'd the whole grid whenever the GPU Space
+# was cold. This is a plain catalogue read: priced items with images first, newest
+# next, deterministic id tiebreak so pages never overlap. Serves in tens of ms and
+# needs no ML runtime, so the grid fills even when the encoder lane is down.
+_BROWSE = """
+SELECT i.id, i.title, 0.0 AS score, i.image_refs
+FROM items i
+WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0 {region} {gender} {category}
+ORDER BY (i.price IS NOT NULL) DESC, i.created_at DESC, i.id
+LIMIT %s OFFSET %s
+"""
 
 _SIMILAR = """
 SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score, i.image_refs
@@ -227,6 +253,32 @@ class PostgresVectorSearchRepository:
             price_max=float(row[3]) if row[3] is not None else None,
         )
 
+    def browse(
+        self,
+        categories: list[str] | None,
+        k: int,
+        region: str | None,
+        offset: int = 0,
+        genders: frozenset[str] | None = None,
+    ) -> list[SearchResult]:
+        gender_list = sorted(genders) if genders else None
+        sql = _BROWSE.format(
+            region=_REGION_FILTER if region else "",
+            gender=_GENDER_FILTER if gender_list else "",
+            category=_CATEGORY_FILTER if categories else "",
+        )
+        params: list[object] = []
+        if region:
+            params.append(region)
+        if gender_list:
+            params.append(gender_list)
+        if categories:
+            params.append(categories)
+        params.extend([k, offset])
+        # depth=0: this is a plain relational read, not an HNSW scan — no ef_search
+        # / iterative-scan tuning needed (and none of that ML cost paid).
+        return self._run(sql, tuple(params))
+
     def _run(self, sql: str, params: tuple, *, depth: int = 0) -> list[SearchResult]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             if depth:
@@ -319,6 +371,36 @@ def search_text_multi_slot(
         )
         for categories in slot_categories
     ]
+    return _interleave(per_slot)
+
+
+def browse_multi_slot(
+    repo: VectorSearchRepository,
+    slot_categories: list[list[str]],
+    per_slot_k: int,
+    region: str | None,
+    offset: int,
+    genders: frozenset[str] | None = None,
+) -> list[SearchResult]:
+    """Empty-state feed: one cheap catalogue page per slot, interleaved. No embed,
+    no vector scan, no ML runtime. The per-slot reads run concurrently (the shared
+    pool has spare connections), so the whole page is one slow query, not N."""
+    if not slot_categories:
+        return []
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=min(4, len(slot_categories))) as pool:
+        per_slot = list(
+            pool.map(
+                lambda categories: repo.browse(categories, per_slot_k, region, offset, genders),
+                slot_categories,
+            )
+        )
+    return _interleave(per_slot)
+
+
+def _interleave(per_slot: list[list[SearchResult]]) -> list[SearchResult]:
+    """Round-robin merge so no single slot monopolizes the top of the grid."""
     longest = max((len(s) for s in per_slot), default=0)
     out: list[SearchResult] = []
     for i in range(longest):

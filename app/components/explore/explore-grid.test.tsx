@@ -8,11 +8,12 @@ import { ExploreGrid } from "./explore-grid";
 import type { ExploreFilters } from "./filter-bar";
 
 const search = vi.fn();
+const browse = vi.fn();
 const getProfile = vi.fn();
 const listSaved = vi.fn().mockResolvedValue([]);
 
 vi.mock("@/lib/api-client", () => ({
-  browserApi: () => ({ search, getProfile, listSaved }),
+  browserApi: () => ({ search, browse, getProfile, listSaved }),
 }));
 vi.mock("@/components/ui/toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
 
@@ -31,6 +32,7 @@ function hit(id: string): SearchResult {
 
 beforeEach(() => {
   search.mockReset();
+  browse.mockReset();
   getProfile.mockReset();
   getProfile.mockResolvedValue({ gender: "unknown" });
   sessionStorage.clear();
@@ -47,13 +49,16 @@ beforeEach(() => {
 });
 
 describe("ExploreGrid default browse", () => {
-  it("fires a single multi-slot search call instead of one per slot", async () => {
-    search.mockResolvedValueOnce([hit("a"), hit("b")]);
+  it("uses the cheap /browse feed (no ML embed) for the empty default view", async () => {
+    browse.mockResolvedValueOnce([hit("a"), hit("b")]);
 
     render(<ExploreGrid filters={FILTERS} />);
 
-    await waitFor(() => expect(search).toHaveBeenCalledTimes(1));
-    const [, params] = search.mock.calls[0];
+    // No query/slot/price/sort → the empty state must hit browse, never search
+    // (which would pay a multi-second SigLIP embed for a non-query).
+    await waitFor(() => expect(browse).toHaveBeenCalledTimes(1));
+    expect(search).not.toHaveBeenCalled();
+    const [params] = browse.mock.calls[0];
     expect(params.slots).toBe("top,bottom,full_body,footwear");
     expect(params.slot).toBeUndefined();
 

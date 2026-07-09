@@ -1,6 +1,7 @@
 "use client";
 
 import { createApi, type GyfApi } from "./api";
+import type { Profile } from "@gyf/types";
 import { clearViewCaches } from "./session-cache";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { supabaseEnv } from "./supabase/env";
@@ -20,6 +21,14 @@ import { accessTokenFromCookies, authStorageKey } from "./supabase/session-token
 // what triggers the refresh-token exchange.
 
 let cached: GyfApi | null = null;
+
+// Session-scoped getProfile memo. The profile (gender, region, body, tone,
+// tastes) is stable for a browsing session, yet canvas, explore, and stylist
+// each fetched it on mount — N identical round trips, and none HTTP-cacheable
+// (auth'd, no Cache-Control). Share ONE in-flight promise so the first fetch
+// serves them all; a failed fetch clears it so the next mount retries. Profile
+// mutations reset it (below) alongside clearViewCaches().
+let profileCache: Promise<Profile> | null = null;
 
 function cookieJar(): (name: string) => string | undefined {
   const jar = new Map<string, string>();
@@ -75,17 +84,31 @@ export function browserApi(): GyfApi {
   // old profile (gender, region, body, tone) must not repaint on back-nav.
   // (createApi returns a class instance — spread would drop prototype methods,
   // so wrap by reassigning the two methods in place.)
+  const getProfile = api.getProfile.bind(api);
+  api.getProfile = () =>
+    (profileCache ??= getProfile().catch((err) => {
+      profileCache = null; // don't cache a failure — let the next mount retry
+      throw err;
+    }));
   const putProfile = api.putProfile.bind(api);
   api.putProfile = async (input) => {
     const profile = await putProfile(input);
+    profileCache = Promise.resolve(profile); // seed the memo with the fresh profile
     clearViewCaches();
     return profile;
   };
   const uploadPhoto = api.uploadPhoto.bind(api);
   api.uploadPhoto = async (file) => {
     const profile = await uploadPhoto(file);
+    profileCache = Promise.resolve(profile);
     clearViewCaches();
     return profile;
+  };
+  const deleteProfile = api.deleteProfile.bind(api);
+  api.deleteProfile = async () => {
+    await deleteProfile();
+    profileCache = null;
+    clearViewCaches();
   };
 
   cached = api;
