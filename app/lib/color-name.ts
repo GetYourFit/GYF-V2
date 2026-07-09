@@ -123,3 +123,39 @@ export function colorNameToCss(color: string | null | undefined): string | null 
   const lastWord = words[words.length - 1];
   return COLOR_MAP[lastWord] ?? null;
 }
+
+/** Coarse color "family" bucket for grouping/ranking (e.g. "sky blue",
+ *  "royal blue", and "navy" are all family "blue"; unrecognized → null).
+ *  Reuses the same base-color fallback as colorNameToCss so the two stay
+ *  in lockstep — same lookup, different return value. */
+export function colorFamily(color: string | null | undefined): string | null {
+  if (!color) return null;
+  const key = normalize(color);
+  if (COLOR_MAP[key]) return key;
+  const words = key.split(" ");
+  const lastWord = words[words.length - 1];
+  return COLOR_MAP[lastWord] ? lastWord : null;
+}
+
+/** Soft multi-stop gradient blending up to 4 distinct catalog colors, for
+ *  tinting the canvas background after a recluster to something that reads
+ *  as "this palette" rather than one flat swatch. Falls back to a single
+ *  CSS color when only one distinct color resolves, and to null when none
+ *  do (caller keeps the current/default background). */
+export function paletteGradient(colors: Array<string | null | undefined>): string | null {
+  const seen = new Set<string>();
+  const css: string[] = [];
+  for (const color of colors) {
+    const value = colorNameToCss(color);
+    if (value && !seen.has(value)) {
+      seen.add(value);
+      css.push(value);
+    }
+    if (css.length === 4) break;
+  }
+  if (css.length === 0) return null;
+  if (css.length === 1) return css[0];
+  const step = 100 / (css.length - 1);
+  const stops = css.map((c, i) => `${c} ${Math.round(i * step)}%`);
+  return `linear-gradient(135deg, ${stops.join(", ")})`;
+}

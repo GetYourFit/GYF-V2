@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { browserApi } from "@/lib/api-client";
-import { colorNameToCss } from "@/lib/color-name";
+import { colorFamily, colorNameToCss, paletteGradient } from "@/lib/color-name";
 import { mediaSrcSet, mediaUrl } from "@/lib/media";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { ItemDetailSheet } from "@/components/explore/item-detail-sheet";
@@ -440,21 +440,34 @@ export function CanvasExplorer() {
   const selectItem = useCallback(async (item: SearchResult) => {
     const token = ++clusterToken.current;
     setSelectedId(item.item_id);
-    setBgColor(colorNameToCss(item.color));
     setLoading(true);
     setError(null);
     pan.current = { x: 0, y: 0 }; // recenter on the selection
     try {
-      // 24, not 48: half the payload and half the tiles to lay out/paint —
-      // a recluster should feel instant, and 24 similar pieces is already
-      // plenty to fill the screen. Use the item's STORED embedding (vector-to-
-      // vector) — NOT search(item.title), which re-embedded the title through the
-      // SigLIP transformer on every click (seconds of CPU/GPU per recluster, and
+      // Over-fetch (48, not 24) so there's enough of a pool to re-rank by
+      // color after the fact without a second round trip — the endpoint is
+      // pure vector-to-vector similarity (visual style, silhouette, texture)
+      // and doesn't itself know about the catalog's free-text `color` field,
+      // so a same-family color match is favored client-side, keeping each
+      // color group's original style-similarity order as the tiebreaker.
+      // Use the item's STORED embedding (vector-to-vector) — NOT
+      // search(item.title), which re-embedded the title through the SigLIP
+      // transformer on every click (seconds of CPU/GPU per recluster, and
       // the query cache never hit since every title differs).
-      const similar = await browserApi().similar(item.item_id, { k: 24 });
+      const pool = await browserApi().similar(item.item_id, { k: 48 });
       if (token !== clusterToken.current) return; // superseded by a newer selection
-      setItems([item, ...similar.filter((s) => s.item_id !== item.item_id)]);
+      const family = colorFamily(item.color);
+      const rest = pool.filter((s) => s.item_id !== item.item_id);
+      const sameColor = family ? rest.filter((s) => colorFamily(s.color) === family) : [];
+      const other = family ? rest.filter((s) => colorFamily(s.color) !== family) : rest;
+      const similar = [...sameColor, ...other].slice(0, 23);
+      setItems([item, ...similar]);
       setGeneration((g) => g + 1);
+      // Multi-stop background from the new cluster's actual palette (the
+      // selected piece plus the color-matched pieces leading the re-ranked
+      // set) instead of one flat swatch — reads as "this collection", not
+      // "this one item's color".
+      setBgColor(paletteGradient([item.color, ...sameColor.slice(0, 3).map((s) => s.color)]));
     } catch (e) {
       if (token === clusterToken.current) {
         setError(e instanceof Error ? e.message : "Could not load similar items.");
@@ -836,7 +849,10 @@ export function CanvasExplorer() {
         inset: 0,
         zIndex: 60,
         background: bgColor ?? "var(--bg)",
-        transition: "background-color 0.45s ease",
+        // `background` (shorthand), not `background-color` — bgColor is now
+        // often a multi-stop gradient (paletteGradient), which animates via
+        // background-image, not background-color.
+        transition: "background 0.45s ease",
         overflow: "hidden",
         touchAction: "none",
         cursor: "grab",
