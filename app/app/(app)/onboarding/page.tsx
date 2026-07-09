@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GYFLogo } from "@/components/brand/GYFLogo";
+import { GYFLogo } from "@/components/brand/gyf-logo";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 
 export const metadata: Metadata = { title: "Your profile · GYF" };

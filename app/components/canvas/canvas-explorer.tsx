@@ -9,7 +9,7 @@ import { browserApi } from "@/lib/api-client";
 import { colorNameToCss } from "@/lib/color-name";
 import { mediaSrcSet, mediaUrl } from "@/lib/media";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { ItemDetailSheet } from "@/components/explore/ItemDetailSheet";
+import { ItemDetailSheet } from "@/components/explore/item-detail-sheet";
 import type { SearchResult } from "@gyf/types";
 
 // Zoom bounds and step sizes (button click / wheel notch).

@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { randomQuote } from "@/lib/fashionQuotes";
-import { GYFLogo } from "./GYFLogo";
+import { GYFLogo } from "./gyf-logo";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const MIN_SHOW_MS = 2400;

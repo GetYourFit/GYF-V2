@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { ExploreFilters } from "./filter-bar";
 import { FilterBar } from "./filter-bar";
 import { ExploreGrid } from "./explore-grid";
-import { ItemDetailSheet } from "./ItemDetailSheet";
+import { ItemDetailSheet } from "./item-detail-sheet";
 import type { SearchResult } from "@gyf/types";
 
 const DEFAULT_FILTERS: ExploreFilters = {

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { jakarta, jetbrainsMono, cormorant } from "@/lib/fonts";
-import { SplashScreen } from "@/components/brand/SplashScreen";
+import { SplashScreen } from "@/components/brand/splash-screen";
 import "./globals.css";
 
 export const metadata: Metadata = {

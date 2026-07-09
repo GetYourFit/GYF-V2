@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { browserApi } from "@/lib/api-client";
-import { SavedItemCard, OutfitCard } from "./CollectionCard";
+import { SavedItemCard, OutfitCard } from "./collection-card";
 import type { SavedItem, SavedOutfit } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];

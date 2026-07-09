@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Suspense, type ReactNode } from "react";
-import { GYFLogo } from "@/components/brand/GYFLogo";
+import { GYFLogo } from "@/components/brand/gyf-logo";
 import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/contact";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];

@@ -5,10 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { NavExplore } from "@/components/icons/NavExplore";
-import { NavWardrobe } from "@/components/icons/NavWardrobe";
-import { NavSocial } from "@/components/icons/NavSocial";
-import { NavProfile } from "@/components/icons/NavProfile";
+import { NavExplore } from "@/components/icons/nav-explore";
+import { NavWardrobe } from "@/components/icons/nav-wardrobe";
+import { NavSocial } from "@/components/icons/nav-social";
+import { NavProfile } from "@/components/icons/nav-profile";
 import { browserApi, onProfileChange } from "@/lib/api-client";
 
 // Cosmos-style floating pill nav (Ref3): icon-only, fully rounded, hovering

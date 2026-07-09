@@ -9,8 +9,8 @@ import { browserApi } from "@/lib/api-client";
 import { formatPrice } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
 import { useToast } from "@/components/ui/toast";
-import { CompatibilityPanel } from "./CompatibilityPanel";
-import { WearItWithRow } from "./WearItWithRow";
+import { CompatibilityPanel } from "./compatibility-panel";
+import { WearItWithRow } from "./wear-it-with-row";
 import type { SearchResult } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
