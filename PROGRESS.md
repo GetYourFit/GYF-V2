@@ -1198,3 +1198,25 @@ frontend-other-surfaces, ML-platform python, accessibility (WCAG 2.2), shared TS
   double-fetched.
 - ML: two sRGB→Lab impls (dedup to ml/common).
 - perf backlog (unchanged): keyset pagination, grid virtualization, HNSW recall benchmark.
+
+### 2026-07-09 (cont.) — Personalization/"mixed gender" diagnosis + fixes
+
+**Report:** recs show mixed gender + random items, not reflecting gender/skin/body/undertone/occasion.
+
+**Diagnosis (research):** gender IS captured (onboarding→profile.gender) and applied
+server-side. Root cause of mixed-gender = catalog DATA: the gender filter is soft
+(NULL-gender items pass for everyone — 'never a wall'), gender was set only at ingest
+from title words (infer_gender, low coverage), and backfill_gender.py (zero-shot fallback)
+was NEVER wired into the nightly pipeline → most prod items stay NULL-gender → surface
+for all users. "Random/un-personalized" on Explore+Canvas is BY DESIGN — those are
+`browse` (discovery), not the stylist feed. The stylist feed (/outfits/recommend) DOES
+apply undertone→hue, body→goal, skin→color-intensity (soft, honest re-weights); skin-tone
+is shadow-gated on prod (fairness eval). Occasion IS used (→ target_formality → scoring).
+
+**Fixed:** `a162555` wired gender backfill into nightly data-export (after embedding).
+Coverage climbs nightly; operator can trigger the workflow now for an immediate pass.
+
+**Follow-up (gated on coverage):** once gender coverage is high, exclude NULL-gender for
+users with a stated gender (doing it now on low coverage would empty the feed). Also
+covered this session: recsys cartesian cap, per-slot concurrency, AbortSignal, ML honest
+abstain + timeouts, a11y focus traps + canvas keyboard, gallery upload, avatar refresh.
