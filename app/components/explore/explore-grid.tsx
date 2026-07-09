@@ -163,28 +163,39 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           // free tier; 500'd the grid when the GPU lane was cold). Plain catalogue
           // read — tens of ms, no ML — interleaved across slots. offset is the
           // GLOBAL count shown (pageNum * PAGE_SIZE); the server splits it per slot.
-          results = await api.browse({
-            k: PAGE_SIZE,
-            offset: pageNum * PAGE_SIZE,
-            slots: BROWSE_SLOTS.join(","),
-            ...(gender ? { gender } : {}),
-          });
+          results = await api.browse(
+            {
+              k: PAGE_SIZE,
+              offset: pageNum * PAGE_SIZE,
+              slots: BROWSE_SLOTS.join(","),
+              ...(gender ? { gender } : {}),
+            },
+            ctrl.signal,
+          );
         } else if (filters.slot || filters.q) {
-          results = await api.search(query, {
-            k: PAGE_SIZE,
-            offset: pageNum * PAGE_SIZE,
-            ...(filters.slot ? { slot: filters.slot } : {}),
-            ...base,
-          });
+          results = await api.search(
+            query,
+            {
+              k: PAGE_SIZE,
+              offset: pageNum * PAGE_SIZE,
+              ...(filters.slot ? { slot: filters.slot } : {}),
+              ...base,
+            },
+            ctrl.signal,
+          );
         } else {
           // No query/slot but a price or sort filter is set → multi-slot vector
           // search that honours the filter (browse doesn't support max_price/sort).
-          results = await api.search(query, {
-            k: PAGE_SIZE,
-            offset: pageNum * PAGE_SIZE,
-            slots: BROWSE_SLOTS.join(","),
-            ...base,
-          });
+          results = await api.search(
+            query,
+            {
+              k: PAGE_SIZE,
+              offset: pageNum * PAGE_SIZE,
+              slots: BROWSE_SLOTS.join(","),
+              ...base,
+            },
+            ctrl.signal,
+          );
         }
         if (reset) setItems(results);
         else setItems((prev) => [...prev, ...results]);

@@ -189,18 +189,25 @@ export class GyfApi {
 
   // --- Visual search & shop-the-look ---
 
-  search(q: string, params: SearchParams = {}): Promise<SearchResult[]> {
+  search(q: string, params: SearchParams = {}, signal?: AbortSignal): Promise<SearchResult[]> {
     const query = toQuery({ q, ...params });
-    return this.request<SearchResults>("GET", `/items/search${query}`).then((r) => r.results);
+    return this.request<SearchResults>("GET", `/items/search${query}`, undefined, signal).then(
+      (r) => r.results,
+    );
   }
 
   /** Empty-state catalogue feed — NO text embedding, NO vector scan (unlike
    *  `search`). Serves in tens of ms and works even when the ML lane is cold, so
    *  the default Explore/canvas grid fills instantly. Use for the unqueried view;
    *  switch to `search` the moment the user types a real query. */
-  browse(params: Omit<SearchParams, "sort" | "max_price"> = {}): Promise<SearchResult[]> {
+  browse(
+    params: Omit<SearchParams, "sort" | "max_price"> = {},
+    signal?: AbortSignal,
+  ): Promise<SearchResult[]> {
     const query = toQuery({ ...params });
-    return this.request<SearchResults>("GET", `/items/browse${query}`).then((r) => r.results);
+    return this.request<SearchResults>("GET", `/items/browse${query}`, undefined, signal).then(
+      (r) => r.results,
+    );
   }
 
   /** Available catalog filter ranges (price coverage + min/max) for the optional
@@ -273,7 +280,7 @@ export class GyfApi {
 
   /** The caller's identity (id + email) as the API resolves it from the token. */
   me(): Promise<{ user_id: string; email: string | null }> {
-    return this.request("GET", "/me");
+    return this.request<{ user_id: string; email: string | null }>("GET", "/me");
   }
 
   // --- Trust surface (M8.5) ---
@@ -350,7 +357,12 @@ export class GyfApi {
 
   // --- internals ---
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    signal?: AbortSignal,
+  ): Promise<T> {
     const token = await this.getToken();
     const headers = new Headers({ Accept: "application/json" });
     if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -360,6 +372,10 @@ export class GyfApi {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      // Forwarded so callers can actually cancel: a superseded search/browse (fast
+      // filter changes) aborts its fetch instead of resolving late and clobbering
+      // newer results. Without this the AbortController on the caller was a no-op.
+      signal,
     });
 
     return this.handle<T>(res);
