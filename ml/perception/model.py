@@ -182,15 +182,19 @@ class SiglipEncoder:
 
         self._device = _resolve_device(self._device, torch)
         model, preprocess = open_clip.create_model_from_pretrained(self._model_id)
-        self._model = model.to(self._device).eval()
-        self._preprocess = preprocess
-        self._tokenizer = open_clip.get_tokenizer(self._model_id)
-        self._torch = torch
+        loaded = model.to(self._device).eval()
+        tokenizer = open_clip.get_tokenizer(self._model_id)
         # `logit_scale` is stored in log space; exponentiate once to the temperature.
         scale = getattr(model, "logit_scale", None)
-        self._logit_scale = (
-            float(scale.detach().exp()) if scale is not None else DEFAULT_LOGIT_SCALE
-        )
+        logit_scale = float(scale.detach().exp()) if scale is not None else DEFAULT_LOGIT_SCALE
+        # Commit self._model LAST — the `if self._model is not None` re-entry guard
+        # keys on it, so assigning it before the tokenizer/scale finish would leave a
+        # half-loaded encoder that looks ready and then crashes on every later call.
+        self._preprocess = preprocess
+        self._tokenizer = tokenizer
+        self._torch = torch
+        self._logit_scale = logit_scale
+        self._model = loaded
 
     @property
     def logit_scale(self) -> float:

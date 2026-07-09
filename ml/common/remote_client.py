@@ -37,11 +37,20 @@ class GradioSpaceClient:
     relies on).
     """
 
-    def __init__(self, url: str, *, hf_token: str | None = None) -> None:
+    # Hard ceiling on a single Space round trip. A ZeroGPU Space that is cold,
+    # overloaded, or queue-stalled must not block the caller forever — the callers
+    # (in-request photo onboarding, the nightly backfill job) are built to abstain
+    # honestly (doctrine D6), so a timeout surfaces as an abstention, not a hang.
+    DEFAULT_TIMEOUT_S = 120.0
+
+    def __init__(
+        self, url: str, *, hf_token: str | None = None, timeout_s: float | None = None
+    ) -> None:
         if not url:
             raise ValueError(f"{type(self).__name__} requires a non-empty Space url")
         self._url = url
         self._hf_token = hf_token or None
+        self._timeout_s = timeout_s if timeout_s is not None else self.DEFAULT_TIMEOUT_S
         self._client: object | None = None
 
     def _get_client(self) -> object:
@@ -49,5 +58,11 @@ class GradioSpaceClient:
             from gradio_client import Client  # lazy: only the first real call needs it
 
             # gradio_client renamed the auth kwarg `hf_token` -> `token` in 2.x.
-            self._client = Client(self._url, token=self._hf_token)
+            # httpx_kwargs sets the per-request timeout on the underlying transport so
+            # no single call can block indefinitely.
+            self._client = Client(
+                self._url,
+                token=self._hf_token,
+                httpx_kwargs={"timeout": self._timeout_s},
+            )
         return self._client

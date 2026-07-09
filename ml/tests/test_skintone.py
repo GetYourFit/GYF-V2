@@ -103,11 +103,18 @@ def test_estimate_skin_tone_scales_confidence_by_quality():
 
 
 def test_estimate_no_face_abstains():
+    from gyf_contracts.usermodel import UNKNOWN_SKIN_TONE, UNKNOWN_UNDERTONE
+
     none = _FakeEstimator(
         SkinReadout(lab=(0.0, 0.0, 0.0), coverage=0.0, face_confidence=0.0, skin_pixels=0)
     )
     est = estimate_skin_tone(object(), none)
-    assert est.field_confidence["skin_tone"] == 0.0
+    # Honest abstain (D6): BOTH fields UNKNOWN, no confidence. Regression guard —
+    # the (0,0) sentinel used to fabricate undertone="neutral" (neutral test matches
+    # a=b=0) even though its confidence was crushed to 0.
+    assert est.skin_tone == UNKNOWN_SKIN_TONE
+    assert est.undertone == UNKNOWN_UNDERTONE
+    assert est.field_confidence == {}
 
 
 # --- fairness gate (pure aggregation) --------------------------------------
