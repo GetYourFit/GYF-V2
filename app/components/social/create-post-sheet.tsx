@@ -58,6 +58,16 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
     }
   }, [toast]);
 
+  const reset = useCallback(() => {
+    setCaption("");
+    setSelected(null);
+    setFieldError(null);
+  }, []);
+  const handleClose = useCallback(() => {
+    reset();
+    onClose();
+  }, [reset, onClose]);
+
   useEffect(() => {
     if (open) void Promise.resolve().then(() => loadLooks());
   }, [open, loadLooks]);
@@ -94,8 +104,7 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
     }
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, handleClose]);
 
   function onRadioKeyDown(e: React.KeyboardEvent) {
     if (looks.length === 0) return;
@@ -111,16 +120,6 @@ export function CreatePostSheet({ open, onClose, onCreated }: CreatePostSheetPro
       setSelected(look.id);
       radioRefs.current[next]?.focus();
     }
-  }
-
-  function reset() {
-    setCaption("");
-    setSelected(null);
-    setFieldError(null);
-  }
-  function handleClose() {
-    reset();
-    onClose();
   }
 
   async function handleSubmit(e: React.FormEvent) {

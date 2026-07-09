@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X, ArrowUpRight, Plus } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { browserApi } from "@/lib/api-client";
 import { formatPrice } from "@/lib/format";
@@ -15,6 +15,8 @@ import type { SearchResult } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const ACCENT = "var(--secondary)";
+const FOCUSABLE =
+  'a[href],button:not([disabled]),textarea,input,select,[tabindex]:not([tabindex="-1"])';
 
 const MONO: React.CSSProperties = {
   fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
@@ -35,6 +37,52 @@ export function ItemDetailSheet({ item, onClose }: Props) {
   const reduce = useReducedMotion();
   const { toast } = useToast();
   const [addingToWardrobe, setAddingToWardrobe] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const restoreRef = useRef<HTMLElement | null>(null);
+  const isOpen = item !== null;
+
+  // Modal a11y (WCAG 2.4.3/2.1.2): move focus into the sheet on open, trap Tab,
+  // close on Escape, restore focus to the trigger on close.
+  useEffect(() => {
+    if (!isOpen) return;
+    restoreRef.current = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+    const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
+    const t = setTimeout(() => (first ?? panel)?.focus(), 50);
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !panel) return;
+      const nodes = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (n) => n.offsetParent !== null,
+      );
+      if (!nodes.length) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const firstN = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === firstN || active === panel)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        firstN.focus();
+      }
+    }
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener("keydown", onKey, true);
+      restoreRef.current?.focus?.();
+    };
+  }, [isOpen, onClose]);
+
   const src = item ? mediaUrl(item.image_url, 800) : null;
   const price = item ? formatPrice(item.price, item.currency) : null;
 
@@ -99,6 +147,8 @@ export function ItemDetailSheet({ item, onClose }: Props) {
           >
             <motion.div
               key="sheet"
+              ref={panelRef}
+              tabIndex={-1}
               role="dialog"
               aria-modal
               aria-label={`Details for ${item.title}`}

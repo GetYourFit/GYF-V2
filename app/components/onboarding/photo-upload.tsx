@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UploadCloud, X, CheckCircle } from "lucide-react";
 
@@ -29,6 +29,15 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
   const [missingFields, setMissingFields] = useState<EstimatedField[]>([]);
   const [missed, setMissed] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+
+  // Revoke the object URL when the component unmounts (e.g. the wizard navigates
+  // to another step and remounts this) — otherwise each preview blob leaks for the
+  // rest of the session. selectFile handles the replace-while-mounted case.
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   function selectFile(next: File | null) {
     setError(null);
@@ -180,7 +189,8 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           ref={inputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          capture="user"
+          // No `capture` — that forces the camera on mobile. Omitting it lets the OS
+          // picker offer BOTH gallery and camera, so a saved photo can be uploaded.
           style={{
             position: "absolute",
             width: "1px",
