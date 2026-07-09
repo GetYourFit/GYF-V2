@@ -260,7 +260,7 @@ function UserHero({
             transition: "opacity 0.15s",
           }}
         >
-          <span style={{ fontSize: "0.625rem", color: "#fff", fontFamily: "var(--font-mono)" }}>
+          <span style={{ fontSize: "0.625rem", color: "var(--text)", fontFamily: "var(--font-mono)" }}>
             {uploading ? "Uploading…" : ""}
           </span>
         </span>

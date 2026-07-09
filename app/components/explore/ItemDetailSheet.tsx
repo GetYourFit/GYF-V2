@@ -228,7 +228,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                   position: "relative",
                   aspectRatio: "3/4",
                   overflow: "hidden",
-                  background: "#1a1a22",
+                  background: "var(--surface-2)",
                   marginTop: "0.5rem",
                   borderRadius: "16px",
                   margin: "0.5rem 1rem 0",

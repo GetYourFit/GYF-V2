@@ -40,7 +40,7 @@ export function SavedItemCard({ item }: SavedItemCardProps) {
         style={{
           position: "relative",
           aspectRatio: "3/4",
-          background: "#1a1a22",
+          background: "var(--surface-2)",
           overflow: "hidden",
         }}
       >
@@ -116,7 +116,7 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "1px",
-          background: "#1a1a22",
+          background: "var(--surface-2)",
           aspectRatio: "4/3",
         }}
       >
@@ -126,7 +126,7 @@ export function OutfitCard({ outfit }: OutfitCardProps) {
             return (
               <div
                 key={p.item_id}
-                style={{ position: "relative", overflow: "hidden", background: "#1a1a22" }}
+                style={{ position: "relative", overflow: "hidden", background: "var(--surface-2)" }}
               >
                 {s ? (
                   <Image src={s} alt={p.title} fill sizes="50vw" style={{ objectFit: "cover" }} />

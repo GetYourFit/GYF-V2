@@ -69,7 +69,7 @@ export function AppIntro() {
                 bottom: 48,
                 width: 32,
                 height: 1,
-                background: "#e8e8e8",
+                background: "var(--surface-2)",
                 transformOrigin: "center",
               }}
             />

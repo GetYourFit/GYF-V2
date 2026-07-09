@@ -65,7 +65,7 @@ function Tile({ item }: { item: OutfitItem }) {
           position: "relative",
           aspectRatio: "3/4",
           width: "100%",
-          background: "#1a1a22",
+          background: "var(--surface-2)",
           borderRadius: "12px",
           overflow: "hidden",
           border: "1px solid var(--rule)",
@@ -171,7 +171,7 @@ export function WearItWithRow({ itemId }: Props) {
               fontFamily: "var(--font-body)",
               fontSize: "0.75rem",
               lineHeight: 1.5,
-              color: "#5f5a55",
+              color: "var(--text-faint)",
               margin: 0,
             }}
           >

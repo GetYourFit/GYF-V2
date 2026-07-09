@@ -143,7 +143,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           justifyContent: "center",
           gap: "0.75rem",
           padding: previewUrl ? "0" : "2rem 1rem",
-          background: dragActive ? "var(--rule)" : "var(--rule)",
+          background: dragActive ? "var(--surface-2)" : "var(--rule)",
           border: `1px dashed ${dragActive ? "var(--secondary)" : "var(--border)"}`,
           cursor: "pointer",
           transition: "all 0.2s",
@@ -237,7 +237,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
               gap: "0.375rem",
               fontFamily: "var(--font-body)",
               fontSize: "0.8125rem",
-              color: "#10B981",
+              color: "var(--success)",
               margin: 0,
             }}
           >

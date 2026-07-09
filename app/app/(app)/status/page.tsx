@@ -16,7 +16,7 @@ const STATE_STYLE: Record<string, { label: string; color: string; bg: string }> 
   live: { label: "Live", color: "#1c6b3c", bg: "rgba(28, 107, 60, 0.10)" },
   beta: { label: "Beta", color: "#8a6d1a", bg: "rgba(138, 109, 26, 0.10)" },
   shadow: { label: "Shadow", color: "var(--text-mid)", bg: "rgba(92, 86, 80, 0.10)" },
-  degraded: { label: "Degraded", color: "#a04545", bg: "rgba(160, 69, 69, 0.10)" },
+  degraded: { label: "Degraded", color: "var(--error)", bg: "rgba(160, 69, 69, 0.10)" },
   planned: { label: "Planned", color: "var(--text-faint)", bg: "rgba(154, 148, 144, 0.12)" },
 };
 
@@ -96,7 +96,7 @@ export default function StatusPage() {
       </motion.div>
 
       {failed && (
-        <p style={{ fontSize: "0.85rem", color: "#a04545" }}>
+        <p style={{ fontSize: "0.85rem", color: "var(--error)" }}>
           The status report itself is unreachable right now — which is a status of its own. Try
           again shortly.
         </p>
