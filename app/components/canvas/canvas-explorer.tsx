@@ -555,19 +555,79 @@ export function CanvasExplorer() {
     pan.current.y = Math.min(-bounds.minY, Math.max(-bounds.maxY, pan.current.y));
   }, [bounds, selectedId]);
 
+  // Viewport culling: a long infinite-scroll session can load thousands of
+  // items, but only ~the ones on/near screen ever need to be live DOM nodes.
+  // `tiles` grows unbounded (never virtualized) while pan/scale live in
+  // refs and are written imperatively for 60fps panning (see applyPan) — so
+  // this recomputes which tiles fall in the visible window and is used to
+  // filter what actually gets rendered below, instead of every loaded tile.
+  // Throttled (not every pointermove) so it stays cheap during a drag; the
+  // always-run settle effect below keeps it in sync once motion stops.
+  const [cullBox, setCullBox] = useState<{
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+  } | null>(null);
+  const lastCullRef = useRef(0);
+  const CULL_MARGIN_PX = 600; // render this far past the viewport edge before culling
+  const CULL_THROTTLE_MS = 150;
+
+  const computeCullBox = useCallback(() => {
+    const scale = scaleRef.current;
+    const halfW = window.innerWidth / 2 + CULL_MARGIN_PX;
+    const halfH = window.innerHeight / 2 + CULL_MARGIN_PX;
+    return {
+      minX: (-halfW - pan.current.x) / scale,
+      maxX: (halfW - pan.current.x) / scale,
+      minY: (-halfH - pan.current.y) / scale,
+      maxY: (halfH - pan.current.y) / scale,
+    };
+  }, []);
+
+  const updateCullBox = useCallback(
+    (force = false) => {
+      const now = performance.now();
+      if (!force && now - lastCullRef.current < CULL_THROTTLE_MS) return;
+      lastCullRef.current = now;
+      setCullBox(computeCullBox());
+    },
+    [computeCullBox],
+  );
+
+  const visibleTiles = useMemo(() => {
+    if (!cullBox) return tiles;
+    return tiles.filter(
+      (t) =>
+        t.x + t.w >= cullBox.minX &&
+        t.x <= cullBox.maxX &&
+        t.y + t.h >= cullBox.minY &&
+        t.y <= cullBox.maxY,
+    );
+  }, [tiles, cullBox]);
+
   const zoomBy = useCallback(
     (delta: number) => {
       zoomAt(window.innerWidth / 2, window.innerHeight / 2, scaleRef.current + delta);
       clampPan();
       applyPan();
+      updateCullBox();
     },
-    [applyPan, zoomAt, clampPan],
+    [applyPan, zoomAt, clampPan, updateCullBox],
   );
 
   // Distance from the current pan position to the nearest loaded edge, in
   // screen px (accounting for zoom) — triggers loadMore() within margin.
   const maybeLoadMore = useCallback(() => {
-    if (selectedId !== null || !hasMoreRef.current || loadingMoreRef.current) return;
+    // Guard against the mount-time race: this runs from an every-render
+    // effect (below), including the very first paint, before loadInitial's
+    // fetch has resolved. With no tiles yet, `bounds` is the {0,0,0,0}
+    // fallback and every distance reads as 0 < LOAD_MORE_MARGIN, firing a
+    // duplicate loadMore() concurrently with loadInitial() at offset 0 —
+    // corrupting offsetRef and doubling the tile-layout work right out of
+    // the gate. Nothing to stream toward until the first cluster has tiles.
+    if (tiles.length === 0 || selectedId !== null || !hasMoreRef.current || loadingMoreRef.current)
+      return;
     const scale = scaleRef.current;
     const distLeft = (-pan.current.x - bounds.minX) * scale;
     const distRight = (bounds.maxX - -pan.current.x) * scale;
@@ -576,11 +636,12 @@ export function CanvasExplorer() {
     if (Math.min(distLeft, distRight, distTop, distBottom) < LOAD_MORE_MARGIN) {
       void loadMore();
     }
-  }, [bounds, loadMore, selectedId]);
+  }, [tiles, bounds, loadMore, selectedId]);
 
   useEffect(() => {
     applyPan(); // recenter after re-cluster
     maybeLoadMore(); // a fresh/grown cluster may already be near its own edge
+    updateCullBox(); // keep the mounted-tile window in sync once motion settles
   });
 
   const stopMomentum = useCallback(() => cancelAnimationFrame(momentum.current), []);
@@ -599,11 +660,12 @@ export function CanvasExplorer() {
         clampPan();
         applyPan();
         maybeLoadMore();
+        updateCullBox();
         momentum.current = requestAnimationFrame(step);
       };
       momentum.current = requestAnimationFrame(step);
     },
-    [applyPan, clampPan, maybeLoadMore, reduce],
+    [applyPan, clampPan, maybeLoadMore, updateCullBox, reduce],
   );
 
   const onPointerDown = useCallback(
@@ -676,8 +738,9 @@ export function CanvasExplorer() {
       clampPan();
       applyPan();
       maybeLoadMore();
+      updateCullBox();
     },
-    [applyPan, clampPan, maybeLoadMore, notifyActivity, zoomAt],
+    [applyPan, clampPan, maybeLoadMore, updateCullBox, notifyActivity, zoomAt],
   );
 
   const onPointerUp = useCallback(
@@ -717,8 +780,9 @@ export function CanvasExplorer() {
       clampPan();
       applyPan();
       notifyActivity();
+      updateCullBox();
     },
-    [applyPan, clampPan, notifyActivity, zoomAt],
+    [applyPan, clampPan, notifyActivity, updateCullBox, zoomAt],
   );
 
   const wasDrag = () => wasDragRef.current;
@@ -804,7 +868,7 @@ export function CanvasExplorer() {
             <SkeletonTile key={t.item.item_id} tile={t} index={i} />
           ))}
 
-        {tiles.map((t, i) => (
+        {visibleTiles.map((t, i) => (
           <motion.button
             key={`${generation}:${t.item.item_id}`}
             type="button"
