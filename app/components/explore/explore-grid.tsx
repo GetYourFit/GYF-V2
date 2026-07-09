@@ -89,6 +89,13 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<Set<string>>(new Set());
+  // Mirror of `saved` for toggleSave to read without depending on it — keeps the
+  // callback identity stable so the memoized ExploreCard grid doesn't all re-render
+  // on every bookmark. Kept in sync on each render below.
+  const savedRef = useRef(saved);
+  useEffect(() => {
+    savedRef.current = saved;
+  }, [saved]);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const loadingRef = useRef(false);
@@ -101,6 +108,13 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   const [gender, setGender] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     let active = true;
+    // Don't let a cold profile round trip gate first paint: after 500ms, paint an
+    // ungendered grid (Canvas does the same). The getProfile memo means this is
+    // usually already resolved; the race only bites on a direct, cold Explore land.
+    // If the real profile arrives later with a gender, the grid re-filters once.
+    const timer = setTimeout(() => {
+      if (active) setGender((g) => (g === undefined ? null : g));
+    }, 500);
     browserApi()
       .getProfile()
       .then((p) => {
@@ -108,9 +122,11 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
       })
       .catch(() => {
         if (active) setGender(null);
-      });
+      })
+      .finally(() => clearTimeout(timer));
     return () => {
       active = false;
+      clearTimeout(timer);
     };
   }, []);
 
@@ -277,7 +293,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
 
   const toggleSave = useCallback(
     (item: SearchResult) => {
-      const wasSaved = saved.has(item.item_id);
+      const wasSaved = savedRef.current.has(item.item_id);
       setSaved((prev) => {
         const next = new Set(prev);
         if (wasSaved) next.delete(item.item_id);
@@ -306,7 +322,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
         });
       });
     },
-    [saved, toast],
+    [toast],
   );
 
   // First load skeleton
@@ -470,6 +486,8 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
               item={item}
               index={i}
               saved={saved.has(item.item_id)}
+              // First screenful loads eagerly at high priority for a fast LCP.
+              priority={i < 8}
               onSave={toggleSave}
               onSelect={onSelectItem}
             />

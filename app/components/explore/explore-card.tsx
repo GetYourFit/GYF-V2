@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 
@@ -11,15 +12,18 @@ interface ExploreCardProps {
   item: SearchResult;
   index: number;
   saved: boolean;
+  /** First screenful: load eagerly at high priority for a fast LCP; later cards stay lazy. */
+  priority?: boolean;
   onSave: (item: SearchResult) => void;
   onSelect?: (item: SearchResult) => void;
 }
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCardProps) {
+function ExploreCardImpl({ item, index, saved, priority, onSave, onSelect }: ExploreCardProps) {
   const reduce = useReducedMotion();
   const price = formatPrice(item.price, item.currency);
+  const openDetail = onSelect ? () => onSelect(item) : undefined;
 
   return (
     <motion.article
@@ -45,7 +49,22 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
         cursor: onSelect ? "pointer" : "default",
         boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
       }}
-      onClick={onSelect ? () => onSelect(item) : undefined}
+      onClick={openDetail}
+      // Keyboard access: the whole card opens detail on click, so it must also
+      // open on Enter/Space and be focusable (the bookmark button was the only
+      // reachable control before).
+      role={openDetail ? "button" : undefined}
+      tabIndex={openDetail ? 0 : undefined}
+      onKeyDown={
+        openDetail
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openDetail();
+              }
+            }
+          : undefined
+      }
     >
       {/* Image */}
       <div
@@ -62,8 +81,12 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
             <motion.img
               src={mediaUrl(item.image_url, 400) ?? undefined}
               srcSet={mediaSrcSet(item.image_url, 400)}
+              // 2-col grid ≈ half the viewport per tile; without this the browser
+              // assumes 100vw and picks the 2x (800px) variant even on standard DPR.
+              sizes="50vw"
               alt={item.title}
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : "auto"}
               whileHover={reduce ? undefined : { scale: 1.03 }}
               transition={{ duration: 0.5, ease: EASE }}
               style={{
@@ -163,3 +186,7 @@ export function ExploreCard({ item, index, saved, onSave, onSelect }: ExploreCar
     </motion.article>
   );
 }
+
+// Memoized: one bookmark toggle re-renders only the toggled card, not the whole
+// visible grid (requires a stable `onSave`/`onSelect` from the parent).
+export const ExploreCard = memo(ExploreCardImpl);
