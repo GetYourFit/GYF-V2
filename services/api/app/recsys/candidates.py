@@ -192,24 +192,32 @@ class PostgresCandidateRepository:
         # The affinity param (if any) is bound first — it appears before WHERE.
         prefix: tuple = (_pgvector(taste_vector),) if taste_vector else ()
         gender_list = sorted(genders) if genders else None
-        out: dict[str, list[Candidate]] = {}
-        with self._pool.connection() as conn:  # type: ignore[attr-defined]
-            for slot in slots:
-                categories = list(_CATEGORIES_BY_SLOT.get(slot, ()))
-                if not categories:
-                    continue
-                params = prefix + (
-                    categories,
-                    region,
-                    region,
-                    max_price,
-                    max_price,
-                    gender_list,
-                    gender_list,
-                    limit_per_slot,
-                )
-                out[slot] = [_row_to_candidate(slot, r) for r in conn.execute(sql, params)]
-        return out
+        work = [(slot, list(_CATEGORIES_BY_SLOT.get(slot, ()))) for slot in slots]
+        work = [(slot, cats) for slot, cats in work if cats]
+        if not work:
+            return {}
+
+        def fetch(slot: str, categories: list[str]) -> tuple[str, list[Candidate]]:
+            params = prefix + (
+                categories,
+                region,
+                region,
+                max_price,
+                max_price,
+                gender_list,
+                gender_list,
+                limit_per_slot,
+            )
+            with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                return slot, [_row_to_candidate(slot, r) for r in conn.execute(sql, params)]
+
+        # Run the per-slot reads concurrently, each on its own pooled connection —
+        # was N sequential round trips on one held connection (the dominant per-
+        # recommend DB latency). Mirrors browse_multi_slot; the shared pool bounds it.
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=min(4, len(work))) as pool:
+            return dict(pool.map(lambda item: fetch(*item), work))
 
     def candidates_by_ids(self, item_ids: list[str]) -> list[Candidate]:
         if not item_ids:
