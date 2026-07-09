@@ -30,6 +30,19 @@ let cached: GyfApi | null = null;
 // mutations reset it (below) alongside clearViewCaches().
 let profileCache: Promise<Profile> | null = null;
 
+// Notified after any profile mutation (avatar/photo/manual edit). Lets components
+// that cache derived profile data in their own state (e.g. BottomNav's avatar)
+// refresh — without this the bottom-nav avatar stayed stale after an upload until a
+// full reload. Fired from the mutation wrappers below, next to profileCache reset.
+const profileListeners = new Set<() => void>();
+export function onProfileChange(listener: () => void): () => void {
+  profileListeners.add(listener);
+  return () => profileListeners.delete(listener);
+}
+function notifyProfileChange() {
+  for (const l of profileListeners) l();
+}
+
 function cookieJar(): (name: string) => string | undefined {
   const jar = new Map<string, string>();
   for (const part of document.cookie.split("; ")) {
@@ -95,6 +108,7 @@ export function browserApi(): GyfApi {
     const profile = await putProfile(input);
     profileCache = Promise.resolve(profile); // seed the memo with the fresh profile
     clearViewCaches();
+    notifyProfileChange();
     return profile;
   };
   const uploadPhoto = api.uploadPhoto.bind(api);
@@ -102,6 +116,7 @@ export function browserApi(): GyfApi {
     const profile = await uploadPhoto(file);
     profileCache = Promise.resolve(profile);
     clearViewCaches();
+    notifyProfileChange();
     return profile;
   };
   const deleteProfile = api.deleteProfile.bind(api);

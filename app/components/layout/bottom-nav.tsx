@@ -9,7 +9,7 @@ import { NavExplore } from "@/components/icons/NavExplore";
 import { NavWardrobe } from "@/components/icons/NavWardrobe";
 import { NavSocial } from "@/components/icons/NavSocial";
 import { NavProfile } from "@/components/icons/NavProfile";
-import { browserApi } from "@/lib/api-client";
+import { browserApi, onProfileChange } from "@/lib/api-client";
 
 // Cosmos-style floating pill nav (Ref3): icon-only, fully rounded, hovering
 // over the content instead of docking to the screen edge. Monochrome —
@@ -111,16 +111,22 @@ export function BottomNav({ collapsed = false }: BottomNavProps) {
 
   useEffect(() => {
     let active = true;
-    browserApi()
-      .getProfileSummary()
-      .then((summary) => {
-        if (active) setAvatarUrl(summary.avatar_url ?? null);
-      })
-      .catch(() => {
-        // Unauthenticated or offline — the nav just shows the default glyph.
-      });
+    const load = () =>
+      browserApi()
+        .getProfileSummary()
+        .then((summary) => {
+          if (active) setAvatarUrl(summary.avatar_url ?? null);
+        })
+        .catch(() => {
+          // Unauthenticated or offline — the nav just shows the default glyph.
+        });
+    void load();
+    // Re-load when the profile changes (e.g. avatar upload on /profile) so the nav
+    // glyph doesn't stay stale until a full reload.
+    const unsub = onProfileChange(() => void load());
     return () => {
       active = false;
+      unsub();
     };
   }, []);
 
