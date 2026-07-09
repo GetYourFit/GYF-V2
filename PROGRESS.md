@@ -1166,3 +1166,35 @@ tracked files, git already versions it) — needs user OK to delete.
 - DOM virtualization for explore/canvas grids past ~100 items.
 - HNSW recall@k benchmark for m/ef_construction (currently pgvector defaults).
 - Rate limiter per-replica → needs Redis for a global limit (tracked W7).
+
+### 2026-07-09 (cont.) — Full-product audit round 2 (10 reviewers total) + fixes
+
+**Ask:** complete-product FAANG-bar audit via subagents across all skills; gallery
+photo upload; keep catalog/app fast; use ponytail + ecc; don't stop.
+
+**2nd reviewer batch (5, covering surfaces the 1st batch didn't):** recsys/mle,
+frontend-other-surfaces, ML-platform python, accessibility (WCAG 2.2), shared TS/lib.
+
+**Shipped (pushed):**
+- `3034372` fix(explore): thread AbortSignal through request()/search()/browse() —
+  the AbortController was a no-op (signal never forwarded), so a stale response could
+  clobber newer results. TS+React reviewers confirmed HIGH.
+- `ad4d5a2` fix(ml): CRITICAL honest skin-tone abstain (sentinel (0,0,0) fabricated
+  undertone='neutral' instead of UNKNOWN — D6 violation); 120s timeout on ZeroGPU
+  remote calls (were unbounded → hang); atomic SiglipEncoder load (was half-loadable).
+- `c3225d6`/`647291a` fix(recsys): CRITICAL cap per-slot pool (14) before the
+  cartesian product — was up to 80^3=512k outfits scored/request (CI missed it, tiny
+  test pools); honest 'not a propensity' note on impression score.
+- `2095e45` feat+fix(frontend): GALLERY photo upload (drop capture='user'); ItemDetailSheet
+  focus trap (WCAG 2.4.3); photo-upload blob-leak; create-post-sheet stale-closure;
+  delete dead onboarding-form.
+
+**Remaining audit backlog (real, not yet done):**
+- recsys HIGH: candidates_by_slot N per-slot queries → one windowed query; wardrobe/
+  anchor round-trips batched; goal+wardrobe score blending under-weights content (<50%).
+- a11y: canvas item-detail keyboard-unreachable (double-click only); TopMenu sheet no
+  focus trap; stylist feed no aria-live on load; skeleton aria-hidden+label conflict.
+- frontend: bottom-nav stale avatar after upload (no shared store); getProfileSummary
+  double-fetched.
+- ML: two sRGB→Lab impls (dedup to ml/common).
+- perf backlog (unchanged): keyset pagination, grid virtualization, HNSW recall benchmark.
