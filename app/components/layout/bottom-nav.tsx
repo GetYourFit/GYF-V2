@@ -62,6 +62,16 @@ function Tab({
         position: "relative",
       }}
     >
+      {active && (
+        <motion.div
+          layoutId="nav-glass-indicator"
+          className="liquid-glass-indicator"
+          style={{ position: "absolute", inset: 0, borderRadius: "50%" }}
+          transition={
+            reduce ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 35 }
+          }
+        />
+      )}
       <motion.div
         whileTap={reduce ? undefined : { scale: 0.82 }}
         transition={{ type: "spring", stiffness: 600, damping: 30 }}
@@ -133,6 +143,7 @@ export function BottomNav({ collapsed = false }: BottomNavProps) {
   return (
     <motion.nav
       aria-label="Primary navigation"
+      className="liquid-nav"
       animate={
         reduce
           ? { opacity: collapsed ? 0 : 1 }
@@ -149,12 +160,9 @@ export function BottomNav({ collapsed = false }: BottomNavProps) {
         alignItems: "center",
         gap: "0.25rem",
         padding: "0.375rem 0.625rem",
-        background: "var(--chrome-strong)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
         border: "1px solid var(--rule)",
         borderRadius: 999,
-        boxShadow: "var(--shadow-float)",
+        overflow: "hidden",
         pointerEvents: collapsed ? "none" : "auto",
       }}
     >
