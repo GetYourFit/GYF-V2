@@ -416,7 +416,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       {/* Full-width pill Continue — dim until the form is fillable (Ref5) */}
       <motion.button
         type="submit"
-        disabled={busy}
+        disabled={!canSubmit}
         aria-busy={busy}
         whileTap={reduce || !canSubmit ? undefined : { scale: 0.97 }}
         transition={{ type: "spring", stiffness: 500, damping: 28 }}

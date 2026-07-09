@@ -130,7 +130,8 @@ export function PostCard({
     } else if (typeof navigator !== "undefined" && navigator.clipboard) {
       void navigator.clipboard
         .writeText(text)
-        .then(() => onShared?.("Caption copied to your clipboard."));
+        .then(() => onShared?.("Caption copied to your clipboard."))
+        .catch(() => onShared?.("Couldn't copy — try again."));
     }
   }
 
