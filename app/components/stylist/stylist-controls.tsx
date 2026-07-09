@@ -25,6 +25,10 @@ export function StylistControls({
   const reduce = useReducedMotion();
   const [goal, setGoal] = useState(value.goal);
   const [occasion, setOccasion] = useState(value.occasion);
+  // Enabled whenever there's a change to apply — a NEW goal OR clearing the applied
+  // one back to the default feed. (Was `!goal.trim()`, which left an applied goal
+  // impossible to reset: empty field = disabled button = stuck feed.)
+  const dirty = goal.trim() !== value.goal;
 
   function tapOccasion(v: string) {
     const next = occasion === v ? "" : v;
@@ -138,8 +142,8 @@ export function StylistControls({
         />
         <button
           type="submit"
-          disabled={busy || !goal.trim()}
-          aria-label="Apply goal"
+          disabled={busy || !dirty}
+          aria-label={goal.trim() ? "Apply goal" : "Reset feed"}
           style={{
             position: "absolute",
             right: 0,
@@ -148,12 +152,12 @@ export function StylistControls({
             justifyContent: "center",
             width: "36px",
             height: "36px",
-            background: goal.trim() && !busy ? "var(--text)" : "var(--rule)",
+            background: dirty && !busy ? "var(--text)" : "var(--rule)",
             border: "none",
             borderRadius: "999px",
-            color: goal.trim() && !busy ? "var(--bg)" : "var(--text-faint)",
-            cursor: busy || !goal.trim() ? "not-allowed" : "pointer",
-            opacity: busy || !goal.trim() ? 0.4 : 1,
+            color: dirty && !busy ? "var(--bg)" : "var(--text-faint)",
+            cursor: busy || !dirty ? "not-allowed" : "pointer",
+            opacity: busy || !dirty ? 0.4 : 1,
             transition: "all 0.2s",
           }}
         >
