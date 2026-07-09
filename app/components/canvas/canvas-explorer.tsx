@@ -740,6 +740,20 @@ export function CanvasExplorer() {
     [openDetail],
   );
 
+  // Keyboard equivalent of the click/double-click arbitration (WCAG 2.1.1): browsers
+  // never synthesize dblclick from two keyboard activations, so without this a keyboard
+  // user could never open a tile's detail sheet (buy/save). First Enter/Space reclusters
+  // (after the arbitration delay); a second within the window opens the detail sheet.
+  const onTileKeyDown = useCallback(
+    (e: React.KeyboardEvent, item: SearchResult) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      if (clickTimerRef.current) onTileDoubleClick(item);
+      else onTileClick(item);
+    },
+    [onTileClick, onTileDoubleClick],
+  );
+
   return (
     <div
       role="region"
@@ -796,6 +810,7 @@ export function CanvasExplorer() {
             }}
             onClick={() => onTileClick(t.item)}
             onDoubleClick={() => onTileDoubleClick(t.item)}
+            onKeyDown={(e) => onTileKeyDown(e, t.item)}
             style={{
               position: "absolute",
               left: t.x,

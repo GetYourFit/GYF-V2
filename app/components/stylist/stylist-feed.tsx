@@ -622,7 +622,10 @@ function UndoStrip({ index, delta, onUndo }: { index: number; delta: string; onU
 function SkeletonGrid() {
   return (
     <div
-      aria-hidden
+      // aria-busy (not aria-hidden): keep the region in the a11y tree so the
+      // loading state is exposed. aria-hidden previously nulled the label entirely.
+      role="status"
+      aria-busy="true"
       aria-label="Loading outfits"
       style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
     >
