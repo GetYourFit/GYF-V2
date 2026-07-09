@@ -112,10 +112,10 @@ interface BottomNavProps {
    *  scrolling/panning) — it reappears once this flips back to false. Every
    *  other page renders the nav plain (defaults to always-visible). */
   collapsed?: boolean;
-  /** Swaps the pill from its resting Liquid Glass material to a solid,
-   *  near-opaque chrome while the host page is actively scrolling — legible
-   *  over fast-moving content — then eases back to glass once scrolling
-   *  settles. See .liquid-nav[data-solid] in globals.css for the transition. */
+  /** When true, the pill sits in its resting solid, near-opaque chrome;
+   *  when false (the host page is actively scrolling), it eases into
+   *  translucent Liquid Glass. See .liquid-nav[data-solid] in globals.css
+   *  for the transition. */
   solid?: boolean;
 }
 

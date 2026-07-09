@@ -271,11 +271,11 @@
       -webkit-backdrop-filter 0.4s var(--lux);
   }
 
-  /* Solid state — while the host page is actively scrolling (see
-     BottomNav's `solid` prop), the pill trades translucent Liquid Glass for
-     a near-opaque chrome so it stays legible over fast-moving content, then
-     eases back to glass once scrolling settles. Same box-shadow/border in
-     both states so only the material itself crossfades. */
+  /* Solid state — the pill's resting appearance once scrolling settles (see
+     BottomNav's `solid` prop): near-opaque chrome instead of translucent
+     Liquid Glass, which is reserved for the moment content is actively in
+     motion underneath it. Same box-shadow/border in both states so only the
+     material itself crossfades. */
   .liquid-nav[data-solid="true"] {
     background: var(--chrome-strong);
     backdrop-filter: blur(12px) saturate(120%);

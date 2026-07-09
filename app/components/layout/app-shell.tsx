@@ -8,7 +8,7 @@ import { TopMenu } from "@/components/layout/top-menu";
 import { APP_SCROLL_ID } from "@/lib/scroll-container";
 
 // How long the scroll container must sit still before the nav pill eases
-// back from its solid, actively-scrolling material to resting Liquid Glass.
+// from Liquid Glass back to its resting solid material.
 const SCROLL_IDLE_MS = 300;
 
 interface AppShellProps {
@@ -22,8 +22,9 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const hideFloatingMenu = pathname === "/explore";
 
-  // Bottom nav material: solid chrome while the page is actively scrolling
-  // (legible over fast-moving content), Liquid Glass once it settles.
+  // Bottom nav material: Liquid Glass while the page is actively scrolling,
+  // solid chrome once it settles (resting state reads as calmer/more legible
+  // than glass over static content; glass reserved for the moment of motion).
   const mainRef = useRef<HTMLElement>(null);
   const [scrolling, setScrolling] = useState(false);
   const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,7 +97,7 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </main>
 
-      <BottomNav solid={scrolling} />
+      <BottomNav solid={!scrolling} />
     </div>
   );
 }
