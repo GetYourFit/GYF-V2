@@ -226,7 +226,12 @@ def _log_impressions(
                     "occasion": occasion,
                     "goals": applied_goals,  # goal-conditioned slate
                     "rank": rank,
-                    "score": outfit.score,  # propensity for IPS
+                    # Deterministic ranking score, NOT a logging propensity: this
+                    # slate comes from a fully deterministic top-k MMR selection, so
+                    # P(shown|context) is 1 for shown items. A real IPS/counterfactual
+                    # gate (doctrine D5) needs randomized logging (epsilon-greedy /
+                    # softmax pre-MMR) before this can be treated as a propensity.
+                    "score": outfit.score,
                     **extra,  # anchored ("complete the look") slates
                 },
             )

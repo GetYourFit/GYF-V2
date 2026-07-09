@@ -556,6 +556,16 @@ def _color_reason(items: tuple[Candidate, ...]) -> str:
 # --- Assembly + diverse ranking --------------------------------------------
 
 
+# Cap per slot BEFORE the cartesian product. Pools arrive affinity/recency-ordered
+# (candidates_by_slot's ORDER BY), so the top of each slot holds the pieces most
+# likely to win; the deep tail can only produce also-ran outfits. Without this the
+# product was |pool|^slots — with _CANDIDATES_PER_SLOT=80 that's up to 80^3 = 512k
+# outfits scored (pairwise CIELAB + 768-d cosine) in pure Python per request, which
+# pegs a core for seconds and blows the request timeout. 14^3 = 2744 keeps quality
+# (best candidates retained) while bounding the work.
+_MAX_POOL_PER_SLOT = 14
+
+
 def _assemble(
     pools: dict[str, list[Candidate]], constraints: Constraints
 ) -> list[tuple[Candidate, ...]]:
@@ -563,11 +573,12 @@ def _assemble(
 
     Tries each blueprint (separates, then full-body) and skips any whose slots are
     not all populated — graceful degradation when a category is missing from the
-    catalog rather than emitting an incomplete look (CLAUDE.md §2).
+    catalog rather than emitting an incomplete look (CLAUDE.md §2). Each slot is
+    trimmed to its top ``_MAX_POOL_PER_SLOT`` first so the product can't explode.
     """
     outfits: list[tuple[Candidate, ...]] = []
     for blueprint in constraints.blueprints:
-        slot_pools = [pools.get(slot, []) for slot in blueprint]
+        slot_pools = [pools.get(slot, [])[:_MAX_POOL_PER_SLOT] for slot in blueprint]
         if any(not pool for pool in slot_pools):
             continue
         outfits.extend(itertools.product(*slot_pools))

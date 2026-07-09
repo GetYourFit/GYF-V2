@@ -183,6 +183,26 @@ def test_compose_returns_complete_three_slot_outfits():
         assert 0.0 <= o.confidence <= 1.0
 
 
+def test_assemble_caps_pool_per_slot_to_bound_the_product():
+    """Regression: without a per-slot cap the cartesian product is |pool|^slots —
+    at 80/slot that's 512k outfits scored per request. Each slot must be trimmed to
+    _MAX_POOL_PER_SLOT before the product."""
+    from app.recsys.compose import _MAX_POOL_PER_SLOT, _assemble
+
+    big = 200
+    pools = {
+        "top": [_item(f"t{i}", "t_shirt", "top") for i in range(big)],
+        "bottom": [_item(f"b{i}", "jeans", "bottom") for i in range(big)],
+        "footwear": [_item(f"f{i}", "sneakers", "footwear") for i in range(big)],
+    }
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    outfits = _assemble(pools, c)
+    # Bounded by the cap^slots, NOT big^slots (=8,000,000).
+    assert len(outfits) <= _MAX_POOL_PER_SLOT**3
+    # And it keeps the TOP of each pool (affinity order preserved).
+    assert all(int(it.item_id[1:]) < _MAX_POOL_PER_SLOT for o in outfits for it in o)
+
+
 def test_results_are_diverse_not_duplicates():
     pools = InMemoryCandidateRepository(_three_slot_catalog()).candidates_by_slot(
         conditioning.CANDIDATE_SLOTS, None, None, 40
