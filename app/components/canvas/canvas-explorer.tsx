@@ -100,6 +100,42 @@ function skeletonItem(id: string): SearchResult {
   return { item_id: id, title: "", score: 0 } as SearchResult;
 }
 
+function buildSpiral(maxRadius: number): Array<[number, number]> {
+  const spiral: Array<[number, number]> = [[0, 0]];
+  for (let r = 1; r < maxRadius; r++) {
+    for (let ix = -r; ix <= r; ix++) spiral.push([ix, -r], [ix, r]);
+    for (let iy = -r + 1; iy <= r - 1; iy++) spiral.push([-r, iy], [r, iy]);
+  }
+  return spiral;
+}
+
+interface LayoutCache {
+  generation: number;
+  occupied: Set<string>;
+  tiles: Tile[];
+  count: number; // items already placed — resume from here
+  spiral: Array<[number, number]>;
+  maxRadius: number;
+  cursor: number; // spiral index near the current packing frontier
+}
+
+function freshCache(generation: number): LayoutCache {
+  return {
+    generation,
+    occupied: new Set(),
+    tiles: [],
+    count: 0,
+    spiral: [[0, 0]],
+    maxRadius: 1,
+    cursor: 0,
+  };
+}
+
+// How far behind the frontier cursor to re-check for gaps left by
+// variable tile sizes — small enough to keep placement O(1) amortized per
+// item instead of rescanning the whole packed interior every time.
+const CURSOR_BACKTRACK = 64;
+
 /**
  * Place tiles on an occupancy grid along an expanding spiral from the
  * center — the organic "cluster" arrangement of Ref2. Tile spans vary per
@@ -107,43 +143,45 @@ function skeletonItem(id: string): SearchResult {
  * array order: appending new items to the end never reshuffles tiles
  * already placed for earlier items, which is what lets loadMore() grow the
  * cluster outward without the existing layout jumping.
+ *
+ * Incremental: `cache` carries forward the occupancy grid and the packing
+ * frontier across calls, so appending a page of new items (infinite scroll)
+ * only lays out the new items instead of re-packing the whole cluster from
+ * the center every time — otherwise each new page got slower the larger the
+ * cluster grew.
  */
-function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[] {
-  const occupied = new Set<string>();
-  const tiles: Tile[] = [];
-
+function growCluster(items: SearchResult[], selectedId: string | null, cache: LayoutCache): Tile[] {
+  const neededRadius = Math.max(46, Math.ceil(Math.sqrt(items.length) * 6));
+  if (neededRadius > cache.maxRadius) {
+    cache.spiral = buildSpiral(neededRadius);
+    cache.maxRadius = neededRadius;
+  }
   const fits = (cx: number, cy: number, cw: number, ch: number) => {
     for (let ix = 0; ix < cw; ix++)
-      for (let iy = 0; iy < ch; iy++) if (occupied.has(`${cx + ix},${cy + iy}`)) return false;
+      for (let iy = 0; iy < ch; iy++) if (cache.occupied.has(`${cx + ix},${cy + iy}`)) return false;
     return true;
   };
   const claim = (cx: number, cy: number, cw: number, ch: number) => {
     for (let ix = 0; ix < cw; ix++)
-      for (let iy = 0; iy < ch; iy++) occupied.add(`${cx + ix},${cy + iy}`);
+      for (let iy = 0; iy < ch; iy++) cache.occupied.add(`${cx + ix},${cy + iy}`);
   };
 
-  // Spiral of candidate anchor cells around the origin. Radius scales with
-  // item count so a growing (infinite-load) cluster always has room.
-  const maxRadius = Math.max(46, Math.ceil(Math.sqrt(items.length) * 6));
-  const spiral: Array<[number, number]> = [[0, 0]];
-  for (let r = 1; r < maxRadius; r++) {
-    for (let ix = -r; ix <= r; ix++) spiral.push([ix, -r], [ix, r]);
-    for (let iy = -r + 1; iy <= r - 1; iy++) spiral.push([-r, iy], [r, iy]);
-  }
-
-  for (const item of items) {
+  for (let idx = cache.count; idx < items.length; idx++) {
+    const item = items[idx];
     const selected = item.item_id === selectedId;
     // Spans in grid cells: selected tile is the big centerpiece.
     const cw = selected ? 6 : 3 + Math.floor(hash01(item.item_id) * 3); // 3–5
     const ch = selected ? 8 : Math.round(cw * (1.15 + hash01(item.item_id, 7) * 0.35)); // portrait-ish
     let placed = false;
-    for (const [sx, sy] of spiral) {
+    const startAt = Math.max(0, cache.cursor - CURSOR_BACKTRACK);
+    for (let si = startAt; si < cache.spiral.length; si++) {
+      const [sx, sy] = cache.spiral[si];
       // Center the span on the candidate cell.
       const cx = sx - Math.floor(cw / 2);
       const cy = sy - Math.floor(ch / 2);
       if (fits(cx, cy, cw, ch)) {
         claim(cx, cy, cw, ch);
-        tiles.push({
+        cache.tiles.push({
           item,
           selected,
           x: cx * CELL,
@@ -151,13 +189,21 @@ function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[]
           w: cw * CELL - GAP,
           h: ch * CELL - GAP,
         });
+        cache.cursor = Math.max(cache.cursor, si);
         placed = true;
         break;
       }
     }
+    cache.count = idx + 1;
     if (!placed) break; // spiral exhausted — enough tiles on screen anyway
   }
-  return tiles;
+  return cache.tiles;
+}
+
+/** One-shot layout for small, static tile sets (a recluster's ~24 similar
+ *  items) where a fresh cache per call is cheap and simplest. */
+function layoutCluster(items: SearchResult[], selectedId: string | null): Tile[] {
+  return growCluster(items, selectedId, freshCache(0));
 }
 
 /** A tile's image, faded in on load rather than popping in the instant the
@@ -243,6 +289,13 @@ export function CanvasExplorer() {
 
   // Single vs. double click arbitration, per the current pointer sequence.
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Whether the gesture that just ended was a drag, not a tap — read by the
+  // click handler. Must live outside `pointer`, because onPointerUp nulls
+  // `pointer.current` *before* the browser's follow-up `click` event fires,
+  // so checking `pointer.current?.moved` there always read `false` and let
+  // clicks fire at the end of every pan (the "inaccurate clicks" bug).
+  const wasDragRef = useRef(false);
 
   // Bottom nav auto-hide: collapse the instant panning starts, bring it
   // back once the canvas has been still for NAV_IDLE_MS.
@@ -425,7 +478,29 @@ export function CanvasExplorer() {
     setBgColor(null);
   }, []);
 
-  const tiles = useMemo(() => layoutCluster(items, selectedId), [items, selectedId]);
+  // Tile placement lives in state, computed in an effect rather than
+  // useMemo: the incremental cache below is mutated in place (occupancy set,
+  // packing cursor), and mutating anything during render is unsafe — render
+  // can run twice (StrictMode) or be discarded under concurrent rendering,
+  // which would double-place or corrupt the cache.
+  const browseCacheRef = useRef<LayoutCache | null>(null);
+  const [tiles, setTiles] = useState<Tile[]>([]);
+  useEffect(() => {
+    // A selection (recluster or centerpiece zoom) is a small, fixed set —
+    // just lay it out fresh. The unselected infinite browse is the one that
+    // grows without bound, so it gets the incremental cache.
+    if (selectedId !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTiles(layoutCluster(items, selectedId));
+      return;
+    }
+    let cache = browseCacheRef.current;
+    if (!cache || cache.generation !== generation) {
+      cache = freshCache(generation);
+      browseCacheRef.current = cache;
+    }
+    setTiles(growCluster(items, selectedId, cache));
+  }, [items, selectedId, generation]);
 
   // Skeleton continuation for the initial load (blank canvas otherwise) and
   // for infinite-scroll fetches (placeholders already sit past the loaded
@@ -620,6 +695,7 @@ export function CanvasExplorer() {
       }
       const p = pointer.current;
       if (!p || p.id !== e.pointerId) return;
+      wasDragRef.current = p.moved;
       pointer.current = null;
       if (p.moved) startMomentum(p.vx, p.vy);
     },
@@ -636,7 +712,7 @@ export function CanvasExplorer() {
     [applyPan, clampPan, notifyActivity, zoomAt],
   );
 
-  const wasDrag = () => pointer.current?.moved ?? false;
+  const wasDrag = () => wasDragRef.current;
 
   const onTileClick = useCallback(
     (item: SearchResult) => {

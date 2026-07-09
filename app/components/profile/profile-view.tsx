@@ -196,11 +196,11 @@ function UserHero({
         // Flat near-black, no gradient — the Cosmos reference (Ref1-4) never
         // decorates a hero panel; negative space and typography carry it.
         background: "var(--bg)",
-        padding: "3rem 1.5rem 1.5rem",
+        padding: "3rem 1.5rem 2rem",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "1.125rem",
+        gap: "1.5rem",
       }}
     >
       {/* Avatar — tap to upload/replace a profile picture; the same photo
@@ -277,37 +277,41 @@ function UserHero({
         }}
       />
 
-      {/* Name */}
-      <p
-        style={{
-          fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-          fontSize: "1.375rem",
-          fontWeight: 700,
-          color: "var(--text)",
-          margin: 0,
-          textAlign: "center",
-        }}
-      >
-        {displayName}
-      </p>
-
-      {/* Member since + email — real account facts, shown only when known */}
-      {(since || summary.email) && (
+      {/* Name + member-since/email — grouped tightly as one identity block,
+          separated from the chips/stats/button below by the hero's larger
+          gap so the page reads as sections, not one packed column. */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
         <p
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "0.6rem",
-            fontWeight: 500,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "var(--text-faint)",
+            fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+            fontSize: "1.75rem",
+            fontStyle: "italic",
+            fontWeight: 600,
+            color: "var(--text)",
             margin: 0,
             textAlign: "center",
           }}
         >
-          {[since ? `Member since ${since}` : null, summary.email].filter(Boolean).join("  ·  ")}
+          {displayName}
         </p>
-      )}
+
+        {(since || summary.email) && (
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.7rem",
+              fontWeight: 500,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--text-faint)",
+              margin: 0,
+              textAlign: "center",
+            }}
+          >
+            {[since ? `Member since ${since}` : null, summary.email].filter(Boolean).join("  ·  ")}
+          </p>
+        )}
+      </div>
 
       {/* Styling identity — only what the user actually set, never "unknown" */}
       {(identityChips.length > 0 || intentChips.length > 0) && (
@@ -461,7 +465,7 @@ function StatCell({ label, value, href }: { label: string; value: number; href?:
       <span
         style={{
           fontFamily: "var(--font-body)",
-          fontSize: "0.55rem",
+          fontSize: "0.7rem",
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
@@ -522,7 +526,7 @@ function Badges({ badges }: { badges: string[] }) {
       <p
         style={{
           fontFamily: "var(--font-body)",
-          fontSize: "0.55rem",
+          fontSize: "0.7rem",
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
@@ -541,7 +545,7 @@ function Badges({ badges }: { badges: string[] }) {
               border: "1px solid var(--border)",
               padding: "0.375rem 0.875rem",
               fontFamily: "var(--font-body)",
-              fontSize: "0.6rem",
+              fontSize: "0.7rem",
               fontWeight: 500,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
@@ -654,7 +658,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
           href="/onboarding"
           style={{
             fontFamily: "var(--font-body)",
-            fontSize: "0.6rem",
+            fontSize: "0.7rem",
             color: "var(--text-faint)",
             textDecoration: "underline",
             textUnderlineOffset: "3px",
@@ -685,7 +689,7 @@ function StyleProfile({ profile }: { profile: Profile | null }) {
             <dt
               style={{
                 fontFamily: "var(--font-body)",
-                fontSize: "0.55rem",
+                fontSize: "0.7rem",
                 fontWeight: 500,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
@@ -725,7 +729,7 @@ function AccountLink() {
       <p
         style={{
           fontFamily: "var(--font-body)",
-          fontSize: "0.55rem",
+          fontSize: "0.7rem",
           fontWeight: 500,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
@@ -822,7 +826,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
           color: "var(--text)",
           cursor: "pointer",
           fontFamily: "var(--font-body)",
-          fontSize: "0.6rem",
+          fontSize: "0.7rem",
           fontWeight: 500,
           letterSpacing: "0.08em",
           textTransform: "uppercase",

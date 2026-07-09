@@ -23,11 +23,12 @@ export default function ProfilePage() {
         </span>
         <h1
           style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "clamp(1.625rem,7vw,2.25rem)",
-            fontWeight: 800,
-            lineHeight: 1.1,
-            letterSpacing: "-0.03em",
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(2.25rem,9vw,3rem)",
+            fontWeight: 600,
+            fontStyle: "italic",
+            lineHeight: 1.05,
+            letterSpacing: "-0.01em",
             color: "var(--text)",
             margin: 0,
           }}
