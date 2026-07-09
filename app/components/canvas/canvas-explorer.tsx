@@ -526,15 +526,24 @@ export function CanvasExplorer() {
   }, [loadingMore, items, selectedId]);
 
   // Content bounds clamp the pan so the cluster can never be lost off-screen.
+  // Plain loop, not Math.min(...tiles.map(...)) — spreading the whole tiles
+  // array as call arguments throws "Maximum call stack size exceeded" once a
+  // long infinite-scroll session grows it past a few tens of thousands of
+  // entries (varies by engine), which crashed the entire Canvas subtree.
   const bounds = useMemo(() => {
     if (tiles.length === 0) return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
     const pad = 120;
-    return {
-      minX: Math.min(...tiles.map((t) => t.x)) - pad,
-      maxX: Math.max(...tiles.map((t) => t.x + t.w)) + pad,
-      minY: Math.min(...tiles.map((t) => t.y)) - pad,
-      maxY: Math.max(...tiles.map((t) => t.y + t.h)) + pad,
-    };
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const t of tiles) {
+      if (t.x < minX) minX = t.x;
+      if (t.x + t.w > maxX) maxX = t.x + t.w;
+      if (t.y < minY) minY = t.y;
+      if (t.y + t.h > maxY) maxY = t.y + t.h;
+    }
+    return { minX: minX - pad, maxX: maxX + pad, minY: minY - pad, maxY: maxY + pad };
   }, [tiles]);
 
   const clampPan = useCallback(() => {
