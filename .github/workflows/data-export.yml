@@ -92,6 +92,23 @@ jobs:
           uv run --extra postgres --extra remote --extra perception \
             python -m pipelines.backfill --limit ${{ steps.gate.outputs.backfill_limit }}
 
+      - name: Backfill the gender facet (text rules + zero-shot over embeddings)
+        # Runs AFTER embedding so the zero-shot fallback has vectors for items the
+        # merchant-text rules can't gender. Without this, gender is set only at ingest
+        # from title words (misses many), most items stay NULL-gender, and the soft
+        # gender filter (NULL passes for everyone) surfaces a mixed-gender feed. This
+        # is the real-data fix for that — idempotent, resumable, safe to re-run.
+        if: steps.gate.outputs.configured == 'true'
+        working-directory: ml
+        env:
+          GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
+          GYF_ENCODER_REMOTE_URL: ${{ secrets.GYF_ENCODER_REMOTE_URL }}
+          GYF_HF_TOKEN: ${{ secrets.GYF_HF_TOKEN }}
+          HF_HOME: ${{ github.workspace }}/ml/.hf-cache
+        run: |
+          uv run --extra postgres --extra remote --extra perception \
+            python -m pipelines.backfill_gender
+
       - name: Sync Cuelinks conversions into the spine
         if: steps.gate.outputs.configured == 'true'
         env:
