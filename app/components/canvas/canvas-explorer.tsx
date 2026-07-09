@@ -232,6 +232,11 @@ export function CanvasExplorer() {
   // Infinite browse (default view only — a recluster around a selection is
   // a fixed similar-items set, not paginated).
   const genderRef = useRef<string | undefined>(undefined);
+  // Bumped by each cluster-changing load (loadInitial / selectItem). An in-flight
+  // fetch captures the token at start; if a newer load bumps it before the fetch
+  // resolves, the stale result is dropped — so clicking tile B while A's similar()
+  // is still loading can't re-cluster the canvas around A.
+  const clusterToken = useRef(0);
   const offsetRef = useRef(0);
   const hasMoreRef = useRef(true);
   const loadingMoreRef = useRef(false);
@@ -297,6 +302,7 @@ export function CanvasExplorer() {
   }, []);
 
   const loadInitial = useCallback(async () => {
+    const token = ++clusterToken.current;
     setLoading(true);
     setError(null);
     setBgColor(null);
@@ -317,6 +323,7 @@ export function CanvasExplorer() {
         slots: BROWSE_SLOTS.join(","),
         ...(gender ? { gender } : {}),
       });
+      if (token !== clusterToken.current) return; // a newer load superseded this one
       setItems(results);
       setSelectedId(null);
       setGeneration((g) => g + 1);
@@ -325,9 +332,11 @@ export function CanvasExplorer() {
       pan.current = { x: 0, y: 0 };
       scaleRef.current = 1;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load the canvas.");
+      if (token === clusterToken.current) {
+        setError(e instanceof Error ? e.message : "Could not load the canvas.");
+      }
     } finally {
-      setLoading(false);
+      if (token === clusterToken.current) setLoading(false);
     }
   }, []);
 
@@ -345,6 +354,7 @@ export function CanvasExplorer() {
   const loadMore = useCallback(async () => {
     if (selectedId !== null) return;
     if (loadingMoreRef.current || !hasMoreRef.current) return;
+    const token = clusterToken.current; // append only if still the same cluster
     loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
@@ -355,6 +365,7 @@ export function CanvasExplorer() {
         slots: BROWSE_SLOTS.join(","),
         ...(genderRef.current ? { gender: genderRef.current } : {}),
       });
+      if (token !== clusterToken.current) return; // a recluster landed mid-fetch
       offsetRef.current += PAGE_SIZE;
       hasMoreRef.current = results.length === PAGE_SIZE;
       if (results.length > 0) {
@@ -374,6 +385,7 @@ export function CanvasExplorer() {
 
   // Single click → cluster similar items around it, tint the background.
   const selectItem = useCallback(async (item: SearchResult) => {
+    const token = ++clusterToken.current;
     setSelectedId(item.item_id);
     setBgColor(colorNameToCss(item.color));
     setLoading(true);
@@ -387,12 +399,15 @@ export function CanvasExplorer() {
       // SigLIP transformer on every click (seconds of CPU/GPU per recluster, and
       // the query cache never hit since every title differs).
       const similar = await browserApi().similar(item.item_id, { k: 24 });
+      if (token !== clusterToken.current) return; // superseded by a newer selection
       setItems([item, ...similar.filter((s) => s.item_id !== item.item_id)]);
       setGeneration((g) => g + 1);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load similar items.");
+      if (token === clusterToken.current) {
+        setError(e instanceof Error ? e.message : "Could not load similar items.");
+      }
     } finally {
-      setLoading(false);
+      if (token === clusterToken.current) setLoading(false);
     }
   }, []);
 
