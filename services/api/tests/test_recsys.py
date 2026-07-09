@@ -52,6 +52,9 @@ class _CollectingSink:
     def publish(self, event) -> None:
         self.events.append(event)
 
+    def publish_many(self, events) -> None:
+        self.events.extend(events)
+
 
 DEV_USER = "00000000-0000-0000-0000-000000000001"
 

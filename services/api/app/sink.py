@@ -19,6 +19,13 @@ from .events import InteractionEvent
 class EventSink(Protocol):
     def publish(self, event: InteractionEvent) -> None: ...
 
+    def publish_many(self, events: list[InteractionEvent]) -> None:
+        """Persist a batch in one shot. A recommendation emits an impression per
+        served item (~40/request); publishing them one-by-one is ~40 DB round
+        trips. Backends that can batch (Postgres) override this to a single
+        connection/round trip; the rest fall back to per-event publish."""
+        ...
+
 
 class LocalFileSink:
     """Append-only JSONL sink for local/dev and tests."""
@@ -30,6 +37,12 @@ class LocalFileSink:
     def publish(self, event: InteractionEvent) -> None:
         with self._path.open("a", encoding="utf-8") as fh:
             fh.write(event.model_dump_json() + "\n")
+
+    def publish_many(self, events: list[InteractionEvent]) -> None:
+        if not events:
+            return
+        with self._path.open("a", encoding="utf-8") as fh:
+            fh.writelines(e.model_dump_json() + "\n" for e in events)
 
 
 class KafkaSink:
@@ -46,6 +59,10 @@ class KafkaSink:
 
     def publish(self, event: InteractionEvent) -> None:
         self._producer.send(self._topic, event.model_dump_json())
+
+    def publish_many(self, events: list[InteractionEvent]) -> None:
+        for event in events:  # producer batches internally; per-send is already async
+            self.publish(event)
 
 
 # SQL kept as module constants so tests can assert against them without a live DB.
@@ -73,22 +90,34 @@ class PostgresSink:
         self._pool = pool
 
     def publish(self, event: InteractionEvent) -> None:
+        self.publish_many([event])
+
+    @staticmethod
+    def _row(event: InteractionEvent) -> tuple:
         import json
 
+        return (
+            event.user_id,
+            event.target_type.value,
+            event.target_id,
+            event.action.value,
+            event.weight,
+            json.dumps(event.context),
+            event.ts,
+        )
+
+    def publish_many(self, events: list[InteractionEvent]) -> None:
+        if not events:
+            return
+        # One connection checkout for the whole batch, and one round trip per
+        # statement via executemany (psycopg3 pipelines it) — a recommendation's
+        # ~40 impressions were ~40 separate checkouts + 80 statements before.
+        distinct_users = [(uid,) for uid in {e.user_id for e in events}]
+        rows = [self._row(e) for e in events]
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
-            conn.execute(_UPSERT_USER, (event.user_id,))
-            conn.execute(
-                _INSERT_INTERACTION,
-                (
-                    event.user_id,
-                    event.target_type.value,
-                    event.target_id,
-                    event.action.value,
-                    event.weight,
-                    json.dumps(event.context),
-                    event.ts,
-                ),
-            )
+            with conn.cursor() as cur:  # type: ignore[attr-defined]
+                cur.executemany(_UPSERT_USER, distinct_users)
+                cur.executemany(_INSERT_INTERACTION, rows)
 
 
 def get_sink(pool: object | None = None) -> EventSink:

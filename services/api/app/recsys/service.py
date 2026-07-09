@@ -215,24 +215,26 @@ def _log_impressions(
     """
     try:
         extra = {"anchor_item_id": anchor_item_id} if anchor_item_id else {}
-        for rank, outfit in enumerate(scored):
-            for item in outfit.items:
-                sink.publish(
-                    InteractionEvent(
-                        user_id=user_id,
-                        target_type=InteractionTarget.ITEM,
-                        target_id=item.item_id,
-                        action=InteractionAction.IMPRESSION,
-                        context={
-                            "recommendation_id": recommendation_id,
-                            "occasion": occasion,
-                            "goals": applied_goals,  # goal-conditioned slate
-                            "rank": rank,
-                            "score": outfit.score,  # propensity for IPS
-                            **extra,  # anchored ("complete the look") slates
-                        },
-                    )
-                )
+        events = [
+            InteractionEvent(
+                user_id=user_id,
+                target_type=InteractionTarget.ITEM,
+                target_id=item.item_id,
+                action=InteractionAction.IMPRESSION,
+                context={
+                    "recommendation_id": recommendation_id,
+                    "occasion": occasion,
+                    "goals": applied_goals,  # goal-conditioned slate
+                    "rank": rank,
+                    "score": outfit.score,  # propensity for IPS
+                    **extra,  # anchored ("complete the look") slates
+                },
+            )
+            for rank, outfit in enumerate(scored)
+            for item in outfit.items
+        ]
+        # One batched write, not ~40 per-item round trips.
+        sink.publish_many(events)
     except Exception:  # noqa: BLE001 — telemetry must not break recommendations
         logger.warning("impression logging failed for recommendation %s", recommendation_id)
 
