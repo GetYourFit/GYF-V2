@@ -80,7 +80,11 @@ def catalog_facets(
 @router.get("/items/browse", dependencies=[Depends(rate_limit("browse", "rate_limit_search"))])
 def browse_items(
     response: Response,
-    k: int = Query(24, ge=1, le=50),
+    # le=100, not 50: the Canvas Explorer's initial load requests k=96 (one
+    # big interleaved page across 4 slots) — was capped at 50, so that
+    # request 422'd and the grid never rendered a single tile. Same class of
+    # bug already fixed on /items/search below; mirrors its headroom.
+    k: int = Query(24, ge=1, le=100),
     offset: int = Query(0, ge=0, le=10_000),
     region: str | None = Query(None, max_length=64),
     gender: str | None = Query(
