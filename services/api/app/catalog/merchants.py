@@ -76,4 +76,47 @@ MERCHANTS: list[Merchant] = [
     Merchant(brand="Veirdo", domain="veirdo.in"),
     # Sneakers (footwear depth — verified live 2026-07-06).
     Merchant(brand="Gully Labs", domain="gullylabs.com"),
+    # ── US region (region_hints=["US"], USD) — first non-IN catalog so US users
+    # get real recs instead of an empty shelf. Verified live (HTTP 200 /products.json
+    # in USD, real stock) 2026-07-11. Men/women/unisex + footwear for full outfits.
+    Merchant(
+        brand="True Classic",
+        domain="trueclassictees.com",
+        region_hints=["US"],
+        currency="USD",
+        audience="men",
+    ),
+    Merchant(
+        brand="Cuts",
+        domain="cutsclothing.com",
+        region_hints=["US"],
+        currency="USD",
+        audience="men",
+    ),
+    Merchant(
+        brand="Girlfriend Collective",
+        domain="girlfriend.com",
+        region_hints=["US"],
+        currency="USD",
+        audience="women",
+    ),
+    Merchant(
+        brand="Marine Layer",
+        domain="marinelayer.com",
+        region_hints=["US"],
+        currency="USD",
+    ),
+    Merchant(
+        brand="Colorful Standard",
+        domain="colorfulstandard.com",
+        region_hints=["US"],
+        currency="USD",
+    ),
+    Merchant(
+        brand="Allbirds",
+        domain="allbirds.com",
+        region_hints=["US"],
+        currency="USD",
+        default_category="sneakers",
+    ),
 ]
