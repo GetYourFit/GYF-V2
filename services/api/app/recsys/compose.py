@@ -341,11 +341,18 @@ def _confidence(
     not report high confidence.
     """
     perceived = sum(1 for it in items if it.lch is not None) / len(items)
+    # A missing colour read DISCOUNTS confidence, it must not annihilate it: an
+    # outfit still coordinates on formality + occasion with no perceived-colour
+    # signal. Multiplying by a raw `perceived` of 0 made every all-missing-colour
+    # look report exactly 0.000 — dishonest (reads as "no confidence" when the
+    # look is sound), and on the current catalog many items still lack a colour
+    # read, so this zeroed out most recommendations. Floor it like `personal`.
+    colour_factor = 0.5 + 0.5 * perceived
     formality_certainty = sum(1.0 if it.formality_certain else 0.5 for it in items) / len(items)
     # Personal signal lifts a floor of 0.6 (occasion-only) toward 1.0.
     personal_signal = max(constraints.personalization_strength, taste_strength)
     personal = 0.6 + 0.4 * personal_signal
-    raw = score * perceived * formality_certainty * personal
+    raw = score * colour_factor * formality_certainty * personal
     return round(max(0.0, min(1.0, raw)), 3)
 
 
@@ -586,6 +593,16 @@ def _assemble(
 _SHARED_ANCHOR_CEILING = 0.1
 
 
+def _core_key(items: tuple[Candidate, ...]) -> tuple[str, ...]:
+    """Identity of an outfit's major slots (footwear ignored) for anchor dedup.
+
+    Two looks with the same top and bottom read as the same outfit no matter the
+    shoe, so they collapse to one core. Falls back to all items when a blueprint
+    has no non-footwear slot (defensive; every real blueprint has a hero piece)."""
+    core = tuple(it.item_id for it in items if it.slot != "footwear")
+    return core or tuple(it.item_id for it in items)
+
+
 def _diversity(a: tuple[Candidate, ...], b: tuple[Candidate, ...]) -> float:
     """Dissimilarity of two outfits in [0, 1] — shared items make them alike.
 
@@ -629,9 +646,20 @@ def compose(
         for items in candidates
     ]
     scored.sort(key=lambda t: t[1], reverse=True)
-    # Cap the working set so MMR stays cheap on a large catalog; the best looks are
-    # already at the front after the sort.
-    pool = scored[: max(k * 8, 24)]
+    # Anchor diversity: keep only the best-scoring outfit per distinct core
+    # (top+bottom, footwear ignored). A single dominant top otherwise fills the
+    # whole working set, so every look reuses it and MMR — which can only pick
+    # from what's in the pool — has no varied anchor to choose (the "all 5 looks
+    # share one shirt/trouser" prod bug). Dict preserves score order.
+    best_per_core: dict[tuple[str, ...], tuple] = {}
+    for entry in scored:
+        core = _core_key(entry[0])
+        if core not in best_per_core:
+            best_per_core[core] = entry
+    # Cap the working set so MMR stays cheap; the best distinct looks are at the
+    # front. Fall back to the raw top-N if dedup left fewer than k (honest scarcity).
+    diverse = list(best_per_core.values())
+    pool = (diverse if len(diverse) >= k else scored)[: max(k * 8, 24)]
 
     selected = _mmr_select(pool, k)
     return [

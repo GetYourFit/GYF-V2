@@ -283,6 +283,51 @@ def test_uncertain_formality_lowers_confidence():
     assert _confidence(shaky, s_shaky, c, 0.0) < _confidence(base, s_base, c, 0.0)
 
 
+def test_missing_colour_discounts_confidence_but_never_zeroes_it():
+    """Prod bug: catalog items without a perceived-colour read made `_confidence`
+    multiply by 0, so every such outfit reported exactly 0.000 — dishonest, since
+    the look still coordinates on formality/occasion. Missing colour must discount,
+    not annihilate: below a full-colour look, but strictly positive on a real score."""
+    from app.recsys.compose import _confidence
+
+    no_colour = (
+        _item("t1", "t_shirt", "top"),  # lch=None
+        _item("b1", "jeans", "bottom"),
+        _item("f1", "sneakers", "footwear"),
+    )
+    full_colour = tuple(
+        _item(it.item_id, it.category, it.slot, lch=(50, 8, 0)) for it in no_colour
+    )
+    c = conditioning.resolve(Profile(), "casual", None)
+    conf_none = _confidence(no_colour, 0.8, c, 0.0)
+    conf_full = _confidence(full_colour, 0.8, c, 0.0)
+    assert conf_none > 0.0  # the real regression: was exactly 0.000
+    assert conf_none < conf_full  # still honestly discounted
+
+
+def test_dominant_top_still_yields_distinct_looks():
+    """Prod bug: when one top scores far above the rest it filled the whole MMR
+    working set, so all k looks reused that top+bottom (only the shoe changed).
+    The best-per-core pool must guarantee distinct top+bottom cores when the
+    catalog has them, even if one top dominates the raw score order."""
+    catalog = [
+        _item("hot", "t_shirt", "top", lch=(50, 40, 30), affinity=0.99),  # dominant
+        _item("t2", "shirt", "top", lch=(60, 8, 0), affinity=0.2),
+        _item("t3", "polo", "top", lch=(55, 20, 40), affinity=0.2),
+        _item("b1", "jeans", "bottom", lch=(40, 10, 250)),
+        _item("f1", "sneakers", "footwear", lch=(80, 5, 0)),
+        _item("f2", "boots", "footwear", lch=(30, 6, 0)),
+        _item("f3", "loafers", "footwear", lch=(35, 8, 40)),
+    ]
+    pools = InMemoryCandidateRepository(catalog).candidates_by_slot(
+        conditioning.CANDIDATE_SLOTS, None, None, 40
+    )
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    outfits = compose(pools, c, k=3)
+    tops = {next(it.item_id for it in o.items if it.slot == "top") for o in outfits}
+    assert len(tops) == len(outfits)  # every look has a different top, not just a different shoe
+
+
 # --- Service + API end to end ----------------------------------------------
 
 
