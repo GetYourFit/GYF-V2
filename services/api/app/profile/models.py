@@ -210,10 +210,20 @@ def profile_from_manual(payload: ProfileInput) -> Profile:
     non-empty value), leaving skipped fields absent from ``field_confidence`` so
     the recommender can tell "stated unknown" from "not asked".
     """
+    # Out-of-vocabulary input canonicalizes to the "unknown" sentinel (not None).
+    # Recording MANUAL_CONFIDENCE for it produced the prod contradiction: a stored
+    # skin_tone of "unknown" at confidence 1.0. Treat a coerced-unknown as "not
+    # stated" — no confidence, and store None so downstream can't read it as a
+    # confident value. Genuine None (field skipped) is handled the same way.
+    canonical: dict[str, str | None] = {}
     confidence: dict[str, float] = {}
     for field_name in ("skin_tone", "undertone", "body_type", "gender", "occasion"):
-        if getattr(payload, field_name) is not None:
-            confidence[field_name] = MANUAL_CONFIDENCE
+        value = getattr(payload, field_name)
+        if value in (None, "unknown"):
+            canonical[field_name] = None
+            continue
+        canonical[field_name] = value
+        confidence[field_name] = MANUAL_CONFIDENCE
     if payload.measurements:
         confidence["measurements"] = MANUAL_CONFIDENCE
     if payload.style_intent:
@@ -222,10 +232,10 @@ def profile_from_manual(payload: ProfileInput) -> Profile:
         confidence["budget_range"] = MANUAL_CONFIDENCE
 
     return Profile(
-        skin_tone=payload.skin_tone,
-        undertone=payload.undertone,
-        body_type=payload.body_type,
-        gender=payload.gender,
+        skin_tone=canonical["skin_tone"],
+        undertone=canonical["undertone"],
+        body_type=canonical["body_type"],
+        gender=canonical["gender"],
         measurements=payload.measurements,
         style_intent=payload.style_intent,
         budget_range=payload.budget_range,

@@ -39,6 +39,18 @@ def test_manual_confidence_only_for_supplied_fields():
     assert profile.source == "manual"
 
 
+def test_coerced_unknown_is_stored_as_none_without_confidence():
+    """Prod bug #7: an out-of-vocab skin_tone canonicalized to "unknown" was stored
+    at confidence 1.0 — a value the system claims to be sure of yet doesn't know.
+    A coerced-unknown must read as "not stated": None, and absent from confidence."""
+    payload = ProfileInput(skin_tone="medium", gender="men")  # "medium" is not an MST tone
+    profile = profile_from_manual(payload)
+    assert profile.skin_tone is None
+    assert "skin_tone" not in profile.field_confidence
+    assert profile.gender == "men"
+    assert profile.field_confidence["gender"] == 1.0
+
+
 def test_style_intent_envelope_round_trips_occasion():
     intents, occasion, gender = _style_intent_out(
         {"intents": ["classic"], "occasion": "formal", "gender": "women"}
