@@ -84,3 +84,6 @@ packages/types/openapi.json
 # GAN design/build harness scratch (specs, eval reports, dev logs)
 gan-harness/
 .data/
+
+# runtime event sink (local/dev fallback; prod uses postgres)
+services/api/data/events.jsonl
