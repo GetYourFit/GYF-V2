@@ -41,7 +41,12 @@ function ExploreCardImpl({ item, index, saved, priority, onSave, onSelect }: Exp
 
   return (
     <motion.article
-      layout
+      // No `layout` prop: Framer Motion's FLIP position-tracking assumes
+      // normal flex/grid reflow to diff before/after rects. This grid is
+      // CSS multi-column (masonry sized to each image's own resolution —
+      // see explore-grid.tsx), where column-fill reflow doesn't match that
+      // model at all; `layout` here was measuring against the wrong box and
+      // producing overlapping/misplaced tiles instead of a clean masonry.
       initial={reduce ? false : { opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{

@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { SearchX, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -502,21 +502,27 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
 
   return (
     <>
+      {/* No AnimatePresence/popLayout here: this grid is CSS multi-column
+        masonry (see GRID_STYLE below), and popLayout's exit animation pulls
+        the leaving element out of flow with `position: absolute` sized to
+        its pre-exit rect — a trick built for flex/grid reflow that has no
+        correct anchor in column-fill layout, so a filter change or reset
+        rendered as overlapping/stuck tiles instead of the grid re-forming
+        cleanly. Cards still animate in (ExploreCard's initial/animate);
+        they just unmount immediately on removal instead of fading out. */}
       <div style={GRID_STYLE}>
-        <AnimatePresence mode="popLayout">
-          {items.map((item, i) => (
-            <ExploreCard
-              key={item.item_id}
-              item={item}
-              index={i}
-              saved={saved.has(item.item_id)}
-              // First screenful loads eagerly at high priority for a fast LCP.
-              priority={i < 8}
-              onSave={toggleSave}
-              onSelect={onSelectItem}
-            />
-          ))}
-        </AnimatePresence>
+        {items.map((item, i) => (
+          <ExploreCard
+            key={item.item_id}
+            item={item}
+            index={i}
+            saved={saved.has(item.item_id)}
+            // First screenful loads eagerly at high priority for a fast LCP.
+            priority={i < 8}
+            onSave={toggleSave}
+            onSelect={onSelectItem}
+          />
+        ))}
       </div>
 
       {/* Append skeleton */}
