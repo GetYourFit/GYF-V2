@@ -160,9 +160,24 @@ LIMIT %s
 # enters the pool. With a taste signal, the pool IS the user's nearest slice
 # (exact scan — the catalog is small enough that no ANN index/beam is involved,
 # so no ef_search/starvation concerns); items without an embedding sort last.
-# Cold start falls back to recency.
+# Cold start falls back to perception-complete items, then recency.
+#
+# Cold start MUST lead with perception-complete items (a stored LCh colour), not
+# raw recency: the catalog's newest slice is exactly the items the perception
+# backfill hasn't reached yet (no colour, no embedding), so `created_at DESC`
+# alone hands the composer a colourless pool and every skin-tone/undertone signal
+# collapses to its neutral prior — recs look identical for warm-deep and cool-fair
+# users (verified on prod: 21k coloured tops exist but sit below the newest,
+# un-backfilled ones). Leading with perception-complete items surfaces the
+# personalisable ones the composer needs. Colour and embedding are written
+# together by the backfill, so "has embedding" ≡ "has colour"; we test the
+# already-joined embeddings row (`e.item_id IS NOT NULL`) rather than extracting
+# the colour JSONB per row — cheaper sort key, same result, and no `{order}`
+# brace-escaping to worry about. The taste path gets this for free: its
+# `affinity DESC NULLS LAST` already floats embedded items above the NULL tail.
+_HAS_PERCEPTION = "(e.item_id IS NOT NULL) DESC"
 _ORDER_BY_TASTE = "affinity DESC NULLS LAST, i.created_at DESC"
-_ORDER_BY_RECENCY = "i.created_at DESC"
+_ORDER_BY_RECENCY = _HAS_PERCEPTION + ", i.created_at DESC"
 
 # Wardrobe anchors: the user owns these items, so no region/price predicates.
 _BY_IDS = _SELECT + "\nWHERE i.id = ANY(%s)\n"

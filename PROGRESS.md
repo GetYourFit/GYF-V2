@@ -1514,3 +1514,48 @@ status disagreement before sign-off. No extra dependency or service was added.
 cont. 5 dead; both are already deleted. Do not delete `gyf_app` or other parallel code by naming
 convention alone. The codebase is materially safer and cleaner, but not honestly “fully optimized”:
 the free-tier GPU quota, catalog perception backfill, and broader end-to-end UX audit remain open.
+
+### 2026-07-10 (cont. 7) — Feedback v5 → front #1: "recs actually feel personal" (ROOT-CAUSED + FIXED)
+
+User feedback (`docs/feedbacks/gyf-feedback-v5.md`): recs don't respect skin tone / body
+type / undertone; "generic, not what I'd feel comfortable in". Chose this front first.
+
+**Empirically root-caused against PROD DB (not theory):**
+- Skin-tone/undertone/body-type ARE wired into scoring (`conditioning.resolve` →
+  `compose.score_outfit`: `_undertone_fit` 0.15, `_skin_tone_fit` 0.10). Profiles ARE
+  populated (17–23 of 25 prod profiles carry the fields). So the code was never the gap.
+- The whole colour machinery keys off `attributes.perception.color.lch`. Prod: 41,409 / 56,816
+  items have `lch` (= exactly the items with an embedding — colour + embedding are co-written).
+- **The bug:** cold-start retrieval (`candidates_by_slot`, no taste vector = every new user)
+  ordered purely by `created_at DESC`. The catalog's NEWEST slice is exactly the items the
+  perception backfill hasn't reached — no colour, no embedding. So cold start handed the
+  composer a 100%-colourless pool; every skin/undertone signal collapsed to its neutral prior.
+  Proven: for warm-deep vs cool-fair profiles the composer returned **identical, colourless**
+  outfits (`[['None','None','None'], ...]`). 21k coloured tops exist but sat below the newest,
+  un-backfilled ones (newest 4,000 tops had ZERO colour).
+
+**Fix (surgical, `services/api/app/recsys/candidates.py`):** cold-start ORDER BY now leads with
+perception-complete items — `(e.item_id IS NOT NULL) DESC, i.created_at DESC` — using the
+already-joined embeddings row as the sort key (has-embedding ≡ has-colour; no per-row JSONB
+extraction). Taste path unchanged (its `affinity DESC NULLS LAST` already floated embedded items
+first). One test updated to assert the new ordering.
+
+**Verified on PROD:** warm-deep now → black/white/**orange**/**red**; cool-fair → black/white/
+white/**maroon** — genuinely undertone-differentiated where it was identical before. Pools are now
+80/80 coloured for top/bottom/footwear. **Bonus:** the change is FASTER, not slower —
+EXPLAIN ANALYZE (top slot): baseline `created_at DESC` = 3,937ms single-thread seq scan; fix =
+742ms (planner parallelised via index-only scan on `item_embeddings_pkey`). API suite 318 passed.
+
+**Residual / next (logged honestly, NOT bundled):**
+1. **Perception backfill lags ingest badly** — 15,407 newest items have no colour/embedding, so
+   they can't be personalised or surfaced by taste. Colour extraction is pure CPU/free
+   (`ml/perception/color.dominant_color`, no GPU); needs a colour-only backfill pass over the
+   embedding-less items (existing `run_backfill` only touches items lacking embeddings AND needs
+   the encoder). This is the catalog-freshness/breadth front.
+2. **`region="US"` returns ZERO candidates** — entire prod catalog is tagged `['IN']` (56,816/56,816).
+   US users get no recs. Latent until US catalog lands (breadth front).
+3. **Retrieval seq-scans `items`** (~700ms/slot server-side) — the region predicate
+   `region_tags='{}' OR 'IN'=ANY(region_tags)` is un-indexable as written. Pre-existing; the
+   "slow loading" complaint. Fix = a region-aware partial/GIN-backed index or denormalised region col.
+4. Differentiation is real but still neutral-heavy (catalog skews black/white); undertone-fit
+   *ordering* in retrieval (not just re-rank) would sharpen it further. Refinement, not a bug.

@@ -1200,5 +1200,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present():
     pool.calls.clear()
     repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=None)
     sql, _ = pool.calls[-1]
-    assert "ORDER BY i.created_at DESC" in sql
+    # Cold start leads with perception-complete items (has-embedding ≡ has-colour)
+    # so the composer never gets a colourless, un-personalisable pool; recency
+    # breaks ties within each group.
+    assert "ORDER BY (e.item_id IS NOT NULL) DESC, i.created_at DESC" in sql
     assert "affinity DESC" not in sql
