@@ -326,6 +326,9 @@ def test_dominant_top_still_yields_distinct_looks():
     outfits = compose(pools, c, k=3)
     tops = {next(it.item_id for it in o.items if it.slot == "top") for o in outfits}
     assert len(tops) == len(outfits)  # every look has a different top, not just a different shoe
+    # …and footwear is spread too, not the same shoe pinned to every look.
+    shoes = {next(it.item_id for it in o.items if it.slot == "footwear") for o in outfits}
+    assert len(shoes) == len(outfits)
 
 
 # --- Service + API end to end ----------------------------------------------

@@ -662,10 +662,50 @@ def compose(
     pool = (diverse if len(diverse) >= k else scored)[: max(k * 8, 24)]
 
     selected = _mmr_select(pool, k)
+    selected = _spread_footwear(
+        selected, pools.get("footwear", []), constraints, taste_strength, goal_effects, wardrobe
+    )
     return [
         _finalize(items, score, color, formality, constraints, taste_strength, wardrobe)
         for items, score, color, formality in selected
     ]
+
+
+def _spread_footwear(
+    selected: list[tuple[tuple[Candidate, ...], float, float, float]],
+    footwear_pool: list[Candidate],
+    constraints: Constraints,
+    taste_strength: float,
+    goal_effects: object,
+    wardrobe: WardrobeContext | None,
+) -> list[tuple[tuple[Candidate, ...], float, float, float]]:
+    """Give each look a distinct shoe when the pool allows.
+
+    best_per_core keys on top+bottom (footwear ignored), so every selected look
+    inherits the same top-scoring shoe. Reassign the next relevance-ranked unused
+    shoe to any look that repeats one, re-scoring the swapped outfit. Footwear is
+    the weakest coordination signal (tech-stack §4.5), so trading a little shoe
+    relevance for visible variety across looks is the right call."""
+    if not footwear_pool:
+        return selected
+    used: set[str] = set()
+    out: list[tuple[tuple[Candidate, ...], float, float, float]] = []
+    for items, score, color, formality in selected:
+        idx = next((i for i, it in enumerate(items) if it.slot == "footwear"), None)
+        if idx is None or items[idx].item_id not in used:
+            if idx is not None:
+                used.add(items[idx].item_id)
+            out.append((items, score, color, formality))
+            continue
+        alt = next((f for f in footwear_pool if f.item_id not in used), None)
+        if alt is None:  # pool exhausted of fresh shoes — keep the repeat, honestly
+            out.append((items, score, color, formality))
+            continue
+        new_items = items[:idx] + (alt,) + items[idx + 1 :]
+        s, cl, fm = score_outfit(new_items, constraints, taste_strength, goal_effects, wardrobe)
+        used.add(alt.item_id)
+        out.append((new_items, s, cl, fm))
+    return out
 
 
 def _mmr_select(
