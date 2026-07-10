@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 
@@ -41,6 +42,9 @@ _ACCEPTED_PHOTO_TYPES = frozenset({"image/jpeg", "image/png", "image/webp"})
 # to gigapixels and exhausts memory. ``Image.open`` reads the dimensions from the
 # header without decoding pixels, so we reject BEFORE ``load()`` does the work.
 _MAX_IMAGE_PIXELS = 40_000_000
+# Longest-side cap fed to the photo modules — face-parse/body-silhouette need no
+# more, and it keeps the Space upload + inference under the request timeout.
+_MAX_DIM = 1024
 
 
 @router.get("/profile")
@@ -150,8 +154,13 @@ async def upsert_profile_from_photo(
     # missing, decode error), not just an import error at build time — a flaky or
     # not-yet-deployed module must never 500 the whole onboarding; the other module
     # still runs and the manual path is always the fallback.
-    skin = await run_in_threadpool(_estimate_or_abstain, skin_adapter, image, "skin-tone")
-    body = await run_in_threadpool(_estimate_or_abstain, body_adapter, image, "body-type")
+    # Run the two modules concurrently, not back to back: each is an independent
+    # remote-Space round trip (~16s skin, ~34s body), so serial ≈ 50s but parallel
+    # ≈ 34s — well inside the request budget. gather over the threadpool futures.
+    skin, body = await asyncio.gather(
+        run_in_threadpool(_estimate_or_abstain, skin_adapter, image, "skin-tone"),
+        run_in_threadpool(_estimate_or_abstain, body_adapter, image, "body-type"),
+    )
     if skin is None and body is None:
         raise HTTPException(status_code=503, detail="photo onboarding unavailable")
 
@@ -289,7 +298,13 @@ def _decode_photo(raw: bytes) -> object:
                     detail="image resolution is too large — please use a normal photo",
                 )
             img.load()
-            return ImageOps.exif_transpose(img).convert("RGB")
+            rgb = ImageOps.exif_transpose(img).convert("RGB")
+            # Downscale before the module runs: a 10MB/4000px phone photo makes the
+            # Space upload + inference blow past the request timeout (observed a 90s
+            # client hang on a full-res portrait), and face-parse / body-silhouette
+            # gain nothing above ~1024px. thumbnail() is a no-op when already smaller.
+            rgb.thumbnail((_MAX_DIM, _MAX_DIM))
+            return rgb
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001 — any decode failure is a bad upload
