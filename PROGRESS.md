@@ -1708,3 +1708,28 @@ ingests + CPU-backfills them automatically — same proven path as the 56k IN it
 
 **Revised open-gaps ledger:** try-on (FASHN credits+eval), skin-tone fairness (labelled MST dataset),
 always-on API (paid tier). US-catalog is now DONE (lands tonight). IN-backfill draining (~79%).
+
+### 2026-07-11 (cont. 14) — v5 addendum: Explore repetition FIXED + recs relevance traced
+
+**"Explore: same products again and again / nothing new / runs out" — ROOT-CAUSED + FIXED
+(commit f47e3ac).** `_BROWSE` ordered `(price IS NOT NULL) DESC, created_at DESC, id` — a fixed
+newest-first page served identically to every user forever, OFFSET walking off a narrow filter's
+end. Replaced the recency key with a daily-seeded shuffle
+`hashtext(i.id::text || CURRENT_DATE::text)`: rotates day-to-day, new items mix in, stable within a
+day so paging doesn't overlap/skip. Priced-first kept. Prod smoke: priced-first holds, day1!=day2.
+15 retrieval tests green. (Follow-up: a per-session client seed would also kill same-day-revisit
+repetition — add when reported.)
+
+**"Explore/Stylist irrelevant to skin/body/undertone/occasion/budget" — TRACED, filters ARE wired.**
+Stylist: budget is a HARD filter — `_budget(profile) -> constraints.max_price` (conditioning:186)
+-> `service.py:97` -> `candidates_by_slot(max_price)` -> SQL (candidates.py:227). Occasion ->
+`_formality_fit` score; undertone + CIELAB colour + aesthetic all scored (compose.py). Chain is
+complete and correct — verified end-to-end, no missing-filter bug. The felt "irrelevance" is the
+SAME root as everything else: catalog thinness (soft undertone/colour signals collapse on a
+neutral/27%-colourless catalog) — the running backfill sharpens exactly this. Did NOT blind-tune
+scorer weights (doctrine: promotion is eval-gated, not vibes).
+
+**Honest remaining Explore gap:** browse personalizes by region+gender only, not undertone/budget
+(it's an unauthenticated cacheable read). Full undertone-ordered Explore = a follow-up slice
+(needs auth-in-browse, breaks the shared edge cache). Variety fix + deepening catalog is the
+high-ROI 80% now.
