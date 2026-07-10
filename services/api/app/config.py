@@ -92,6 +92,11 @@ class Settings(BaseSettings):
     # full-MST fairness eval passes. Manual skin tone is unaffected.
     skin_tone_enabled: bool = False
 
+    # Exact encoder identity consumed by the optional ML adapter. Keeping the
+    # value in API settings lets policy checks run even when the ML package is
+    # intentionally absent and search uses its keyword fallback.
+    perception_model: str = "hf-hub:timm/ViT-B-16-SigLIP2"
+
     @field_validator("body_remote_url", "skintone_remote_url", mode="after")
     @classmethod
     def _normalise_space_ref(cls, value: str) -> str:

@@ -143,10 +143,9 @@ def test_runtime_gate_rejects_duplicate_name_capability_and_uri_mismatches(tmp_p
 def test_encoder_provider_rejects_configured_uri_mismatch(monkeypatch):
     from app import dependencies as deps
     from app.catalog import perception_adapter
-    from common.config import settings as perception_settings
 
     sentinel = object()
-    monkeypatch.setattr(perception_settings, "perception_model", "hf-hub:unapproved/model")
+    monkeypatch.setattr(deps.settings, "perception_model", "hf-hub:unapproved/model")
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", RUNTIME_MODELS["encoder"].model_uri)
     monkeypatch.setattr(perception_adapter, "cached_text_embedder", lambda: sentinel)
     assert deps.get_text_embedder() is None

@@ -90,11 +90,7 @@ def get_text_embedder() -> TextEmbedder | None:
     keyword title match, so search keeps working on the encoder-less prod image
     instead of 503-ing.
     """
-    from common.config import settings as perception_settings
-
-    if not runtime_model_verdict(
-        "encoder", configured_model_uri=perception_settings.perception_model
-    )[0]:
+    if not runtime_model_verdict("encoder", configured_model_uri=settings.perception_model)[0]:
         return None
     try:
         from .catalog.perception_adapter import cached_text_embedder

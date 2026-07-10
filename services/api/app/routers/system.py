@@ -150,11 +150,7 @@ def _runtime_installed(module: str) -> bool:
 def _configured_runtime_verdict(runtime: str) -> tuple[bool, list[str]]:
     """Use the exact encoder setting consumed by the ML loader."""
     if runtime == "encoder":
-        from common.config import settings as perception_settings
-
-        return runtime_model_verdict(
-            runtime, configured_model_uri=perception_settings.perception_model
-        )
+        return runtime_model_verdict(runtime, configured_model_uri=settings.perception_model)
     return runtime_model_verdict(runtime)
 
 
