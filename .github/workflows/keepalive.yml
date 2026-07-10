@@ -12,7 +12,7 @@ name: keepalive
 
 on:
   schedule:
-    - cron: "*/10 * * * *" # every ~10 min (GitHub may delay under load)
+    - cron: "*/5 * * * *" # every ~5 min (GitHub may delay under load; Render sleeps at 15min)
   workflow_dispatch: {} # allow manual "wake it now"
 
 # Never let overlapping pings pile up if a run is slow.

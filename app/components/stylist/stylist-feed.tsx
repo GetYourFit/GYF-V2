@@ -24,6 +24,10 @@ export function StylistFeed() {
   const [query, setQuery] = useState<StylistQuery>(EMPTY_QUERY);
   const [data, setData] = useState<OutfitRecommendation | null>(null);
   const [loading, setLoading] = useState(true);
+  // True once a foreground load has stalled past ~7s with nothing to paint —
+  // i.e. the free-tier API is cold-starting (~30s). Lets us explain the wait
+  // instead of showing a blank skeleton that reads as broken.
+  const [warming, setWarming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [saved, setSaved] = useState<Set<number>>(new Set());
@@ -74,6 +78,16 @@ export function StylistFeed() {
       void Promise.resolve().then(() => load(EMPTY_QUERY));
     }
   }, [load]);
+
+  useEffect(() => {
+    if (!loading || data) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWarming(false);
+      return;
+    }
+    const t = setTimeout(() => setWarming(true), 7000);
+    return () => clearTimeout(t);
+  }, [loading, data]);
 
   function apply(q: StylistQuery) {
     setQuery(q);
@@ -411,7 +425,25 @@ export function StylistFeed() {
       </AnimatePresence>
 
       {/* ── Skeleton ── */}
-      {loading && <SkeletonGrid />}
+      {loading && (
+        <>
+          {warming && (
+            <p
+              role="status"
+              style={{
+                textAlign: "center",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.875rem",
+                color: "var(--text-faint)",
+                margin: "0 0 1rem",
+              }}
+            >
+              Warming up the stylist — the first look of the day takes a moment.
+            </p>
+          )}
+          <SkeletonGrid />
+        </>
+      )}
 
       {/* ── Empty state ── */}
       {!loading && data && data.outfits.length === 0 && (
