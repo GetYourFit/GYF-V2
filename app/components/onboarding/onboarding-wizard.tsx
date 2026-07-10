@@ -378,6 +378,12 @@ export function OnboardingWizard() {
   const budget = form.budget_range ?? { min: 0, max: null, currency: "USD" };
   const isLast = step === STEPS.length - 1;
   const currentStepId: StepId = STEPS[step]!.id;
+  // Gender is the strongest styling signal and gates the whole catalog: left
+  // unset it silently shows every gender ("mixing genders" feedback). Require an
+  // explicit choice on the You step — "Non-binary — show me everything" is the
+  // inclusive way to opt into the full catalog, so this forces a decision, never
+  // a binary.
+  const needsGender = currentStepId === "you" && !form.gender;
   const offset = reduceMotion ? 0 : 32;
 
   const variants = {
@@ -601,9 +607,14 @@ export function OnboardingWizard() {
         ) : (
           <motion.button
             type="button"
-            onClick={() => goTo(step + 1)}
-            whileTap={{ scale: 0.97 }}
-            whileHover={{ y: -2, boxShadow: "0 6px 18px rgba(255,255,255,0.22)" }}
+            onClick={() => {
+              if (!needsGender) goTo(step + 1);
+            }}
+            disabled={needsGender}
+            aria-disabled={needsGender}
+            title={needsGender ? "Pick who you're shopping for to continue" : undefined}
+            whileTap={needsGender ? undefined : { scale: 0.97 }}
+            whileHover={needsGender ? undefined : { y: -2, boxShadow: "0 6px 18px rgba(255,255,255,0.22)" }}
             transition={{ type: "spring", stiffness: 500, damping: 28 }}
             style={{
               display: "flex",
@@ -620,7 +631,8 @@ export function OnboardingWizard() {
               fontWeight: 600,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              cursor: "pointer",
+              cursor: needsGender ? "not-allowed" : "pointer",
+              opacity: needsGender ? 0.45 : 1,
             }}
           >
             Next
@@ -708,7 +720,7 @@ function StepYou({
     <>
       <StepHeader
         title="About you"
-        hint="Helps GYF choose flattering colours and cuts. Everything is optional."
+        hint="Helps GYF choose flattering colours and cuts. Only who you're shopping for is required — the rest is optional."
       />
       <PhotoUpload onEstimated={applyEstimated} />
       <FieldWrap
@@ -716,14 +728,14 @@ function StepYou({
         badge={
           !form.gender ? (
             <span style={{ fontSize: "0.7rem", color: "var(--text-faint)" }}>
-              strongest signal — unset shows every gender
+              required — pick &ldquo;show me everything&rdquo; for the full catalogue
             </span>
           ) : null
         }
       >
         <DarkSelect
           options={GENDERS}
-          placeholder="No preference"
+          placeholder="Pick one to continue"
           value={form.gender ?? ""}
           onChange={(v) => set("gender", v)}
         />

@@ -1559,3 +1559,33 @@ EXPLAIN ANALYZE (top slot): baseline `created_at DESC` = 3,937ms single-thread s
    "slow loading" complaint. Fix = a region-aware partial/GIN-backed index or denormalised region col.
 4. Differentiation is real but still neutral-heavy (catalog skews black/white); undertone-fit
    *ordering* in retrieval (not just re-rank) would sharpen it further. Refinement, not a bug.
+
+### 2026-07-10 (cont. 8) — Feedback v5: "Explore mixing genders" ROOT-CAUSED + FIXED
+
+Re-evaluated front-#1 residuals first and dropped them honestly: (1) colour-only backfill is
+now YAGNI — cont. 7's fix orders cold start by `(e.item_id IS NOT NULL) DESC`, so items without
+embeddings (the same 15k missing colour) sort LAST regardless; colour without embedding buys
+nothing. (2) US-region-empty needs a US catalog (none yet). (3) latency: slots ALREADY run
+concurrently (ThreadPoolExecutor, own connections) so retrieval ≈ one slot ~750ms, not 3s — no
+index needed. Front #1 is done; no marginal tweaks.
+
+Moved to the next concrete complaint — **"Explore mixes genders."**
+
+**Root cause (traced, not guessed):** the API filters by `profile.gender` correctly (both Explore
+and recs), the Explore grid DOES pass the param, and catalog gender labels are near-complete on
+prod (men 28,917 / women 26,481 / unisex 1,417 / null 1). Gender also persists fine (packed into
+the `style_intent` JSONB envelope, symmetric round-trip). The gap: **onboarding made gender
+OPTIONAL** ("Everything is optional", badge "unset shows every gender") even though the code's own
+comment calls it "the strongest signal." Users who skipped it → `catalog_genders_for(None)` = all
+genders → mixed Explore AND mixed recs. Prod proof: 10 of 25 profiles have no usable gender
+(7 null + 3 "unknown").
+
+**Fix (`app/components/onboarding/onboarding-wizard.tsx`, frontend-only):** gender is now required
+on the "You" step — `Next` is disabled until a choice is made (`needsGender` guard). It is NOT a
+forced binary: `GENDERS` already has "Non-binary — show me everything", so opting into the full
+catalogue is now an *explicit* choice, not a silent default. Copy corrected (header + field badge +
+placeholder) so the UI stops claiming gender is optional. tsc clean, eslint clean.
+
+**Residual:** the 10 existing null/unknown-gender prod profiles still see mixed Explore until they
+re-touch onboarding (the gate also cleans them up on revisit since it loads `gender: ""`). No blind
+data migration — I can't infer their real gender. New users are fully fixed.
