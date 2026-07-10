@@ -216,6 +216,31 @@ def test_results_are_diverse_not_duplicates():
     assert len(tops) > 1
 
 
+def test_shared_anchor_craters_diversity():
+    """Prod bug: all 5 outfits reused one shirt because plain Jaccard rated a
+    shared-top pair 0.8 diverse (4/5 items differ). The anchor cap must read two
+    looks built on the same top as near-identical, and distinct tops as diverse."""
+    from app.recsys.compose import _SHARED_ANCHOR_CEILING, _diversity
+
+    a = (
+        _item("top", "shirt", "top"),
+        _item("b1", "jeans", "bottom"),
+        _item("f1", "shoe", "footwear"),
+    )
+    same_top = (
+        _item("top", "shirt", "top"),
+        _item("b2", "jeans", "bottom"),
+        _item("f2", "shoe", "footwear"),
+    )
+    diff_top = (
+        _item("top2", "shirt", "top"),
+        _item("b1", "jeans", "bottom"),
+        _item("f1", "shoe", "footwear"),
+    )
+    assert _diversity(a, same_top) <= _SHARED_ANCHOR_CEILING
+    assert _diversity(a, diff_top) > _SHARED_ANCHOR_CEILING
+
+
 def test_full_body_blueprint_when_no_separates():
     catalog = [
         _item("d1", "dress", "full_body", lch=(50, 30, 320), hue_name="purple", formality="formal"),

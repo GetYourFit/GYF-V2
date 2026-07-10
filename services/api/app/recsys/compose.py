@@ -577,16 +577,29 @@ def _assemble(
     return outfits
 
 
+# Two looks built on the same anchor (the hero piece — the top for separates, the
+# dress for a full-body blueprint, always slot 0 of the assembled tuple) read as
+# the same outfit no matter how the minor slots differ. Plain Jaccard rates them
+# 0.8 dissimilar (4 of 5 items differ), so MMR happily stacked five variants of the
+# one best shirt — the "all 5 reuse the same top" prod bug. Cap a shared-anchor
+# pair's dissimilarity so MMR spends its novelty budget varying the anchor first.
+_SHARED_ANCHOR_CEILING = 0.1
+
+
 def _diversity(a: tuple[Candidate, ...], b: tuple[Candidate, ...]) -> float:
     """Dissimilarity of two outfits in [0, 1] — shared items make them alike.
 
-    Jaccard distance over item ids: outfits sharing a top (or footwear) are near-
-    duplicates, exactly the "five near-identical results" failure to avoid (§2).
+    Jaccard distance over item ids, then the anchor cap above: outfits sharing a
+    top (or footwear) are near-duplicates, exactly the "five near-identical
+    results" failure to avoid (§2).
     """
     ids_a = {it.item_id for it in a}
     ids_b = {it.item_id for it in b}
     union = ids_a | ids_b
-    return 1.0 - len(ids_a & ids_b) / len(union) if union else 0.0
+    jaccard = 1.0 - len(ids_a & ids_b) / len(union) if union else 0.0
+    if a and b and a[0].item_id == b[0].item_id:
+        return min(jaccard, _SHARED_ANCHOR_CEILING)
+    return jaccard
 
 
 def compose(
