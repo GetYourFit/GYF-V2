@@ -1675,3 +1675,21 @@ rewrite situation; two concentrated defects were dragging the whole experience.
 **Genuinely-open (need resourcing/decisions, NOT code hidden):** try-on (FASHN credits+eval),
 US catalog (needs US feed), photo-onboarding skin-tone fairness eval (fails DoD gap 3.2 vs <=1.0),
 always-on API tier (paid). These are the honest remaining gaps — all tracked, none silently broken.
+
+### 2026-07-11 (cont. 12) — Skin-tone fairness: characterized, DATA-blocked (not faked)
+
+v5 calls skin-tone "degraded/beta". Dug into the gate. Report
+`skintone-fairness-mste-v1.json`: per-band MST MAE 4-5 on a 10-band scale, max_band_gap 3.2 (DoD
+<=1.0). The eval scores abstain = full-scale error (9.0), so MAE 4-5 ≈ **~50% of the balanced set
+abstained** — the estimator can't get a confident read on ~half of diverse real faces. Module logic
+is sound (11 tests pass, estimator imports, cv2 present) — this is genuine ML accuracy, not a bug.
+**Cannot re-run or improve it in-session: the labelled MST fairness dataset isn't in the repo**
+(manifest points at uncommitted MST-E/FairFace photos). Real fix = obtain/build a labelled MST set +
+improve face-skin seg / illumination / MST mapping, then re-eval. Per doctrine (CLAUDE.md §8) it
+CORRECTLY stays research-lane with manual fallback until it provably passes — not force-promoted, not
+eval-hacked. Honest blocker, tracked.
+
+**Session close-out — all code-completable v5 work done.** Remaining gaps are RESOURCE-blocked, each
+needing an external input only the owner can provide: labelled MST dataset (skin-tone), FASHN credits
+(try-on), a US product feed (US catalog), a paid always-on tier (cold-start elimination). None are
+silently broken; each is gated honestly.
