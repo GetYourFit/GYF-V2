@@ -21,14 +21,6 @@ from .candidates import Candidate
 from .conditioning import Constraints, formality_rank
 from .goals import Effect, GoalEffects, effects_for, goal_fit
 
-# Daily rotation jitter: a tiny, deterministic per-(user, day, outfit) nudge added
-# to score before ranking. Never large enough to promote a genuinely worse outfit
-# over a better one (component weights above are all in [0, 1] and combine to a
-# score in roughly that range) — it only reorders outfits that were already close
-# enough to be a toss-up, so the same profile sees a *different* top-k tomorrow
-# without ever surfacing a look the composer doesn't actually endorse.
-_DAILY_JITTER_MAGNITUDE = 0.02
-
 # A garment with chroma below this reads as a neutral (black/white/grey/denim-ish)
 # and coordinates with almost anything — the backbone of real-world outfits.
 _NEUTRAL_CHROMA = 14.0

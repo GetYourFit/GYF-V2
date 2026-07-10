@@ -25,6 +25,7 @@ const CAPABILITY_LABEL: Record<string, string> = {
   text_search: "Catalog text search",
   photo_body_type: "Photo onboarding — body type",
   photo_skin_tone: "Photo onboarding — skin tone",
+  virtual_try_on: "Virtual try-on",
   affiliate_commerce: "Shopping & affiliate links",
 };
 

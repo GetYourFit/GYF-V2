@@ -241,6 +241,18 @@ def system_status(
         "text_search": _text_search_capability(),
         "photo_body_type": _photo_module(settings.body_remote_url, "Body-type estimation"),
         "photo_skin_tone": skin,
+        "virtual_try_on": Capability(
+            status="beta",
+            lane="licensed-api",
+            detail="Outfits render on your photo via a licensed model (top+bottom; "
+            "footwear phased in). Ephemeral: photos are never stored.",
+        )
+        if settings.tryon_provider and settings.fashn_api_key
+        else Capability(
+            status="planned",
+            lane="none",
+            detail="No rendering lane configured — nothing is rendered or implied.",
+        ),
         "affiliate_commerce": Capability(
             status="live",
             lane="cuelinks",

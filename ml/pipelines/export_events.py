@@ -33,6 +33,7 @@ from typing import Any, Iterable
 ACTION_REWARD: dict[str, float] = {
     "purchase": 1.5,
     "cart": 1.2,
+    "tryon": 1.0,
     "save": 1.0,
     "share": 0.8,
     "react": 0.6,
@@ -163,7 +164,7 @@ def build_report(rows: list[dict[str, Any]], examples: list[dict[str, Any]]) -> 
             for rk, ls in sorted(by_rank.items())
         ],
         "",
-        "_Positive = save/cart/react/share/view per the reward contract "
+        "_Positive = save/cart/react/share/tryon/view per the reward contract "
         "(services/api/app/recsys/signals.py)._",
         "",
     ]

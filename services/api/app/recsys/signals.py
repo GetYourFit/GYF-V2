@@ -8,7 +8,7 @@ engagement is worth. Keeping it here — not buried in the taste math — is the
 architectural seam that makes the early users' data trainable later.
 
 Rewards are signed: positive actions pull taste toward an item, negatives push it
-away. Magnitudes encode intent strength (a cart add is a stronger purchase
+away. Magnitudes encode intent strength (a cart/try-on is a stronger purchase
 signal than a passing view). ``IMPRESSION`` is the served-but-unacted negative the
 ranker needs; it carries no intrinsic reward (its label is "not engaged").
 """
@@ -22,6 +22,7 @@ from ..events import InteractionAction
 ACTION_REWARD: dict[InteractionAction, float] = {
     InteractionAction.PURCHASE: 1.5,  # ground truth: money changed hands
     InteractionAction.CART: 1.2,  # strongest purchase intent
+    InteractionAction.TRYON: 1.0,  # high intent: imagining it on themselves
     InteractionAction.SAVE: 1.0,  # explicit "I like this"
     InteractionAction.SHARE: 0.8,  # endorses to others
     InteractionAction.REACT: 0.6,  # lightweight approval

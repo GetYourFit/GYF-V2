@@ -36,6 +36,7 @@ from .routers import (
     social,
     support,
     system,
+    tryon,
     wardrobe,
 )
 from .telemetry import configure_telemetry
@@ -235,6 +236,7 @@ app.include_router(wardrobe.router)
 app.include_router(social.router)
 app.include_router(support.router)
 app.include_router(system.router)
+app.include_router(tryon.router)
 
 
 # --- Back-compat re-exports -------------------------------------------------

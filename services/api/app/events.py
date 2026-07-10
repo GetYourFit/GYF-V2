@@ -22,6 +22,7 @@ class InteractionAction(str, Enum):
     REACT = "react"
     SHARE = "share"
     FOLLOW = "follow"
+    TRYON = "tryon"
     # The user replaced one garment in a recommended outfit with an alternate
     # (swap-a-piece). Context carries recommendation_id + replaced_item_id;
     # target_id is the chosen alternate. Each swap is a labelled compatibility

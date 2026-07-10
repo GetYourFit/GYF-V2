@@ -24,6 +24,7 @@ import type {
   SaveOutfitRequest,
   SearchResult,
   SystemStatus,
+  TryOnResponse,
   WardrobeItem,
   WardrobeItemInput,
 } from "@gyf/types";
@@ -294,6 +295,17 @@ export class GyfApi {
    *  verdict the CI license gate enforces. Public (names/licenses only). */
   systemModels(): Promise<ModelRegistryStatus> {
     return this.request<ModelRegistryStatus>("GET", "/system/models");
+  }
+
+  // --- Virtual try-on (M9) ---
+
+  /** Render an outfit on the user's photo. Returns a render or an honest
+   *  abstention (`image_b64: null` + reason) — never a fabricated image. */
+  tryOn(photo: File, itemIds: string[]): Promise<TryOnResponse> {
+    const form = new FormData();
+    form.append("photo", photo);
+    form.append("item_ids", itemIds.join(","));
+    return this.requestMultipart<TryOnResponse>("/tryon", form);
   }
 
   // --- Social (shared looks) ---
