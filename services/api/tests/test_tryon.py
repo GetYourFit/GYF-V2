@@ -202,6 +202,9 @@ def test_fal_leffa_total_failure_abstains():
 def test_tryon_provider_selection_covers_both_licensed_lanes(monkeypatch):
     from app import dependencies as deps
 
+    # Simulate registry promotion; the runtime-gate regression tests pin today's
+    # research cards to the null renderer until that promotion actually happens.
+    monkeypatch.setattr(deps, "runtime_model_verdict", lambda _runtime: (True, []))
     monkeypatch.setattr(deps.settings, "tryon_provider", "fal-leffa")
     monkeypatch.setattr(deps.settings, "fal_api_key", "k")
     assert isinstance(deps.get_tryon_renderer(), FalLeffaTryOnRenderer)

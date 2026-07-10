@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
+from gyf_contracts.eval_report import RUNTIME_MODELS
 
 from app.main import app
 from app.routers.system import (
@@ -77,6 +78,19 @@ def test_text_search_reports_remote_gpu_lane(monkeypatch):
     assert cap["status"] == "live" and cap["lane"] == "remote-gpu"
 
 
+def test_remote_probe_rejects_auth_and_missing_routes(monkeypatch):
+    import app.routers.system as system_module
+
+    system_module._probe_cache.clear()
+    for status_code in (401, 404):
+        monkeypatch.setattr(
+            system_module.httpx,
+            "get",
+            lambda *_args, **_kwargs: type("Response", (), {"status_code": status_code})(),
+        )
+        assert system_module._remote_reachable(f"https://space.example/{status_code}") is False
+
+
 def test_affiliate_detail_reports_partial_price_coverage():
     stats = InMemorySystemStatsRepository(
         CatalogHealth(items=53651, with_embedding=12161, with_price=9161, with_image=53651)
@@ -111,12 +125,15 @@ def test_model_registry_status_mirrors_the_ci_gate():
     # and each reports the honest reason — identical to check_model_licenses.py.
     prod = models["google-siglip2-base"]
     assert prod["lane"] == "production"
-    assert prod["servable"] is True
+    assert prod["promotable"] is True
+    assert prod["runtime_servable"] is True
     assert prod["blockers"] == []
+    assert prod["runtime_blockers"] == []
+    assert models["marqo-fashionSigLIP"]["runtime_servable"] is None
 
     for m in body["models"]:
         if m["lane"] == "research":
-            assert m["servable"] is False
+            assert m["promotable"] is False
             assert any("not production" in b for b in m["blockers"])
 
 
@@ -124,7 +141,29 @@ def test_model_registry_status_reports_missing_registry_honestly(monkeypatch):
     """A minimal serving image without the registry says so, never 500s or lies."""
     import app.routers.system as system_module
 
-    monkeypatch.setattr(system_module, "_find_registry_root", lambda: None)
+    monkeypatch.setattr(
+        system_module,
+        "load_registry",
+        lambda: (_ for _ in ()).throw(FileNotFoundError("models.registry.json")),
+    )
     resp = TestClient(app).get("/system/models")
     assert resp.status_code == 200
     assert resp.json() == {"available": False, "models": []}
+
+
+def test_model_registry_status_distinguishes_promotion_from_runtime(monkeypatch):
+    import app.routers.system as system_module
+
+    monkeypatch.setattr(
+        system_module,
+        "runtime_model_verdict",
+        lambda runtime, **_: (False, [f"{runtime} runtime identity mismatch"]),
+    )
+    model = next(
+        m
+        for m in TestClient(app).get("/system/models").json()["models"]
+        if m["name"] == RUNTIME_MODELS["encoder"].name
+    )
+    assert model["promotable"] is True
+    assert model["runtime_servable"] is False
+    assert "runtime identity mismatch" in model["runtime_blockers"][0]

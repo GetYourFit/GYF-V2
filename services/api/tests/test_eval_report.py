@@ -47,6 +47,7 @@ def _card(**over) -> ModelCard:
         train_data_commercial_ok=True,
         train_data_license="Apache-2.0",
         eval_report="encoder-x",
+        model_version="x-v1",
     )
     base.update(over)
     return ModelCard(**base)
@@ -134,6 +135,12 @@ def test_promotion_blocked_when_below_gate(tmp_path):
     _write(_report(metrics={"mrr": 0.30}), tmp_path)
     ok, reasons = resolve_promotion(_card(), tmp_path)
     assert not ok and any("fails gate" in r for r in reasons)
+
+
+def test_promotion_blocks_passing_report_for_another_model_version(tmp_path):
+    _write(_report(model_version="other-v1"), tmp_path)
+    ok, reasons = resolve_promotion(_card(), tmp_path)
+    assert not ok and any("model version" in r for r in reasons)
 
 
 def test_promotion_blocked_when_capability_mismatch(tmp_path):

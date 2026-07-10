@@ -18,9 +18,54 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from .model_policy import ModelCard, is_servable
+from .model_policy import ModelCard, is_servable, load_registry
 
 DEFAULT_REPORTS_DIR = "eval-reports"
+
+
+@dataclass(frozen=True)
+class RuntimeModelBinding:
+    """The exact registry identity wired to one serving adapter."""
+
+    name: str
+    capability: str
+    model_uri: str
+    model_version: str
+
+
+RUNTIME_MODELS = {
+    "encoder": RuntimeModelBinding(
+        "google-siglip2-base",
+        "encoder",
+        "hf-hub:timm/ViT-B-16-SigLIP2",
+        "google-siglip2-base-v1",
+    ),
+    "skin_tone": RuntimeModelBinding(
+        "retinaface-farl-celebm",
+        "skin_tone",
+        "facer: retinaface/mobilenet detector + farl/celebm/448 parser",
+        "retinaface-farl-celebm-cielab-mst-v1",
+    ),
+    "body": RuntimeModelBinding(
+        "birefnet-rtmw-bodyshape",
+        "body_estimator",
+        "hf://ZhengPeng7/BiRefNet + rtmlib Wholebody (RTMW)",
+        "rtmw-birefnet-v1",
+    ),
+    "fal-leffa": RuntimeModelBinding(
+        "fal-leffa-vto-v1",
+        "try_on",
+        "fal-ai/leffa/virtual-tryon (queue.fal.run)",
+        "fal-leffa-vto-v1",
+    ),
+    "fashn": RuntimeModelBinding(
+        "fashn-tryon-v1.6",
+        "try_on",
+        "https://api.fashn.ai/v1 (model_name=tryon-v1.6)",
+        "fashn-tryon-v1.6",
+    ),
+}
+RUNTIME_BY_MODEL = {binding.name: runtime for runtime, binding in RUNTIME_MODELS.items()}
 
 
 @dataclass(frozen=True)
@@ -161,9 +206,19 @@ def load_report(path: str | Path) -> EvalReport:
     return EvalReport.from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
 
 
-def find_report(report_id: str, reports_dir: str | Path = DEFAULT_REPORTS_DIR) -> EvalReport | None:
+def _default_reports_path() -> Path:
+    """Find bundled reports from this package, independent of process cwd."""
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / DEFAULT_REPORTS_DIR
+        if candidate.is_dir():
+            return candidate
+    return Path(__file__).resolve().parent / DEFAULT_REPORTS_DIR
+
+
+def find_report(report_id: str, reports_dir: str | Path | None = None) -> EvalReport | None:
     """Resolve a registry ``eval_report`` id to its canonical ``<reports_dir>/<id>.json``."""
-    path = Path(reports_dir) / f"{report_id}.json"
+    directory = Path(reports_dir) if reports_dir is not None else _default_reports_path()
+    path = directory / f"{report_id}.json"
     if not path.exists():
         return None
     report = load_report(path)
@@ -175,7 +230,7 @@ def find_report(report_id: str, reports_dir: str | Path = DEFAULT_REPORTS_DIR) -
 
 
 def resolve_promotion(
-    card: ModelCard, reports_dir: str | Path = DEFAULT_REPORTS_DIR
+    card: ModelCard, reports_dir: str | Path | None = None
 ) -> tuple[bool, list[str]]:
     """The M1 promotion gate: may this model serve, license **and** evaluation considered?
 
@@ -193,16 +248,66 @@ def resolve_promotion(
         reasons.append("no eval report attached (engineering-doctrine D5)")
         return False, reasons
 
-    report = find_report(card.eval_report, reports_dir)
+    directory = Path(reports_dir) if reports_dir is not None else _default_reports_path()
+    report = find_report(card.eval_report, directory)
     if report is None:
-        reasons.append(f"eval report '{card.eval_report}' does not resolve under {reports_dir}/")
+        reasons.append(f"eval report '{card.eval_report}' does not resolve under {directory}/")
         return False, reasons
 
     if report.capability != card.capability:
         reasons.append(
             f"eval report is for capability '{report.capability}', not '{card.capability}'"
         )
+    if not card.model_version:
+        reasons.append("no model version attached to registry card")
+    elif report.model_version != card.model_version:
+        reasons.append(
+            f"eval report model version '{report.model_version}' does not match "
+            f"'{card.model_version}'"
+        )
     ok_gate, gate_reasons = meets_gate(report)
     reasons.extend(gate_reasons)
 
     return (not reasons, reasons)
+
+
+def runtime_model_verdict(
+    runtime: str,
+    *,
+    configured_model_uri: str | None = None,
+    registry: str | Path | None = None,
+    reports_dir: str | Path | None = None,
+) -> tuple[bool, list[str]]:
+    """Fail-closed promotion verdict for the exact model wired to a runtime adapter."""
+    binding = RUNTIME_MODELS.get(runtime)
+    if binding is None:
+        return False, [f"unknown runtime model binding '{runtime}'"]
+    reasons: list[str] = []
+    actual_uri = binding.model_uri if configured_model_uri is None else configured_model_uri
+    if actual_uri != binding.model_uri:
+        reasons.append(f"configured model URI '{actual_uri}' does not match '{binding.model_uri}'")
+    try:
+        cards = [card for card in load_registry(registry) if card.name == binding.name]
+        if len(cards) != 1:
+            reasons.append(f"expected one registry card named '{binding.name}', found {len(cards)}")
+            return False, reasons
+        card = cards[0]
+        if card.capability != binding.capability:
+            reasons.append(
+                f"registry capability '{card.capability}' does not match '{binding.capability}'"
+            )
+        if card.model_uri != binding.model_uri:
+            reasons.append(
+                f"registry model URI '{card.model_uri}' does not match '{binding.model_uri}'"
+            )
+        if card.model_version != binding.model_version:
+            reasons.append(
+                f"registry model version '{card.model_version}' does not match "
+                f"'{binding.model_version}'"
+            )
+        promoted, promotion_reasons = resolve_promotion(card, reports_dir)
+        reasons.extend(promotion_reasons)
+    except Exception as exc:  # noqa: BLE001 — corrupt policy/report must disable serving
+        reasons.append(f"model policy could not be verified: {exc}")
+        return False, reasons
+    return (not reasons and promoted, reasons)

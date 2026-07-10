@@ -32,6 +32,8 @@ RUN uv sync --extra dev --extra postgres --extra migrate --extra photo-remote --
 
 # App source is COPYed for standalone runs and overlaid by a bind mount in dev compose.
 COPY services/api /app/services/api
+COPY models.registry.json /app/models.registry.json
+COPY eval-reports /app/eval-reports
 
 # Bring the schema to head on boot (Alembic is the single source of truth), then run
 # the CMD. /opt/venv is on PATH, so the entrypoint's `python -m alembic` resolves here.

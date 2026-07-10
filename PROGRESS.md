@@ -1483,3 +1483,33 @@ $9/mo HF Pro decision (or accept intermittent). No further free code lever unloc
   spin-down (best-effort cron still lets some cold starts through). Real fix = an always-on
   API tier (paid Render / Fly min-machines=1). No further free code lever.
 - **ML-live** remains the ZeroGPU-quota / HF-Pro ($9/mo) decision (cont. 4). Unchanged.
+
+### 2026-07-10 (cont. 6) — Runtime ML promotion is now fail-closed
+
+The audit found a doctrine gap: CI enforced the model registry, but runtime adapters could
+still construct from configuration without proving the exact model, training-data approval,
+and evaluation report. Fixed at the shared policy boundary rather than adding route guards:
+
+- Runtime identity is now one predicate over unique registry name + capability + URI + model
+  version + production lane + explicit commercial model/data booleans + a real passing report.
+- Reports must match the registered model version; malformed/missing policy, duplicate cards,
+  revoked lanes, wrong configured weights, and missing/failed reports all abstain immediately.
+- Both commercial flags are mandatory literal JSON booleans; missing values never inherit.
+- API Docker images now bundle the registry and eval reports, while `.env` is excluded from the
+  build context so local configuration/secrets cannot silently select different weights.
+- Skin-tone capability naming is canonical (`skin_tone`), so a future commercial-clean model can
+  actually pass its fairness gate; today's RetinaFace/FaRL model remains correctly research-only.
+- `/system/models` separates offline `promotable` from actual `runtime_servable`; user status uses
+  the same runtime verdict. Remote 401/404 responses no longer count as live.
+- Research-only body, skin-tone, and VTON adapters stay behind honest manual/null fallbacks even
+  when provider URLs or keys are configured. The approved SigLIP encoder remains servable.
+
+Verification: API **318 passed, 3 skipped**; ML **83 passed**; Ruff clean; model-license,
+promotion, architecture-port, and whitespace gates clean. Independent correctness + security
+reviews attacked malformed flags, report swapping, configuration divergence, revocation, and
+status disagreement before sign-off. No extra dependency or service was added.
+
+**Ponytail/dead-code truth:** the reliable whole-repo scan still proves only the two files in
+cont. 5 dead; both are already deleted. Do not delete `gyf_app` or other parallel code by naming
+convention alone. The codebase is materially safer and cleaner, but not honestly “fully optimized”:
+the free-tier GPU quota, catalog perception backfill, and broader end-to-end UX audit remain open.

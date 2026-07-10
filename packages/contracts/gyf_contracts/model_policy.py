@@ -48,6 +48,7 @@ class ModelCard:
     train_data_license: str = "unknown"
     eval_report: str | None = None  # id/path of a passing eval report; None = unevaluated
     model_uri: str | None = None
+    model_version: str | None = None
     notes: str = ""
 
 
@@ -70,25 +71,40 @@ def is_servable(card: ModelCard, *, require_eval: bool = True) -> tuple[bool, li
 
 
 def _coerce_card(d: dict) -> ModelCard:
-    # train-data commercial flag defaults to the model flag when unspecified, but a model can
-    # be commercial while its *training data* is not (the real trap) — so it is its own field.
+    # Both flags are explicit: model code can be commercial while its training data is not.
+    commercial_ok = d["commercial_ok"]
+    train_data_commercial_ok = d["train_data_commercial_ok"]
+    if type(commercial_ok) is not bool or type(train_data_commercial_ok) is not bool:
+        raise TypeError("commercial_ok and train_data_commercial_ok must be JSON booleans")
     return ModelCard(
         name=d["name"],
         capability=d["capability"],
         provider=d.get("provider", "unknown"),
         license=d["license"],
         lane=Lane(d["lane"]),
-        commercial_ok=bool(d["commercial_ok"]),
-        train_data_commercial_ok=bool(d.get("train_data_commercial_ok", d["commercial_ok"])),
+        commercial_ok=commercial_ok,
+        train_data_commercial_ok=train_data_commercial_ok,
         train_data_license=d.get("train_data_license", "unknown"),
         eval_report=d.get("eval_report"),
         model_uri=d.get("model_uri"),
+        model_version=d.get("model_version"),
         notes=d.get("notes", ""),
     )
 
 
-def load_registry(path: str | Path = DEFAULT_REGISTRY) -> list[ModelCard]:
+def _default_registry_path() -> Path:
+    """Find the bundled registry from this package, independent of process cwd."""
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / DEFAULT_REGISTRY
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(DEFAULT_REGISTRY)
+
+
+def load_registry(path: str | Path | None = None) -> list[ModelCard]:
     """Parse the model registry manifest into cards. Accepts ``{"models": [...]}`` or a bare list."""
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    data = json.loads(
+        (Path(path) if path is not None else _default_registry_path()).read_text(encoding="utf-8")
+    )
     entries = data["models"] if isinstance(data, dict) else data
     return [_coerce_card(d) for d in entries]

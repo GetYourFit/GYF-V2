@@ -15,12 +15,12 @@ from __future__ import annotations
 import importlib.util
 import os
 import time
-from pathlib import Path
 from typing import Literal, Protocol
 
 import httpx
 from fastapi import APIRouter, Depends
-from gyf_contracts.model_policy import is_servable, load_registry
+from gyf_contracts.eval_report import RUNTIME_BY_MODEL, resolve_promotion, runtime_model_verdict
+from gyf_contracts.model_policy import load_registry
 from pydantic import BaseModel
 
 from ..config import settings
@@ -48,7 +48,8 @@ def _remote_reachable(url: str) -> bool:
     if hit is not None and now - hit[0] < _PROBE_TTL_S:
         return hit[1]
     try:
-        ok = httpx.get(url, timeout=2.0, follow_redirects=True).status_code < 500
+        status_code = httpx.get(url, timeout=2.0, follow_redirects=True).status_code
+        ok = 200 <= status_code < 300
     except Exception:  # noqa: BLE001 — unreachable == not live; the status must never 500
         ok = False
     _probe_cache[url] = (now, ok)
@@ -146,25 +147,27 @@ def _runtime_installed(module: str) -> bool:
         return False
 
 
-def _skin_tone_fairness_evaluated() -> bool:
-    """True once a skin-tone fairness report exists under eval-reports/.
+def _configured_runtime_verdict(runtime: str) -> tuple[bool, list[str]]:
+    """Use the exact encoder setting consumed by the ML loader."""
+    if runtime == "encoder":
+        from common.config import settings as perception_settings
 
-    The doctrine's D5 gate is machine-readable by construction: the fairness
-    eval writes its report to the repo's ``eval-reports/``. Absent (including
-    on images that don't ship the directory) reads as "pending" — the honest
-    default for an uncleared gate.
-    """
-    for parent in Path(__file__).resolve().parents:
-        reports = parent / "eval-reports"
-        if reports.is_dir():
-            return any(reports.glob("skintone-fairness*"))
-    return False
+        return runtime_model_verdict(
+            runtime, configured_model_uri=perception_settings.perception_model
+        )
+    return runtime_model_verdict(runtime)
 
 
 def _text_search_capability() -> Capability:
     """Mirror the real /items/search serving path (perception.remote.encoder_for):
     a set ``GYF_ENCODER_REMOTE_URL`` serves queries over the ZeroGPU lane with no
     local torch; otherwise the local SigLIP encoder needs the torch runtime."""
+    if not _configured_runtime_verdict("encoder")[0]:
+        return Capability(
+            status="degraded",
+            lane="keyword-fallback",
+            detail="Encoder is blocked by the model registry — search falls back to keywords.",
+        )
     encoder_url = os.environ.get("GYF_ENCODER_REMOTE_URL", "").strip()
     if encoder_url:
         if _remote_reachable(encoder_url):
@@ -191,8 +194,14 @@ def _text_search_capability() -> Capability:
     )
 
 
-def _photo_module(remote_url: str, name: str) -> Capability:
+def _photo_module(remote_url: str, name: str, runtime: str) -> Capability:
     """Status of a photo-onboarding module from its lane config + local runtime."""
+    if not _configured_runtime_verdict(runtime)[0]:
+        return Capability(
+            status="degraded",
+            lane="manual-fallback",
+            detail=f"{name} is blocked by the model registry; manual onboarding carries the flow.",
+        )
     if remote_url:
         if _remote_reachable(remote_url):
             return Capability(
@@ -256,7 +265,7 @@ def system_status(
     except Exception:  # noqa: BLE001 — the status surface must never 500
         catalog = CatalogHealth()
 
-    skin = _photo_module(settings.skintone_remote_url, "Skin-tone estimation")
+    skin = _photo_module(settings.skintone_remote_url, "Skin-tone estimation", "skin_tone")
     if skin.status == "live":
         # The module can run — but it is surfaced only as a beta estimate until
         # the fairness gate clears, and re-shadowed when the flag is off.
@@ -265,11 +274,35 @@ def system_status(
             status="beta" if surfaced else "shadow",
             lane=skin.lane,
             detail=(
-                "Surfaced as an editable estimate; full-spectrum fairness eval "
-                + ("passed." if _skin_tone_fairness_evaluated() else "pending.")
+                "Surfaced as an editable estimate; registry promotion checks passed."
                 if surfaced
-                else "Computed but not surfaced (fairness gate)."
+                else "Computed but not surfaced (feature gate)."
             ),
+        )
+
+    tryon_model = None
+    if settings.tryon_provider == "fal-leffa" and settings.fal_api_key:
+        tryon_model = "fal-leffa"
+    elif settings.tryon_provider == "fashn" and settings.fashn_api_key:
+        tryon_model = "fashn"
+    if tryon_model and _configured_runtime_verdict(tryon_model)[0]:
+        tryon = Capability(
+            status="beta",
+            lane="licensed-api",
+            detail="Rendering provider is configured and registry-approved; availability is "
+            "verified on each request.",
+        )
+    elif tryon_model:
+        tryon = Capability(
+            status="degraded",
+            lane="manual-fallback",
+            detail="Configured rendering model is blocked by the registry; original outfits remain available.",
+        )
+    else:
+        tryon = Capability(
+            status="planned",
+            lane="none",
+            detail="No rendering lane configured — nothing is rendered or implied.",
         )
 
     capabilities = {
@@ -281,20 +314,9 @@ def system_status(
             else "Database unreachable — recommendations cannot serve.",
         ),
         "text_search": _text_search_capability(),
-        "photo_body_type": _photo_module(settings.body_remote_url, "Body-type estimation"),
+        "photo_body_type": _photo_module(settings.body_remote_url, "Body-type estimation", "body"),
         "photo_skin_tone": skin,
-        "virtual_try_on": Capability(
-            status="beta",
-            lane="licensed-api",
-            detail="Outfits render on your photo via a licensed model (top+bottom; "
-            "footwear phased in). Ephemeral: photos are never stored.",
-        )
-        if settings.tryon_provider and settings.fashn_api_key
-        else Capability(
-            status="planned",
-            lane="none",
-            detail="No rendering lane configured — nothing is rendered or implied.",
-        ),
+        "virtual_try_on": tryon,
         "affiliate_commerce": Capability(
             status="live",
             lane="cuelinks",
@@ -327,26 +349,27 @@ def system_status(
 # The /system/status endpoint above is the *user*-facing capability report. This
 # is the *operator*-facing one the M8.5 audit flagged missing: which specific
 # models GYF can load, which lane each is in, and whether it may enter the
-# serving path — derived from models.registry.json via the SAME is_servable()
-# gate scripts/check_model_licenses.py enforces in CI, so the live view can
+# serving path — derived from models.registry.json via the SAME resolve_promotion()
+# gate scripts/check_promotion.py enforces in CI, so the live view can
 # never disagree with the build gate (one source of truth, engineering-doctrine
 # D2/D5). No secrets: model names, licenses, and lanes are already public in the
 # repo. Never 500 — a missing registry is itself an honestly-reported state.
 
 
 class ModelStatus(BaseModel):
-    """One model behind a capability port: its lane and serve-eligibility."""
+    """One model's promotion result and, when wired, separate runtime verdict."""
 
     name: str
     capability: str  # the port it plugs into: encoder, body_estimator, try_on, …
     provider: str
     lane: str  # "production" (serving path) | "research" (offline north-star)
     license: str
-    # Passes the doctrine license+lane+eval gate (is_servable, require_eval=True) —
-    # identical verdict to the CI license gate.
-    servable: bool
-    blockers: list[str]  # why it may not serve yet; empty when servable
+    promotable: bool
+    runtime_servable: bool | None
+    blockers: list[str]  # why it may not promote; empty when promotable
+    runtime_blockers: list[str]
     eval_report: str | None
+    model_version: str | None
 
 
 class ModelRegistryStatus(BaseModel):
@@ -360,15 +383,6 @@ class ModelRegistryStatus(BaseModel):
     models: list[ModelStatus]
 
 
-def _find_registry_root() -> Path | None:
-    """Locate the repo root (dir holding models.registry.json), walking up from
-    this file. None when the registry isn't bundled — reported, never guessed."""
-    for parent in Path(__file__).resolve().parents:
-        if (parent / "models.registry.json").is_file():
-            return parent
-    return None
-
-
 @router.get(
     "/system/models",
     summary="Operator view: per-model lane + serve-eligibility (M8.5)",
@@ -376,20 +390,25 @@ def _find_registry_root() -> Path | None:
 def model_registry_status() -> ModelRegistryStatus:
     """Per-model lane + serve-eligibility, from the same gate CI enforces.
 
-    Research-lane models report ``servable=False`` with the honest reason
+    Research-lane models report ``promotable=False`` with the honest reason
     (``lane is 'research', not production``) — so an operator sees exactly what
     is in the serving path, what is held back as an offline north-star, and why.
     """
-    root = _find_registry_root()
-    if root is None:
-        return ModelRegistryStatus(available=False, models=[])
     try:
-        cards = load_registry(root / "models.registry.json")
+        cards = load_registry()
     except Exception:  # noqa: BLE001 — the trust surface must never 500
         return ModelRegistryStatus(available=False, models=[])
     models = []
     for c in sorted(cards, key=lambda x: (x.lane.value, x.capability, x.name)):
-        ok, reasons = is_servable(c)
+        try:
+            ok, reasons = resolve_promotion(c)
+        except Exception as exc:  # noqa: BLE001 — corrupt report is a blocked model
+            ok, reasons = False, [f"promotion report could not be verified: {exc}"]
+        runtime = RUNTIME_BY_MODEL.get(c.name)
+        if runtime is None:
+            runtime_ok, runtime_reasons = None, []
+        else:
+            runtime_ok, runtime_reasons = _configured_runtime_verdict(runtime)
         models.append(
             ModelStatus(
                 name=c.name,
@@ -397,9 +416,12 @@ def model_registry_status() -> ModelRegistryStatus:
                 provider=c.provider,
                 lane=c.lane.value,
                 license=c.license,
-                servable=ok,
+                promotable=ok,
+                runtime_servable=runtime_ok,
                 blockers=reasons,
+                runtime_blockers=runtime_reasons,
                 eval_report=c.eval_report,
+                model_version=c.model_version,
             )
         )
     return ModelRegistryStatus(available=True, models=models)

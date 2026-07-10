@@ -16,6 +16,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from fastapi import Depends, HTTPException, status
+from gyf_contracts.eval_report import runtime_model_verdict
 
 from .auth import Principal, get_current_principal
 from .catalog.directory import ItemDirectory
@@ -34,6 +35,7 @@ from .sink import EventSink, get_sink
 from .social import SocialRepository
 from .support import SupportRepository
 from .wardrobe import WardrobeRepository
+
 
 @lru_cache(maxsize=4)
 def shared_pool(dsn: str):
@@ -88,6 +90,12 @@ def get_text_embedder() -> TextEmbedder | None:
     keyword title match, so search keeps working on the encoder-less prod image
     instead of 503-ing.
     """
+    from common.config import settings as perception_settings
+
+    if not runtime_model_verdict(
+        "encoder", configured_model_uri=perception_settings.perception_model
+    )[0]:
+        return None
     try:
         from .catalog.perception_adapter import cached_text_embedder
 
@@ -159,6 +167,8 @@ def get_skin_adapter() -> SkinToneAdapter | None:
     abstain: the endpoint still runs the other module, and manual entry is always
     available. Construction loads weights, so it is cached inside the adapter.
     """
+    if not runtime_model_verdict("skin_tone")[0]:
+        return None
     try:
         from .profile.photo import cached_skin_adapter
 
@@ -169,6 +179,8 @@ def get_skin_adapter() -> SkinToneAdapter | None:
 
 def get_body_adapter() -> BodyAdapter | None:
     """The body-type estimator adapter, or ``None`` if its ml runtime is absent."""
+    if not runtime_model_verdict("body")[0]:
+        return None
     try:
         from .profile.photo import cached_body_adapter
 
@@ -253,21 +265,26 @@ def get_summary_repo() -> SummaryRepository:
 def get_tryon_renderer():
     """The configured TryOnRenderer port (M9, doctrine D1/D2).
 
-    ``GYF_TRYON_PROVIDER=fal-leffa`` + ``GYF_FAL_API_KEY`` activates the primary
-    licensed lane (MIT-licensed Leffa model, hosted on fal.ai — chosen over
-    FASHN and over fal's own Kling Kolors endpoint after a 2026-07-06 license/
-    infra research pass, see models.registry.json); ``GYF_TRYON_PROVIDER=fashn``
-    + ``GYF_FASHN_API_KEY`` activates the alternate lane. Anything else returns
-    the always-available abstaining baseline (invariant #5) so the endpoint
-    stays honest instead of erroring.
+    A configured provider constructs only after its registry card passes the
+    production license/lane/eval gate. Anything else returns the always-available
+    abstaining baseline (invariant #5) so the endpoint stays honest instead of
+    serving research models or erroring.
     """
     from .tryon import NullTryOnRenderer
 
-    if settings.tryon_provider == "fal-leffa" and settings.fal_api_key:
+    if (
+        settings.tryon_provider == "fal-leffa"
+        and settings.fal_api_key
+        and runtime_model_verdict("fal-leffa")[0]
+    ):
         from .tryon.fal_leffa import FalLeffaTryOnRenderer
 
         return FalLeffaTryOnRenderer(settings.fal_api_key)
-    if settings.tryon_provider == "fashn" and settings.fashn_api_key:
+    if (
+        settings.tryon_provider == "fashn"
+        and settings.fashn_api_key
+        and runtime_model_verdict("fashn")[0]
+    ):
         from .tryon.fashn import FashnTryOnRenderer
 
         return FashnTryOnRenderer(settings.fashn_api_key, mode=settings.tryon_mode)

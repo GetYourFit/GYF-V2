@@ -4,6 +4,7 @@
 # leaks into an image.
 .git
 .github
+services/api/.env
 
 # Host-built dependency trees — always reinstalled inside the image.
 .venv
@@ -36,4 +37,3 @@ ml/*.png
 # Provisioning tooling and local docs not needed by any image build.
 .tools
 docs
-eval-reports
