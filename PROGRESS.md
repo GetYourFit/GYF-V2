@@ -1388,3 +1388,37 @@ confidence and colour-reasoned explanations across the board. Also: invalid prof
 
 **Session commits shipped to main (all deploy-verified):** 01f0a0e auth · c893b57 splash ·
 0feea1b keyword search · f0a2185 recsys · (+ the 6 previously-unpushed fixes now live).
+
+### 2026-07-10 (cont. 3) — Sequential backlog sweep (code-doable items)
+
+Directive: "do everything sequentially and continue." Worked the residual backlog;
+GPU-Space items skipped (operator-gated — no HF/Render creds this session).
+
+- **Footwear variety `e1885c8`**: best-per-core keyed on top+bottom pinned one shoe
+  to every look. `_spread_footwear` reassigns the next relevance-ranked unused shoe
+  per repeat look + re-scores. Prod-verified: 4/5 distinct shoes (was 1/5). Footwear
+  catalog is healthy (1,584: sneakers 615 / shoes 535 / sandals 260 / boots 61 / mojari 98).
+- **Kids leak `55267cb`**: a "…Boys T-shirt" surfaced for a men's profile. 1,571
+  kids-titled items are ALL mislabeled adult-gender at ingest (SQL-verified), so the
+  gender predicate can't catch them. Applied search's `_KIDS_RE` title guard (imported,
+  DRY) to the recsys candidate query. Also lifts confidence (kids items lacked lch).
+- **Profile enum "silent drop" — NON-ISSUE (skipped, YAGNI)**: the onboarding wizard
+  imports the same `STYLE_INTENTS`/vocab from shared contracts, so real users only ever
+  send valid enums. The drop only bites garbage API input (my test used "minimal" vs the
+  canonical "minimalist"). Defensive validation working as intended.
+- **Status honesty `b21221c`**: `/system/status` claimed photo/search "live" from the
+  env var alone, so it lied while the Space slept. Added a cheap cached (60s TTL, 2s
+  timeout, one probe per distinct Space URL) HTTP liveness probe — a configured-but-
+  unreachable lane now reports "degraded" with the real fallback.
+
+**Code-doable backlog is now essentially clear.** Remaining high-value work is gated on
+the GPU Space (operator): (1) wake/redeploy the ZeroGPU Space + wire Render env →
+unlocks photo onboarding AND semantic search; (2) THEN backfill embeddings for the
+~15,407 un-embedded items (needs the encoder) — their `lch` is absent because they were
+never run through perception; CPU-only LCh backfill alone is low-value without embeddings
+(un-embedded items sort last / never appear in search). No further code lever until the
+Space is live.
+
+**All session commits on main (deploy-verified where testable):** 01f0a0e auth ·
+c893b57 splash · 0feea1b keyword-search · f0a2185 recsys-confidence+variety ·
+e1885c8 footwear · 55267cb kids-filter · b21221c status-honesty (+ 6 previously-unpushed).
