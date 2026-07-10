@@ -1454,3 +1454,17 @@ doctrine's "baseline behind every port," working as designed.
 render CLI here is unauthorized (no API key) so I can't set/inspect Render env directly;
 the user set it in the dashboard. Everything on the code side is done — the gate is the
 $9/mo HF Pro decision (or accept intermittent). No further free code lever unlocks it.
+
+### 2026-07-10 (cont. 5) — Dead code sweep + catalog-speed audit
+
+- **Dead code (knip, reliable — not grep guessing):** whole-repo scan found exactly two
+  truly-unused files. Both deleted: `AppIntro` (ea2c106) and `page-header.tsx` (c644ffc).
+  A hand grep had false-flagged the entire ui/ kit (Button/Input/Card…) as dead — those
+  are live; knip resolves real imports and cleared them. No other dead files.
+- **Catalog "fast + instantaneous" — already covered as far as free-tier allows:**
+  every catalog route already sends `Cache-Control: max-age` (30–3600s); migration 0013
+  added browse hot-path indexes; `.github/workflows/keepalive.yml` already pings /health
+  every 10 min to fight Render cold-start. Remaining perceived slowness = Render free-tier
+  spin-down (best-effort cron still lets some cold starts through). Real fix = an always-on
+  API tier (paid Render / Fly min-machines=1). No further free code lever.
+- **ML-live** remains the ZeroGPU-quota / HF-Pro ($9/mo) decision (cont. 4). Unchanged.
