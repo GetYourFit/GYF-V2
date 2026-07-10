@@ -1500,7 +1500,8 @@ and evaluation report. Fixed at the shared policy boundary rather than adding ro
 - Skin-tone capability naming is canonical (`skin_tone`), so a future commercial-clean model can
   actually pass its fairness gate; today's RetinaFace/FaRL model remains correctly research-only.
 - `/system/models` separates offline `promotable` from actual `runtime_servable`; user status uses
-  the same runtime verdict. Remote 401/404 responses no longer count as live.
+  the same runtime verdict. Remote 401/404 responses no longer count as live, and a reachable
+  Space host is only `beta` because inference/quota is verified on each real request.
 - Research-only body, skin-tone, and VTON adapters stay behind honest manual/null fallbacks even
   when provider URLs or keys are configured. The approved SigLIP encoder remains servable.
 

@@ -39,8 +39,11 @@ _probe_cache: dict[str, tuple[float, bool]] = {}
 
 
 def _remote_reachable(url: str) -> bool:
-    """True iff the Space answered an HTTP request (any <500) recently. Cached per
-    URL for _PROBE_TTL_S; distinct capabilities sharing one Space cost one probe."""
+    """True iff the Space host answered a successful HTTP request recently.
+
+    This is host liveness, not inference readiness; capability status therefore
+    stays beta until a real user request verifies the model path.
+    """
     if not url:
         return False
     now = time.monotonic()
@@ -168,9 +171,12 @@ def _text_search_capability() -> Capability:
     if encoder_url:
         if _remote_reachable(encoder_url):
             return Capability(
-                status="live",
+                status="beta",
                 lane="remote-gpu",
-                detail="Text→image catalog search embeds queries on the remote GPU lane.",
+                detail=(
+                    "GPU host is reachable; semantic inference is verified per request, "
+                    "with keyword fallback always available."
+                ),
             )
         return Capability(
             status="degraded",
@@ -201,9 +207,9 @@ def _photo_module(remote_url: str, name: str, runtime: str) -> Capability:
     if remote_url:
         if _remote_reachable(remote_url):
             return Capability(
-                status="live",
+                status="beta",
                 lane="remote-gpu",
-                detail=f"{name} runs on the remote GPU lane.",
+                detail=f"{name} GPU host is reachable; inference is verified per request.",
             )
         return Capability(
             status="degraded",

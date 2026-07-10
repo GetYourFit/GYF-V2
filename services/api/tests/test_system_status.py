@@ -75,7 +75,8 @@ def test_status_survives_stats_repo_failure():
 def test_text_search_reports_remote_gpu_lane(monkeypatch):
     monkeypatch.setenv("GYF_ENCODER_REMOTE_URL", "https://GetYourFit-gyf-gpu.hf.space")
     cap = _get().json()["capabilities"]["text_search"]
-    assert cap["status"] == "live" and cap["lane"] == "remote-gpu"
+    assert cap["status"] == "beta" and cap["lane"] == "remote-gpu"
+    assert "verified per request" in cap["detail"]
 
 
 def test_remote_probe_rejects_auth_and_missing_routes(monkeypatch):

@@ -197,7 +197,7 @@ def test_status_never_advertises_registry_blocked_models_as_live(monkeypatch):
     finally:
         app.dependency_overrides.clear()
 
-    assert caps["text_search"]["status"] == "live"
+    assert caps["text_search"]["status"] == "beta"
     for capability in ("photo_body_type", "photo_skin_tone", "virtual_try_on"):
         assert caps[capability]["status"] in {"degraded", "planned"}
         assert caps[capability]["status"] not in {"live", "beta"}
