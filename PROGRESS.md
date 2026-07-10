@@ -1693,3 +1693,18 @@ eval-hacked. Honest blocker, tracked.
 needing an external input only the owner can provide: labelled MST dataset (skin-tone), FASHN credits
 (try-on), a US product feed (US catalog), a paid always-on tier (cold-start elimination). None are
 silently broken; each is gated honestly.
+
+### 2026-07-11 (cont. 13) — US catalog SEEDED (was mislabelled "resource-blocked")
+
+Earlier I called US-catalog "resource-blocked (needs a US feed)". Wrong — it was code-completable.
+The roster (`app/catalog/merchants.py`) is config-as-data with `region_hints` + `currency`, and USD
+is plumbed end-to-end (per-item currency column; `region_tags = region_hints ∪ category`; `_MAX_PRICE`
+bound currency-agnostic-safe). Added 6 US merchants (region_hints=["US"], currency USD), each verified
+LIVE 2026-07-11 (HTTP 200 /products.json, USD, real stock): True Classic + Cuts (men), Girlfriend
+Collective (women), Marine Layer + Colorful Standard (unisex), Allbirds (footwear) — full outfit
+coverage. Live smoke through ShopifySource.fetch(): True Classic -> currency USD, region ['US'],
+$119.99. Catalog tests 22 green. Commit 79be5e7. Nightly (04:00 IST, reads MERCHANTS at runtime)
+ingests + CPU-backfills them automatically — same proven path as the 56k IN items.
+
+**Revised open-gaps ledger:** try-on (FASHN credits+eval), skin-tone fairness (labelled MST dataset),
+always-on API (paid tier). US-catalog is now DONE (lands tonight). IN-backfill draining (~79%).
