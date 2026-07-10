@@ -657,6 +657,17 @@ export function CanvasExplorer() {
     updateCullBox(); // keep the mounted-tile window in sync once motion settles
   });
 
+  // A recluster (click) recenters `pan` to {0,0} and lays tiles out fresh
+  // around the origin, but the throttled updateCullBox() above may not fire
+  // in time if the user had panned away from center first — leaving the
+  // cull window stale and pointed at the old pan position, so the new tiles
+  // (all near origin) fall outside it and never render even though bgColor
+  // already updated. Force an immediate, unthrottled recompute whenever the
+  // cluster itself changes.
+  useEffect(() => {
+    updateCullBox(true);
+  }, [generation, updateCullBox]);
+
   const stopMomentum = useCallback(() => cancelAnimationFrame(momentum.current), []);
 
   const startMomentum = useCallback(

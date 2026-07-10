@@ -60,7 +60,7 @@ export function OutfitCard({
         initial={reduce ? { opacity: 1 } : { opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, ease: EASE, delay: Math.min(index * 0.08, 0.4) }}
-        whileHover={reduce ? undefined : { y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.10)" }}
+        whileHover={reduce ? undefined : { y: -2 }}
         // Swipe right = save, left = not interested — same actions as the
         // buttons below, an order of magnitude faster on touch.
         drag="x"
@@ -73,12 +73,13 @@ export function OutfitCard({
         }}
         style={{
           background: "var(--surface-2)",
-          border: pick ? "1px solid var(--text-faint)" : "1px solid var(--rule)",
-          borderRadius: "20px",
+          // Sharp corners, hairline border — same flat masonry language
+          // (Ref1–4) as Canvas/Explore, not the old rounded/glow card.
+          border: pick ? "1px solid var(--text)" : "1px solid var(--rule)",
+          borderRadius: 0,
           overflow: "hidden",
           cursor: "default",
           willChange: "transform",
-          boxShadow: pick ? "0 4px 24px rgba(255,255,255,0.14)" : "0 2px 16px rgba(0,0,0,0.06)",
         }}
       >
         {pick && (
@@ -277,9 +278,9 @@ export function OutfitCard({
                 style={{
                   padding: "0.875rem 1.25rem",
                   margin: "0.75rem 1.25rem 0",
-                  borderRadius: "12px",
-                  background: "var(--rule)",
-                  border: "1px solid var(--border)",
+                  borderRadius: 0,
+                  background: "var(--surface)",
+                  border: "1px solid var(--rule)",
                 }}
               >
                 <p

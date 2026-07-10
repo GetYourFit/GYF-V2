@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Search, X, SlidersHorizontal } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
@@ -246,25 +246,27 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           borderBottom: "1px solid var(--rule)",
-          padding: "0.75rem 1rem",
+          padding: "0.625rem 1rem",
           display: "flex",
           flexDirection: "column",
-          gap: "0.75rem",
+          gap: "0.5rem",
           // Forces its own GPU compositing layer so iOS Safari repaints the
           // blur every frame instead of freezing it mid-scroll (see app-shell.tsx).
           transform: "translateZ(0)",
           willChange: "transform",
         }}
       >
-        {/* Search input + canvas entry */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+        {/* Search input + canvas entry — no boxed pill, just an icon-led
+          field with a hairline underline (Ref4's rounded search box read as
+          heavy chrome; this sits flush with the header instead). */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <div style={{ position: "relative", display: "flex", alignItems: "center", flex: 1 }}>
             <Search
-              size={16}
+              size={15}
               aria-hidden
               style={{
                 position: "absolute",
-                left: "1rem",
+                left: "0.125rem",
                 color: "var(--text-faint)",
                 flexShrink: 0,
                 pointerEvents: "none",
@@ -281,18 +283,17 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               aria-label="Search garments"
               style={{
                 flex: 1,
-                background: "var(--surface-2)",
-                border: `1.5px solid ${focused ? "var(--secondary)" : "var(--border)"}`,
+                background: "transparent",
+                border: "none",
+                borderBottom: `1.5px solid ${focused ? "var(--secondary)" : "var(--rule)"}`,
                 outline: "none",
-                borderRadius: "999px",
-                padding: filters.q ? "0.75rem 4.75rem 0.75rem 3rem" : "0.75rem 3rem",
+                borderRadius: 0,
+                padding: filters.q ? "0.5rem 4.5rem 0.5rem 1.5rem" : "0.5rem 2.5rem 0.5rem 1.5rem",
                 fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
                 fontSize: "0.9375rem",
                 color: "var(--text)",
-                boxShadow: focused
-                  ? "0 0 0 3px rgba(255,255,255,0.12)"
-                  : "0 2px 8px rgba(0,0,0,0.06)",
-                transition: "border-color 0.2s, box-shadow 0.2s",
+                boxShadow: "none",
+                transition: "border-color 0.2s",
               }}
             />
             {filters.q && (
@@ -302,7 +303,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
                 onClick={() => set("q", "")}
                 style={{
                   position: "absolute",
-                  right: "2.75rem",
+                  right: "2.25rem",
                   background: "none",
                   border: "none",
                   color: "var(--text-faint)",
@@ -316,14 +317,13 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               </button>
             )}
 
-            {/* Canvas explorer — pan the whole collection (Ref1/Ref2), now
-              living inside the search pill instead of its own circle. */}
+            {/* Canvas explorer — pan the whole collection (Ref1/Ref2). */}
             <Link
               href="/canvas"
               aria-label="Open canvas explorer"
               style={{
                 position: "absolute",
-                right: "0.625rem",
+                right: 0,
                 width: 32,
                 height: 32,
                 flexShrink: 0,
@@ -337,6 +337,41 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               <CanvasFlowerIcon reduce={reduce} />
             </Link>
           </div>
+
+          {/* Filter toggle — lives inside the bar itself, not a separate
+            hanging tab. Only shown once scrolled: at rest the filter rows
+            are already open below the bar, nothing to toggle. */}
+          {scrolled && (
+            <motion.button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              aria-label={expanded ? "Hide filters" : "Show filters"}
+              aria-expanded={expanded}
+              whileTap={reduce ? undefined : { scale: 0.9 }}
+              style={{
+                width: 32,
+                height: 32,
+                flexShrink: 0,
+                borderRadius: "50%",
+                border: "none",
+                background: expanded ? "var(--surface-2)" : "transparent",
+                color: hasActive ? "var(--secondary)" : "var(--text-faint)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <SlidersHorizontal
+                size={15}
+                aria-hidden
+                style={{
+                  transform: expanded ? "rotate(180deg)" : "none",
+                  transition: "transform 0.2s",
+                }}
+              />
+            </motion.button>
+          )}
 
           {/* 3-dot menu — takes the outer slot the canvas button vacated */}
           <div
@@ -353,49 +388,16 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           </div>
         </div>
 
-        {/* Collapse toggle — only appears once stuck to the top, letting the
-          user drop the filter rows back down or tuck them away again. */}
-        {scrolled && (
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "-0.6rem" }}>
-            <motion.button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              aria-label={expanded ? "Hide filters" : "Show filters"}
-              aria-expanded={expanded}
-              whileTap={reduce ? undefined : { scale: 0.9 }}
-              style={{
-                width: 30,
-                height: 18,
-                borderRadius: "0 0 12px 12px",
-                border: "1px solid var(--border)",
-                borderTop: "none",
-                background: "var(--surface-2)",
-                color: UI_COLORS.category,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                boxShadow: "0 3px 8px rgba(0,0,0,0.08)",
-              }}
-            >
-              <ChevronDown
-                size={13}
-                aria-hidden
-                style={{
-                  transform: expanded ? "rotate(180deg)" : "none",
-                  transition: "transform 0.2s",
-                }}
-              />
-            </motion.button>
-          </div>
-        )}
-
         {/* Collapsible filter rows — animated via the CSS grid-template-rows
           trick rather than Framer Motion's height:"auto", which needs a JS
           layout measurement every frame. Doing that inside a position:sticky,
           backdrop-blurred bar while the user is mid-scroll (the exact moment
           this triggers) causes visible jank; grid-template-rows lets the
-          browser interpolate on its own without re-measuring, staying smooth. */}
+          browser interpolate on its own without re-measuring, staying smooth.
+          At rest (not scrolled) this sits inline, unboxed, as part of the
+          header. Once scrolled + explicitly opened via the toggle above, it
+          becomes a floating dropdown with its own background box, sized to
+          exactly the content it holds — never a full-bleed panel. */}
         <div
           aria-hidden={!showFilters}
           // @ts-expect-error -- `inert` is a valid DOM attribute not yet in React's JSX typings
@@ -407,6 +409,16 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             transition: reduce
               ? "none"
               : "grid-template-rows 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease",
+            ...(scrolled
+              ? {
+                  position: "absolute",
+                  left: "1rem",
+                  right: "1rem",
+                  top: "100%",
+                  marginTop: "0.375rem",
+                  zIndex: 21,
+                }
+              : {}),
           }}
         >
           <div
@@ -416,6 +428,17 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               flexDirection: "column",
               gap: "0.75rem",
               minHeight: 0,
+              // The boxed background only exists for the scrolled dropdown
+              // state — at rest the rows sit directly on the header, no box.
+              ...(scrolled
+                ? {
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--rule)",
+                    borderRadius: "12px",
+                    padding: "0.75rem",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.16)",
+                  }
+                : {}),
             }}
           >
             {/* Occasion chips */}

@@ -27,6 +27,14 @@ interface GridCache {
 }
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
+/** Deterministic per-index pseudo-random aspect ratio for skeleton tiles —
+ *  varied heights (Ref4 masonry) so the loading state already reads as a
+ *  photo grid instead of a uniform block grid. */
+function skeletonRatio(i: number): number {
+  const h = Math.imul(i + 1, 2654435761) >>> 0;
+  return 0.68 + (h % 1000) / 1000 / 1.6; // ~0.68–1.3
+}
+
 function CardSkeleton({ i }: { i: number }) {
   return (
     <motion.div
@@ -40,9 +48,11 @@ function CardSkeleton({ i }: { i: number }) {
         border: "1px solid var(--rule)",
         borderRadius: 0,
         overflow: "hidden",
+        breakInside: "avoid",
+        marginBottom: "0.75rem",
       }}
     >
-      <div style={{ aspectRatio: "3/4", background: "var(--rule)" }} />
+      <div style={{ aspectRatio: `${skeletonRatio(i)}`, background: "var(--rule)" }} />
       <div style={{ padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         <div
           style={{
@@ -65,10 +75,13 @@ function CardSkeleton({ i }: { i: number }) {
   );
 }
 
+// Masonry, not a uniform grid: each tile's height follows its image's own
+// resolution/aspect ratio (Ref4) instead of forcing every crop into the same
+// 3:4 box. CSS multi-column is what lets tiles size to their natural content
+// height while still packing two columns tightly.
 const GRID_STYLE: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, 1fr)",
-  gap: "0.75rem",
+  columnCount: 2,
+  columnGap: "0.75rem",
 };
 
 interface ExploreGridProps {

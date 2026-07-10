@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 
@@ -20,8 +20,22 @@ interface ExploreCardProps {
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
+/** Deterministic per-item pseudo-random aspect ratio for the placeholder box
+ *  (before the real image reports its intrinsic size) — same idea as the
+ *  Canvas cluster's hash01, kept local since the two grids don't share a
+ *  layout engine. Portrait-leaning, matching the catalog's garment photos. */
+function placeholderRatio(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return 0.68 + ((h >>> 0) % 1000) / 1000 / 1.6; // ~0.68–1.3
+}
+
 function ExploreCardImpl({ item, index, saved, priority, onSave, onSelect }: ExploreCardProps) {
   const reduce = useReducedMotion();
+  const [loaded, setLoaded] = useState(false);
   const price = formatPrice(item.price, item.currency);
   const openDetail = onSelect ? () => onSelect(item) : undefined;
 
@@ -48,6 +62,11 @@ function ExploreCardImpl({ item, index, saved, priority, onSave, onSelect }: Exp
         overflow: "hidden",
         cursor: onSelect ? "pointer" : "default",
         boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+        // Masonry (CSS multi-column parent): each card must stay in one
+        // column instead of splitting across the column break, with its own
+        // bottom gap since column-gap only spaces sideways.
+        breakInside: "avoid",
+        marginBottom: "0.75rem",
       }}
       onClick={openDetail}
       // Keyboard access: the whole card opens detail on click, so it must also
@@ -66,18 +85,22 @@ function ExploreCardImpl({ item, index, saved, priority, onSave, onSelect }: Exp
           : undefined
       }
     >
-      {/* Image */}
+      {/* Image — sized to its own resolution (Ref4 masonry), not forced into
+          a uniform crop: the wrapper only holds a placeholder aspect ratio
+          until the real image has loaded and reports its intrinsic size. */}
       <div
         style={{
           position: "relative",
-          aspectRatio: "3/4",
+          aspectRatio: loaded ? undefined : `${placeholderRatio(item.item_id)}`,
           overflow: "hidden",
           background: "var(--bg)",
         }}
       >
         {item.image_url ? (
           <>
-            <div className="skeleton" style={{ position: "absolute", inset: 0 }} aria-hidden />
+            {!loaded && (
+              <div className="skeleton" style={{ position: "absolute", inset: 0 }} aria-hidden />
+            )}
             <motion.img
               src={mediaUrl(item.image_url, 400) ?? undefined}
               srcSet={mediaSrcSet(item.image_url, 400)}
@@ -90,17 +113,14 @@ function ExploreCardImpl({ item, index, saved, priority, onSave, onSelect }: Exp
               whileHover={reduce ? undefined : { scale: 1.03 }}
               transition={{ duration: 0.5, ease: EASE }}
               style={{
-                position: "relative",
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
                 display: "block",
-                opacity: 0,
+                width: "100%",
+                height: loaded ? "auto" : "100%",
+                objectFit: loaded ? undefined : "cover",
+                opacity: loaded ? 1 : 0,
                 transition: "opacity 0.35s ease",
               }}
-              onLoad={(e) => {
-                e.currentTarget.style.opacity = "1";
-              }}
+              onLoad={() => setLoaded(true)}
             />
           </>
         ) : (
