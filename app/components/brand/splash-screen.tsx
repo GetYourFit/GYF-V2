@@ -13,9 +13,23 @@ interface SplashScreenProps {
   onDone?: () => void;
 }
 
+// Once per session: after the first paint the brand splash is a 2.4s wall in
+// front of every navigation. The lazy initializer reads the shown-flag on the
+// client so a repeat load renders `visible=false` from its first client render
+// (no block); SSR has no sessionStorage, so it defaults to showing and hydration
+// corrects it instantly.
+function alreadyShown(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem("gyf_splash_shown") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function SplashScreen({ onDone }: SplashScreenProps) {
   const reduce = useReducedMotion();
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => !alreadyShown());
   const [quoteState, setQuoteState] = useState(() => randomQuote());
   const [quoteVisible, setQuoteVisible] = useState(false);
 
@@ -41,6 +55,11 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
   // Hide splash after minimum show time (effect runs at mount, so the timer
   // starts from first paint — no impure Date.now() read during render).
   useEffect(() => {
+    // Already shown this session: never block — resolve immediately.
+    if (!visible) {
+      onDone?.();
+      return;
+    }
     const t = setTimeout(() => {
       setVisible(false);
       onDone?.();
@@ -49,6 +68,8 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
       } catch {}
     }, MIN_SHOW_MS);
     return () => clearTimeout(t);
+    // Only the first-mount decision matters; `visible` is set once here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onDone]);
 
   const activeDot = quoteState.index % 3;
