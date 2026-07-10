@@ -1733,3 +1733,18 @@ scorer weights (doctrine: promotion is eval-gated, not vibes).
 (it's an unauthenticated cacheable read). Full undertone-ordered Explore = a follow-up slice
 (needs auth-in-browse, breaks the shared edge cache). Variety fix + deepening catalog is the
 high-ROI 80% now.
+
+### 2026-07-11 (cont. 15) — SOTA: personalized two-tower Explore (non-deterministic)
+
+User: "make Explore non-deterministic and state-of-the-art ML." Done. Explore browse now ranks by
+pgvector cosine to the caller's learned taste vector (`recsys.taste.build_taste` — engagement-
+weighted, recency-decayed SigLIP-space centroid) over the HNSW index — two-tower content retrieval,
+the doctrine's launch recsys. Per-user (non-deterministic across users) + shifts as taste evolves.
+Free: reuses the embeddings + taste model already built, no GPU. Anonymous/cold-start -> the
+rotating relational read (cont.14), honoring invariant #5 (baseline behind the port).
+Files: `retrieval._BROWSE_TASTE` + `browse(taste_vector)` (threaded through `browse_multi_slot`);
+`auth.get_optional_principal`; `routers/catalog` builds taste + private-caches the per-user page.
+Prod smoke: personalized scores descend nearest-first (1.0/0.845/0.817...), cold-start plain read,
+orderings differ. 56 tests green + a new branch test. Commit pending push.
+Honest next layer: cold-start users with a PROFILE but no engagement still get the shuffle (taste
+vector needs engagement); profile->vector content cold-start for Explore is the follow-up.
