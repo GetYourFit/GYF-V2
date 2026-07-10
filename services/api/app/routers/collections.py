@@ -96,10 +96,11 @@ def save_outfit(
     ``(user, outfit_key)`` — re-saving updates the stored snapshot. Returns the
     saved look enriched for immediate render."""
     outfit_id = repo.save(principal.user_id, body)
-    saved = enrich_saved_outfits(repo.list(principal.user_id), directory)
-    for look in saved:
-        if look.id == outfit_id:
-            return look
+    # Enrich only the just-saved look, not the user's whole saved list.
+    record = next((r for r in repo.list(principal.user_id) if r.id == outfit_id), None)
+    saved = enrich_saved_outfits([record], directory) if record else []
+    if saved:
+        return saved[0]
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Save failed")
 
 

@@ -116,13 +116,13 @@ def test_put_profile_sets_display_name_on_account():
         # trimmed on the way in
         resp = client.put("/profile", json={"body_type": "oval", "display_name": "  Atharv  "})
         assert resp.status_code == 200
-        assert accounts.get_identity(DEV_USER)[0] == "Atharv"
+        assert accounts.get_profile_fields(DEV_USER)[0] == "Atharv"
         # omitted key never clears an existing name
         client.put("/profile", json={"body_type": "hourglass"})
-        assert accounts.get_identity(DEV_USER)[0] == "Atharv"
+        assert accounts.get_profile_fields(DEV_USER)[0] == "Atharv"
         # explicit null (and whitespace-only) clears
         client.put("/profile", json={"display_name": "   "})
-        assert accounts.get_identity(DEV_USER)[0] is None
+        assert accounts.get_profile_fields(DEV_USER)[0] is None
     finally:
         app.dependency_overrides.clear()
 

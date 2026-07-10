@@ -223,12 +223,15 @@ def profile_summary(
     plus identity: the user-set display name (falling back to the email local-part),
     email, and member-since date — all real account data, never invented."""
     summary = summarize(repo, principal.user_id)
-    name, created_at = account_repo.get_identity(principal.user_id)
+    # One users-row read for identity + phone + avatar (was three round-trips).
+    name, created_at, phone_cc, phone_num, avatar_url = account_repo.get_profile_fields(
+        principal.user_id
+    )
     summary.display_name = name or fallback_display_name(principal.email)
     summary.email = principal.email
     summary.member_since = created_at.date().isoformat() if hasattr(created_at, "date") else None
-    summary.phone_country_code, summary.phone_number = account_repo.get_phone(principal.user_id)
-    summary.avatar_url = account_repo.get_avatar_url(principal.user_id)
+    summary.phone_country_code, summary.phone_number = phone_cc, phone_num
+    summary.avatar_url = avatar_url
     return summary
 
 
