@@ -14,6 +14,16 @@ type SignupStep = "credentials" | "identity";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
+function redirectPath(next: string | null, mode: Mode): string {
+  if (next === null) return mode === "signup" ? "/onboarding" : "/";
+  if (!next.startsWith("/") || next.startsWith("//")) return "/";
+  try {
+    return new URL(next, window.location.origin).origin === window.location.origin ? next : "/";
+  } catch {
+    return "/";
+  }
+}
+
 async function waitForGuardToAccept(path: string, timeoutMs = 4000): Promise<void> {
   const target = new URL(path, window.location.origin).pathname;
   const deadline = Date.now() + timeoutMs;
@@ -129,7 +139,7 @@ function GhostInput({
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const params = useSearchParams();
-  const next = params.get("next") || "/";
+  const next = redirectPath(params.get("next"), mode);
   const copy = COPY[mode];
   const reduce = useReducedMotion();
 
