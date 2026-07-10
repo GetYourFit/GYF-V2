@@ -1422,3 +1422,35 @@ Space is live.
 **All session commits on main (deploy-verified where testable):** 01f0a0e auth ·
 c893b57 splash · 0feea1b keyword-search · f0a2185 recsys-confidence+variety ·
 e1885c8 footwear · 55267cb kids-filter · b21221c status-honesty (+ 6 previously-unpushed).
+
+### 2026-07-10 (cont. 4) — "make every ML live": root cause = ZeroGPU free-quota ceiling
+
+User set the Render env (encoder/body/skin URLs + GYF_HF_TOKEN). Traced why ML still
+wasn't live:
+
+- Space `https://GetYourFit-gyf-gpu.hf.space` is UP (GET / 200 in ~1.3s) and serves all
+  four endpoints: `/embed_texts`, `/embed_images`, `/estimate_skin_tone`, `/estimate_body`.
+- `perception` package + gradio_client ARE installed on the API image; the remote encoder
+  path is torch-free (torch lazy-imported) so the adapter constructs fine (`RemoteEncoder`).
+- BUT running the real encoder path WITH the token returns:
+  `AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left).`
+  Prod `/items/search?q=elegant evening outfit` scores are 0.5 (keyword n/len), not cosine
+  → the encoder call fails on quota every time → graceful keyword fallback. Same quota wall
+  makes photo body/skin abstain → 503.
+
+**This is a free-tier ceiling, not a code bug.** HF free ZeroGPU grants a tiny rolling
+quota; production styling traffic exhausts it, so ML is only intermittently live and
+degrades honestly (keyword search / manual onboarding) the rest of the time — which is the
+doctrine's "baseline behind every port," working as designed.
+
+**To make ML reliably live, one of (cheapest first):**
+1. **HF Pro on the GetYourFit account — $9/mo.** Unlocks real ZeroGPU quota for all three
+   lanes (encoder + body + skin). Cleanest; keeps the current architecture unchanged.
+2. Self-host the SigLIP encoder CPU-side on Render (search only) — needs torch in the API
+   image (~2GB) + a ≥2GB Render instance; doesn't cover body/skin (SAM/pyfacer too heavy).
+3. Accept intermittent ML (free): live when quota allows, keyword/manual otherwise. Status
+   now reports the real lane honestly (b21221c liveness probe).
+
+render CLI here is unauthorized (no API key) so I can't set/inspect Render env directly;
+the user set it in the dashboard. Everything on the code side is done — the gate is the
+$9/mo HF Pro decision (or accept intermittent). No further free code lever unlocks it.
