@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, Query, Response
 from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 
 from ..catalog.directory import ItemDirectory
@@ -22,6 +23,31 @@ from ..dependencies import get_item_directory, get_search_repo, get_text_embedde
 from ..ratelimit import rate_limit
 
 router = APIRouter(tags=["catalog"])
+logger = logging.getLogger(__name__)
+
+
+class _Precomputed:
+    """A :class:`TextEmbedder` holding an already-computed query vector, so the
+    existing search functions run without re-embedding (the handler embeds once,
+    isolating that failure-prone step from the SQL path)."""
+
+    def __init__(self, vec: list[float]) -> None:
+        self._vec = vec
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._vec
+
+
+def _embed_or_none(embedder: TextEmbedder | None, query: str) -> list[float] | None:
+    """Embed the query, or ``None`` if no encoder is available or the encode fails
+    (remote lane down/cold). Callers fall back to keyword search — never a 500."""
+    if embedder is None:
+        return None
+    try:
+        return embedder.embed_query(query)
+    except Exception:  # noqa: BLE001 — any encode failure degrades to keyword search
+        logger.warning("text encoder failed; falling back to keyword search", exc_info=True)
+        return None
 
 
 @router.get(
@@ -163,46 +189,56 @@ def search_items(
         "Mutually exclusive with `slot`; `k` is the total page size, split evenly.",
     ),
     repo: VectorSearchRepository = Depends(get_search_repo),
-    embedder: TextEmbedder = Depends(get_text_embedder),
+    embedder: TextEmbedder | None = Depends(get_text_embedder),
     directory: ItemDirectory = Depends(get_item_directory),
 ) -> dict[str, list[SearchResult]]:
     """Text->image search over the catalog (e.g. 'red floral summer dress').
 
-    The encoder loads its backend lazily, so a missing runtime (e.g. ``open_clip``
-    absent from the API image, which delegates GPU work to the remote lane) only
-    raises when we actually embed. Convert that into the same honest 503 the
-    construction-time path returns, never a 500 that pretends the search broke.
+    The semantic path embeds the query and does an ANN scan. The encoder loads its
+    backend lazily and delegates GPU work to a remote lane, so on the encoder-less
+    prod image (or when that lane is down) embedding fails. We isolate *only* the
+    embed step and fall back to a keyword title match — search keeps returning items
+    instead of the raw 500 it used to throw. SQL/other errors are left to surface.
     """
     response.headers["Cache-Control"] = "public, max-age=30"
-    try:
-        if slots:
-            slot_list = [s.strip() for s in slots.split(",") if s.strip()]
-            per_slot_k = max(1, k // len(slot_list))
-            hits = search_text_multi_slot(
-                repo,
-                embedder,
-                q,
-                per_slot_k,
-                region,
-                offset // len(slot_list),
-                [_slot_categories(s) or [] for s in slot_list],
-                max_price=max_price,
-                sort=sort,
-                genders=_genders(gender),
-            )
-        else:
-            hits = search_text(
-                repo,
-                embedder,
-                q,
-                k,
-                region,
-                offset,
-                max_price=max_price,
-                sort=sort,
-                genders=_genders(gender),
-                categories=_slot_categories(slot),
-            )
-        return {"results": enrich_results(hits, directory)}
-    except ImportError as exc:  # encoder backend not installed in this runtime
-        raise HTTPException(status_code=503, detail="text search unavailable") from exc
+    vec = _embed_or_none(embedder, q)
+    if vec is None:
+        hits = repo.keyword_search(
+            q,
+            k,
+            region,
+            offset,
+            max_price=max_price,
+            sort=sort,
+            genders=_genders(gender),
+            categories=_slot_categories(slot),
+        )
+    elif slots:
+        slot_list = [s.strip() for s in slots.split(",") if s.strip()]
+        per_slot_k = max(1, k // len(slot_list))
+        hits = search_text_multi_slot(
+            repo,
+            _Precomputed(vec),
+            q,
+            per_slot_k,
+            region,
+            offset // len(slot_list),
+            [_slot_categories(s) or [] for s in slot_list],
+            max_price=max_price,
+            sort=sort,
+            genders=_genders(gender),
+        )
+    else:
+        hits = search_text(
+            repo,
+            _Precomputed(vec),
+            q,
+            k,
+            region,
+            offset,
+            max_price=max_price,
+            sort=sort,
+            genders=_genders(gender),
+            categories=_slot_categories(slot),
+        )
+    return {"results": enrich_results(hits, directory)}

@@ -79,19 +79,21 @@ def get_search_repo() -> VectorSearchRepository:
     )
 
 
-def get_text_embedder() -> TextEmbedder:
-    """The SigLIP text-query embedder from the ML runtime.
+def get_text_embedder() -> TextEmbedder | None:
+    """The SigLIP text-query embedder from the ML runtime, or ``None`` when the
+    ML/torch stack is not installed in this runtime.
 
-    Imported lazily so the API needs the ML/torch stack only when text search is
-    actually served. When the perception runtime is not installed, ``/items/search``
-    returns an honest 503 rather than pretending to work.
+    Imported lazily so the API needs the stack only when text search is served.
+    Returning ``None`` (rather than raising) lets ``/items/search`` fall back to a
+    keyword title match, so search keeps working on the encoder-less prod image
+    instead of 503-ing.
     """
     try:
         from .catalog.perception_adapter import cached_text_embedder
 
         return cached_text_embedder()
-    except ImportError as exc:  # perception runtime / torch not installed
-        raise HTTPException(status_code=503, detail="text search unavailable") from exc
+    except ImportError:  # perception runtime / torch not installed
+        return None
 
 
 def get_item_directory() -> ItemDirectory:

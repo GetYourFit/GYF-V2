@@ -82,6 +82,21 @@ class VectorSearchRepository(Protocol):
         categories: list[str] | None = None,
     ) -> list[SearchResult]: ...
 
+    def keyword_search(
+        self,
+        query: str,
+        k: int,
+        region: str | None,
+        offset: int = 0,
+        max_price: float | None = None,
+        sort: str = "relevance",
+        genders: frozenset[str] | None = None,
+        categories: list[str] | None = None,
+    ) -> list[SearchResult]:
+        """Title keyword fallback when the semantic encoder lane is unavailable —
+        no embedding, so search still returns items instead of a 500/503."""
+        ...
+
     def browse(
         self,
         categories: list[str] | None,
@@ -103,10 +118,17 @@ class VectorSearchRepository(Protocol):
 _REGION_FILTER = "AND (i.region_tags = '{}' OR i.region_tags @> ARRAY[%s]::text[])"
 
 # A gender filter keeps unfaceted items (no taxonomy gender) and items whose
-# facet is in the allowed set — gendered relevance, never a wall.
+# facet is in the allowed set — gendered relevance, never a wall. It also drops
+# children's garments: infer_gender maps "boys"->men and "girls"->women, so a
+# "Boys T-shirt" indexes as adult menswear and surfaced to a men's profile (prod
+# bug). ponytail: title regex, applied only when a gender is stated (i.e. adult
+# styling). Ceiling: heuristic on the title — the real fix is a kids taxonomy
+# facet at ingest so it excludes regardless of title wording.
+_KIDS_RE = r"\y(boys?|girls?|kids?|toddlers?|infants?|babys?|childrens?)\y"
 _GENDER_FILTER = (
     "AND (i.attributes #>> '{taxonomy,gender}' IS NULL"
     " OR i.attributes #>> '{taxonomy,gender}' = ANY(%s::text[]))"
+    f" AND i.title !~* '{_KIDS_RE}'"
 )
 
 _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
@@ -280,6 +302,59 @@ class PostgresVectorSearchRepository:
         params.extend([k, offset])
         # depth=0: this is a plain relational read, not an HNSW scan — no ef_search
         # / iterative-scan tuning needed (and none of that ML cost paid).
+        return self._run(sql, tuple(params))
+
+    def keyword_search(
+        self,
+        query: str,
+        k: int,
+        region: str | None,
+        offset: int = 0,
+        max_price: float | None = None,
+        sort: str = "relevance",
+        genders: frozenset[str] | None = None,
+        categories: list[str] | None = None,
+    ) -> list[SearchResult]:
+        # Every whitespace token must appear in the title (ANDed ILIKE), so
+        # "red dress" needs both words — cheap approximation of relevance with no
+        # embedding. ponytail: sequential ILIKE scan over the catalog; add a
+        # pg_trgm GIN index on title if keyword-fallback volume ever grows.
+        tokens = [t for t in query.split() if t][:6]  # bound the clause count
+        # Require a stored embedding (same as browse()): a keyword hit with none
+        # would dead-end on click, since recluster/similar joins item_embeddings.
+        where = (
+            "WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0"
+            " AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)"
+        )
+        params: list[object] = []
+        for tok in tokens or [query]:
+            where += " AND i.title ILIKE %s"
+            params.append(f"%{tok}%")
+        if region:
+            where += " " + _REGION_FILTER
+            params.append(region)
+        if max_price is not None:
+            where += " AND i.price IS NOT NULL AND i.price <= %s"
+            params.append(max_price)
+        if genders:
+            where += " " + _GENDER_FILTER
+            params.append(sorted(genders))
+        if categories:
+            where += " " + _CATEGORY_FILTER
+            params.append(categories)
+        # No semantic score without an embedding — order by price when asked,
+        # else priced-with-images first then newest (same as browse).
+        order = _SORT_CLAUSES.get(
+            sort, "ORDER BY (i.price IS NOT NULL) DESC, i.created_at DESC, i.id"
+        )
+        params.extend([k, offset])
+        sql = f"""
+        SELECT i.id, i.title, 0.0 AS score, i.image_refs
+        FROM items i
+        {where}
+        {order}
+        LIMIT %s OFFSET %s
+        """
         return self._run(sql, tuple(params))
 
     def _run(self, sql: str, params: tuple, *, depth: int = 0) -> list[SearchResult]:

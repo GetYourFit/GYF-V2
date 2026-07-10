@@ -2,8 +2,8 @@
 
 This bridges the API to the SigLIP text encoder for query-time text->image search.
 It imports the ``gyf-ml`` perception package, so it is only importable where that
-runtime (and torch) is installed; ``get_text_embedder`` in app.main catches the
-ImportError and returns 503 otherwise.
+runtime (and torch) is installed; ``get_text_embedder`` catches the ImportError
+and returns ``None`` otherwise, so ``/items/search`` falls back to keyword search.
 
 Architectural note: the product surface and the ML platform communicate via
 contracts (plan §1/§3). For the beta this in-process adapter is the simplest

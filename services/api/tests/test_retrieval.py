@@ -234,6 +234,19 @@ class StubRepo:
     ):
         return [SearchResult("hit", "Search Hit", 0.77)]
 
+    def keyword_search(
+        self,
+        query,
+        k,
+        region,
+        offset=0,
+        max_price=None,
+        sort="relevance",
+        genders=None,
+        categories=None,
+    ):
+        return [SearchResult("kw", "Keyword Hit", 0.0)]
+
 
 class StubEmbedder:
     def embed_query(self, text):
@@ -334,13 +347,16 @@ def test_search_endpoint_validates_and_forwards_price_and_sort():
         app.dependency_overrides.clear()
 
 
-def test_search_endpoint_503_when_embedder_unavailable():
-    # Default get_text_embedder import path: perception runtime is absent in the
-    # api venv, so the dependency raises 503.
+def test_search_endpoint_keyword_fallback_when_embedder_unavailable():
+    # No encoder (perception runtime absent → get_text_embedder is None): search
+    # falls back to a keyword title match and returns 200, never a 500/503.
     app.dependency_overrides[get_search_repo] = lambda: StubRepo()
+    app.dependency_overrides[get_text_embedder] = lambda: None
+    app.dependency_overrides[get_item_directory] = lambda: InMemoryItemDirectory([])
     try:
-        resp = TestClient(app, raise_server_exceptions=False).get("/items/search?q=x")
-        assert resp.status_code == 503
+        resp = TestClient(app).get("/items/search?q=x")
+        assert resp.status_code == 200
+        assert resp.json()["results"][0]["item_id"] == "kw"
     finally:
         app.dependency_overrides.clear()
 
