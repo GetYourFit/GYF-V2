@@ -19,8 +19,19 @@ from ..catalog.retrieval import (
     search_text,
     search_text_multi_slot,
 )
-from ..dependencies import get_item_directory, get_search_repo, get_text_embedder
+from ..auth import Principal, get_optional_principal
+from ..dependencies import (
+    get_item_directory,
+    get_search_repo,
+    get_taste_repo,
+    get_text_embedder,
+)
 from ..ratelimit import rate_limit
+from ..recsys.taste import TasteRepository, build_taste
+
+# How many recent engagements feed the Explore taste vector — matches the feed's
+# horizon so both surfaces learn from the same window.
+_TASTE_HISTORY = 200
 
 router = APIRouter(tags=["catalog"])
 logger = logging.getLogger(__name__)
@@ -123,16 +134,25 @@ def browse_items(
     ),
     repo: VectorSearchRepository = Depends(get_search_repo),
     directory: ItemDirectory = Depends(get_item_directory),
+    principal: Principal | None = Depends(get_optional_principal),
+    taste_repo: TasteRepository = Depends(get_taste_repo),
 ) -> dict[str, list[SearchResult]]:
-    """Empty-state Explore feed — a cheap catalogue page, NO text embedding and NO
-    vector scan (unlike /items/search). The default browse view isn't a real query,
-    so paying a multi-second SigLIP embed + HNSW scan for a generic seed was pure
-    waste that also 500'd the grid whenever the GPU lane was cold. This serves in
-    tens of ms from a plain relational read and needs no ML runtime at all, so the
-    grid fills instantly and stays up even when the encoder is down. Priced items
-    with images lead; ``offset`` is the global count shown, split across slots."""
-    # Near-static per (region, gender, slots): let the browser + any edge cache it.
-    response.headers["Cache-Control"] = "public, max-age=60"
+    """Explore feed. When the caller is signed in and has a learned taste vector,
+    this ranks the catalogue by cosine to it (two-tower content retrieval) — the
+    feed reflects what they actually engage with, per-user, and shifts as their
+    taste evolves. Anonymous / cold-start callers get a cheap rotating relational
+    read (no ML runtime), so the grid still fills instantly and stays up when the
+    encoder lane is cold. ``offset`` is the global count shown, split across slots."""
+    # Personalize only when there's real engagement signal; otherwise the shared,
+    # cacheable rotating read (which already varies day-to-day so it never repeats).
+    taste_vector = None
+    if principal is not None:
+        taste = build_taste(taste_repo.engagements(principal.user_id, _TASTE_HISTORY))
+        taste_vector = taste.vector if taste.has_signal else None
+    if taste_vector is not None:
+        response.headers["Cache-Control"] = "private, max-age=30"  # per-user, never shared
+    else:
+        response.headers["Cache-Control"] = "public, max-age=60"
     if slots:
         slot_list = [s.strip() for s in slots.split(",") if s.strip()]
         per_slot_k = max(1, k // len(slot_list))
@@ -143,9 +163,12 @@ def browse_items(
             region,
             offset // len(slot_list),
             genders=_genders(gender),
+            taste_vector=taste_vector,
         )
     else:
-        hits = repo.browse(None, k, region, offset, genders=_genders(gender))
+        hits = repo.browse(
+            None, k, region, offset, genders=_genders(gender), taste_vector=taste_vector
+        )
     return {"results": enrich_results(hits, directory)}
 
 

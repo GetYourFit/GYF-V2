@@ -66,6 +66,25 @@ def test_browse_sql_requires_an_embedding_to_exist():
     assert "EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)" in sql
 
 
+def test_browse_personalizes_by_taste_vector():
+    """With a taste vector, Explore browse ranks by cosine to it (two-tower content
+    retrieval) instead of the plain rotating read — the SOTA personalized path."""
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    taste = [0.1] * 768
+
+    repo.browse(categories=None, k=10, region=None, taste_vector=taste)
+    taste_sql, taste_params = pool.calls[-1]
+    assert "ORDER BY e.embedding <=> %s::vector" in taste_sql  # nearest-taste first
+    assert "1 - (e.embedding <=> %s::vector) AS score" in taste_sql  # honest affinity score
+    assert taste_params[0] == taste_params[-3]  # same vector bound for score + ORDER BY
+
+    repo.browse(categories=None, k=10, region=None)  # no taste -> cold-start path
+    cold_sql, _ = pool.calls[-1]
+    assert "embedding <=>" not in cold_sql.split("ORDER BY")[1]  # not a vector scan
+    assert "CURRENT_DATE" in cold_sql  # the rotating daily shuffle
+
+
 def test_region_filter_added_only_when_region_given():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)

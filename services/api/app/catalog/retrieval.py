@@ -115,9 +115,11 @@ class VectorSearchRepository(Protocol):
         region: str | None,
         offset: int = 0,
         genders: frozenset[str] | None = None,
+        taste_vector: list[float] | None = None,
     ) -> list[SearchResult]:
-        """Cheap catalogue page for the empty-state feed — no embedding, no vector
-        scan. ``categories`` restricts to one slot's garments; None = all slots."""
+        """Catalogue page for the Explore feed. With ``taste_vector`` set, ranks by
+        cosine to it (personalized two-tower retrieval); without, a cheap relational
+        read. ``categories`` restricts to one slot's garments; None = all slots."""
         ...
 
     def catalog_facets(self, region: str | None) -> CatalogFacets: ...
@@ -164,6 +166,24 @@ WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
 -- ponytail: daily rotation; a per-session client seed would also de-dupe same-day
 -- revisits — add when users report intra-day repetition.
 ORDER BY (i.price IS NOT NULL) DESC, hashtext(i.id::text || CURRENT_DATE::text), i.id
+LIMIT %s OFFSET %s
+"""
+
+# Personalized Explore: two-tower content retrieval. When the caller has a learned
+# taste vector (recsys.taste, an engagement-weighted centroid in SigLIP space), rank
+# the whole catalogue by pgvector cosine to it over the HNSW index — the user's
+# nearest-taste slice, not a generic page. Per-user, so non-deterministic across
+# users; the taste vector is recency-decayed, so it also shifts over time as they
+# engage. ponytail: no per-hour exploration jitter yet (would defeat index-ordered
+# ANN); the evolving vector + growing catalogue supply freshness — add bandit
+# exploration if users report a static feed.
+_BROWSE_TASTE = """
+SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs
+FROM item_embeddings e
+JOIN items i ON i.id = e.item_id
+WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+  {region} {gender} {category}
+ORDER BY e.embedding <=> %s::vector, i.id
 LIMIT %s OFFSET %s
 """
 
@@ -303,14 +323,32 @@ class PostgresVectorSearchRepository:
         region: str | None,
         offset: int = 0,
         genders: frozenset[str] | None = None,
+        taste_vector: list[float] | None = None,
     ) -> list[SearchResult]:
         gender_list = sorted(genders) if genders else None
-        sql = _BROWSE.format(
-            region=_REGION_FILTER if region else "",
-            gender=_GENDER_FILTER if gender_list else "",
-            category=_CATEGORY_FILTER if categories else "",
-        )
-        params: list[object] = []
+        region_clause = _REGION_FILTER if region else ""
+        gender_clause = _GENDER_FILTER if gender_list else ""
+        category_clause = _CATEGORY_FILTER if categories else ""
+        # Personalized path: rank by cosine to the taste vector over the HNSW index.
+        if taste_vector is not None:
+            vec = _pgvector(taste_vector)
+            sql = _BROWSE_TASTE.format(
+                region=region_clause, gender=gender_clause, category=category_clause
+            )
+            params: list[object] = [vec]  # score expression
+            if region:
+                params.append(region)
+            if gender_list:
+                params.append(gender_list)
+            if categories:
+                params.append(categories)
+            params.append(vec)  # ORDER BY expression
+            params.extend([k, offset])
+            # HNSW scan: size ef_search to the page depth like the other vector reads.
+            return self._run(sql, tuple(params), depth=k + offset)
+        # Cold-start / anonymous path: plain relational read, no vector scan.
+        sql = _BROWSE.format(region=region_clause, gender=gender_clause, category=category_clause)
+        params = []
         if region:
             params.append(region)
         if gender_list:
@@ -318,8 +356,6 @@ class PostgresVectorSearchRepository:
         if categories:
             params.append(categories)
         params.extend([k, offset])
-        # depth=0: this is a plain relational read, not an HNSW scan — no ef_search
-        # / iterative-scan tuning needed (and none of that ML cost paid).
         return self._run(sql, tuple(params))
 
     def keyword_search(
@@ -489,10 +525,12 @@ def browse_multi_slot(
     region: str | None,
     offset: int,
     genders: frozenset[str] | None = None,
+    taste_vector: list[float] | None = None,
 ) -> list[SearchResult]:
-    """Empty-state feed: one cheap catalogue page per slot, interleaved. No embed,
-    no vector scan, no ML runtime. The per-slot reads run concurrently (the shared
-    pool has spare connections), so the whole page is one slow query, not N."""
+    """Explore feed: one catalogue page per slot, interleaved. With ``taste_vector``
+    each slot is ranked by cosine to it (personalized); otherwise a cheap read. The
+    per-slot reads run concurrently (the shared pool has spare connections), so the
+    whole page is one slow query, not N."""
     if not slot_categories:
         return []
     from concurrent.futures import ThreadPoolExecutor
@@ -500,7 +538,9 @@ def browse_multi_slot(
     with ThreadPoolExecutor(max_workers=min(4, len(slot_categories))) as pool:
         per_slot = list(
             pool.map(
-                lambda categories: repo.browse(categories, per_slot_k, region, offset, genders),
+                lambda categories: repo.browse(
+                    categories, per_slot_k, region, offset, genders, taste_vector
+                ),
                 slot_categories,
             )
         )

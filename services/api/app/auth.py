@@ -109,3 +109,22 @@ def get_current_principal(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return _decode(creds.credentials)
+
+
+def get_optional_principal(
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> Principal | None:
+    """The verified caller when a valid token is present, else ``None``.
+
+    For routes that *personalize* when signed in but must still serve anonymous
+    (and edge-cacheable) traffic — e.g. Explore browse. An invalid/expired token
+    on such a route is treated as anonymous, not a 401: the page still renders.
+    """
+    if settings.auth_is_open:
+        return Principal(user_id=settings.dev_user_id, email="dev@local")
+    if creds is None:
+        return None
+    try:
+        return _decode(creds.credentials)
+    except HTTPException:
+        return None
