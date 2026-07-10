@@ -1748,3 +1748,25 @@ Prod smoke: personalized scores descend nearest-first (1.0/0.845/0.817...), cold
 orderings differ. 56 tests green + a new branch test. Commit pending push.
 Honest next layer: cold-start users with a PROFILE but no engagement still get the shuffle (taste
 vector needs engagement); profile->vector content cold-start for Explore is the follow-up.
+
+### 2026-07-11 (cont. 16) — SOTA cold-start: profile→SigLIP zero-shot Explore
+
+The gap cont.15 flagged: signed-in users with a **profile but no engagement** still
+got the generic rotating shuffle (taste vector needs engagement). Closed it with the
+standard SOTA move for content cold-start — **zero-shot text→image retrieval in the
+joint SigLIP space**. `conditioning.profile_style_query(profile)` writes a
+fashion-vocabulary sentence from the signals SigLIP actually retrieves on: style
+intent (fashion adjectives), occasion→formality, and undertone→flattering **colour
+palette** (SigLIP has no "undertone" concept but retrieves colour names well — same
+colour theory as `_UNDERTONE_HUES`, as words). Body type is deliberately omitted
+(SigLIP sees the garment, not the wearer — body-type styling stays in the effects
+engine). The sentence is embedded via the existing cached `TextEmbedder` and passed
+as the cold-start `taste_vector` into the SAME two-tower `browse()` path from cont.15.
+
+So Explore is personal from the **first visit** — ordered by the user's style + palette
+— before any click. Precedence in `browse_items`: engagement taste → profile zero-shot
+→ anonymous rotating read. Free (reuses cached SigLIP text tower + HNSW, no GPU, no new
+dep); degrades to the rotating read if the profile is signal-less or the encoder lane is
+cold (never a 500). Files: `conditioning.profile_style_query` + `_UNDERTONE_COLORS`;
+`routers/catalog._profile_taste_vector` wired into `browse_items`. 73 API tests green,
+ruff clean. Commit pending.

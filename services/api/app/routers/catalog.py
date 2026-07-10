@@ -22,11 +22,14 @@ from ..catalog.retrieval import (
 from ..auth import Principal, get_optional_principal
 from ..dependencies import (
     get_item_directory,
+    get_profile_repo,
     get_search_repo,
     get_taste_repo,
     get_text_embedder,
 )
+from ..profile.repository import ProfileRepository
 from ..ratelimit import rate_limit
+from ..recsys.conditioning import profile_style_query
 from ..recsys.taste import TasteRepository, build_taste
 
 # How many recent engagements feed the Explore taste vector — matches the feed's
@@ -59,6 +62,22 @@ def _embed_or_none(embedder: TextEmbedder | None, query: str) -> list[float] | N
     except Exception:  # noqa: BLE001 — any encode failure degrades to keyword search
         logger.warning("text encoder failed; falling back to keyword search", exc_info=True)
         return None
+
+
+def _profile_taste_vector(
+    profile_repo: ProfileRepository, embedder: TextEmbedder | None, user_id: str
+) -> list[float] | None:
+    """Zero-shot cold-start taste vector: the user's profile as a SigLIP text query,
+    embedded into the same space as item images. ``None`` when there's no profile,
+    no personalisable signal in it, or the encoder lane is down (caller then falls
+    back to the rotating read — never a 500)."""
+    profile = profile_repo.get(user_id)
+    if profile is None:
+        return None
+    query = profile_style_query(profile)
+    if query is None:
+        return None
+    return _embed_or_none(embedder, query)
 
 
 @router.get(
@@ -136,19 +155,27 @@ def browse_items(
     directory: ItemDirectory = Depends(get_item_directory),
     principal: Principal | None = Depends(get_optional_principal),
     taste_repo: TasteRepository = Depends(get_taste_repo),
+    profile_repo: ProfileRepository = Depends(get_profile_repo),
+    embedder: TextEmbedder | None = Depends(get_text_embedder),
 ) -> dict[str, list[SearchResult]]:
     """Explore feed. When the caller is signed in and has a learned taste vector,
     this ranks the catalogue by cosine to it (two-tower content retrieval) — the
     feed reflects what they actually engage with, per-user, and shifts as their
-    taste evolves. Anonymous / cold-start callers get a cheap rotating relational
-    read (no ML runtime), so the grid still fills instantly and stays up when the
-    encoder lane is cold. ``offset`` is the global count shown, split across slots."""
-    # Personalize only when there's real engagement signal; otherwise the shared,
-    # cacheable rotating read (which already varies day-to-day so it never repeats).
+    taste evolves. Signed-in callers with a profile but no engagement yet get a
+    zero-shot cold-start: their profile (style + occasion + undertone palette) is
+    text-encoded in the same SigLIP space and used as the taste vector, so Explore
+    is personal from the first visit. Anonymous callers get a cheap rotating
+    relational read (no ML runtime), so the grid still fills instantly and stays up
+    when the encoder lane is cold. ``offset`` is the global count shown, split
+    across slots."""
+    # Personalize on real engagement signal first; else fall back to a zero-shot
+    # taste vector synthesized from the profile; else the shared rotating read.
     taste_vector = None
     if principal is not None:
         taste = build_taste(taste_repo.engagements(principal.user_id, _TASTE_HISTORY))
         taste_vector = taste.vector if taste.has_signal else None
+        if taste_vector is None:
+            taste_vector = _profile_taste_vector(profile_repo, embedder, principal.user_id)
     if taste_vector is not None:
         response.headers["Cache-Control"] = "private, max-age=30"  # per-user, never shared
     else:

@@ -155,6 +155,23 @@ def test_budget_max_becomes_price_ceiling():
     assert c.max_price == 80
 
 
+def test_profile_style_query_grounds_in_fashion_vocabulary():
+    profile = Profile(
+        gender="men", undertone="cool", occasion="wedding", style_intent=["minimalist"]
+    )
+    q = conditioning.profile_style_query(profile)
+    assert q is not None
+    assert "men's" in q and "minimalist" in q and "formal" in q  # wedding -> formal
+    assert "cool blue" in q  # cool undertone -> cool palette, not the word "undertone"
+    assert "undertone" not in q
+
+
+def test_profile_style_query_none_without_signal():
+    # No style intent, no occasion, neutral/unknown undertone => nothing to encode.
+    assert conditioning.profile_style_query(Profile(gender="women")) is None
+    assert conditioning.profile_style_query(Profile(undertone="neutral")) is None
+
+
 # --- Composition ------------------------------------------------------------
 
 
