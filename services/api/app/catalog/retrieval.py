@@ -13,11 +13,22 @@ unit-tested with an in-memory cosine repo and a fake embedder.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, replace
 from typing import Protocol
 
 from ..media import image_url_from_refs
 from .directory import ItemDirectory
+
+# Keyword-fallback tokenization. Stopwords must never become search terms: a
+# conversational query ("something cozy for a rainy evening") otherwise ANDs
+# "for"/"a" into the title match and returns an empty grid.
+_WORD_RE = re.compile(r"[a-z0-9]+")
+_STOPWORDS = frozenset(
+    "a an and the for to of in on at with without is are be i want need looking "
+    "look wear something anything some any that this my me you it its outfit "
+    "outfits style styles wardrobe".split()
+)
 
 
 @dataclass(frozen=True)
@@ -319,17 +330,28 @@ class PostgresVectorSearchRepository:
         # "red dress" needs both words — cheap approximation of relevance with no
         # embedding. ponytail: sequential ILIKE scan over the catalog; add a
         # pg_trgm GIN index on title if keyword-fallback volume ever grows.
-        tokens = [t for t in query.split() if t][:6]  # bound the clause count
+        # Content tokens only (stopwords/single-chars dropped), bounded to 6.
+        # Fall back to the raw words, then the whole query, so we never end up
+        # with zero terms.
+        words = _WORD_RE.findall(query.lower())
+        tokens = [t for t in words if t not in _STOPWORDS and len(t) > 1][:6] or words[:6] or [
+            query.lower()
+        ]
+        terms = [f"%{t}%" for t in tokens]
+        # score = fraction of tokens present in the title. Matching ANY token
+        # (OR) and ranking by overlap means a multi-word query surfaces its
+        # best-overlap items instead of requiring every word — the fallback
+        # never dead-ends to an empty grid when at least one token matches.
+        score_expr = " + ".join(["(i.title ILIKE %s)::int"] * len(terms))
+        params: list[object] = list(terms)  # score expression (SELECT) — positional, first
         # Require a stored embedding (same as browse()): a keyword hit with none
         # would dead-end on click, since recluster/similar joins item_embeddings.
         where = (
             "WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0"
             " AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)"
+            " AND (" + " OR ".join(["i.title ILIKE %s"] * len(terms)) + ")"
         )
-        params: list[object] = []
-        for tok in tokens or [query]:
-            where += " AND i.title ILIKE %s"
-            params.append(f"%{tok}%")
+        params.extend(terms)  # WHERE OR block
         if region:
             where += " " + _REGION_FILTER
             params.append(region)
@@ -342,14 +364,15 @@ class PostgresVectorSearchRepository:
         if categories:
             where += " " + _CATEGORY_FILTER
             params.append(categories)
-        # No semantic score without an embedding — order by price when asked,
-        # else priced-with-images first then newest (same as browse).
+        # Relevance: best keyword overlap first, then priced-with-images, then
+        # newest. Price sorts use the shared clauses.
         order = _SORT_CLAUSES.get(
-            sort, "ORDER BY (i.price IS NOT NULL) DESC, i.created_at DESC, i.id"
+            sort,
+            "ORDER BY score DESC, (i.price IS NOT NULL) DESC, i.created_at DESC, i.id",
         )
         params.extend([k, offset])
         sql = f"""
-        SELECT i.id, i.title, 0.0 AS score, i.image_refs
+        SELECT i.id, i.title, ({score_expr})::float / {len(terms)} AS score, i.image_refs
         FROM items i
         {where}
         {order}
