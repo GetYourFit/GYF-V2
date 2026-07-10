@@ -130,9 +130,9 @@ describe("CanvasExplorer recluster", () => {
     await waitFor(() => expect(similar).toHaveBeenCalledTimes(1), { timeout: 1000 });
     await waitFor(
       () => {
-        expect(tileButtons().some((b) => b.getAttribute("aria-label")?.startsWith("similar-a"))).toBe(
-          true,
-        );
+        expect(
+          tileButtons().some((b) => b.getAttribute("aria-label")?.startsWith("similar-a")),
+        ).toBe(true);
       },
       { timeout: 1000 },
     );

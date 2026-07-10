@@ -57,12 +57,12 @@ This feature is inspired by premium applications that prioritize continuity and 
 
 The grid should allow users to:
 
-* Browse curated collections
-* Explore AI-generated looks
-* Open products instantly
-* Compare outfits
-* Save items
-* Continue browsing without losing context
+- Browse curated collections
+- Explore AI-generated looks
+- Open products instantly
+- Compare outfits
+- Save items
+- Continue browsing without losing context
 
 The entire experience should require minimal navigation.
 
@@ -168,9 +168,9 @@ Only a preview of the collection is visible.
 
 The user immediately understands:
 
-* What the collection contains
-* How large it is
-* Why it matters
+- What the collection contains
+- How large it is
+- Why it matters
 
 without being overwhelmed.
 
@@ -1006,16 +1006,16 @@ It should become one of the most reused UI components in GYF.
 
 Planned capabilities
 
-* Drag-and-drop reordering
-* AI-generated collection titles
-* Collaborative collections
-* Shared collections
-* Offline cached collections
-* Collection analytics
-* Animated sorting
-* Smart pinning
-* Foldable-specific layouts
-* Desktop side-panel expansion
+- Drag-and-drop reordering
+- AI-generated collection titles
+- Collaborative collections
+- Shared collections
+- Offline cached collections
+- Collection analytics
+- Animated sorting
+- Smart pinning
+- Foldable-specific layouts
+- Desktop side-panel expansion
 
 These additions should build on the same interaction model without changing the user's mental model.
 

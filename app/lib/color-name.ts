@@ -105,11 +105,7 @@ const COLOR_MAP: Record<string, string> = {
 /** Lowercased lookup key: strips punctuation and collapses whitespace so
  *  "Off-White" / "off_white" / "OFF WHITE" all hit the same entry. */
 function normalize(color: string): string {
-  return color
-    .toLowerCase()
-    .replace(/[_-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return color.toLowerCase().replace(/[_-]/g, " ").replace(/\s+/g, " ").trim();
 }
 
 /** CSS color for a catalog color string, or null if unrecognized. */

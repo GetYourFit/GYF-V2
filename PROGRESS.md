@@ -855,11 +855,11 @@ credited "neutral" undertone confidence even though neutral deliberately
 produces zero hue signal by design (D6 — no colour-theory guess) — inflating
 the confidence readout for exactly the users it can't help. Fixed in
 conditioning.py `resolve()`: undertone only counts toward
-personalization_strength when it actually yields `preferred_hues`. New test:
+personalization*strength when it actually yields `preferred_hues`. New test:
 `test_neutral_undertone_yields_no_hue_preference_and_no_personalization_credit`.
 Photo-estimation pipelines (skin tone + body type) were re-confirmed to
 already run unconditionally on every onboarding photo upload — only the
-skin-tone *display* is fairness-gated (`skin_tone_enabled`), ranking still
+skin-tone \_display* is fairness-gated (`skin_tone_enabled`), ranking still
 uses it either way.
 
 **(4) Ledger item — models.registry.json blind spot, actually closed, not
@@ -940,6 +940,7 @@ correct sequencing, already documented. Nothing to change here.
 **Built the missing piece: the M9 promotion harness (D5).** Try-on had no
 capability gate in `gyf_contracts.eval_report.GATES`, so `resolve_promotion`
 could never certify it regardless of vendor. Added:
+
 - `GATES["try_on"]` — `render_success_rate >= 0.9` on a curated look-set.
 - `ml/eval/tryon_eval.py` — `TryOnEvalCase`/`evaluate_tryon`/`TryOnEvalReport`,
   renderer-agnostic (works against the real fal-Leffa/FASHN adapters or a
@@ -986,6 +987,7 @@ regardless — not a config flip).
 
 **Scope confirmed via AskUserQuestion: full rip-out**, not a hide-behind-flag.
 Removed the entire M9 virtual try-on feature built across prior sessions:
+
 - `services/api/app/tryon/` (port + FASHN + fal-Leffa adapters), `routers/tryon.py`,
   its router registration in `main.py`, `get_tryon_renderer` in `dependencies.py`,
   all `tryon_*`/`fal_api_key`/`fashn_api_key`/`rate_limit_tryon` config fields.
@@ -1067,10 +1069,11 @@ error shake + error haptic, password toggle, success state), GyfSearchField, bad
 (status/confidence/price), GyfWishlistButton (pulse 1.0→1.15→1.0 + success haptic; fixed
 a real lazy-AnimationController-in-dispose bug caught by tests), GyfPressableCard base
 (0.97/120ms press contract), GyfProductCard, GyfOutfitCard, GyfFilterChip (AI-suggested
-+ removable variants), GyfChatBubble (4 states incl. custom AI-thinking dots — no generic
-spinners) + GyfPromptChip, GyfOverlays (sheet/dialog/toast single entry points),
-GyfErrorState (6 variants, every one with a recovery action). Gallery shows everything.
-analyze clean; 18/18 tests. New directive: push commits after every phase completion.
+
+- removable variants), GyfChatBubble (4 states incl. custom AI-thinking dots — no generic
+  spinners) + GyfPromptChip, GyfOverlays (sheet/dialog/toast single entry points),
+  GyfErrorState (6 variants, every one with a recovery action). Gallery shows everything.
+  analyze clean; 18/18 tests. New directive: push commits after every phase completion.
 
 ### 2026-07-07 (evening) — gyf_app Phase 2 + Expandable Collection Grid; plan updated
 
@@ -1078,6 +1081,7 @@ analyze clean; 18/18 tests. New directive: push commits after every phase comple
 update the implementation plan also."
 
 **gyf_app commits (local — no remote configured yet):**
+
 - `f4cac17` Phase 2 + remaining §5.3 inputs: GyfOtpField/GyfSlider/
   GyfSteppedProgress, SessionManager (persisted splash decision tree),
   SplashScreen (900 ms token timeline, reduced-motion skip), onboarding
@@ -1136,6 +1140,7 @@ Remaining Home gaps: offline cached-feed banner, analytics hooks.
 FAANG/top-AI-standard audit via subagents; use ecc + ponytail; commit + push.
 
 **Shipped (4 commits, pushed to main):**
+
 - `a68b44d` perf(catalog): `/items/browse` relational feed (zero ML, tens of ms,
   survives cold GPU); canvas recluster uses stored embedding via `/similar` (no
   title re-embed); Cache-Control on browse/facets/search/similar; CORS preflight
@@ -1159,6 +1164,7 @@ ponytail: repo lean; only real cut = `Reference/gyf_app_standalone_backup/` (67
 tracked files, git already versions it) — needs user OK to delete.
 
 **Deferred follow-ups (real, bigger/riskier — NOT the stated perf complaint):**
+
 - Batch impression INSERTs (~40 serial round-trips per /recommend) into one multi-row INSERT.
 - `candidates_by_slot` N per-slot queries → one windowed `category = ANY(...)` query.
 - Keyset (cursor) pagination for deep browse pages (OFFSET cost grows with depth).
@@ -1176,6 +1182,7 @@ photo upload; keep catalog/app fast; use ponytail + ecc; don't stop.
 frontend-other-surfaces, ML-platform python, accessibility (WCAG 2.2), shared TS/lib.
 
 **Shipped (pushed):**
+
 - `3034372` fix(explore): thread AbortSignal through request()/search()/browse() —
   the AbortController was a no-op (signal never forwarded), so a stale response could
   clobber newer results. TS+React reviewers confirmed HIGH.
@@ -1190,6 +1197,7 @@ frontend-other-surfaces, ML-platform python, accessibility (WCAG 2.2), shared TS
   delete dead onboarding-form.
 
 **Remaining audit backlog (real, not yet done):**
+
 - recsys HIGH: candidates_by_slot N per-slot queries → one windowed query; wardrobe/
   anchor round-trips batched; goal+wardrobe score blending under-weights content (<50%).
 - a11y: canvas item-detail keyboard-unreachable (double-click only); TopMenu sheet no
@@ -1312,6 +1320,7 @@ one-shirt-rec variety `aecbbb4`, confidence-0.0 `d58e02e`) sat only on
 `agent/production-rescue`. Render deploys `origin/main`, so **prod ran old code**.
 
 **Verified against prod DB (real data, no fakes) before pushing:**
+
 - pg 17.6 / pgvector 0.8.0; stored embeddings 768-dim; catalog 56,816 items / 41,409 embedded.
 - Query encoder = `hf-hub:timm/ViT-B-16-SigLIP2` (768-dim) — MATCHES the catalog. No
   model/dim mismatch. Earlier dim-mismatch hypothesis was wrong.
@@ -1319,6 +1328,7 @@ one-shirt-rec variety `aecbbb4`, confidence-0.0 `d58e02e`) sat only on
   purely the missing fallback code, not a DB/SQL fault.
 
 **Shipped this session (all tests green: API 292 passed / web vitest green; pushed to main):**
+
 1. `01f0a0e` fix(auth): sanitize `next` redirect (kills open-redirect vector) + route
    new signups to `/onboarding` (findings #1, #2). +6 vitest cases.
 2. `c893b57` perf(web): brand SplashScreen now shows **once per session** (read the
@@ -1339,13 +1349,14 @@ is the single root cause of BOTH dead semantic search AND photo-onboarding 503.
 Endpoint code is correct (abstains → 503 only when both modules fail; 120s client
 timeout is ample). The 503 is the Space erroring at ~13s, not a code bug. To revive
 (free tier), the OPERATOR must, with HF + Render access I don't have this session:
-  1. Confirm/redeploy the Space: `HF_USER=<user> bash scripts/deploy_gpu_space.sh`
-     (bundle is `spaces/gyf-gpu`; finding #6 says regenerate it fresh — it may be stale).
-  2. Wake it (ZeroGPU sleeps) and confirm it answers.
-  3. Set Render env: `GYF_ENCODER_REMOTE_URL`, `GYF_BODY_REMOTE_URL`,
-     `GYF_SKINTONE_REMOTE_URL` = `https://<user>-gyf-gpu.hf.space`, plus `GYF_HF_TOKEN`.
-  4. Re-probe `/items/search?q=cozy` (should go semantic) and `/profile/photo`.
-Skin-tone stays shadow-gated (fairness eval fails, MAE 4.31) regardless — correct.
+
+1. Confirm/redeploy the Space: `HF_USER=<user> bash scripts/deploy_gpu_space.sh`
+   (bundle is `spaces/gyf-gpu`; finding #6 says regenerate it fresh — it may be stale).
+2. Wake it (ZeroGPU sleeps) and confirm it answers.
+3. Set Render env: `GYF_ENCODER_REMOTE_URL`, `GYF_BODY_REMOTE_URL`,
+   `GYF_SKINTONE_REMOTE_URL` = `https://<user>-gyf-gpu.hf.space`, plus `GYF_HF_TOKEN`.
+4. Re-probe `/items/search?q=cozy` (should go semantic) and `/profile/photo`.
+   Skin-tone stays shadow-gated (fairness eval fails, MAE 4.31) regardless — correct.
 
 **Still open (not this session):** recsys is centroid+hand-weights not trained
 two-tower/HSTU (finding #9); VTON has no free renderer (finding #8); `/system/status`
@@ -1358,10 +1369,12 @@ Space was down (worth a cheap cached health-probe later).
 men + casual + warm + rectangle + ₹5k, INR; account tombstoned after via DELETE /account):
 
 `/outfits/recommend?k=5` BEFORE fixes — the user's exact complaint, reproduced:
+
 - All 5 looks reused ONE top (a mislabeled "Teddy … Boys T-shirt", gender=men) AND
   one bottom; only the shoe changed. All 5 `confidence = 0.000`. One skeleton reason.
 
 Root causes found by querying prod DB directly:
+
 - Those items have `attributes #> '{perception,color,lch}'` = NULL. `_confidence`
   multiplied by the colour-coverage fraction → any all-missing-colour outfit = exactly
   0.000 (dishonest; the look still coordinates on formality/occasion).
@@ -1370,7 +1383,8 @@ Root causes found by querying prod DB directly:
   reweights novelty; it can't diversify a pool that has no other anchor.)
 
 **Fixed `f0a2185`** (API 294 passed, +2 regression tests, deploy-verified in prod):
-- `_confidence`: colour_factor = 0.5 + 0.5*perceived (floor, not annihilate).
+
+- `_confidence`: colour_factor = 0.5 + 0.5\*perceived (floor, not annihilate).
 - `compose`: working pool = best outfit per distinct top+bottom core (footwear ignored),
   so k distinct looks are guaranteed when the catalog has them.
 
@@ -1444,6 +1458,7 @@ degrades honestly (keyword search / manual onboarding) the rest of the time — 
 doctrine's "baseline behind every port," working as designed.
 
 **To make ML reliably live, one of (cheapest first):**
+
 1. **HF Pro on the GetYourFit account — $9/mo.** Unlocks real ZeroGPU quota for all three
    lanes (encoder + body + skin). Cleanest; keeps the current architecture unchanged.
 2. Self-host the SigLIP encoder CPU-side on Render (search only) — needs torch in the API

@@ -531,7 +531,9 @@ export function CanvasExplorer() {
     const withPlaceholders = layoutCluster(
       [
         ...items,
-        ...Array.from({ length: EXTRA_SKELETON_COUNT }, (_, i) => skeletonItem(`skeleton-more-${i}`)),
+        ...Array.from({ length: EXTRA_SKELETON_COUNT }, (_, i) =>
+          skeletonItem(`skeleton-more-${i}`),
+        ),
       ],
       selectedId,
     );

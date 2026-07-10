@@ -67,9 +67,7 @@ function Tab({
           layoutId="nav-glass-indicator"
           className="liquid-glass-indicator"
           style={{ position: "absolute", inset: 0, borderRadius: "50%" }}
-          transition={
-            reduce ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 35 }
-          }
+          transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 35 }}
         />
       )}
       <motion.div

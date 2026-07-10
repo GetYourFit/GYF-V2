@@ -260,7 +260,9 @@ function UserHero({
             transition: "opacity 0.15s",
           }}
         >
-          <span style={{ fontSize: "0.625rem", color: "var(--text)", fontFamily: "var(--font-mono)" }}>
+          <span
+            style={{ fontSize: "0.625rem", color: "var(--text)", fontFamily: "var(--font-mono)" }}
+          >
             {uploading ? "Uploading…" : ""}
           </span>
         </span>
@@ -280,7 +282,9 @@ function UserHero({
       {/* Name + member-since/email — grouped tightly as one identity block,
           separated from the chips/stats/button below by the hero's larger
           gap so the page reads as sections, not one packed column. */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+      <div
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}
+      >
         <p
           style={{
             fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
