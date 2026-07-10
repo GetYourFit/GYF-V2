@@ -10,20 +10,20 @@
 ## 1. Standing directives from the user (permanent)
 
 1. **Principal-engineer bar** — operate like a principal engineer at a top AI company/FAANG.
-   Expert-grade, production-grade, never "college-project" work. No noob mistakes.
+   Expert-grade, production-grade, shippable never "college-project" work. No noob mistakes.
 2. **Boil the ocean** — do the whole thing, with tests, with documentation. Never offer to
    table something when the permanent solve is within reach. Never a workaround when the real
    fix exists. The standard is "holy shit, that's done", not "good enough".
-3. **Use subagents, loop engineering, ECC skills, and ponytail** aggressively on every
+3. **Use subagents, loop engineering, ECC skills, and ponytail and caveman** aggressively on every
    substantial task: parallel specialist reviews, audit→fix→verify loops, ponytail for
-   over-engineering audits.
+   over-engineering audits etc.
 4. **Plan before execution** — always surface the plan first, then implement it.
 5. **Commit and push everything** once verified — conventional commits, scoped, **no AI
    attribution trailers**.
 6. **Novel-app mindset** — GYF is novel; prefer researched, high-IQ solutions with explicit
    trade-offs, not just pretraining defaults. Clean, robust, secure, efficient, optimized,
    aesthetic — never compromised.
-7. **CI/CD, security, efficiency, optimization always on point** — every push must pass the
+7. **complete Productional grade CI/CD, security, efficiency, optimization always on point** — every push must pass the
    full gate (fmt, lint, typecheck, tests, doctrine license/ports gates).
 8. **Maintain this ledger** — append every user ask, decision, and change here, every session.
 9. **Contact email** — `gyf1ltd@gmail.com` is THE public contact for the whole app.
@@ -1220,3 +1220,134 @@ Coverage climbs nightly; operator can trigger the workflow now for an immediate 
 users with a stated gender (doing it now on low coverage would empty the feed). Also
 covered this session: recsys cartesian cap, per-slot concurrency, AbortSignal, ML honest
 abstain + timeouts, a11y focus traps + canvas keyboard, gallery upload, avatar refresh.
+
+### 2026-07-10 — Production rescue: full-doc audit + fresh real-user proof
+
+**Directive:** `PROGRESS.md` is the living project context window. Append verified
+state after every engineering loop. Never record credentials or unsupported “done”
+claims. Runtime/live evidence outranks stale plan text.
+
+**Scope read:** all 41 project-owned Markdown files; Next web, API, ML, GPU Space,
+contracts, deployment, and critical tests traced with frontend/backend/ML subagents.
+Canonical shipped client remains `app/` (Next.js). `gyf_app/` is experimental until an
+explicit replacement/parallel-client decision; do not split launch work across both.
+
+**Fresh production journey** (new Supabase accounts, manual profile = men + casual +
+warm + MST5 + rectangle + ₹3,000):
+
+- `/health` 200 in 0.51s warm; `/system/status` 200 in 2.48s.
+- Catalog status: 56,816 total items, 41,409 with embeddings.
+- `/profile/photo` 503 after 13.57s: `photo onboarding unavailable`.
+- `/items/search?q=shirt` 500 after 2.20s, request id
+  `e90009ca33c34b2cac7547058b216140`.
+- `/outfits/recommend?k=5` 200 after 17.78s.
+- All five looks reused `Teddy Black Oversized Graphic Back Printed Boys T-shirt`.
+- All five confidence values were `0.0`; explanations reused one sentence skeleton.
+- One disposable account tombstoned. One earlier probe account could not be tombstoned
+  after its short-lived shell lost the token; no credentials retained.
+
+**Repository state:** rebased on `origin/main`; work moved to
+`agent/production-rescue`. Six local commits remain ahead. Targeted recsys/profile/
+retrieval suite: 100 passed. Existing local fixes are not production proof:
+
+- `aecbbb4` forces top-anchor diversity.
+- `d58e02e` drops coerced-unknown manual confidence.
+- `786dbac` adds keyword fallback and kids-title exclusion.
+
+Search caveat: the live encoder works, so current 500 is likely post-embedding SQL.
+`786dbac` only falls back when embedding fails; add a real pgvector reproducer or
+stage-specific semantic failure fallback before claiming search fixed.
+
+**New P0 findings:**
+
+1. Signup identity-only `PUT /profile` creates a blank styling profile; default `/`
+   redirect can bypass onboarding. Default signup to `/onboarding`; later separate
+   account identity from styling profile.
+2. Auth `next` reaches `window.location.assign` unsanitized: external open redirect.
+3. Global splash hard-blocks every full load for 2.4s; stored “shown” key is never read.
+4. Runtime ignores model registry promotion. Docker omits registry; live
+   `/system/models` returns unavailable. Research skin/body/VTON models can activate by
+   env alone.
+5. Skin fairness gate fails badly (MAE 4.3133 MST buckets, max band gap 3.2) while
+   Render forces surfacing. Re-shadow; do not let it steer ranking.
+6. GPU Space bundle is hand-copied and stale versus canonical ML. Generate/sync it and
+   enforce parity before deploy.
+7. Photo modules run serially; live Space calls measured ~16s skin, ~34s body, ~25s
+   text. UI lacks truthful preflight, resize, cancellation, and useful stages.
+8. VTON adapters accept `one_piece` while canonical taxonomy uses `full_body`; dresses
+   skip. No free production renderer exists. Catalog-image access is not model-training
+   permission.
+9. Recommendations are SigLIP centroid + hand-set compatibility weights + bounded
+   cartesian compose + MMR, not trained two-tower/HSTU or calibrated confidence.
+10. GPU endpoints accept unbounded public inputs; production builds/Space dependencies
+    are not fully frozen.
+
+**Recovery loops:**
+
+1. Ship/live-verify current fixes, but first close post-embedding search failure.
+2. Trust boundary: auth redirect, signup routing, explicit consent, truthful status,
+   runtime promotion gate, re-shadow failed models.
+3. Photo reliability: canonical Space bundle, bounded inputs/timeouts, independent
+   inference concurrency, client resize/cancel, run/abstain/error metrics, live smoke.
+4. Recommendation quality: ingest-time age/gender coverage gate, occasion/profile slice
+   eval, cold-start “Exploring” UX, calibration dataset, evidence-bound explanations.
+5. Performance: remove splash, batch recommendation DB work, benchmark SQL/index/ANN,
+   enforce LCP/INP/p95 budgets.
+6. VTON: honest unavailable UI now; only commercial-clean, rights-proven,
+   evaluation-gated free lane later.
+7. Dead-code/doc cleanup after runtime behavior has regression coverage.
+
+**Loop law:** reproduce → trace callers/contracts → primary-source research → RED test →
+minimal shared fix → GREEN → full build/type/lint/test/security/diff review → push draft
+PR → deploy → rerun production journey → append evidence here.
+
+### 2026-07-10 (cont.) — Prod rescue: shipped the unpushed fixes + search/perf resilience
+
+**Directive:** app is "not production grade" — slow, unintuitive, broken buttons,
+ambiguous recs, photo onboarding + skin/undertone/body AI dead on prod. Audit, fix, push.
+
+**Root cause of the loudest complaints: the fixes existed but were never pushed.**
+`origin/main` was stuck at `efe0f96`; six verified commits (search-500 fallback,
+one-shirt-rec variety `aecbbb4`, confidence-0.0 `d58e02e`) sat only on
+`agent/production-rescue`. Render deploys `origin/main`, so **prod ran old code**.
+
+**Verified against prod DB (real data, no fakes) before pushing:**
+- pg 17.6 / pgvector 0.8.0; stored embeddings 768-dim; catalog 56,816 items / 41,409 embedded.
+- Query encoder = `hf-hub:timm/ViT-B-16-SigLIP2` (768-dim) — MATCHES the catalog. No
+  model/dim mismatch. Earlier dim-mismatch hypothesis was wrong.
+- Both vector-search and keyword-search SQL execute fine against prod → the 500 was
+  purely the missing fallback code, not a DB/SQL fault.
+
+**Shipped this session (all tests green: API 292 passed / web vitest green; pushed to main):**
+1. `01f0a0e` fix(auth): sanitize `next` redirect (kills open-redirect vector) + route
+   new signups to `/onboarding` (findings #1, #2). +6 vitest cases.
+2. `c893b57` perf(web): brand SplashScreen now shows **once per session** (read the
+   `gyf_splash_shown` flag it always wrote but never read) — was a 2.4s z-9999 wall on
+   **every** navigation (finding #3). +2 vitest cases.
+3. `0feea1b` fix(search): keyword fallback drops stopwords + ranks by token overlap
+   (OR, never dead-ends). Was ANDing every token incl. stopwords → empty grid for any
+   conversational query. Verified live: 'blue linen summer shirt' → Blue Linen shirts.
+4. Pushed the six prior commits → **prod search now 200 (was 500)**, rec variety +
+   honest manual confidence live.
+
+**Live prod re-probe after deploy:** `/items/search?q=shirt` → 200 (was 500).
+Semantic query 'something cozy…' → empty on the OLD deploy = **prod is on the keyword
+fallback = the shared HF ZeroGPU Space (encoder + body + skin) is DOWN/unwired.** This
+is the single root cause of BOTH dead semantic search AND photo-onboarding 503.
+
+**Photo onboarding + skin/undertone/body — root cause = the ZeroGPU Space, OPERATOR-GATED.**
+Endpoint code is correct (abstains → 503 only when both modules fail; 120s client
+timeout is ample). The 503 is the Space erroring at ~13s, not a code bug. To revive
+(free tier), the OPERATOR must, with HF + Render access I don't have this session:
+  1. Confirm/redeploy the Space: `HF_USER=<user> bash scripts/deploy_gpu_space.sh`
+     (bundle is `spaces/gyf-gpu`; finding #6 says regenerate it fresh — it may be stale).
+  2. Wake it (ZeroGPU sleeps) and confirm it answers.
+  3. Set Render env: `GYF_ENCODER_REMOTE_URL`, `GYF_BODY_REMOTE_URL`,
+     `GYF_SKINTONE_REMOTE_URL` = `https://<user>-gyf-gpu.hf.space`, plus `GYF_HF_TOKEN`.
+  4. Re-probe `/items/search?q=cozy` (should go semantic) and `/profile/photo`.
+Skin-tone stays shadow-gated (fairness eval fails, MAE 4.31) regardless — correct.
+
+**Still open (not this session):** recsys is centroid+hand-weights not trained
+two-tower/HSTU (finding #9); VTON has no free renderer (finding #8); `/system/status`
+reports photo/search "live" from env config, not a real probe — it lied while the
+Space was down (worth a cheap cached health-probe later).
