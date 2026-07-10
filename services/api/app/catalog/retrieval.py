@@ -120,7 +120,9 @@ _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
 _BROWSE = """
 SELECT i.id, i.title, 0.0 AS score, i.image_refs
 FROM items i
-WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0 {region} {gender} {category}
+WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+  AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
+  {region} {gender} {category}
 ORDER BY (i.price IS NOT NULL) DESC, i.created_at DESC, i.id
 LIMIT %s OFFSET %s
 """

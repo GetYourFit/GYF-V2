@@ -51,6 +51,21 @@ def test_similar_sql_excludes_self_and_orders_by_distance():
     assert results == [SearchResult("22222222", "Other Tee", 0.91, image_url="/media/22222222.jpg")]
 
 
+def test_browse_sql_requires_an_embedding_to_exist():
+    """Canvas/Explore's default feed reads `browse()` directly (no vector scan),
+    but a clicked tile's recluster goes through `similar_to_item()`, which joins
+    against `item_embeddings` and silently returns zero rows if the clicked item
+    has none. Without this filter, browse() could hand out tiles that dead-end on
+    click — the grid never re-forms and the background never re-tints, with a
+    200 OK and an empty `results` array giving no hint why."""
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo.browse(categories=None, k=10, region=None)
+
+    sql, _ = pool.calls[-1]
+    assert "EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)" in sql
+
+
 def test_region_filter_added_only_when_region_given():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
