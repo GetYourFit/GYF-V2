@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from ..catalog.retrieval import _KIDS_RE  # shared kids-title guard (DRY with search)
 from ..media import image_url_from_refs
 from .conditioning import CANDIDATE_SLOTS, _CATEGORIES_BY_SLOT
 
@@ -144,6 +145,12 @@ WHERE i.category = ANY(%s)
   AND (%s::text[] IS NULL
        OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
        OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
+  """
+    # Kids' garments leak into adult looks: many are mislabeled gender=men/women at
+    # ingest (a "…Boys T-shirt" tagged men), so the gender predicate can't catch
+    # them — filter on the title, the same guard /items/search already applies.
+    + f"AND i.title !~* '{_KIDS_RE}'"
+    + """
 ORDER BY {order}
 LIMIT %s
 """
