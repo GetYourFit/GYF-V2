@@ -156,7 +156,14 @@ FROM items i
 WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
   AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
   {region} {gender} {category}
-ORDER BY (i.price IS NOT NULL) DESC, i.created_at DESC, i.id
+-- Variety, not recency: a fixed `created_at DESC` served every user the identical
+-- page forever ("same products again and again, nothing new"). Shuffle by a daily
+-- seed so the catalogue rotates day-to-day and new items mix in — while staying
+-- stable *within* a day so OFFSET pages never overlap or skip mid-browse. Priced
+-- items still lead (revenue + they carry images); `i.id` is the final tiebreak.
+-- ponytail: daily rotation; a per-session client seed would also de-dupe same-day
+-- revisits — add when users report intra-day repetition.
+ORDER BY (i.price IS NOT NULL) DESC, hashtext(i.id::text || CURRENT_DATE::text), i.id
 LIMIT %s OFFSET %s
 """
 
