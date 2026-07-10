@@ -1351,3 +1351,40 @@ Skin-tone stays shadow-gated (fairness eval fails, MAE 4.31) regardless — corr
 two-tower/HSTU (finding #9); VTON has no free renderer (finding #8); `/system/status`
 reports photo/search "live" from env config, not a real probe — it lied while the
 Space was down (worth a cheap cached health-probe later).
+
+### 2026-07-10 (cont. 2) — Registered + used the app as a real user; fixed what I found
+
+**Fresh authenticated prod journey** (disposable Supabase account, manual profile:
+men + casual + warm + rectangle + ₹5k, INR; account tombstoned after via DELETE /account):
+
+`/outfits/recommend?k=5` BEFORE fixes — the user's exact complaint, reproduced:
+- All 5 looks reused ONE top (a mislabeled "Teddy … Boys T-shirt", gender=men) AND
+  one bottom; only the shoe changed. All 5 `confidence = 0.000`. One skeleton reason.
+
+Root causes found by querying prod DB directly:
+- Those items have `attributes #> '{perception,color,lch}'` = NULL. `_confidence`
+  multiplied by the colour-coverage fraction → any all-missing-colour outfit = exactly
+  0.000 (dishonest; the look still coordinates on formality/occasion).
+- One top dominated the score order and filled the whole MMR working set, so MMR had
+  no varied anchor to pick — every look reused it. (aecbbb4's anchor-ceiling only
+  reweights novelty; it can't diversify a pool that has no other anchor.)
+
+**Fixed `f0a2185`** (API 294 passed, +2 regression tests, deploy-verified in prod):
+- `_confidence`: colour_factor = 0.5 + 0.5*perceived (floor, not annihilate).
+- `compose`: working pool = best outfit per distinct top+bottom core (footwear ignored),
+  so k distinct looks are guaranteed when the catalog has them.
+
+`/outfits/recommend?k=5` AFTER (same account, verified live): 5 DISTINCT top+bottom
+cores (3 tops, 3 bottoms), confidence 0.124 (non-zero, honest). The "5 near-identical
+looks" complaint is resolved.
+
+**Residual (smaller, follow-up):** the dominant top still recurs across ~3/5 cores
+(only ~3 men's-casual tops survive filtering into the effective pool → catalog breadth,
+not logic); footwear identical across looks (cosmetic); confidence uniform per request
+(no per-look spread yet). Real remaining root cause = **perception colour (LCh) is NULL
+on many catalog items** → backfill perception.color in the nightly pipeline lifts both
+confidence and colour-reasoned explanations across the board. Also: invalid profile enums
+(e.g. style_intent) are silently dropped to empty rather than 422'd — a validation gap.
+
+**Session commits shipped to main (all deploy-verified):** 01f0a0e auth · c893b57 splash ·
+0feea1b keyword search · f0a2185 recsys · (+ the 6 previously-unpushed fixes now live).
