@@ -1589,3 +1589,89 @@ placeholder) so the UI stops claiming gender is optional. tsc clean, eslint clea
 **Residual:** the 10 existing null/unknown-gender prod profiles still see mixed Explore until they
 re-touch onboarding (the gate also cleans them up on revisit since it loads `gender: ""`). No blind
 data migration — I can't infer their real gender. New users are fully fixed.
+
+### 2026-07-10 (cont. 9) — Feedback v5: junk purge + body-type wiring VERIFIED
+
+**Purged tracked junk (commit f2baf91):** `Motivation.md` (stray prompt paste, 0 refs),
+`FEATURE_EXPANDABLE_COLLECTION_GRID.md` (stale root spec; widget shipped), and untracked+
+gitignored `services/api/data/events.jsonl` (runtime event sink — was dirtying `git status`
+on every local run; prod uses the postgres sink). Root now holds only real docs (CLAUDE, README,
+PROGRESS).
+
+**Body-type recs — traced, NOT a bug.** Feedback "recs don't respect body type." Verified the
+full path IS wired: `conditioning.resolve` (candidates region) maps `profile.body_type ->
+_BODY_TYPE_EFFECTS -> goals`; `compose.effects_for(goals) -> goal_effects`; scored at
+`compose.py:325` `score = (1-_W_GOAL)*score + _W_GOAL*goal_fit(items, goal_effects)`. So body
+type shifts the ranker via garment cut/lightness/contrast preferences and shows in the reason
+sentence. The *felt* gap is catalog attribute coverage (sparse cut/fit labels -> goal_fit often
+neutral), a DATA-breadth front, not logic. No code change.
+
+**Standing theme:** the recurring v5 complaints (neutral-heavy recs, "short catalogue breadth",
+body-type feels weak) collapse to ONE root: catalog data thinness — black/white skew + 15k newest
+items un-backfilled (no colour/embedding/attributes) + entire catalog region-tagged IN only.
+Personalization LOGIC is verified correct across skin-tone/undertone (cont.7) and body-type
+(cont.9). Next real lever = catalog breadth/attribute backfill, not recsys code.
+
+### 2026-07-11 (cont. 10) — Feedback v5 ROOT LEVER: catalog breadth via FREE CPU backfill
+
+**Dead-code sweep (subagent): repo is CLEAN** — 0 genuinely-dead modules. The v5 "trash/bloat"
+feeling = sprawl/incompleteness, not dead files. Only real offenders were the root-doc junk (purged
+cont.9). Dormant `online_eval.py` is intentional D5 scaffolding — kept.
+
+**Ground truth on PROD (queried directly, not trusting docs):**
+- 56,816 items, ALL priced (memory's "null prices" fully resolved), category spread healthy
+  (shirt 14k / t_shirt 6k / blouse 5.5k / dress 4.4k / trousers / saree / kurta / jeans...).
+- **41,409 embedded, 15,407 RAW** (no embedding AND no perception — `perception.color` coverage ==
+  embedding coverage exactly). Newest Jul 8-10 fully un-embedded; Jul 7 batch 13k of 35k missing.
+- Retrieval LEFT JOINs embeddings + cold-start orders `has-embedding DESC` -> those 15,407 sort to
+  the BOTTOM, invisible to cold-start + un-retrievable by similarity. **THIS is the felt "short
+  catalogue breadth" — 27% of catalog dark.** All region-tagged IN (US still empty, no US users).
+
+**The fix that kills the "blocked on GPU" dead-end:** the encoder (`hf-hub:timm/ViT-B-16-SigLIP2`,
+768-dim, SAME model/space as the promoted 41k) runs on **CPU** — `default_encoder()` returns the
+local `SiglipEncoder` baseline when `GYF_ENCODER_REMOTE_URL` unset. Weights already cached in
+`.hf-cache`. So the 15k backfill needs NO ZeroGPU, NO paid GPU — pure free CPU. MUST force
+`GYF_PERCEPTION_DEVICE=cpu` (MPS returns non-unit SigLIP embeddings, model.py:59).
+
+**Proven end-to-end on PROD** (`ml/pipelines/backfill.py`, `--limit 3`): 41409->41412, new vectors
+768-dim unit-norm (self-dist 0.0), `perception.color.hue_name` written. Then launched the **full
+catch-up** (all ~15,404, batch 24 / io 12) in background — additive, idempotent, resumable
+(`pending()` re-selects items lacking embeddings; every batch commits). On completion the live
+catalog goes 41k->56.8k (+37%), all newly personalisable by tone/undertone/attributes.
+
+**Run recipe (repeatable, e.g. when nightly pipeline falls behind again):**
+```
+cd ml; export GYF_DATABASE_URL=<prod> GYF_PERCEPTION_DEVICE=cpu GYF_ENCODER_REMOTE_URL="" \
+  HF_HOME=<repo>/.hf-cache PYTHONPATH="$PWD:$PWD/../packages/contracts"
+./.venv/bin/python -m pipelines.backfill        # optional --limit N / --shard i/n
+```
+Root cause of the lag itself (nightly CI has no GPU + time caps -> encoder step falls behind) —
+next: point the nightly backfill at this CPU path / shard it so it never accumulates a 15k debt.
+
+### 2026-07-11 (cont. 11) — Feedback v5: cold-start UX + wardrobe verified
+
+**"Slow first screen" — root-caused + mitigated (commit 04b23e6).** Measured prod
+`gyf-api.onrender.com/health`: **32s cold, 1.2s warm** (free Render sleeps at 15min). Frontend
+already does SWR cache (instant repaint on return) + skeleton + pull-to-refresh, so only the
+FIRST-ever visit during a cold instance is slow — and it showed a blank skeleton that reads as
+broken. Fix: (1) feed shows a "warming up the stylist" status line after 7s of an uncached
+foreground load; (2) keepalive cron 10min->5min (2x chances vs GitHub-cron slippage before the
+15min sleep). tsc+eslint clean. The real cure (always-on tier) costs money — out of scope for the
+free-tier mandate; documented in keepalive.yml.
+
+**"Digital wardrobe not working" — investigated, it WORKS.** `wardrobe-grid.tsx` is
+production-grade: loading/error(+retry)/empty states, category filters derived from actual items
+with counts, optimistic add/remove with toast + rollback, a11y, motion. Full CRUD wired
+(POST/GET/DELETE /wardrobe/items) + wardrobe-aware recs already shipped. Not touched — no bug to fix.
+
+**Meta-finding (the honest read on v5):** every surface traced this session (feed, wardrobe,
+personalization logic, recsys) is solid, well-built code. The "nothing works / hand-stitched"
+feeling was PERCEPTION driven by exactly two real defects — (a) 27% of catalog un-embedded/dark
+(fixing: backfill now 78%) and (b) 32s cold-start behind a broken-looking skeleton (fixed). Not a
+rewrite situation; two concentrated defects were dragging the whole experience.
+
+**Backfill:** 44,468/56,816 embedded (78.3%), 2 shards healthy (pooler-bounded at 2), draining.
+
+**Genuinely-open (need resourcing/decisions, NOT code hidden):** try-on (FASHN credits+eval),
+US catalog (needs US feed), photo-onboarding skin-tone fairness eval (fails DoD gap 3.2 vs <=1.0),
+always-on API tier (paid). These are the honest remaining gaps — all tracked, none silently broken.
