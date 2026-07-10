@@ -14,9 +14,11 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import time
 from pathlib import Path
 from typing import Literal, Protocol
 
+import httpx
 from fastapi import APIRouter, Depends
 from gyf_contracts.model_policy import is_servable, load_registry
 from pydantic import BaseModel
@@ -27,6 +29,30 @@ from ..observability import database_ready
 router = APIRouter(tags=["system"])
 
 CapabilityState = Literal["live", "beta", "shadow", "degraded", "planned"]
+
+# Liveness probe of a configured remote Space, cached so /system/status stays
+# cheap. A configured-but-unreachable Space (a sleeping ZeroGPU host) must report
+# "degraded", not "live" — the status surface used to claim "live" from the env
+# var alone and lied while the Space was down (invariant #6: honest intelligence).
+_PROBE_TTL_S = 60.0
+_probe_cache: dict[str, tuple[float, bool]] = {}
+
+
+def _remote_reachable(url: str) -> bool:
+    """True iff the Space answered an HTTP request (any <500) recently. Cached per
+    URL for _PROBE_TTL_S; distinct capabilities sharing one Space cost one probe."""
+    if not url:
+        return False
+    now = time.monotonic()
+    hit = _probe_cache.get(url)
+    if hit is not None and now - hit[0] < _PROBE_TTL_S:
+        return hit[1]
+    try:
+        ok = httpx.get(url, timeout=2.0, follow_redirects=True).status_code < 500
+    except Exception:  # noqa: BLE001 — unreachable == not live; the status must never 500
+        ok = False
+    _probe_cache[url] = (now, ok)
+    return ok
 
 
 class Capability(BaseModel):
@@ -139,11 +165,18 @@ def _text_search_capability() -> Capability:
     """Mirror the real /items/search serving path (perception.remote.encoder_for):
     a set ``GYF_ENCODER_REMOTE_URL`` serves queries over the ZeroGPU lane with no
     local torch; otherwise the local SigLIP encoder needs the torch runtime."""
-    if os.environ.get("GYF_ENCODER_REMOTE_URL", "").strip():
+    encoder_url = os.environ.get("GYF_ENCODER_REMOTE_URL", "").strip()
+    if encoder_url:
+        if _remote_reachable(encoder_url):
+            return Capability(
+                status="live",
+                lane="remote-gpu",
+                detail="Text→image catalog search embeds queries on the remote GPU lane.",
+            )
         return Capability(
-            status="live",
-            lane="remote-gpu",
-            detail="Text→image catalog search embeds queries on the remote GPU lane.",
+            status="degraded",
+            lane="keyword-fallback",
+            detail="GPU encoder lane unreachable — search falls back to keyword match.",
         )
     if _runtime_installed("torch"):
         return Capability(
@@ -161,10 +194,19 @@ def _text_search_capability() -> Capability:
 def _photo_module(remote_url: str, name: str) -> Capability:
     """Status of a photo-onboarding module from its lane config + local runtime."""
     if remote_url:
+        if _remote_reachable(remote_url):
+            return Capability(
+                status="live",
+                lane="remote-gpu",
+                detail=f"{name} runs on the remote GPU lane.",
+            )
         return Capability(
-            status="live",
-            lane="remote-gpu",
-            detail=f"{name} runs on the remote GPU lane.",
+            status="degraded",
+            lane="manual-fallback",
+            detail=(
+                f"GPU lane configured but unreachable — {name} abstains; "
+                "manual onboarding carries the flow."
+            ),
         )
     if _runtime_installed("torch"):
         return Capability(
