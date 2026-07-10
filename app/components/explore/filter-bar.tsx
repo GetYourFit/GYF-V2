@@ -1,14 +1,13 @@
 "use client";
 
 import { Search, X, SlidersHorizontal } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import type { CatalogFacets } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
-import { getScrollContainer } from "@/lib/scroll-container";
 import { UI_COLORS } from "@/lib/ui-colors";
 import { currencySymbol } from "@/lib/format";
 import { TopMenu } from "@/components/layout/top-menu";
@@ -39,8 +38,6 @@ function CanvasFlowerIcon({ reduce }: { reduce: boolean | null }) {
     </motion.svg>
   );
 }
-
-const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 type SortKey = "relevance" | "price_asc" | "price_desc";
 
@@ -138,37 +135,11 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   const filtersRef = useRef(filters);
   const onChangeRef = useRef(onChange);
 
-  // Once scrolled past this bar's resting position it becomes sticky —
-  // at that point the chip rows collapse to just the search bar + a toggle
-  // arrow, so the catalog below is easy to see. A 1px sentinel placed right
-  // before the sticky bar tells us exactly when that happens.
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = useState(false);
+  // Filters are always collapsed by default — top of page or scrolled,
+  // doesn't matter — and only appear when the toggle next to the search bar
+  // is tapped. No more auto-open-at-rest behavior.
   const [expanded, setExpanded] = useState(false);
-  const showFilters = !scrolled || expanded;
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        const isScrolled = !entry.isIntersecting;
-        setScrolled(isScrolled);
-        // Collapse fresh every time the bar returns to rest, so a filter
-        // dropped open mid-scroll doesn't stay stuck open next time the
-        // user scrolls away.
-        if (!isScrolled) setExpanded(false);
-      },
-      // Root explicitly set to the app's real scroll container (<main> —
-      // see lib/scroll-container.ts). The implicit default root is the
-      // top-level document viewport, which happens to still work here since
-      // the browser accounts for clipping ancestors, but pinning it removes
-      // any ambiguity across engines/mobile browsers.
-      { root: getScrollContainer(), threshold: 0 },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
+  const showFilters = expanded;
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -234,7 +205,6 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
   return (
     <>
-      <div ref={sentinelRef} aria-hidden style={{ height: 1 }} />
       <div
         style={{
           position: "sticky",
@@ -341,49 +311,38 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
             </Link>
           </div>
 
-          {/* Filter toggle — lives inside the bar itself, not a separate
-            hanging tab. Only meaningful once scrolled (at rest the filter
-            rows are already open below the bar), and its own mount/unmount
-            is animated rather than an instant conditional-render pop so it
-            appears in step with the filter rows collapsing beneath it. */}
-          <AnimatePresence initial={false}>
-            {scrolled && (
-              <motion.button
-                key="filter-toggle"
-                type="button"
-                onClick={() => setExpanded((v) => !v)}
-                aria-label={expanded ? "Hide filters" : "Show filters"}
-                aria-expanded={expanded}
-                initial={reduce ? false : { opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.7 }}
-                transition={{ duration: 0.2, ease: EASE }}
-                whileTap={reduce ? undefined : { scale: 0.9 }}
-                style={{
-                  width: 32,
-                  height: 32,
-                  flexShrink: 0,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: expanded ? "var(--surface-2)" : "transparent",
-                  color: hasActive ? "var(--secondary)" : "var(--text-faint)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <SlidersHorizontal
-                  size={15}
-                  aria-hidden
-                  style={{
-                    transform: expanded ? "rotate(180deg)" : "none",
-                    transition: "transform 0.25s ease",
-                  }}
-                />
-              </motion.button>
-            )}
-          </AnimatePresence>
+          {/* Filter toggle — lives inside the bar itself, always present
+            (top of page or scrolled, doesn't matter). Filters never
+            auto-open anymore; this is the only way to reveal them. */}
+          <motion.button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-label={expanded ? "Hide filters" : "Show filters"}
+            aria-expanded={expanded}
+            whileTap={reduce ? undefined : { scale: 0.9 }}
+            style={{
+              width: 32,
+              height: 32,
+              flexShrink: 0,
+              borderRadius: "50%",
+              border: "none",
+              background: expanded ? "var(--surface-2)" : "transparent",
+              color: hasActive ? "var(--secondary)" : "var(--text-faint)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
+          >
+            <SlidersHorizontal
+              size={15}
+              aria-hidden
+              style={{
+                transform: expanded ? "rotate(180deg)" : "none",
+                transition: "transform 0.25s ease",
+              }}
+            />
+          </motion.button>
 
           {/* 3-dot menu — takes the outer slot the canvas button vacated */}
           <div
@@ -400,26 +359,27 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           </div>
         </div>
 
-        {/* Collapsible filter rows — animated via the CSS grid-template-rows
-          trick rather than Framer Motion's height:"auto", which needs a JS
-          layout measurement every frame. Doing that inside a position:sticky,
-          backdrop-blurred bar while the user is mid-scroll (the exact moment
-          this triggers) causes visible jank; grid-template-rows lets the
-          browser interpolate on its own without re-measuring, staying smooth.
-
-          Deliberately stays in normal flow (never position:absolute) in
-          every state: switching between in-flow and an absolute overlay
-          would have to happen on a discrete frame, and doing that at the
-          exact moment scroll crosses the sentinel (or the toggle is
-          clicked) is what caused the old "filters move smoothly" complaint
-          — the page content snapped instead of collapsing. Staying in-flow
-          throughout means the grid-template-rows transition is the only
-          thing moving, so it's smooth in both directions. */}
+        {/* Filter rows — never auto-open, only via the toggle above, and
+          always a floating overlay (position: absolute), never pushing the
+          catalog grid down. It stays absolute in every state (mounted or
+          not) rather than switching modes on toggle: flipping between
+          in-flow and absolute at the exact instant of a state change is
+          what caused the earlier "filters don't move smoothly" jump — the
+          page content snapped instead of animating. Always-absolute means
+          only height/opacity ever move. The background box is sized to
+          exactly this content (padding only, no forced width/height) so it
+          never reads as a big empty panel. */}
         <div
           aria-hidden={!showFilters}
           // @ts-expect-error -- `inert` is a valid DOM attribute not yet in React's JSX typings
           inert={!showFilters ? "" : undefined}
           style={{
+            position: "absolute",
+            left: "1rem",
+            right: "1rem",
+            top: "100%",
+            marginTop: "0.375rem",
+            zIndex: 21,
             display: "grid",
             gridTemplateRows: showFilters ? "1fr" : "0fr",
             opacity: showFilters ? 1 : 0,
@@ -436,19 +396,11 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
               flexDirection: "column",
               gap: "0.75rem",
               minHeight: 0,
-              // The boxed background only exists once explicitly opened
-              // while scrolled — at rest (top of page) the rows sit
-              // directly on the header, no box, no excess padding.
-              transition: reduce ? "none" : "background 0.2s ease, border-color 0.2s ease",
-              ...(scrolled && expanded
-                ? {
-                    background: "var(--surface-2)",
-                    border: "1px solid var(--rule)",
-                    borderRadius: "12px",
-                    padding: "0.75rem",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-                  }
-                : {}),
+              background: "var(--surface-2)",
+              border: "1px solid var(--rule)",
+              borderRadius: "12px",
+              padding: "0.75rem",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
             }}
           >
             {/* Occasion chips */}
