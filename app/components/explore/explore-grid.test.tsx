@@ -65,6 +65,25 @@ describe("ExploreGrid default browse", () => {
     await screen.findByText("a");
   });
 
+  it("repaints from the back-nav cache without refetching page 0", async () => {
+    // Same-session back-nav: the profile gender matches what the cache stored.
+    getProfile.mockResolvedValue({ gender: "men" });
+    Element.prototype.scrollTo = vi.fn(); // jsdom has no scrollTo
+    sessionStorage.setItem(
+      `gyf:explore:${JSON.stringify(FILTERS)}`,
+      JSON.stringify({ items: [hit("cached")], page: 2, hasMore: true, gender: "men", scrollY: 0 }),
+    );
+
+    render(<ExploreGrid filters={FILTERS} />);
+
+    await screen.findByText("cached");
+    // The restore's own setGender re-runs the load effect; it must not fire a
+    // reset fetch that wipes the restored grid and scroll position.
+    await waitFor(() => expect(getProfile).toHaveBeenCalled());
+    expect(browse).not.toHaveBeenCalled();
+    expect(search).not.toHaveBeenCalled();
+  });
+
   it("uses a plain slot filter (not slots) when a search query is present", async () => {
     search.mockResolvedValueOnce([hit("a")]);
 

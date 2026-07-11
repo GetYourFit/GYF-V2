@@ -27,9 +27,12 @@ jobs:
     steps:
       - name: Ping API health
         run: |
+          # /items/browse?k=1, not /health: health never touches the DB, so the
+          # instance stayed warm while the Postgres pool + page cache went cold —
+          # the first real catalog request after a lull still paid 10–13s.
           for i in 1 2 3; do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 70 \
-              https://gyf-api.onrender.com/health || echo "000")
+              "https://gyf-api.onrender.com/items/browse?k=1" || echo "000")
             echo "attempt $i -> HTTP $code"
             [ "$code" = "200" ] && exit 0
             sleep 15

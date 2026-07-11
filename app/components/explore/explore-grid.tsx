@@ -112,6 +112,9 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const loadingRef = useRef(false);
+  // Set by the back-nav restore path: its setGender re-runs the load effect,
+  // which would otherwise loadPage(0, true) and wipe the grid it just restored.
+  const skipNextLoad = useRef(false);
 
   const query = [filters.q || "fashion", filters.occasion, filters.style].filter(Boolean).join(" ");
 
@@ -213,13 +216,20 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
         if (reset) setItems(results);
         else setItems((prev) => [...prev, ...results]);
         setPage(pageNum);
-        setHasMore(results.length === PAGE_SIZE);
+        // Any non-empty page keeps scrolling (not `=== PAGE_SIZE`): multi-slot
+        // browse splits k across 4 slots, so one dry slot returns a short page
+        // while the others still hold thousands — a short page is not the end.
+        setHasMore(results.length > 0);
       } catch (e) {
         if ((e as { name?: string }).name === "AbortError") return;
         setError(e instanceof Error ? e.message : "Could not load items.");
       } finally {
-        loadingRef.current = false;
-        setLoading(false);
+        // Only the still-current request may clear the guard: an aborted call's
+        // finally otherwise unlatches the reset that superseded it (double fetch).
+        if (abortRef.current === ctrl) {
+          loadingRef.current = false;
+          setLoading(false);
+        }
       }
     },
     [query, filters, gender],
@@ -233,6 +243,9 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
       const cached = readCache<GridCache>(cacheKey);
       if (cached && cached.items.length > 0) {
         firstLoad.current = false;
+        // setGender below re-runs this effect (gender is a dep); skip that one
+        // run or it would loadPage(0, true) and wipe the grid just restored.
+        skipNextLoad.current = gender !== cached.gender;
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setItems(cached.items);
         setPage(cached.page);
@@ -247,6 +260,10 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
       firstLoad.current = false;
     }
     if (gender === undefined) return;
+    if (skipNextLoad.current) {
+      skipNextLoad.current = false;
+      return;
+    }
     void loadPage(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
