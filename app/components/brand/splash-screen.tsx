@@ -14,10 +14,12 @@ interface SplashScreenProps {
 }
 
 // Once per session: after the first paint the brand splash is a 2.4s wall in
-// front of every navigation. The lazy initializer reads the shown-flag on the
-// client so a repeat load renders `visible=false` from its first client render
-// (no block); SSR has no sessionStorage, so it defaults to showing and hydration
-// corrects it instantly.
+// front of every navigation. The shown-flag is read in the mount effect, NOT a
+// lazy state initializer: initializing `visible=false` on the client while SSR
+// rendered the splash is a hydration mismatch, and React recovered by orphaning
+// the server-rendered splash div — a fiber-less node stuck at z-index 9999 that
+// covered the whole app forever ("app not loading"). Server and client now both
+// render the splash; repeat sessions dismiss it in the effect, one frame later.
 function alreadyShown(): boolean {
   if (typeof window === "undefined") return false;
   try {
@@ -29,7 +31,7 @@ function alreadyShown(): boolean {
 
 export function SplashScreen({ onDone }: SplashScreenProps) {
   const reduce = useReducedMotion();
-  const [visible, setVisible] = useState(() => !alreadyShown());
+  const [visible, setVisible] = useState(true); // must match SSR — see alreadyShown()
   const [quoteState, setQuoteState] = useState(() => randomQuote());
   const [quoteVisible, setQuoteVisible] = useState(false);
 
@@ -55,8 +57,9 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
   // Hide splash after minimum show time (effect runs at mount, so the timer
   // starts from first paint — no impure Date.now() read during render).
   useEffect(() => {
-    // Already shown this session: never block — resolve immediately.
-    if (!visible) {
+    // Already shown this session: dismiss on mount — never block repeat loads.
+    if (alreadyShown()) {
+      setVisible(false);
       onDone?.();
       return;
     }
