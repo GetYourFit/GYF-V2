@@ -171,24 +171,10 @@ function UserHero({
     [onAvatarChange],
   );
 
-  // Styling identity, straight from the user's own profile — only fields they set.
-  const identityChips = [
-    profile?.gender,
-    profile?.body_type,
-    profile?.skin_tone,
-    profile?.undertone ? `${profile.undertone} undertone` : null,
-    profile?.occasion,
-  ]
-    .filter(isSet)
-    .map(titleCase);
+  // Style intents only. Body/skin/undertone/occasion already live in the Style
+  // profile table below — repeating them as chips is what made the page read
+  // as cluttered (every fact shown twice).
   const intentChips = (profile?.style_intent ?? []).filter(isSet).map(titleCase);
-
-  const stats = [
-    { label: "Outfits", value: summary.outfits_made },
-    { label: "Saved", value: summary.items_saved },
-    { label: "Posts", value: summary.posts },
-    { label: "Badges", value: summary.badges.length },
-  ];
 
   return (
     <div
@@ -317,8 +303,9 @@ function UserHero({
         )}
       </div>
 
-      {/* Styling identity — only what the user actually set, never "unknown" */}
-      {(identityChips.length > 0 || intentChips.length > 0) && (
+      {/* Style intents — the one line of personality in the hero. Every other
+          fact lives exactly once, in the Style profile table below. */}
+      {intentChips.length > 0 && (
         <div
           style={{
             display: "flex",
@@ -332,24 +319,6 @@ function UserHero({
             <span
               key={`intent-${chip}`}
               style={{
-                background: "var(--text)",
-                color: "var(--on-accent)",
-                borderRadius: "999px",
-                padding: "0.25rem 0.875rem",
-                fontFamily: "var(--font-body)",
-                fontSize: "0.7rem",
-                fontWeight: 600,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
-              {chip}
-            </span>
-          ))}
-          {identityChips.map((chip) => (
-            <span
-              key={`identity-${chip}`}
-              style={{
                 border: "1px solid var(--border)",
                 color: "var(--text-mid)",
                 borderRadius: "999px",
@@ -357,7 +326,7 @@ function UserHero({
                 fontFamily: "var(--font-body)",
                 fontSize: "0.7rem",
                 fontWeight: 500,
-                letterSpacing: "0.06em",
+                letterSpacing: "0.08em",
                 textTransform: "uppercase",
               }}
             >
@@ -366,58 +335,6 @@ function UserHero({
           ))}
         </div>
       )}
-
-      {/* Stats row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 0, width: "100%", maxWidth: 320 }}>
-        {stats.map((s, i) => (
-          <div
-            key={s.label}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "0.2rem",
-              position: "relative",
-            }}
-          >
-            {i > 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: 1,
-                  height: "2rem",
-                  background: "var(--border)",
-                }}
-              />
-            )}
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "1.25rem",
-                fontWeight: 700,
-                color: "var(--text)",
-              }}
-            >
-              {s.value}
-            </span>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "0.7rem",
-                color: "var(--text-faint)",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-              }}
-            >
-              {s.label}
-            </span>
-          </div>
-        ))}
-      </div>
 
       {/* Edit profile */}
       <Link
@@ -506,6 +423,7 @@ function Stats({ summary }: { summary: ProfileSummary }) {
     { label: "Wardrobe", value: summary.wardrobe_size, href: "/wardrobe" },
     { label: "Posts", value: summary.posts, href: "/social" },
     { label: "Reactions", value: summary.reactions_received },
+    { label: "Badges", value: summary.badges.length }, // 6 cells → clean 3×2 grid
   ];
   return (
     <section

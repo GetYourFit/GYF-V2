@@ -44,3 +44,5 @@ It has no one-click reloading. Rather, I have to press three or four times just 
 Do not implement without planning! First, you should always plan and come up with lots of plans and lots of approaches on how to solve the problem, and then implement the most viable and the best solution that GetYourFit should have. That solution should not have many trade-offs and should be really economical and really rational.
 
 These are the current issues that I am kind of facing, and I wanted to tell them in feedback-v6.md. I will update with my future opinions on the app in future feedback markdowns.
+
+The nav pill is still tinted fix that give it a more premium finish, The profile page is looking very cluttered review it and provide a more structural , aesthetic and modern design for it that complements our App's build. Audit the complete fronted of the App for all pages and provide the status.
