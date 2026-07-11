@@ -14,7 +14,6 @@ from fastapi.testclient import TestClient
 from app.catalog.retrieval import SearchResult
 from app.dependencies import (
     get_item_directory,
-    get_profile_repo,
     get_search_repo,
     get_taste_repo,
     get_text_embedder,
@@ -64,18 +63,16 @@ class _NoSignalTasteRepo:
         return []
 
 
-class _NoProfileRepo:
-    def get(self, user_id):
-        return None
-
-
 def _call(query_string: str, path: str = "/items/search") -> tuple[_CapturingRepo, object]:
     repo = _CapturingRepo()
     app.dependency_overrides[get_search_repo] = lambda: repo
-    app.dependency_overrides[get_text_embedder] = _FakeEmbedder
+    app.dependency_overrides[get_text_embedder] = (
+        _FakeEmbedder
+        if path == "/items/search"
+        else lambda: (_ for _ in ()).throw(AssertionError("browse resolved the encoder"))
+    )
     app.dependency_overrides[get_item_directory] = _EmptyDirectory
     app.dependency_overrides[get_taste_repo] = _NoSignalTasteRepo
-    app.dependency_overrides[get_profile_repo] = _NoProfileRepo
     try:
         resp = TestClient(app).get(f"{path}{query_string}")
     finally:
@@ -99,7 +96,8 @@ def test_page_one_advances_each_slot_by_its_own_page_not_by_one():
 
 
 def test_browse_endpoint_embeds_nothing_and_splits_offset_per_slot():
-    # /items/browse must NOT call the embedder (no _FakeEmbedder.embed_query) and
+    # Open-auth mode makes this a signed-in user with no learned engagement.
+    # Browse must not resolve/call the remote embedder on this first-load path and
     # must advance each slot by its own page: global offset 24 / 4 slots => 6.
     repo, resp = _call("?slots=top,bottom,full_body,footwear&k=24&offset=24", path="/items/browse")
     assert resp.status_code == 200
