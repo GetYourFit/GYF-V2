@@ -10,6 +10,15 @@ const getProfile = vi.fn();
 const browse = vi.fn();
 const similar = vi.fn();
 
+class TestPointerEvent extends MouseEvent {
+  readonly pointerId: number;
+
+  constructor(type: string, init: PointerEventInit = {}) {
+    super(type, init);
+    this.pointerId = init.pointerId ?? 0;
+  }
+}
+
 vi.mock("@/lib/api-client", () => ({
   browserApi: () => ({ getProfile, browse, similar }),
 }));
@@ -41,6 +50,7 @@ beforeEach(() => {
   // pan handler relies on.
   Element.prototype.setPointerCapture = vi.fn();
   Element.prototype.releasePointerCapture = vi.fn();
+  vi.stubGlobal("PointerEvent", TestPointerEvent);
   // fireEvent dispatches pointermove events back-to-back with ~0ms of real
   // elapsed time, which the component's velocity calc (dx / dt, dt clamped
   // to a 1ms floor) reads as an absurd flick — momentum then flings `pan`
@@ -81,6 +91,7 @@ describe("CanvasExplorer recluster", () => {
     fireEvent.pointerDown(surface, { pointerId: 1, clientX: 800, clientY: 800 });
     fireEvent.pointerMove(surface, { pointerId: 1, clientX: 500, clientY: 500 });
     fireEvent.pointerUp(surface, { pointerId: 1, clientX: 500, clientY: 500 });
+    expect((surface.firstElementChild as HTMLElement).style.transform).not.toContain("NaN");
 
     // Sanity check on the pan itself, isolated from the click/recluster:
     // the loaded cluster spans roughly ±2000px from origin, so a 300px pan

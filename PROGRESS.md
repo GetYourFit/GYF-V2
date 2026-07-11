@@ -1833,3 +1833,10 @@ GitHub run 29146352665 exposed two pre-existing repository-policy conflicts: Pre
 rewrite the append-only `PROGRESS.md`, while the raw v5 feedback ended with trailing spaces and no
 newline. Added `PROGRESS.md` to `.prettierignore` so history stays byte-stable, and mechanically
 cleaned the feedback whitespace while preserving the user's latest Explore/relevance addendum.
+
+### 2026-07-11 (cont. 20) — Canvas CI flake root-caused to jsdom PointerEvent
+
+Second CI run passed API, standards, and doctrine but exposed `clientX/clientY=undefined` in
+GitHub's jsdom: `fireEvent.pointer*` had no `PointerEvent`, so pan became `NaN` and virtualized every
+tile away. The test now installs a minimal MouseEvent-backed PointerEvent carrying `pointerId` and
+asserts the plane transform never contains `NaN`. Exact root `bun run test` passed twice (48 tests).
