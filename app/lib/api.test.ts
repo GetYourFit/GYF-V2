@@ -55,10 +55,12 @@ describe("GyfApi", () => {
   });
 
   it("maps a 404 to an onboarding-aware ApiError", async () => {
-    vi.stubGlobal("fetch", mockFetch({ status: 404, body: { detail: "No profile yet" } }));
+    const fetchSpy = mockFetch({ status: 404, body: { detail: "No profile yet" } });
+    vi.stubGlobal("fetch", fetchSpy);
     const api = new GyfApi(() => "jwt", "http://api");
 
     const err = await api.getProfile().catch((e: unknown) => e);
+    expect(fetchSpy).toHaveBeenCalledOnce();
     expect(err).toBeInstanceOf(ApiError);
     expect((err as ApiError).status).toBe(404);
     expect((err as ApiError).isNotOnboarded).toBe(true);

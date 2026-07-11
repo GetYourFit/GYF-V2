@@ -383,8 +383,8 @@ export function CanvasExplorer() {
       setItems(results);
       setSelectedId(null);
       setGeneration((g) => g + 1);
-      offsetRef.current = results.length;
-      hasMoreRef.current = results.length === 96;
+      offsetRef.current = 96;
+      hasMoreRef.current = results.length > 0;
       pan.current = { x: 0, y: 0 };
       scaleRef.current = 1;
     } catch (e) {
@@ -425,7 +425,7 @@ export function CanvasExplorer() {
       recordSeen(results.map((r) => r.item_id));
       if (token !== clusterToken.current) return; // a recluster landed mid-fetch
       offsetRef.current += PAGE_SIZE;
-      hasMoreRef.current = results.length === PAGE_SIZE;
+      hasMoreRef.current = results.length > 0;
       if (results.length > 0) {
         setItems((prev) => {
           const known = new Set(prev.map((it) => it.item_id));

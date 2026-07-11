@@ -410,6 +410,7 @@ export class GyfApi {
         return await this.handle<T>(res);
       } catch (e) {
         if ((e as { name?: string }).name === "AbortError") throw e;
+        if (e instanceof ApiError) throw e;
         lastErr = e; // network drop (TypeError) — retry
       }
     }

@@ -1957,3 +1957,28 @@ all pages, then continue with a plan and implementation.
 
 **Verification:** local Flutter CLI is not available in this shell, so the Flutter checks will
 finish through the repo gates / CI path after commit.
+
+### 2026-07-12 (cont. 2) — Flutter promoted into required CI
+
+**User asked:** keep CI/CD healthy across every page while continuing the v6 feedback plan.
+
+**Root cause:** the Flutter product surface had widget tests but GitHub Actions never installed
+Flutter or ran them, so the shared navigation/profile/page-chrome work could merge without a
+compile, analyzer, formatting, or test gate.
+
+**Changed:** added one pinned Flutter 3.24.5 CI job using the existing project commands:
+dependency resolution, `dart format --set-exit-if-changed`, `flutter analyze`, and `flutter test`.
+No wrapper script or dependency was added.
+
+### 2026-07-12 (cont. 3) — v6 flow audit: HTTP delay + bounded Canvas root causes
+
+**Subagent audit findings:** startup/auth mitigations already hold, but `GyfApi.request()` caught
+its own `ApiError` and retried every GET HTTP failure. Ordinary 401/404/429/500 responses therefore
+waited through 4.5 seconds of backoff before redirect/error UI could react. Canvas treated a short
+multi-slot page as exhausted and advanced by returned row count, violating the API's fixed-page
+offset contract; sparse slots could stop the supposedly infinite grid early or overlap pages.
+
+**Changed:** HTTP responses now fail immediately while network drops and 502-504 cold-start proxy
+responses retain bounded retries. Canvas always advances the initial 96-item request by 96 and
+continues until an empty page, with later offsets advancing by the fixed 48-item request size.
+Focused regressions pin one-call 404 handling and short-page Canvas continuation at offset 96.

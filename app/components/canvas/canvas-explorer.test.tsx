@@ -68,6 +68,17 @@ afterEach(() => {
 });
 
 describe("CanvasExplorer recluster", () => {
+  it("continues a short first page from the fixed API offset", async () => {
+    browse
+      .mockResolvedValueOnce(Array.from({ length: 60 }, (_, i) => hit(`browse-${i}`)))
+      .mockResolvedValueOnce([]);
+
+    render(<CanvasExplorer />);
+
+    await waitFor(() => expect(browse).toHaveBeenCalledTimes(2));
+    expect(browse.mock.calls[1][0]).toMatchObject({ k: 48, offset: 96 });
+  });
+
   it("repopulates the grid after a click, even after panning away from center first", async () => {
     // Initial browse: 60 items, enough to pan across. Not `...Once`: the
     // pan below may cross the infinite-scroll load-more margin and fire a
