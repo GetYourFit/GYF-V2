@@ -1871,3 +1871,19 @@ an IPS `propensity`. The exporter now preserves score separately and leaves prop
 a randomized serving policy logs a real probability; reports identify served examples from the
 impression context. This prevents future transformer/ranker evaluation from learning against a
 false counterfactual contract.
+
+### 2026-07-11 (cont. 22) — Recommendation latency profiled on the real production DB
+
+The fresh account's 52.7 s first recommendation was traced stage by stage against the production
+database: profile 3.6 s, taste 1.3 s, and candidate retrieval **73.0 s** in the standalone profile;
+composition itself was not the bottleneck. Candidate SQL fetched four pools of 80 wide rows,
+including 768-d embeddings, even though the composer immediately caps every slot to 14.
+
+Fix: cold-start SQL now limits the ID set before hydrating the wide perception row, requires a
+real embedding before an item may enter an AI-styled outfit, and retrieval depth is 20 per slot
+(enough for the public `k<=20`; composer still consumes 14). Real production-DB candidate timing
+dropped from 73.0 s to about 6.9 s while retaining colour/formality/body/tone/budget rules and
+style-cohesion embeddings. A tested experiment omitting vectors saved only ~1.3 s and was rejected
+as a bad quality tradeoff. The deployed five-look result already had five unique hero garments and
+five unique shoes, proving the prior anchor/footwear diversity fixes are live; the repetition
+claim is not being re-fixed blindly.

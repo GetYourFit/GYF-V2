@@ -103,7 +103,7 @@ class CandidateRepository(Protocol):
 # Shared SELECT list so per-slot retrieval and by-id anchor resolution read the
 # exact same signals (one place to add a column). ``{affinity}`` is NULL or a
 # pgvector cosine expression, filled by the caller.
-_SELECT = """
+_SELECT_COLUMNS = """
 SELECT
     i.id,
     i.title,
@@ -132,13 +132,18 @@ SELECT
     i.attributes #>> '{{perception,attributes,fit,certain}}'         AS fit_certain,
     i.attributes #>> '{{taxonomy,gender}}'                           AS gender,
     e.embedding::text                                                AS embedding
+"""
+
+_SELECT = (
+    _SELECT_COLUMNS
+    + """
 FROM items i
 LEFT JOIN item_embeddings e ON e.item_id = i.id
 """
+)
 
-_CANDIDATES = (
-    _SELECT
-    + """
+_FILTERS = (
+    """
 WHERE i.category = ANY(%s)
   AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
   AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
@@ -146,29 +151,47 @@ WHERE i.category = ANY(%s)
        OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
        OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
   """
-    # Kids' garments leak into adult looks: many are mislabeled gender=men/women at
-    # ingest (a "…Boys T-shirt" tagged men), so the gender predicate can't catch
-    # them — filter on the title, the same guard /items/search already applies.
     + f"AND i.title !~* '{_KIDS_RE}'"
+)
+
+_CANDIDATES = (
+    _SELECT
+    + _FILTERS
     + """
 ORDER BY {order}
 LIMIT %s
 """
 )
 
+# Cold start does not rank by the vector itself. Select perceived item IDs first,
+# then hydrate the 768-d embeddings and JSON attributes for only those rows. Raw
+# items remain browsable, but cannot enter an "AI-styled" outfit until perception
+# backfill gives the scorer real visual evidence. The old query joined/serialized
+# every matching embedding before LIMIT, turning an 80-item top pool into a 50s
+# wide sort on the production catalog.
+_CANDIDATES_COLD = (
+    "WITH picked AS MATERIALIZED (SELECT i.id FROM items i "
+    "JOIN item_embeddings picked_embedding ON picked_embedding.item_id = i.id "
+    + _FILTERS
+    + " ORDER BY i.created_at DESC LIMIT %s)\n"
+    + _SELECT_COLUMNS
+    + " FROM picked p JOIN items i ON i.id = p.id "
+    "LEFT JOIN item_embeddings e ON e.item_id = i.id"
+)
+
 # Pool selection is the recommendation ceiling: the composer can only rank what
 # enters the pool. With a taste signal, the pool IS the user's nearest slice
 # (exact scan — the catalog is small enough that no ANN index/beam is involved,
 # so no ef_search/starvation concerns); items without an embedding sort last.
-# Cold start falls back to perception-complete items, then recency.
+# Cold start uses perception-complete items, then recency.
 #
-# Cold start MUST lead with perception-complete items (a stored LCh colour), not
+# Cold start MUST contain perception-complete items (a stored LCh colour), not
 # raw recency: the catalog's newest slice is exactly the items the perception
 # backfill hasn't reached yet (no colour, no embedding), so `created_at DESC`
 # alone hands the composer a colourless pool and every skin-tone/undertone signal
 # collapses to its neutral prior — recs look identical for warm-deep and cool-fair
 # users (verified on prod: 21k coloured tops exist but sit below the newest,
-# un-backfilled ones). Leading with perception-complete items surfaces the
+# un-backfilled ones). Requiring perception-complete items surfaces the
 # personalisable ones the composer needs. Colour and embedding are written
 # together by the backfill, so "has embedding" ≡ "has colour"; we test the
 # already-joined embeddings row (`e.item_id IS NOT NULL`) rather than extracting
@@ -210,7 +233,11 @@ class PostgresCandidateRepository:
     ) -> dict[str, list[Candidate]]:
         affinity_expr = _AFFINITY_EXPR if taste_vector else "NULL"
         order = _ORDER_BY_TASTE if taste_vector else _ORDER_BY_RECENCY
-        sql = _CANDIDATES.format(affinity=affinity_expr, order=order)
+        sql = (
+            _CANDIDATES.format(affinity=affinity_expr, order=order)
+            if taste_vector
+            else _CANDIDATES_COLD.format(affinity=affinity_expr)
+        )
         # The affinity param (if any) is bound first — it appears before WHERE.
         prefix: tuple = (_pgvector(taste_vector),) if taste_vector else ()
         gender_list = sorted(genders) if genders else None

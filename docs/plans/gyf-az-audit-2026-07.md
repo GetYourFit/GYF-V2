@@ -225,6 +225,10 @@ returned in 0.44 s; profile creation returned in 2.8 s. The first authenticated 
 22.9 s on the pre-fix deployment. Five cold-start outfits took 52.7 s and contained only two unique
 top-slot items. These measurements make two items launch-blocking: deploy/verify the encoder-free
 browse path, then profile recommendation SQL/composition and enforce per-slot slate diversity.
+The follow-up profile found candidate retrieval, not composition, was dominant (73.0 s standalone):
+ID-first hydration and a consumer-aligned 20-item pool reduced it to roughly 6.9 s without removing
+the visual cohesion signal. The same live slate had five unique hero garments and shoes, so current
+diversity is working; latency remains the active blocker.
 
 ## 5. Research and infrastructure evidence
 

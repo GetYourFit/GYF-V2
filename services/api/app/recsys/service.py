@@ -34,11 +34,10 @@ from ..wardrobe import WardrobeRepository
 
 logger = logging.getLogger("gyf")
 
-# How many candidates to pull per slot. Generous enough for real variety and MMR
-# diversity, bounded so the assembly cartesian product stays tractable.
-# Pool depth per slot. Taste-ordered pools (candidates.py) make this the user's
-# nearest slice, so depth buys the composer diversity headroom (MMR/DPP prune it).
-_CANDIDATES_PER_SLOT = 80
+# The composer consumes at most 14 items per slot; 20 preserves enough footwear
+# headroom for the endpoint's maximum `k` without shipping 4 * 80 wide, 768-d
+# embedding rows over the production pooler on every request.
+_CANDIDATES_PER_SLOT = 20
 
 # How many recent engagements feed the taste vector. Recency decay handles older
 # ones; this just bounds the read.
