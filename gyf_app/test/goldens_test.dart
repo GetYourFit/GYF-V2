@@ -51,7 +51,7 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/components_light.png'),
     );
-  }, skip: Platform.isLinux ? 'Golden baseline was captured on macOS.' : false);
+  }, skip: Platform.isLinux);
 
   testWidgets('component sampler — dark', (tester) async {
     await tester.pumpWidget(host(sampler(), GyfTheme.dark()));
@@ -59,5 +59,5 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/components_dark.png'),
     );
-  }, skip: Platform.isLinux ? 'Golden baseline was captured on macOS.' : false);
+  }, skip: Platform.isLinux);
 }
