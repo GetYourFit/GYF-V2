@@ -76,13 +76,36 @@ function CardSkeleton({ i }: { i: number }) {
 }
 
 // Masonry, not a uniform grid: each tile's height follows its image's own
-// resolution/aspect ratio (Ref4) instead of forcing every crop into the same
-// 3:4 box. CSS multi-column is what lets tiles size to their natural content
-// height while still packing two columns tightly.
-const GRID_STYLE: React.CSSProperties = {
-  columnCount: 2,
-  columnGap: "0.75rem",
+// aspect ratio (Ref4) instead of forcing every crop into the same 3:4 box.
+// Two FIXED flex columns (item i → column i % 2), not CSS multi-column:
+// column-fill rebalances the whole layout every time a page appends, so
+// existing tiles visibly jumped between columns mid-scroll. Fixed assignment
+// means appends only ever grow the column ends — nothing already on screen
+// moves. ponytail: parity split, not shortest-column packing — columns can
+// drift a tile's height apart; measure real heights if the ragged bottom bugs.
+const GRID_WRAP: React.CSSProperties = {
+  display: "flex",
+  gap: "0.75rem",
+  alignItems: "flex-start",
 };
+const GRID_COL: React.CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  display: "flex",
+  flexDirection: "column",
+};
+
+function TwoColumns({ children }: { children: React.ReactNode[] }) {
+  return (
+    <div style={GRID_WRAP}>
+      {[0, 1].map((col) => (
+        <div key={col} style={GRID_COL}>
+          {children.filter((_, i) => i % 2 === col)}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 interface ExploreGridProps {
   filters: ExploreFilters;
@@ -369,10 +392,12 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
   // First load skeleton
   if (loading && items.length === 0 && !error) {
     return (
-      <div style={GRID_STYLE} aria-busy aria-label="Loading items">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <CardSkeleton key={i} i={i} />
-        ))}
+      <div aria-busy aria-label="Loading items">
+        <TwoColumns>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <CardSkeleton key={i} i={i} />
+          ))}
+        </TwoColumns>
       </div>
     );
   }
@@ -519,15 +544,12 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
 
   return (
     <>
-      {/* No AnimatePresence/popLayout here: this grid is CSS multi-column
-        masonry (see GRID_STYLE below), and popLayout's exit animation pulls
+      {/* No AnimatePresence/popLayout here: popLayout's exit animation pulls
         the leaving element out of flow with `position: absolute` sized to
-        its pre-exit rect — a trick built for flex/grid reflow that has no
-        correct anchor in column-fill layout, so a filter change or reset
-        rendered as overlapping/stuck tiles instead of the grid re-forming
-        cleanly. Cards still animate in (ExploreCard's initial/animate);
+        its pre-exit rect, which rendered as overlapping/stuck tiles on a
+        filter change. Cards still animate in (ExploreCard's initial/animate);
         they just unmount immediately on removal instead of fading out. */}
-      <div style={GRID_STYLE}>
+      <TwoColumns>
         {items.map((item, i) => (
           <ExploreCard
             key={item.item_id}
@@ -540,18 +562,16 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
             onSelect={onSelectItem}
           />
         ))}
-      </div>
+      </TwoColumns>
 
       {/* Append skeleton */}
       {loading && items.length > 0 && (
-        <div
-          style={{ ...GRID_STYLE, marginTop: "0.75rem" }}
-          aria-busy
-          aria-label="Loading more items"
-        >
-          {Array.from({ length: 8 }).map((_, i) => (
-            <CardSkeleton key={i} i={i} />
-          ))}
+        <div style={{ marginTop: "0.75rem" }} aria-busy aria-label="Loading more items">
+          <TwoColumns>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <CardSkeleton key={i} i={i} />
+            ))}
+          </TwoColumns>
         </div>
       )}
 

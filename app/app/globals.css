@@ -96,6 +96,9 @@
   --chrome-glass-active: rgba(255, 255, 255, 0.18);
   --glass-specular-top: rgba(255, 255, 255, 0.16);
   --glass-specular-bottom: rgba(255, 255, 255, 0.05);
+  /* Halo behind nav glyphs while the pill is untinted glass — separates the
+     (light) icons from bright imagery scrolling underneath. */
+  --glyph-halo: rgba(0, 0, 0, 0.6);
 }
 
 /* ─── Light theme — same Cosmos structure, inverted values ───────────────── */
@@ -132,6 +135,7 @@
   --chrome-glass-active: rgba(0, 0, 0, 0.08);
   --glass-specular-top: rgba(255, 255, 255, 0.65);
   --glass-specular-bottom: rgba(255, 255, 255, 0.1);
+  --glyph-halo: rgba(255, 255, 255, 0.75); /* light halo for dark icons */
 }
 
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
@@ -295,6 +299,14 @@
 
   .liquid-nav[data-solid="true"]::before {
     opacity: 0;
+  }
+
+  /* Glass state only: halo the glyphs so they stay legible over whatever
+     content scrolls beneath the untinted pill. Inline `filter` on the centre
+     logo <img> wins over this, which is fine — it sits on its own disc. */
+  .liquid-nav:not([data-solid="true"]) svg,
+  .liquid-nav:not([data-solid="true"]) img {
+    filter: drop-shadow(0 0 3px var(--glyph-halo));
   }
 
   .liquid-glass-indicator {
