@@ -1928,3 +1928,11 @@ test was updated to match the real cold-browse contract. Local retrieval tests p
 The pre-commit standards gate rewrote `docs/feedbacks/gyf-feedback-v6.md` to add the final
 newline. That was the entire failure. The file is now newline-terminated and the standards gate
 should stop touching it.
+
+### 2026-07-11 (cont. 27) — Profile surface cleanup + nav pill neutralized
+
+Followed the latest feedback note that the profile page was cluttered and the nav pill still looked
+tinted. The shared navigation bar theme now uses a neutral indicator with explicit icon coloring,
+and the profile page is reorganized into a proper settings surface: style summary, appearance
+selector, and account sections. Added smoke tests for the profile screen and the nav indicator
+color.

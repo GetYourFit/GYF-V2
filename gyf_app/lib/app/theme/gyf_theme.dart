@@ -159,10 +159,23 @@ abstract final class GyfTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: c.surface,
-        indicatorColor: c.primaryContainer,
+        indicatorColor: c.surfaceElevated,
+        shadowColor: Colors.transparent,
+        elevation: 0,
+        indicatorShape: const StadiumBorder(),
         height: 72,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            color: selected ? c.primary : c.textTertiary,
+            size: 24,
+          );
+        }),
         labelTextStyle: WidgetStatePropertyAll(
-          GyfTypography.micro.copyWith(color: c.textSecondary),
+          GyfTypography.micro.copyWith(
+            color: c.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       dividerTheme: DividerThemeData(

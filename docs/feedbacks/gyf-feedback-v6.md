@@ -41,8 +41,12 @@ The app is also not really responsive for laptop screens as well as mobile scree
 
 It has no one-click reloading. Rather, I have to press three or four times just for the endpoint to connect. Also, it just doesn't reload after a click or redirect after a click or something like that. It has a problem like this, where I have to click multiple times to obtain a behaviour or to go to a screen. The first fetching screen is really, really slow, and the complete app really feels slow and really boring, with nothing interesting going on with it.
 
+The nav pill is still tinted fix that give it a more premium finish, The profile page is looking very cluttered review it and provide a more structural , aesthetic and modern design for it that complements our App's build. Audit the complete fronted of the App for all pages and provide the status.
+
 Do not implement without planning! First, you should always plan and come up with lots of plans and lots of approaches on how to solve the problem, and then implement the most viable and the best solution that GetYourFit should have. That solution should not have many trade-offs and should be really economical and really rational.
 
-These are the current issues that I am kind of facing, and I wanted to tell them in feedback-v6.md. I will update with my future opinions on the app in future feedback markdowns.
+These are the current issues that I am kind of facing, and I wanted to tell them in gyf-feedback-v6.md. I will update with my future opinions on the app in future feedback markdowns.
 
-The nav pill is still tinted fix that give it a more premium finish, The profile page is looking very cluttered review it and provide a more structural , aesthetic and modern design for it that complements our App's build. Audit the complete fronted of the App for all pages and provide the status.
+Make a plan, then go with the plan, fix, and then commit, or do whatever you want to do, and then commit and push the changes with proper gate conventions and good hygiene.
+
+Also, you should use the best programming principles to develop GYF from 0 to 100. The complete codebase should be structured and should have a philosophy, and you should have structure and organisation. It should be really easy to debug the complete app and figure out how it is working. It should maintain proper repo hygiene and everything with all the proper commits. The app should be built with proper usage of skills, sub-agents, and loop engineering whenever relevant, and it should not shy away from using skills like ECC, Caveman, ponytail, claudememe, etc.
