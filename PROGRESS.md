@@ -1826,3 +1826,10 @@ phases, owner unblocks, arXiv decisions, hosting tradeoffs, metric gates, and fe
 passed 5 consecutive runs; typecheck clean; lint 0 errors (one pre-existing `<img>` warning).
 Full root format gate remains polluted by preserved user-owned/untracked `.agents`, `ml/data`, and
 feedback edits; scoped changed files pass formatting/diff checks.
+
+### 2026-07-11 (cont. 19) — Post-push CI root causes fixed
+
+GitHub run 29146352665 exposed two pre-existing repository-policy conflicts: Prettier tried to
+rewrite the append-only `PROGRESS.md`, while the raw v5 feedback ended with trailing spaces and no
+newline. Added `PROGRESS.md` to `.prettierignore` so history stays byte-stable, and mechanically
+cleaned the feedback whitespace while preserving the user's latest Explore/relevance addendum.
