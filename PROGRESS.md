@@ -1936,3 +1936,8 @@ tinted. The shared navigation bar theme now uses a neutral indicator with explic
 and the profile page is reorganized into a proper settings surface: style summary, appearance
 selector, and account sections. Added smoke tests for the profile screen and the nav indicator
 color.
+
+### 2026-07-11 (cont. 28) — Feedback file newline restored again
+
+The standards hook still rewrote `docs/feedbacks/gyf-feedback-v6.md` because the checked-out tree
+kept losing the final newline. I forced the newline back in place without changing the content.
