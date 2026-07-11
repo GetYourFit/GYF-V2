@@ -24,8 +24,7 @@ class OnboardingFlowScreen extends ConsumerWidget {
     final controller = ref.read(onboardingControllerProvider.notifier);
     final colors = Theme.of(context).extension<GyfColorScheme>()!;
 
-    final showChrome =
-        state.step != OnboardingStep.welcome &&
+    final showChrome = state.step != OnboardingStep.welcome &&
         state.step != OnboardingStep.homeTransition;
 
     return Scaffold(
@@ -92,102 +91,103 @@ class OnboardingFlowScreen extends ConsumerWidget {
   }
 
   bool _isSkippable(OnboardingStep step) => switch (step) {
-    OnboardingStep.permissions ||
-    OnboardingStep.goals ||
-    OnboardingStep.personality ||
-    OnboardingStep.occasions ||
-    OnboardingStep.colors ||
-    OnboardingStep.brands ||
-    OnboardingStep.bodyProfile => true,
-    _ => false,
-  };
+        OnboardingStep.permissions ||
+        OnboardingStep.goals ||
+        OnboardingStep.personality ||
+        OnboardingStep.occasions ||
+        OnboardingStep.colors ||
+        OnboardingStep.brands ||
+        OnboardingStep.bodyProfile =>
+          true,
+        _ => false,
+      };
 
   Widget _stepBody(OnboardingStep step) => switch (step) {
-    OnboardingStep.welcome => const _WelcomeStep(),
-    OnboardingStep.meetStylist => const _MeetStylistStep(),
-    OnboardingStep.permissions => const _PermissionsStep(),
-    OnboardingStep.goals => const _MultiSelectStep(
-      answerKey: 'goals',
-      headline: 'What brings you to GYF?',
-      description: 'Pick as many as you like — your stylist adapts.',
-      options: [
-        'Dress better daily',
-        'Refresh my wardrobe',
-        'Find my style',
-        'Shop smarter',
-        'Special occasion',
-        'Keep up with trends',
-      ],
-    ),
-    OnboardingStep.personality => const _MultiSelectStep(
-      answerKey: 'personality',
-      headline: 'Which styles feel like you?',
-      description: 'Choose the looks you gravitate toward.',
-      options: [
-        'Minimal',
-        'Classic',
-        'Streetwear',
-        'Bold',
-        'Romantic',
-        'Sporty',
-        'Vintage',
-        'Editorial',
-      ],
-    ),
-    OnboardingStep.occasions => const _MultiSelectStep(
-      answerKey: 'occasions',
-      headline: 'What do you dress for most?',
-      description: 'We’ll prioritize outfits for these.',
-      options: [
-        'Work',
-        'Casual days',
-        'Evenings out',
-        'Events',
-        'Travel',
-        'Working out',
-      ],
-    ),
-    OnboardingStep.colors => const _MultiSelectStep(
-      answerKey: 'colors',
-      headline: 'Colors you love wearing?',
-      description: 'Your palette shapes every recommendation.',
-      options: [
-        'Neutrals',
-        'Earth tones',
-        'Pastels',
-        'Jewel tones',
-        'Monochrome',
-        'Brights',
-      ],
-    ),
-    OnboardingStep.brands => const _MultiSelectStep(
-      answerKey: 'brands',
-      headline: 'Any brands you reach for?',
-      description: 'Optional — helps us match your taste and fit.',
-      options: [
-        'Zara',
-        'Uniqlo',
-        'COS',
-        'Nike',
-        'Levi’s',
-        'Massimo Dutti',
-        'H&M',
-        'Adidas',
-      ],
-    ),
-    OnboardingStep.budget => const _BudgetStep(),
-    OnboardingStep.bodyProfile => const _MultiSelectStep(
-      answerKey: 'bodyProfile',
-      headline: 'How do you like clothes to fit?',
-      description: 'Fit preference guides every size and cut we pick.',
-      options: ['Fitted', 'Regular', 'Relaxed', 'Oversized'],
-    ),
-    OnboardingStep.photoCapture => const _PhotoCaptureStep(),
-    OnboardingStep.aiAnalysis => const _AiAnalysisStep(),
-    OnboardingStep.styleDnaReveal => const _StyleDnaRevealStep(),
-    OnboardingStep.dashboardPreview => const _DashboardPreviewStep(),
-    OnboardingStep.homeTransition => const _HomeTransitionStep(),
-  };
+        OnboardingStep.welcome => const _WelcomeStep(),
+        OnboardingStep.meetStylist => const _MeetStylistStep(),
+        OnboardingStep.permissions => const _PermissionsStep(),
+        OnboardingStep.goals => const _MultiSelectStep(
+            answerKey: 'goals',
+            headline: 'What brings you to GYF?',
+            description: 'Pick as many as you like — your stylist adapts.',
+            options: [
+              'Dress better daily',
+              'Refresh my wardrobe',
+              'Find my style',
+              'Shop smarter',
+              'Special occasion',
+              'Keep up with trends',
+            ],
+          ),
+        OnboardingStep.personality => const _MultiSelectStep(
+            answerKey: 'personality',
+            headline: 'Which styles feel like you?',
+            description: 'Choose the looks you gravitate toward.',
+            options: [
+              'Minimal',
+              'Classic',
+              'Streetwear',
+              'Bold',
+              'Romantic',
+              'Sporty',
+              'Vintage',
+              'Editorial',
+            ],
+          ),
+        OnboardingStep.occasions => const _MultiSelectStep(
+            answerKey: 'occasions',
+            headline: 'What do you dress for most?',
+            description: 'We’ll prioritize outfits for these.',
+            options: [
+              'Work',
+              'Casual days',
+              'Evenings out',
+              'Events',
+              'Travel',
+              'Working out',
+            ],
+          ),
+        OnboardingStep.colors => const _MultiSelectStep(
+            answerKey: 'colors',
+            headline: 'Colors you love wearing?',
+            description: 'Your palette shapes every recommendation.',
+            options: [
+              'Neutrals',
+              'Earth tones',
+              'Pastels',
+              'Jewel tones',
+              'Monochrome',
+              'Brights',
+            ],
+          ),
+        OnboardingStep.brands => const _MultiSelectStep(
+            answerKey: 'brands',
+            headline: 'Any brands you reach for?',
+            description: 'Optional — helps us match your taste and fit.',
+            options: [
+              'Zara',
+              'Uniqlo',
+              'COS',
+              'Nike',
+              'Levi’s',
+              'Massimo Dutti',
+              'H&M',
+              'Adidas',
+            ],
+          ),
+        OnboardingStep.budget => const _BudgetStep(),
+        OnboardingStep.bodyProfile => const _MultiSelectStep(
+            answerKey: 'bodyProfile',
+            headline: 'How do you like clothes to fit?',
+            description: 'Fit preference guides every size and cut we pick.',
+            options: ['Fitted', 'Regular', 'Relaxed', 'Oversized'],
+          ),
+        OnboardingStep.photoCapture => const _PhotoCaptureStep(),
+        OnboardingStep.aiAnalysis => const _AiAnalysisStep(),
+        OnboardingStep.styleDnaReveal => const _StyleDnaRevealStep(),
+        OnboardingStep.dashboardPreview => const _DashboardPreviewStep(),
+        OnboardingStep.homeTransition => const _HomeTransitionStep(),
+      };
 }
 
 /// Shared step layout: headline, description, content, sticky CTA.
@@ -294,8 +294,7 @@ class _MeetStylistStep extends ConsumerWidget {
         children: [
           GyfChatBubble(
             role: GyfChatRole.assistant,
-            text:
-                'Hi! I’m your stylist. Tell me about your day and I’ll put '
+            text: 'Hi! I’m your stylist. Tell me about your day and I’ll put '
                 'together something that feels like you.',
           ),
           SizedBox(height: GyfSpacing.s12),
@@ -325,8 +324,7 @@ class _PermissionsStep extends ConsumerWidget {
           _PermissionRow(
             icon: Icons.photo_camera_outlined,
             title: 'Camera',
-            rationale:
-                'Snap your clothes to build your digital wardrobe '
+            rationale: 'Snap your clothes to build your digital wardrobe '
                 'and get outfit checks.',
             colors: colors,
           ),
@@ -334,8 +332,7 @@ class _PermissionsStep extends ConsumerWidget {
           _PermissionRow(
             icon: Icons.notifications_outlined,
             title: 'Notifications',
-            rationale:
-                'Morning outfit suggestions and price drops on '
+            rationale: 'Morning outfit suggestions and price drops on '
                 'wishlist items. Never spam.',
             colors: colors,
           ),
@@ -472,8 +469,7 @@ class _PhotoCaptureStep extends ConsumerWidget {
     final colors = Theme.of(context).extension<GyfColorScheme>()!;
     return _StepScaffold(
       headline: 'Add a photo for better matches.',
-      description:
-          'Helps your stylist judge color and fit against you — not a '
+      description: 'Helps your stylist judge color and fit against you — not a '
           'generic model. You can always do this later.',
       ctaLabel: 'Take a photo',
       onCta: controller.next,

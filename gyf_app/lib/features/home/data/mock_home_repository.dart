@@ -57,17 +57,18 @@ class HomeRepository {
     List<GyfCollectionProduct> products(
       String seed,
       List<(String brand, String name)> items,
-    ) => [
-      for (final (index, (brand, name)) in items.indexed)
-        GyfCollectionProduct(
-          brand: brand,
-          name: name,
-          price: '₹${1399 + index * 280}',
-          matchPercent: 97 - index * 2,
-          aiReason: '$seed piece that works with your current wardrobe.',
-          sizes: const ['S', 'M', 'L'],
-        ),
-    ];
+    ) =>
+        [
+          for (final (index, (brand, name)) in items.indexed)
+            GyfCollectionProduct(
+              brand: brand,
+              name: name,
+              price: '₹${1399 + index * 280}',
+              matchPercent: 97 - index * 2,
+              aiReason: '$seed piece that works with your current wardrobe.',
+              sizes: const ['S', 'M', 'L'],
+            ),
+        ];
     return HomeFeed(
       hero: const HeroRecommendation(
         headline: 'Linen shirt + tapered chinos',

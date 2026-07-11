@@ -15,12 +15,13 @@ abstract final class GyfTypography {
     FontWeight weight,
     double heightPct, {
     double spacingPct = 0,
-  }) => TextStyle(
-    fontSize: size,
-    fontWeight: weight,
-    height: heightPct / 100,
-    letterSpacing: size * spacingPct / 100,
-  );
+  }) =>
+      TextStyle(
+        fontSize: size,
+        fontWeight: weight,
+        height: heightPct / 100,
+        letterSpacing: size * spacingPct / 100,
+      );
 
   static final TextStyle displayXL = _style(
     64,
@@ -72,20 +73,20 @@ abstract final class GyfTypography {
   /// Maps token styles into Material [TextTheme] slots so Material
   /// components pick them up automatically.
   static TextTheme textTheme(Color primary, Color secondary) => TextTheme(
-    displayLarge: displayXL.copyWith(color: primary),
-    displayMedium: displayL.copyWith(color: primary),
-    displaySmall: displayM.copyWith(color: primary),
-    headlineLarge: h1.copyWith(color: primary),
-    headlineMedium: h2.copyWith(color: primary),
-    headlineSmall: h3.copyWith(color: primary),
-    titleLarge: h4.copyWith(color: primary),
-    titleMedium: h5.copyWith(color: primary),
-    titleSmall: title.copyWith(color: primary),
-    bodyLarge: bodyLarge.copyWith(color: primary),
-    bodyMedium: body.copyWith(color: primary),
-    bodySmall: bodySmall.copyWith(color: secondary),
-    labelLarge: button.copyWith(color: primary),
-    labelMedium: label.copyWith(color: secondary),
-    labelSmall: micro.copyWith(color: secondary),
-  );
+        displayLarge: displayXL.copyWith(color: primary),
+        displayMedium: displayL.copyWith(color: primary),
+        displaySmall: displayM.copyWith(color: primary),
+        headlineLarge: h1.copyWith(color: primary),
+        headlineMedium: h2.copyWith(color: primary),
+        headlineSmall: h3.copyWith(color: primary),
+        titleLarge: h4.copyWith(color: primary),
+        titleMedium: h5.copyWith(color: primary),
+        titleSmall: title.copyWith(color: primary),
+        bodyLarge: bodyLarge.copyWith(color: primary),
+        bodyMedium: body.copyWith(color: primary),
+        bodySmall: bodySmall.copyWith(color: secondary),
+        labelLarge: button.copyWith(color: primary),
+        labelMedium: label.copyWith(color: secondary),
+        labelSmall: micro.copyWith(color: secondary),
+      );
 }

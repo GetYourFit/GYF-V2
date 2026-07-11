@@ -16,9 +16,9 @@ class GyfSkeleton extends ConsumerStatefulWidget {
   });
 
   const GyfSkeleton.circle({required double size, super.key})
-    : width = size,
-      height = size,
-      borderRadius = const BorderRadius.all(Radius.circular(GyfRadius.pill));
+      : width = size,
+        height = size,
+        borderRadius = const BorderRadius.all(Radius.circular(GyfRadius.pill));
 
   final double? width;
   final double height;

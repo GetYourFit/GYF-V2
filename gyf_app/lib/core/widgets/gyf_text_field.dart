@@ -101,8 +101,8 @@ class _GyfTextFieldState extends ConsumerState<GyfTextField>
                 tooltip: _obscured ? 'Show password' : 'Hide password',
               )
             : (widget.successText != null
-                  ? Icon(Icons.check_circle_outline, color: colors.success)
-                  : null),
+                ? Icon(Icons.check_circle_outline, color: colors.success)
+                : null),
       ),
     );
 
@@ -113,9 +113,8 @@ class _GyfTextFieldState extends ConsumerState<GyfTextField>
         Text(
           widget.label,
           style: text.labelMedium?.copyWith(
-            color: widget.errorText != null
-                ? colors.error
-                : colors.textSecondary,
+            color:
+                widget.errorText != null ? colors.error : colors.textSecondary,
           ),
         ),
         const SizedBox(height: GyfSpacing.s8),

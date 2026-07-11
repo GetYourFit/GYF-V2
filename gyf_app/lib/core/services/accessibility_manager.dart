@@ -26,13 +26,14 @@ class AccessibilityState {
     bool? reduceMotion,
     bool? highContrast,
     bool? Function()? reduceMotionOverride,
-  }) => AccessibilityState(
-    reduceMotion: reduceMotion ?? this.reduceMotion,
-    highContrast: highContrast ?? this.highContrast,
-    reduceMotionOverride: reduceMotionOverride != null
-        ? reduceMotionOverride()
-        : this.reduceMotionOverride,
-  );
+  }) =>
+      AccessibilityState(
+        reduceMotion: reduceMotion ?? this.reduceMotion,
+        highContrast: highContrast ?? this.highContrast,
+        reduceMotionOverride: reduceMotionOverride != null
+            ? reduceMotionOverride()
+            : this.reduceMotionOverride,
+      );
 }
 
 class AccessibilityManager extends Notifier<AccessibilityState> {
@@ -54,5 +55,5 @@ class AccessibilityManager extends Notifier<AccessibilityState> {
 
 final accessibilityProvider =
     NotifierProvider<AccessibilityManager, AccessibilityState>(
-      AccessibilityManager.new,
-    );
+  AccessibilityManager.new,
+);

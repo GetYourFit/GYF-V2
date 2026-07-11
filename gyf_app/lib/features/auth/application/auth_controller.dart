@@ -33,9 +33,8 @@ class AuthState {
       // With clearErrors, explicitly passed values still win (a validation
       // pass both clears stale errors and sets fresh ones in one call).
       emailError: clearErrors ? emailError : emailError ?? this.emailError,
-      passwordError: clearErrors
-          ? passwordError
-          : passwordError ?? this.passwordError,
+      passwordError:
+          clearErrors ? passwordError : passwordError ?? this.passwordError,
       otpError: clearErrors ? otpError : otpError ?? this.otpError,
       pendingEmail: pendingEmail ?? this.pendingEmail,
     );

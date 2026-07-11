@@ -5,11 +5,11 @@ import 'package:gyf_app/app/theme/gyf_theme.dart';
 import 'package:gyf_app/core/widgets/gyf_widgets.dart';
 
 Widget host(Widget child, {ThemeData? theme}) => ProviderScope(
-  child: MaterialApp(
-    theme: theme ?? GyfTheme.light(),
-    home: Scaffold(body: Center(child: child)),
-  ),
-);
+      child: MaterialApp(
+        theme: theme ?? GyfTheme.light(),
+        home: Scaffold(body: Center(child: child)),
+      ),
+    );
 
 void main() {
   group('GyfConfidenceBadge', () {

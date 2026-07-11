@@ -70,19 +70,17 @@ class HomeScreen extends ConsumerWidget {
                 for (final (i, collection) in data.collections.indexed) ...[
                   const SizedBox(height: GyfSpacing.s16),
                   GyfExpandableCollectionGrid(
-                        title: collection.title,
-                        subtitle: collection.subtitle,
-                        compatibilityScore: collection.compatibility,
-                        updatedLabel: 'Updated today',
-                        products: collection.products,
-                        onSavedChanged: (_, saved) {
-                          if (saved) {
-                            ref
-                                .read(hapticServiceProvider)
-                                .emit(GyfHaptic.success);
-                          }
-                        },
-                      )
+                    title: collection.title,
+                    subtitle: collection.subtitle,
+                    compatibilityScore: collection.compatibility,
+                    updatedLabel: 'Updated today',
+                    products: collection.products,
+                    onSavedChanged: (_, saved) {
+                      if (saved) {
+                        ref.read(hapticServiceProvider).emit(GyfHaptic.success);
+                      }
+                    },
+                  )
                       .animate(delay: GyfMotion.stagger * (i + 1))
                       .fadeIn(duration: GyfMotion.medium, curve: GyfCurve.enter)
                       .slideY(begin: 0.04, duration: GyfMotion.medium),

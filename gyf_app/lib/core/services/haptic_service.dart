@@ -38,23 +38,22 @@ class HapticService {
   }
 
   bool _allowedAtLevel(GyfHaptic haptic) => switch (level) {
-    GyfHapticLevel.full => true,
-    GyfHapticLevel.reduced => haptic != GyfHaptic.heavy,
-    GyfHapticLevel.minimal =>
-      haptic == GyfHaptic.success ||
-          haptic == GyfHaptic.error ||
-          haptic == GyfHaptic.warning,
-    GyfHapticLevel.disabled => false,
-  };
+        GyfHapticLevel.full => true,
+        GyfHapticLevel.reduced => haptic != GyfHaptic.heavy,
+        GyfHapticLevel.minimal => haptic == GyfHaptic.success ||
+            haptic == GyfHaptic.error ||
+            haptic == GyfHaptic.warning,
+        GyfHapticLevel.disabled => false,
+      };
 
   Future<void> _invoke(GyfHaptic haptic) => switch (haptic) {
-    GyfHaptic.selection => HapticFeedback.selectionClick(),
-    GyfHaptic.light => HapticFeedback.lightImpact(),
-    GyfHaptic.medium => HapticFeedback.mediumImpact(),
-    GyfHaptic.heavy || GyfHaptic.success => HapticFeedback.heavyImpact(),
-    GyfHaptic.warning || GyfHaptic.error => HapticFeedback.vibrate(),
-    GyfHaptic.none => Future<void>.value(),
-  };
+        GyfHaptic.selection => HapticFeedback.selectionClick(),
+        GyfHaptic.light => HapticFeedback.lightImpact(),
+        GyfHaptic.medium => HapticFeedback.mediumImpact(),
+        GyfHaptic.heavy || GyfHaptic.success => HapticFeedback.heavyImpact(),
+        GyfHaptic.warning || GyfHaptic.error => HapticFeedback.vibrate(),
+        GyfHaptic.none => Future<void>.value(),
+      };
 }
 
 final hapticServiceProvider = Provider<HapticService>((ref) => HapticService());

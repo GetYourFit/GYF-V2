@@ -247,7 +247,7 @@ class _GyfExpandableCollectionGridState
         // widths — size rows explicitly instead.
         final itemWidth =
             (constraints.maxWidth - GyfSpacing.s12 * (widget.columns - 1)) /
-            widget.columns;
+                widget.columns;
         // 168 is the bare text-block estimate; cards showing the AI
         // match badge (matchPercent) need a bit more headroom or they
         // clip by a hair at narrow widths — 184 keeps a safety margin.
@@ -381,8 +381,7 @@ class _CollectionHeader extends StatelessWidget {
     return Semantics(
       container: true,
       button: showExpandButton,
-      label:
-          '$title, $itemCount looks'
+      label: '$title, $itemCount looks'
           '${expanded ? ', expanded' : ', collapsed'}',
       child: InkWell(
         onTap: showExpandButton ? onToggle : null,

@@ -225,9 +225,7 @@ class RegisterScreen extends ConsumerWidget {
 
     Future<void> submit() async {
       ref.read(hapticServiceProvider).emit(GyfHaptic.light);
-      final ok = await ref
-          .read(authControllerProvider.notifier)
-          .register(
+      final ok = await ref.read(authControllerProvider.notifier).register(
             forms.email.text,
             forms.password.text,
             forms.confirmPassword.text,

@@ -185,8 +185,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
             ),
             const GyfChatBubble(
               role: GyfChatRole.assistant,
-              text:
-                  'Great choice — white sneakers ground a relaxed date look. '
+              text: 'Great choice — white sneakers ground a relaxed date look. '
                   'Try slim dark denim and an open overshirt.',
             ),
             const GyfChatBubble(role: GyfChatRole.assistant, loading: true),

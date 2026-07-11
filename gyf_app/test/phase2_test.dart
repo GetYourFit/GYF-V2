@@ -9,11 +9,11 @@ import 'package:gyf_app/features/onboarding/application/onboarding_controller.da
 import 'package:shared_preferences/shared_preferences.dart';
 
 Widget host(Widget child, {ThemeData? theme}) => ProviderScope(
-  child: MaterialApp(
-    theme: theme ?? GyfTheme.light(),
-    home: Scaffold(body: Center(child: child)),
-  ),
-);
+      child: MaterialApp(
+        theme: theme ?? GyfTheme.light(),
+        home: Scaffold(body: Center(child: child)),
+      ),
+    );
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));

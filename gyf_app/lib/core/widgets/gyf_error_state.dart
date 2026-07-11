@@ -23,43 +23,43 @@ class GyfErrorState extends StatelessWidget {
   final VoidCallback? onSecondary;
 
   (IconData, String, String, String) get _content => switch (variant) {
-    GyfErrorVariant.offline => (
-      Icons.wifi_off_outlined,
-      'You’re offline.',
-      'Check your connection. Anything you saved is still here.',
-      'Try again',
-    ),
-    GyfErrorVariant.retry => (
-      Icons.refresh,
-      'Something didn’t load.',
-      'Give it another try — this usually resolves quickly.',
-      'Try again',
-    ),
-    GyfErrorVariant.permission => (
-      Icons.lock_outline,
-      'Permission needed.',
-      'Allow access in Settings to use this feature.',
-      'Open settings',
-    ),
-    GyfErrorVariant.ai => (
-      Icons.auto_awesome_outlined,
-      'Your stylist needs another moment.',
-      'The AI couldn’t finish that request.',
-      'Generate again',
-    ),
-    GyfErrorVariant.upload => (
-      Icons.cloud_upload_outlined,
-      'Upload didn’t finish.',
-      'Your photo is still on your device — try uploading again.',
-      'Retry upload',
-    ),
-    GyfErrorVariant.unknown => (
-      Icons.error_outline,
-      'Something went wrong.',
-      'Please try again. If it keeps happening, contact support.',
-      'Try again',
-    ),
-  };
+        GyfErrorVariant.offline => (
+            Icons.wifi_off_outlined,
+            'You’re offline.',
+            'Check your connection. Anything you saved is still here.',
+            'Try again',
+          ),
+        GyfErrorVariant.retry => (
+            Icons.refresh,
+            'Something didn’t load.',
+            'Give it another try — this usually resolves quickly.',
+            'Try again',
+          ),
+        GyfErrorVariant.permission => (
+            Icons.lock_outline,
+            'Permission needed.',
+            'Allow access in Settings to use this feature.',
+            'Open settings',
+          ),
+        GyfErrorVariant.ai => (
+            Icons.auto_awesome_outlined,
+            'Your stylist needs another moment.',
+            'The AI couldn’t finish that request.',
+            'Generate again',
+          ),
+        GyfErrorVariant.upload => (
+            Icons.cloud_upload_outlined,
+            'Upload didn’t finish.',
+            'Your photo is still on your device — try uploading again.',
+            'Retry upload',
+          ),
+        GyfErrorVariant.unknown => (
+            Icons.error_outline,
+            'Something went wrong.',
+            'Please try again. If it keeps happening, contact support.',
+            'Try again',
+          ),
+      };
 
   @override
   Widget build(BuildContext context) {

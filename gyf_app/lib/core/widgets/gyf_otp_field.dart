@@ -175,8 +175,8 @@ class _OtpBox extends StatelessWidget {
     final borderColor = error
         ? colors.borderError
         : active
-        ? colors.borderFocus
-        : colors.borderDefault;
+            ? colors.borderFocus
+            : colors.borderDefault;
     return AnimatedContainer(
       duration: GyfMotion.quick,
       curve: GyfCurve.enter,
@@ -188,9 +188,8 @@ class _OtpBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(GyfRadius.md),
         border: Border.all(
           color: borderColor,
-          width: active || error
-              ? GyfBorderWidth.focus
-              : GyfBorderWidth.regular,
+          width:
+              active || error ? GyfBorderWidth.focus : GyfBorderWidth.regular,
         ),
       ),
       child: Text(char ?? '', style: textTheme.titleLarge),

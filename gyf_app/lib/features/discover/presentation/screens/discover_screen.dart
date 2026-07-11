@@ -46,18 +46,15 @@ class _DiscoverFeed extends ConsumerWidget {
         ref.watch(selectedDiscoverCategoryProvider) ?? data.categories.first;
     final query = ref.watch(discoverSearchQueryProvider).trim().toLowerCase();
     final saved = ref.watch(savedDiscoverTilesProvider);
-    final tiles = data.tiles
-        .where((tile) {
-          final matchesCategory =
-              selected == data.categories.first || tile.category == selected;
-          final matchesQuery =
-              query.isEmpty ||
-              [tile.title, tile.attribution, tile.category]
-                  .whereType<String>()
-                  .any((value) => value.toLowerCase().contains(query));
-          return matchesCategory && matchesQuery;
-        })
-        .toList(growable: false);
+    final tiles = data.tiles.where((tile) {
+      final matchesCategory =
+          selected == data.categories.first || tile.category == selected;
+      final matchesQuery = query.isEmpty ||
+          [tile.title, tile.attribution, tile.category]
+              .whereType<String>()
+              .any((value) => value.toLowerCase().contains(query));
+      return matchesCategory && matchesQuery;
+    }).toList(growable: false);
 
     return CustomScrollView(
       slivers: [
@@ -98,11 +95,9 @@ class _DiscoverFeed extends ConsumerWidget {
                 return GyfFilterChip(
                   label: label,
                   selected: label == selected,
-                  onSelected: (_) =>
-                      ref
-                              .read(selectedDiscoverCategoryProvider.notifier)
-                              .state =
-                          label,
+                  onSelected: (_) => ref
+                      .read(selectedDiscoverCategoryProvider.notifier)
+                      .state = label,
                 );
               },
             ),

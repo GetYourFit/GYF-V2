@@ -31,10 +31,10 @@ class ThemeManager extends Notifier<GyfThemeChoice> {
   }
 
   ThemeMode get themeMode => switch (state) {
-    GyfThemeChoice.light => ThemeMode.light,
-    GyfThemeChoice.dark => ThemeMode.dark,
-    GyfThemeChoice.system => ThemeMode.system,
-  };
+        GyfThemeChoice.light => ThemeMode.light,
+        GyfThemeChoice.dark => ThemeMode.dark,
+        GyfThemeChoice.system => ThemeMode.system,
+      };
 }
 
 final themeManagerProvider = NotifierProvider<ThemeManager, GyfThemeChoice>(

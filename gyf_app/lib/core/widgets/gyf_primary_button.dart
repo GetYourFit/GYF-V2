@@ -70,9 +70,8 @@ class _GyfPrimaryButtonState extends ConsumerState<GyfPrimaryButton> {
       label: widget.label,
       hint: widget.semanticHint,
       child: Listener(
-        onPointerDown: widget._enabled
-            ? (_) => setState(() => _pressed = true)
-            : null,
+        onPointerDown:
+            widget._enabled ? (_) => setState(() => _pressed = true) : null,
         onPointerUp: (_) => setState(() => _pressed = false),
         onPointerCancel: (_) => setState(() => _pressed = false),
         child: AnimatedScale(
