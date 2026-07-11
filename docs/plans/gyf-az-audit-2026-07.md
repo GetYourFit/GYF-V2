@@ -1,137 +1,202 @@
-# GYF A–Z Audit & Roadmap — 2026-07-11
+# GYF A-Z Production Plan — 2026-07-11
 
-> Whole-app audit from a real-user prod run (registered a live account, hit every
-> surface on `gyf-api.onrender.com`) + code/repo scan. Verdict-first, then the
-> prioritized A–Z plan. This is a living plan — feedback loop at the bottom.
+> Evidence: `PROGRESS.md`, product/engineering vision, current code and tests, a live
+> production smoke, and a July 2026 arXiv sweep. This plan replaces the stale four-blocker
+> snapshot. Work in order; each phase has a measurable exit gate.
 
----
+## 0. Plain-English verdict
 
-## 0. Honest verdict (kills the myths)
+GYF is not a failed rewrite. Auth, manual onboarding, personalized Explore, outfit generation,
+wardrobe, social, affiliate links, and a large catalog exist. Production currently reports 59,072
+items, 49,204 embedded, all with prices and images. US merchants are seeded. Next.js web is the
+beta product; Flutter is deliberately parked.
 
-The v5 feedback says "shameful, hand-stitched, tons of trash, nothing works." The
-audit says **the opposite is mostly true** — the tracked codebase is lean and the
-core flows work. The pain is real but it's **4 specific blockers**, not "everything."
+Four things stop it feeling like a million-dollar product:
 
-**What actually works (verified live, this session):**
-- Signup / login / session (Supabase, JWT) ✅
-- Manual onboarding + consent gate + erasure ✅
-- **Personalized Explore** — two-tower taste retrieval + zero-shot profile cold-start
-  + MMR diversity — returns 24 distinct, on-profile items ✅
-- Catalog: 49,204 items, **all priced** (INR), Cuelinks affiliate-wrapped ✅
-- Stylist feed, wardrobe, collections, social, profile/badges — built & wired ✅
+1. Photo body/skin estimation is blocked before inference by the model registry: current weights
+   lack a complete commercial-data chain and passing evaluations. More GPU credits do not fix it.
+2. The free Render API can sleep. First-user latency cannot be both guaranteed and free.
+3. Explore behavior is not yet a complete learning loop. Missing view/save/shop/impression data
+   means a larger recommender would learn from incomplete evidence.
+4. Operational proof is thin: no live Sentry/tracing, load-test result, frozen person-photo eval
+   set, or million-user capacity evidence.
 
-**Repo health (contradicts "tons of trash"):**
-- Tracked: api 114 files / ml 57 / app 135 / docs 31 md. **2 TODO/FIXME total.**
-- The 2M-LOC / 5,864-md "bloat" = on-disk `.venv` (gitignored, NOT tracked). Non-issue.
-- CI: 323 API tests green, ruff clean, license gate enforced.
+## 1. Transformer and arXiv decision
 
-**The 4 real blockers (everything else is polish):**
-| # | Blocker | Nature | Fix owner |
-|---|---|---|---|
-| B1 | Photo AI estimation returns 503 | license + fairness + infra | code + you ($/creds) |
-| B2 | Cold-start ~26s first load | Render free-tier sleep | infra ($ or free keep-alive) |
-| B3 | Catalog India-only (region=US empty) | data | ops |
-| B4 | Two frontends (Next.js web + `gyf_app` Flutter) | product drift | **decision** |
+GYF already uses the right transformer now: [SigLIP 2](https://arxiv.org/abs/2502.14786) for
+image/text embeddings, zero-shot cold start, and vector retrieval. MMR then prevents a page of
+near-duplicates. This is fast, explainable, and works before behavior data becomes dense.
 
----
+Do not put a transformer everywhere:
 
-## 1. Why NOT "transformer everywhere" / SOTA-now (the recurring question)
+- A transformer cannot repair a missing consent, bad photo, sleeping server, broken event, or
+  unlicensed checkpoint.
+- [HSTU](https://arxiv.org/abs/2402.17152), [TIGER](https://arxiv.org/abs/2305.05065), and
+  [OneRec](https://arxiv.org/abs/2502.18965) learn sequences. With few or incomplete sequences,
+  they learn noise and add latency.
+- Use [GRID](https://arxiv.org/abs/2507.22224) ideas to benchmark semantic-ID variants instead
+  of assuming a published win transfers to GYF.
 
-GYF **is** transformer where it earns it: **SigLIP2** (ViT image + text transformer)
-powers embeddings, zero-shot cold-start, similarity, two-tower retrieval. Try-on
-target is DiT; body is SAM-3D. Those are gated by infra/license, not architecture.
+Promotion ladder:
 
-Recsys ranking is **deliberately** heuristic (centroid taste + MMR + color-theory
-rules), NOT a sequence transformer, because:
+1. Now: SigLIP 2 two-tower retrieval + rules + MMR.
+2. At roughly 10,000 clean engagements: shadow a small reranker over the top 200 candidates.
+3. At 100,000-1,000,000 useful sequences: benchmark HSTU/TIGER/OneRec against the incumbent.
+4. Promote only after offline NDCG/diversity/calibration and an online save/cart lift pass.
 
-1. **Data.** HSTU / TIGER / OneRec need ~10⁵–10⁶ interaction sequences to beat a
-   content centroid. GYF has ~beta users, near-zero logs. Transformer-on-no-data
-   **overfits and loses** to content cold-start. (Doctrine D4: earn it with the flywheel.)
-2. **Latency.** Per-request transformer inference on free CPU + cold-start kills the
-   "instant" goal. Centroid+cosine+MMR is sub-ms.
-3. **Explainability.** Color-theory / body-effect rules give a human reason
-   (invariant #3). A transformer black-boxes the "why this suits you" that IS the product.
+Photo research supports measurement plus confirmation, not an opaque classifier. [TrustSkin](https://arxiv.org/abs/2505.20637)
+shows lighting-sensitive skin groupings can distort fairness. Store continuous CIELAB evidence,
+confidence, capture quality, and user correction; treat undertone as editable styling guidance.
 
-**SOTA is adopted on a data-gated ladder, eval-promoted (D5) — not by vibes:**
-- **Now (0 data):** SigLIP two-tower + MMR + rules. ✅ shipped.
-- **~10⁴ engagements:** train a shallow **transformer ranker** over SigLIP features
-  (re-rank top-200). Offline-eval vs centroid; promote only on online A/B + IPS.
-- **~10⁵–10⁶ sequences:** **Semantic-ID generative recsys (TIGER/HSTU)** for retrieval.
-- **Ongoing:** outfit-compatibility **transformer-over-set + hypergraph GNN** once
-  labeled outfit data (behavior + curation) exists.
+Try-on research is useful as an offline north star. [MuGa-VTON](https://arxiv.org/abs/2508.08488)
+and [Voost](https://arxiv.org/abs/2508.04825) improve multi-garment/bidirectional modeling, but
+paper quality does not grant commercial rights or cheap serving. Evaluate vendors/models with
+human-aligned criteria such as [VTON-IQA](https://arxiv.org/abs/2603.13057): identity, garment
+fidelity, hands/occlusion, background, failure rate, latency, and cost per successful result.
 
-So "efficient & SOTA" = right tool per data stage, transformer where data+latency+trust
-justify it. Slapping transformers on everything now is the exact over-build to avoid.
+## 2. A-Z execution plan
 
----
+### Phase A — Truth, safety, and release gates (now)
 
-## 2. A–Z fix roadmap (prioritized: impact × unblocked-ness)
+- Keep manual onboarding primary while photo capabilities are blocked.
+- Show photo estimation as beta/availability-dependent; never imply vendor images are never
+  retained. Publish privacy/terms, subprocessors, retention, and separate try-on consent before
+  activation.
+- Schedule account purge and prove deletion. Move runtime DB access away from the owner role.
+- Keep browser zoom enabled. Run web tests in CI. Eliminate flaky gates.
 
-### Tier 1 — unblocks the felt product (do first)
+Exit: every UI claim matches `/system/status` and vendor behavior; CI is deterministic; deletion
+is exercised end to end.
 
-**A. Photo AI: commercial-clean CPU skin-tone (B1, code).** Replace non-commercial
-RetinaFace (WIDER FACE) + torch FaRL with **MediaPipe FaceMesh (Apache-2.0, CPU, no
-torch)** → cheek/forehead CIELAB → MST + undertone. Runs on the Render host (no Space).
-Ships in **shadow** until it clears the fairness eval (gap 3.2 → ≤1.0). Unblocks the
-license half + makes skin-tone actually run. *Body-type stays Space-gated (needs seg/pose).*
+Owner/tradeoff: product and legal approve claims/retention; less magical copy buys trust and safety.
 
-**B. Cold-start (B2).** Free path: tighten keep-alive to a reliable ~10-min external
-ping (UptimeRobot / Render cron) — GitHub Actions is too jittery. Real path: $7/mo
-Render always-on OR port to **Vercel Python (Fluid Compute)** — web is already on Vercel,
-consolidates platforms, warmer instances. **NOT Firebase** (can't run persistent FastAPI +
-pgvector pools; serverless cold-starts worse). Risk to vet on Vercel: serverless DB
-pooling (use Supabase transaction pooler, per-request conns).
+### Phase B — Activation and seamless onboarding
 
-**C. Frontend decision (B4).** Pick ONE surface. If web-first: freeze/remove `gyf_app`
-Flutter (it's mock-backed scaffolding — the "half-built" feeling). If mobile matters:
-make Flutter consume the real API, kill the mock. Two half-built frontends = the drift.
+- Store identity separately from styling completion. Add explicit onboarding completion state.
+- Require catalog preference/gender choice without forcing a binary identity. Keep region, style,
+  and budget short; ask body/tone/photo later and always allow correction.
+- Add browser-side photo quality checks: resolution, blur, exposure, framing, one face/person,
+  and pose visibility before upload.
+- Observe 5-10 target users completing signup without coaching.
 
-### Tier 2 — quality & speed polish (code, unblocked)
+Exit: at least 70% signup-to-first-outfit; median under two minutes; no blank profile can be
+treated as fully onboarded.
 
-**D. Explore warm latency** (~1.3–1.9s). Profile the browse: the anon path full-sorts
-49k rows by `hashtext(id||date)` (no index). If it dominates, add an indexed
-`shuffle_seed` column + seek pagination (fast random rotation). Measure before migrating.
+Owner/tradeoff: product recruits observed testers; shorter intake delays optional personalization.
 
-**E. Seamless UX pass.** Skeleton-first paint (mostly done), optimistic feedback on
-save/skip, haptics on mobile web, drag-to-refresh, image `decoding=async` + blur-up,
-route prefetch. Small QoL the v5 feedback keeps naming.
+### Phase C — Complete the data moat
 
-**F. Recsys transformer lane (data-gated).** Land the eval harness + the shallow
-transformer ranker **behind the promotion gate**, dark, so it auto-promotes when
-engagement crosses threshold. Queue, don't ship-on.
+- Emit canonical, idempotent events for Explore impressions, item views, saves/removes, shop
+  clicks, wardrobe actions, try-ons, purchases, returns, and corrections.
+- Every slate records request/session, model version, rank, score/propensity, filters, and
+  experiment. Keep Postgres; add Kafka only after measured write pressure.
+- Build one daily funnel: signup, onboarding, first outfit, save, shop, purchase, D7 return.
 
-### Tier 3 — data & moat (ops/$)
+Exit: every visible action joins to an impression; duplicate inflation is tested; taste updates
+from Explore behavior, not only Stylist feedback. This first-party outcome graph is the moat.
 
-**G. Catalog breadth (B3).** US ingest for launch (deferred — India-only for beta).
-Deepen India ethnic wear. This is the retrieval-quality ceiling right now.
+Owner/tradeoff: engineering defines event semantics; more events require retention/privacy limits.
 
-**H. The moat (compounding, not copyable).** First-party behavior lake (saves/skips/
-carts/try-ons) → the data no competitor has → the B2B distilled model. Ensure every
-interaction is cleanly event-sourced NOW so the flywheel compounds from day one.
+### Phase D — Instant beta and observability
 
-**I. Try-on.** FASHN lane built behind the port; activate on credits + eval + lane-flip.
+- Cheapest zero-dollar always-on option: Oracle OCI Always Free ARM VM. Tradeoff: capacity/signup
+  friction plus owning OS patches, TLS, backups, monitoring, and incident response.
+- Recommended managed beta: Render Starter at about $7/month. No migration risk; predictable warm
+  API. A platform migration to save roughly $2/month is false economy.
+- Scale later: Cloud Run with minimum instances when load tests prove horizontal demand.
+- Enable Sentry/tracing, DB pool-wait metrics, route p50/p95, and alerts. Profile anonymous,
+  learned-taste, and zero-shot Explore independently before adding indexes/services.
 
----
+Exit: browse warm p95 below 500 ms; outfit generation p95 below 2 s excluding deliberate async
+ML; error rate below 1%; alert and rollback drill pass.
 
-## 3. Million-dollar-product bar (the throughline)
+Owner/tradeoff: owner chooses ~$7 managed uptime or self-managed free hosting and on-call work.
 
-- **Trust is the product:** every rec already carries a reason + confidence — keep that
-  invariant as transformers come in (never black-box the "why").
-- **Instant:** kill cold-start (B) — the single biggest perceived-quality lever.
-- **Moat:** the compounding behavior data + distilled B2B model (H), not any one model.
-- **Seamless:** one frontend, done flawlessly (C) > two, half-built.
+### Phase E — Catalog freshness and relevance
 
----
+- Drain the remaining 9,868 embedding backlog and prevent recurrence with freshness SLOs.
+- Gate ingest on image/buy-link/price/stock quality; monitor dead links, duplicates, gender/kids,
+  region/currency, and attribute coverage.
+- Keep pgvector. Do not add another vector database while 59k items fit comfortably.
+- Use schema-validated VLM enrichment only after a fixed human-labeled catalog eval exists.
 
-## 4. Locked decisions (feedback captured 2026-07-11)
+Exit: over 98% live images, prices, embeddings, and required attributes; bounded ingest-to-search
+lag; human first-page relevance and diversity pass for key personas.
 
-1. **Frontend (B4): BOTH — web now, Flutter parked.** Next.js web is the beta surface;
-   `gyf_app` stays but is explicitly marked WIP (README banner added), unparked in the
-   mobile phase (wire real API, kill mocks). **Not deleted.**
-2. **Hosting (B2): free keep-alive now.** (Revisit Vercel-Python port / $7 always-on if
-   keep-alive proves too jittery. **Firebase ruled out** — can't host persistent FastAPI+pgvector.)
-3. **Photo AI (B1): MediaPipe CPU skin-tone + also wire the Space.** MediaPipe is the code
-   half I own; the ZeroGPU Space needs your HF-Pro creds + Render env vars.
-4. **Catalog (B3): India-only for beta.** US ingest deferred to launch.
-5. **Execution: plan-review first.** Build slices execute on explicit go-ahead. Candidates
-   queued: photo skin-tone (A), Explore speed (D), UX polish (E).
+Owner/tradeoff: catalog ops owns freshness; strict gates may temporarily reduce visible breadth.
+
+### Phase F — Production photo AI
+
+- Skin: commercial-clean CPU face/skin segmentation, color constancy, multi-patch CIELAB, MST/CST
+  mapping, confidence, adjacent-choice confirmation. Build a consented balanced labeled eval set.
+- Body: start with pose/silhouette ratios and user correction. Do not promise precise measurements
+  from one casual photo. For sizing, require guided front/side views plus known height.
+- Attach provenance and eval reports; only then promote registry entries. Do not flip lanes or
+  bypass fail-closed policy.
+
+Exit: accuracy, abstention, subgroup gap, correction rate, and latency gates pass; current skin
+gap 3.2 reaches <=1.0; commercial model and training-data rights are documented.
+
+Owner unblock: provide/approve a labeled, consented photo set and legal review of model/dataset
+licenses. HF Pro or another GPU only matters after these gates can pass.
+
+### Phase G — Data-gated learned ranking
+
+- First train a small logistic/BPR/GBM or shallow neural reranker on clean events.
+- Shadow transformer candidates at the thresholds in section 1.
+- Keep hard inventory, budget, size, safety, and diversity constraints outside the black box.
+- Keep human reasons and calibrated confidence.
+
+Exit: statistically significant online save/cart/purchase lift without latency, subgroup, catalog
+coverage, or explanation regression.
+
+Owner/tradeoff: ML starts only after data gates; waiting avoids spending compute to learn noise.
+
+### Phase H — Licensed try-on
+
+- Keep the existing `TryOnRenderer` port. Start with a licensed hosted API after credits and a
+  frozen eval set; use async jobs, quotas, retries, deletion evidence, and vendor failover.
+- Benchmark the distinct [FASHN VTON 1.5](https://huggingface.co/fashn-ai/fashn-vton-1.5)
+  self-host candidate—not the wired hosted FASHN 1.6 adapter—only after its parser, pose, model,
+  training-data, and commercial license chain is cleared.
+- Market appearance visualization, never exact fit/size/drape physics.
+
+Exit: blind human preference, subgroup failure, identity/garment fidelity, p95 latency, cost per
+successful render, and deletion gates pass.
+
+Owner unblock: fund a small eval credit pool and approve vendor/privacy terms.
+
+### Phase I — Earned million-user scale
+
+- Load-test 1x, 10x, and 100x. Then add stateless replicas, transaction pooling, shared rate
+  limits, cursor pagination, queue/DLQ for ML, event retention/partitioning, and upgraded DB/auth.
+- CDN/cache catalog media and public reads. Set per-user cost ceilings and abuse quotas.
+- Do not add Kubernetes, Kafka, or a separate vector DB before a measured bottleneck requires it.
+
+Exit: capacity, failover, backup/restore, privacy deletion, regional processing, and unit economics
+pass at the next traffic tier. Prove 1,000 retained users before designing for 1,000,000 concurrent
+ones.
+
+Owner/tradeoff: engineering scales only after load evidence; delaying distributed systems reduces
+cost and failure modes but requires explicit traffic thresholds.
+
+## 3. Feedback loop
+
+Watch users; do not ask only opinion questions:
+
+1. What did you expect after signup?
+2. Which recommendation feels most and least like you, and why?
+3. What made you hesitate before photo upload?
+4. What information is missing before you would buy?
+5. What would make you return tomorrow?
+
+Track signup completion, time to first useful outfit, correction rate, save/shop/purchase rate,
+photo opt-in/abstain, D7 return, catalog coverage, latency, failures, and cost per retained user.
+
+## 4. Immediate owner decisions
+
+1. Upgrade Render to Starter (~$7/month) for the lowest-risk instant beta, or accept best-effort
+   free keepalive. Use OCI free only if you want to operate a server.
+2. Supply/approve consented labeled photo data and legal review; otherwise photo AI stays manual.
+3. Fund a small licensed try-on eval pool; otherwise keep try-on planned.
+4. Approve completing Explore behavior instrumentation before any transformer ranker.

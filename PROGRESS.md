@@ -1794,3 +1794,35 @@ merchants were added for catalog breadth). 323 API tests green, ruff clean. Live
 smoke NOT run this session (no local pgvector with embeddings) — logic + wiring covered by unit
 + endpoint tests. Commit pending. Honest next layer: MMR is deterministic within a page; if
 intra-day *revisit* repetition is reported, SMMR sampling (non-deterministic) is the upgrade.
+
+### 2026-07-11 (cont. 18) — A-Z audit, arXiv sweep, and first truth/release fixes
+
+**User asked:** audit the complete app top-to-bottom; explain transformer/SOTA tradeoffs in plain
+language; research recent arXiv work across photo, body/skin, recommendation, catalog, and try-on;
+produce an A-Z million-user/moat plan; use the production app; fix photo onboarding/catalog UX;
+verify, commit, and push.
+
+**Production truth:** web/login/signup/status returned 200; warm API health returned 200 in 0.4s;
+`/system/status` reported 59,072 catalog items, 49,204 embedded, all priced/imaged, recommendations
+and Cuelinks live. Photo body and skin are degraded/manual because the fail-closed model registry
+blocks their research-lane weights before remote inference. Try-on remains planned/unconfigured.
+Prior 2026-07-10 agent evaluation already registered and onboarded a real production account; this
+session did not create redundant account data.
+
+**Audit conclusion:** not a rewrite. Main gaps are photo model/data license + evaluation, incomplete
+Explore behavior capture, truthful privacy/retention, free-tier cold start, missing production
+observability/load proof, and a 9,868-item embedding freshness debt. US merchants are already seeded;
+the old A-Z plan's India-only blocker was stale. SigLIP2 two-tower + MMR is the right low-data stack;
+HSTU/TIGER/OneRec wait for clean interaction volume and online eval.
+
+**Shipped locally in this slice:** onboarding progress dots/final submit cannot bypass required
+gender (+ regression test); browser zoom restored; web Vitest added to CI; Canvas Explorer timing
+flake fixed with proper global cleanup and post-virtualization wait; photo AI labeled beta and
+availability-dependent; persisted-estimate copy made truthful; try-on copy now distinguishes GYF
+handling from temporary provider processing. `docs/plans/gyf-az-audit-2026-07.md` rewritten with
+phases, owner unblocks, arXiv decisions, hosting tradeoffs, metric gates, and feedback questions.
+
+**Verification:** targeted API audit 73 passed; web suite 47/47 passed twice; canvas focused suite
+passed 5 consecutive runs; typecheck clean; lint 0 errors (one pre-existing `<img>` warning).
+Full root format gate remains polluted by preserved user-owned/untracked `.agents`, `ml/data`, and
+feedback edits; scoped changed files pass formatting/diff checks.
