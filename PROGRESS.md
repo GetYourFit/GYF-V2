@@ -1922,3 +1922,9 @@ for the "app doesn't even open" complaint when local persistence or restore gets
 GitHub CI tripped on a stale retrieval test that still expected the old `CURRENT_DATE` browse
 shuffle. The code is already using the session-seeded `hashtext(i.id::text || %s)` order, so the
 test was updated to match the real cold-browse contract. Local retrieval tests pass again.
+
+### 2026-07-11 (cont. 26) — Standards newline fix
+
+The pre-commit standards gate rewrote `docs/feedbacks/gyf-feedback-v6.md` to add the final
+newline. That was the entire failure. The file is now newline-terminated and the standards gate
+should stop touching it.
