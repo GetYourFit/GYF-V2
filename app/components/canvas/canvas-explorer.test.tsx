@@ -54,6 +54,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("CanvasExplorer recluster", () => {
@@ -84,11 +85,10 @@ describe("CanvasExplorer recluster", () => {
     // Sanity check on the pan itself, isolated from the click/recluster:
     // the loaded cluster spans roughly ±2000px from origin, so a 300px pan
     // must not already have wiped out every tile on its own.
-    const afterPan = tileButtons();
-    expect(afterPan.length).toBeGreaterThan(0);
+    await waitFor(() => expect(tileButtons().length).toBeGreaterThan(0));
 
     similar.mockResolvedValueOnce(pool);
-    const target = afterPan[0];
+    const target = tileButtons()[0];
     // A real tap is pointerdown -> pointerup -> click; the pan above left
     // wasDragRef pinned true, which onTileClick checks to ignore clicks at
     // the end of a drag. A still (no-movement) pointer sequence on the

@@ -270,7 +270,7 @@ export function OnboardingWizard() {
             skin_tone: profile.skin_tone ?? "",
             undertone: profile.undertone ?? "",
             body_type: profile.body_type ?? "",
-            gender: profile.gender ?? "",
+            gender: GENDERS.some(({ value }) => value === profile.gender) ? profile.gender : "",
             style_intent: profile.style_intent ?? [],
             occasion: profile.occasion ?? "",
             budget_range: profile.budget_range ?? { min: 0, max: null, currency: "USD" },
@@ -318,6 +318,7 @@ export function OnboardingWizard() {
   }
 
   function goTo(next: number) {
+    if (next > step && !GENDERS.some(({ value }) => value === form.gender)) return;
     setDirection(next > step ? 1 : -1);
     setStep(next);
   }
@@ -333,6 +334,11 @@ export function OnboardingWizard() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!GENDERS.some(({ value }) => value === form.gender)) {
+      goTo(0);
+      setError("Pick who you're shopping for before meeting your stylist.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -568,7 +574,7 @@ export function OnboardingWizard() {
         {isLast ? (
           <motion.button
             type="submit"
-            disabled={saving}
+            disabled={saving || !GENDERS.some(({ value }) => value === form.gender)}
             aria-busy={saving}
             whileTap={saving ? undefined : { scale: 0.97 }}
             style={{
@@ -614,7 +620,9 @@ export function OnboardingWizard() {
             aria-disabled={needsGender}
             title={needsGender ? "Pick who you're shopping for to continue" : undefined}
             whileTap={needsGender ? undefined : { scale: 0.97 }}
-            whileHover={needsGender ? undefined : { y: -2, boxShadow: "0 6px 18px rgba(255,255,255,0.22)" }}
+            whileHover={
+              needsGender ? undefined : { y: -2, boxShadow: "0 6px 18px rgba(255,255,255,0.22)" }
+            }
             transition={{ type: "spring", stiffness: 500, damping: 28 }}
             style={{
               display: "flex",

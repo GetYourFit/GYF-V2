@@ -108,7 +108,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             marginBottom: "0.375rem",
           }}
         >
-          Estimate from photo
+          Photo estimates · Beta
         </p>
         <p
           style={{
@@ -118,8 +118,9 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
             color: "var(--text-faint)",
           }}
         >
-          Upload a clear, well-lit photo. GYF estimates your skin tone and body type — edit anything
-          it gets wrong. Image is not stored.
+          When available, GYF may estimate your skin tone, undertone, or body type from a clear,
+          well-lit photo. Review anything it finds and set missing fields manually below. Your image
+          is processed ephemerally and not saved by GYF.
         </p>
       </div>
 
@@ -243,8 +244,8 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
           >
             <CheckCircle size={14} aria-hidden />
             {missingFields.length === 0
-              ? `Estimated ${estimated.join(" & ")} — review and edit below.`
-              : `Estimated ${estimated.join(" & ")} — couldn't read ${missingFields.map((f) => FIELD_LABELS[f]).join(" & ")} from this photo, set it manually below.`}
+              ? `Saved estimated ${estimated.join(" & ")} to your profile — review and edit below.`
+              : `Saved estimated ${estimated.join(" & ")} to your profile — couldn't read ${missingFields.map((f) => FIELD_LABELS[f]).join(" & ")} from this photo, set it manually below.`}
           </motion.p>
         )}
         {done && missed && (

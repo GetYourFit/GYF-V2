@@ -4,7 +4,8 @@
 // user picks a photo; the API renders the designed look on their body via the
 // licensed rendering lane and answers with the doctrine's honest trio — the
 // render (or an abstention + reason), a calibrated confidence, and exactly
-// which garments made it onto the body. The photo is ephemeral end-to-end.
+// which garments made it onto the body. GYF handles the upload ephemerally; a
+// configured rendering provider may process or temporarily retain it under its policy.
 
 import { useRef, useState } from "react";
 import { Camera } from "lucide-react";
@@ -146,7 +147,8 @@ export function TryOnSection({ outfit }: { outfit: Outfit }) {
           lineHeight: 1.5,
         }}
       >
-        Your photo is used only for this render and never stored.
+        GYF does not save your uploaded photo. When try-on is available, a configured rendering
+        provider processes it and may retain it temporarily under its own policy.
       </p>
     </div>
   );
