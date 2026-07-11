@@ -1982,3 +1982,10 @@ offset contract; sparse slots could stop the supposedly infinite grid early or o
 responses retain bounded retries. Canvas always advances the initial 96-item request by 96 and
 continues until an empty page, with later offsets advancing by the fixed 48-item request size.
 Focused regressions pin one-call 404 handling and short-page Canvas continuation at offset 96.
+
+### 2026-07-12 (cont. 4) — First Flutter gate exposed format drift
+
+CI run 29165571780 passed doctrine, standards, API, and web, then the newly added Flutter job
+correctly failed before analysis/tests because two tracked Dart files were not canonical-format.
+Applied only the formatter's reported line wrapping in `gyf_sharp_image_tile.dart` and
+`profile_screen.dart`; no behavior changed.
