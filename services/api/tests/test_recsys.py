@@ -312,9 +312,7 @@ def test_missing_colour_discounts_confidence_but_never_zeroes_it():
         _item("b1", "jeans", "bottom"),
         _item("f1", "sneakers", "footwear"),
     )
-    full_colour = tuple(
-        _item(it.item_id, it.category, it.slot, lch=(50, 8, 0)) for it in no_colour
-    )
+    full_colour = tuple(_item(it.item_id, it.category, it.slot, lch=(50, 8, 0)) for it in no_colour)
     c = conditioning.resolve(Profile(), "casual", None)
     conf_none = _confidence(no_colour, 0.8, c, 0.0)
     conf_full = _confidence(full_colour, 0.8, c, 0.0)
@@ -499,7 +497,8 @@ def test_endpoint_logs_impressions_with_context():
         ev = sink.events[0]
         assert ev.action == InteractionAction.IMPRESSION
         assert ev.context["recommendation_id"] == rec_id
-        assert "rank" in ev.context and "score" in ev.context  # propensity captured
+        assert "rank" in ev.context and "score" in ev.context
+        assert "propensity" not in ev.context  # deterministic slate has no selection probability
     finally:
         app.dependency_overrides.clear()
 

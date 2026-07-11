@@ -36,7 +36,8 @@ def test_impression_without_engagement_is_a_zero_label_negative():
     ex = examples[0]
     assert ex["label"] == 0.0
     assert ex["engaged_action"] is None
-    assert ex["propensity"] == 0.9
+    assert ex["score"] == 0.9
+    assert ex["propensity"] is None
     assert ex["rank"] == 0
     assert ex["occasion"] == "casual"
 
@@ -94,7 +95,7 @@ def test_examples_are_scoped_per_user_and_item():
         _event("save", "2026-07-01T10:01:00+00:00", user="u2"),  # different user
         _event("save", "2026-07-01T10:01:00+00:00", target="i2"),  # different item
     ]
-    imp = next(e for e in build_examples(rows) if e["propensity"] is not None)
+    imp = next(e for e in build_examples(rows) if e["recommendation_id"] is not None)
     assert imp["label"] == 0.0
 
 

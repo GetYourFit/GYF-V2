@@ -7,10 +7,9 @@ pools (with pgvector taste affinity), and :mod:`compose` assembles, scores
 (content blended with taste) and diversely ranks the looks.
 
 It also **logs an impression per served item** onto the behavioral spine, with the
-recommendation context (id, occasion, rank, score = propensity). Those impressions
-are the implicit negatives + propensities a future two-tower/ranker and the
-counterfactual/IPS gate train on — captured from the very first user. Logging is
-best-effort: a sink failure must never fail a recommendation.
+recommendation context (id, occasion, rank, ranking score). Those impressions are
+the implicit negatives a future two-tower/ranker trains on — captured from the very
+first user. Logging is best-effort: a sink failure must never fail a recommendation.
 """
 
 from __future__ import annotations
@@ -207,11 +206,11 @@ def _log_impressions(
     scored: list[ScoredOutfit],
     anchor_item_id: str | None = None,
 ) -> None:
-    """Emit one impression per served item with its propensity (rank + score).
+    """Emit one impression per served item with its rank and ranking score.
 
     These are the labelled negatives the future ranker needs; an engagement logged
     later with the same ``recommendation_id`` reconstructs the (context, slate,
-    label, propensity) tuple. Best-effort — never raises into the request path.
+    label) tuple. Best-effort — never raises into the request path.
     """
     try:
         extra = {"anchor_item_id": anchor_item_id} if anchor_item_id else {}

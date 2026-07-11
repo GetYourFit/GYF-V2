@@ -48,26 +48,37 @@ def main() -> None:
 
     # 1) Real taste vector from the seeded saves.
     taste = build_taste(taste_repo.engagements(WARM_USER, 200))
-    print(f"taste: has_signal={taste.has_signal} strength={taste.strength} "
-          f"positives={taste.positive_count}")
+    print(
+        f"taste: has_signal={taste.has_signal} strength={taste.strength} "
+        f"positives={taste.positive_count}"
+    )
     assert taste.has_signal, "saves did not produce a taste vector"
 
     # 2) Cold vs warm recommendation through the real service.
     profile = Profile(occasion="casual")
-    cold = recommend(profile, COLD_USER, cand_repo, taste_repo, _CollectingSink(),
-                     "casual", None, 3)
+    cold = recommend(
+        profile, COLD_USER, cand_repo, taste_repo, _CollectingSink(), "casual", None, 3
+    )
     sink = _CollectingSink()
     warm = recommend(profile, WARM_USER, cand_repo, taste_repo, sink, "casual", None, 3)
 
-    print(f"\ncold:  cold_start={cold.cold_start} taste_strength={cold.taste_strength} "
-          f"outfits={len(cold.outfits)}")
-    print(f"warm:  cold_start={warm.cold_start} taste_strength={warm.taste_strength} "
-          f"outfits={len(warm.outfits)}")
+    print(
+        f"\ncold:  cold_start={cold.cold_start} taste_strength={cold.taste_strength} "
+        f"outfits={len(cold.outfits)}"
+    )
+    print(
+        f"warm:  cold_start={warm.cold_start} taste_strength={warm.taste_strength} "
+        f"outfits={len(warm.outfits)}"
+    )
     for o in warm.outfits:
         print(f"  conf={o.confidence:.2f} :: {o.explanation}")
 
-    assert cold.cold_start and cold.taste_strength == 0.0, "cold user must be cold-start"
-    assert not warm.cold_start and warm.taste_strength > 0.0, "warm user must be personalized"
+    assert cold.cold_start and cold.taste_strength == 0.0, (
+        "cold user must be cold-start"
+    )
+    assert not warm.cold_start and warm.taste_strength > 0.0, (
+        "warm user must be personalized"
+    )
 
     # 3) Served warm items skew toward the saved hue's affinity (positive).
     affinity = _served_affinity(dsn, taste.vector, warm)
@@ -76,12 +87,15 @@ def main() -> None:
 
     # 4) Impressions logged with the recommendation context (training tuple).
     impressions = [e for e in sink.events if e.action.value == "impression"]
-    print(f"impressions logged: {len(impressions)} "
-          f"(sample context: {impressions[0].context})")
+    print(
+        f"impressions logged: {len(impressions)} "
+        f"(sample context: {impressions[0].context})"
+    )
     assert impressions, "no impressions logged"
     ctx = impressions[0].context
     assert ctx["recommendation_id"] == warm.recommendation_id
-    assert "rank" in ctx and "score" in ctx, "propensity (rank/score) not captured"
+    assert "rank" in ctx and "score" in ctx, "ranking context not captured"
+    assert "propensity" not in ctx, "deterministic slate must not claim a propensity"
 
     print("\nWorkstream C Cycle 2 live-DB verification: OK")
 
@@ -89,7 +103,9 @@ def main() -> None:
 def _seed_saves(dsn: str, user_id: str, hue: str, n: int = 6) -> None:
     """Insert SAVE interactions for the user on items of the given hue."""
     with psycopg.connect(dsn) as conn:
-        conn.execute("INSERT INTO users (id) VALUES (%s) ON CONFLICT DO NOTHING", (user_id,))
+        conn.execute(
+            "INSERT INTO users (id) VALUES (%s) ON CONFLICT DO NOTHING", (user_id,)
+        )
         conn.execute("DELETE FROM interactions WHERE user_id = %s", (user_id,))
         rows = conn.execute(
             "SELECT id FROM items WHERE attributes #>> '{perception,color,hue_name}' = %s LIMIT %s",

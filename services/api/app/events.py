@@ -29,9 +29,8 @@ class InteractionAction(str, Enum):
     # example: "this piece works better in this look, for this user".
     SWAP = "swap"
     # Served-but-not-yet-acted-on: logged when a recommendation is shown. These are
-    # the implicit negatives + propensities a future two-tower/ranker trains on
-    # (and the counterfactual/IPS gate needs). Never user-supplied — emitted by the
-    # recommender at serve time.
+    # the implicit negatives a future two-tower/ranker trains on. Never
+    # user-supplied — emitted by the recommender at serve time.
     IMPRESSION = "impression"
     # A confirmed retailer conversion synced from the affiliate network
     # (scripts/sync_conversions.py), joined to its recommendation via the deeplink
@@ -59,8 +58,9 @@ class InteractionEvent(BaseModel):
     weight: float | None = None
     # Recommendation context for offline training: recommendation_id (links an
     # engagement back to the impression slate it came from), occasion, rank, and
-    # score (the propensity, for IPS). Free-form by design so logging can enrich
-    # without a migration; the recommender writes it, clients may echo it back.
+    # ranking score. A `propensity` belongs here only after a randomized serving
+    # policy logs its true selection probability. Free-form by design so logging
+    # can enrich without a migration; the recommender writes it, clients may echo it.
     context: dict[str, object] = Field(default_factory=dict)
     ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

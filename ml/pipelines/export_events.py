@@ -3,10 +3,10 @@
 Turns the append-only ``interactions`` spine into two versioned artifacts:
 
 1. ``examples.jsonl`` — one training example per served item: the impression
-   (rank + propensity score from the recommender) joined with any later
+   (rank + ranking score from the recommender) joined with any later
    engagement by the same user on the same item. This is the (context, slate,
-   label, propensity) tuple the future two-tower/ranker trains on and the
-   IPS/counterfactual promotion gate replays.
+   label) tuple the future two-tower/ranker trains on. Propensity stays null until
+   the serving policy actually randomizes and logs a selection probability.
 2. ``report.md`` — an operator-facing insight report: volume, engagement rates
    by action/occasion/rank, and per-user funnel. Makes the data useful today.
 
@@ -84,7 +84,8 @@ def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
                 "occasion": ctx.get("occasion"),
                 "goals": ctx.get("goals", []),
                 "rank": ctx.get("rank"),
-                "propensity": ctx.get("score"),
+                "score": ctx.get("score"),
+                "propensity": ctx.get("propensity"),
                 "label": ACTION_REWARD.get(best["action"], 0.0) if best else 0.0,
                 "engaged_action": best["action"] if best else None,
                 "ts": imp["ts"],
@@ -102,6 +103,7 @@ def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
                     "occasion": (e.get("context") or {}).get("occasion"),
                     "goals": [],
                     "rank": None,
+                    "score": None,
                     "propensity": None,
                     "label": ACTION_REWARD.get(e["action"], 0.0),
                     "engaged_action": e["action"],
@@ -115,7 +117,7 @@ def build_report(rows: list[dict[str, Any]], examples: list[dict[str, Any]]) -> 
     """Markdown insight report over the raw events + built examples."""
     actions = Counter(r["action"] for r in rows)
     users = {r["user_id"] for r in rows}
-    served = [e for e in examples if e["propensity"] is not None]
+    served = [e for e in examples if e["recommendation_id"] is not None and e["rank"] is not None]
     engaged = [e for e in served if e["label"] > 0]
     skipped = [e for e in served if e["label"] < 0]
 
