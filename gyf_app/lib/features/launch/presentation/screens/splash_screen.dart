@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +23,7 @@ class SplashScreen extends ConsumerStatefulWidget {
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   static const _timeline = Duration(milliseconds: 900);
+  static const _restoreTimeout = Duration(milliseconds: 2500);
 
   late final AnimationController _controller = AnimationController(
     vsync: this,
@@ -45,12 +48,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   bool _hapticFired = false;
   bool _navigated = false;
+  Timer? _restoreTimeoutTimer;
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(_onTick);
     _controller.addStatusListener(_onStatus);
+    _restoreTimeoutTimer = Timer(_restoreTimeout, _forceFallbackNavigate);
     if (ref.read(animationManagerProvider).reduceMotion) {
       _controller.value = 1;
     } else {
@@ -68,6 +73,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   void _onStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed) _maybeNavigate();
+  }
+
+  void _forceFallbackNavigate() {
+    if (_navigated || !mounted) return;
+    final session = ref.read(sessionManagerProvider);
+    if (session.restored) return;
+    _navigated = true;
+    context.go(GyfRoutes.authWelcome);
   }
 
   void _maybeNavigate() {
@@ -88,6 +101,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
+    _restoreTimeoutTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

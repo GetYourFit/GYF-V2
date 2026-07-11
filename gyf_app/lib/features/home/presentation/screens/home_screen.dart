@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../app/design_tokens/design_tokens.dart';
+import '../../../../app/router/gyf_router.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../../../core/widgets/gyf_widgets.dart';
 import '../../data/mock_home_repository.dart';
@@ -102,7 +104,7 @@ class _HeroRecommendationCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).extension<GyfColorScheme>()!;
     return GyfPressableCard(
-      onTap: () {},
+      onTap: () => context.go(GyfRoutes.aiStylist),
       semanticLabel:
           'Today’s recommendation: ${hero.headline}, ${hero.confidence} '
           'percent match',
@@ -171,15 +173,15 @@ class _QuickActionsRow extends StatelessWidget {
     final colors = Theme.of(context).extension<GyfColorScheme>()!;
     return Row(
       children: [
-        for (final (icon, label) in [
-          (Icons.photo_camera_outlined, 'Outfit check'),
-          (Icons.checkroom_outlined, 'Add clothing'),
-          (Icons.auto_awesome, 'Ask AI'),
+        for (final (icon, label, route) in [
+          (Icons.photo_camera_outlined, 'Outfit check', GyfRoutes.aiStylist),
+          (Icons.checkroom_outlined, 'Add clothing', GyfRoutes.wardrobe),
+          (Icons.auto_awesome, 'Ask AI', GyfRoutes.aiStylist),
         ]) ...[
           if (label != 'Outfit check') const SizedBox(width: GyfSpacing.s8),
           Expanded(
             child: GyfPressableCard(
-              onTap: () {},
+              onTap: () => context.go(route),
               semanticLabel: label,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -216,7 +218,7 @@ class _ContinueJourneyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<GyfColorScheme>()!;
     return GyfPressableCard(
-      onTap: () {},
+      onTap: () => context.go(GyfRoutes.wardrobe),
       semanticLabel: 'Continue: ${journey.title}',
       child: Padding(
         padding: const EdgeInsets.all(GyfSpacing.s16),

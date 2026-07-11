@@ -11,6 +11,7 @@ class GyfSearchField extends ConsumerStatefulWidget {
   const GyfSearchField({
     this.controller,
     this.hint = 'Search styles, brands, outfits',
+    this.onChanged,
     this.onSubmitted,
     this.onVoice,
     this.onCamera,
@@ -20,6 +21,7 @@ class GyfSearchField extends ConsumerStatefulWidget {
 
   final TextEditingController? controller;
   final String hint;
+  final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final VoidCallback? onVoice;
   final VoidCallback? onCamera;
@@ -58,6 +60,7 @@ class _GyfSearchFieldState extends ConsumerState<GyfSearchField> {
         controller: _controller,
         autofocus: widget.autofocus,
         textInputAction: TextInputAction.search,
+        onChanged: widget.onChanged,
         onSubmitted: widget.onSubmitted,
         decoration: InputDecoration(
           hintText: widget.hint,
@@ -69,6 +72,7 @@ class _GyfSearchFieldState extends ConsumerState<GyfSearchField> {
                 IconButton(
                   onPressed: () {
                     _controller.clear();
+                    widget.onChanged?.call('');
                     ref.read(hapticServiceProvider).emit(GyfHaptic.selection);
                   },
                   icon: const Icon(Icons.close, size: GyfIconSize.sm),

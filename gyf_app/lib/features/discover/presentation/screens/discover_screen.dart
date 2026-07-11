@@ -44,19 +44,37 @@ class _DiscoverFeed extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected =
         ref.watch(selectedDiscoverCategoryProvider) ?? data.categories.first;
+    final query = ref.watch(discoverSearchQueryProvider).trim().toLowerCase();
     final saved = ref.watch(savedDiscoverTilesProvider);
+    final tiles = data.tiles.where((tile) {
+      final matchesCategory =
+          selected == data.categories.first || tile.category == selected;
+      final matchesQuery = query.isEmpty ||
+          [
+            tile.title,
+            tile.attribution,
+            tile.category,
+          ].whereType<String>().any(
+                (value) => value.toLowerCase().contains(query),
+              );
+      return matchesCategory && matchesQuery;
+    }).toList(growable: false);
 
     return CustomScrollView(
       slivers: [
-        const SliverToBoxAdapter(
+        SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(
+            padding: const EdgeInsets.fromLTRB(
               GyfSpacing.marginStandard,
               GyfSpacing.s16,
               GyfSpacing.marginStandard,
               0,
             ),
-            child: GyfSearchField(hint: 'Try “archival fashion”'),
+            child: GyfSearchField(
+              hint: 'Try “archival fashion”',
+              onChanged: (value) =>
+                  ref.read(discoverSearchQueryProvider.notifier).state = value,
+            ),
           ),
         ),
         SliverToBoxAdapter(
@@ -83,38 +101,56 @@ class _DiscoverFeed extends ConsumerWidget {
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            GyfSpacing.marginStandard,
-            0,
-            GyfSpacing.marginStandard,
-            GyfSpacing.marginStandard,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: GyfMasonryGrid(
-              items: [
-                for (final tile in data.tiles)
-                  GyfMasonryItem(
-                    aspectRatio: tile.aspectRatio,
-                    child: GyfSharpImageTile(
+        if (tiles.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.all(GyfSpacing.marginStandard),
+              child: GyfEmptyState(
+                headline: 'No results match those filters.',
+                description: 'Clear the search or choose a wider category.',
+                primaryLabel: 'Clear filters',
+                onPrimary: () {
+                  ref.read(discoverSearchQueryProvider.notifier).state = '';
+                  ref.read(selectedDiscoverCategoryProvider.notifier).state =
+                      data.categories.first;
+                },
+              ),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              GyfSpacing.marginStandard,
+              0,
+              GyfSpacing.marginStandard,
+              GyfSpacing.marginStandard,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: GyfMasonryGrid(
+                items: [
+                  for (final tile in tiles)
+                    GyfMasonryItem(
                       aspectRatio: tile.aspectRatio,
-                      title: tile.title,
-                      subtitle: tile.attribution,
-                      matchPercent: tile.matchPercent,
-                      saved: saved.contains(tile.id),
-                      onSaveChanged: (value) => ref
-                          .read(savedDiscoverTilesProvider.notifier)
-                          .update(
-                            (s) => value
-                                ? {...s, tile.id}
-                                : ({...s}..remove(tile.id)),
-                          ),
+                      child: GyfSharpImageTile(
+                        aspectRatio: tile.aspectRatio,
+                        title: tile.title,
+                        subtitle: tile.attribution,
+                        matchPercent: tile.matchPercent,
+                        saved: saved.contains(tile.id),
+                        onSaveChanged: (value) => ref
+                            .read(savedDiscoverTilesProvider.notifier)
+                            .update(
+                              (s) => value
+                                  ? {...s, tile.id}
+                                  : ({...s}..remove(tile.id)),
+                            ),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
       ],
     );
   }

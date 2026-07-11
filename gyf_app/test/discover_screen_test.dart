@@ -51,4 +51,12 @@ void main() {
     );
     expect(chip.selected, isTrue);
   });
+
+  testWidgets('typing filters the feed immediately', (tester) async {
+    await pumpDiscover(tester);
+    await tester.enterText(find.byType(TextField), 'A.P.C.');
+    await tester.pump();
+    expect(find.text('Curated capsule 1'), findsNothing);
+    expect(find.textContaining('A.P.C.'), findsWidgets);
+  });
 }

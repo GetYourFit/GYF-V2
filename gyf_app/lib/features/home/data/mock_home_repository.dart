@@ -54,14 +54,18 @@ class HomeCollection {
 class HomeRepository {
   Future<HomeFeed> fetchFeed() async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    List<GyfCollectionProduct> products(String seed, int n) => [
-          for (var i = 0; i < n; i++)
+    List<GyfCollectionProduct> products(
+      String seed,
+      List<(String brand, String name)> items,
+    ) =>
+        [
+          for (final (index, item) in items.indexed)
             GyfCollectionProduct(
-              brand: const ['Uniqlo', 'COS', 'Zara', 'Levi’s'][i % 4],
-              name: '$seed piece ${i + 1}',
-              price: '₹${1499 + i * 300}',
-              matchPercent: 96 - i * 2,
-              aiReason: 'Complements items you already own.',
+              brand: item.brand,
+              name: item.name,
+              price: '₹${1399 + index * 280}',
+              matchPercent: 97 - index * 2,
+              aiReason: '$seed piece that works with your current wardrobe.',
               sizes: const ['S', 'M', 'L'],
             ),
         ];
@@ -80,19 +84,46 @@ class HomeRepository {
           title: 'Today’s Picks',
           subtitle: 'Chosen for your morning and the weather.',
           compatibility: 94,
-          products: products('Everyday', 8),
+          products: products('Everyday', [
+            ('Uniqlo', 'Relaxed poplin shirt'),
+            ('COS', 'Tailored pleat trouser'),
+            ('Arket', 'Cotton overshirt'),
+            ('Zara', 'Leather sneaker'),
+            ('Mango', 'Textured knit polo'),
+            ('Levi’s', '501 straight jean'),
+            ('Everlane', 'Compact tote'),
+            ('A.P.C.', 'Raw denim jacket'),
+          ]),
         ),
         HomeCollection(
           title: 'Trending This Week',
           subtitle: 'What people with your StyleDNA are loving.',
           compatibility: 88,
-          products: products('Trending', 10),
+          products: products('Trending', [
+            ('Mango', 'Relaxed pinstripe shirt'),
+            ('Uniqlo', 'Airism tee'),
+            ('COS', 'Fluid wide-leg trouser'),
+            ('Arket', 'Canvas overshirt'),
+            ('Zara', 'Runner sneaker'),
+            ('Everlane', 'Boxy knit vest'),
+            ('Levi’s', 'Vintage trucker'),
+            ('A.P.C.', 'Mini crossbody'),
+            ('Massimo Dutti', 'Clean blazer'),
+            ('Adidas', 'Retro court shoe'),
+          ]),
         ),
         HomeCollection(
           title: 'Recently Viewed',
           subtitle: 'Pick up where you left off.',
           compatibility: 90,
-          products: products('Viewed', 6),
+          products: products('Viewed', [
+            ('Uniqlo', 'Linen-blend shirt'),
+            ('COS', 'Straight-leg trouser'),
+            ('Arket', 'Oversized blazer'),
+            ('Zara', 'Tank layer'),
+            ('Levi’s', 'Loose jean'),
+            ('Everlane', 'Minimal sneaker'),
+          ]),
         ),
       ],
     );

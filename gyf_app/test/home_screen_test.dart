@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gyf_app/app/theme/gyf_theme.dart';
+import 'package:go_router/go_router.dart';
+import 'package:gyf_app/app/router/gyf_router.dart';
 import 'package:gyf_app/features/home/presentation/screens/home_screen.dart';
 
 void main() {
@@ -50,5 +52,41 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('flagship home actions navigate somewhere real', (tester) async {
+    final router = GoRouter(
+      initialLocation: GyfRoutes.home,
+      routes: [
+        GoRoute(
+          path: GyfRoutes.home,
+          builder: (context, state) => const Scaffold(body: HomeScreen()),
+        ),
+        GoRoute(
+          path: GyfRoutes.aiStylist,
+          builder: (context, state) => const Scaffold(body: Text('AI')),
+        ),
+        GoRoute(
+          path: GyfRoutes.wardrobe,
+          builder: (context, state) => const Scaffold(body: Text('Wardrobe')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(
+          theme: GyfTheme.light(),
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+
+    await tester.tap(find.text('Outfit check'));
+    await tester.pumpAndSettle();
+    expect(find.text('AI'), findsOneWidget);
+    expect(find.text('Today’s Picks'), findsNothing);
   });
 }

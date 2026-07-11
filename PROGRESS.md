@@ -1888,3 +1888,31 @@ style-cohesion embeddings. A tested experiment omitting vectors saved only ~1.3 
 as a bad quality tradeoff. The deployed five-look result already had five unique hero garments and
 five unique shoes, proving the prior anchor/footwear diversity fixes are live; the repetition
 claim is not being re-fixed blindly.
+
+### 2026-07-11 (cont. 23) — Feedback v6 UX unblock: live Discover + real Home taps
+
+User asked: read `docs/feedbacks/gyf-feedback-v6.md` for the deeper complaints, not just the surface
+text, and implement the highest-signal fixes. The practical read was: the app feels dead because
+obvious taps do nothing, Discover looks static/repetitive, and the feed needs to feel searchable
+instead of frozen.
+
+Shipped locally in this slice:
+
+- `GyfSearchField` now exposes `onChanged` and clears the caller's query state when the clear button
+  is pressed.
+- Discover feed now has a real category field, 48 varied tiles, and live text filtering via
+  `discoverSearchQueryProvider`; empty results show a recovery empty state instead of a dead grid.
+- Home quick actions are no longer dead taps: hero card goes to AI Stylist, Outfit check/Ask AI go
+  to AI Stylist, Add clothing and Continue Journey go to Wardrobe.
+- Home mock feed was diversified so the top screen stops reading like the same four items repeated.
+- Tests added for Discover text filtering and Home navigation.
+
+Verification note: Flutter tooling is not installed in this workspace (`flutter`/`dart` missing), so
+I could not run the widget suite here. The diff was sanity-checked by inspection only; CI must verify
+the Flutter side once pushed.
+
+### 2026-07-11 (cont. 24) — Splash fail-open safeguard
+
+Added a small launch timeout to the splash screen: if session restore never resolves, the app now
+fails open to auth instead of sitting on the splash forever. This is the narrowest practical fix
+for the "app doesn't even open" complaint when local persistence or restore gets stuck.
