@@ -21,9 +21,8 @@ describe("SplashScreen once-per-session", () => {
     // that skips it is the hydration mismatch that orphaned the splash div at
     // z-index 9999 and blanked the whole app), then dismiss right after mount.
     render(<SplashScreen />);
-    await waitFor(
-      () => expect(screen.queryByRole("status", { name: /loading gyf/i })).toBeNull(),
-      { timeout: 2000 },
-    );
+    await waitFor(() => expect(screen.queryByRole("status", { name: /loading gyf/i })).toBeNull(), {
+      timeout: 2000,
+    });
   });
 });
