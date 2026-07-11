@@ -14,7 +14,10 @@ Widget host(Widget child) => ProviderScope(
 List<GyfCollectionProduct> products(int n) => [
       for (var i = 0; i < n; i++)
         GyfCollectionProduct(
-            brand: 'Brand', name: 'Item ${i + 1}', price: '₹999'),
+          brand: 'Brand',
+          name: 'Item ${i + 1}',
+          price: '₹999',
+        ),
     ];
 
 void main() {
