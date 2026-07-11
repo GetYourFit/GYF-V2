@@ -1210,12 +1210,12 @@ def test_candidate_pool_ordered_by_taste_when_signal_present():
     repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
 
     repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=[0.1, 0.2])
-    sql, _ = pool.calls[-1]
+    sql, _ = pool.calls[0]
     assert "ORDER BY affinity DESC NULLS LAST" in sql
 
     pool.calls.clear()
     repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=None)
-    sql, _ = pool.calls[-1]
+    sql, _ = pool.calls[0]
     # Cold start requires perception-complete items (has-embedding ≡ has-colour)
     # so the composer never gets a colourless, un-personalisable pool; recency
     # breaks ties within each group.
@@ -1223,3 +1223,5 @@ def test_candidate_pool_ordered_by_taste_when_signal_present():
     assert "ORDER BY i.created_at DESC" in sql
     assert sql.index("LIMIT %s") < sql.rindex("e.embedding::text")
     assert "affinity DESC" not in sql
+    assert len(pool.calls) == 2
+    assert "ORDER BY (e.item_id IS NOT NULL) DESC" in pool.calls[1][0]

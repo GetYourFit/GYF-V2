@@ -258,7 +258,14 @@ class PostgresCandidateRepository:
                 limit_per_slot,
             )
             with self._pool.connection() as conn:  # type: ignore[attr-defined]
-                return slot, [_row_to_candidate(slot, r) for r in conn.execute(sql, params)]
+                rows = list(conn.execute(sql, params))
+                if not rows and taste_vector is None:
+                    # Sparse/local catalogs may not have run perception yet. Keep
+                    # the product usable with the existing raw baseline; production
+                    # categories with perceived inventory never pay this second read.
+                    fallback = _CANDIDATES.format(affinity="NULL", order=_ORDER_BY_RECENCY)
+                    rows = list(conn.execute(fallback, params))
+                return slot, [_row_to_candidate(slot, r) for r in rows]
 
         # Run the per-slot reads concurrently, each on its own pooled connection —
         # was N sequential round trips on one held connection (the dominant per-

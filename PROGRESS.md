@@ -1879,8 +1879,9 @@ database: profile 3.6 s, taste 1.3 s, and candidate retrieval **73.0 s** in the 
 composition itself was not the bottleneck. Candidate SQL fetched four pools of 80 wide rows,
 including 768-d embeddings, even though the composer immediately caps every slot to 14.
 
-Fix: cold-start SQL now limits the ID set before hydrating the wide perception row, requires a
-real embedding before an item may enter an AI-styled outfit, and retrieval depth is 20 per slot
+Fix: cold-start SQL now limits the ID set before hydrating the wide perception row, prefers a
+real embedding before an item enters an AI-styled outfit (raw fallback only when a slot has zero
+perceived inventory), and retrieval depth is 20 per slot
 (enough for the public `k<=20`; composer still consumes 14). Real production-DB candidate timing
 dropped from 73.0 s to about 6.9 s while retaining colour/formality/body/tone/budget rules and
 style-cohesion embeddings. A tested experiment omitting vectors saved only ~1.3 s and was rejected
