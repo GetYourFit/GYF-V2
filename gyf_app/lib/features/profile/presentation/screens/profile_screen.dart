@@ -79,7 +79,8 @@ class ProfileScreen extends ConsumerWidget {
                         label: 'Manual input',
                         variant: GyfBadgeVariant.fresh,
                       ),
-                      GyfBadge(label: 'Photo beta', variant: GyfBadgeVariant.ai),
+                      GyfBadge(
+                          label: 'Photo beta', variant: GyfBadgeVariant.ai),
                       GyfBadge(
                         label: 'Privacy controls',
                         variant: GyfBadgeVariant.premium,

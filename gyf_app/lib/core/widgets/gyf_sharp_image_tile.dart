@@ -73,7 +73,8 @@ class GyfSharpImageTile extends ConsumerWidget {
               Positioned(
                 top: GyfSpacing.s0,
                 right: GyfSpacing.s0,
-                child: GyfWishlistButton(saved: saved!, onChanged: onSaveChanged!),
+                child:
+                    GyfWishlistButton(saved: saved!, onChanged: onSaveChanged!),
               ),
             if (hasCaption)
               Positioned(
@@ -100,14 +101,16 @@ class GyfSharpImageTile extends ConsumerWidget {
                     children: [
                       Text(
                         title!,
-                        style: GyfTypography.label.copyWith(color: Colors.white),
+                        style:
+                            GyfTypography.label.copyWith(color: Colors.white),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (subtitle != null)
                         Text(
                           subtitle!,
-                          style: GyfTypography.caption.copyWith(color: Colors.white70),
+                          style: GyfTypography.caption
+                              .copyWith(color: Colors.white70),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
