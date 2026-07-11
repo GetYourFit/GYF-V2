@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { randomQuote } from "@/lib/fashionQuotes";
 import { GYFLogo } from "./gyf-logo";
 
@@ -29,9 +29,12 @@ function alreadyShown(): boolean {
   }
 }
 
+const subscribeSession = () => () => {};
+
 export function SplashScreen({ onDone }: SplashScreenProps) {
   const reduce = useReducedMotion();
-  const [visible, setVisible] = useState(true); // must match SSR — see alreadyShown()
+  const shown = useSyncExternalStore(subscribeSession, alreadyShown, () => false);
+  const [dismissed, setDismissed] = useState(false);
   const [quoteState, setQuoteState] = useState(() => randomQuote());
   const [quoteVisible, setQuoteVisible] = useState(false);
 
@@ -58,24 +61,22 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
   // starts from first paint — no impure Date.now() read during render).
   useEffect(() => {
     // Already shown this session: dismiss on mount — never block repeat loads.
-    if (alreadyShown()) {
-      setVisible(false);
+    if (shown) {
       onDone?.();
       return;
     }
     const t = setTimeout(() => {
-      setVisible(false);
+      setDismissed(true);
       onDone?.();
       try {
         sessionStorage.setItem("gyf_splash_shown", "1");
       } catch {}
     }, MIN_SHOW_MS);
     return () => clearTimeout(t);
-    // Only the first-mount decision matters; `visible` is set once here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onDone]);
+  }, [onDone, shown]);
 
   const activeDot = quoteState.index % 3;
+  const visible = !shown && !dismissed;
 
   return (
     <AnimatePresence>
