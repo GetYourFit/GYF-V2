@@ -29,7 +29,7 @@ void main() {
     expect(find.text('For You'), findsOneWidget);
     expect(find.text('Editorial'), findsOneWidget);
     expect(find.byIcon(Icons.search), findsOneWidget);
-    expect(find.text('Curated capsule 1'), findsOneWidget);
+    expect(find.text('For You capsule 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,7 +51,7 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/components_light.png'),
     );
-  });
+  }, skip: Platform.isLinux ? 'Golden baseline was captured on macOS.' : false);
 
   testWidgets('component sampler — dark', (tester) async {
     await tester.pumpWidget(host(sampler(), GyfTheme.dark()));
@@ -57,5 +59,5 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/components_dark.png'),
     );
-  });
+  }, skip: Platform.isLinux ? 'Golden baseline was captured on macOS.' : false);
 }
