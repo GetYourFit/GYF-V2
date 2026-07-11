@@ -21,6 +21,12 @@ Four things stop it feeling like a million-dollar product:
 4. Operational proof is thin: no live Sentry/tracing, load-test result, frozen person-photo eval
    set, or million-user capacity evidence.
 
+The v6 production trace also found that first-time authenticated Explore browse synchronously
+called the remote text encoder before its catalog query. That made a nominally cheap read take the
+same 5-18 second ML path as semantic search. The immediate fix serves the rotating catalog until
+real engagement taste exists. The follow-up is an asynchronously precomputed profile vector,
+never a remote model call on the first-paint request.
+
 ## 1. Transformer and arXiv decision
 
 GYF already uses the right transformer now: [SigLIP 2](https://arxiv.org/abs/2502.14786) for
@@ -64,6 +70,9 @@ fidelity, hands/occlusion, background, failure rate, latency, and cost per succe
   activation.
 - Schedule account purge and prove deletion. Move runtime DB access away from the owner role.
 - Keep browser zoom enabled. Run web tests in CI. Eliminate flaky gates.
+- Replace the prechecked, disabled `data_processing` "consent" with versioned acceptance of the
+  necessary service terms. Keep optional photo storage, personalization, and marketing consent
+  separate and revocable. Schedule and monitor the existing hard-purge job.
 
 Exit: every UI claim matches `/system/status` and vendor behavior; CI is deterministic; deletion
 is exercised end to end.
@@ -88,8 +97,11 @@ Owner/tradeoff: product recruits observed testers; shorter intake delays optiona
 
 - Emit canonical, idempotent events for Explore impressions, item views, saves/removes, shop
   clicks, wardrobe actions, try-ons, purchases, returns, and corrections.
-- Every slate records request/session, model version, rank, score/propensity, filters, and
-  experiment. Keep Postgres; add Kafka only after measured write pressure.
+- Every slate records request/session, model version, rank, score, optional true propensity,
+  filters, and
+  experiment. A deterministic ranking score is **not** a propensity; log propensity only when a
+  randomized serving policy records the actual selection probability. Keep Postgres; add Kafka
+  only after measured write pressure.
 - Build one daily funnel: signup, onboarding, first outfit, save, shop, purchase, D7 return.
 
 Exit: every visible action joins to an impression; duplicate inflation is tested; taste updates
@@ -99,11 +111,14 @@ Owner/tradeoff: engineering defines event semantics; more events require retenti
 
 ### Phase D — Instant beta and observability
 
-- Cheapest zero-dollar always-on option: Oracle OCI Always Free ARM VM. Tradeoff: capacity/signup
-  friction plus owning OS patches, TLS, backups, monitoring, and incident response.
+- Cheapest zero-dollar always-on option: Oracle OCI Always Free ARM VM (aggregate 2 OCPU/12 GB
+  Arm). Tradeoff: capacity/signup friction, no SLA, and owning OS patches, TLS, backups,
+  monitoring, and incident response.
 - Recommended managed beta: Render Starter at about $7/month. No migration risk; predictable warm
   API. A platform migration to save roughly $2/month is false economy.
-- Scale later: Cloud Run with minimum instances when load tests prove horizontal demand.
+- Scale later: Cloud Run with minimum instances when load tests prove horizontal demand. Its
+  scale-to-zero free allowance is economical, not always-on; Google's published example puts
+  10M requests/month at roughly $82 for a 400 ms, 1 vCPU/512 MiB workload.
 - Enable Sentry/tracing, DB pool-wait metrics, route p50/p95, and alerts. Profile anonymous,
   learned-taste, and zero-shot Explore independently before adding indexes/services.
 
@@ -156,6 +171,8 @@ Owner/tradeoff: ML starts only after data gates; waiting avoids spending compute
 
 - Keep the existing `TryOnRenderer` port. Start with a licensed hosted API after credits and a
   frozen eval set; use async jobs, quotas, retries, deletion evidence, and vendor failover.
+- Benchmark fal's managed VTO (currently advertised around $0.04/successful image) against FASHN,
+  then move to burst GPU hosting such as Modal only when measured volume makes self-hosting cheaper.
 - Benchmark the distinct [FASHN VTON 1.5](https://huggingface.co/fashn-ai/fashn-vton-1.5)
   self-host candidate—not the wired hosted FASHN 1.6 adapter—only after its parser, pose, model,
   training-data, and commercial license chain is cleared.
@@ -200,3 +217,31 @@ photo opt-in/abstain, D7 return, catalog coverage, latency, failures, and cost p
 2. Supply/approve consented labeled photo data and legal review; otherwise photo AI stays manual.
 3. Fund a small licensed try-on eval pool; otherwise keep try-on planned.
 4. Approve completing Explore behavior instrumentation before any transformer ranker.
+
+## 4.1 Fresh production journey, 2026-07-11
+
+A new production account was created through Supabase Auth and driven through the live API. `/me`
+returned in 0.44 s; profile creation returned in 2.8 s. The first authenticated 24-item browse took
+22.9 s on the pre-fix deployment. Five cold-start outfits took 52.7 s and contained only two unique
+top-slot items. These measurements make two items launch-blocking: deploy/verify the encoder-free
+browse path, then profile recommendation SQL/composition and enforce per-slot slate diversity.
+
+## 5. Research and infrastructure evidence
+
+- Retrieval: [FashionM3](https://arxiv.org/abs/2504.17826) is a useful multimodal assistant
+  reference, but its full weight/data commercial chain is not established. GYF keeps the promoted
+  SigLIP 2 two-tower until a GYF relevance set proves a replacement wins.
+- Recommendation: [MMGRec](https://arxiv.org/abs/2404.16555) and
+  [MDSRec](https://arxiv.org/abs/2412.08103) justify semantic IDs and modality-aware sequence
+  experiments only after clean attributable histories exist.
+- Body: [SMPLer](https://arxiv.org/abs/2404.15276) improves monocular mesh recovery, but a pose
+  benchmark is not proof of consumer body shape or sizing accuracy under loose clothing.
+- Skin: [CST](https://arxiv.org/abs/2410.21005) finds Monk/Fitzpatrick judgments sensitive to
+  camera and environment. GYF must guide capture, measure quality, abstain, and ask for correction.
+- Try-on: [CatVTON](https://arxiv.org/abs/2407.15886) is efficient but single-garment;
+  [IDM-VTON](https://arxiv.org/abs/2403.05139) is non-commercial; multi-garment research such as
+  [M&M VTO](https://arxiv.org/abs/2406.04542) remains a north star until code, weights, datasets,
+  quality, privacy, and serving cost all clear the production gates.
+- Hosting: current official references are [OCI Always Free](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm),
+  [Cloud Run pricing](https://cloud.google.com/run/pricing),
+  [Render pricing](https://render.com/pricing), and [Modal pricing](https://modal.com/pricing).

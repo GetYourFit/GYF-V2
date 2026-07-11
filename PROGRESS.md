@@ -1840,3 +1840,34 @@ Second CI run passed API, standards, and doctrine but exposed `clientX/clientY=u
 GitHub's jsdom: `fireEvent.pointer*` had no `PointerEvent`, so pan became `NaN` and virtualized every
 tile away. The test now installs a minimal MouseEvent-backed PointerEvent carrying `pointerId` and
 asserts the plane transform never contains `NaN`. Exact root `bun run test` passed twice (48 tests).
+
+### 2026-07-11 (cont. 21) — Feedback v6 root trace + A-Z continuation
+
+**User asked:** read v6 below the surface, use this ledger as source of truth, continue the A-Z
+audit/research/implementation, use a fresh production account, and keep CI/CD green after every
+commit.
+
+**Shipped and pushed:** `a25024b` records feedback v6; `8a1e4f6` removes the synchronous remote
+profile-embedding call from authenticated `/items/browse`, so a new user gets the existing rotating
+catalog immediately until real engagement taste exists. Learned taste ranking is unchanged.
+`fc15aa2` adds the final newline required by the standards gate after CI correctly rejected it.
+
+**Fresh production journey:** registered `gyf.audit.1783776919@example.com`; `/me` 200 in 0.44 s;
+profile PUT 200 in 2.8 s; authenticated 24-item browse 200 in 22.9 s on the pre-fix deployment;
+five cold-start outfits 200 in 52.7 s with only two unique tops. The latency and within-slate slot
+repetition in v6 are reproducible. Photo estimation was not run because no consented person photo
+was supplied; production status and registry prove body/skin weights remain research-lane blocked.
+
+**Audit/research:** the existing `docs/plans/gyf-az-audit-2026-07.md` remains the canonical plan and
+was extended rather than duplicated. SigLIP 2 already supplies the correct sparse-data transformer;
+sequential/generative rankers wait for clean attributable events. Current research reinforces
+capture-quality + user confirmation for skin/body and licensed/eval-gated async VTO. OCI is the
+only credible zero-dollar always-on CPU option but has no SLA and adds server operations; Render
+Starter is the lowest-risk beta choice; Cloud Run is the scale path. There is no credible free
+always-on production GPU.
+
+**Data-moat correction in progress:** deterministic ranking `score` was incorrectly exported as
+an IPS `propensity`. The exporter now preserves score separately and leaves propensity null until
+a randomized serving policy logs a real probability; reports identify served examples from the
+impression context. This prevents future transformer/ranker evaluation from learning against a
+false counterfactual contract.
