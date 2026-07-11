@@ -89,6 +89,9 @@ export interface SearchParams {
   /** Comma-separated slots: one embed, one page per slot, interleaved server-side.
    *  Mutually exclusive with `slot` — use for multi-slot default browse. */
   slots?: string;
+  /** Per-session shuffle seed for the anonymous browse feed (fresh order every
+   *  visit, stable within one). Ignored by search; omit for daily rotation. */
+  seed?: string;
 }
 
 interface SearchResults {
@@ -380,17 +383,37 @@ export class GyfApi {
     if (token) headers.set("Authorization", `Bearer ${token}`);
     if (body !== undefined) headers.set("Content-Type", "application/json");
 
-    const res = await fetch(`${this.base}${path}`, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      // Forwarded so callers can actually cancel: a superseded search/browse (fast
-      // filter changes) aborts its fetch instead of resolving late and clobbering
-      // newer results. Without this the AbortController on the caller was a no-op.
-      signal,
-    });
-
-    return this.handle<T>(res);
+    // Cold-start resilience: the free-tier API sleeps and its first response can
+    // be a proxy 502/503/504 or a dropped connection. Users were tapping 3–4
+    // times to get one page. Retry idempotent GETs twice with a short backoff —
+    // by the second try the instance is usually awake. Mutations never retry
+    // (a retried POST could double-write); aborts propagate immediately.
+    const attempts = method === "GET" ? 3 : 1;
+    let lastErr: unknown;
+    for (let i = 0; i < attempts; i++) {
+      if (i > 0) await new Promise((r) => setTimeout(r, 1500 * i));
+      if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+      try {
+        const res = await fetch(`${this.base}${path}`, {
+          method,
+          headers,
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+          // Forwarded so callers can actually cancel: a superseded search/browse
+          // (fast filter changes) aborts its fetch instead of resolving late and
+          // clobbering newer results.
+          signal,
+        });
+        if (res.status >= 502 && res.status <= 504 && i < attempts - 1) {
+          lastErr = new ApiError(res.status, res.statusText, null);
+          continue;
+        }
+        return await this.handle<T>(res);
+      } catch (e) {
+        if ((e as { name?: string }).name === "AbortError") throw e;
+        lastErr = e; // network drop (TypeError) — retry
+      }
+    }
+    throw lastErr;
   }
 
   /** Like `request`, but sends multipart form data — the browser sets the

@@ -1,15 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { TopMenu } from "@/components/layout/top-menu";
 import { APP_SCROLL_ID } from "@/lib/scroll-container";
-
-// How long the scroll container must sit still before the nav pill eases
-// from Liquid Glass back to its resting solid material.
-const SCROLL_IDLE_MS = 300;
 
 interface AppShellProps {
   children: ReactNode;
@@ -21,28 +16,6 @@ export function AppShell({ children }: AppShellProps) {
   // floating copy here would just duplicate it on that one page.
   const pathname = usePathname();
   const hideFloatingMenu = pathname === "/explore";
-
-  // Bottom nav material: Liquid Glass while the page is actively scrolling,
-  // solid chrome once it settles (resting state reads as calmer/more legible
-  // than glass over static content; glass reserved for the moment of motion).
-  const mainRef = useRef<HTMLElement>(null);
-  const [scrolling, setScrolling] = useState(false);
-  const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const el = mainRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      setScrolling(true);
-      if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
-      scrollIdleTimerRef.current = setTimeout(() => setScrolling(false), SCROLL_IDLE_MS);
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      if (scrollIdleTimerRef.current) clearTimeout(scrollIdleTimerRef.current);
-    };
-  }, []);
 
   return (
     <div
@@ -76,7 +49,6 @@ export function AppShell({ children }: AppShellProps) {
       )}
 
       <main
-        ref={mainRef}
         id={APP_SCROLL_ID}
         style={{
           flex: 1,
@@ -97,7 +69,7 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </main>
 
-      <BottomNav solid={!scrolling} />
+      <BottomNav />
     </div>
   );
 }

@@ -132,6 +132,12 @@ def browse_items(
         description="Comma-separated outfit slots to interleave (e.g. "
         "'top,bottom,full_body,footwear'). Omit for a single mixed page.",
     ),
+    seed: str | None = Query(
+        None,
+        max_length=64,
+        description="Shuffle seed for the anonymous/cold-start feed. Pass a "
+        "per-session value for a fresh order every visit; omit for daily rotation.",
+    ),
     repo: VectorSearchRepository = Depends(get_search_repo),
     directory: ItemDirectory = Depends(get_item_directory),
     principal: Principal | None = Depends(get_optional_principal),
@@ -162,10 +168,11 @@ def browse_items(
             offset // len(slot_list),
             genders=_genders(gender),
             taste_vector=taste_vector,
+            seed=seed,
         )
     else:
         hits = repo.browse(
-            None, k, region, offset, genders=_genders(gender), taste_vector=taste_vector
+            None, k, region, offset, genders=_genders(gender), taste_vector=taste_vector, seed=seed
         )
     return {"results": enrich_results(hits, directory)}
 

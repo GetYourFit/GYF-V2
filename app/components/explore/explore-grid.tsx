@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
 import { getScrollContainer } from "@/lib/scroll-container";
-import { readCache, writeCache } from "@/lib/session-cache";
+import { readCache, recordSeen, sessionSeed, writeCache } from "@/lib/session-cache";
 import type { SearchResult } from "@gyf/types";
 import { ExploreCard } from "./explore-card";
 import type { ExploreFilters } from "./filter-bar";
@@ -207,6 +207,9 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
               k: PAGE_SIZE,
               offset: pageNum * PAGE_SIZE,
               slots: BROWSE_SLOTS.join(","),
+              // Fresh catalogue order every session — the daily-seed rotation
+              // served the identical grid all day ("same products again and again").
+              seed: sessionSeed(),
               ...(gender ? { gender } : {}),
             },
             ctrl.signal,
@@ -238,6 +241,7 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
         }
         if (reset) setItems(results);
         else setItems((prev) => [...prev, ...results]);
+        recordSeen(results.map((r) => r.item_id)); // cross-surface de-dupe hint
         setPage(pageNum);
         // Any non-empty page keeps scrolling (not `=== PAGE_SIZE`): multi-slot
         // browse splits k across 4 slots, so one dry slot returns a short page

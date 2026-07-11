@@ -32,7 +32,7 @@ class _CapturingRepo:
         self.calls.append((cats, offset))
         return [SearchResult(item_id=f"{cats}-{offset}", title="x", score=1.0)]
 
-    def browse(self, categories, k, region, offset=0, genders=None, taste_vector=None):
+    def browse(self, categories, k, region, offset=0, genders=None, taste_vector=None, seed=None):
         cats = tuple(categories or ())
         self.calls.append((cats, offset))
         return [SearchResult(item_id=f"{cats}-{offset}", title="x", score=0.0)]

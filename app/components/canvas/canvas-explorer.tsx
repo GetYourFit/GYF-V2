@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { browserApi } from "@/lib/api-client";
+import { recordSeen, sessionSeed } from "@/lib/session-cache";
 import { colorFamily, colorNameToCss, paletteGradient } from "@/lib/color-name";
 import { mediaSrcSet, mediaUrl } from "@/lib/media";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -374,8 +375,10 @@ export function CanvasExplorer() {
       const results = await api.browse({
         k: 96,
         slots: BROWSE_SLOTS.join(","),
+        seed: sessionSeed(), // fresh order per session, stable within it
         ...(gender ? { gender } : {}),
       });
+      recordSeen(results.map((r) => r.item_id));
       if (token !== clusterToken.current) return; // a newer load superseded this one
       setItems(results);
       setSelectedId(null);
@@ -416,8 +419,10 @@ export function CanvasExplorer() {
         k: PAGE_SIZE,
         offset: offsetRef.current,
         slots: BROWSE_SLOTS.join(","),
+        seed: sessionSeed(),
         ...(genderRef.current ? { gender: genderRef.current } : {}),
       });
+      recordSeen(results.map((r) => r.item_id));
       if (token !== clusterToken.current) return; // a recluster landed mid-fetch
       offsetRef.current += PAGE_SIZE;
       hasMoreRef.current = results.length === PAGE_SIZE;

@@ -275,17 +275,6 @@
       -webkit-backdrop-filter 0.4s var(--lux);
   }
 
-  /* Solid state — the pill's resting appearance once scrolling settles (see
-     BottomNav's `solid` prop): near-opaque chrome instead of translucent
-     Liquid Glass, which is reserved for the moment content is actively in
-     motion underneath it. Same box-shadow/border in both states so only the
-     material itself crossfades. */
-  .liquid-nav[data-solid="true"] {
-    background: var(--chrome-strong);
-    backdrop-filter: blur(12px) saturate(120%);
-    -webkit-backdrop-filter: blur(12px) saturate(120%);
-  }
-
   .liquid-nav::before {
     content: "";
     position: absolute;
@@ -297,15 +286,11 @@
     transition: opacity 0.4s var(--lux);
   }
 
-  .liquid-nav[data-solid="true"]::before {
-    opacity: 0;
-  }
-
-  /* Glass state only: halo the glyphs so they stay legible over whatever
-     content scrolls beneath the untinted pill. Inline `filter` on the centre
-     logo <img> wins over this, which is fine — it sits on its own disc. */
-  .liquid-nav:not([data-solid="true"]) svg,
-  .liquid-nav:not([data-solid="true"]) img {
+  /* Halo the glyphs so they stay legible over whatever content sits beneath
+     the untinted pill. Inline `filter` on the centre logo <img> wins over
+     this, which is fine — it sits on its own disc. */
+  .liquid-nav svg,
+  .liquid-nav img {
     filter: drop-shadow(0 0 3px var(--glyph-halo));
   }
 

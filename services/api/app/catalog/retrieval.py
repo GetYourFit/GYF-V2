@@ -116,10 +116,12 @@ class VectorSearchRepository(Protocol):
         offset: int = 0,
         genders: frozenset[str] | None = None,
         taste_vector: list[float] | None = None,
+        seed: str | None = None,
     ) -> list[SearchResult]:
         """Catalogue page for the Explore feed. With ``taste_vector`` set, ranks by
         cosine to it (personalized two-tower retrieval); without, a cheap relational
-        read. ``categories`` restricts to one slot's garments; None = all slots."""
+        read shuffled by ``seed`` (per browsing session; defaults to the day).
+        ``categories`` restricts to one slot's garments; None = all slots."""
         ...
 
     def catalog_facets(self, region: str | None) -> CatalogFacets: ...
@@ -159,13 +161,11 @@ WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
   AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
   {region} {gender} {category}
 -- Variety, not recency: a fixed `created_at DESC` served every user the identical
--- page forever ("same products again and again, nothing new"). Shuffle by a daily
--- seed so the catalogue rotates day-to-day and new items mix in — while staying
--- stable *within* a day so OFFSET pages never overlap or skip mid-browse. Priced
--- items still lead (revenue + they carry images); `i.id` is the final tiebreak.
--- ponytail: daily rotation; a per-session client seed would also de-dupe same-day
--- revisits — add when users report intra-day repetition.
-ORDER BY (i.price IS NOT NULL) DESC, hashtext(i.id::text || CURRENT_DATE::text), i.id
+-- page forever ("same products again and again, nothing new"). Shuffle by the
+-- caller's seed (per browsing session) so every visit gets a fresh order — while
+-- staying stable *within* a session so OFFSET pages never overlap or skip
+-- mid-browse. Priced items still lead; `i.id` is the final tiebreak.
+ORDER BY (i.price IS NOT NULL) DESC, hashtext(i.id::text || %s), i.id
 LIMIT %s OFFSET %s
 """
 
@@ -365,6 +365,7 @@ class PostgresVectorSearchRepository:
         offset: int = 0,
         genders: frozenset[str] | None = None,
         taste_vector: list[float] | None = None,
+        seed: str | None = None,
     ) -> list[SearchResult]:
         gender_list = sorted(genders) if genders else None
         region_clause = _REGION_FILTER if region else ""
@@ -399,7 +400,10 @@ class PostgresVectorSearchRepository:
             params.append(gender_list)
         if categories:
             params.append(categories)
-        params.extend([k, offset])
+        # No client seed → daily rotation, the old behavior.
+        from datetime import date
+
+        params.extend([seed or str(date.today()), k, offset])
         return self._run(sql, tuple(params))
 
     def keyword_search(
@@ -578,6 +582,7 @@ def browse_multi_slot(
     offset: int,
     genders: frozenset[str] | None = None,
     taste_vector: list[float] | None = None,
+    seed: str | None = None,
 ) -> list[SearchResult]:
     """Explore feed: one catalogue page per slot, interleaved. With ``taste_vector``
     each slot is ranked by cosine to it (personalized); otherwise a cheap read. The
@@ -591,7 +596,7 @@ def browse_multi_slot(
         per_slot = list(
             pool.map(
                 lambda categories: repo.browse(
-                    categories, per_slot_k, region, offset, genders, taste_vector
+                    categories, per_slot_k, region, offset, genders, taste_vector, seed
                 ),
                 slot_categories,
             )
