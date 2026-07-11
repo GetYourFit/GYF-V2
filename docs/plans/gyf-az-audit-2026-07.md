@@ -123,9 +123,15 @@ interaction is cleanly event-sourced NOW so the flywheel compounds from day one.
 
 ---
 
-## 4. Feedback loop (answer these to lock the plan)
+## 4. Locked decisions (feedback captured 2026-07-11)
 
-1. **Frontend (B4):** web-only, or web + Flutter mobile? (drives whether `gyf_app` dies or gets wired)
-2. **Hosting (B2):** free keep-alive now, $7 Render always-on, or port to Vercel Python?
-3. **Photo AI (B1):** build the MediaPipe CPU skin-tone (shadow) now, or wait for the Space?
-4. **Next code slice:** photo skin-tone (A), Explore speed (D), or UX polish (E)?
+1. **Frontend (B4): BOTH — web now, Flutter parked.** Next.js web is the beta surface;
+   `gyf_app` stays but is explicitly marked WIP (README banner added), unparked in the
+   mobile phase (wire real API, kill mocks). **Not deleted.**
+2. **Hosting (B2): free keep-alive now.** (Revisit Vercel-Python port / $7 always-on if
+   keep-alive proves too jittery. **Firebase ruled out** — can't host persistent FastAPI+pgvector.)
+3. **Photo AI (B1): MediaPipe CPU skin-tone + also wire the Space.** MediaPipe is the code
+   half I own; the ZeroGPU Space needs your HF-Pro creds + Render env vars.
+4. **Catalog (B3): India-only for beta.** US ingest deferred to launch.
+5. **Execution: plan-review first.** Build slices execute on explicit go-ahead. Candidates
+   queued: photo skin-tone (A), Explore speed (D), UX polish (E).

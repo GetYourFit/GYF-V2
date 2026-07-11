@@ -1,5 +1,11 @@
 # GYF Flutter App (frontend)
 
+> **STATUS — PARKED / WIP (2026-07-11).** GYF's live beta surface is the **Next.js web
+> app** (`/app`, deployed on Vercel). This Flutter app is the *future* mobile surface:
+> UI/design/motion only, **mock-backed** (no real API yet). It is intentionally parked
+> until the mobile phase — do not treat it as a working product surface. When mobile
+> starts: replace the mock repositories with the real API client, then unpark.
+
 Frontend-only Flutter app for GYF, built from `../Front/16_IMPLEMENTATION_PLAN.md`
 (source docs: `../Front/00…15`). UI, design system, motion, haptics, accessibility —
 no backend logic; data goes through mocked repositories.
