@@ -45,19 +45,27 @@ Widget sampler() => Column(
     );
 
 void main() {
-  testWidgets('component sampler — light', (tester) async {
-    await tester.pumpWidget(host(sampler(), GyfTheme.light()));
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('goldens/components_light.png'),
-    );
-  }, skip: Platform.isLinux);
+  testWidgets(
+    'component sampler — light',
+    (tester) async {
+      await tester.pumpWidget(host(sampler(), GyfTheme.light()));
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/components_light.png'),
+      );
+    },
+    skip: Platform.isLinux,
+  );
 
-  testWidgets('component sampler — dark', (tester) async {
-    await tester.pumpWidget(host(sampler(), GyfTheme.dark()));
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('goldens/components_dark.png'),
-    );
-  }, skip: Platform.isLinux);
+  testWidgets(
+    'component sampler — dark',
+    (tester) async {
+      await tester.pumpWidget(host(sampler(), GyfTheme.dark()));
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/components_dark.png'),
+      );
+    },
+    skip: Platform.isLinux,
+  );
 }
