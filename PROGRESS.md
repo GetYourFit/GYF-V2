@@ -1916,3 +1916,9 @@ the Flutter side once pushed.
 Added a small launch timeout to the splash screen: if session restore never resolves, the app now
 fails open to auth instead of sitting on the splash forever. This is the narrowest practical fix
 for the "app doesn't even open" complaint when local persistence or restore gets stuck.
+
+### 2026-07-11 (cont. 25) — CI contract drift fixed
+
+GitHub CI tripped on a stale retrieval test that still expected the old `CURRENT_DATE` browse
+shuffle. The code is already using the session-seeded `hashtext(i.id::text || %s)` order, so the
+test was updated to match the real cold-browse contract. Local retrieval tests pass again.

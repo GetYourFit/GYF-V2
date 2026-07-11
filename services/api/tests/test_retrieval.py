@@ -82,7 +82,7 @@ def test_browse_personalizes_by_taste_vector():
     repo.browse(categories=None, k=10, region=None)  # no taste -> cold-start path
     cold_sql, _ = pool.calls[-1]
     assert "embedding <=>" not in cold_sql.split("ORDER BY")[1]  # not a vector scan
-    assert "CURRENT_DATE" in cold_sql  # the rotating daily shuffle
+    assert "hashtext(i.id::text || %s)" in cold_sql  # session-seeded shuffle
 
 
 def test_mmr_rerank_breaks_near_duplicate_run():
