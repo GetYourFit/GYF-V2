@@ -43,8 +43,7 @@ void main() {
     expect(find.text('Profile'), findsOneWidget);
 
     await tester.tap(find.text('Discover'));
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(
       find.text('Browse curated looks, products, and inspiration.'),
       findsOneWidget,
