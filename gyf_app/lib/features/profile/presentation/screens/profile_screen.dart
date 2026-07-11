@@ -21,11 +21,9 @@ class ProfileScreen extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(GyfSpacing.marginStandard),
         children: [
-          Text('Profile', style: text.headlineSmall),
-          const SizedBox(height: GyfSpacing.s8),
-          Text(
-            'Your style, privacy, and appearance in one place.',
-            style: GyfTypography.body.copyWith(color: colors.textSecondary),
+          const GyfPageChrome(
+            title: 'Profile',
+            subtitle: 'Your style, privacy, and appearance in one place.',
           ),
           const SizedBox(height: GyfSpacing.s24),
           GyfPressableCard(

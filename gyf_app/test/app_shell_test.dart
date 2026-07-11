@@ -36,6 +36,24 @@ void main() {
     await tester.pump(const Duration(milliseconds: 950));
     await tester.pump(const Duration(milliseconds: 400));
 
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Discover'), findsOneWidget);
+    expect(find.text('AI Stylist'), findsOneWidget);
+    expect(find.text('Wardrobe'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
+
+    await tester.tap(find.text('Discover'));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Browse curated looks, products, and inspiration.'),
+        findsOneWidget);
+
+    await tester.tap(find.text('AI Stylist'));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(
+      find.text('Ask for outfits, shop-the-look ideas, or a second opinion.'),
+      findsOneWidget,
+    );
+
     await tester.tap(find.text('Wardrobe'));
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Your wardrobe is waiting.'), findsOneWidget);

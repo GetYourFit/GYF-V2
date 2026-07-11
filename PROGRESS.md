@@ -1941,3 +1941,19 @@ color.
 
 The standards hook still rewrote `docs/feedbacks/gyf-feedback-v6.md` because the checked-out tree
 kept losing the final newline. I forced the newline back in place without changing the content.
+
+### 2026-07-12 — Shared product chrome + tab smoke coverage
+
+**User asked:** make the app more structured as a product surface and keep CI/CD healthy across
+all pages, then continue with a plan and implementation.
+
+**Shipped:**
+
+- Added `GyfPageChrome` as a shared top-of-page surface for the main tabs.
+- Applied the shared chrome to Home, Discover, AI Stylist, Wardrobe, and Profile so the app
+  reads as one product surface instead of five unrelated screens.
+- Tightened the main tab smoke test to walk through all five pillars and assert the new page
+  headers render.
+
+**Verification:** local Flutter CLI is not available in this shell, so the Flutter checks will
+finish through the repo gates / CI path after commit.

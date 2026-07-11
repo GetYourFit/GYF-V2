@@ -62,6 +62,12 @@ class _DiscoverFeed extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
+        const SliverToBoxAdapter(
+          child: GyfPageChrome(
+            title: 'Discover',
+            subtitle: 'Browse curated looks, products, and inspiration.',
+          ),
+        ),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(

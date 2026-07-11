@@ -25,7 +25,6 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final text = Theme.of(context).textTheme;
     final feed = ref.watch(homeFeedProvider);
 
     return SafeArea(
@@ -39,9 +38,10 @@ class HomeScreen extends ConsumerWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(GyfSpacing.marginStandard),
           children: [
-            Text(_greeting(), style: text.headlineSmall),
-            const SizedBox(height: GyfSpacing.s4),
-            Text('What should I wear today?', style: text.bodyMedium),
+            GyfPageChrome(
+              title: _greeting(),
+              subtitle: 'What should I wear today?',
+            ),
             const SizedBox(height: GyfSpacing.s16),
             GyfSearchField(
               hint: 'Search styles, brands, outfits',

@@ -42,6 +42,12 @@ class _AiStylistScreenState extends ConsumerState<AiStylistScreen> {
     return SafeArea(
       child: Column(
         children: [
+          const GyfPageChrome(
+            title: 'AI Stylist',
+            subtitle:
+                'Ask for outfits, shop-the-look ideas, or a second opinion.',
+          ),
+          const SizedBox(height: GyfSpacing.s8),
           Expanded(
             child: ListView.builder(
               controller: _scroll,

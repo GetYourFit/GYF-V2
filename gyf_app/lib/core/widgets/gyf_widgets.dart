@@ -14,6 +14,7 @@ export 'gyf_masonry_grid.dart';
 export 'gyf_otp_field.dart';
 export 'gyf_outfit_card.dart';
 export 'gyf_overlays.dart';
+export 'gyf_page_chrome.dart';
 export 'gyf_primary_button.dart';
 export 'gyf_progress.dart';
 export 'gyf_product_card.dart';
