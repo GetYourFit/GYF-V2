@@ -21,23 +21,26 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('greets with prompts and renders without overflow',
-      (tester) async {
+  testWidgets('greets with prompts and renders without overflow', (
+    tester,
+  ) async {
     await pumpStylist(tester);
     expect(find.text('What are you dressing for today?'), findsOneWidget);
     expect(find.text('Work'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('renders without overflow at narrow mobile width',
-      (tester) async {
+  testWidgets('renders without overflow at narrow mobile width', (
+    tester,
+  ) async {
     addTearDown(tester.view.reset);
     await pumpStylist(tester, size: const Size(320, 844));
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tapping a prompt sends it and shows suggestions',
-      (tester) async {
+  testWidgets('tapping a prompt sends it and shows suggestions', (
+    tester,
+  ) async {
     await pumpStylist(tester);
     await tester.tap(find.text('Work'));
     await tester.pump();
@@ -51,8 +54,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('typing and submitting via the composer sends a message',
-      (tester) async {
+  testWidgets('typing and submitting via the composer sends a message', (
+    tester,
+  ) async {
     await pumpStylist(tester);
     await tester.enterText(find.byType(TextField), 'Something casual');
     await tester.testTextInput.receiveAction(TextInputAction.send);

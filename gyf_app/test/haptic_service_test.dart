@@ -14,11 +14,11 @@ void main() {
     now = DateTime(2026);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      if (call.method == 'HapticFeedback.vibrate') {
-        calls.add(call.arguments as String? ?? 'vibrate');
-      }
-      return null;
-    });
+          if (call.method == 'HapticFeedback.vibrate') {
+            calls.add(call.arguments as String? ?? 'vibrate');
+          }
+          return null;
+        });
     return HapticService(clock: () => now);
   }
 

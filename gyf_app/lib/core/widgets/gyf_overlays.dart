@@ -82,9 +82,9 @@ abstract final class GyfOverlays {
     String cancelLabel = 'Cancel',
     bool destructive = false,
   }) async {
-    ref.read(hapticServiceProvider).emit(
-          destructive ? GyfHaptic.warning : GyfHaptic.selection,
-        );
+    ref
+        .read(hapticServiceProvider)
+        .emit(destructive ? GyfHaptic.warning : GyfHaptic.selection);
     final colors = Theme.of(context).extension<GyfColorScheme>()!;
     final confirmed = await showDialog<bool>(
       context: context,

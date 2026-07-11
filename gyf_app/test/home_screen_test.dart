@@ -34,8 +34,9 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('hero card header does not overflow at narrow mobile widths',
-      (tester) async {
+  testWidgets('hero card header does not overflow at narrow mobile widths', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);

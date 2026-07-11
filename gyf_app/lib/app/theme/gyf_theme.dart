@@ -72,8 +72,10 @@ abstract final class GyfTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: c.primary,
-          side:
-              BorderSide(color: c.borderDefault, width: GyfBorderWidth.regular),
+          side: BorderSide(
+            color: c.borderDefault,
+            width: GyfBorderWidth.regular,
+          ),
           minimumSize: const Size(
             GyfSpacing.touchTargetMin,
             GyfSpacing.touchTargetRecommended,
@@ -109,8 +111,10 @@ abstract final class GyfTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: GyfRadius.button,
-          borderSide:
-              BorderSide(color: c.borderFocus, width: GyfBorderWidth.focus),
+          borderSide: BorderSide(
+            color: c.borderFocus,
+            width: GyfBorderWidth.focus,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: GyfRadius.button,
@@ -141,8 +145,9 @@ abstract final class GyfTheme {
         modalBarrierColor: c.modalScrim,
         showDragHandle: true,
         shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(GyfRadius.xxl)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(GyfRadius.xxl),
+          ),
         ),
       ),
       snackBarTheme: SnackBarThemeData(

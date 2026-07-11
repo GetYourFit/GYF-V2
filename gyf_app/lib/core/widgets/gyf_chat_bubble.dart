@@ -44,10 +44,7 @@ class GyfChatBubble extends StatelessWidget {
             style: textTheme.bodyMedium?.copyWith(color: colors.error),
           ),
           if (onRetry != null)
-            TextButton(
-              onPressed: onRetry,
-              child: const Text('Generate again'),
-            ),
+            TextButton(onPressed: onRetry, child: const Text('Generate again')),
         ],
       );
     } else {
@@ -79,8 +76,9 @@ class GyfChatBubble extends StatelessWidget {
               topLeft: const Radius.circular(GyfRadius.xl),
               topRight: const Radius.circular(GyfRadius.xl),
               bottomLeft: Radius.circular(isUser ? GyfRadius.xl : GyfRadius.xs),
-              bottomRight:
-                  Radius.circular(isUser ? GyfRadius.xs : GyfRadius.xl),
+              bottomRight: Radius.circular(
+                isUser ? GyfRadius.xs : GyfRadius.xl,
+              ),
             ),
           ),
           child: content,
@@ -138,9 +136,7 @@ class _AiThinkingIndicatorState extends ConsumerState<_AiThinkingIndicator>
               final phase = (_controller.value * 3 - i).clamp(0.0, 1.0);
               final emphasis = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
               return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: GyfSpacing.s2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: GyfSpacing.s2),
                 child: Container(
                   width: GyfSpacing.s8,
                   height: GyfSpacing.s8,

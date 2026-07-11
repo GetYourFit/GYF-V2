@@ -5,11 +5,11 @@ import 'package:gyf_app/app/theme/gyf_theme.dart';
 import 'package:gyf_app/core/widgets/gyf_widgets.dart';
 
 Widget host(Widget child, {ThemeData? theme}) => ProviderScope(
-      child: MaterialApp(
-        theme: theme ?? GyfTheme.light(),
-        home: Scaffold(body: Center(child: child)),
-      ),
-    );
+  child: MaterialApp(
+    theme: theme ?? GyfTheme.light(),
+    home: Scaffold(body: Center(child: child)),
+  ),
+);
 
 void main() {
   group('GyfConfidenceBadge', () {
@@ -52,8 +52,9 @@ void main() {
   });
 
   group('GyfTextField', () {
-    testWidgets('shows always-visible label, helper, and error states',
-        (tester) async {
+    testWidgets('shows always-visible label, helper, and error states', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         host(
           const GyfTextField(
@@ -91,8 +92,9 @@ void main() {
   });
 
   group('GyfSearchField', () {
-    testWidgets('shows clear button only when text present, and clears',
-        (tester) async {
+    testWidgets('shows clear button only when text present, and clears', (
+      tester,
+    ) async {
       await tester.pumpWidget(host(GyfSearchField(onVoice: () {})));
       expect(find.byIcon(Icons.close), findsNothing);
       expect(find.byIcon(Icons.mic_none), findsOneWidget);
@@ -148,10 +150,7 @@ void main() {
           ),
         ),
       );
-      expect(
-        find.text('You own 3 of 4 items · 1 to find'),
-        findsOneWidget,
-      );
+      expect(find.text('You own 3 of 4 items · 1 to find'), findsOneWidget);
       expect(find.text('Generate again'), findsOneWidget);
     });
   });

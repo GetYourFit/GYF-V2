@@ -44,8 +44,10 @@ void main() {
 
     await tester.tap(find.text('Discover'));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Browse curated looks, products, and inspiration.'),
-        findsOneWidget);
+    expect(
+      find.text('Browse curated looks, products, and inspiration.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('AI Stylist'));
     await tester.pump(const Duration(milliseconds: 400));

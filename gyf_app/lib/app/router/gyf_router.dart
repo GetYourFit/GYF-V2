@@ -58,10 +58,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'register',
             builder: (context, state) => const RegisterScreen(),
           ),
-          GoRoute(
-            path: 'otp',
-            builder: (context, state) => const OtpScreen(),
-          ),
+          GoRoute(path: 'otp', builder: (context, state) => const OtpScreen()),
           GoRoute(
             path: 'forgot-password',
             builder: (context, state) => const ForgotPasswordScreen(),

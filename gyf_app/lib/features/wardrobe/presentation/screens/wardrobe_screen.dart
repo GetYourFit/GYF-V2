@@ -10,9 +10,9 @@ class WardrobeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return const SafeArea(
       child: Column(
-        children: const [
+        children: [
           GyfPageChrome(
             title: 'Wardrobe',
             subtitle: 'Add your clothes to unlock outfits from what you own.',

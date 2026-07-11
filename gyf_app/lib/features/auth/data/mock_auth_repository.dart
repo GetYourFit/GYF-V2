@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Result of a mocked auth call: [ok] or a user-facing [message]
 /// (copy per 11_UX_WRITING_GUIDE).
 class AuthResult {
-  const AuthResult.ok()
-      : ok = true,
-        message = null;
+  const AuthResult.ok() : ok = true, message = null;
   const AuthResult.failure(this.message) : ok = false;
 
   final bool ok;
@@ -49,5 +47,6 @@ class AuthRepository {
       Future<void>.delayed(_latency);
 }
 
-final authRepositoryProvider =
-    Provider<AuthRepository>((_) => AuthRepository());
+final authRepositoryProvider = Provider<AuthRepository>(
+  (_) => AuthRepository(),
+);

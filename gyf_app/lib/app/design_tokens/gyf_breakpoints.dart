@@ -13,7 +13,7 @@ enum GyfDeviceClass {
   largePhone,
   tablet,
   largeTablet,
-  desktop
+  desktop,
 }
 
 GyfDeviceClass deviceClassForWidth(double width) {

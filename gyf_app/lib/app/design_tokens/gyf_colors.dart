@@ -268,10 +268,16 @@ class GyfColorScheme extends ThemeExtension<GyfColorScheme> {
       premiumBronze: c(premiumBronze, other.premiumBronze),
       premiumIvory: c(premiumIvory, other.premiumIvory),
       aiGradient: Gradient.lerp(aiGradient, other.aiGradient, t)!,
-      premiumGradient:
-          Gradient.lerp(premiumGradient, other.premiumGradient, t)!,
-      successGradient:
-          Gradient.lerp(successGradient, other.successGradient, t)!,
+      premiumGradient: Gradient.lerp(
+        premiumGradient,
+        other.premiumGradient,
+        t,
+      )!,
+      successGradient: Gradient.lerp(
+        successGradient,
+        other.successGradient,
+        t,
+      )!,
       recommendationGradient: Gradient.lerp(
         recommendationGradient,
         other.recommendationGradient,

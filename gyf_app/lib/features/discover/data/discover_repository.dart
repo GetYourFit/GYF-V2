@@ -64,16 +64,7 @@ class DiscoverRepository {
       'rib tank',
       'utility jacket',
     ];
-    const ratios = [
-      0.72,
-      0.86,
-      0.95,
-      1.08,
-      1.22,
-      1.34,
-      0.78,
-      1.16,
-    ];
+    const ratios = [0.72, 0.86, 0.95, 1.08, 1.22, 1.34, 0.78, 1.16];
 
     return DiscoverFeed(
       categories: categories,
@@ -94,8 +85,9 @@ class DiscoverRepository {
   }
 }
 
-final discoverRepositoryProvider =
-    Provider<DiscoverRepository>((_) => DiscoverRepository());
+final discoverRepositoryProvider = Provider<DiscoverRepository>(
+  (_) => DiscoverRepository(),
+);
 
 final discoverFeedProvider = FutureProvider<DiscoverFeed>(
   (ref) => ref.watch(discoverRepositoryProvider).fetchFeed(),

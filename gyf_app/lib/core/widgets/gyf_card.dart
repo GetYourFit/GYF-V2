@@ -69,13 +69,10 @@ class _GyfPressableCardState extends ConsumerState<GyfPressableCard> {
               boxShadow: _pressed
                   ? GyfShadows.xs
                   : widget.selected
-                      ? GyfShadows.md
-                      : GyfShadows.sm,
+                  ? GyfShadows.md
+                  : GyfShadows.sm,
             ),
-            child: ClipRRect(
-              borderRadius: GyfRadius.card,
-              child: widget.child,
-            ),
+            child: ClipRRect(borderRadius: GyfRadius.card, child: widget.child),
           ),
         ),
       ),

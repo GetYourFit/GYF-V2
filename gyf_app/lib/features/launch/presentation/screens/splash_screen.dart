@@ -34,13 +34,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     parent: _controller,
     curve: const Interval(100 / 900, 250 / 900, curve: GyfCurve.enter),
   );
-  late final Animation<double> _logoScale =
-      Tween(begin: 0.92, end: 1.0).animate(
-    CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(250 / 900, 450 / 900, curve: GyfCurve.spring),
-    ),
-  );
+  late final Animation<double> _logoScale = Tween(begin: 0.92, end: 1.0)
+      .animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(250 / 900, 450 / 900, curve: GyfCurve.spring),
+        ),
+      );
   late final Animation<double> _glow = CurvedAnimation(
     parent: _controller,
     curve: const Interval(450 / 900, 700 / 900, curve: GyfCurve.enter),
@@ -130,8 +130,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primary
-                            .withValues(alpha: 0.35 * _glow.value),
+                        color: colors.primary.withValues(
+                          alpha: 0.35 * _glow.value,
+                        ),
                         blurRadius: GyfSpacing.s40 * _glow.value,
                       ),
                     ],

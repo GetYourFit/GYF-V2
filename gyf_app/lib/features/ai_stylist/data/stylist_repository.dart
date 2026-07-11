@@ -33,12 +33,12 @@ class StylistMessage {
 class StylistController extends Notifier<List<StylistMessage>> {
   @override
   List<StylistMessage> build() => const [
-        StylistMessage(
-          role: GyfChatRole.assistant,
-          text: 'What are you dressing for today?',
-          prompts: ['Work', 'Date night', 'Weekend'],
-        ),
-      ];
+    StylistMessage(
+      role: GyfChatRole.assistant,
+      text: 'What are you dressing for today?',
+      prompts: ['Work', 'Date night', 'Weekend'],
+    ),
+  ];
 
   Future<void> send(String text) async {
     final trimmed = text.trim();
@@ -75,5 +75,5 @@ class StylistController extends Notifier<List<StylistMessage>> {
 
 final stylistControllerProvider =
     NotifierProvider<StylistController, List<StylistMessage>>(
-  StylistController.new,
-);
+      StylistController.new,
+    );

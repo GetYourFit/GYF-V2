@@ -52,8 +52,9 @@ class _AuthScaffold extends StatelessWidget {
       appBar: AppBar(backgroundColor: colors.background),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding:
-              const EdgeInsets.symmetric(horizontal: GyfSpacing.marginStandard),
+          padding: const EdgeInsets.symmetric(
+            horizontal: GyfSpacing.marginStandard,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -81,8 +82,9 @@ class AuthWelcomeScreen extends ConsumerWidget {
       backgroundColor: colors.background,
       body: SafeArea(
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: GyfSpacing.marginStandard),
+          padding: const EdgeInsets.symmetric(
+            horizontal: GyfSpacing.marginStandard,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -105,8 +107,9 @@ class AuthWelcomeScreen extends ConsumerWidget {
                     Text(
                       'Create an account to keep your StyleDNA, wardrobe '
                       'and wishlist everywhere.',
-                      style: GyfTypography.body
-                          .copyWith(color: colors.textSecondary),
+                      style: GyfTypography.body.copyWith(
+                        color: colors.textSecondary,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -133,8 +136,9 @@ class AuthWelcomeScreen extends ConsumerWidget {
               const SizedBox(height: GyfSpacing.s8),
               Text(
                 'By continuing you agree to our Terms and Privacy Policy.',
-                style:
-                    GyfTypography.caption.copyWith(color: colors.textTertiary),
+                style: GyfTypography.caption.copyWith(
+                  color: colors.textTertiary,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: GyfSpacing.s16),
@@ -221,7 +225,9 @@ class RegisterScreen extends ConsumerWidget {
 
     Future<void> submit() async {
       ref.read(hapticServiceProvider).emit(GyfHaptic.light);
-      final ok = await ref.read(authControllerProvider.notifier).register(
+      final ok = await ref
+          .read(authControllerProvider.notifier)
+          .register(
             forms.email.text,
             forms.password.text,
             forms.confirmPassword.text,
@@ -343,8 +349,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             child: _secondsLeft > 0
                 ? Text(
                     'Resend code in ${_secondsLeft}s',
-                    style: GyfTypography.bodySmall
-                        .copyWith(color: colors.textTertiary),
+                    style: GyfTypography.bodySmall.copyWith(
+                      color: colors.textTertiary,
+                    ),
                   )
                 : GyfGhostButton(
                     label: 'Resend code',

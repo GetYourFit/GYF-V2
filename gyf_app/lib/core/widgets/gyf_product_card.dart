@@ -41,7 +41,8 @@ class GyfProductCard extends StatelessWidget {
 
     return GyfPressableCard(
       onTap: onTap,
-      semanticLabel: '$brand $name, $price'
+      semanticLabel:
+          '$brand $name, $price'
           '${matchPercent != null ? ', $matchPercent percent match' : ''}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -1989,3 +1989,20 @@ CI run 29165571780 passed doctrine, standards, API, and web, then the newly adde
 correctly failed before analysis/tests because two tracked Dart files were not canonical-format.
 Applied only the formatter's reported line wrapping in `gyf_sharp_image_tile.dart` and
 `profile_screen.dart`; no behavior changed.
+
+### 2026-07-12 (cont. 5) — Focused 2026 arXiv refresh
+
+Refreshed recommendation and catalog-enrichment evidence in the canonical A-Z plan. MuSTRec
+(arXiv:2602.07207) reinforces multimodal sequential ranking as a later shadow experiment once GYF
+has clean interaction sequences; it does not change the current sparse-data SigLIP 2 + MMR choice.
+A 2026 three-tier VLM attribute study (arXiv:2601.15711) shows applicability/NA detection is the
+weak link, so future catalog enrichment must separately gate whether an attribute is visible and
+whether its value is correct. No model or dependency was added without GYF eval data.
+
+### 2026-07-12 (cont. 6) — Flutter CI SDK contract corrected
+
+The first analyzer run under Flutter 3.24.5 reported 22 issues, dominated by undefined modern
+framework APIs (`CardThemeData`, `Color.withValues`, `FadeForwardsPageTransitionsBuilder`, and
+new semantics). Root cause was the CI pin, not separate app regressions: current code targets the
+current stable framework while `pubspec.yaml` only sets a Dart minimum. Updated CI to Flutter
+3.44.6 / Dart 3.12.2; matching formatter/analyzer output becomes the enforced contract.

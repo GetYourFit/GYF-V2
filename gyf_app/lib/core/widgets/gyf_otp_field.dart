@@ -107,10 +107,7 @@ class _GyfOtpFieldState extends ConsumerState<GyfOtpField>
               builder: (context, child) {
                 final t = _shake.value;
                 final dx = _shakeAmplitude * (1 - t) * _oscillation(t);
-                return Transform.translate(
-                  offset: Offset(dx, 0),
-                  child: child,
-                );
+                return Transform.translate(offset: Offset(dx, 0), child: child);
               },
               child: Stack(
                 children: [
@@ -130,8 +127,9 @@ class _GyfOtpFieldState extends ConsumerState<GyfOtpField>
                           LengthLimitingTextInputFormatter(widget.length),
                         ],
                         onChanged: _onChanged,
-                        decoration:
-                            const InputDecoration(border: InputBorder.none),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                        ),
                       ),
                     ),
                   ),
@@ -177,8 +175,8 @@ class _OtpBox extends StatelessWidget {
     final borderColor = error
         ? colors.borderError
         : active
-            ? colors.borderFocus
-            : colors.borderDefault;
+        ? colors.borderFocus
+        : colors.borderDefault;
     return AnimatedContainer(
       duration: GyfMotion.quick,
       curve: GyfCurve.enter,
@@ -190,8 +188,9 @@ class _OtpBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(GyfRadius.md),
         border: Border.all(
           color: borderColor,
-          width:
-              active || error ? GyfBorderWidth.focus : GyfBorderWidth.regular,
+          width: active || error
+              ? GyfBorderWidth.focus
+              : GyfBorderWidth.regular,
         ),
       ),
       child: Text(char ?? '', style: textTheme.titleLarge),

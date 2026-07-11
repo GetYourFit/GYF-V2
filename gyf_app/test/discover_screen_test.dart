@@ -22,8 +22,9 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('shows category pills, search, and masonry tiles',
-      (tester) async {
+  testWidgets('shows category pills, search, and masonry tiles', (
+    tester,
+  ) async {
     await pumpDiscover(tester);
     expect(find.text('For You'), findsOneWidget);
     expect(find.text('Editorial'), findsOneWidget);
@@ -32,8 +33,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('renders without overflow at narrow mobile width',
-      (tester) async {
+  testWidgets('renders without overflow at narrow mobile width', (
+    tester,
+  ) async {
     addTearDown(tester.view.reset);
     await pumpDiscover(tester, size: const Size(320, 844));
     expect(tester.takeException(), isNull);

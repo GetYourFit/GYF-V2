@@ -18,30 +18,30 @@ class GyfBadge extends StatelessWidget {
 
     final (Color bg, Color fg, Gradient? gradient) = switch (variant) {
       GyfBadgeVariant.success => (
-          colors.success.withValues(alpha: GyfOpacity.o10),
-          colors.success,
-          null,
-        ),
+        colors.success.withValues(alpha: GyfOpacity.o10),
+        colors.success,
+        null,
+      ),
       GyfBadgeVariant.warning => (
-          colors.warning.withValues(alpha: GyfOpacity.o10),
-          colors.warning,
-          null,
-        ),
+        colors.warning.withValues(alpha: GyfOpacity.o10),
+        colors.warning,
+        null,
+      ),
       GyfBadgeVariant.premium => (
-          Colors.transparent,
-          colors.textInverse,
-          colors.premiumGradient,
-        ),
+        Colors.transparent,
+        colors.textInverse,
+        colors.premiumGradient,
+      ),
       GyfBadgeVariant.fresh => (
-          colors.primaryContainer,
-          colors.textBrand,
-          null,
-        ),
+        colors.primaryContainer,
+        colors.textBrand,
+        null,
+      ),
       GyfBadgeVariant.ai => (
-          Colors.transparent,
-          colors.textInverse,
-          colors.aiGradient,
-        ),
+        Colors.transparent,
+        colors.textInverse,
+        colors.aiGradient,
+      ),
     };
 
     return Semantics(
@@ -56,10 +56,7 @@ class GyfBadge extends StatelessWidget {
           gradient: gradient,
           borderRadius: GyfRadius.chip,
         ),
-        child: Text(
-          label,
-          style: GyfTypography.micro.copyWith(color: fg),
-        ),
+        child: Text(label, style: GyfTypography.micro.copyWith(color: fg)),
       ),
     );
   }
@@ -68,16 +65,16 @@ class GyfBadge extends StatelessWidget {
 /// "97% · Excellent Match" — used app-wide for AI confidence.
 class GyfConfidenceBadge extends StatelessWidget {
   const GyfConfidenceBadge({required this.percent, super.key})
-      : assert(percent >= 0 && percent <= 100);
+    : assert(percent >= 0 && percent <= 100);
 
   final int percent;
 
   String get _quality => switch (percent) {
-        >= 90 => 'Excellent Match',
-        >= 75 => 'Great Match',
-        >= 60 => 'Good Match',
-        _ => 'Fair Match',
-      };
+    >= 90 => 'Excellent Match',
+    >= 75 => 'Great Match',
+    >= 60 => 'Good Match',
+    _ => 'Fair Match',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -85,8 +82,8 @@ class GyfConfidenceBadge extends StatelessWidget {
     final color = percent >= 75
         ? colors.success
         : percent >= 60
-            ? colors.warning
-            : colors.textSecondary;
+        ? colors.warning
+        : colors.textSecondary;
     return Semantics(
       label: '$percent percent, $_quality',
       child: Container(

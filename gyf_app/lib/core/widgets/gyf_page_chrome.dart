@@ -52,7 +52,7 @@ class GyfPageChrome extends StatelessWidget {
             ],
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: GyfSpacing.s6),
+            const SizedBox(height: GyfSpacing.s8),
             Text(
               subtitle!,
               style: GyfTypography.body.copyWith(color: colors.textSecondary),

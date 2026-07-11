@@ -247,7 +247,7 @@ class _GyfExpandableCollectionGridState
         // widths — size rows explicitly instead.
         final itemWidth =
             (constraints.maxWidth - GyfSpacing.s12 * (widget.columns - 1)) /
-                widget.columns;
+            widget.columns;
         // 168 is the bare text-block estimate; cards showing the AI
         // match badge (matchPercent) need a bit more headroom or they
         // clip by a hair at narrow widths — 184 keeps a safety margin.
@@ -324,8 +324,9 @@ class _GyfExpandableCollectionGridState
             const SizedBox(height: GyfSpacing.s12),
             Text(
               product.aiReason!,
-              style:
-                  GyfTypography.bodySmall.copyWith(color: colors.textSecondary),
+              style: GyfTypography.bodySmall.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
           ],
           if (product.sizes.isNotEmpty) ...[
@@ -380,7 +381,8 @@ class _CollectionHeader extends StatelessWidget {
     return Semantics(
       container: true,
       button: showExpandButton,
-      label: '$title, $itemCount looks'
+      label:
+          '$title, $itemCount looks'
           '${expanded ? ', expanded' : ', collapsed'}',
       child: InkWell(
         onTap: showExpandButton ? onToggle : null,
@@ -397,8 +399,9 @@ class _CollectionHeader extends StatelessWidget {
                       const SizedBox(height: GyfSpacing.s4),
                       Text(
                         subtitle!,
-                        style: GyfTypography.bodySmall
-                            .copyWith(color: colors.textSecondary),
+                        style: GyfTypography.bodySmall.copyWith(
+                          color: colors.textSecondary,
+                        ),
                       ),
                     ],
                     const SizedBox(height: GyfSpacing.s4),
@@ -407,8 +410,9 @@ class _CollectionHeader extends StatelessWidget {
                         '$itemCount looks',
                         if (updatedLabel != null) updatedLabel!,
                       ].join(' · '),
-                      style: GyfTypography.caption
-                          .copyWith(color: colors.textTertiary),
+                      style: GyfTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                      ),
                     ),
                   ],
                 ),

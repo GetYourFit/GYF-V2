@@ -71,16 +71,18 @@ class ProfileScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: GyfSpacing.s16),
-                  Wrap(
+                  const Wrap(
                     spacing: GyfSpacing.s8,
                     runSpacing: GyfSpacing.s8,
-                    children: const [
+                    children: [
                       GyfBadge(
                         label: 'Manual input',
                         variant: GyfBadgeVariant.fresh,
                       ),
                       GyfBadge(
-                          label: 'Photo beta', variant: GyfBadgeVariant.ai),
+                        label: 'Photo beta',
+                        variant: GyfBadgeVariant.ai,
+                      ),
                       GyfBadge(
                         label: 'Privacy controls',
                         variant: GyfBadgeVariant.premium,

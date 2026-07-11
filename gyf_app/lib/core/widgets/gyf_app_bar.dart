@@ -39,10 +39,7 @@ class GyfAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   /// Large-title variant for scrollables: collapses into a standard bar.
-  static Widget sliver({
-    required String title,
-    List<Widget>? actions,
-  }) {
+  static Widget sliver({required String title, List<Widget>? actions}) {
     return Builder(
       builder: (context) {
         final colors = Theme.of(context).extension<GyfColorScheme>()!;

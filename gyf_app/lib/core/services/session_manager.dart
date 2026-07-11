@@ -23,8 +23,8 @@ class SessionState {
   GyfLaunchTarget get launchTarget => !onboardingComplete
       ? GyfLaunchTarget.onboarding
       : signedIn
-          ? GyfLaunchTarget.home
-          : GyfLaunchTarget.auth;
+      ? GyfLaunchTarget.home
+      : GyfLaunchTarget.auth;
 
   SessionState copyWith({
     bool? onboardingComplete,
@@ -81,5 +81,6 @@ class SessionManager extends Notifier<SessionState> {
   }
 }
 
-final sessionManagerProvider =
-    NotifierProvider<SessionManager, SessionState>(SessionManager.new);
+final sessionManagerProvider = NotifierProvider<SessionManager, SessionState>(
+  SessionManager.new,
+);

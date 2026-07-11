@@ -70,17 +70,19 @@ class HomeScreen extends ConsumerWidget {
                 for (final (i, collection) in data.collections.indexed) ...[
                   const SizedBox(height: GyfSpacing.s16),
                   GyfExpandableCollectionGrid(
-                    title: collection.title,
-                    subtitle: collection.subtitle,
-                    compatibilityScore: collection.compatibility,
-                    updatedLabel: 'Updated today',
-                    products: collection.products,
-                    onSavedChanged: (_, saved) {
-                      if (saved) {
-                        ref.read(hapticServiceProvider).emit(GyfHaptic.success);
-                      }
-                    },
-                  )
+                        title: collection.title,
+                        subtitle: collection.subtitle,
+                        compatibilityScore: collection.compatibility,
+                        updatedLabel: 'Updated today',
+                        products: collection.products,
+                        onSavedChanged: (_, saved) {
+                          if (saved) {
+                            ref
+                                .read(hapticServiceProvider)
+                                .emit(GyfHaptic.success);
+                          }
+                        },
+                      )
                       .animate(delay: GyfMotion.stagger * (i + 1))
                       .fadeIn(duration: GyfMotion.medium, curve: GyfCurve.enter)
                       .slideY(begin: 0.04, duration: GyfMotion.medium),
@@ -125,8 +127,9 @@ class _HeroRecommendationCard extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     'Today’s look',
-                    style: GyfTypography.caption
-                        .copyWith(color: colors.textInverse),
+                    style: GyfTypography.caption.copyWith(
+                      color: colors.textInverse,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -154,8 +157,9 @@ class _HeroRecommendationCard extends ConsumerWidget {
             const SizedBox(height: GyfSpacing.s8),
             Text(
               hero.reason,
-              style:
-                  GyfTypography.bodySmall.copyWith(color: colors.textInverse),
+              style: GyfTypography.bodySmall.copyWith(
+                color: colors.textInverse,
+              ),
             ),
           ],
         ),
@@ -184,9 +188,7 @@ class _QuickActionsRow extends StatelessWidget {
               onTap: () => context.go(route),
               semanticLabel: label,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: GyfSpacing.s12,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: GyfSpacing.s12),
                 child: Column(
                   children: [
                     Icon(icon, color: colors.primary, size: GyfIconSize.sm),
@@ -234,8 +236,9 @@ class _ContinueJourneyCard extends StatelessWidget {
                   const SizedBox(height: GyfSpacing.s2),
                   Text(
                     journey.subtitle,
-                    style: GyfTypography.caption
-                        .copyWith(color: colors.textSecondary),
+                    style: GyfTypography.caption.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ],
               ),

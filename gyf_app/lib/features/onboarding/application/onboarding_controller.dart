@@ -119,5 +119,5 @@ class OnboardingController extends Notifier<OnboardingState> {
 
 final onboardingControllerProvider =
     NotifierProvider<OnboardingController, OnboardingState>(
-  OnboardingController.new,
-);
+      OnboardingController.new,
+    );

@@ -9,11 +9,11 @@ import 'package:gyf_app/features/onboarding/application/onboarding_controller.da
 import 'package:shared_preferences/shared_preferences.dart';
 
 Widget host(Widget child, {ThemeData? theme}) => ProviderScope(
-      child: MaterialApp(
-        theme: theme ?? GyfTheme.light(),
-        home: Scaffold(body: Center(child: child)),
-      ),
-    );
+  child: MaterialApp(
+    theme: theme ?? GyfTheme.light(),
+    home: Scaffold(body: Center(child: child)),
+  ),
+);
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -44,8 +44,9 @@ void main() {
 
     testWidgets('shows error text', (tester) async {
       await tester.pumpWidget(host(const GyfOtpField()));
-      await tester
-          .pumpWidget(host(const GyfOtpField(errorText: 'Wrong code.')));
+      await tester.pumpWidget(
+        host(const GyfOtpField(errorText: 'Wrong code.')),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Wrong code.'), findsOneWidget);
     });

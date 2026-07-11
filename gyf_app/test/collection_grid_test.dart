@@ -5,20 +5,16 @@ import 'package:gyf_app/app/theme/gyf_theme.dart';
 import 'package:gyf_app/core/widgets/gyf_widgets.dart';
 
 Widget host(Widget child) => ProviderScope(
-      child: MaterialApp(
-        theme: GyfTheme.light(),
-        home: Scaffold(body: SingleChildScrollView(child: child)),
-      ),
-    );
+  child: MaterialApp(
+    theme: GyfTheme.light(),
+    home: Scaffold(body: SingleChildScrollView(child: child)),
+  ),
+);
 
 List<GyfCollectionProduct> products(int n) => [
-      for (var i = 0; i < n; i++)
-        GyfCollectionProduct(
-          brand: 'Brand',
-          name: 'Item ${i + 1}',
-          price: '₹999',
-        ),
-    ];
+  for (var i = 0; i < n; i++)
+    GyfCollectionProduct(brand: 'Brand', name: 'Item ${i + 1}', price: '₹999'),
+];
 
 void main() {
   group('GyfExpandableCollectionGrid', () {
@@ -92,8 +88,9 @@ void main() {
       expect(retried, isTrue);
     });
 
-    testWidgets('header with compatibility badge does not overflow at 320px',
-        (tester) async {
+    testWidgets('header with compatibility badge does not overflow at 320px', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(320, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -111,8 +108,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('header announces item count and state to a11y',
-        (tester) async {
+    testWidgets('header announces item count and state to a11y', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       await tester.pumpWidget(
         host(
@@ -122,9 +120,9 @@ void main() {
           ),
         ),
       );
-      final labels = tester.semantics
-          .simulatedAccessibilityTraversal()
-          .map((node) => node.label);
+      final labels = tester.semantics.simulatedAccessibilityTraversal().map(
+        (node) => node.label,
+      );
       expect(
         labels.any((l) => l.contains('Summer Essentials, 8 looks, collapsed')),
         isTrue,
