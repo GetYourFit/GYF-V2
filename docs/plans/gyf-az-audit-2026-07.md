@@ -232,6 +232,14 @@ diversity is working; latency remains the active blocker.
 
 ## 5. Research and infrastructure evidence
 
+- 2026 refresh: [MuSTRec](https://arxiv.org/abs/2602.07207) reports gains from combining
+  multimodal item graphs with sequential attention, but its input is the clean interaction
+  history GYF is still completing. Treat it as a Phase G shadow benchmark, not a replacement for
+  the sparse-data SigLIP 2 retrieval path.
+- Catalog enrichment: a 2026 [three-tier VLM evaluation](https://arxiv.org/abs/2601.15711)
+  separates attribute applicability from fine-grained classification and reports applicability
+  as the weak point. GYF should therefore preserve `unknown`/not-visible abstention and gate any
+  VLM enrichment on both applicability F1 and value F1; a single aggregate score is unsafe.
 - Retrieval: [FashionM3](https://arxiv.org/abs/2504.17826) is a useful multimodal assistant
   reference, but its full weight/data commercial chain is not established. GYF keeps the promoted
   SigLIP 2 two-tower until a GYF relevance set proves a replacement wins.

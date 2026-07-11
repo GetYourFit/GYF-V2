@@ -2006,3 +2006,18 @@ framework APIs (`CardThemeData`, `Color.withValues`, `FadeForwardsPageTransition
 new semantics). Root cause was the CI pin, not separate app regressions: current code targets the
 current stable framework while `pubspec.yaml` only sets a Dart minimum. Updated CI to Flutter
 3.44.6 / Dart 3.12.2; matching formatter/analyzer output becomes the enforced contract.
+
+### 2026-07-12 (cont. 7) — Flutter CI fully green + v6 reliability slice complete
+
+The new Flutter gate exposed real repository drift: SDK mismatch, one invalid spacing token,
+record-field access lost through `indexed`, analyzer style errors, stale Discover assertions, and
+macOS/Linux golden pixel variance. Fixed the code/test issues, kept macOS goldens active off Linux,
+and preserved 52 Linux widget tests. Final run 29166167260 passed all five jobs: standards,
+doctrine, API, web/build, and Flutter format/analyze/test.
+
+V6 root fixes now pushed: ordinary GET HTTP failures no longer incur 4.5 seconds of retry delay;
+Canvas continues short multi-slot pages at fixed offsets; Flutter is no longer outside CI. Photo
+skin/body estimation remains intentionally unavailable because both default models fail commercial
+provenance/promotion gates before GPU inference. Owner unblocks remain: consented labelled photo
+data plus license review; a small licensed try-on eval budget; and either Render Starter for
+managed uptime or acceptance of best-effort free hosting.
