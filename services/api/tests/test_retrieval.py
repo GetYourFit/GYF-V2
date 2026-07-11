@@ -85,6 +85,36 @@ def test_browse_personalizes_by_taste_vector():
     assert "CURRENT_DATE" in cold_sql  # the rotating daily shuffle
 
 
+def test_mmr_rerank_breaks_near_duplicate_run():
+    """Greedy MMR must not stack near-identical items ("same products again and
+    again"): given two near-duplicates leading and one distinct item behind them,
+    the distinct item is pulled ahead of the second duplicate."""
+    from app.catalog.retrieval import _mmr_rerank
+
+    ranked = [
+        (SearchResult(item_id="a", title="a", score=0.99), [1.0, 0.0]),
+        (SearchResult(item_id="b", title="b", score=0.98), [0.999, 0.045]),  # ~dup of a
+        (SearchResult(item_id="c", title="c", score=0.90), [0.0, 1.0]),  # distinct
+    ]
+    out = _mmr_rerank(ranked, k=2, lam=0.7)
+    assert [r.item_id for r in out] == ["a", "c"]  # not ["a", "b"]
+
+
+def test_browse_taste_overfetches_and_reranks():
+    """The taste page over-fetches k*_OVERFETCH candidates (disjoint per page) so MMR
+    has a pool to diversify from, and pages stay disjoint (offset also scaled)."""
+    from app.catalog.retrieval import _OVERFETCH
+
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo.browse(categories=None, k=10, region=None, offset=10, taste_vector=[0.1] * 768)
+
+    _, params = pool.calls[-1]
+    assert params[-2] == 10 * _OVERFETCH  # LIMIT over-fetches the window
+    assert params[-1] == 10 * _OVERFETCH  # OFFSET scaled so page-2 window is disjoint
+    assert "e.embedding" in pool.calls[-1][0].split("FROM")[0]  # embedding selected for MMR
+
+
 def test_region_filter_added_only_when_region_given():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)

@@ -178,7 +178,7 @@ LIMIT %s OFFSET %s
 # ANN); the evolving vector + growing catalogue supply freshness — add bandit
 # exploration if users report a static feed.
 _BROWSE_TASTE = """
-SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs
+SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs, e.embedding
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
@@ -206,6 +206,47 @@ _SORT_CLAUSES = {
     "price_asc": "ORDER BY i.price ASC NULLS LAST, i.id ASC",
     "price_desc": "ORDER BY i.price DESC NULLS LAST, i.id ASC",
 }
+
+# Explore diversity rerank. A taste-ranked page is pure nearest-neighbour to the
+# user's centroid, which stacks near-identical products ("same products again and
+# again, nothing new"). Greedy MMR (Carbonell & Goldstein, 1998 — still the efficient
+# CPU default over DPP/FastDPP for reranking; SMMR, SIGIR'25, adds sampling we don't
+# need yet) over-fetches a per-page candidate window and keeps relevant-yet-visually-
+# distinct items. Free: reuses the embeddings already fetched, no GPU, no new dep.
+_OVERFETCH = 3  # candidate pool = k * this; windows are disjoint per page (clean paging)
+_MMR_RELEVANCE = 0.7  # weight on relevance vs (1 - redundancy); quality stays first
+
+
+def _parse_vec(v: object) -> list[float]:
+    """A pgvector embedding as psycopg returns it — a ``"[..]"`` string when the
+    vector adapter isn't registered (this repo passes vectors as strings, so it
+    isn't), else an already-iterable of floats."""
+    if isinstance(v, str):
+        return [float(x) for x in v.strip("[]").split(",") if x]
+    return [float(x) for x in v]  # list / tuple / numpy array
+
+
+def _mmr_rerank(
+    ranked: list[tuple[SearchResult, list[float]]], k: int, lam: float
+) -> list[SearchResult]:
+    """Greedy Maximal Marginal Relevance over the candidate window. ``ranked`` is
+    relevance-ordered (nearest-first) with each item's L2-normalized embedding;
+    returns the top ``k`` balancing the item's taste score against redundancy with
+    the already-picked set. Embeddings are unit-norm, so cosine is a dot product.
+    ponytail: O(k²·window) pure-python cosine — fine at k≤50; vectorize if k grows."""
+    if len(ranked) <= k:
+        return [r for r, _ in ranked]
+    selected = [ranked[0]]  # the most relevant item always leads
+    pool = ranked[1:]
+    while pool and len(selected) < k:
+        best_i, best_val = 0, float("-inf")
+        for i, (res, emb) in enumerate(pool):
+            redundancy = max(sum(x * y for x, y in zip(emb, s_emb)) for _, s_emb in selected)
+            mmr = lam * res.score - (1.0 - lam) * redundancy
+            if mmr > best_val:
+                best_i, best_val = i, mmr
+        selected.append(pool.pop(best_i))
+    return [r for r, _ in selected]
 
 
 class PostgresVectorSearchRepository:
@@ -343,9 +384,12 @@ class PostgresVectorSearchRepository:
             if categories:
                 params.append(categories)
             params.append(vec)  # ORDER BY expression
-            params.extend([k, offset])
-            # HNSW scan: size ef_search to the page depth like the other vector reads.
-            return self._run(sql, tuple(params), depth=k + offset)
+            # Over-fetch a disjoint per-page window, then MMR-rerank to k so the feed
+            # stops stacking near-identical products. The window scales with offset so
+            # consecutive pages stay disjoint — no cross-page duplicates from paging.
+            params.extend([k * _OVERFETCH, offset * _OVERFETCH])
+            # HNSW scan: size ef_search to the deepest fetched row.
+            return self._run(sql, tuple(params), depth=(k + offset) * _OVERFETCH, mmr_k=k)
         # Cold-start / anonymous path: plain relational read, no vector scan.
         sql = _BROWSE.format(region=region_clause, gender=gender_clause, category=category_clause)
         params = []
@@ -423,7 +467,9 @@ class PostgresVectorSearchRepository:
         """
         return self._run(sql, tuple(params))
 
-    def _run(self, sql: str, params: tuple, *, depth: int = 0) -> list[SearchResult]:
+    def _run(
+        self, sql: str, params: tuple, *, depth: int = 0, mmr_k: int | None = None
+    ) -> list[SearchResult]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             if depth:
                 # HNSW only surfaces ef_search candidates per scan (default 40), so a
@@ -447,15 +493,21 @@ class PostgresVectorSearchRepository:
                 # (pgvector >= 0.8) keeps walking the graph until the LIMIT is
                 # satisfied (bounded by hnsw.max_scan_tuples, default 20k).
                 conn.execute("SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true)")
-            return [
-                SearchResult(
-                    item_id=str(r[0]),
-                    title=r[1],
-                    score=float(r[2]),
-                    image_url=image_url_from_refs(r[3]),
-                )
-                for r in conn.execute(sql, params)
-            ]
+            rows = list(conn.execute(sql, params))
+        results = [
+            SearchResult(
+                item_id=str(r[0]),
+                title=r[1],
+                score=float(r[2]),
+                image_url=image_url_from_refs(r[3]),
+            )
+            for r in rows
+        ]
+        if mmr_k is None:
+            return results
+        # MMR path: the query SELECTs the embedding as a 5th column (see _BROWSE_TASTE).
+        ranked = [(res, _parse_vec(r[4])) for res, r in zip(results, rows)]
+        return _mmr_rerank(ranked, mmr_k, _MMR_RELEVANCE)
 
 
 def search_text(

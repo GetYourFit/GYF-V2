@@ -130,7 +130,7 @@ def test_registry_merchants_are_wellformed():
     assert MERCHANTS, "roster must not be empty"
     for m in MERCHANTS:
         assert m.domain and "://" not in m.domain
-        assert m.currency == "INR"
+        assert m.currency in {"INR", "USD"}  # roster is multi-region (IN + US)
         assert m.region_hints
 
 

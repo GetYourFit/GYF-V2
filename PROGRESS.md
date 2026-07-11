@@ -1770,3 +1770,27 @@ dep); degrades to the rotating read if the profile is signal-less or the encoder
 cold (never a 500). Files: `conditioning.profile_style_query` + `_UNDERTONE_COLORS`;
 `routers/catalog._profile_taste_vector` wired into `browse_items`. 73 API tests green,
 ruff clean. Commit pending.
+
+### 2026-07-11 (cont. 17) — SOTA diversity: MMR rerank on Explore (kills near-identical runs)
+
+The freshest v5 complaint ("same products again and again / nothing new / near-identical"):
+the Stylist feed already MMR-diversifies (compose.py), but **Explore** did not. `_BROWSE_TASTE`
+ranked pure cosine-nearest to the taste vector — and nearest-neighbour to a centroid *stacks*
+near-duplicate products at the top (colour variants, re-listings). That's the sameness the user
+sees. Closed it with the SOTA-standard diversity rerank named in CLAUDE.md §5 / research
+component (5): **greedy Maximal Marginal Relevance** (Carbonell & Goldstein 1998 — still the
+efficient CPU default over DPP/FastDPP for reranking; SMMR SIGIR'25 adds sampling we don't need
+yet, verified via web search this session). The taste-browse path now over-fetches a
+`k*_OVERFETCH` (3×) candidate window and MMR-reranks to `k`, balancing each item's taste score
+against redundancy (cosine) with the already-picked set (`_MMR_RELEVANCE=0.7`, quality-first).
+Windows scale with offset so pages stay **disjoint** — no cross-page duplicates from paging.
+Free: reuses embeddings already fetched, no GPU, no new dep, embeddings never leave the repo.
+Files: `catalog/retrieval.py` — `_mmr_rerank` + `_parse_vec`, `_BROWSE_TASTE` selects the
+embedding, `browse` over-fetches, `_run` gains an `mmr_k` path. Also fixed two pre-existing
+suite reds the cont.15/16 work left: `test_search_multi_slot_endpoint` didn't fake the
+taste/profile repos (open-auth → dev principal → real-pool `PoolTimeout`) and its fake `browse`
+lacked the `taste_vector` arg; `test_shopify_source` hardcoded INR-only currency (US/USD
+merchants were added for catalog breadth). 323 API tests green, ruff clean. Live-prod Explore
+smoke NOT run this session (no local pgvector with embeddings) — logic + wiring covered by unit
++ endpoint tests. Commit pending. Honest next layer: MMR is deterministic within a page; if
+intra-day *revisit* repetition is reported, SMMR sampling (non-deterministic) is the upgrade.
