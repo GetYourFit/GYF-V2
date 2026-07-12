@@ -2053,3 +2053,16 @@ cover unsafe schemes, credentials, ports, lookalike hosts, IPv4/IPv6 local targe
 redirect rejection, public fal CDN resolution, and oversized responses. Full API Ruff and test
 gates pass locally. The allow-list follows fal.ai's current Leffa output schema and should be
 reviewed if fal.ai documents another result CDN.
+
+### 2026-07-12 (cont. 11) — confirmed API dead paths removed
+
+**Audit finding:** application startup registered two competing catch-all exception handlers; only
+the observability handler remained effective. Catalog code also advertised an affiliate source
+whose only behavior was `NotImplementedError`, and configuration exposed an unused Cuelinks token.
+Infrastructure setup still instructed fresh databases to load the stale baseline SQL before
+Alembic, contradicting the container's migration-only contract.
+
+**Changed:** removed the shadowed handler, placeholder affiliate source, and unused secret setting.
+Fresh Supabase setup now runs `alembic upgrade head`, and Terraform guidance matches. Existing
+`DelimitedFeedSource` remains the working affiliate CSV/TSV path. Full API Ruff and 334-test gate
+pass locally.

@@ -2,9 +2,8 @@
 
 A :class:`FeedSource` yields :class:`RawFeedItem` records; ingestion
 (:mod:`app.catalog.ingest`) normalizes and upserts them. The first concrete
-source reads an open-dataset catalog from JSONL (zero licensing friction,
-genuinely functional now). :class:`AffiliateFeedSource` implements the same
-interface for real affiliate/retailer feeds and is wired as a second provider.
+source reads an open-dataset catalog from JSONL. Standard affiliate/retailer
+CSV and TSV exports use :class:`DelimitedFeedSource`.
 
 This mirrors the sink abstraction (:mod:`app.sink`): a ``Protocol`` with
 interchangeable backends and lazy/optional dependencies.
@@ -70,27 +69,6 @@ class OpenDatasetSource:
                 line = line.strip()
                 if line:
                     yield RawFeedItem.model_validate_json(line)
-
-
-class AffiliateFeedSource:
-    """Real affiliate/retailer product feed (CJ / Awin / Rakuten, …).
-
-    Implements the same :class:`FeedSource` interface so ingestion is identical
-    regardless of origin. The network client is imported lazily and the field
-    mapping is provided per network; not enabled for the beta cohort yet.
-    """
-
-    def __init__(self, provider: str, license: str, feed_url: str) -> None:
-        self.provider = provider
-        self.license = license
-        self._feed_url = feed_url
-
-    def fetch(self) -> Iterator[RawFeedItem]:
-        raise NotImplementedError(
-            "Affiliate feed ingestion is not enabled for the beta cohort. "
-            "Add the network-specific client + field mapping here, or use "
-            "DelimitedFeedSource for a standard CSV/TSV product feed."
-        )
 
 
 class DelimitedFeedSource:

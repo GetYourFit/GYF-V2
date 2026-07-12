@@ -41,8 +41,9 @@ terraform apply     # creates Supabase project + Upstash Redis
 After apply, initialize the database schema:
 
 ```bash
-# Using the Supabase SQL editor or psql with the output db host:
-psql "$DATABASE_URL" -f ../../services/api/db/schema.sql
+cd ../../services/api
+uv sync --extra postgres
+GYF_DATABASE_URL="$DATABASE_URL" uv run alembic upgrade head
 ```
 
 `terraform output` prints `supabase_project_id`, db host, redis endpoint.

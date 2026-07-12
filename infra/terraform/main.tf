@@ -24,9 +24,7 @@ resource "supabase_project" "db" {
   }
 }
 
-# Enable pgvector and baseline settings via the project's API settings.
-# (Apply the SQL in services/api/db/schema.sql after first provision; it
-#  runs `CREATE EXTENSION IF NOT EXISTS "vector";`.)
+# Alembic migrations initialize extensions and schema after provisioning.
 
 # --- Cache: Upstash Redis (free tier, scale-to-zero) ---
 resource "upstash_redis_database" "cache" {

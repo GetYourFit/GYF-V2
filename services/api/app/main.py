@@ -133,22 +133,6 @@ else:
     )
 
 
-@app.exception_handler(Exception)
-async def _unhandled_exception_handler(request, exc: Exception) -> JSONResponse:
-    """Turn any uncaught exception into a normal JSON response.
-
-    Starlette's default crash path (ServerErrorMiddleware) builds the 500 outside
-    the CORS middleware layer, so an uncaught exception ships with no
-    Access-Control-Allow-Origin header — the browser then reports a confusing
-    "blocked by CORS policy" instead of the real 500. Handling it here keeps the
-    response inside the normal middleware chain so CORS headers still apply.
-    """
-    logging.getLogger("gyf.unhandled").exception(
-        "Unhandled exception on %s %s", request.method, request.url.path
-    )
-    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
-
-
 def _media_root() -> Path | None:
     """Resolve the catalog-image directory, or ``None`` if it doesn't exist.
 

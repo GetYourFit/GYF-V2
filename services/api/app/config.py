@@ -120,9 +120,6 @@ class Settings(BaseSettings):
     # Cuelinks channel id (the `cid=` value in any deeplink the dashboard/API
     # generates). Unset = null linker: buy links pass through unwrapped.
     cuelinks_cid: str = ""
-    # Cuelinks publisher API token (My Account → API). Used by the conversions
-    # sync (transactions → purchase signal), not by link wrapping. Secret.
-    cuelinks_api_token: str = ""
 
     # --- Virtual try-on (M9, doctrine D2: licensed model at inference) ---
     # Rendering lane provider: "fal-leffa" (primary — MIT-licensed Leffa model,
