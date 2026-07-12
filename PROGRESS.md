@@ -2033,3 +2033,10 @@ cases. Added photo-study consent/capture protocol plus an uncoached signup-to-fi
 CSV observation sheet. Deliberately did not add a study platform or pollute ML `/feedback` events
 with product-funnel semantics. ECC was requested but unavailable in this session; doctrine gates,
 specialist audits, tests, and CI provide the available equivalent review loop.
+
+### 2026-07-12 (cont. 9) — ML platform promoted into CI
+
+The consent-manifest validator landed with local tests, exposing that CI covered doctrine scripts
+but never ran `ml/tests`. Added a lightweight ML job using existing Python 3.12 + `uv` base/dev
+dependencies, Ruff, and the full weightless test suite. Heavy optional perception runtimes remain
+outside this unit gate.
