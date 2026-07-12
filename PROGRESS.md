@@ -2021,3 +2021,15 @@ skin/body estimation remains intentionally unavailable because both default mode
 provenance/promotion gates before GPU inference. Owner unblocks remain: consented labelled photo
 data plus license review; a small licensed try-on eval budget; and either Render Starter for
 managed uptime or acceptance of best-effort free hosting.
+### 2026-07-12 (cont. 8) — Photo and usability studies made runnable
+
+**User asked:** fix highest-value actions #2 (photo evaluation data) and #5 (observed user tests),
+and explain why random internet images cannot replace consented data.
+
+**Implemented:** added a skin-tone-specific manifest validator enforcing explicit evaluation scope,
+consent receipt/version, retention, withdrawal, path safety, SHA-256, unique images, MST labels, and
+subject-safe splits; synthetic tests cover valid, unconsented, withdrawn, expired, and cross-split
+cases. Added photo-study consent/capture protocol plus an uncoached signup-to-first-outfit study and
+CSV observation sheet. Deliberately did not add a study platform or pollute ML `/feedback` events
+with product-funnel semantics. ECC was requested but unavailable in this session; doctrine gates,
+specialist audits, tests, and CI provide the available equivalent review loop.
