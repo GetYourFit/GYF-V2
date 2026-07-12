@@ -40,17 +40,29 @@ event spine feeds one scorecard; every change ships behind a flag and is promote
   dashboards + SLOs         experiments, IPS/interleave)  Scorecard" report     rollback drills
 ```
 
-- **Feature flags + experiments:** **GrowthBook** (open-source, free self-host, no usage cap, connects
-  flags → experiments → warehouse-native metrics). *Not Statsig* — mid-acquisition (OpenAI→Amplitude),
-  roadmap uncertain. *Not Unleash* — flags only, no experiment analysis. Every non-trivial change
-  (frontend, ranker, copy) ships behind a GrowthBook flag and is A/B'd.
-- **Observability:** **Grafana Faro** (browser RUM: auto Core Web Vitals, JS errors, sessions) +
-  **OpenTelemetry Collector** → **Tempo** (traces) + **Loki** (logs) + **Prometheus/Mimir** (metrics),
-  one unified browser→API→DB trace. GYF already has `@vercel/otel` + `prometheus-client` + planned
-  Sentry — this completes the loop. Grafana Cloud free tier first; self-host LGTM only if it pays off.
-- **ML online eval:** **interleaving** (show two rankers to the same user, see which gets the clicks) +
-  **SNIPS/DR IPS** counterfactual estimators (Open Bandit Pipeline `obp` as reference). Log **true
-  propensity only when serving is randomized** — a deterministic score is not a propensity.
+**Principle: adopt SOTA managed tools, do not hand-roll telemetry.** Ponytail rung 4/5 — a custom
+web-vitals endpoint, a custom event-analytics store, or a custom `scorecard.py` is exactly the junk to
+avoid when battle-tested managed tools (mostly free-tier) do it better with a few lines of glue.
+
+- **Frontend RUM (Core Web Vitals):** **Vercel Speed Insights** (`@vercel/speed-insights`) — one
+  framework component, real-user p75 LCP/INP/CLS **per route**. Zero custom endpoint/table/script; GYF
+  is already on Vercel. (Optionally `@vercel/analytics`, 1.2 KB, for pageviews.)
+- **Product analytics + funnels + flags + experiments + session replay:** **PostHog** (open-source,
+  all-in-one; free tier 1M events / 5K replays / 1M flag requests per month). One SDK gives funnels,
+  retention, error tracking, **feature flags + experiments** (sequential testing, CUPED, SRM), and
+  session replay — **replacing** GrowthBook + custom funnel SQL + a custom scorecard entirely. Every
+  non-trivial change (frontend, ranker, copy) ships behind a PostHog flag and is A/B'd; the funnel and
+  scorecard live in PostHog dashboards, not code we maintain. *Not Statsig* — mid-acquisition
+  (OpenAI→Amplitude). *Not GrowthBook-alone* — needs external SQL/warehouse glue PostHog avoids at our
+  stage.
+- **Errors + backend tracing:** **Sentry** (already wired in `app/telemetry.py`, just needs the DSN) —
+  errors + performance tracing + browser→API spans, auto-instruments the Vercel AI SDK. This replaces
+  standing up a self-hosted OTel Collector + Tempo/Loki/Grafana at beta scale (revisit LGTM self-host
+  only if Sentry/PostHog free tiers are outgrown). Keep the existing `/metrics` Prometheus endpoint.
+- **ML online eval:** **interleaving** (show two rankers to the same user, see which gets the clicks),
+  analyzed as a **PostHog experiment**, plus **SNIPS/DR IPS** counterfactual estimators (Open Bandit
+  Pipeline `obp`) for offline pre-checks. Log **true propensity only when serving is randomized** — a
+  deterministic score is not a propensity.
 
 ## 2. The GYF Scorecard — one number sheet, every layer
 
@@ -67,8 +79,10 @@ an experiment or a release. Thresholds are launch gates.
 | **Trust/quality** | confidence calibration, explanation quality (human eval), catalog freshness (% live image/price/embedding) | > 98% catalog freshness; calibrated confidence |
 | **Business** | affiliate CTR→conversion, revenue/retained user, **cost per retained user** | positive unit economics before scale spend |
 
-Deliverable: `scripts/scorecard.py` joins the event spine + Grafana/GrowthBook APIs into one weekly
-markdown/HTML report. This is the artifact that answers "how much better did we get?"
+Deliverable: **not a custom script** — the scorecard is a **PostHog dashboard** (funnels, retention,
+experiment lifts) + the **Vercel Speed Insights** tab (CWV) + Sentry (errors/latency), with one saved
+weekly view. Glue we own = firing the canonical events (S2) into PostHog; the reporting is the tool's
+job, not ours. This is the artifact that answers "how much better did we get?"
 
 ## 3. Per-layer SOTA target (current → target; upgrade, not rewrite)
 
@@ -115,9 +129,11 @@ no PII. Keep WebAuthn passkeys on the roadmap.
 
 ## 4. Phased execution (each phase exits on a scorecard threshold)
 
-- **S1 — Measurement spine (mostly code, startable now).** Faro RUM + OTel Collector + Tempo/Loki/
-  Prometheus; GrowthBook self-host + SDK in web/API; `scripts/scorecard.py` v1. *Exit:* one live
-  browser→API→DB trace; CWV + route-latency + one funnel visible in Grafana; first weekly Scorecard.
+- **S1 — Measurement spine (adopt, don't build; a few lines of glue + owner keys).** Add
+  `@vercel/speed-insights` (one component); wire the PostHog SDK in web + API (behind env keys) and
+  fire the existing events into it; set the Sentry DSN (code already present). *Exit:* CWV per route in
+  Vercel; one funnel + one session replay in PostHog; errors/latency in Sentry — all via managed tools,
+  ~no custom telemetry code. **Owner unlock:** PostHog + Sentry keys (both free-tier).
 - **S2 — Event spine / data moat (code = A-Z Phase C).** Canonical idempotent events (impressions,
   views, saves, shops, wardrobe, try-ons, purchases, corrections) with model version/rank/score/
   propensity-when-randomized. *Exit:* every visible action joins to an impression; dup-inflation tested.
@@ -135,9 +151,10 @@ no PII. Keep WebAuthn passkeys on the roadmap.
   for 1,000,000.
 
 ## 5. Code vs owner-gated
-- **Code (mine, startable now):** S1 measurement spine, S2 events, S3 flag wiring, S4 frontend polish,
-  S5 backend hardening, S6 photo clean baselines + ML ladder plumbing, `scripts/scorecard.py`.
-- **Owner-gated (yours):** Render Starter ($7/mo) · GrowthBook/Grafana Cloud account (or self-host box) ·
+- **Code (mine, startable now):** S1 SDK glue (Vercel Speed Insights component + PostHog SDK wiring +
+  Sentry init), S2 events → PostHog, S3 flag wiring, S4 frontend polish, S5 backend hardening, S6 photo
+  clean baselines + ML ladder plumbing. No custom telemetry store/scorecard — managed tools own that.
+- **Owner-gated (yours):** PostHog + Sentry free-tier keys (unblocks S1) · Render Starter ($7/mo) ·
   consented MST eval panel + model-license legal sign-off (photo AI) · try-on eval credits · RLS role +
   DSN flip.
 
@@ -148,8 +165,8 @@ noise + adds latency). Keep pgvector, FastAPI, Next.js, Supabase, Vercel. **Chan
 scorecard says to change** — that is the whole point of building the scorecard first.
 
 ## 7. Research anchors
-- Experimentation/flags (free self-host, experiment analysis): [GrowthBook](https://www.growthbook.io/).
-- Frontend RUM + unified trace: [Grafana Faro](https://grafana.com/products/cloud/frontend-observability/) + OTel → Tempo/Loki/Prometheus.
+- Analytics + funnels + flags + experiments + replay (all-in-one, free tier): [PostHog](https://posthog.com/pricing).
+- Frontend RUM / Core Web Vitals (native, one component): [Vercel Speed Insights](https://vercel.com/docs/speed-insights). Errors + tracing: Sentry.
 - Online rec eval: interleaving + IPS/SNIPS/DR — [Open Bandit Pipeline](https://arxiv.org/pdf/2008.07146),
   [CRM with IPS-weighted BPR + SNIPS (2025)](https://arxiv.org/abs/2509.00333).
 - Sequential recsys ladder: HSTU (2402.17152), TIGER (2305.05065), OneRec (2502.18965) — gated by data.
