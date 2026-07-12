@@ -33,7 +33,6 @@ const EXTRA_SKELETON_COUNT = 24;
 
 // A single click is deferred this long so a following second click can
 // cancel it and fire the double-click action instead.
-const CLICK_ARBITRATION_MS = 260;
 
 // How long the canvas must sit still before the bottom nav floats back in.
 const NAV_IDLE_MS = 350;
@@ -287,9 +286,6 @@ export function CanvasExplorer() {
   const offsetRef = useRef(0);
   const hasMoreRef = useRef(true);
   const loadingMoreRef = useRef(false);
-
-  // Single vs. double click arbitration, per the current pointer sequence.
-  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Whether the gesture that just ended was a drag, not a tap — read by the
   // click handler. Must live outside `pointer`, because onPointerUp nulls
@@ -818,15 +814,17 @@ export function CanvasExplorer() {
 
   const wasDrag = () => wasDragRef.current;
 
+  // Single click reclusters immediately — selectItem() sets selectedId synchronously, so the
+  // tile becomes the centerpiece on the next paint with no perceptible lag (the recluster's
+  // network fetch resolves behind that instant local relayout). No arbitration timer: a
+  // double-click's first click already reclusters around the item the detail sheet then opens,
+  // which is coherent. ponytail: that costs one superseded similar() fetch per detail-open
+  // (deduped by clusterToken) — suppress only if it ever shows up as a problem.
   const onTileClick = useCallback(
     (item: SearchResult) => {
       if (wasDrag()) return;
-      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = setTimeout(() => {
-        clickTimerRef.current = null;
-        navigator.vibrate?.(8); // light tick — single action confirmed
-        void selectItem(item);
-      }, CLICK_ARBITRATION_MS);
+      navigator.vibrate?.(8); // light tick — single action confirmed
+      void selectItem(item);
     },
     [selectItem],
   );
@@ -834,28 +832,24 @@ export function CanvasExplorer() {
   const onTileDoubleClick = useCallback(
     (item: SearchResult) => {
       if (wasDrag()) return;
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
-        clickTimerRef.current = null;
-      }
       navigator.vibrate?.([10, 30, 10]); // double pulse — zoom + info
       openDetail(item);
     },
     [openDetail],
   );
 
-  // Keyboard equivalent of the click/double-click arbitration (WCAG 2.1.1): browsers
-  // never synthesize dblclick from two keyboard activations, so without this a keyboard
-  // user could never open a tile's detail sheet (buy/save). First Enter/Space reclusters
-  // (after the arbitration delay); a second within the window opens the detail sheet.
+  // Keyboard equivalent (WCAG 2.1.1): browsers never synthesize dblclick from two keyboard
+  // activations, so without this a keyboard user could never open a tile's detail sheet
+  // (buy/save). First Enter/Space reclusters around the tile; a second on the now-selected
+  // centerpiece opens its detail sheet.
   const onTileKeyDown = useCallback(
     (e: React.KeyboardEvent, item: SearchResult) => {
       if (e.key !== "Enter" && e.key !== " ") return;
       e.preventDefault();
-      if (clickTimerRef.current) onTileDoubleClick(item);
+      if (selectedId === item.item_id) onTileDoubleClick(item);
       else onTileClick(item);
     },
-    [onTileClick, onTileDoubleClick],
+    [selectedId, onTileClick, onTileDoubleClick],
   );
 
   return (
