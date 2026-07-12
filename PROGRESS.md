@@ -2066,3 +2066,36 @@ Alembic, contradicting the container's migration-only contract.
 Fresh Supabase setup now runs `alembic upgrade head`, and Terraform guidance matches. Existing
 `DelimitedFeedSource` remains the working affiliate CSV/TSV path. Full API Ruff and 334-test gate
 pass locally.
+
+### 2026-07-12 (cont. 12) — Five named high-risk items triaged; #1 + #2 fixed
+
+**User asked:** audit + remove degraded/fake/outdated code, refactor to best principles,
+continue the plan, and address the five remaining high-risk items from the prior review.
+
+**Fixed (with tests, CI-gated, committed):**
+- **#2 ML backfill wrong model version** (18d9b48) — root cause: `perception_model` (URI) and
+  `perception_model_version` (label) were two independent config knobs that could drift, silently
+  stamping `item_embeddings.model_version` + attribute provenance wrong. Now the version is derived
+  from the registry (single source of truth) via new `production_card_for()`, which also enforces
+  production-lane + license/eval before a version is stamped; backfill fails loud on config drift.
+- **#1 Public ML Space bypasses promotion rules** (dd82183) — the ZeroGPU Space's hand-maintained
+  `ALLOWED_MODELS` set was never covered by the CI license gate, so a non-commercial checkpoint could
+  be slipped into the served lane. Added a CI guard asserting every allow-listed model maps to a
+  commercial-clean encoder card in the registry (research lane OK — it's the bake-off lane —
+  non-commercial not). Space comment now points at the enforcing test.
+
+**Junk removed:** deleted untracked dead `gyf_app/.../mock_discover_repository.dart` (imported by
+nothing; the tracked `discover_repository.dart` is the live one).
+
+**Triaged, deliberately NOT force-changed (honest report, not churn):**
+- **#3 Flutter production client** — Flutter is deliberately parked (Next.js web is the beta
+  product per the A-Z plan); promoting it to a real client is large, out-of-scope work, not a bug.
+- **#4 Canvas** — "delayed click" is the deliberate 260ms `CLICK_ARBITRATION_MS` single/double-click
+  disambiguation (a UX tradeoff, not a defect); the packing (`growCluster`) is coherent by design
+  (pure function of array order, incremental cache matches a fresh pack). No confirmed defect in the
+  current code; changing the click model is a design decision needing owner sign-off.
+- **#5 Runtime DB owner bypasses RLS** — by construction (migration 0006): the app path is protected
+  by explicit `WHERE user_id = %s` scoping in every repo, and RLS already covers the non-owner
+  Supabase/PostgREST surface today. Full enforcement (dedicated non-owner role + `SET LOCAL
+  app.current_user_id`) is an owner infra decision with lockout risk — documented follow-up, not a
+  live hole.
