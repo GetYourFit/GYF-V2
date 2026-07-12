@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import io
 
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -19,7 +20,12 @@ from app.dependencies import (
 from app.profile.account import InMemoryAccountRepository
 from app.tryon import NullTryOnRenderer, TryOnGarment, TryOnRender
 from app.tryon.fashn import FashnTryOnRenderer
-from app.tryon.fal_leffa import FalLeffaTryOnRenderer
+from app.tryon.fal_leffa import (
+    FalLeffaTryOnRenderer,
+    _fetch_bytes,
+    _SafeRedirectHandler,
+    _validate_result_url,
+)
 
 DEV_USER = "00000000-0000-0000-0000-000000000001"
 
@@ -197,6 +203,71 @@ def test_fal_leffa_partial_failure_returns_honest_partial():
 def test_fal_leffa_total_failure_abstains():
     render = _fal_renderer(_FakeFalTransport(fail_on_run=1)).render(b"p", _garments(_TOP))
     assert render.abstained and "failed" in render.reason
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://images.example/result.png",
+        "https://127.0.0.1/result.png",
+        "https://169.254.169.254/latest/meta-data",
+        "https://user:password@images.example/result.png",
+        "https://fal.media:8443/result.png",
+        "https://notfal.media.example/result.png",
+        "https://[::1]/result.png",
+    ],
+)
+def test_fal_result_url_rejects_unsafe_targets(url):
+    with pytest.raises(ValueError):
+        _validate_result_url(url)
+
+
+def test_fal_result_url_rejects_private_dns(monkeypatch):
+    monkeypatch.setattr(
+        "app.tryon.fal_leffa.socket.getaddrinfo",
+        lambda *_args, **_kwargs: [(None, None, None, None, ("10.0.0.8", 443))],
+    )
+    with pytest.raises(ValueError, match="not public"):
+        _validate_result_url("https://v3.fal.media/result.png")
+
+
+def test_fal_result_url_accepts_public_https(monkeypatch):
+    monkeypatch.setattr(
+        "app.tryon.fal_leffa.socket.getaddrinfo",
+        lambda *_args, **_kwargs: [(None, None, None, None, ("8.8.8.8", 443))],
+    )
+    _validate_result_url("https://v3.fal.media/result.png")
+
+
+def test_fal_result_redirect_rejects_non_vendor_target():
+    with pytest.raises(ValueError, match="fal.media"):
+        _SafeRedirectHandler().redirect_request(
+            None, None, 302, "Found", {}, "https://127.0.0.1/result.png"
+        )
+
+
+def test_fal_result_download_rejects_oversize(monkeypatch):
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self, size):
+            return b"x" * size
+
+    class Opener:
+        def open(self, *_args, **_kwargs):
+            return Response()
+
+    monkeypatch.setattr(
+        "app.tryon.fal_leffa.socket.getaddrinfo",
+        lambda *_args, **_kwargs: [(None, None, None, None, ("8.8.8.8", 443))],
+    )
+    monkeypatch.setattr("app.tryon.fal_leffa.urllib.request.build_opener", lambda *_: Opener())
+    with pytest.raises(ValueError, match="10 MiB"):
+        _fetch_bytes("https://fal.media/result.png")
 
 
 def test_tryon_provider_selection_covers_both_licensed_lanes(monkeypatch):

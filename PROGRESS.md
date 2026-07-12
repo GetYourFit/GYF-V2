@@ -2040,3 +2040,16 @@ The consent-manifest validator landed with local tests, exposing that CI covered
 but never ran `ml/tests`. Added a lightweight ML job using existing Python 3.12 + `uv` base/dev
 dependencies, Ruff, and the full weightless test suite. Heavy optional perception runtimes remain
 outside this unit gate.
+
+### 2026-07-12 (cont. 10) — fal.ai result downloads hardened
+
+**Audit finding:** the Leffa adapter fetched the result URL returned by fal.ai without restricting
+its destination, redirect chain, or response size. A compromised or malformed vendor response
+could therefore target internal services or exhaust API memory.
+
+**Changed:** hosted results must use `fal.media` or its subdomains over port 443, resolve only to
+public addresses, and remain under 10 MiB; every redirect is validated by the same policy. Tests
+cover unsafe schemes, credentials, ports, lookalike hosts, IPv4/IPv6 local targets, private DNS,
+redirect rejection, public fal CDN resolution, and oversized responses. Full API Ruff and test
+gates pass locally. The allow-list follows fal.ai's current Leffa output schema and should be
+reviewed if fal.ai documents another result CDN.

@@ -34,11 +34,14 @@ fully unit-testable without credits; the default uses stdlib urllib.
 from __future__ import annotations
 
 import base64
+import ipaddress
 import json
+import socket
 import time
 import urllib.error
 import urllib.request
 from typing import Callable, Sequence
+from urllib.parse import urlsplit
 
 from .renderer import TryOnGarment, TryOnRender
 
@@ -60,6 +63,8 @@ _SEQUENTIAL_DECAY = 0.9
 
 _POLL_INTERVAL_S = 2.0
 _TERMINAL = {"COMPLETED", "FAILED"}
+_MAX_RESULT_BYTES = 10 * 1024 * 1024
+_RESULT_HOST = "fal.media"
 
 Transport = Callable[[str, str, dict | None], dict]
 
@@ -82,9 +87,39 @@ def _urllib_transport(api_key: str, timeout_s: float) -> Transport:
     return call
 
 
+def _validate_result_url(url: str) -> None:
+    parsed = urlsplit(url)
+    hostname = parsed.hostname or ""
+    if (
+        parsed.scheme != "https"
+        or parsed.username
+        or parsed.password
+        or parsed.port not in (None, 443)
+        or (hostname != _RESULT_HOST and not hostname.endswith(f".{_RESULT_HOST}"))
+    ):
+        raise ValueError("try-on result URL must use fal.media HTTPS")
+    try:
+        addresses = socket.getaddrinfo(hostname, 443, type=socket.SOCK_STREAM)
+    except socket.gaierror as exc:
+        raise ValueError("try-on result host did not resolve") from exc
+    if not addresses or any(not ipaddress.ip_address(info[4][0]).is_global for info in addresses):
+        raise ValueError("try-on result host is not public")
+
+
+class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+        _validate_result_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def _fetch_bytes(url: str, timeout_s: float = 30.0) -> bytes:
-    with urllib.request.urlopen(url, timeout=timeout_s) as resp:  # noqa: S310 — vendor result URL
-        return resp.read()
+    _validate_result_url(url)
+    opener = urllib.request.build_opener(_SafeRedirectHandler())
+    with opener.open(url, timeout=timeout_s) as resp:  # noqa: S310 — validated above
+        image = resp.read(_MAX_RESULT_BYTES + 1)
+    if len(image) > _MAX_RESULT_BYTES:
+        raise ValueError("try-on result exceeded 10 MiB")
+    return image
 
 
 class FalLeffaTryOnRenderer:
