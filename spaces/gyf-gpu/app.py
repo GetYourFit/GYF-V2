@@ -26,8 +26,11 @@ import torch
 from PIL import Image
 
 # Models the lane is allowed to serve. Mirrors the GYF model registry's `encoder`
-# capability (incumbent + the M2 research candidates). Keep in sync with
-# models.registry.json — only commercial-clean (Apache-2.0) weights belong here.
+# capability (incumbent + the M2 research candidates). Only commercial-clean weights
+# belong here; research candidates are fine (this is the offline bake-off lane), but
+# nothing non-commercial. Enforced in CI by
+# test_gpu_space_allowlist_is_commercial_clean_per_registry — every entry must map to a
+# commercial-clean encoder card in models.registry.json.
 ALLOWED_MODELS = {
     "hf://Marqo/marqo-fashionSigLIP",  # production incumbent
     "hf-hub:Marqo/marqo-fashionSigLIP",  # open_clip-prefixed alias (config default)

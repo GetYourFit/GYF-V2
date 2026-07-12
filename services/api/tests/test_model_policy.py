@@ -103,6 +103,44 @@ def test_production_card_for_matches_the_live_perception_default():
     assert card.model_version == "google-siglip2-base-v1"
 
 
+def _space_allowed_models() -> set[str]:
+    """The GPU Space's ALLOWED_MODELS literal, read without importing its torch/gradio deps."""
+    import ast
+
+    src = (_REGISTRY.parent / "spaces" / "gyf-gpu" / "app.py").read_text(encoding="utf-8")
+    for node in ast.walk(ast.parse(src)):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == "ALLOWED_MODELS" for t in node.targets
+        ):
+            return set(ast.literal_eval(node.value))
+    raise AssertionError("ALLOWED_MODELS not found in spaces/gyf-gpu/app.py")
+
+
+def _norm_uri(uri: str) -> str:
+    # "hf://Marqo/x" and "hf-hub:Marqo/x" both denote the same HF repo "Marqo/x".
+    return uri.split(":", 1)[-1].lstrip("/")
+
+
+def test_gpu_space_allowlist_is_commercial_clean_per_registry():
+    """The public GPU Space serves research encoder candidates for bake-offs (legitimate), but its
+    hand-maintained allow-list is not covered by the CI license gate. Guard it: every model it may
+    load must map to a registry encoder card whose model *and* training-data licenses are
+    commercial-OK — so a non-commercial checkpoint can never be slipped into the served lane."""
+    clean = {
+        _norm_uri(c.model_uri): c
+        for c in load_registry(_REGISTRY)
+        if c.capability == "encoder"
+        and c.model_uri
+        and c.commercial_ok
+        and c.train_data_commercial_ok
+    }
+    for model_id in _space_allowed_models():
+        assert _norm_uri(model_id) in clean, (
+            f"Space allow-list has '{model_id}' with no commercial-clean encoder card in the "
+            f"registry — promotion rule bypassed"
+        )
+
+
 def test_known_non_commercial_models_are_quarantined_to_research():
     # FitDiT / IDM-VTON must never be production-tagged.
     by_name = {c.name: c for c in load_registry(_REGISTRY)}
