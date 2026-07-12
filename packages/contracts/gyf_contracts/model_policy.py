@@ -70,6 +70,30 @@ def is_servable(card: ModelCard, *, require_eval: bool = True) -> tuple[bool, li
     return (not reasons, reasons)
 
 
+def production_card_for(model_uri: str, cards: list[ModelCard] | None = None) -> ModelCard:
+    """The servable production card for ``model_uri``, or raise.
+
+    The registry is the single source of truth mapping a model URI to its version. Callers that
+    persist a ``model_version`` (e.g. the perception backfill writing ``item_embeddings``) resolve
+    it here instead of trusting an independent config knob, so a mismatched version can never be
+    stamped onto stored data. Fails loud when the URI is unregistered, not in the production lane,
+    not servable (license/eval — engineering-doctrine D2/D5), or missing a version.
+    """
+    cards = cards if cards is not None else load_registry()
+    for card in cards:
+        if card.model_uri != model_uri:
+            continue
+        if card.lane is not Lane.PRODUCTION:
+            raise ValueError(f"model '{model_uri}' is registered as '{card.lane.value}', not production")
+        ok, reasons = is_servable(card)
+        if not ok:
+            raise ValueError(f"model '{model_uri}' is not servable: {'; '.join(reasons)}")
+        if not card.model_version:
+            raise ValueError(f"production model '{model_uri}' has no model_version in the registry")
+        return card
+    raise ValueError(f"no production model registered for uri '{model_uri}'")
+
+
 def _coerce_card(d: dict) -> ModelCard:
     # Both flags are explicit: model code can be commercial while its training data is not.
     commercial_ok = d["commercial_ok"]

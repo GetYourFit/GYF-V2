@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gyf_contracts.model_policy import Lane, ModelCard, is_servable, load_registry
+import pytest
+
+from gyf_contracts.model_policy import (
+    Lane,
+    ModelCard,
+    is_servable,
+    load_registry,
+    production_card_for,
+)
 
 _REGISTRY = Path(__file__).resolve().parents[3] / "models.registry.json"
 
@@ -66,6 +74,33 @@ def test_live_registry_loads_and_every_production_model_is_servable():
         if c.lane is Lane.PRODUCTION:
             ok, reasons = is_servable(c)
             assert ok, f"{c.name} is production but not servable: {reasons}"
+
+
+def test_production_card_for_resolves_version_from_uri():
+    cards = [
+        _card(name="prod", model_uri="uri://prod", model_version="prod-v1"),
+        _card(name="old", lane=Lane.RESEARCH, model_uri="uri://old", model_version="old-v1"),
+    ]
+    assert production_card_for("uri://prod", cards).model_version == "prod-v1"
+
+
+def test_production_card_for_rejects_research_unknown_and_unservable():
+    cards = [
+        _card(name="research", lane=Lane.RESEARCH, model_uri="uri://r"),
+        _card(name="noneval", model_uri="uri://n", model_version="n-v1", eval_report=None),
+    ]
+    with pytest.raises(ValueError, match="not production"):
+        production_card_for("uri://r", cards)
+    with pytest.raises(ValueError, match="not servable"):
+        production_card_for("uri://n", cards)
+    with pytest.raises(ValueError, match="no production model registered"):
+        production_card_for("uri://missing", cards)
+
+
+def test_production_card_for_matches_the_live_perception_default():
+    # The backfill resolves the stamped version from this exact lookup; keep it green.
+    card = production_card_for("hf-hub:timm/ViT-B-16-SigLIP2", load_registry(_REGISTRY))
+    assert card.model_version == "google-siglip2-base-v1"
 
 
 def test_known_non_commercial_models_are_quarantined_to_research():

@@ -254,13 +254,25 @@ def main(argv: Iterable[str] | None = None) -> None:
         if not 0 <= i < n:
             parser.error("--shard must be i/n with 0 <= i < n")
         shard = (i, n)
+    # The version stamped onto every row must come from the model's registry identity, never a
+    # free-standing config knob that could silently drift from the URI actually loaded. Resolve it
+    # from the registry (also enforcing production-lane + license/eval), and fail loud if the
+    # configured version string disagrees — a misconfiguration, not something to persist.
+    from gyf_contracts.model_policy import production_card_for
+
+    model_version = production_card_for(settings.perception_model).model_version
+    if settings.perception_model_version != model_version:
+        parser.error(
+            f"GYF_PERCEPTION_MODEL_VERSION='{settings.perception_model_version}' disagrees with the "
+            f"registry version '{model_version}' for model '{settings.perception_model}'"
+        )
     store = PostgresBackfillStore(settings.database_url, shard=shard)
     perceptor = Perceptor(default_encoder())
     result = run_backfill(
         store,
         perceptor,
         default_image_loader,
-        settings.perception_model_version,
+        model_version,
         limit=args.limit,
         batch_size=settings.perception_batch_size,
         io_workers=settings.perception_io_workers,
