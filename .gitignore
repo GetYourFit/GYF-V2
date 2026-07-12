@@ -87,3 +87,11 @@ gan-harness/
 
 # runtime event sink (local/dev fallback; prod uses postgres)
 services/api/data/events.jsonl
+
+# Local agent/skill tooling caches (ECC/caveman/ponytail) — machine-local, never committed
+.agents/
+.cache-gh/
+skills-lock.json
+
+# e2e fixture data (regenerable; exports already ignored above)
+ml/data/e2e/
