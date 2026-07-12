@@ -2099,3 +2099,31 @@ nothing; the tracked `discover_repository.dart` is the live one).
   Supabase/PostgREST surface today. Full enforcement (dedicated non-owner role + `SET LOCAL
   app.current_user_id`) is an owner infra decision with lockout risk — documented follow-up, not a
   live hole.
+
+### 2026-07-12 (cont. 13) — #4 shipped, #5 resolved as built+proven, audit verdict
+
+**#4 Canvas delayed click — FIXED** (aaa56d5): dropped the 260ms `CLICK_ARBITRATION_MS`
+timer; single-click reclusters instantly (selectItem sets selectedId synchronously), double-
+click opens detail on top. Keyboard double-activation keys on already-selected. 50 web tests green.
+
+**Junk/hygiene** (13e4bfd): gitignored local agent/skill caches (.agents, .cache-gh=1.5GB,
+skills-lock.json, ml/data/e2e); deleted dead untracked Flutter mock earlier.
+
+**#5 RLS — RESOLVED as already built + proven, remainder owner-gated (no code shipped, by design):**
+- RLS policies exist (migration 0006) and `tests/test_rls.py` already PROVES cross-user isolation
+  via a real non-owner role + `app.current_user_id` GUC. App path is additionally scoped by explicit
+  `WHERE user_id=%s` everywhere. Not a live vulnerability.
+- The only remaining piece — connecting the app as a non-owner role so RLS binds the app path too —
+  is all-or-nothing: a non-owner role without per-request `SET LOCAL app.current_user_id` plumbing
+  turns a DSN flip into a trap (RLS denies all rows); the plumbing without a login role is inert.
+  Safe delivery = role + `rls_connection(pool,user_id)` wiring (~18 sites) + DSN flip landing
+  together, and the flip needs an owner credential + Supabase role. Building inert plumbing now =
+  speculative scaffolding + lockout risk (purge job, social feed) for zero security gain today.
+  **Deferred until owner commits to the flip** — then it lands as one coherent PR.
+
+**Audit verdict (live prod evidence, /system/status + /health):** app works as designed and reports
+itself honestly (D6). Prod live, DB ready, 63,549 items all priced+imaged, 57,040 embedded (6,509
+backlog). Recs + affiliate live; photo AI degraded→manual fallback; try-on planned (nothing implied).
+Remaining blockers are OWNER-gated (model licenses, consented photo data, try-on credits, DSN flip,
+Render Starter, backfill ops run) — not code. Repo confirmed LEAN; no fake/dead code beyond what was
+removed. Did not manufacture refactors on working lean code (ponytail).
