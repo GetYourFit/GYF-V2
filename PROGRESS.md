@@ -2258,3 +2258,19 @@ pass; dependency locks, standards, model-license/promotion/port doctrine, shell 
 single head/offline concurrent-index SQL, and diff/secret checks pass. A local PostgreSQL service and
 Flutter/Dart are unavailable, so GitHub CI must run those gates. No production performance or Space
 deployment claim is made here.
+
+### 2026-07-13 (cont. 4) — CI PostgreSQL gate green; candidates remain controlled
+
+Implementation commit `142661d` and its test-only psycopg cursor correction `66c714e` are pushed to
+`origin/main`. GitHub Actions run `29244454313` passed all six jobs: Core API applied migration 0015
+and ran the new seeded-browse test against real PostgreSQL; web build/tests, Flutter format/analyze/
+tests, ML, standards, and doctrine all passed. The first run correctly failed because the new fixture
+called `executemany` on a psycopg 3 connection instead of its cursor; production code and migrations
+were not the cause, and the corrected real-Postgres run is green.
+
+CD run `29244511692` passed its secret check but skipped Vercel deployment because its deployment
+secrets are absent. Render `/health` remains HTTP 200 with metrics and Sentry SDK initialization; the
+new browse query is still disabled by the committed false flag, so no unmeasured latency claim or
+production behavior change is made. Space deployment still needs the owner's write-scoped HF token,
+and production browse promotion still needs controlled flag-on latency/variety measurement plus
+representative `EXPLAIN (ANALYZE, BUFFERS)` evidence.
