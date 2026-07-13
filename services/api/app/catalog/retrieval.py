@@ -148,23 +148,68 @@ _GENDER_FILTER = (
 
 _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
 
-# Default-browse query: NO embedding, NO vector scan. The empty-state Explore feed
-# ("fashion") isn't a real query — running a remote-GPU text embed + HNSW scan for
-# it cost 5–18s on the free tier and 500'd the whole grid whenever the GPU Space
-# was cold. This is a plain catalogue read: priced items with images first, newest
-# next, deterministic id tiebreak so pages never overlap. Serves in tens of ms and
-# needs no ML runtime, so the grid fills even when the encoder lane is down.
-_BROWSE = """
+# Default browse: no embedding or vector scan. A fixed pseudorandom item rank is
+# indexed; the session seed chooses a cyclic pivot in that ordering. Each branch
+# returns at most ``k + offset`` candidates, but selective region/gender/category/
+# embedding filters can make its index scan examine more rows. Four branches preserve
+# the priced-first contract across the pivot wrap; latency requires deployed EXPLAIN.
+# ponytail: one fixed ring gives fresh starting windows but weaker neighbour diversity
+# than a full per-seed permutation. Add a measured multi-ring/cursor only if deployed
+# coverage/overlap regresses. OFFSET remains O(offset), capped by the API at 10,000.
+_BROWSE_INDEXED = """
+WITH browse_seed AS (
+  SELECT hashtextextended(%s::text, 0) AS pivot, (%s::integer + %s::integer) AS take
+), candidates AS (
+  (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
+          hashtextextended(i.id::text, 0) AS seed_rank
+   FROM items i CROSS JOIN browse_seed s
+   WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+     AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
+     AND i.price IS NOT NULL AND hashtextextended(i.id::text, 0) >= s.pivot
+     {region} {gender} {category}
+   ORDER BY seed_rank, i.id LIMIT (SELECT take FROM browse_seed))
+  UNION ALL
+  (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
+          hashtextextended(i.id::text, 0) AS seed_rank
+   FROM items i CROSS JOIN browse_seed s
+   WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+     AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
+     AND i.price IS NOT NULL AND hashtextextended(i.id::text, 0) < s.pivot
+     {region} {gender} {category}
+   ORDER BY seed_rank, i.id LIMIT (SELECT take FROM browse_seed))
+  UNION ALL
+  (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
+          hashtextextended(i.id::text, 0) AS seed_rank
+   FROM items i CROSS JOIN browse_seed s
+   WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+     AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
+     AND i.price IS NULL AND hashtextextended(i.id::text, 0) >= s.pivot
+     {region} {gender} {category}
+   ORDER BY seed_rank, i.id LIMIT (SELECT take FROM browse_seed))
+  UNION ALL
+  (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
+          hashtextextended(i.id::text, 0) AS seed_rank
+   FROM items i CROSS JOIN browse_seed s
+   WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+     AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
+     AND i.price IS NULL AND hashtextextended(i.id::text, 0) < s.pivot
+     {region} {gender} {category}
+   ORDER BY seed_rank, i.id LIMIT (SELECT take FROM browse_seed))
+)
+SELECT id, title, score, image_refs
+FROM candidates
+ORDER BY band, seed_rank, id
+LIMIT %s OFFSET %s
+"""
+
+# Current production path, retained behind the default-off candidate switch so a
+# deploy cannot promote an unmeasured query and rollback is one env-var change.
+_BROWSE_LEGACY = """
 SELECT i.id, i.title, 0.0 AS score, i.image_refs
 FROM items i
 WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
   AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
   {region} {gender} {category}
--- Variety, not recency: a fixed `created_at DESC` served every user the identical
--- page forever ("same products again and again, nothing new"). Shuffle by the
--- caller's seed (per browsing session) so every visit gets a fresh order — while
--- staying stable *within* a session so OFFSET pages never overlap or skip
--- mid-browse. Priced items still lead; `i.id` is the final tiebreak.
 ORDER BY (i.price IS NOT NULL) DESC, hashtext(i.id::text || %s), i.id
 LIMIT %s OFFSET %s
 """
@@ -252,12 +297,15 @@ def _mmr_rerank(
 class PostgresVectorSearchRepository:
     """pgvector-backed retrieval. Lazy pool, injectable for tests."""
 
-    def __init__(self, dsn: str, pool: object | None = None) -> None:
+    def __init__(
+        self, dsn: str, pool: object | None = None, *, indexed_browse: bool = False
+    ) -> None:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy
 
             pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
         self._pool = pool
+        self._indexed_browse = indexed_browse
 
     def similar_to_item(
         self,
@@ -392,18 +440,36 @@ class PostgresVectorSearchRepository:
             # HNSW scan: size ef_search to the deepest fetched row.
             return self._run(sql, tuple(params), depth=(k + offset) * _OVERFETCH, mmr_k=k)
         # Cold-start / anonymous path: plain relational read, no vector scan.
-        sql = _BROWSE.format(region=region_clause, gender=gender_clause, category=category_clause)
-        params = []
-        if region:
-            params.append(region)
-        if gender_list:
-            params.append(gender_list)
-        if categories:
-            params.append(categories)
+        browse_query = _BROWSE_INDEXED if self._indexed_browse else _BROWSE_LEGACY
+        sql = browse_query.format(
+            region=region_clause, gender=gender_clause, category=category_clause
+        )
         # No client seed → daily rotation, the old behavior.
         from datetime import date
 
-        params.extend([seed or str(date.today()), k, offset])
+        browse_seed = seed or str(date.today())
+        if not self._indexed_browse:
+            params = [browse_seed]
+            if region:
+                params.append(region)
+            if gender_list:
+                params.append(gender_list)
+            if categories:
+                params.append(categories)
+            params.extend([k, offset])
+            return self._run(sql, tuple(params))
+
+        params = [browse_seed, k, offset]
+        # The same optional predicates occur in each cyclic branch. Bind them in
+        # SQL order so every branch preserves the exact browse filter contract.
+        for _ in range(4):
+            if region:
+                params.append(region)
+            if gender_list:
+                params.append(gender_list)
+            if categories:
+                params.append(categories)
+        params.extend([k, offset])
         return self._run(sql, tuple(params))
 
     def keyword_search(

@@ -39,6 +39,10 @@ services:
       # dashboard, to make the launch-critical default impossible to forget.
       - key: GYF_EVENT_SINK
         value: postgres
+      # Candidate query stays off until deployed EXPLAIN/latency/variety gates pass.
+      # This switch is also the immediate rollback path during controlled evaluation.
+      - key: GYF_BROWSE_INDEXED_RING_ENABLED
+        value: "false"
       # Catalog images are served from a public Supabase Storage bucket (the
       # local /media mount is absent on Render), so image_url points at the CDN.
       - key: GYF_MEDIA_BASE_URL
@@ -88,7 +92,9 @@ services:
       - key: GYF_FASHN_API_KEY
         sync: false
       # --- Secrets: set in dashboard / `render` CLI, not committed ---
-      # The entrypoint runs `alembic upgrade head` on boot. DDL must NOT go through
+      # The entrypoint runs `alembic upgrade head` on boot. The current free service
+      # is a singleton; before adding replicas, move migrations to one serialized
+      # release job so multiple booting instances never race the same DDL. DDL must NOT go through
       # the transaction pooler (:6543) — pgbouncer transaction mode breaks Alembic's
       # locks/prepared statements. Use the :5432 session connection here (runtime
       # queries work over it too on free tier). A fresh Supabase DB also needs the

@@ -2207,3 +2207,54 @@ would regress session diversity, and production `EXPLAIN ANALYZE` evidence is no
 **Next owner inputs:** read-only production database access sufficient to run `EXPLAIN (ANALYZE,
 BUFFERS)` on the browse queries; optionally, an in-region encoder endpoint URL and token to evaluate
 against the current hosted encoder before any serving change.
+
+### 2026-07-13 (cont. 2) — Phase 3 plan reconciliation and current production truth
+
+Reconciled the existing canonical SOTA and A–Z plans; no competing plan was created. Production
+`/health` verifies that the Sentry SDK initialized (`sentry=true`); code configures 10% Sentry
+transaction sampling, but delivery still needs dashboard evidence. `tracing=false` is the separate
+OTLP path, not a statement that Sentry transaction sampling is disabled.
+Production catalog truth is 64,404 priced/imaged items, 61,772 embedded, and a 2,632-item backlog
+(95.9% embedding coverage).
+
+**Measurement/data status:** Phase C/S2 is partial, not absent and not complete. Stylist impression
+attribution plus retry-safe/idempotent feedback IDs are done. Explore item views, shop clicks,
+wardrobe actions, try-ons, purchases, corrections, and the daily signup→outfit→save→shop→purchase→D7
+funnel remain. PostHog token/host and retention/privacy approval are owner inputs; the remaining event
+emission and joins are code work.
+
+**Current candidates, not production claims:** the encoder-only Space now declares a 30-second text
+GPU ceiling and its deploy script mirrors exactly `README.md`, `app.py`, and `requirements.txt`,
+deleting retired remote files while preserving Hub `.gitattributes`. Deployment still requires the
+owner's write-scoped HF token. Cold browse now has a fixed-rank indexed-ring candidate instead of a
+per-seed full-catalog sort; promotion requires the real-Postgres CI property test, deployed warm p95
+under 500 ms, representative `EXPLAIN (ANALYZE, BUFFERS)`, and no first-page coverage or pairwise-
+overlap/variety regression. It remains default-off behind `GYF_BROWSE_INDEXED_RING_ENABLED`, which
+is also the immediate rollback switch. Keep migration 0013's historical index until production usage
+and plans prove it unused.
+
+**Photo alternative, not approved:** rank guided manual tone/styling-goal choices as production truth
+first; optionally add an opt-in on-device correction flywheel that uploads no pixels and retains only
+approved derived evidence. The owner has not approved this path, and neither self-corrections nor
+public datasets replace an independent consented target-user fairness set for production photo-
+accuracy claims. S4 frontend gates, S5 cursor-pagination target (current browse uses OFFSET) plus
+rate/cost/rollback work, A/B activation evidence, Phase C
+events, Phase D tracing/latency proof, Phase E backlog/SLOs, and Phase F evaluation remain explicitly
+split between code work and the owner decisions recorded in the two canonical plans.
+
+### 2026-07-13 (cont. 3) — Release blockers resolved; local gates pass
+
+The final independent audit caught and resolved four pre-push blockers. The indexed-ring browse
+candidate is now default-off behind `GYF_BROWSE_INDEXED_RING_ENABLED=false`; the legacy query remains
+the deployed default and the same flag is the rollback switch. Its real-Postgres property test now
+executes category, region, gender, and pagination together. The public encoder lab now rejects
+oversized/malformed input (16 images, 32 MiB aggregate base64, 8 MiB and 20 MP per image; 64 texts,
+2,000 characters each) and explicitly discloses that `embed_images` sends supplied pixels to the
+provider. Private/user photos are out of scope.
+
+Local verification after those fixes: API Ruff and 346 tests pass with four documented environment-
+dependent skips; web formatting/typecheck, 55 tests, and production build pass; ML Ruff and 83 tests
+pass; dependency locks, standards, model-license/promotion/port doctrine, shell syntax, Alembic's
+single head/offline concurrent-index SQL, and diff/secret checks pass. A local PostgreSQL service and
+Flutter/Dart are unavailable, so GitHub CI must run those gates. No production performance or Space
+deployment claim is made here.

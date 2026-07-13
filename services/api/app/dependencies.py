@@ -77,7 +77,9 @@ def get_search_repo() -> VectorSearchRepository:
     from .catalog.retrieval import PostgresVectorSearchRepository
 
     return PostgresVectorSearchRepository(
-        settings.database_url, pool=shared_pool(settings.database_url)
+        settings.database_url,
+        pool=shared_pool(settings.database_url),
+        indexed_browse=settings.browse_indexed_ring_enabled,
     )
 
 

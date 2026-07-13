@@ -7,8 +7,8 @@
 ## 0. Plain-English verdict
 
 GYF is not a failed rewrite. Auth, manual onboarding, personalized Explore, outfit generation,
-wardrobe, social, affiliate links, and a large catalog exist. Production currently reports 59,072
-items, 49,204 embedded, all with prices and images. US merchants are seeded. Next.js web is the
+wardrobe, social, affiliate links, and a large catalog exist. Production currently reports 64,404
+items, 61,772 embedded, all with prices and images (2,632 pending embeddings; 95.9% complete). US merchants are seeded. Next.js web is the
 beta product; Flutter is deliberately parked.
 
 Four things stop it feeling like a million-dollar product:
@@ -16,10 +16,12 @@ Four things stop it feeling like a million-dollar product:
 1. Photo body/skin estimation is blocked before inference by the model registry: current weights
    lack a complete commercial-data chain and passing evaluations. More GPU credits do not fix it.
 2. The free Render API can sleep. First-user latency cannot be both guaranteed and free.
-3. Explore behavior is not yet a complete learning loop. Missing view/save/shop/impression data
-   means a larger recommender would learn from incomplete evidence.
-4. Operational proof is thin: no live Sentry/tracing, load-test result, frozen person-photo eval
-   set, or million-user capacity evidence.
+3. Explore behavior is not yet a complete learning loop. Stylist impression attribution and
+   retry-safe feedback are done; Explore views/shops, wardrobe, try-on, purchase, correction, and
+   funnel events remain, so a larger recommender would still learn from incomplete evidence.
+4. Operational proof is partial: `/health` proves the Sentry SDK initialized with 10% transaction
+   sampling configured, not that events were delivered; separate OTLP tracing is false. There is no
+   load-test result, frozen person-photo eval set, or million-user capacity evidence.
 
 The v6 production trace also found that first-time authenticated Explore browse synchronously
 called the remote text encoder before its catalog query. That made a nominally cheap read take the
@@ -79,6 +81,10 @@ is exercised end to end.
 
 Owner/tradeoff: product and legal approve claims/retention; less magical copy buys trust and safety.
 
+Current split: status honesty, fail-closed model policy, deterministic CI, browser zoom, and web tests
+are done. Consent versioning/hard-purge monitoring remain code work; privacy/retention copy, the RLS
+role/DSN cutover, and any photo claim remain owner/legal decisions.
+
 ### Phase B — Activation and seamless onboarding
 
 - Store identity separately from styling completion. Add explicit onboarding completion state.
@@ -92,6 +98,10 @@ Exit: at least 70% signup-to-first-outfit; median under two minutes; no blank pr
 treated as fully onboarded.
 
 Owner/tradeoff: product recruits observed testers; shorter intake delays optional personalization.
+
+Current split: the short manual path and correction controls exist. Explicit completion state,
+browser-side photo quality gates, and measured activation exits remain code/evidence work; recruiting
+the 5–10 uncoached target users remains owner work.
 
 ### Phase C — Complete the data moat
 
@@ -109,6 +119,10 @@ from Explore behavior, not only Stylist feedback. This first-party outcome graph
 
 Owner/tradeoff: engineering defines event semantics; more events require retention/privacy limits.
 
+Current: Stylist impressions/feedback attribution and retry-safe event IDs are done. Explore item
+views, shop clicks, wardrobe actions, try-ons, purchases, corrections, and the daily funnel remain.
+PostHog provisioning and retention/privacy approval are owner inputs; event emission and joins are code.
+
 ### Phase D — Instant beta and observability
 
 - Cheapest zero-dollar always-on option: Oracle OCI Always Free ARM VM (aggregate 2 OCPU/12 GB
@@ -119,7 +133,8 @@ Owner/tradeoff: engineering defines event semantics; more events require retenti
 - Scale later: Cloud Run with minimum instances when load tests prove horizontal demand. Its
   scale-to-zero free allowance is economical, not always-on; Google's published example puts
   10M requests/month at roughly $82 for a 400 ms, 1 vCPU/512 MiB workload.
-- Enable Sentry/tracing, DB pool-wait metrics, route p50/p95, and alerts. Profile anonymous,
+- Keep the Sentry SDK initialized and verify delivery in its dashboard; enable separate OTLP tracing
+  only with an approved collector, then add DB pool-wait metrics, route p50/p95, and alerts. Profile anonymous,
   learned-taste, and zero-shot Explore independently before adding indexes/services.
 
 Exit: browse warm p95 below 500 ms; outfit generation p95 below 2 s excluding deliberate async
@@ -127,18 +142,33 @@ ML; error rate below 1%; alert and rollback drill pass.
 
 Owner/tradeoff: owner chooses ~$7 managed uptime or self-managed free hosting and on-call work.
 
+Current: `/health` verifies Sentry SDK initialization (`sentry=true`), with 10% transaction sampling
+configured in code; delivery is not yet evidenced. `tracing=false` refers to the separate OTLP path.
+The encoder-only Space quota candidate
+uses a 30-second text ceiling and a three-file mirrored deploy; it is not deployed until the owner
+supplies a write-scoped HF token. The fixed-rank indexed-ring browse candidate remains default-off
+behind `GYF_BROWSE_INDEXED_RING_ENABLED` (also its rollback switch) and must pass the real-
+Postgres CI property test, deployed warm p95 <500 ms, representative `EXPLAIN (ANALYZE, BUFFERS)`,
+and first-page coverage/variety comparisons before promotion; keep the historical index until usage
+evidence says otherwise.
+
 ### Phase E — Catalog freshness and relevance
 
-- Drain the remaining 9,868 embedding backlog and prevent recurrence with freshness SLOs.
+- Drain the remaining 2,632 embedding backlog (61,772/64,404 embedded; 95.9%) and prevent recurrence
+  with freshness SLOs.
 - Gate ingest on image/buy-link/price/stock quality; monitor dead links, duplicates, gender/kids,
   region/currency, and attribute coverage.
-- Keep pgvector. Do not add another vector database while 59k items fit comfortably.
+- Keep pgvector. Do not add another vector database while 64,404 items fit comfortably.
 - Use schema-validated VLM enrichment only after a fixed human-labeled catalog eval exists.
 
 Exit: over 98% live images, prices, embeddings, and required attributes; bounded ingest-to-search
 lag; human first-page relevance and diversity pass for key personas.
 
 Owner/tradeoff: catalog ops owns freshness; strict gates may temporarily reduce visible breadth.
+
+Current split: price/image coverage is 64,404/64,404 and embedding coverage is 95.9%. Draining and
+keeping the 2,632-item backlog bounded is catalog operations work; freshness alarms/SLO enforcement
+remain code.
 
 ### Phase F — Production photo AI
 
@@ -154,6 +184,11 @@ gap 3.2 reaches <=1.0; commercial model and training-data rights are documented.
 
 Owner unblock: provide/approve a labeled, consented photo set and legal review of model/dataset
 licenses. HF Pro or another GPU only matters after these gates can pass.
+
+Ranked alternative awaiting owner approval: keep guided manual tone and styling-goal choices as
+production truth, then optionally collect consented corrections from on-device inference without
+uploading pixels. This can build product-domain evidence cheaply, but self-labels/public datasets do
+not replace an independent target-user fairness set for a production photo-accuracy claim.
 
 ### Phase G — Data-gated learned ranking
 
@@ -186,7 +221,8 @@ Owner unblock: fund a small eval credit pool and approve vendor/privacy terms.
 ### Phase I — Earned million-user scale
 
 - Load-test 1x, 10x, and 100x. Then add stateless replicas, transaction pooling, shared rate
-  limits, cursor pagination, queue/DLQ for ML, event retention/partitioning, and upgraded DB/auth.
+  limits, cursor pagination (current browse uses OFFSET), queue/DLQ for ML, event
+  retention/partitioning, and upgraded DB/auth.
 - CDN/cache catalog media and public reads. Set per-user cost ceilings and abuse quotas.
 - Do not add Kubernetes, Kafka, or a separate vector DB before a measured bottleneck requires it.
 

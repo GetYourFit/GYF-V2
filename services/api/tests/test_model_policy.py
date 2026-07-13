@@ -116,6 +116,40 @@ def _space_allowed_models() -> set[str]:
     raise AssertionError("ALLOWED_MODELS not found in spaces/gyf-gpu/app.py")
 
 
+def _space_input_guards() -> dict[str, object]:
+    """Load only the Space's small input guards, never its GPU/model dependencies."""
+    import ast
+    import base64
+    import binascii
+    import io
+
+    from PIL import Image
+
+    path = _REGISTRY.parent / "spaces" / "gyf-gpu" / "app.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    wanted = {
+        "_MAX_IMAGE_BATCH",
+        "_MAX_TEXT_BATCH",
+        "_MAX_IMAGE_BYTES",
+        "_MAX_IMAGE_PIXELS",
+        "_MAX_TEXT_CHARS",
+        "_MAX_IMAGE_B64_CHARS",
+        "_MAX_IMAGE_REQUEST_B64_CHARS",
+        "_validate_images",
+        "_validate_texts",
+        "_decode_image",
+    }
+    body = [
+        node
+        for node in tree.body
+        if (isinstance(node, ast.Assign) and any(name.id in wanted for name in node.targets))
+        or (isinstance(node, ast.FunctionDef) and node.name in wanted)
+    ]
+    namespace = {"base64": base64, "binascii": binascii, "io": io, "Image": Image}
+    exec(compile(ast.Module(body=body, type_ignores=[]), str(path), "exec"), namespace)
+    return namespace
+
+
 def _norm_uri(uri: str) -> str:
     # "hf://Marqo/x" and "hf-hub:Marqo/x" both denote the same HF repo "Marqo/x".
     return uri.split(":", 1)[-1].lstrip("/")
@@ -155,9 +189,100 @@ def test_gpu_space_is_an_encoder_lab_not_a_production_or_photo_surface():
     }
     assert api_names == {"embed_images", "embed_texts"}
 
+    embed_texts = next(
+        node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "embed_texts"
+    )
+    gpu_decorator = next(
+        decorator
+        for decorator in embed_texts.decorator_list
+        if isinstance(decorator, ast.Call)
+        and isinstance(decorator.func, ast.Attribute)
+        and decorator.func.attr == "GPU"
+    )
+    assert {keyword.arg: ast.literal_eval(keyword.value) for keyword in gpu_decorator.keywords} == {
+        "duration": 30
+    }
+
+    deploy = (_REGISTRY.parent / "scripts" / "deploy_gpu_space.sh").read_text(encoding="utf-8")
+    deploy_python = deploy.split("<<'PY'\n", 1)[1].split("\nPY\n", 1)[0]
+    upload = next(
+        node
+        for node in ast.walk(ast.parse(deploy_python))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "upload_folder"
+    )
+    upload_options = {
+        keyword.arg: ast.literal_eval(keyword.value)
+        for keyword in upload.keywords
+        if keyword.arg in {"allow_patterns", "delete_patterns"}
+    }
+    assert upload_options == {
+        "allow_patterns": ["README.md", "app.py", "requirements.txt"],
+        "delete_patterns": "*",
+    }
+
     readme = (space / "README.md").read_text(encoding="utf-8").lower()
     assert "inference lab" in readme
     assert "not a production serving path" in readme
+
+
+def test_gpu_space_rejects_oversized_or_malformed_public_inputs(monkeypatch):
+    import base64
+    import io
+
+    from PIL import Image
+
+    guard = _space_input_guards()
+    validate_images = guard["_validate_images"]
+    validate_texts = guard["_validate_texts"]
+    decode_image = guard["_decode_image"]
+
+    validate_images([])
+    validate_texts([])
+    assert guard["_MAX_IMAGE_BATCH"] == 16
+    assert guard["_MAX_TEXT_BATCH"] == 64
+    assert guard["_MAX_IMAGE_REQUEST_B64_CHARS"] == 32 * 1024 * 1024
+    with pytest.raises(ValueError, match="batch exceeds"):
+        validate_images([""] * (guard["_MAX_IMAGE_BATCH"] + 1))
+    with pytest.raises(ValueError, match="batch exceeds"):
+        validate_texts([""] * (guard["_MAX_TEXT_BATCH"] + 1))
+    with pytest.raises(ValueError, match="base64 string"):
+        validate_images([1])
+    guard["_MAX_IMAGE_REQUEST_B64_CHARS"] = 3
+    with pytest.raises(ValueError, match="request"):
+        validate_images(["aa", "aa"])
+    with pytest.raises(ValueError, match="must be a string"):
+        validate_texts([1])
+    with pytest.raises(ValueError, match="characters"):
+        validate_texts(["x" * (guard["_MAX_TEXT_CHARS"] + 1)])
+    with pytest.raises(ValueError, match="valid base64"):
+        decode_image("not base64")
+
+    image_bytes = io.BytesIO()
+    Image.new("RGB", (1, 1)).save(image_bytes, format="PNG")
+    assert decode_image(base64.b64encode(image_bytes.getvalue()).decode()).size == (1, 1)
+
+    guard["_MAX_IMAGE_BYTES"] = 2
+    with pytest.raises(ValueError, match="decoded image"):
+        decode_image(base64.b64encode(b"abc").decode())
+
+    class OversizedImage:
+        width = guard["_MAX_IMAGE_PIXELS"] + 1
+        height = 1
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+    guard["_MAX_IMAGE_BYTES"] = 8 * 1024 * 1024
+    monkeypatch.setattr(guard["Image"], "open", lambda _stream: OversizedImage())
+    with pytest.raises(ValueError, match="pixels"):
+        decode_image(base64.b64encode(b"header").decode())
 
 
 def test_known_non_commercial_models_are_quarantined_to_research():

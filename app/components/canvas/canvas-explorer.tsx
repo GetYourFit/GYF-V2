@@ -366,8 +366,8 @@ export function CanvasExplorer() {
         new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), PROFILE_WAIT_MS)),
       ]);
       genderRef.current = gender;
-      // Cheap catalogue read — no text embed, no vector scan, no ML runtime, so
-      // the canvas fills in tens of ms and works even when the GPU lane is cold.
+      // Catalogue read with no text embed/vector scan; it remains available when
+      // the GPU lane is cold. Deployed latency is measured separately.
       const results = await api.browse({
         k: 96,
         slots: BROWSE_SLOTS.join(","),

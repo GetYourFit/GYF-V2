@@ -40,7 +40,7 @@ class FakePool:
 
 def test_similar_sql_excludes_self_and_orders_by_distance():
     pool = FakePool([("22222222", "Other Tee", 0.91, ["/imgs/22222222.jpg"])])
-    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
     results = repo.similar_to_item("11111111", k=5, region=None)
 
     sql, params = pool.calls[-1]
@@ -70,7 +70,7 @@ def test_browse_personalizes_by_taste_vector():
     """With a taste vector, Explore browse ranks by cosine to it (two-tower content
     retrieval) instead of the plain rotating read — the SOTA personalized path."""
     pool = FakePool([])
-    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
     taste = [0.1] * 768
 
     repo.browse(categories=None, k=10, region=None, taste_vector=taste)
@@ -82,7 +82,43 @@ def test_browse_personalizes_by_taste_vector():
     repo.browse(categories=None, k=10, region=None)  # no taste -> cold-start path
     cold_sql, _ = pool.calls[-1]
     assert "embedding <=>" not in cold_sql.split("ORDER BY")[1]  # not a vector scan
-    assert "hashtext(i.id::text || %s)" in cold_sql  # session-seeded shuffle
+    assert "hashtextextended(i.id::text, 0)" in cold_sql  # indexed fixed random rank
+
+
+def test_indexed_browse_candidate_is_default_off():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+
+    repo.browse(categories=None, k=10, region=None, seed="session-a")
+
+    sql, params = pool.calls[-1]
+    assert "hashtext(i.id::text || %s)" in sql
+    assert "browse_seed" not in sql
+    assert params == ("session-a", 10, 0)
+
+
+def test_cold_browse_uses_four_bounded_seeded_index_windows():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+
+    repo.browse(
+        categories=["shirt"],
+        k=6,
+        region="IN",
+        offset=12,
+        genders=frozenset({"unisex", "men"}),
+        seed="session-a",
+    )
+
+    sql, params = pool.calls[-1]
+    assert "hashtext(i.id::text ||" not in sql  # no per-seed whole-catalog sort
+    assert sql.count("LIMIT (SELECT take FROM browse_seed)") == 4
+    assert sql.count("i.price IS NOT NULL") == 2
+    assert sql.count("i.price IS NULL") == 2
+    assert sql.count("hashtextextended(i.id::text, 0) >= s.pivot") == 2
+    assert sql.count("hashtextextended(i.id::text, 0) < s.pivot") == 2
+    branch_filters = ["IN", ["men", "unisex"], ["shirt"]] * 4
+    assert params == ("session-a", 6, 12, *branch_filters, 6, 12)
 
 
 def test_mmr_rerank_breaks_near_duplicate_run():

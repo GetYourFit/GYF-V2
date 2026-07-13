@@ -202,9 +202,9 @@ export class GyfApi {
   }
 
   /** Empty-state catalogue feed — NO text embedding, NO vector scan (unlike
-   *  `search`). Serves in tens of ms and works even when the ML lane is cold, so
-   *  the default Explore/canvas grid fills instantly. Use for the unqueried view;
-   *  switch to `search` the moment the user types a real query. */
+   *  `search`). Works when the ML lane is cold; deployed latency is measured at
+   *  the database/API boundary. Use for the unqueried view, and switch to `search`
+   *  the moment the user types a real query. */
   browse(
     params: Omit<SearchParams, "sort" | "max_price"> = {},
     signal?: AbortSignal,

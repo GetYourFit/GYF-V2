@@ -238,6 +238,26 @@ CREATE UNIQUE INDEX uq_interactions_event_id ON public.interactions USING btree 
 CREATE INDEX idx_item_embeddings_hnsw ON public.item_embeddings USING hnsw (embedding public.vector_cosine_ops);
 
 
+-- Name: idx_items_browse; Type: INDEX; Schema: public; Owner: -
+
+CREATE INDEX idx_items_browse ON public.items USING btree (category, ((price IS NOT NULL)) DESC, created_at DESC, id) WHERE ((category <> 'unknown'::text) AND (jsonb_array_length(image_refs) > 0));
+
+
+-- Name: idx_items_browse_seed_rank; Type: INDEX; Schema: public; Owner: -
+
+CREATE INDEX idx_items_browse_seed_rank ON public.items USING btree (((price IS NOT NULL)) DESC, hashtextextended((id)::text, (0)::bigint), id) WHERE ((category <> 'unknown'::text) AND (jsonb_array_length(image_refs) > 0));
+
+
+-- Name: idx_items_gender; Type: INDEX; Schema: public; Owner: -
+
+CREATE INDEX idx_items_gender ON public.items USING btree (((attributes #>> '{taxonomy,gender}'::text[])));
+
+
+-- Name: idx_items_region_tags; Type: INDEX; Schema: public; Owner: -
+
+CREATE INDEX idx_items_region_tags ON public.items USING gin (region_tags);
+
+
 -- Name: uq_items_dedupe_key; Type: INDEX; Schema: public; Owner: -
 
 CREATE UNIQUE INDEX uq_items_dedupe_key ON public.items USING btree (dedupe_key);

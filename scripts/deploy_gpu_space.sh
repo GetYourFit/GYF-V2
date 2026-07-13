@@ -43,8 +43,15 @@ api.create_repo(
     space_hardware=hardware,
     exist_ok=True,
 )
-# Push app.py + requirements.txt + README.md (README frontmatter sets the Space config).
-api.upload_folder(repo_id=repo_id, repo_type="space", folder_path=src)
+# Mirror the canonical folder atomically. Hugging Face preserves .gitattributes while
+# deleting remote-only files, so retired endpoints cannot survive a redeploy.
+api.upload_folder(
+    repo_id=repo_id,
+    repo_type="space",
+    folder_path=src,
+    allow_patterns=["README.md", "app.py", "requirements.txt"],
+    delete_patterns="*",
+)
 print(f"[deploy] done -> https://huggingface.co/spaces/{repo_id}")
 print(f"[deploy] endpoint URL: https://{repo_id.replace('/', '-')}.hf.space")
 PY

@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     # permitting) as beta traffic grows. Env: GYF_DB_POOL_MAX_SIZE.
     db_pool_max_size: int = 10
 
+    # Candidate cold-browse index path. Default-off until the deployed latency,
+    # query-plan, and variety gates pass; flipping this env var is also the
+    # immediate rollback switch if production measurements regress.
+    browse_indexed_ring_enabled: bool = False
+
     # --- Photo onboarding (P1-B Cycles 2 & 3) ---
     # Max accepted upload size for POST /profile/photo (bytes); larger is rejected
     # before decode so an oversized image can't exhaust memory. Default 10 MiB.

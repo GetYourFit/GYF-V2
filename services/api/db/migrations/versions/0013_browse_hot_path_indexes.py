@@ -1,12 +1,10 @@
 """Indexes for the browse/search hot path the 2026-07-09 perf+DB audit found missing.
 
-``idx_items_browse`` — the single busiest query in the app (``_BROWSE``, the empty-state
-Explore/Canvas feed, fanned out 4x per page) orders by
-``(price IS NOT NULL) DESC, created_at DESC, id`` with no matching index, so every
-call did a full sort of the filtered set before OFFSET/LIMIT. A partial composite
-index on that exact sort key (predicate is immutable per row once ingested) turns it
-into an index scan. The leading ``category`` column also serves the ``<> 'unknown'``
-/ ``= ANY(...)`` equality lookups, superseding the single-column ``idx_items_category``.
+``idx_items_browse`` matched the recency-ordered empty-state Explore/Canvas feed
+that existed when this migration shipped. Migration 0015 adds the index for the
+later session-seeded order; this index remains until production plans prove it is
+unused via ``pg_stat_user_indexes`` plus representative production ``EXPLAIN`` plans.
+Its leading ``category`` column also superseded ``idx_items_category``.
 
 ``idx_items_region_tags`` (GIN) — region-scoped browse/search/facets filter on
 ``region_tags @> ARRAY[...]`` (rewritten from the non-sargable ``= ANY(col)`` form in
@@ -34,8 +32,8 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # Matches _BROWSE's ORDER BY exactly; partial on its immutable WHERE so the
-    # index is small and covers only rows the feed can ever return.
+    # Historical recency browse index. Kept after 0015 until pg_stat_user_indexes
+    # and representative production EXPLAIN plans prove it unused.
     op.execute(
         "CREATE INDEX idx_items_browse ON items "
         "(category, (price IS NOT NULL) DESC, created_at DESC, id) "

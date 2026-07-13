@@ -200,8 +200,8 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
         if (plainBrowse) {
           // NOT a real query, so never pay a text embed + vector scan (5–18s on the
           // free tier; 500'd the grid when the GPU lane was cold). Plain catalogue
-          // read — tens of ms, no ML — interleaved across slots. offset is the
-          // GLOBAL count shown (pageNum * PAGE_SIZE); the server splits it per slot.
+          // read — no ML dependency — interleaved across slots. offset is the GLOBAL
+          // count shown (pageNum * PAGE_SIZE); the server splits it per slot.
           results = await api.browse(
             {
               k: PAGE_SIZE,

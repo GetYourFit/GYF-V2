@@ -57,6 +57,14 @@ GPU host you like:
 Deploy `spaces/gyf-gpu/` (Gradio: `app.py` + `requirements.txt`), then point the stack at it:
 
 ```bash
+HF_TOKEN=hf_... HF_USER=<your-hf-username> bash scripts/deploy_gpu_space.sh
+```
+
+`HF_TOKEN` needs write access for this deployment; do not put it in source control. The script
+atomically mirrors the canonical folder, deleting remote-only retired code while preserving the
+Hub-managed `.gitattributes` file.
+
+```bash
 GYF_ENCODER_REMOTE_URL=https://<your-endpoint>   # e.g. https://<user>-gyf-gpu.hf.space
 GYF_HF_TOKEN=hf_...                              # only if the endpoint is private
 ```
@@ -64,6 +72,13 @@ GYF_HF_TOKEN=hf_...                              # only if the endpoint is priva
 Now `default_encoder()` and the bake-off can embed through that GPU with **zero code changes**;
 unset the var to fall back to local. The Space's `ALLOWED_MODELS` must stay in sync with
 commercial-clean `encoder` entries in `models.registry.json`; CI enforces that boundary.
+
+The text endpoint declares `duration=30`: ZeroGPU checks and reserves the declared ceiling before
+running a request, and shorter realistic durations receive better queue priority. Validate a new
+revision with 20 fixed queries, one cold plus three warm rounds: zero errors, 768-dimensional
+vectors, remote p50/p95 ≤0.75s/1.5s, and API semantic-search p50/p95 ≤2s/3s. If any quality,
+shape, availability, or latency gate regresses, restore the previous Space revision and restart the
+API so its process-wide client reconnects.
 
 ### Smoke test
 ```python
