@@ -2191,3 +2191,19 @@ probe, and the three real-Postgres checks.
 migrated `GYF_TEST_DATABASE_URL`; consented labeled photo evaluation data plus legal/license signoff;
 a licensed try-on provider key and evaluation budget; and the Render uptime decision (free cold
 starts versus paid always-on). No deployment, commit, or push is claimed in this entry.
+
+### 2026-07-13 (cont. 1) — Changes pushed, CI green, production latency profiled
+
+Commits `83149a1` and `e09f650` are pushed to `origin/main`. GitHub Actions run `29236519432`
+passed all six jobs, including real-Postgres migrations/tests and Flutter analysis/tests.
+
+Production browse timings were 8.456/3.258/1.957/2.004/1.314s (p50 2.004s); cached `red dress`
+search p50 was 1.272s, five distinct semantic searches p50 2.646s, and the hosted Hugging Face
+encoder took about 1.10s median. Browse performs four concurrent full `hashtext(id || seed)` sorts;
+the `created_at` index from migration 0013 cannot serve that ordering. Semantic search has a remote
+network/inference floor around 1.1–1.5s. No code was changed: replacing seeded variety with recency
+would regress session diversity, and production `EXPLAIN ANALYZE` evidence is not yet available.
+
+**Next owner inputs:** read-only production database access sufficient to run `EXPLAIN (ANALYZE,
+BUFFERS)` on the browse queries; optionally, an in-region encoder endpoint URL and token to evaluate
+against the current hosted encoder before any serving change.
