@@ -18,7 +18,8 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
     ids = [UUID(int=i + 1) for i in range(16)]
     embedding = "[1," + ",".join(["0"] * 767) + "]"
     with psycopg.connect(live_db) as conn:
-        conn.executemany(
+        cursor = conn.cursor()
+        cursor.executemany(
             """
             INSERT INTO items (
                 id, title, category, attributes, price, currency, region_tags, image_refs,
@@ -41,7 +42,7 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
                 for n, item_id in enumerate(ids)
             ],
         )
-        conn.executemany(
+        cursor.executemany(
             "INSERT INTO item_embeddings (item_id, embedding, model_version) "
             "VALUES (%s, %s::vector, 'test') ON CONFLICT (item_id) DO NOTHING",
             [(item_id, embedding) for item_id in ids],
