@@ -1,5 +1,7 @@
 # GYF — Comprehensive Phased Implementation Plan
 
+> **Status:** historical/evidence only. This P0–P5 sequence is superseded by `docs/plans/active-execution-contract.md` and must not independently drive implementation.
+
 > **What this document is.** The detailed, end-to-end build plan for GYF — from empty repo to
 > the ambient stylist + B2B product. It turns the vision
 > ([`vision/ideas-complete.md`](./vision/ideas-complete.md)), the stack

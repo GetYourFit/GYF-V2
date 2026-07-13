@@ -1,6 +1,6 @@
 # GYF Elevation Program — real data · premium surface · clean codebase
 
-> **Status:** active (created 2026-06-29). The **elevation track** of the launch push —
+> **Status:** historical/evidence only (created 2026-06-29). The former **elevation track** —
 > complements `gyf-v2-launch-program.md` (the surface-first method/order) and
 > `accuracy-precision-trust.md` (model accuracy/trust). Vision/law/tech precedence unchanged:
 > `ideas-complete.md` → `engineering-doctrine.md` → `tech-stack.md` → `roadmap.md`.
@@ -82,13 +82,15 @@ module-boundary lint, structured logging + consistent error envelopes across rou
 `ecc:silent-failure-hunter` over every diff; `make ci` stays the green commit gate. Method:
 `ecc:orch-refine-code` (green → restructure → green → review → gated commit). No behavior change.
 
-## Sequencing (parallel, gated loops)
+## Historical sequencing snapshot (parallel, gated loops)
 
-- **Now:** W-STRUCTURE 1–2 (god-file split + ML dedup, low-risk) ∥ W-SURFACE foundation (tokens +
+- **Then-current:** W-STRUCTURE 1–2 (god-file split + ML dedup, low-risk) ∥ W-SURFACE foundation (tokens +
   layout primitives) ∥ W-DATA connector once a network is signed up.
-- **Next:** W-SURFACE per-screen loops ∥ W-DATA image ownership + backfill + prod ingest ∥
+- **Then-proposed:** W-SURFACE per-screen loops ∥ W-DATA image ownership + backfill + prod ingest ∥
   W-STRUCTURE enforcement.
-- **Continuous:** accuracy/trust loops L1–L6 consume the new real catalog + real behavioral events.
+- **Former continuous track:** accuracy/trust loops L1–L6 consume the new real catalog + real behavioral events.
+
+This snapshot does not direct current work; use the active execution contract.
 
 **Per-workstream DoD (all hold):** `make ci` green · specialist reviewers pass · `verify` E2E green ·
 W-DATA passing ingestion quality report · W-SURFACE passing design rubric + Lighthouse per screen ·

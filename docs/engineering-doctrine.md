@@ -1,11 +1,11 @@
 # GYF Engineering Doctrine — The Highest-IQ Way
 
-> **Status:** authoritative, standing doctrine (created 2026-06-20).
+> **Status:** authoritative, standing doctrine (created 2026-06-20). Execution order and current owner decisions live only in `docs/plans/active-execution-contract.md`; it overrides stale per-phase examples here without weakening the invariants.
 > **Purpose.** This is the cross-cutting design law for *how* GYF is built so it is
 > simultaneously **state-of-the-art, commercially clean, never quality-compromised, and
-> never development-blocked**. Where `tech-stack.md` says *which* model per pillar and
-> `implementation-plan.md` says *when*, this doctrine says *how every pillar is structured
-> so the model choice is swappable, the license is a tag, and the moat is ours.*
+> never development-blocked**. The historical `tech-stack.md` records researched candidates
+> and `implementation-plan.md` records an older phase design; neither decides current *which*
+> or *when*. This doctrine says *how* every pillar stays swappable, licence-gated and owned.
 > It sits above per-pillar choices: when a specific model is dethroned next quarter, the
 > doctrine is unchanged — only a tag flips.
 

@@ -7,8 +7,11 @@ coordinated outfits you can trust — getting smarter with every person it dress
 
 - [`CLAUDE.md`](./CLAUDE.md) — operating guide & entry point.
 - [`docs/vision/ideas-complete.md`](./docs/vision/ideas-complete.md) — canonical product/vision brief.
-- [`docs/tech-stack.md`](./docs/tech-stack.md) — technology & architecture decisions.
-- [`docs/implementation-plan.md`](./docs/implementation-plan.md) — phased build plan (P0–P5).
+- [`docs/plans/active-execution-contract.md`](./docs/plans/active-execution-contract.md) — **single active execution contract** and current handoff.
+- [`docs/engineering-doctrine.md`](./docs/engineering-doctrine.md) — standing quality, licence, privacy and evaluation rules.
+- [`docs/tech-stack.md`](./docs/tech-stack.md) — researched technology reference; selections require active-contract gates.
+- [`docs/implementation-plan.md`](./docs/implementation-plan.md) — historical phased plan; evidence only.
+- [`docs/plans/gyf-free-first-beta-master-plan-2026-07.md`](./docs/plans/gyf-free-first-beta-master-plan-2026-07.md) — July audit/research evidence; not an execution sequence.
 - [`docs/research/deep-research-report.md`](./docs/research/deep-research-report.md) — cited SOTA research.
 
 ## Repository layout
@@ -63,7 +66,7 @@ to persist to the `interactions` table, or `kafka` to publish to Redpanda.
 
 ## Status
 
-Phase **P0 — Foundations** (see `docs/implementation-plan.md`), nearly complete:
+The active contract starts application work at F1a: preserve omitted profile fields on partial updates. Older P0–P5 status below is historical completion evidence.
 
 | Area | State |
 | --- | --- |
@@ -73,4 +76,4 @@ Phase **P0 — Foundations** (see `docs/implementation-plan.md`), nearly complet
 | Contracts & data spine (P0-D) | ✅ schema, auth scaffold, event taxonomy, sinks — **proven end-to-end in CI** |
 | Observability (P0-E) | ✅ Prometheus metrics + structured logs + opt-in backend Sentry errors/performance; OTel remains collector-gated |
 
-Free-tier-first, no hardcoded limitations, built to scale. Next: **P1 — The Intelligent Stylist**.
+Free-tier-first, no hardcoded limitations, built to scale. Current work is defined only by the active execution contract.

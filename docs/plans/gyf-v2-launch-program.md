@@ -1,11 +1,9 @@
 # GYF v2 Launch Program — the loop-engineered drive to a launch-grade product
 
-> **Status:** active execution plan (2026-06-27). Created from `docs/feedbacks/gyf-feedback-v2.md`
+> **Status:** historical/evidence only (2026-06-27). Superseded by `docs/plans/active-execution-contract.md`.
 > + two grounded audits (frontend reality, dead-code/structure) + verified live-stack state.
-> **This is the single source of execution truth for the v2 push** (it absorbed and replaced the
-> earlier launch-era plan drafts). Vision/law/tech precedence is unchanged: `ideas-complete.md` → `engineering-doctrine.md`
-> → `tech-stack.md` → `roadmap.md`. **DRY:** scope/DoD/model-per-pillar live in those docs; this file is
-> *the method, the order, and the verification gates* for shipping the full surface to launch quality.
+> This file records the v2 push's former method, order and verification gates. It is historical
+> evidence only; `docs/plans/active-execution-contract.md` is the sole current execution authority.
 
 ---
 
@@ -138,7 +136,7 @@ Deployed web app, loaded via `verify`/chrome-devtools: every nav destination wor
 
 ---
 
-## 8. Immediate next actions (on approval)
+## 8. Historical next actions proposed in 2026-06
 1. S0 hygiene (delete dead notebook, gitignore check, vision README).
 2. Present **2–3 concrete redesign directions** for your pick (the one creative decision left).
 3. Begin S1 design-system rebuild under a GAN-design loop.

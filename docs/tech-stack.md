@@ -1,5 +1,7 @@
 # GYF (Get Your Fit) — Technology Stack & Techniques
 
+> **Status:** researched reference, not execution authority. Current selections and phase order live only in `docs/plans/active-execution-contract.md`; older provider/model picks here remain candidates until its gates pass.
+
 > **What this document is.** The canonical, well-researched reference for *how* GYF is
 > built: every technology, model, technique, and architectural decision, with the
 > reasoning and the cutting-edge research behind each choice. It is the engineering

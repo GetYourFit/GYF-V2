@@ -1,11 +1,11 @@
 # GYF Build Roadmap — the sequential, high-IQ path to the full product
 
-> **Status:** authoritative build sequence (created 2026-06-20).
+> **Status:** historical/evidence only (created 2026-06-20). The only active build sequence is `docs/plans/active-execution-contract.md`.
 > **Relationship to other docs (DRY — each fact lives once):**
-> - *What & when, per phase* → `implementation-plan.md` (P0–P5 definitions + DoD).
+> - *Historical what & when* → `implementation-plan.md` (superseded P0–P5 evidence).
 > - *How every pillar is built* → `engineering-doctrine.md` (ports, two-lane license gate,
 >   foundation+adapter, real-data flywheel, eval-gated promotion).
-> - *Which model per pillar* → `tech-stack.md`.
+> - *Researched model candidates* → `tech-stack.md` (reference only; current selection follows the active contract).
 > - *How we stay provably dependable* → `plans/reliability-trustworthiness.md` (the
 >   **Reliability track**: live-verified Definition-of-Done, post-deploy smoke gate,
 >   module observability/alerting, remote-lane resilience, accuracy+fairness eval gates).
