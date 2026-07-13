@@ -140,9 +140,9 @@ export class GyfApi {
     return this.request<ProfileSummary>("GET", "/profile/summary");
   }
 
-  /** Photo onboarding: upload one photo to estimate skin tone + body type.
-   *  Returns the merged profile (estimated fields are editable and never override
-   *  higher-confidence manual values). A 503 means neither photo module is
+  /** Photo onboarding: upload one photo to explicitly re-estimate skin tone + body type.
+   *  Non-abstaining estimates replace their prior fields but remain editable.
+   *  A 503 means neither photo module is
    *  available — fall back to the manual form. */
   uploadPhoto(file: File): Promise<Profile> {
     const form = new FormData();
@@ -188,7 +188,8 @@ export class GyfApi {
   }
 
   feedback(body: FeedbackRequest): Promise<FeedbackAck> {
-    return this.request<FeedbackAck>("POST", "/feedback", body);
+    const event = body.event_id ? body : { ...body, event_id: crypto.randomUUID() };
+    return this.request<FeedbackAck>("POST", "/feedback", event);
   }
 
   // --- Visual search & shop-the-look ---
@@ -385,10 +386,12 @@ export class GyfApi {
 
     // Cold-start resilience: the free-tier API sleeps and its first response can
     // be a proxy 502/503/504 or a dropped connection. Users were tapping 3–4
-    // times to get one page. Retry idempotent GETs twice with a short backoff —
+    // times to get one page. Retry safe GETs twice with a short backoff —
     // by the second try the instance is usually awake. Mutations never retry
-    // (a retried POST could double-write); aborts propagate immediately.
-    const attempts = method === "GET" ? 3 : 1;
+    // except /feedback, whose stable event_id makes retries safe.
+    const createsSlate =
+      path.startsWith("/outfits/recommend") || path.startsWith("/outfits/complete");
+    const attempts = (method === "GET" && !createsSlate) || path === "/feedback" ? 3 : 1;
     let lastErr: unknown;
     for (let i = 0; i < attempts; i++) {
       if (i > 0) await new Promise((r) => setTimeout(r, 1500 * i));

@@ -1,11 +1,10 @@
-"""GYF GPU serving lane — HF ZeroGPU Space (free-tier GPU per doctrine D7).
+"""GYF encoder inference lab — HF ZeroGPU Space (free-tier GPU per doctrine D7).
 
 Serves the fashion encoder's GPU-heavy embedding as a tiny JSON API the local
 GYF stack calls through ``perception.remote.RemoteEncoder``. Only the forward
 pass runs here; retrieval scoring, ranking, and the M2 bake-off stay on the
-caller's CPU, so this one small Space backs every GPU need (M2 embeddings now;
-the M3/M4 photo modules can add more ``@spaces.GPU`` endpoints later) without the
-catalog ever leaving the local machine.
+caller's CPU. This public Space is an inference lab for commercial-clean encoder
+bake-offs, not a production serving path; the catalog never leaves the caller.
 
 ``spaces`` must be imported before torch so ZeroGPU can intercept CUDA init; the
 model is loaded on CPU and moved to ``cuda`` *inside* the GPU-decorated function,
@@ -27,8 +26,8 @@ from PIL import Image
 
 # Models the lane is allowed to serve. Mirrors the GYF model registry's `encoder`
 # capability (incumbent + the M2 research candidates). Only commercial-clean weights
-# belong here; research candidates are fine (this is the offline bake-off lane), but
-# nothing non-commercial. Enforced in CI by
+# belong here; research candidates are fine because this is an inference lab, but
+# nothing non-commercial or outside the encoder capability. Enforced in CI by
 # test_gpu_space_allowlist_is_commercial_clean_per_registry — every entry must map to a
 # commercial-clean encoder card in models.registry.json.
 ALLOWED_MODELS = {
@@ -86,137 +85,11 @@ def embed_texts(model_id: str, texts: list[str]) -> dict:
     return {"embeddings": emb.tolist(), "dim": int(emb.shape[1])}
 
 
-# --- Skin-tone lane (M4): face-parse → CIELAB → MST, runs the vendored pipeline -
-@lru_cache(maxsize=1)
-def _skin_estimator():
-    """The real face-parsing skin-tone estimator (vendored under skintone/)."""
-    from skintone import FaceParsingSkinToneEstimator
-
-    return FaceParsingSkinToneEstimator()
-
-
-@spaces.GPU
-def estimate_skin_tone(image_b64: str) -> dict:
-    """One photo → {'skin_tone': 'mstN', 'undertone': str, 'field_confidence': {...},
-    'model_version': str}. Abstains ('unknown') honestly when no face/skin is found."""
-    from skintone import estimate_skin_tone as _run
-
-    est = _run(_decode_image(image_b64), _skin_estimator())
-    return {
-        "skin_tone": est.skin_tone,
-        "undertone": est.undertone,
-        "field_confidence": dict(est.field_confidence),
-        "model_version": est.model_version,
-    }
-
-
-# --- Body-type lane (M3): BiRefNet silhouette + RTMW keypoints → torso widths ----
-# Commercial-clean + ZeroGPU-deployable (SAM 3D Body needs detectron2/pyrender/
-# pytorch3d/conda — not pip-installable on a Space; Sapiens is CC-BY-NC). We segment
-# the body silhouette with BiRefNet (MIT, SOTA high-res matting) and locate the
-# shoulder/hip landmarks with RTMW whole-body 2D keypoints (Apache-2.0, rtmlib ONNX).
-# The vendored pure geometry (bodyshape.silhouette_measurements) reads the *arm-robust
-# torso width* at each keypoint-anchored height — pose-, crop-, and lighting-invariant,
-# unlike the v1 raw-extent silhouette. The caller's CPU classifies the widths
-# unchanged. See docs/plans/m3-body-type-rtmw-birefnet.md.
-_BODY_MODEL = "ZhengPeng7/BiRefNet"
-_BIREFNET_SIZE = 1024
-_BODY_MODEL_VERSION = "rtmw-birefnet-v1"
-# Below this fraction of image height the foreground isn't a full standing body
-# (a face/upper-body selfie) — abstain rather than fabricate a silhouette class.
-_MIN_BODY_HEIGHT_FRAC = 0.35
-
-_BODY_ABSTAIN = {
-    "measurements": {},
-    "region_quality": {},
-    "model_confidence": 0.0,
-    "model_version": _BODY_MODEL_VERSION,
-}
-
-
-@lru_cache(maxsize=1)
-def _load_body():
-    """Load BiRefNet once on CPU (moved to GPU inside the @spaces.GPU call)."""
-    from transformers import AutoModelForImageSegmentation
-
-    model = AutoModelForImageSegmentation.from_pretrained(_BODY_MODEL, trust_remote_code=True)
-    # BiRefNet ships half-precision weights; pin float32 so it matches our float input.
-    return model.float().eval()
-
-
-@lru_cache(maxsize=1)
-def _load_pose():
-    """Load the RTMW whole-body keypoint detector once (ONNX, GPU-backed)."""
-    from rtmlib import Wholebody
-
-    return Wholebody(mode="performance", backend="onnxruntime", device="cuda")
-
-
-def _silhouette_mask(image: Image.Image) -> np.ndarray:
-    """BiRefNet foreground mask (bool, original H×W) for the largest subject."""
-    from torchvision import transforms
-
-    tfm = transforms.Compose(
-        [
-            transforms.Resize((_BIREFNET_SIZE, _BIREFNET_SIZE)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
-    model = _load_body().to("cuda")
-    x = tfm(image).unsqueeze(0).to("cuda")
-    with torch.no_grad():
-        pred = model(x)[-1].sigmoid().cpu()[0, 0]  # (size, size) in [0,1]
-    mask = Image.fromarray((pred.numpy() * 255).astype("uint8")).resize(image.size)
-    return np.asarray(mask) > 127  # bool H×W
-
-
-@spaces.GPU
-def estimate_body(image_b64: str) -> dict:
-    """One photo → height-normalized torso widths for the body-type taxonomy.
-
-    Returns ``{'measurements': {...}, 'region_quality': {...}, 'model_confidence':
-    float, 'model_version': str}``. RTMW gives the shoulder/hip landmark heights;
-    BiRefNet gives the silhouette; the vendored ``silhouette_measurements`` reads the
-    arm-robust torso width at each landmark. Abstains (confidence 0, empty
-    measurements) when no plausible full-body / front-facing subject is found — the
-    caller turns that into ``unknown`` body type and the manual field is the fallback.
-    """
-    from bodyshape import silhouette_measurements
-
-    image = _decode_image(image_b64)
-    rgb = np.ascontiguousarray(np.asarray(image))
-
-    keypoints, scores = _load_pose()(rgb)  # (P,K,2), (P,K)
-    if keypoints is None or len(keypoints) == 0:
-        return dict(_BODY_ABSTAIN)
-    subject = int(np.argmax([s.mean() for s in scores]))
-    kp, sc = keypoints[subject], scores[subject]
-
-    mask = _silhouette_mask(image)
-    rows = np.where(mask.any(axis=1))[0]
-    if rows.size == 0:
-        return dict(_BODY_ABSTAIN)
-    if float(rows[-1] - rows[0] + 1) / float(mask.shape[0]) < _MIN_BODY_HEIGHT_FRAC:
-        return dict(_BODY_ABSTAIN)
-
-    measurements, region_quality, confidence = silhouette_measurements(mask, kp, sc)
-    if not measurements or confidence <= 0.0:
-        return dict(_BODY_ABSTAIN)
-
-    return {
-        "measurements": {k: round(float(v), 6) for k, v in measurements.items()},
-        "region_quality": {k: round(float(v), 4) for k, v in region_quality.items()},
-        "model_confidence": round(float(confidence), 4),
-        "model_version": _BODY_MODEL_VERSION,
-    }
-
-
-with gr.Blocks(title="GYF GPU lane") as demo:
+with gr.Blocks(title="GYF encoder inference lab") as demo:
     gr.Markdown(
-        "# GYF GPU serving lane\n"
-        "Fashion encoder embeddings on free-tier ZeroGPU. Called by "
-        "`perception.remote.RemoteEncoder`; also browsable here for a smoke test."
+        "# GYF encoder inference lab\n"
+        "Commercial-clean fashion encoder embeddings and bake-offs on free-tier ZeroGPU. "
+        "This public Space is not a production serving path."
     )
     model_in = gr.Textbox(label="model_id", value="hf-hub:Marqo/marqo-fashionSigLIP")
     with gr.Tab("images"):
@@ -230,18 +103,6 @@ with gr.Blocks(title="GYF GPU lane") as demo:
         txt_out = gr.JSON(label="embeddings")
         gr.Button("embed_texts").click(
             embed_texts, [model_in, txt_in], txt_out, api_name="embed_texts"
-        )
-    with gr.Tab("skintone"):
-        skin_in = gr.Textbox(label="image_b64 (base64 PNG)")
-        skin_out = gr.JSON(label="skin tone")
-        gr.Button("estimate_skin_tone").click(
-            estimate_skin_tone, skin_in, skin_out, api_name="estimate_skin_tone"
-        )
-    with gr.Tab("body"):
-        body_in = gr.Textbox(label="image_b64 (base64 PNG)")
-        body_out = gr.JSON(label="mesh")
-        gr.Button("estimate_body").click(
-            estimate_body, body_in, body_out, api_name="estimate_body"
         )
 
 

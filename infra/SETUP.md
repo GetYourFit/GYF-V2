@@ -64,9 +64,8 @@ vercel --prod          # production deploy
 Day to day you don't run anything: Vercel's Git integration auto-deploys on every
 push to `main` (and builds a preview for each PR).
 
-The `NEXT_PUBLIC_*` env vars are inlined at build time — set `NEXT_PUBLIC_API_URL`
-(the Render API URL), `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-in the Vercel project (Production scope):
+The `NEXT_PUBLIC_*` env vars are inlined at build time. Set the API/Supabase
+values in the Vercel project (Production scope):
 
 ```bash
 vercel env add NEXT_PUBLIC_API_URL production
@@ -77,9 +76,12 @@ vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
 ## 5. Deploy the API — Render
 
 Render → New → Blueprint → select this repo → it reads `render.yaml`. Then set the
-dashboard secrets marked `sync: false`: `GYF_DATABASE_URL` (Supabase pooler URL),
-`GYF_SUPABASE_JWT_SECRET`, and `GYF_ALLOWED_ORIGINS` (the Vercel web origin
+dashboard secrets marked `sync: false`: `GYF_DATABASE_URL` (Supabase session URL),
+`GYF_SUPABASE_JWT_SECRET`, `GYF_SENTRY_DSN` (Sentry project → Client Keys), and
+`GYF_ALLOWED_ORIGINS` (the Vercel web origin
 `https://gyf-v2-app.vercel.app` from step 4, so CORS lets the browser in).
+The blueprint sets `GYF_TRACE_SAMPLE_RATE=0.1`; no production OTLP collector,
+frontend Sentry, or PostHog integration is configured yet.
 
 ## 6. Verify the P0 gate
 

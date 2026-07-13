@@ -20,7 +20,7 @@ WORKDIR /app
 
 # Shared contracts + the ml package (editable path deps) resolved first so dependency
 # layers cache well. gyf-ml is needed by the photo-remote extra (ZeroGPU onboarding
-# lane); only its light base deps install here — no torch/pyfacer/SAM on the API host.
+# lane); only its light base deps install here — no research body runtime or model weights.
 COPY packages/contracts /app/packages/contracts
 COPY ml /app/ml
 COPY services/api/pyproject.toml /app/services/api/pyproject.toml
@@ -28,7 +28,7 @@ COPY services/api/pyproject.toml /app/services/api/pyproject.toml
 # Resolve the runtime (postgres + dev + migrate + photo-remote extras) into /opt/venv —
 # kept outside /app so a bind-mount over /app/services/api at run time never shadows it.
 WORKDIR /app/services/api
-RUN uv sync --extra dev --extra postgres --extra migrate --extra photo-remote --no-install-project
+RUN uv sync --extra dev --extra postgres --extra migrate --extra photo-remote --extra sentry --no-install-project
 
 # App source is COPYed for standalone runs and overlaid by a bind mount in dev compose.
 COPY services/api /app/services/api

@@ -44,9 +44,7 @@ def upgrade() -> None:
     # Superseded by idx_items_browse's leading category column.
     op.execute("DROP INDEX IF EXISTS idx_items_category")
     op.execute("CREATE INDEX idx_items_region_tags ON items USING GIN (region_tags)")
-    op.execute(
-        "CREATE INDEX idx_items_gender ON items ((attributes #>> '{taxonomy,gender}'))"
-    )
+    op.execute("CREATE INDEX idx_items_gender ON items ((attributes #>> '{taxonomy,gender}'))")
 
 
 def downgrade() -> None:

@@ -14,7 +14,7 @@ app/  ── api-client.ts ──► services/api (FastAPI)
                               ├──► Redis                (cache / rate-limit — planned)
                               ├──► event sink           (JSONL → Postgres → Redpanda)  D4 flywheel
                               └──► ml/  (perception encoder, usermodel: body+skintone, eval)
-                                     └─ GPU lane: spaces/gyf-gpu (HF ZeroGPU) for photo onboarding
+                                     └─ encoder inference lab: spaces/gyf-gpu (HF ZeroGPU; not production)
 ```
 
 ## Boundaries

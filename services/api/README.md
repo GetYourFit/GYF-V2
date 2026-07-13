@@ -33,15 +33,17 @@ uv run uvicorn app.main:app --reload --port 8000
   `local` (append-only JSONL, default), `postgres` (the `interactions` table,
   queryable serving side), or `kafka` (Redpanda/Kafka). Optional deps load lazily.
 - **`app/metrics.py` / `app/telemetry.py`** — observability (P0-E): always-on
-  Prometheus metrics; opt-in OpenTelemetry OTLP tracing and Sentry errors;
-  structured JSON logs. All env-driven and no-op when unconfigured.
+  Prometheus metrics; opt-in backend Sentry errors/performance; and structured
+  JSON logs. OTLP export is supported but disabled in production until an owner
+  provisions a collector. All optional paths are no-ops when unconfigured.
 - **`db/schema.sql`** — the P0 relational schema (migrated via Alembic going forward).
 
 ## Configuration
 
 12-factor via the `GYF_` env prefix (see `app/config.py` and the repo `.env.example`).
 Key vars: `GYF_ENV`, `GYF_DATABASE_URL`, `GYF_EVENT_SINK`, `GYF_SUPABASE_JWT_SECRET`,
-`GYF_OTEL_EXPORTER_OTLP_ENDPOINT`, `GYF_SENTRY_DSN`.
+`GYF_SENTRY_DSN`, `GYF_TRACE_SAMPLE_RATE`. `GYF_OTEL_EXPORTER_OTLP_ENDPOINT` is
+collector-gated and is not set by the production blueprint.
 
 ## Tests
 

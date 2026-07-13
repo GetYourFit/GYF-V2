@@ -1,6 +1,11 @@
-# M3 — Body-type estimation: RTMW + BiRefNet (commercial-clean, ZeroGPU)
+# M3 — Body-type estimation: RTMW + BiRefNet (retired research record)
 
-> **Status:** v2 **built + locally verified** 2026-06-29 — RTMW keypoint-anchoring is
+> **Current status (2026-07-13): retired.** The BiRefNet remote route and serving code
+> were removed; DIS5K provenance remains promotion-blocking. The replacement local
+> RTMW keypoint-ratio candidate is research-only and fail-closed pending its own eval.
+> Everything below is a historical implementation record, not an operational runbook.
+>
+> **Historical status:** v2 **built + locally verified** 2026-06-29 — RTMW keypoint-anchoring is
 > implemented and the pipeline runs end-to-end on real photos (CPU), producing
 > calibration-consistent body types with confidence in `[0, 1]`. Deploy to the HF
 > Space (`GetYourFit/gyf-gpu`) + Render verification is the remaining owner step
@@ -55,11 +60,9 @@ Both load once and run a single forward pass on the $9 ZeroGPU. Replaces the est
 3. **`spaces/gyf-gpu/requirements.txt`** — already set to `rtmlib onnxruntime-gpu timm
    kornia` (BiRefNet loads via `transformers` AutoModel, trust_remote_code).
 
-4. **Deploy + verify.** Push `spaces/gyf-gpu/` to the HF Space repo (needs HF creds — owner
-   step). Then set `GYF_BODY_REMOTE_URL` in Render and confirm via
-   `render logs … --text "photo onboarding outcome"` that `body_ran=True` + a real
-   `body_type`. Until deployed+verified, keep `GYF_BODY_REMOTE_URL` unset (graceful abstain;
-   skin-tone unaffected).
+4. **Historical deploy path (retired).** The former Space body endpoint and Render remote
+   configuration were removed. Do not configure a body remote URL; production abstains and
+   uses editable manual onboarding until a consented evaluation clears an owner-approved gate.
 
 ## Accuracy notes
 - Best results from a full/upper-body, front-facing photo; selfies abstain (low keypoint

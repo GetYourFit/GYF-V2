@@ -2127,3 +2127,67 @@ backlog). Recs + affiliate live; photo AI degraded→manual fallback; try-on pla
 Remaining blockers are OWNER-gated (model licenses, consented photo data, try-on credits, DSN flip,
 Render Starter, backfill ops run) — not code. Repo confirmed LEAN; no fake/dead code beyond what was
 removed. Did not manufacture refactors on working lean code (ponytail).
+
+### 2026-07-12 (cont. 14) — ML stack verified working + S1 telemetry (non-owner-gated slice)
+
+**ML stack + pipeline — VERIFIED WORKING** (per `gyf-sota-app-plan-2026-07.md` §3d):
+- Prod `/system/status`: outfit_recommendations **live** (local lane), text_search **beta**
+  (remote GPU reachable, semantic inference verified per request + keyword fallback), catalog
+  63,549 items / 57,040 embedded / all priced+imaged, event_sink=postgres.
+- Local green: `ml/tests` **88 passed**; API `test_recsys/test_retrieval/test_retrieval_multi_slot/
+  test_eval_report` **109 passed**. Perception→retrieval→recsys→eval path all pass.
+- No code changed in ML — it works as designed; did not manufacture refactors (ponytail).
+
+**S1 measurement spine — shipped the only non-owner-gated code** (`gyf-sota-app-plan` §4/§5):
+- Added `@vercel/speed-insights@2.0.0` + `<SpeedInsights/>` in `app/app/layout.tsx`. Real-user
+  p75 LCP/INP/CLS **per route** stream automatically on next Vercel deploy — zero key, zero custom
+  endpoint (ponytail rung 4: native platform feature). typecheck/lint/prettier green.
+- **Deliberately NOT built (inert without owner keys = speculative scaffolding):** frontend PostHog
+  SDK + frontend Sentry. Backend Sentry already fully wired (`services/api/app/telemetry.py`), needs
+  only `GYF_SENTRY_DSN`. Owner unlock: PostHog + Sentry free-tier keys → then S1 completes + S2 events
+  fire into PostHog.
+
+### 2026-07-13 — ML/research-to-production audit and Phases 1–4 implemented (not yet deployed)
+
+**Ask + root cause, plainly:** make the ML stack useful, replace degraded/fake/outdated paths only
+when evidence proves no regression, apply the engineering doctrine end to end, remove junk, verify
+the whole app, and continue through commit/push. The models were not mainly failing because a newer
+checkpoint was missing: photo inference was wired to a retired remote demo and promotion labels were
+being mistaken for proof of live service, while feedback could be duplicated or attached to the
+wrong impression. The current encoder evidence also cannot prove live text-search quality.
+
+**Implemented:** Phase 1 audited doctrine, registry/runtime truth, production paths, and current
+research, then added one research→production contract. Phase 2 replaced the provenance-blocked
+BiRefNet silhouette claim with a smaller research-only RTMW shoulder/hip-ratio candidate that
+abstains on weak/ambiguous poses; failed skin-tone fairness remains shadowed and manual onboarding
+remains the non-degraded production path. Phase 3 made feedback retry-safe with stable event UUIDs,
+a concurrent unique Postgres index, exact/preceding-impression attribution, and truthful saved-look
+negative feedback only after deletion succeeds. Phase 4 corrected status/API/UI semantics
+(`eligible` is not `serving`), prevented retrying slate-creating GETs, made explicit photo uploads
+true re-estimates, kept Vercel Speed Insights, and documented the existing opt-in Sentry path.
+
+**Deleted degraded paths:** remote body/skin clients and env wiring; duplicate Space body-shape,
+skin-tone, and vendored-contract implementations; BiRefNet serving code and its unused heavy
+dependencies. The Space now keeps only the encoder endpoint; no unproven replacement was promoted.
+
+**Evaluation honesty gap:** the 840-query SigLIP report is image→image category clustering with no
+frozen catalog/query judgments and is not comparable to the 112-query Marqo report; it cannot prove
+text-search lift. Keep the incumbent to avoid an unmeasured regression, but block the next encoder
+swap until both candidates run on the same versioned text→catalog benchmark plus online evidence.
+
+**Production probe truth (before this change is deployed):** `/health` is OK but reports
+Sentry=false/tracing=false; `/system/status` reports DB ready, recommendations live, remote semantic
+search beta, both photo modules degraded→manual fallback, try-on planned, affiliate live, Postgres
+event sink, and 64,404 items / 61,772 embedded / all 64,404 priced+imaged. This is old production
+behavior, not proof of the local Phase 1–4 changes.
+
+**Final local verification:** API **343 passed, 3 skipped** (all three need a reachable migrated
+Postgres; two explicitly need `GYF_TEST_DATABASE_URL`), ML **83 passed**, web **55 passed**.
+Flutter/Dart are unavailable in this shell, so Flutter was not re-run locally. Remaining evidence
+gaps are the frozen text-search benchmark, consented labeled photo evaluation, production deploy
+probe, and the three real-Postgres checks.
+
+**Owner inputs:** PostHog project token + host are future/not wired; `GYF_SENTRY_DSN`; a disposable
+migrated `GYF_TEST_DATABASE_URL`; consented labeled photo evaluation data plus legal/license signoff;
+a licensed try-on provider key and evaluation budget; and the Render uptime decision (free cold
+starts versus paid always-on). No deployment, commit, or push is claimed in this entry.

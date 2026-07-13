@@ -45,10 +45,11 @@ CPU works (slow); a local NVIDIA/Intel GPU is auto-selected.
 
 ---
 
-## ▶ Remote serving lane (optional, for scale) — `spaces/gyf-gpu`
+## ▶ Encoder inference lab (optional) — `spaces/gyf-gpu`
 
-A persistent Gradio GPU endpoint, reusable for production perception and the M3/M4 photo
-modules — not just one bake-off. Deploy it on whatever GPU host you like:
+A public Gradio lab for commercial-clean encoder inference and bake-offs. It is **not a
+production serving path** and exposes no photo/user-model endpoints. Deploy it on whatever
+GPU host you like:
 
 - **HF ZeroGPU** — needs **HF Pro** (~$9/mo) to attach ZeroGPU hardware to your own Space.
 - **RunPod / Modal Gradio** — cheap pay-per-use; same `app.py` works.
@@ -60,9 +61,9 @@ GYF_ENCODER_REMOTE_URL=https://<your-endpoint>   # e.g. https://<user>-gyf-gpu.h
 GYF_HF_TOKEN=hf_...                              # only if the endpoint is private
 ```
 
-Now `default_encoder()` and the bake-off embed through that GPU with **zero code changes**;
-unset the var to fall back to local. The Space's `ALLOWED_MODELS` must stay in sync with the
-`encoder` entries in `models.registry.json` (commercial-clean / Apache-2.0 only).
+Now `default_encoder()` and the bake-off can embed through that GPU with **zero code changes**;
+unset the var to fall back to local. The Space's `ALLOWED_MODELS` must stay in sync with
+commercial-clean `encoder` entries in `models.registry.json`; CI enforces that boundary.
 
 ### Smoke test
 ```python

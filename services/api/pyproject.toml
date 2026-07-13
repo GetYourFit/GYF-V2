@@ -26,10 +26,8 @@ gyf-ml = { path = "../../ml", editable = true }
 kafka = [
   "kafka-python>=2.0.2",
 ]
-# Photo onboarding over the ZeroGPU lane (M3/M4): the endpoint reaches the skin-tone
-# and SAM 3D Body Spaces via gradio_client and uses the ml `usermodel` package for the
-# remote adapters + taxonomy. Lightweight on the API host — gyf-ml's base deps are
-# numpy/pillow/pydantic only (no torch/pyfacer/SAM). See docs/deploy/gpu-lane.md.
+# Photo onboarding remote client. The RTMW body candidate stays in gyf-ml's research
+# extra and is deliberately absent from the production API runtime until promotion.
 photo-remote = [
   "gyf-ml",
   "gradio-client>=2.0.0",

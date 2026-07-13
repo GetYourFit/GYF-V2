@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { jakarta, jetbrainsMono, cormorant } from "@/lib/fonts";
 import { SplashScreen } from "@/components/brand/splash-screen";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <SplashScreen />
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );

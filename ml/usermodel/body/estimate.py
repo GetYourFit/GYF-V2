@@ -37,7 +37,7 @@ def estimate_body(image: object, estimator: BodyEstimator) -> BodyEstimate:
     measurements).
     """
     shape: BodyShapeEstimate = estimator.estimate(image)
-    if not shape.measurements or shape.model_confidence <= 0.0:
+    if (not shape.measurements and not shape.shape_ratios) or shape.model_confidence <= 0.0:
         return BodyEstimate(
             body_type=UNKNOWN_BODY_TYPE,
             field_confidence={},
@@ -45,7 +45,7 @@ def estimate_body(image: object, estimator: BodyEstimator) -> BodyEstimate:
         )
 
     measurements = canonical_measurements(shape.measurements)
-    body_type, type_conf = classify(ratios(measurements))
+    body_type, type_conf = classify(shape.shape_ratios or ratios(measurements))
 
     quality = shape.model_confidence
     confidence: dict[str, float] = {"body_type": round(type_conf * quality, 4)}

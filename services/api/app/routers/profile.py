@@ -79,7 +79,10 @@ def upsert_profile(
     repo.upsert(principal.user_id, profile)
     if "display_name" in payload.model_fields_set:
         account_repo.set_display_name(principal.user_id, payload.display_name)
-    if "phone_country_code" in payload.model_fields_set or "phone_number" in payload.model_fields_set:
+    if (
+        "phone_country_code" in payload.model_fields_set
+        or "phone_number" in payload.model_fields_set
+    ):
         country_code, number = account_repo.get_phone(principal.user_id)
         if "phone_country_code" in payload.model_fields_set:
             country_code = payload.phone_country_code
@@ -122,8 +125,8 @@ async def upsert_profile_from_photo(
     runtime is unavailable, so the endpoint still succeeds with whatever ran; the
     manual `PUT /profile` is always the fallback. Skin-tone is held in **shadow**
     (computed, not surfaced) until the fairness gate flips `skin_tone_enabled`.
-    Every estimated field stays editable and never overwrites a higher-confidence
-    manual value.
+    Uploading is an explicit re-estimate: non-abstaining estimates overwrite their
+    prior fields, remain editable, and can be corrected through manual profile save.
     """
     consent = await run_in_threadpool(account_repo.get_consent, principal.user_id)
     if not consent.get("data_processing", False):

@@ -1,7 +1,7 @@
 """Photo-onboarding adapters + profile merge (P1-B Cycles 2 & 3).
 
 Bridges the API to the two user-model estimators in the ``gyf-ml`` runtime —
-body-type (SAM 3D Body → MHR) and skin-tone (face-parse → CIELAB → MST) — behind
+body-type (local RTMW keypoint geometry) and skin-tone (face-parse → CIELAB → MST) — behind
 small Protocols, exactly like ``catalog/perception_adapter.py`` bridges perception.
 Each adapter imports its heavy ml package lazily on construction, so the API runs
 without those runtimes installed; ``main.py`` catches the ImportError and the
@@ -9,9 +9,9 @@ corresponding module simply abstains (the other still runs; manual is always the
 
 The adapters return transport results decoupled from the ml dataclasses, and
 :func:`profile_from_photo` folds whichever ran into a stored :class:`Profile` with
-``source="photo"`` and a **merge policy that never overwrites a higher-confidence
-field** — so a value the user stated by hand (confidence 1.0) always wins over a
-model guess, satisfying the always-editable invariant.
+``source="photo"``. A photo upload is an explicit re-estimate, so a non-abstaining
+estimate overwrites that field; the returned estimate remains editable and a later
+manual save can correct it.
 """
 
 from __future__ import annotations
@@ -56,26 +56,15 @@ class BodyAdapter(Protocol):
 
 
 class FaceParsingSkinToneAdapter:
-    """Bridge to ``usermodel.skintone`` (RetinaFace + FaRL + CIELAB).
+    """Bridge to the local research-only ``usermodel.skintone`` pipeline."""
 
-    When ``remote_url`` is set the whole pipeline runs on the ZeroGPU Space (the API
-    host needs no pyfacer/torch); otherwise it runs in-process. Either way the result
-    is the same :class:`SkinToneResult`.
-    """
-
-    def __init__(self, *, remote_url: str = "", hf_token: str | None = None) -> None:
+    def __init__(self) -> None:
         # Import here so an ImportError surfaces only when this adapter is built;
         # main.py turns that into a graceful per-module abstain.
-        if remote_url:
-            from usermodel.skintone.remote import RemoteSkinToneEstimator
+        from usermodel.skintone import FaceParsingSkinToneEstimator, estimate_skin_tone
 
-            remote = RemoteSkinToneEstimator(remote_url, hf_token=hf_token)
-            self._run = remote.estimate
-        else:
-            from usermodel.skintone import FaceParsingSkinToneEstimator, estimate_skin_tone
-
-            local = FaceParsingSkinToneEstimator()
-            self._run = lambda img: estimate_skin_tone(img, local)
+        local = FaceParsingSkinToneEstimator()
+        self._run = lambda img: estimate_skin_tone(img, local)
 
     def estimate(self, image: object) -> SkinToneResult:
         est = self._run(image)
@@ -87,20 +76,14 @@ class FaceParsingSkinToneAdapter:
         )
 
 
-class SilhouetteBodyAdapter:
-    """Bridge to ``usermodel.body`` (BiRefNet silhouette + RTMW keypoints → widths).
+class RTMWBodyAdapter:
+    """Bridge to the clean CPU RTMW keypoint-ratio body candidate."""
 
-    The shape estimator is selected by :func:`usermodel.body.body_estimator_for`:
-    the remote ZeroGPU lane when ``remote_url`` is set (the API host needs no
-    BiRefNet / RTMW / GPU), else the CPU-capable local baseline. The
-    widths→ratios→silhouette-class taxonomy always runs in-process.
-    """
-
-    def __init__(self, *, remote_url: str = "", hf_token: str | None = None) -> None:
-        from usermodel.body import body_estimator_for, estimate_body
+    def __init__(self) -> None:
+        from usermodel.body import RTMWBodyEstimator, estimate_body
 
         self._estimate = estimate_body
-        self._estimator = body_estimator_for(remote_url, hf_token=hf_token)
+        self._estimator = RTMWBodyEstimator()
 
     def estimate(self, image: object) -> BodyResult:
         est = self._estimate(image, self._estimator)
@@ -114,26 +97,14 @@ class SilhouetteBodyAdapter:
 
 @lru_cache(maxsize=1)
 def cached_skin_adapter() -> FaceParsingSkinToneAdapter:
-    """Process-wide singleton. ``GYF_SKINTONE_REMOTE_URL`` routes to the ZeroGPU Space."""
-    from ..config import settings
-
-    return FaceParsingSkinToneAdapter(
-        remote_url=settings.skintone_remote_url, hf_token=settings.hf_token or None
-    )
+    """Process-wide singleton for offline research/evaluation."""
+    return FaceParsingSkinToneAdapter()
 
 
 @lru_cache(maxsize=1)
-def cached_body_adapter() -> SilhouetteBodyAdapter:
-    """Process-wide singleton so the models load once.
-
-    Reads the GPU-lane config: ``GYF_BODY_REMOTE_URL`` routes segmentation + pose to
-    the ZeroGPU Space, ``GYF_HF_TOKEN`` authenticates the Space quota.
-    """
-    from ..config import settings
-
-    return SilhouetteBodyAdapter(
-        remote_url=settings.body_remote_url, hf_token=settings.hf_token or None
-    )
+def cached_body_adapter() -> RTMWBodyAdapter:
+    """Process-wide singleton so the RTMW model loads once."""
+    return RTMWBodyAdapter()
 
 
 def _adopt(
@@ -170,12 +141,12 @@ def profile_from_photo(
     body: BodyResult | None,
     existing: Profile | None = None,
 ) -> Profile:
-    """Fold whichever modules ran into a stored profile (merge-by-confidence).
+    """Fold whichever modules ran into a stored profile (explicit re-estimate).
 
     Starts from the user's ``existing`` profile (so manual fields and untouched
-    values survive) and overlays photo estimates only where they are present and
-    more confident. Stamps ``source="photo"`` and a combined ``model_version`` from
-    the modules that contributed.
+    values survive) and overwrites each field for which a module produced a
+    non-abstaining estimate. The fields stay editable. Stamps ``source="photo"``
+    and a combined ``model_version`` from the modules that contributed.
     """
     profile = existing.model_copy(deep=True) if existing is not None else Profile()
     versions: list[str] = []

@@ -141,13 +141,12 @@ export interface paths {
         };
         /**
          * Browse Items
-         * @description Empty-state Explore feed — a cheap catalogue page, NO text embedding and NO
-         *     vector scan (unlike /items/search). The default browse view isn't a real query,
-         *     so paying a multi-second SigLIP embed + HNSW scan for a generic seed was pure
-         *     waste that also 500'd the grid whenever the GPU lane was cold. This serves in
-         *     tens of ms from a plain relational read and needs no ML runtime at all, so the
-         *     grid fills instantly and stays up even when the encoder is down. Priced items
-         *     with images lead; ``offset`` is the global count shown, split across slots.
+         * @description Explore feed. When the caller is signed in and has a learned taste vector,
+         *     this ranks the catalogue by cosine to it (two-tower content retrieval) — the
+         *     feed reflects what they actually engage with, per-user, and shifts as their
+         *     taste evolves. Callers without engagement get the same cheap rotating relational
+         *     read as anonymous users, so the first grid does not block on the remote encoder.
+         *     ``offset`` is the global count shown, split across slots.
          */
         get: operations["browse_items_items_browse_get"];
         put?: never;
@@ -169,10 +168,11 @@ export interface paths {
          * Search Items
          * @description Text->image search over the catalog (e.g. 'red floral summer dress').
          *
-         *     The encoder loads its backend lazily, so a missing runtime (e.g. ``open_clip``
-         *     absent from the API image, which delegates GPU work to the remote lane) only
-         *     raises when we actually embed. Convert that into the same honest 503 the
-         *     construction-time path returns, never a 500 that pretends the search broke.
+         *     The semantic path embeds the query and does an ANN scan. The encoder loads its
+         *     backend lazily and delegates GPU work to a remote lane, so on the encoder-less
+         *     prod image (or when that lane is down) embedding fails. We isolate *only* the
+         *     embed step and fall back to a keyword title match — search keeps returning items
+         *     instead of the raw 500 it used to throw. SQL/other errors are left to surface.
          */
         get: operations["search_items_items_search_get"];
         put?: never;
@@ -237,8 +237,8 @@ export interface paths {
          *     runtime is unavailable, so the endpoint still succeeds with whatever ran; the
          *     manual `PUT /profile` is always the fallback. Skin-tone is held in **shadow**
          *     (computed, not surfaced) until the fairness gate flips `skin_tone_enabled`.
-         *     Every estimated field stays editable and never overwrites a higher-confidence
-         *     manual value.
+         *     Uploading is an explicit re-estimate: non-abstaining estimates overwrite their
+         *     prior fields, remain editable, and can be corrected through manual profile save.
          */
         post: operations["upsert_profile_from_photo_profile_photo_post"];
         delete?: never;
@@ -738,7 +738,7 @@ export interface paths {
          * Operator view: per-model lane + serve-eligibility (M8.5)
          * @description Per-model lane + serve-eligibility, from the same gate CI enforces.
          *
-         *     Research-lane models report ``servable=False`` with the honest reason
+         *     Research-lane models report ``promotable=False`` with the honest reason
          *     (``lane is 'research', not production``) — so an operator sees exactly what
          *     is in the serving path, what is held back as an offline north-star, and why.
          */
@@ -884,6 +884,8 @@ export interface components {
          *     }
          */
         FeedbackRequest: {
+            /** Event Id */
+            event_id?: string | null;
             target_type: components["schemas"]["InteractionTarget"];
             /** Target Id */
             target_id: string;
@@ -925,7 +927,10 @@ export interface components {
         };
         /**
          * ModelStatus
-         * @description One model behind a capability port: its lane and serve-eligibility.
+         * @description One model's promotion and runtime-policy eligibility verdicts.
+         *
+         *     ``runtime_servable`` means configuration is eligible to enter the serving
+         *     path; it does not prove that the model is loaded or handling traffic.
          */
         ModelStatus: {
             /** Name */
@@ -938,12 +943,18 @@ export interface components {
             lane: string;
             /** License */
             license: string;
-            /** Servable */
-            servable: boolean;
+            /** Promotable */
+            promotable: boolean;
+            /** Runtime Servable */
+            runtime_servable: boolean | null;
             /** Blockers */
             blockers: string[];
+            /** Runtime Blockers */
+            runtime_blockers: string[];
             /** Eval Report */
             eval_report: string | null;
+            /** Model Version */
+            model_version: string | null;
         };
         /**
          * Outfit
@@ -1607,6 +1618,8 @@ export interface operations {
                 gender?: string | null;
                 /** @description Comma-separated outfit slots to interleave (e.g. 'top,bottom,full_body,footwear'). Omit for a single mixed page. */
                 slots?: string | null;
+                /** @description Shuffle seed for the anonymous/cold-start feed. Pass a per-session value for a fresh order every visit; omit for daily rotation. */
+                seed?: string | null;
             };
             header?: never;
             path?: never;

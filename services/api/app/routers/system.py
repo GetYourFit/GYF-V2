@@ -196,28 +196,13 @@ def _text_search_capability() -> Capability:
     )
 
 
-def _photo_module(remote_url: str, name: str, runtime: str) -> Capability:
-    """Status of a photo-onboarding module from its lane config + local runtime."""
+def _photo_module(name: str, runtime: str) -> Capability:
+    """Status of a local photo-onboarding module."""
     if not _configured_runtime_verdict(runtime)[0]:
         return Capability(
             status="degraded",
             lane="manual-fallback",
             detail=f"{name} is blocked by the model registry; manual onboarding carries the flow.",
-        )
-    if remote_url:
-        if _remote_reachable(remote_url):
-            return Capability(
-                status="beta",
-                lane="remote-gpu",
-                detail=f"{name} GPU host is reachable; inference is verified per request.",
-            )
-        return Capability(
-            status="degraded",
-            lane="manual-fallback",
-            detail=(
-                f"GPU lane configured but unreachable — {name} abstains; "
-                "manual onboarding carries the flow."
-            ),
         )
     if _runtime_installed("torch"):
         return Capability(
@@ -228,10 +213,28 @@ def _photo_module(remote_url: str, name: str, runtime: str) -> Capability:
     return Capability(
         status="degraded",
         lane="manual-fallback",
-        detail=(
-            f"No GPU lane configured and no local ML runtime — {name} abstains; "
-            "manual onboarding carries the flow."
-        ),
+        detail=(f"No local ML runtime — {name} abstains; manual onboarding carries the flow."),
+    )
+
+
+def _body_photo_module() -> Capability:
+    """Body candidate is local RTMW/ONNX; the retired remote URL has no effect."""
+    if not _configured_runtime_verdict("body")[0]:
+        return Capability(
+            status="degraded",
+            lane="manual-fallback",
+            detail="Body-type estimation is blocked by the promotion gate; manual onboarding carries the flow.",
+        )
+    if _runtime_installed("onnxruntime") and _runtime_installed("rtmlib"):
+        return Capability(
+            status="live",
+            lane="local",
+            detail="Body-type estimation runs locally with RTMW keypoints via ONNX Runtime.",
+        )
+    return Capability(
+        status="degraded",
+        lane="manual-fallback",
+        detail="RTMW/ONNX runtime is unavailable; body estimation abstains and manual onboarding carries the flow.",
     )
 
 
@@ -267,7 +270,7 @@ def system_status(
     except Exception:  # noqa: BLE001 — the status surface must never 500
         catalog = CatalogHealth()
 
-    skin = _photo_module(settings.skintone_remote_url, "Skin-tone estimation", "skin_tone")
+    skin = _photo_module("Skin-tone estimation", "skin_tone")
     if skin.status == "live":
         # The module can run — but it is surfaced only as a beta estimate until
         # the fairness gate clears, and re-shadowed when the flag is off.
@@ -316,7 +319,7 @@ def system_status(
             else "Database unreachable — recommendations cannot serve.",
         ),
         "text_search": _text_search_capability(),
-        "photo_body_type": _photo_module(settings.body_remote_url, "Body-type estimation", "body"),
+        "photo_body_type": _body_photo_module(),
         "photo_skin_tone": skin,
         "virtual_try_on": tryon,
         "affiliate_commerce": Capability(
@@ -359,7 +362,11 @@ def system_status(
 
 
 class ModelStatus(BaseModel):
-    """One model's promotion result and, when wired, separate runtime verdict."""
+    """One model's promotion and runtime-policy eligibility verdicts.
+
+    ``runtime_servable`` means configuration is eligible to enter the serving
+    path; it does not prove that the model is loaded or handling traffic.
+    """
 
     name: str
     capability: str  # the port it plugs into: encoder, body_estimator, try_on, …

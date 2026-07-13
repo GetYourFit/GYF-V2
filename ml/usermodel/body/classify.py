@@ -38,8 +38,17 @@ def classify(shape_ratios: dict[str, float]) -> tuple[str, float]:
     sh = shape_ratios.get("shoulder_hip", 0.0)
     wh = shape_ratios.get("waist_hip", 0.0)
     wc = shape_ratios.get("waist_chest", 0.0)
-    if sh <= 0 or wh <= 0:
+    if sh <= 0:
         return UNKNOWN_BODY_TYPE, 0.0
+
+    # Keypoint-only baseline can honestly identify clear shoulder/hip dominance.
+    # Balanced shapes require waist evidence, so abstain rather than invent it.
+    if wh <= 0:
+        margin = abs(sh - 1.0)
+        if margin <= _BALANCED:
+            return UNKNOWN_BODY_TYPE, 0.0
+        confidence = min(1.0, 0.5 + margin * 4)
+        return ("inverted_triangle" if sh > 1.0 else "triangle"), confidence
 
     defined_waist = wh <= _DEFINED_WAIST
     margin = abs(sh - 1.0)

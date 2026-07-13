@@ -171,7 +171,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--feed", type=Path, default=root / "data" / "e2e" / "feed.jsonl")
     p.add_argument("--images", type=Path, default=root / "data" / "e2e" / "images")
     p.add_argument("--out", type=Path, default=root / "eval-reports" / "bakeoffs")
-    p.add_argument("--dataset", default="p1a-e2e-catalog (bake-off, image->image LOO by category)")
+    p.add_argument(
+        "--dataset",
+        default="p1a-e2e-catalog (image->image leave-one-out, grouped by canonical category)",
+    )
     p.add_argument(
         "--only",
         nargs="*",

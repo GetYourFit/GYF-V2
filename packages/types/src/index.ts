@@ -63,6 +63,7 @@ export type InteractionTarget = (typeof INTERACTION_TARGETS)[number];
 
 /** A single behavioral event. Append-only, schema-versioned. */
 export interface InteractionEvent {
+  eventId: string;
   schemaVersion: 1;
   userId: string;
   targetType: InteractionTarget;

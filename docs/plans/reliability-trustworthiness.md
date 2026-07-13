@@ -20,7 +20,7 @@
 | R2 | **Silent prod degradation** | nobody noticed body abstaining until a user did | No success-rate metric / alert per onboarding module or remote lane |
 | R3 | **Contract drift API ↔ Space** | Space returned `vertices`; API later expected `measurements` | The two deploy independently; no wire-contract test against the *live* Space |
 | R4 | **Stale long-lived caches** | API process cached the old Space schema after a Space redeploy | Process-wide adapter/client singletons never refresh; no restart-on-dependency-change |
-| R5 | **Config-as-hidden-state** | `GYF_BODY_REMOTE_URL` once resolved to the literal `true` → 404 `spaces/true` | Env vars (`sync:false`) live only in the dashboard; nothing validates them at boot |
+| R5 | **Config-as-hidden-state (historical)** | The retired body remote URL once resolved to literal `true` → 404 `spaces/true` | Env vars (`sync:false`) lived only in the dashboard; current body research is local and fail-closed |
 | R6 | **Remote-lane fragility** | ZeroGPU cold start → first call hangs ~10s then abstains | No warmth/health probe; abstain looks identical to "module ran and found nothing" |
 | R7 | **Accuracy unvalidated** | classifier thresholds provisional; skin-tone surfaced via owner override of the fairness gate | No labelled eval set; promotion not gated on real accuracy/fairness |
 | R8 | **Frontend/cache masking** | API returns a value, UI still shows "couldn't read features" | No e2e check across the API→browser boundary; caching unaccounted |
@@ -54,10 +54,11 @@ Everything below is a direct countermeasure to one or more of these.
 A single script `scripts/smoke_prod.sh` that, after any deploy, hits the **live** API +
 each **live** Space and asserts a real result:
 - `GET /health` → 200 and reports each lane `{wired, reachable}` (see REL-3).
-- Space lanes: call `/embed_images`, `/estimate_skin_tone`, `/estimate_body` with a
-  bundled fixture image → assert non-abstain shape (`model_confidence > 0`, expected keys).
-- API photo path: a seeded test user uploads a fixture photo → assert `body_type` and
-  (gated) `skin_tone` come back populated, confidences in `[0,1]`.
+- Encoder inference lab: call `/embed_images` with a bundled fixture image and assert
+  the expected wire shape. The public Space has no photo/user-model routes.
+- API photo path: a seeded test user uploads a fixture photo → assert any promoted
+  estimator returns confidence in `[0,1]`; otherwise assert honest abstention and that
+  editable manual onboarding remains available. The RTMW body candidate is research-only.
 - Wire it as a **Render post-deploy hook** and a **GitHub Actions `deploy-verify` job**
   that fails loudly (and can auto-rollback). DoD: a broken body lane turns the pipeline
   red within minutes, automatically. (R1, R3, R8)
@@ -133,10 +134,9 @@ passing eval report exists. This supersedes the looser "built + verified" wordin
 
 ---
 
-## 5. Immediate concrete fixes already applied (2026-06-29)
-- Body-type v2 (RTMW + BiRefNet, arm-robust, lighting-invariant, confidence∈[0,1]) built,
-  locally verified on real photos, deployed to the Space, and verified by a **direct live
-  call** to `/estimate_body` (returned real measurements). `GYF_BODY_REMOTE_URL` confirmed
-  set; API restarted to drop the stale Space schema (R4). See
-  `docs/plans/m3-body-type-rtmw-birefnet.md`.
+## 5. Historical fix record (superseded 2026-07-13)
+- The former RTMW + BiRefNet remote path was verified in 2026-06, then retired because
+  BiRefNet/DIS5K provenance remained unresolved. Production has no body remote URL. The
+  replacement RTMW keypoint-ratio candidate remains research-only and production abstains
+  until consented evaluation data and owner-approved thresholds clear promotion.
 - **Next action:** implement REL-1 + REL-3 so this verification is automatic, not manual.

@@ -130,6 +130,20 @@
       "notes": "CORRECTED (2026-07-07): was mistagged 'production' while failing its own gate (train_data_commercial_ok=false, eval_report=null) — that mistagging is what was turning CI red, not a code bug. This is the model actually running in FaceParsingSkinToneEstimator (ml/usermodel/skintone/estimator.py, model_version 'retinaface-farl-celebm-cielab-mst-v1'), but it is shadow-gated behind GYF_SKIN_TONE_ENABLED and never reaches the served ranking path today — 'research' lane accurately reflects that it is not commercial-clean-cleared for serving. Promote to production only after: (1) swap the WIDER-FACE-trained RetinaFace detector for a commercial-clean one (e.g. MediaPipe BlazeFace, verified viable in the 2026-07-06 research thread) or get a legal opinion on WIDER FACE terms, AND (2) it clears the skin-tone fairness eval (DoD gap 3.2 vs ≤1.0, see ml/usermodel/skintone/fairness_eval.py) with an attached eval_report."
     },
     {
+      "name": "rtmw-keypoint-bodyshape",
+      "capability": "body_estimator",
+      "provider": "OpenMMLab (RTMW via rtmlib)",
+      "license": "Apache-2.0 (rtmlib, confirmed in existing repository evidence)",
+      "lane": "research",
+      "commercial_ok": true,
+      "train_data_commercial_ok": true,
+      "train_data_license": "COCO-WholeBody (CC-BY-4.0 — commercial-OK; existing verified registry evidence)",
+      "eval_report": null,
+      "model_version": "rtmw-keypoint-ratios-v1",
+      "model_uri": "rtmlib://Wholebody (RTMW)",
+      "notes": "Clean CPU candidate replacing BiRefNet in the selected body path. Uses only observable shoulder/hip keypoint geometry; makes no sizing/waist measurement claim and abstains on balanced or low-quality evidence. Remains research-only until a consented body-type eval clears the D5 accuracy, abstention, subgroup, correction-rate, and latency gates."
+    },
+    {
       "name": "birefnet-rtmw-bodyshape",
       "capability": "body_estimator",
       "provider": "ZhengPeng7 (BiRefNet) / OpenMMLab (RTMW via rtmlib)",
@@ -141,7 +155,7 @@
       "eval_report": null,
       "model_version": "rtmw-birefnet-v1",
       "model_uri": "hf://ZhengPeng7/BiRefNet + rtmlib Wholebody (RTMW)",
-      "notes": "CORRECTED (2026-07-07): was mistagged 'production' while failing its own gate (train_data_commercial_ok=false, eval_report=null) — that mistagging is what was turning CI red, not a code bug. This is the model in SilhouetteBodyAdapter (ml/usermodel/body/estimator.py, DEFAULT_MODEL_VERSION 'rtmw-birefnet-v1'), but per CLAUDE.md §0.5 the remote GPU lane it needs is not wired on Render, so it abstains in prod rather than serving live. 'research' lane accurately reflects that it is not commercial-clean-cleared for serving. Promote to production only after DIS5K provenance is independently re-verified (or the matting head is swapped) AND it clears an attached eval_report (D5). sam-3d-body/mhr/anny above remain the research-lane north-star candidates for a future M3 replacement."
+      "notes": "Retired research comparison; no serving code or runtime binding remains. BiRefNet/DIS5K remains provenance-blocked and must not be promoted. The selected research candidate is rtmw-keypoint-bodyshape."
     },
     {
       "name": "fal-leffa-vto-v1",

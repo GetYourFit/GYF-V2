@@ -64,8 +64,9 @@ def test_postgres_sink_upserts_user_then_inserts_interaction():
     assert upsert_rows == [(event.user_id,)]
 
     assert insert_sql == _INSERT_INTERACTION
+    assert insert_sql.endswith("ON CONFLICT (event_id) DO NOTHING")
     assert insert_rows == [
-        (event.user_id, "outfit", "o1", "save", 1.0, "{}", event.ts)
+        (event.event_id, event.user_id, "outfit", "o1", "save", 1.0, "{}", event.ts)
     ]
 
 
@@ -81,6 +82,7 @@ def test_publish_many_batches_one_checkout_and_dedupes_users():
     _, insert_rows = pool.log[1]
     assert upsert_rows == [("11111111-1111-1111-1111-111111111111",)]  # deduped
     assert len(insert_rows) == 3
+    assert len({row[0] for row in insert_rows}) == 3  # repeated semantics remain distinct events
 
 
 def test_publish_many_empty_is_noop():

@@ -87,6 +87,13 @@ def test_page_zero_uses_zero_offset_for_every_slot():
     assert all(offset == 0 for _cats, offset in repo.calls)
 
 
+def test_k_is_total_even_when_smaller_than_the_slot_count():
+    repo, resp = _call("?q=fashion&slots=top,bottom,full_body,footwear&k=3&offset=0")
+    assert resp.status_code == 200
+    assert len(repo.calls) == 4  # retain one candidate from every slot before interleaving
+    assert len(resp.json()["results"]) == 3
+
+
 def test_page_one_advances_each_slot_by_its_own_page_not_by_one():
     # Global offset = one full page (24) across 4 slots → each slot must skip 6,
     # NOT 24 (that would skip 4 pages) and NOT 1 (the bug: re-shows rows 1-5).

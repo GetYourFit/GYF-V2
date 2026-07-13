@@ -169,53 +169,57 @@ export default function StatusPage() {
   );
 }
 
-/** Operator surface: every model behind a capability port, its lane, and — when
- *  it can't serve — the honest reason it's held back. Same verdict as the CI
- *  license gate, so this can never disagree with the build. */
+/** Operator surface: every model behind a capability port and whether policy
+ *  permits it to serve. Actual serving state is reported by the capabilities above. */
 function ModelLanes({ models }: { models: ModelRegistryStatus["models"] }) {
   const production = models.filter((m) => m.lane === "production");
   const research = models.filter((m) => m.lane !== "production");
 
-  const row = (m: ModelRegistryStatus["models"][number]) => (
-    <li
-      key={m.name}
-      style={{
-        display: "flex",
-        alignItems: "baseline",
-        gap: "0.75rem",
-        padding: "0.75rem 0",
-        borderBottom: "1px solid var(--rule)",
-      }}
-    >
-      <span
+  const row = (m: ModelRegistryStatus["models"][number]) => {
+    const eligible = m.runtime_servable === true;
+    const label = m.runtime_servable == null ? "Not checked" : eligible ? "Eligible" : "Blocked";
+    const blockers = [...m.blockers, ...m.runtime_blockers];
+    return (
+      <li
+        key={m.name}
         style={{
-          fontSize: "0.6rem",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: m.servable ? "#1c6b3c" : "var(--text-faint)",
-          background: m.servable ? "rgba(28, 107, 60, 0.10)" : "rgba(154, 148, 144, 0.12)",
-          borderRadius: "999px",
-          padding: "0.25rem 0.6rem",
-          flexShrink: 0,
-          minWidth: "4.5rem",
-          textAlign: "center",
+          display: "flex",
+          alignItems: "baseline",
+          gap: "0.75rem",
+          padding: "0.75rem 0",
+          borderBottom: "1px solid var(--rule)",
         }}
       >
-        {m.servable ? "Serving" : "Held"}
-      </span>
-      <span style={{ display: "flex", flexDirection: "column", gap: "0.15rem", minWidth: 0 }}>
-        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text)" }}>
-          {m.name}{" "}
-          <span style={{ fontWeight: 400, color: "var(--text-faint)" }}>· {m.capability}</span>
+        <span
+          style={{
+            fontSize: "0.6rem",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: eligible ? "#1c6b3c" : "var(--text-faint)",
+            background: eligible ? "rgba(28, 107, 60, 0.10)" : "rgba(154, 148, 144, 0.12)",
+            borderRadius: "999px",
+            padding: "0.25rem 0.6rem",
+            flexShrink: 0,
+            minWidth: "4.5rem",
+            textAlign: "center",
+          }}
+        >
+          {label}
         </span>
-        <span style={{ fontSize: "0.78rem", color: "var(--text-mid)", lineHeight: 1.5 }}>
-          {m.provider} · {m.license}
-          {m.blockers.length > 0 && ` — held: ${m.blockers.join("; ")}`}
+        <span style={{ display: "flex", flexDirection: "column", gap: "0.15rem", minWidth: 0 }}>
+          <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text)" }}>
+            {m.name}{" "}
+            <span style={{ fontWeight: 400, color: "var(--text-faint)" }}>· {m.capability}</span>
+          </span>
+          <span style={{ fontSize: "0.78rem", color: "var(--text-mid)", lineHeight: 1.5 }}>
+            {m.provider} · {m.license}
+            {blockers.length > 0 && ` — blocked: ${blockers.join("; ")}`}
+          </span>
         </span>
-      </span>
-    </li>
-  );
+      </li>
+    );
+  };
 
   return (
     <section style={{ marginTop: "2.5rem" }}>
@@ -239,8 +243,9 @@ function ModelLanes({ models }: { models: ModelRegistryStatus["models"] }) {
           marginBottom: "1rem",
         }}
       >
-        Every model GYF can load and whether it may serve — the same license/lane gate enforced in
-        CI. Research-lane models are offline north-stars, never in the live path.
+        Every model GYF can load and whether policy permits it to serve — not proof that it is
+        currently serving. Live runtime state appears above. Research-lane models are offline
+        north-stars, never in the live path.
       </p>
       <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {production.map(row)}

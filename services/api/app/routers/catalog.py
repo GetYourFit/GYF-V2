@@ -255,7 +255,7 @@ def search_items(
             max_price=max_price,
             sort=sort,
             genders=_genders(gender),
-        )
+        )[:k]
     else:
         hits = search_text(
             repo,

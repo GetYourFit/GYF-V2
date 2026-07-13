@@ -33,3 +33,9 @@ def test_cors_anchor_not_enforced_in_local():
     # Local dev defaults localhost in, so an empty configured list is fine.
     s = Settings(env="local", allowed_origins="")
     assert "http://localhost:3000" in s.cors_origins
+
+
+@pytest.mark.parametrize("rate", [-0.01, 1.01])
+def test_trace_sample_rate_must_be_a_fraction(rate):
+    with pytest.raises(ValueError, match="trace_sample_rate"):
+        Settings(trace_sample_rate=rate)

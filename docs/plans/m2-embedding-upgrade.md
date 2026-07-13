@@ -1,7 +1,8 @@
 # M2 · Embedding upgrade — eval-driven bake-off (not a forced swap)
 
 > **Roadmap:** STAGE 1 → M2. **Doctrine:** D3 (clean foundation), D5 (eval-gated promotion via M1),
-> D1/D2 (port + license gate). **Dep:** M1 (✅). **Status:** planned (2026-06-20).
+> D1/D2 (port + license gate). **Dep:** M1 (✅). **Status:** shipped; evaluation scope corrected
+> 2026-07-13. See `docs/research/encoder-eval-alignment-2026-07-13.md`.
 
 ## Research finding that reshapes this milestone
 
@@ -88,5 +89,12 @@ treated as uncertain (conservative). Verified: `test_uncertain_structural_attrib
 
 If no candidate beats the incumbent, we say so plainly and keep `marqo-fashionSigLIP`. "Latest"
 is not a goal; "measurably better, commercial-clean" is (engineering-doctrine thesis).
+
+The completed 112-image bake-off measured image-to-image clustering by canonical category. It did
+not measure the production text-to-catalog task. The separate local 840-query artifact used the
+same image-to-image protocol, has no matching Marqo run, and lacks a versioned catalog snapshot;
+it is therefore neither task-aligned nor a valid cross-model comparison. Promotion state is kept
+unchanged to avoid an equally unmeasured rollback. Any later encoder swap requires the frozen,
+same-query/same-catalog text relevance evaluation specified in the alignment audit above.
 </content>
 </invoke>

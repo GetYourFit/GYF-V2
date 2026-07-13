@@ -56,6 +56,7 @@ CREATE TABLE public.alembic_version (
 
 CREATE TABLE public.interactions (
     id bigint NOT NULL,
+    event_id uuid,
     user_id uuid NOT NULL,
     target_type text NOT NULL,
     target_id text NOT NULL,
@@ -228,6 +229,8 @@ CREATE INDEX idx_interactions_user_action ON public.interactions USING btree (us
 -- Name: idx_interactions_user_ts; Type: INDEX; Schema: public; Owner: -
 
 CREATE INDEX idx_interactions_user_ts ON public.interactions USING btree (user_id, ts DESC);
+
+CREATE UNIQUE INDEX uq_interactions_event_id ON public.interactions USING btree (event_id);
 
 
 -- Name: idx_item_embeddings_hnsw; Type: INDEX; Schema: public; Owner: -

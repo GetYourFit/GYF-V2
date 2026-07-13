@@ -25,6 +25,9 @@ Dashboard → your project `tabjvaatrikogutkrjom`:
    - `GYF_DATABASE_URL` = the **Session** string (:5432).
    - `GYF_SUPABASE_URL` = `https://<ref>.supabase.co`  ← enables real login (ES256).
    - `GYF_SUPABASE_JWT_SECRET` = the JWT secret (legacy fallback).
+   - `GYF_SENTRY_DSN` = Sentry → project `gyf-api` → Settings → Client Keys (DSN).
+   - The blueprint pins `GYF_TRACE_SAMPLE_RATE=0.1` (10% of backend requests) to
+     control Sentry performance-event volume.
 3. Deploy. On boot the API auto-runs migrations (builds the schema). Wait for healthy.
 4. **Copy the API URL** → e.g. `https://gyf-api.onrender.com`. Check `…/health` returns ok.
 
@@ -48,7 +51,7 @@ bucket. (Idempotent — safe to re-run.)
    NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
    ```
-   via `cd app && vercel env add <NAME> production` (or the Vercel dashboard).
+   Add them via `cd app && vercel env add <NAME> production` or the Vercel dashboard.
 2. Link once (you run this — it's interactive): `! cd app && vercel link` → project `gyf-v2-app`.
 3. Deploy: `make deploy-web` (or just push to `main` — Vercel's Git integration auto-deploys).
 4. **The website URL** is `https://gyf-v2-app.vercel.app`.
@@ -70,4 +73,7 @@ That first signup is the first row of your real-data flywheel. 🎉
 - **The web build inlines `NEXT_PUBLIC_*`** at build time — they must be set in the
   Vercel project (Production scope) before deploy, or it ships pointing at localhost.
 - **Render free tier sleeps** — first request after idle is slow; not a bug.
+- **Current production telemetry** is Vercel Speed Insights plus backend Sentry
+  errors/performance when `GYF_SENTRY_DSN` is set. PostHog, frontend Sentry, and
+  browser→API OTel need owner tokens/a production collector and are not configured yet.
 </content>

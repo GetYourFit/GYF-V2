@@ -92,6 +92,25 @@ def test_remote_probe_rejects_auth_and_missing_routes(monkeypatch):
         assert system_module._remote_reachable(f"https://space.example/{status_code}") is False
 
 
+def test_promoted_body_runtime_is_local(monkeypatch):
+    import app.routers.system as system_module
+
+    monkeypatch.setattr(
+        system_module,
+        "_configured_runtime_verdict",
+        lambda runtime: (True, []) if runtime == "body" else (False, []),
+    )
+    monkeypatch.setattr(
+        system_module, "_runtime_installed", lambda package: package in {"onnxruntime", "rtmlib"}
+    )
+    cap = _get().json()["capabilities"]["photo_body_type"]
+    assert cap == {
+        "status": "live",
+        "lane": "local",
+        "detail": "Body-type estimation runs locally with RTMW keypoints via ONNX Runtime.",
+    }
+
+
 def test_affiliate_detail_reports_partial_price_coverage():
     stats = InMemorySystemStatsRepository(
         CatalogHealth(items=53651, with_embedding=12161, with_price=9161, with_image=53651)

@@ -99,6 +99,68 @@ def test_examples_are_scoped_per_user_and_item():
     assert imp["label"] == 0.0
 
 
+def test_attribution_is_scoped_by_target_type():
+    rows = [
+        _event("impression", "2026-07-01T10:00:00+00:00", ttype="item", context=IMP_CTX),
+        _event("save", "2026-07-01T10:01:00+00:00", ttype="outfit", context=IMP_CTX),
+    ]
+    examples = build_examples(rows)
+    assert [e["label"] for e in examples] == [0.0, 1.0]
+
+
+def test_recommendation_id_prevents_repeated_item_credit():
+    rows = [
+        _event("impression", "2026-07-01T10:00:00+00:00", context=IMP_CTX),
+        _event(
+            "impression",
+            "2026-07-01T11:00:00+00:00",
+            context={**IMP_CTX, "recommendation_id": "rec-2"},
+        ),
+        _event(
+            "save",
+            "2026-07-01T11:01:00+00:00",
+            context={"recommendation_id": "rec-2"},
+        ),
+    ]
+    examples = build_examples(rows)
+    assert [(e["recommendation_id"], e["label"]) for e in examples] == [
+        ("rec-1", 0.0),
+        ("rec-2", 1.0),
+    ]
+
+
+def test_exact_recommendation_can_credit_an_older_preceding_impression():
+    rows = [
+        _event("impression", "2026-07-01T10:00:00+00:00", context=IMP_CTX),
+        _event(
+            "impression",
+            "2026-07-01T11:00:00+00:00",
+            context={**IMP_CTX, "recommendation_id": "rec-2"},
+        ),
+        _event(
+            "save",
+            "2026-07-01T11:01:00+00:00",
+            context={"recommendation_id": "rec-1"},
+        ),
+    ]
+    examples = build_examples(rows)
+    assert [e["label"] for e in examples] == [1.0, 0.0]
+
+
+def test_legacy_engagement_credits_only_latest_impression():
+    rows = [
+        _event("impression", "2026-07-01T10:00:00+00:00", context=IMP_CTX),
+        _event(
+            "impression",
+            "2026-07-01T11:00:00+00:00",
+            context={**IMP_CTX, "recommendation_id": "rec-2"},
+        ),
+        _event("save", "2026-07-01T11:01:00+00:00"),
+    ]
+    examples = build_examples(rows)
+    assert [e["label"] for e in examples] == [0.0, 1.0]
+
+
 def test_report_contains_rates_and_tables():
     rows = [
         _event("impression", "2026-07-01T10:00:00+00:00", context=IMP_CTX),

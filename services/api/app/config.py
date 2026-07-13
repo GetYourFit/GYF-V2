@@ -1,4 +1,4 @@
-from pydantic import field_validator, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -68,21 +68,10 @@ class Settings(BaseSettings):
     # Max accepted upload size for POST /profile/photo (bytes); larger is rejected
     # before decode so an oversized image can't exhaust memory. Default 10 MiB.
     max_photo_bytes: int = 10 * 1024 * 1024
-    # Body-type GPU lane (M3, doctrine D7). When set, the body-type module runs the
-    # BiRefNet silhouette + RTMW keypoint pipeline on a remote HF ZeroGPU Space (see
-    # spaces/gyf-gpu) instead of needing those models / a GPU on the API host; the
-    # widths→ratios→silhouette taxonomy still runs here. Unset = local CPU-capable
-    # SilhouetteBodyEstimator baseline (invariant #5).
-    body_remote_url: str = ""
-    # Skin-tone GPU lane (M4, doctrine D7). When set, the CIELAB→MST pipeline runs on
-    # the ZeroGPU Space (the API host needs no pyfacer/torch); unset = local in-process.
-    skintone_remote_url: str = ""
-    # HF token for the gated SAM checkpoint / higher ZeroGPU quota; passed to gradio_client.
-    hf_token: str = ""
     # ⚠ Fairness gate (engineering-doctrine D5/D6): the skin-tone module is surfaced
     # in BETA as an explicitly editable, honest-confidence ESTIMATE — never an
     # authority. It lands in onboarding as a pre-filled, user-correctable field
-    # ("we estimated this — fix if wrong") and never overwrites a manual value.
+    # ("we estimated this — fix if wrong"); a new upload explicitly re-estimates it.
     # RE-SHADOWED 2026-07-05: the only fairness report
     # (ml/eval-reports/skintone-fairness-mste-v1.json) fails the gate hard
     # (max_band_gap 3.2 vs ≤ 1.0, per-band MAE up to 5.4/10 buckets) AND the
@@ -96,25 +85,6 @@ class Settings(BaseSettings):
     # value in API settings lets policy checks run even when the ML package is
     # intentionally absent and search uses its keyword fallback.
     perception_model: str = "hf-hub:timm/ViT-B-16-SigLIP2"
-
-    @field_validator("body_remote_url", "skintone_remote_url", mode="after")
-    @classmethod
-    def _normalise_space_ref(cls, value: str) -> str:
-        """Drop an implausible Space reference (e.g. a stray ``GYF_BODY_REMOTE_URL=true``).
-
-        A valid ref is an http(s) URL or an ``owner/repo`` Space id. Anything else is
-        treated as unset so a misconfigured env var abstains instantly instead of
-        hanging ~10s on a 404 ``gradio_client`` Space lookup on every photo upload.
-        """
-        candidate = value.strip()
-        if not candidate:
-            return ""
-        if candidate.startswith(("http://", "https://")):
-            return candidate
-        # "owner/repo" form: exactly one slash with non-empty halves and no whitespace.
-        if candidate.count("/") == 1 and " " not in candidate and all(candidate.split("/")):
-            return candidate
-        return ""
 
     # --- Affiliate attribution (Cuelinks lane behind the AffiliateLinker port) ---
     # Cuelinks channel id (the `cid=` value in any deeplink the dashboard/API
@@ -142,7 +112,7 @@ class Settings(BaseSettings):
     # Sentry DSN for error reporting. Unset = Sentry disabled.
     sentry_dsn: str = ""
     # Fraction of transactions traced/sampled (0.0–1.0).
-    trace_sample_rate: float = 1.0
+    trace_sample_rate: float = Field(1.0, ge=0.0, le=1.0)
 
     # --- Rate limiting (W1, security H-3). In-process fixed-window limiter keyed by
     # client (authenticated user when present, else IP) + route. Defaults are generous

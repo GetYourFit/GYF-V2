@@ -68,8 +68,8 @@ class KafkaSink:
 # SQL kept as module constants so tests can assert against them without a live DB.
 _UPSERT_USER = "INSERT INTO users (id) VALUES (%s) ON CONFLICT (id) DO NOTHING"
 _INSERT_INTERACTION = (
-    "INSERT INTO interactions (user_id, target_type, target_id, action, weight, context, ts) "
-    "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    "INSERT INTO interactions (event_id, user_id, target_type, target_id, action, weight, context, ts) "
+    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (event_id) DO NOTHING"
 )
 
 
@@ -97,6 +97,7 @@ class PostgresSink:
         import json
 
         return (
+            event.event_id,
             event.user_id,
             event.target_type.value,
             event.target_id,

@@ -425,9 +425,11 @@ class PostgresVectorSearchRepository:
         # Fall back to the raw words, then the whole query, so we never end up
         # with zero terms.
         words = _WORD_RE.findall(query.lower())
-        tokens = [t for t in words if t not in _STOPWORDS and len(t) > 1][:6] or words[:6] or [
-            query.lower()
-        ]
+        tokens = (
+            [t for t in words if t not in _STOPWORDS and len(t) > 1][:6]
+            or words[:6]
+            or [query.lower()]
+        )
         terms = [f"%{t}%" for t in tokens]
         # score = fraction of tokens present in the title. Matching ANY token
         # (OR) and ranking by overlap means a multi-word query surfaces its

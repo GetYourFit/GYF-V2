@@ -92,4 +92,40 @@ describe("GyfApi", () => {
     const results = await api.search("dress", { k: 2 });
     expect(results).toHaveLength(2);
   });
+
+  it("reuses one generated event id when feedback retries", async () => {
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(((callback: () => void) => {
+      callback();
+      return 0;
+    }) as typeof setTimeout);
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: "accepted", action: "save" }), { status: 202 }),
+      );
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await new GyfApi(() => "jwt", "http://api").feedback({
+      target_type: "item",
+      target_id: "i1",
+      action: "save",
+    });
+
+    const bodies = fetchSpy.mock.calls.map(([, init]) => JSON.parse(String(init?.body)));
+    expect(bodies).toHaveLength(2);
+    expect(bodies[0].event_id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(bodies[1].event_id).toBe(bodies[0].event_id);
+  });
+
+  it("does not retry recommendation GETs that already logged a slate", async () => {
+    const fetchSpy = mockFetch({ status: 503, body: { detail: "cold start" } });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const err = await new GyfApi(() => "jwt", "http://api").recommend().catch((e: unknown) => e);
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(503);
+  });
 });

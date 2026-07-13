@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -50,6 +51,7 @@ class InteractionTarget(str, Enum):
 
 
 class InteractionEvent(BaseModel):
+    event_id: UUID = Field(default_factory=uuid4)
     schema_version: int = SCHEMA_VERSION
     user_id: str
     target_type: InteractionTarget
@@ -81,6 +83,8 @@ class FeedbackRequest(BaseModel):
         }
     }
 
+    # Stable across client retries. Optional for older clients.
+    event_id: UUID | None = None
     target_type: InteractionTarget
     target_id: str
     action: InteractionAction
@@ -115,6 +119,7 @@ class FeedbackRequest(BaseModel):
 
     def to_event(self, user_id: str) -> InteractionEvent:
         return InteractionEvent(
+            event_id=self.event_id or uuid4(),
             user_id=user_id,
             target_type=self.target_type,
             target_id=self.target_id,

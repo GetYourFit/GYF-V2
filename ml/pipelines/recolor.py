@@ -57,7 +57,9 @@ class PostgresRecolorStore:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             for row in conn.execute(sql, params):
                 lch_raw = row[1]
-                lch = tuple(float(x) for x in (json.loads(lch_raw) if isinstance(lch_raw, str) else lch_raw))
+                lch = tuple(
+                    float(x) for x in (json.loads(lch_raw) if isinstance(lch_raw, str) else lch_raw)
+                )
                 yield ColoredItem(item_id=row[0], lch=lch, current_hue_name=row[2])
 
     def save_batch(self, updates: list[tuple[str, str]]) -> None:
@@ -88,7 +90,9 @@ class RecolorResult:
     unchanged: int = 0
 
 
-def run_recolor(store: PostgresRecolorStore, *, limit: int | None = None, batch_size: int = 500) -> RecolorResult:
+def run_recolor(
+    store: PostgresRecolorStore, *, limit: int | None = None, batch_size: int = 500
+) -> RecolorResult:
     result = RecolorResult()
     batch: list[tuple[str, str]] = []
     for item in store.pending(limit):
@@ -111,7 +115,9 @@ def run_recolor(store: PostgresRecolorStore, *, limit: int | None = None, batch_
 def main(argv: Iterable[str] | None = None) -> None:
     from common.config import settings
 
-    parser = argparse.ArgumentParser(description="Recompute hue_name from stored LCh (no re-embedding).")
+    parser = argparse.ArgumentParser(
+        description="Recompute hue_name from stored LCh (no re-embedding)."
+    )
     parser.add_argument("--limit", type=int, default=None, help="Max items to process.")
     args = parser.parse_args(list(argv) if argv is not None else None)
 

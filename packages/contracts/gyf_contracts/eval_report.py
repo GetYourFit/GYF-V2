@@ -47,10 +47,10 @@ RUNTIME_MODELS = {
         "retinaface-farl-celebm-cielab-mst-v1",
     ),
     "body": RuntimeModelBinding(
-        "birefnet-rtmw-bodyshape",
+        "rtmw-keypoint-bodyshape",
         "body_estimator",
-        "hf://ZhengPeng7/BiRefNet + rtmlib Wholebody (RTMW)",
-        "rtmw-birefnet-v1",
+        "rtmlib://Wholebody (RTMW)",
+        "rtmw-keypoint-ratios-v1",
     ),
     "fal-leffa": RuntimeModelBinding(
         "fal-leffa-vto-v1",

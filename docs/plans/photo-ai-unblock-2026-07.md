@@ -4,20 +4,20 @@
 > gate, D3 foundation+adapter, D4 real-data flywheel, D5 eval-gated, D6 honest/abstain). Registry
 > is the machine gate (`models.registry.json` + `gyf_contracts.model_policy.is_servable`).
 
-## 0. Diagnosis — the blocker is ONE dirty component per module, not the pipeline
+## 0. Diagnosis — selected research paths and remaining promotion blockers
 
 Verified from the registry, not assumed:
 
 | Module | Card | Clean parts | The single dirty part |
 | --- | --- | --- | --- |
 | **Skin** | `retinaface-farl-celebm` (research) | CIELAB→MST geometry (ours, no license) | **RetinaFace detector trained on WIDER FACE = non-commercial**; FaRL parser train-data unverified. **Also fails fairness eval (gap 3.2 vs ≤1.0).** |
-| **Body** | `birefnet-rtmw-bodyshape` (research) | **RTMW keypoints on COCO-WholeBody = CC-BY-4.0 = already commercial-clean ✓**; taxonomy geometry (ours) | **BiRefNet matting head on DIS5K = provenance unverified.** |
+| **Body (retired comparison)** | `birefnet-rtmw-bodyshape` (research) | **RTMW keypoints on COCO-WholeBody = CC-BY-4.0 = already commercial-clean ✓**; taxonomy geometry (ours) | **BiRefNet matting head on DIS5K = provenance unverified.** |
+| **Body (selected P2 candidate)** | `rtmw-keypoint-bodyshape` (research) | RTMW keypoints + directly observable shoulder/hip geometry; no sizing claim | Consented accuracy/abstention/subgroup/correction evaluation and owner-approved thresholds are still missing. |
 | **Body alt** | `sam-3d-body` (research) | SAM License commercial-OK, train-data OK | No eval attached; M3 not shipped. |
 
-**Consequence:** you do not need to relicense a whole model or collect a giant dataset. Replace the
-**one** license-encumbered *learned* component with a permissively-licensed foundation + classical
-CV, and calibrate on **our** consented data. That is doctrine D3 (clean foundation + our-data
-adapter), and it is the lazy-correct move: **less code, no license drama, fully CPU.**
+**Consequence:** P2 selected the smaller RTMW-only research candidate and retired the BiRefNet
+serving route. That removes the known body provenance blocker, but does **not** unblock production:
+the candidate remains fail-closed until consented evaluation and explicit promotion thresholds exist.
 
 ## 1. SOTA solution architecture
 
@@ -50,7 +50,7 @@ Only learned component = landmarks (clean, geometric). Everything else is our ge
 1. **Keypoints** — **RTMW is already clean (CC-BY-4.0)**; keep it, or use **MediaPipe Pose** (Apache)
    for a CPU/edge path. Shoulder / waist / hip / torso ratios.
 2. **Silhouette (optional)** — drop **BiRefNet(DIS5K)**. v1 = **keypoint ratios alone** → existing
-   silhouette taxonomy (`bodyshape.silhouette_measurements`, pure geometry). If ratios underperform,
+   body-type taxonomy. If ratios underperform on consented evaluation data,
    add **MediaPipe Selfie Segmentation / Image Segmenter** (Apache) — still commercial-clean.
 3. **Honesty** — **no body measurements from one casual photo** (pose benchmarks like
    [SMPLer](https://arxiv.org/abs/2404.15276) prove mesh recovery, not sizing under loose clothing).
@@ -116,9 +116,10 @@ Build the MediaPipe-landmarks + classical-color-constancy + CIELAB→MST(LUT) pi
 skin-tone port. Ship abstain + adjacent-choice confirmation. Register the landmark model with verified
 provenance. *Exit:* runs CPU in-process/Space; `is_servable` blocked only on the eval report (P3).
 
-**P2 — Body clean baseline (code).** Drop BiRefNet; RTMW/MediaPipe keypoint ratios → taxonomy +
-confidence + correction. Register clean. *Exit:* body-type returned with honest confidence, no
-measurement claims.
+**P2 — Body clean baseline (research code).** Drop BiRefNet; RTMW/MediaPipe keypoint ratios →
+taxonomy + confidence + correction. Register clean. *Exit:* offline candidate returns an honest
+confidence and no measurement claims; production stays fail-closed until the owner supplies the
+consented evaluation panel and approves explicit promotion thresholds in P3.
 
 **P3 — Eval + fairness gate (owner unlock: panel).** Recruit + freeze the consented MST panel; run the
 fairness eval. *Exit (the promotion gate):* accuracy, abstention, **subgroup gap ≤ 1.0 (from 3.2)**,
@@ -139,6 +140,6 @@ regression.
   A/B candidates) + the fairness-eval sign-off. GPU only matters *after* the eval gate can pass.
 - **Recommendation** is not license/data-blocked — it is gated on Phase-C event instrumentation.
 
-**Bottom line:** the photo AI is unblocked by *removing* the license-encumbered learned component (not
-relicensing a giant model) and *labeling from the product itself* (not buying a dataset). The only
-things I cannot do are recruit the consented eval panel and sign off the model licenses legally.
+**Bottom line:** the implementation path is selected, not fully unblocked. Removing the
+license-encumbered component produced a cleaner research candidate; production still requires the
+consented eval panel, evidence-backed thresholds, fairness results, and legal sign-off.

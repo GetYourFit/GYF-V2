@@ -92,22 +92,32 @@ export function SavedGrid() {
       setLooks((cur) => cur.filter((l) => l.id !== look.id));
       void browserApi()
         .removeSavedOutfit(look.id)
-        .then(() => toast({ title: "Look removed", variant: "success" }))
-        .catch(() => {
-          setLooks((cur) => [look, ...cur]);
-          toast({ title: "Couldn't remove that look", variant: "error" });
-        });
-      // Behavioral signal: this look was removed from the collection (best-effort).
-      if (look.recommendation_id) {
-        void browserApi()
-          .feedback({
-            target_type: "outfit",
-            target_id: look.recommendation_id,
-            action: "skip",
-            context: { source: "saved_remove" },
-          })
-          .catch(() => {});
-      }
+        .then(
+          () => {
+            toast({ title: "Look removed", variant: "success" });
+            // Only a committed removal is negative taste feedback. Failed deletes
+            // restore the look and must not teach the model that the user skipped it.
+            if (look.recommendation_id) {
+              void Promise.all(
+                look.items.map((item) =>
+                  browserApi().feedback({
+                    target_type: "item",
+                    target_id: item.item_id,
+                    action: "skip",
+                    context: {
+                      recommendation_id: look.recommendation_id,
+                      source: "saved_remove",
+                    },
+                  }),
+                ),
+              ).catch(() => {});
+            }
+          },
+          () => {
+            setLooks((cur) => [look, ...cur]);
+            toast({ title: "Couldn't remove that look", variant: "error" });
+          },
+        );
     },
     [toast],
   );

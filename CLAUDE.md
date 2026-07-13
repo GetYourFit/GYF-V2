@@ -56,19 +56,19 @@ GetYourFit-New/
 
 ---
 
-## 0.5 Current Status (2026-07-02)
+## 0.5 Current Status (body lane updated 2026-07-13)
 
 **Done & verified:** P0 infra; P1-A/B/C (perception & catalog, manual onboarding + consent/erasure, cold-start → taste model → NL goals); **M0** (license gate) and **M1** (eval harness + promotion gate) ✅; **M2 ✅** — `google-siglip2-base-v1` promoted via a real ZeroGPU bake-off, prod catalog seeded with ~24k items + embeddings; **the full product surface is built, wired to prod, and deployed** (Vercel web + Render API + Supabase): auth, onboarding (manual + photo path), stylist feed with explanations/confidence/NL goals/occasion, Explore search + facets + price filter/sort, collections & saved looks, wardrobe, social posts/reactions/recreate, profile + badges, account (consent + erasure). Security hardening (headers, rate limits, bounded queries) and a full lint/type/test/doctrine CI gate are green.
 
 **The honest gaps (requirements not yet met — see the 2026-07-02 audit):**
-1. **Virtual try-on (M9) is MISSING** — no `TryOnRenderer` port, no UI, no router; only event vocabulary exists. It is a headline Phase-1 feature.
-2. **Affiliate attribution is MISSING** — buy is a raw `buy_url` redirect; no affiliate wrapping/attribution. Cuelinks signup is on hold pending channel verification (contact email now published in-app); prod catalog prices are null until a real feed lands, which keeps the price filter inert.
-3. **Photo onboarding is DEGRADED on prod** — body-type and skin-tone modules abstain (no GPU runtime wired on Render); both are also correctly `research`-lane in `models.registry.json` (not just shadow-gated) because their training-data licenses (WIDER FACE / DIS5K) aren't yet confirmed commercial-clean, and skin-tone additionally fails its fairness eval — manual path is the live fallback, as designed. Promotion checklist (per-model) lives in the registry's `notes` field.
+1. **Virtual try-on (M9) surface is built, rendering is not promoted** — the `TryOnRenderer` port, `/tryon` router, outfit-detail UI, null baseline, and licensed fal-Leffa/FASHN adapters exist. Production remains an honest abstention until a configured provider passes its eval/registry gate.
+2. **Affiliate attribution is built and configured** — retailer links pass through the Cuelinks port with recommendation subids when `GYF_CUELINKS_CID` is set (it is pinned in `render.yaml`); otherwise raw retailer redirects remain the fallback. Catalog and price coverage are reported from live database aggregates, never a stale hardcoded count.
+3. **Photo onboarding is fail-closed on prod** — skin tone remains research-lane and fairness-blocked. The BiRefNet body route is retired; its replacement RTMW keypoint-ratio candidate makes no sizing claim and is not installed in the production API. Editable manual onboarding remains live. Body promotion requires owner-approved thresholds and a consented evaluation panel; neither is fabricated in code.
 4. **Trust/ops surface (M8.5) PARTIAL** — per-rec confidence ships; no operator-facing live-vs-shadow status view.
 
 **Done since the audit:** follow-graph ✅ (follow/unfollow endpoints, Following feed, 2026-07-02) and **wardrobe-aware recommendations ✅** (closet-anchored styling: owned garments join the candidate pools as anchors, new pieces scored for versatility against the owned palette, "You own this" badges, 2026-07-03).
 
-**Next:** land the real affiliate feed (Cuelinks) → real prices/buy-URLs activate Explore + revenue + flywheel; then try-on behind a `TryOnRenderer` port (licensed model at inference, ZeroGPU). M3/M4 GPU lanes fill the photo path behind the live surface.
+**Next:** validate live catalog/price coverage and affiliate conversion sync; fund and evaluate the existing licensed try-on adapter before configuring it. Photo research promotes only after its consented eval gates pass.
 
 ---
 

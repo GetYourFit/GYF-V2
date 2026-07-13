@@ -71,6 +71,6 @@ Phase **P0 — Foundations** (see `docs/implementation-plan.md`), nearly complet
 | CI/CD (P0-B) | ✅ CI green; CD wired (no-op until Vercel secrets set) |
 | Infra (P0-C) | ✅ Supabase + Upstash + Vercel via Terraform; local docker stack |
 | Contracts & data spine (P0-D) | ✅ schema, auth scaffold, event taxonomy, sinks — **proven end-to-end in CI** |
-| Observability (P0-E) | ✅ Prometheus metrics + opt-in OTel traces + Sentry; structured logs |
+| Observability (P0-E) | ✅ Prometheus metrics + structured logs + opt-in backend Sentry errors/performance; OTel remains collector-gated |
 
 Free-tier-first, no hardcoded limitations, built to scale. Next: **P1 — The Intelligent Stylist**.

@@ -59,11 +59,15 @@ def test_authenticated_feedback_lands_in_postgres_and_is_queryable(
     monkeypatch.setattr(dependencies, "sink", PostgresSink(DSN))
 
     client = TestClient(app)
-    res = client.post(
-        "/feedback",
-        headers={"Authorization": f"Bearer {token}"},
-        json={"target_type": "outfit", "target_id": "o-e2e", "action": "save", "weight": 1.0},
-    )
+    payload = {
+        "event_id": str(uuid.uuid4()),
+        "target_type": "outfit",
+        "target_id": "o-e2e",
+        "action": "save",
+        "weight": 1.0,
+        "context": {"recommendation_id": "rec-e2e"},
+    }
+    res = client.post("/feedback", headers={"Authorization": f"Bearer {token}"}, json=payload)
     assert res.status_code == 202
     assert res.json() == {"status": "accepted", "action": "save"}
 
@@ -76,6 +80,16 @@ def test_authenticated_feedback_lands_in_postgres_and_is_queryable(
     assert row is not None, "event did not land in the interactions table"
     assert str(row[0]) == user_id  # attributed to the authenticated principal
     assert (row[1], row[2], row[3], row[4]) == ("outfit", "o-e2e", "save", 1.0)
+
+    # Retrying the same event id is accepted but cannot inflate the spine.
+    retry = client.post("/feedback", headers={"Authorization": f"Bearer {token}"}, json=payload)
+    assert retry.status_code == 202
+    assert (
+        db_conn.execute(
+            "SELECT count(*) FROM interactions WHERE user_id = %s", (user_id,)
+        ).fetchone()[0]
+        == 1
+    )
 
     # Auth is enforced end-to-end: no token → 401, nothing persisted.
     unauth = client.post(

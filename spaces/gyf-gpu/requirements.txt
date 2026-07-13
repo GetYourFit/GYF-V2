@@ -9,20 +9,3 @@ numpy
 transformers>=4.40
 sentencepiece
 protobuf
-# Skin-tone lane (M4): RetinaFace face detect + FaRL face-parsing (MIT) for the
-# real CIELAB->MST pipeline vendored under skintone/. CPU-capable; torch already present.
-pyfacer>=0.0.5
-# Body-type lane (M3): commercial-clean, ZeroGPU-deployable silhouette + keypoint
-# pipeline (replaces SAM 3D Body — that stack needs detectron2+pyrender+pytorch3d+
-# conda and is NOT pip-deployable on a Space; Sapiens is CC-BY-NC). app.py segments
-# the body with BiRefNet (MIT) and locates shoulder/hip landmarks with RTMW
-# whole-body keypoints (Apache-2.0, rtmlib ONNX); the vendored bodyshape geometry
-# reads the arm-robust torso width at each landmark and the caller classifies it.
-# BiRefNet loads from HF (ZhengPeng7/BiRefNet) via transformers AutoModel
-# (trust_remote_code) and needs timm/kornia/einops; torchvision for preprocessing.
-torchvision
-timm
-kornia
-einops
-rtmlib>=0.0.13
-onnxruntime-gpu>=1.17.0

@@ -183,8 +183,6 @@ def test_status_never_advertises_registry_blocked_models_as_live(monkeypatch):
     monkeypatch.setattr(system, "database_ready", lambda _dsn: True)
     monkeypatch.setattr(system, "_remote_reachable", lambda _url: True)
     monkeypatch.setenv("GYF_ENCODER_REMOTE_URL", "https://encoder.example")
-    monkeypatch.setattr(system.settings, "body_remote_url", "https://body.example")
-    monkeypatch.setattr(system.settings, "skintone_remote_url", "https://skin.example")
     monkeypatch.setattr(system.settings, "skin_tone_enabled", True)
     monkeypatch.setattr(system.settings, "tryon_provider", "fal-leffa")
     monkeypatch.setattr(system.settings, "fal_api_key", "configured")

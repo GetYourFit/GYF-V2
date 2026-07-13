@@ -122,7 +122,7 @@ def _norm_uri(uri: str) -> str:
 
 
 def test_gpu_space_allowlist_is_commercial_clean_per_registry():
-    """The public GPU Space serves research encoder candidates for bake-offs (legitimate), but its
+    """The public inference lab serves research encoder candidates for bake-offs, but its
     hand-maintained allow-list is not covered by the CI license gate. Guard it: every model it may
     load must map to a registry encoder card whose model *and* training-data licenses are
     commercial-OK — so a non-commercial checkpoint can never be slipped into the served lane."""
@@ -139,6 +139,25 @@ def test_gpu_space_allowlist_is_commercial_clean_per_registry():
             f"Space allow-list has '{model_id}' with no commercial-clean encoder card in the "
             f"registry — promotion rule bypassed"
         )
+
+
+def test_gpu_space_is_an_encoder_lab_not_a_production_or_photo_surface():
+    import ast
+
+    space = _REGISTRY.parent / "spaces" / "gyf-gpu"
+    tree = ast.parse((space / "app.py").read_text(encoding="utf-8"))
+    api_names = {
+        keyword.value.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        for keyword in node.keywords
+        if keyword.arg == "api_name" and isinstance(keyword.value, ast.Constant)
+    }
+    assert api_names == {"embed_images", "embed_texts"}
+
+    readme = (space / "README.md").read_text(encoding="utf-8").lower()
+    assert "inference lab" in readme
+    assert "not a production serving path" in readme
 
 
 def test_known_non_commercial_models_are_quarantined_to_research():

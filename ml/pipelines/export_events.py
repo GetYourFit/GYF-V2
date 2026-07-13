@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from bisect import bisect_right
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
@@ -57,25 +58,49 @@ def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     exported too, with ``propensity: null`` — usable as extra positives.
     """
     impressions: list[dict[str, Any]] = []
-    engagements: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    impressions_by_target: dict[tuple[str, str, str], list[tuple[str, int]]] = defaultdict(list)
+    impressions_by_rec: dict[tuple[str, str, str, str], list[tuple[str, int]]] = defaultdict(list)
+    engagements: list[dict[str, Any]] = []
     for row in rows:
         if row["action"] == "impression":
             impressions.append(row)
+            key = (row["user_id"], row["target_type"], row["target_id"])
+            entry = (row["ts"], len(impressions) - 1)
+            impressions_by_target[key].append(entry)
+            recommendation_id = (row.get("context") or {}).get("recommendation_id")
+            if isinstance(recommendation_id, str) and recommendation_id:
+                impressions_by_rec[(*key, recommendation_id)].append(entry)
         else:
-            engagements[(row["user_id"], row["target_id"])].append(row)
+            engagements.append(row)
+
+    for candidates in (*impressions_by_target.values(), *impressions_by_rec.values()):
+        candidates.sort()
+
+    # Attribute every action once. Echoed recommendation ids are exact; legacy
+    # context-free actions fall back to the most recent preceding impression.
+    attributed: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    matched: set[int] = set()
+    for event in engagements:
+        event_rec = (event.get("context") or {}).get("recommendation_id")
+        key = (event["user_id"], event["target_type"], event["target_id"])
+        if event_rec:
+            candidates = (
+                impressions_by_rec.get((*key, event_rec), []) if isinstance(event_rec, str) else []
+            )
+        else:
+            candidates = impressions_by_target.get(key, [])
+        position = bisect_right(candidates, (event["ts"], len(impressions))) - 1
+        if position >= 0:
+            _, index = candidates[position]
+            attributed[index].append(event)
+            matched.add(id(event))
 
     examples: list[dict[str, Any]] = []
-    matched: set[int] = set()
-    for imp in impressions:
+    for index, imp in enumerate(impressions):
         ctx = imp.get("context") or {}
-        later = [
-            e
-            for e in engagements.get((imp["user_id"], imp["target_id"]), [])
-            if e["ts"] >= imp["ts"]
-        ]
+        later = attributed[index]
         # ponytail: strongest-signal label; sequence/dwell modeling when a ranker exists
         best = max(later, key=lambda e: abs(ACTION_REWARD.get(e["action"], 0.0)), default=None)
-        matched.update(id(e) for e in later)
         examples.append(
             {
                 "user_id": imp["user_id"],
@@ -91,25 +116,24 @@ def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
                 "ts": imp["ts"],
             }
         )
-    for events in engagements.values():
-        for e in events:
-            if id(e) in matched or e["target_type"] not in ("item", "outfit"):
-                continue
-            examples.append(
-                {
-                    "user_id": e["user_id"],
-                    "item_id": e["target_id"],
-                    "recommendation_id": (e.get("context") or {}).get("recommendation_id"),
-                    "occasion": (e.get("context") or {}).get("occasion"),
-                    "goals": [],
-                    "rank": None,
-                    "score": None,
-                    "propensity": None,
-                    "label": ACTION_REWARD.get(e["action"], 0.0),
-                    "engaged_action": e["action"],
-                    "ts": e["ts"],
-                }
-            )
+    for e in engagements:
+        if id(e) in matched or e["target_type"] not in ("item", "outfit"):
+            continue
+        examples.append(
+            {
+                "user_id": e["user_id"],
+                "item_id": e["target_id"],
+                "recommendation_id": (e.get("context") or {}).get("recommendation_id"),
+                "occasion": (e.get("context") or {}).get("occasion"),
+                "goals": [],
+                "rank": None,
+                "score": None,
+                "propensity": None,
+                "label": ACTION_REWARD.get(e["action"], 0.0),
+                "engaged_action": e["action"],
+                "ts": e["ts"],
+            }
+        )
     return examples
 
 
