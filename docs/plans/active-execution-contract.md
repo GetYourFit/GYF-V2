@@ -59,7 +59,37 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 
 A failed candidate is rolled back or skipped; it never silently degrades production or blocks an independent slice.
 
-## Current handoff: F4 — catalogue truth (F3 gate closed 2026-07-14)
+## Current handoff: F5 — free recommendation incumbent (F4 gate closed 2026-07-14)
+
+**F4 — catalogue truth. Closed for availability/freshness/removal; rights and price verified.**
+
+The gap: ingestion was insert-or-update only. A product a merchant delists — or that sells out,
+which `ShopifySource` already drops at the feed — simply stopped arriving, and its row stayed live
+forever: still embedded, still recommended, still linked "Buy". GYF was confidently sending people
+to dead product pages, which is the exact opposite of "purchasable outputs".
+
+Closed (migration `0017` + `catalog/ingest.py`): `items.last_seen_at` records the run that last
+carried an item and `items.available` is what serving filters on. Each feed run opens with a
+*database-clock* marker (a fast host clock must never make a freshly refreshed catalogue look
+stale), and on completion flags this provider's untouched rows unavailable. A run carrying less
+than half the provider's live rows is treated as a broken feed, not a mass delisting, and reconciles
+nothing — one rate-limited night can never blank the catalogue. Items are flagged, never deleted:
+wardrobes, saved outfits and the learning spine still reference them, and a product that comes back
+in stock flips available again on its next appearance. Every serving path filters `i.available`
+(search, browse, keyword, similar, facets, and the recommender's candidate pools); the item
+*directory* deliberately does not, so an owned or saved garment still renders.
+
+Verified already true: rights are recorded per feed (`source_provider`/`source_license`, and
+`ShopifySource` states its `merchant-public-feed` basis — listing with attribution and buy-through,
+never generative training on merchant imagery without terms, which is what F8 must clear); prices
+and currency come from the feed with a currency guard and sanity bound, and coverage is reported
+from live aggregates (`/items/facets`), never a hardcoded count.
+
+Regressions: `test_catalog_availability.py` — reconciliation, the come-back-in-stock path, the
+broken-run guard, and (real-PG lane) proof that a delisted item is gone from search, browse,
+keyword and candidates.
+
+## Previous handoff: F4 — catalogue truth (F3 gate closed 2026-07-14)
 
 **F3 — learning-event truth. Closed.** Audit-first, one true gap found and closed.
 

@@ -2522,3 +2522,31 @@ engagements already export with a null propensity) and viewport-verified "seen" 
 
 Verification: fmt/lint/typecheck/doctrine green, API 362 passed / 8 env-gated skips, ML 86 passed,
 web 62 passed, build green.
+
+### 2026-07-14 (cont. 11) — F4 closed: the catalogue was recommending dead products
+
+Ingestion was insert-or-update ONLY. A delisted or sold-out product (ShopifySource already drops
+out-of-stock at the feed) just stopped arriving — and its row stayed live forever: embedded,
+recommended, "Buy" link intact. GYF was sending people to dead product pages while claiming
+purchasable outputs.
+
+Migration 0017 (`items.last_seen_at`, `items.available`, provider+freshness index) + reconciliation
+in `catalog/ingest.py`: a run opens with a DATABASE-clock marker (a host clock minutes fast would
+otherwise mark everything it just refreshed as stale and delist the whole catalogue), and on
+completion flags that provider's untouched rows unavailable. Guard: a run carrying <50% of the
+provider's live rows is a broken feed (store down / rate-limited / partial pages), not a mass
+delisting — it reconciles nothing and says so in the logs. Items are flagged, never deleted
+(wardrobe/saved/history reference them); a product back in stock flips available on its next
+appearance. Serving filters `i.available` on every path — search, browse, keyword, similar, facets,
+recommender candidate pools — while the item directory deliberately does NOT, so owned/saved
+garments still render. CLI/nightly output now reports `delisted=` per provider.
+
+Verified-not-rebuilt: rights (source_provider/source_license; ShopifySource's merchant-public-feed
+basis = listing + attribution + buy-through, NOT generative training — F8 must clear that
+separately), price/currency (feed values, currency guard, sanity bound, live-aggregate facets).
+
+Regressions: test_catalog_availability.py (reconcile, back-in-stock, broken-run guard, and a real-PG
+proof that a delisted item vanishes from search/browse/keyword/candidates).
+
+Verification: fmt/lint/typecheck/doctrine green, API 366 passed / 9 env-gated skips, ML 86, web 62,
+build green.

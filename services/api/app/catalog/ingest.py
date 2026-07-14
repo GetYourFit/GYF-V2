@@ -114,6 +114,8 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
 class IngestResult:
     seen: int = 0
     written: int = 0
+    # Items this provider stopped carrying, flagged unavailable by reconciliation.
+    delisted: int = 0
     # Raw feed strings that still classified to ``unknown`` after the title
     # fallback → occurrence count. The taxonomy grows from this evidence, not
     # guesswork: every run reports exactly the vocabulary it failed to place.
@@ -125,10 +127,43 @@ class ItemRepository(Protocol):
         """Insert or update by ``dedupe_key``. Returns True if a row changed."""
         ...
 
+    def begin_run(self) -> object:
+        """Open a feed run and return its start marker.
+
+        The marker comes from the *store's* clock (the same clock that stamps
+        ``last_seen_at``), never the ingesting host's — a host clock running a few
+        minutes fast would otherwise make every item this run just refreshed look
+        stale and delist the entire catalogue.
+        """
+        ...
+
+    def reconcile_removals(self, provider: str, run_start: object, seen: int) -> int:
+        """Flag this provider's items that the run starting at ``run_start`` did not
+        carry. Returns the number newly marked unavailable."""
+        ...
+
+
+# A feed run that returns far less than the provider's known catalogue is a broken
+# run, not a mass delisting (store down, rate-limited, partial page). Reconciling on
+# it would blank most of the catalogue. Below this fraction of the provider's live
+# rows, we keep the old items and say so in the logs.
+# ponytail: one blunt ratio. If real merchants ever churn >50% legitimately, replace
+# it with a per-provider expected-size baseline — not with a bigger constant.
+MIN_RUN_COVERAGE = 0.5
+
 
 def ingest(source: FeedSource, repo: ItemRepository) -> IngestResult:
-    """Normalize every item from ``source`` and upsert via ``repo``."""
+    """Normalize every item from ``source`` and upsert via ``repo``, then reconcile
+    what the feed no longer carries.
+
+    A product a merchant delists — or that sells out, which the Shopify source
+    already filters at the feed — simply stops arriving. Without this second step
+    its row stays live forever and GYF keeps recommending a dead product page.
+    Items are flagged unavailable, never deleted: wardrobes, saved outfits and the
+    learning spine still reference them.
+    """
     result = IngestResult()
+    run_start = repo.begin_run()
     for raw in source.fetch():
         item = normalize(raw, provider=source.provider, license=source.license)
         result.seen += 1
@@ -136,6 +171,7 @@ def ingest(source: FeedSource, repo: ItemRepository) -> IngestResult:
             result.unknown_categories[raw.category.strip() or raw.title.strip()] += 1
         if repo.upsert(item):
             result.written += 1
+    result.delisted = repo.reconcile_removals(source.provider, run_start, result.seen)
     return result
 
 
@@ -157,8 +193,21 @@ ON CONFLICT (dedupe_key) DO UPDATE SET
     image_refs = EXCLUDED.image_refs,
     source_provider = EXCLUDED.source_provider,
     source_license = EXCLUDED.source_license,
-    image_hash = EXCLUDED.image_hash
+    image_hash = EXCLUDED.image_hash,
+    -- The feed still carries it: it is fresh, and purchasable again if a previous
+    -- run had delisted it (a sold-out product coming back in stock).
+    last_seen_at = now(),
+    available = TRUE
 """
+
+# Items this provider no longer carries: everything it owns that this run did not
+# touch. `run_start` is captured before the first upsert, so "not touched" is exact
+# even for a run that takes hours.
+_DELIST_STALE = (
+    "UPDATE items SET available = FALSE "
+    "WHERE source_provider = %s AND available AND last_seen_at < %s"
+)
+_PROVIDER_LIVE_COUNT = "SELECT count(*) FROM items WHERE source_provider = %s AND available"
 
 
 class PostgresItemRepository:
@@ -180,6 +229,25 @@ class PostgresItemRepository:
             # Pooled prod connections get dropped mid-run (Supabase pooler);
             # one retry on a fresh connection rides out the blip.
             return self._upsert_once(item)
+
+    def begin_run(self) -> object:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            return conn.execute("SELECT now()").fetchone()[0]
+
+    def reconcile_removals(self, provider: str, run_start: object, seen: int) -> int:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            live = conn.execute(_PROVIDER_LIVE_COUNT, (provider,)).fetchone()[0]
+            if seen == 0 or (live and seen < live * MIN_RUN_COVERAGE):
+                logging.getLogger("gyf.catalog.ingest").warning(
+                    "skipping removal reconciliation for %s: run carried %d items against "
+                    "%d live — treating this as a broken feed, not a mass delisting",
+                    provider,
+                    seen,
+                    live,
+                )
+                return 0
+            cur = conn.execute(_DELIST_STALE, (provider, run_start))
+            return cur.rowcount or 0
 
     def _upsert_once(self, item: NormalizedItem) -> bool:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
@@ -208,10 +276,30 @@ class InMemoryItemRepository:
 
     def __init__(self) -> None:
         self.items: dict[str, NormalizedItem] = {}
+        self.unavailable: set[str] = set()
+        self._run: set[str] = set()
 
     def upsert(self, item: NormalizedItem) -> bool:
         self.items[item.dedupe_key] = item
+        self.unavailable.discard(item.dedupe_key)
+        self._run.add(item.dedupe_key)
         return True
+
+    def begin_run(self) -> object:
+        self._run = set()
+        return None
+
+    def reconcile_removals(self, provider: str, run_start: object, seen: int) -> int:
+        live = [
+            key
+            for key, item in self.items.items()
+            if item.source_provider == provider and key not in self.unavailable
+        ]
+        if seen == 0 or (live and seen < len(live) * MIN_RUN_COVERAGE):
+            return 0
+        stale = [key for key in live if key not in self._run]
+        self.unavailable.update(stale)
+        return len(stale)
 
 
 def ingest_shopify_roster(repo: ItemRepository, merchants=None) -> dict[str, IngestResult]:
@@ -270,7 +358,10 @@ def main(argv: Iterable[str] | None = None) -> None:
         results = ingest_shopify_roster(repo)
         unknowns: Counter[str] = Counter()
         for provider, result in results.items():
-            print(f"ingest: seen={result.seen} written={result.written} provider={provider}")
+            print(
+                f"ingest: seen={result.seen} written={result.written} "
+                f"delisted={result.delisted} provider={provider}"
+            )
             unknowns.update(result.unknown_categories)
         if unknowns:
             print(
@@ -284,7 +375,10 @@ def main(argv: Iterable[str] | None = None) -> None:
         raise SystemExit("file feeds require a path and --license")
     source = OpenDatasetSource(args.path, provider=args.provider, license=args.license)
     result = ingest(source, repo)
-    print(f"ingest: seen={result.seen} written={result.written} provider={args.provider}")
+    print(
+        f"ingest: seen={result.seen} written={result.written} "
+        f"delisted={result.delisted} provider={args.provider}"
+    )
 
 
 if __name__ == "__main__":

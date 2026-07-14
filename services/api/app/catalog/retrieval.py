@@ -163,7 +163,7 @@ WITH browse_seed AS (
   (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
           hashtextextended(i.id::text, 0) AS seed_rank
    FROM items i CROSS JOIN browse_seed s
-   WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.price IS NOT NULL AND hashtextextended(i.id::text, 0) >= s.pivot
      {region} {gender} {category}
@@ -172,7 +172,7 @@ WITH browse_seed AS (
   (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
           hashtextextended(i.id::text, 0) AS seed_rank
    FROM items i CROSS JOIN browse_seed s
-   WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.price IS NOT NULL AND hashtextextended(i.id::text, 0) < s.pivot
      {region} {gender} {category}
@@ -181,7 +181,7 @@ WITH browse_seed AS (
   (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
           hashtextextended(i.id::text, 0) AS seed_rank
    FROM items i CROSS JOIN browse_seed s
-   WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.price IS NULL AND hashtextextended(i.id::text, 0) >= s.pivot
      {region} {gender} {category}
@@ -190,7 +190,7 @@ WITH browse_seed AS (
   (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
           hashtextextended(i.id::text, 0) AS seed_rank
    FROM items i CROSS JOIN browse_seed s
-   WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.price IS NULL AND hashtextextended(i.id::text, 0) < s.pivot
      {region} {gender} {category}
@@ -207,7 +207,7 @@ LIMIT %s OFFSET %s
 _BROWSE_LEGACY = """
 SELECT i.id, i.title, 0.0 AS score, i.image_refs
 FROM items i
-WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
   AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
   {region} {gender} {category}
 ORDER BY (i.price IS NOT NULL) DESC, hashtext(i.id::text || %s), i.id
@@ -226,7 +226,7 @@ _BROWSE_TASTE = """
 SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs, e.embedding
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
-WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
   {region} {gender} {category}
 ORDER BY e.embedding <=> %s::vector, i.id
 LIMIT %s OFFSET %s
@@ -237,7 +237,7 @@ SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score, i.image_refs
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 CROSS JOIN (SELECT embedding FROM item_embeddings WHERE item_id = %s) q
-WHERE e.item_id <> %s AND i.category <> 'unknown' {region} {gender} {category}
+WHERE e.item_id <> %s AND i.available AND i.category <> 'unknown' {region} {gender} {category}
 ORDER BY e.embedding <=> q.embedding
 LIMIT %s OFFSET %s
 """
@@ -350,7 +350,7 @@ class PostgresVectorSearchRepository:
         params: list[object] = [vec]  # score expression
         # Unknown-category rows are unstylable (no outfit slot) and are where
         # feed junk (hardware, jewelry) concentrates — never surface them.
-        where = "WHERE i.category <> 'unknown'"
+        where = "WHERE i.available AND i.category <> 'unknown'"
         if region:
             where += " " + _REGION_FILTER
             params.append(region)
@@ -385,7 +385,7 @@ class PostgresVectorSearchRepository:
         # appear in results, so counting it as `priced` would make the UI offer a
         # price filter that still empties the grid. COUNT(i.price) counts only
         # non-null prices, so `priced == 0` is the honest "no usable price" signal.
-        where = "WHERE TRUE"
+        where = "WHERE i.available"
         params: list[object] = []
         if region:
             where += " " + _REGION_FILTER
@@ -506,7 +506,7 @@ class PostgresVectorSearchRepository:
         # Require a stored embedding (same as browse()): a keyword hit with none
         # would dead-end on click, since recluster/similar joins item_embeddings.
         where = (
-            "WHERE i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0"
+            "WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0"
             " AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)"
             " AND (" + " OR ".join(["i.title ILIKE %s"] * len(terms)) + ")"
         )

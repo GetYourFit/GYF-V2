@@ -144,7 +144,8 @@ LEFT JOIN item_embeddings e ON e.item_id = i.id
 
 _FILTERS = (
     """
-WHERE i.category = ANY(%s)
+WHERE i.available
+  AND i.category = ANY(%s)
   AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
   AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
   AND (%s::text[] IS NULL
