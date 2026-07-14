@@ -1,0 +1,48 @@
+name: Account purge
+
+# Right-to-erasure, second half (F2): DELETE /account tombstones immediately;
+# this nightly job hard-deletes every account whose tombstone is older than the
+# grace window (app.profile.purge — idempotent, safe to re-run). Without a
+# scheduled runner the erasure promise is only half-kept.
+#
+# Guarded like CD/data-export: no-ops gracefully until the
+# GYF_PROD_DATABASE_URL repo secret is set (it already is for data-export).
+
+on:
+  schedule:
+    - cron: "0 22 * * *" # nightly, 03:30 IST — before the 22:30 data export
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  purge:
+    name: Hard-delete tombstones past the grace window
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secret configured
+        id: gate
+        env:
+          DSN: ${{ secrets.GYF_PROD_DATABASE_URL }}
+        run: |
+          if [ -z "$DSN" ]; then
+            echo "GYF_PROD_DATABASE_URL not set — skipping (set the repo secret to activate)."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: astral-sh/setup-uv@v5
+        if: steps.gate.outputs.configured == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Purge expired tombstones
+        if: steps.gate.outputs.configured == 'true'
+        working-directory: services/api
+        env:
+          GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
+        run: uv run --extra postgres python -m app.profile.purge

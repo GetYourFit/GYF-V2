@@ -2397,3 +2397,15 @@ Verification: full phase gate green — fmt-check, lint (0 errors, 1 pre-existin
 typecheck, doctrine, API 354/4 skipped, web 62 passed / 16 files, production build includes
 both new routes. **F1 gate closed** (F1a+F1b+F1c + full set). Contract handoff advanced to F2
 (privacy & isolation: audit-first, close true gaps only).
+
+### 2026-07-14 (cont. 6) — F2 begun: audit + purge job finally scheduled
+
+F2 audit (audit-first, no rebuilds): consent GET/PUT, DELETE /account tombstone, and
+server-side fail-closed access for tombstoned users all exist and are tested; RLS is
+built+proven per the 2026-07-12 risk review (remainder owner-gated). Two true gaps found:
+(1) `app.profile.purge` — the grace-window hard delete that DELETE /account's contract
+promises — was scheduled NOWHERE, so erasure stopped at the tombstone; (2) no user-facing
+data export endpoint. Gap 1 closed: new `.github/workflows/purge.yml` runs the purge nightly
+(03:30 IST) against prod via the existing GYF_PROD_DATABASE_URL secret, no-ops gracefully
+until the secret is present, `workflow_dispatch` for manual runs; module entrypoint
+smoke-verified. Gap 2 (export) is the next F2 slice, then session-revocation review.
