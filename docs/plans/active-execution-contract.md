@@ -57,13 +57,20 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 
 A failed candidate is rolled back or skipped; it never silently degrades production or blocks an independent slice.
 
-## Current handoff: F1c (F1a shipped 2026-07-14 `6f78bed`; F1b shipped 2026-07-14)
+## Current handoff: F2 (F1 gate closed 2026-07-14 — F1a `6f78bed`, F1b, F1c all shipped)
 
-Add password recovery and an exact deployed authenticated-session integration check.
+F1c delivered `/forgot-password` + `/reset-password` on Supabase Auth (regressions in
+`password-recovery.test.tsx`) and the exact deployed check `scripts/verify_deployed_auth.sh`,
+which passed verbatim against the deployed stack (anonymous /me refused; deployed sign-in;
+authenticated /me identity round-trip). The deployed password-update mutation was proven live
+(old password rejected, new accepted). One residual manual leg: the recovery **email link**
+click-through on the deployed site awaits owner confirmation; the deployed auth config was
+corrected first (site_url was a dead `gyf-web.onrender.com`; now `https://gyf-v2-app.vercel.app`
+with the live domain allowlisted), without which every recovery link would have landed on a dead
+host.
 
-- Password recovery: a working reset path on the deployed auth stack (Supabase Auth), covered by a regression that fails if the flow breaks.
-- Deployed-session check: one exact, runnable integration command that signs in against the deployed stack and proves an authenticated round trip; it must be reproducible by the owner verbatim.
-
-Slice verification: the targeted tests added with each fixed claim, plus the full phase verification set above. The F1 gate closes when F1a+F1b+F1c and the full verification set pass together; F2 cannot begin before that gate.
-
-F1c must not touch payment, migration, model replacement or deletion.
+F2 — Privacy and isolation: consent, export, deletion, session revocation, private storage and
+least-privilege database ownership/RLS. Audit what already exists (consent + erasure shipped in
+P1-B; RLS partially built per the 2026-07-12 risk review) and close only the true gaps, each with
+a regression; no rebuild of proven surfaces. F2 must not touch payment, migration, model
+replacement or deletion.

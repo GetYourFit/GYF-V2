@@ -2369,3 +2369,31 @@ doc-alignment), API 354 passed / 4 known env-gated skips, web 57 passed / 15 fil
 production build OK. Contract handoff advanced to F1c (password recovery + exact deployed
 authenticated-session integration check); the F1 gate closes after F1c. Deletion stays
 parked until F13.
+
+### 2026-07-14 (cont. 5) — F1c shipped: password recovery + exact deployed auth check; F1 GATE CLOSED
+
+Password recovery is live in the web app: `/forgot-password` (sends the Supabase recovery
+email with `redirectTo` `/reset-password`, anti-enumeration copy, honest error surfacing) and
+`/reset-password` (waits for the recovery session via `onAuthStateChange`/`getSession`, calls
+`updateUser`, tells the user plainly when the link is invalid/expired and never claims success
+without an accepted update). "Forgot password?" link added to login; both routes excluded from
+the auth-guard matcher (anonymous by definition). Regressions in
+`password-recovery.test.tsx` (4 tests: redirect target, send failure, update path, no-session
+honesty).
+
+Deployed evidence, run for real: `scripts/verify_deployed_auth.sh` PASSED verbatim against
+prod (anonymous /me → 401; password sign-in on deployed Supabase → session; authenticated
+/me → 200 with the signed-in email). A second live probe proved the actual mutation: password
+update via the deployed GoTrue accepted, old password then rejected (400), new password signs
+in. Found and fixed a real deployment bug while verifying: Supabase auth `site_url` pointed at
+DEAD `gyf-web.onrender.com` and the live domain `gyf-v2-app.vercel.app` was absent from the
+redirect allowlist — every recovery link would have landed on a dead host. Management API
+PATCH set site_url to the live domain and rebuilt the allowlist (live + team + preview
+wildcards + localhost). Residual manual leg: owner click-through of a real recovery email on
+the deployed site (fake test domains are rejected by GoTrue deliverability checks —
+`email_address_invalid` — so only a real inbox can close it).
+
+Verification: full phase gate green — fmt-check, lint (0 errors, 1 pre-existing img warning),
+typecheck, doctrine, API 354/4 skipped, web 62 passed / 16 files, production build includes
+both new routes. **F1 gate closed** (F1a+F1b+F1c + full set). Contract handoff advanced to F2
+(privacy & isolation: audit-first, close true gaps only).

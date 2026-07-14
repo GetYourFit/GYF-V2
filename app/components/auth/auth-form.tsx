@@ -60,7 +60,7 @@ const COPY = {
  * the black canvas. No label, no icon, no underline: the placeholder is
  * the label.
  */
-function GhostInput({
+export function GhostInput({
   type: typeProp = "text",
   value,
   onChange,
@@ -317,6 +317,20 @@ export function AuthForm({ mode }: { mode: Mode }) {
               required
               minLength={6}
             />
+            {mode === "login" && (
+              <Link
+                href="/forgot-password"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "0.9375rem",
+                  color: "var(--text-faint)",
+                  textDecoration: "none",
+                  textAlign: "center",
+                }}
+              >
+                Forgot password?
+              </Link>
+            )}
           </>
         ) : (
           <>
