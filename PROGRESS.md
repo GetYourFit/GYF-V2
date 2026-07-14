@@ -2488,3 +2488,9 @@ Owner-gated remainder (both inside the ceiling): `modal deploy` + three Render e
 Render Starter/Singapore (a region change means recreating the service, so it is documented in
 render.yaml rather than encoded). Verification: fmt/lint/typecheck/doctrine green, API 358 passed
 / 8 env-gated skips, ML 86 passed, web 62 passed, build green.
+
+**F2.5 after-numbers (deployed `c752161`, prod, from India):** health 0.44s p50 PASS · browse 1.85s
+p50 · search-cached 1.45s p50 · search-uncached 11.5s p50. Cache proven live in prod: a brand-new
+query took 13.1s, its immediate repeat 1.25s. The §2 SLO gate still FAILS — a first encode still
+hits the cold ZeroGPU Space, and every request still crosses to a sleeping Oregon free instance.
+Both are the owner flips (Modal deploy + Render Starter/Singapore); no further code removes them.

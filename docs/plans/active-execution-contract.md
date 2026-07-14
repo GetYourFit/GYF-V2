@@ -83,6 +83,14 @@ Shipped in code:
   the search miss path stops paying the ZeroGPU cold start. The Space stays the image-embed lane.
 - **`scripts/measure_slo.py`**: the §2 SLO gate itself — before/after, from the user's vantage.
 
+Measured *after* the code lane deployed (same command, same vantage, commit `c752161`):
+`health` 0.44 s p50 (PASS) · `browse` 1.85 s p50 · `search_cached` 1.45 s p50 ·
+`search_uncached` 11.5 s p50. The cache works and is proven live — a brand-new query cost
+**13.1 s, and its immediate repeat 1.25 s** — but the SLO gate still **FAILS**, and honestly so:
+a *first* encode of any query still crosses to the cold ZeroGPU Space, and every hit still crosses
+the Pacific to Oregon on a sleeping 0.1-CPU instance. Those are exactly the two owner flips below;
+no further code removes them.
+
 Owner-gated (each is one step, both inside the ₹3,000 ceiling):
 1. `modal deploy ml/serving/modal_encoder.py`, then set `GYF_ENCODER_REMOTE_URL` /
    `GYF_ENCODER_REMOTE_KIND=http` / `GYF_ENCODER_REMOTE_KEY` on Render (recipe:
