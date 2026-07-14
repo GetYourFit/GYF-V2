@@ -98,7 +98,7 @@ Two standing gates, both machine-enforced:
 
 1. **Surface meaningfulness (runs in F12):** every user-facing surface declares one
    north-star metric wired to real events (feed → save-rate@10; Explore → view→shop CTR;
-   wardrobe → anchored-outfit saves; social → recreate rate; try-on → completion + renewal;
+   wardrobe → anchored-outfit saves; social → recreate rate; try-on → completion + repeat use;
    explanations → correction/undo rate). F12's evidence-led review keeps, fixes, or cuts each
    surface **by its number**. A surface with no wired metric is by definition not meaningful
    and is a cut candidate in F13.

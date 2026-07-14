@@ -4,13 +4,16 @@
 > [`docs/plans/active-execution-contract.md`](./docs/plans/active-execution-contract.md) is the
 > sole source of truth for execution order, phase gates and the current slice. It supersedes
 > older roadmap, implementation-plan, provider, payment and "Next" guidance in this file and
-> elsewhere. The current slice is **F1a only**. Virtual try-on sits behind a subscription
-> (owner amendment 2026-07-14, [`docs/plans/tryon-subscription-monetization.md`](./docs/plans/tryon-subscription-monetization.md));
-> every other surface is free. Payment work is authorised only for that try-on subscription and
-> lands in F8 — no paid ranking or any other paywall. Owner (2026-07-14): incumbent-preservation
-> and migration-parity caution are relaxed — replacements may ship once licensed and secure;
-> security, privacy and reliability gates stay. Delete obsolete or duplicate code
-> only in **F13**. Complete the contract's phase verification before committing or pushing.
+> elsewhere. The current slice is **F1b only**. Every surface is free, **including virtual
+> try-on** (owner amendment 2026-07-14, superseding the same-day subscription decision): the
+> owned free lane per [`docs/plans/free-vton-moat.md`](./docs/plans/free-vton-moat.md), quota-
+> and kill-switch-bounded, lands in F8/F9. Payment work is cancelled; no paywall anywhere.
+> Owner (2026-07-14): incumbent-preservation and migration-parity caution are relaxed —
+> replacements may ship once licensed and secure; security, privacy and reliability gates stay.
+> A gated replacement deletes what it replaces in the same slice; all other obsolete or
+> duplicate code is deleted only in **F13**. Learned challengers train on GYF's own data until
+> they measurably beat the production incumbent; promotion only on that win. Complete the
+> contract's phase verification before committing or pushing.
 
 > **Purpose.** This is the operating guide for any AI agent or developer working on GYF.
 > It consolidates the full product vision, feature set, technology stack, and engineering

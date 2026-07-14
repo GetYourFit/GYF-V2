@@ -10,16 +10,18 @@ are evidence only when they conflict with it.
 
 ## Binding owner decisions
 
-- Virtual try-on is behind a subscription (owner amendment 2026-07-14; see
-  `docs/plans/tryon-subscription-monetization.md`). Every other surface is free. Payment work is
-  authorised only for that try-on subscription, lands in F8, and goes on sale only after F9
-  promotes a provider. No paid ranking or any other paywall.
+- Every surface is free, including virtual try-on (owner amendment 2026-07-14, superseding
+  the same-day subscription decision; see `docs/plans/free-vton-moat.md`). The owned free lane
+  (MIT Leffa architecture fine-tuned on GYF catalogue pairs, ZeroGPU or rented scale-to-zero
+  serving) lands in F8 and opens to users only after F9 promotes a lane. Payment work is
+  cancelled; no paywall anywhere.
 - Owner (2026-07-14): incumbent-preservation and migration-parity caution are relaxed —
   replacements may ship once licensed and secure. Never trade security, privacy or reliability
   for cost.
-- Delete obsolete and duplicate code only in F13, after its behaviour is protected or rejected.
-- The current slice is F1a only: fix partial profile updates at the shared boundary and prove
-  omitted values survive.
+- A gated replacement deletes what it replaces in the same slice; everything else obsolete
+  or duplicate is deleted only in F13, after its behaviour is protected or rejected.
+- The current slice is F1b only: make filter, confidence-label and sensitive-upload
+  capability claims truthful, one regression per fixed claim. (F1a shipped, commit `6f78bed`.)
 
 ## Working rule
 

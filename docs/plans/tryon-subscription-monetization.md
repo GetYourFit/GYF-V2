@@ -1,7 +1,10 @@
 # Try-on subscription monetization plan
 
-Status: **ACTIVE** · owner decision 2026-07-14 · subordinate to
-[`active-execution-contract.md`](./active-execution-contract.md) (amended the same day)
+Status: **PARKED / superseded evidence** · owner decision 2026-07-14, superseded by the
+same-day free-lane amendment in [`active-execution-contract.md`](./active-execution-contract.md).
+Try-on is free behind quotas ([`free-vton-moat.md`](./free-vton-moat.md)); this plan reactivates
+only if F12's reconciled GPU cost exceeds the owner-approved ceiling. Cost research below stays
+valid evidence.
 
 ## Owner decision
 

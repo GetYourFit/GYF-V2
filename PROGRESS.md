@@ -2312,3 +2312,25 @@ correction flywheel toward the fairness set, and per-surface north-star metrics 
 keep/cut decisions. The uncommitted F0 amendment docs (AGENTS.md, CLAUDE.md, contract, try-on
 monetization plan) are committed separately from this doc-governance work. Current slice
 remains F1b next; no application code touched.
+
+### 2026-07-14 (cont. 2) — Owner amendment: try-on FREE on the owned lane; replace-then-delete; self-training gate
+
+Owner asked whether try-on can be free on a rentable GPU, decided yes, and asked for the single
+execution authority to record it. Contract amended (third same-day amendment): every surface is
+free including try-on; the subscription plan is PARKED evidence (reactivates only if F12's
+reconciled GPU cost exceeds the owner ceiling) and payment work is cancelled again — nothing was
+built, so nothing is deleted. F8 becomes "durable free try-on" on the owned lane per
+free-vton-moat.md (now ACTIVE, subordinate): catalogue pairing/preprocessing pipeline with
+license-gated preprocessing models, LoRA fine-tune of the MIT Leffa architecture on GYF's own
+catalogue pairs (Kaggle free quota or rented burst inside the ceiling), ZeroGPU or rented
+scale-to-zero serving behind the existing TryOnRenderer port, per-user quotas + global kill
+switch. F9: try-on opens to users only when a lane passes the frozen consented scorecard; the
+GYF lane retrains on GYF pairs and behavioural signal until it beats the best eligible
+alternative; losing adapters deleted. Two new binding decisions: replace-then-delete (a gated
+replacement deletes what it replaces in the same slice; F13 keeps the rest) and self-training
+promotion (challengers train on GYF data until they measurably beat the production incumbent —
+frozen offline eval, then shadow/cohort; incumbent stays the fallback). Cost evidence retained:
+fal Leffa/FASHN $0.075–0.10/render as optional bridge; self-hosted rented GPU at $0.50–0.70/hr
+doing 100+ renders/hr implies <$0.01/render (hypothesis until measured in F9). CLAUDE.md and
+AGENTS.md headers updated; contract handoff advanced to F1b (F1a shipped, 6f78bed). Doc-only
+change; application code untouched.
