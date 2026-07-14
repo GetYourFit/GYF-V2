@@ -11,6 +11,7 @@ import { useRef, useState } from "react";
 import { Camera } from "lucide-react";
 
 import { browserApi } from "@/lib/api-client";
+import { useCapability } from "@/lib/use-capability";
 import type { Outfit, TryOnResponse } from "@gyf/types";
 
 export function TryOnSection({ outfit }: { outfit: Outfit }) {
@@ -18,6 +19,7 @@ export function TryOnSection({ outfit }: { outfit: Outfit }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<TryOnResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const capable = useCapability("virtual_try_on");
 
   // A new outfit invalidates the previous render (render-time state adjustment
   // — the React-docs pattern for derived resets, no effect, no extra commit).
@@ -48,6 +50,38 @@ export function TryOnSection({ outfit }: { outfit: Outfit }) {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
     }
+  }
+
+  if (capable === false) {
+    // Capability gate (F1b): no rendering lane on this deployment — say so
+    // instead of collecting a photo that could never be rendered.
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.55rem",
+            color: "var(--text-faint)",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+          }}
+        >
+          See it on you
+        </span>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.6875rem",
+            color: "var(--text-faint)",
+            margin: 0,
+            lineHeight: 1.5,
+          }}
+        >
+          Virtual try-on isn&apos;t available here yet, so GYF doesn&apos;t ask for your photo. It
+          arrives once a rendering lane passes its evaluation gate.
+        </p>
+      </div>
+    );
   }
 
   return (

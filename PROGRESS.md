@@ -2345,3 +2345,27 @@ F13. Training-data rights for catalogue on-model photos are explicitly verified 
 any pair enters training. Contract + free-vton-moat.md updated; training work itself still
 starts at F8 per the contract order (pairing pipeline depends on F4 catalogue rights/truth).
 Doc-only change.
+
+### 2026-07-14 (cont. 4) — F1b shipped: truthful filters, confidence labels, capability checks
+
+Per the contract slice F1b, every false UI/API claim about filters, confidence and sensitive
+uploads is fixed at its shared boundary, one regression per claim. (1) Explore: a set
+occasion/style with no search query used to fall through to `/items/browse`, which honours no
+filter — the advertised filter was silently dropped. `isPlainBrowse` now routes to vector
+search (occasion/style join the query text) the moment ANY filter is set; regression
+`explore-grid.test.ts`. (2) Compatibility panel: browse rows carry the retrieval placeholder
+score 0.0, which rendered as a low-confidence judgment ("might work…") plus a meter — it now
+reads "not yet scored against your profile" and hides the meter. (3) Photo onboarding: with
+no estimator configured, `POST /profile/photo` 503s BEFORE the sensitive body is validated or
+decoded (regression proves an oversized upload gets 503, not 413), and the web uploader asks
+`/system/status` (`useCapability` hook, fails open) and offers the manual form instead of a
+photo field it could never use. (4) Try-on: with only the `NullTryOnRenderer` configured,
+`POST /tryon` 503s before the photo is touched instead of accepting the upload and abstaining
+after; the outfit page says try-on isn't available rather than collecting a photo. Stale
+photo-upload test mock gained `systemStatus`.
+
+Verification: full phase gate green — fmt-check, lint, typecheck, doctrine (license/ports/
+doc-alignment), API 354 passed / 4 known env-gated skips, web 57 passed / 15 files,
+production build OK. Contract handoff advanced to F1c (password recovery + exact deployed
+authenticated-session integration check); the F1 gate closes after F1c. Deletion stays
+parked until F13.

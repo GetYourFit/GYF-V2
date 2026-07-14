@@ -31,7 +31,7 @@ from ..events import InteractionAction, InteractionEvent, InteractionTarget
 from ..profile.account import AccountRepository
 from ..ratelimit import rate_limit
 from ..sink import EventSink
-from ..tryon import TryOnGarment, TryOnRenderer
+from ..tryon import NullTryOnRenderer, TryOnGarment, TryOnRenderer
 from .profile import _ACCEPTED_PHOTO_TYPES, _decode_photo, _is_supported_image
 
 router = APIRouter(tags=["tryon"])
@@ -70,6 +70,14 @@ async def try_on(
     phased in per the roadmap). Consent-gated; the photo is ephemeral."""
     if not account_repo.get_consent(principal.user_id).get("data_processing", False):
         raise HTTPException(status_code=403, detail="data_processing consent required")
+
+    # Capability gate (F1b): no rendering lane configured means nothing could ever
+    # be rendered — refuse before the photo is validated, decoded or forwarded,
+    # instead of accepting a sensitive upload only to abstain on it.
+    if isinstance(renderer, NullTryOnRenderer):
+        raise HTTPException(
+            status_code=503, detail="virtual try-on is not available on this deployment"
+        )
 
     ids = [i.strip() for i in item_ids.split(",") if i.strip()]
     if not ids:

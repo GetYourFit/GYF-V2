@@ -25,7 +25,16 @@ const REASON: Record<string, string> = {
 };
 
 export function CompatibilityPanel({ item }: Props) {
-  const reason = item.score >= 0.75 ? REASON.high : item.score >= 0.5 ? REASON.mid : REASON.low;
+  // ponytail: browse rows carry the retrieval placeholder score 0.0 (real
+  // cosine similarity is always > 0) — that means "not scored", never a judgment.
+  const unscored = item.score <= 0;
+  const reason = unscored
+    ? "A catalogue browse pick — not yet scored against your profile. Save or skip looks to teach GYF your taste."
+    : item.score >= 0.75
+      ? REASON.high
+      : item.score >= 0.5
+        ? REASON.mid
+        : REASON.low;
 
   return (
     <div
@@ -48,7 +57,7 @@ export function CompatibilityPanel({ item }: Props) {
         <span style={{ ...MONO, color: "var(--secondary)" }}>Why this works</span>
       </div>
 
-      <ConfidenceMeter value={item.score} />
+      {!unscored && <ConfidenceMeter value={item.score} />}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
         {item.color && (

@@ -330,13 +330,18 @@ def test_tryon_requires_consent():
         app.dependency_overrides.clear()
 
 
-def test_tryon_null_renderer_abstains_honestly():
+def test_tryon_null_renderer_rejected_before_photo_processing():
+    # Capability gate (F1b): no rendering lane -> refuse the sensitive upload
+    # outright. The invalid image body proves the 503 fires before decoding
+    # (it would otherwise be a 415).
     try:
-        r = _client().post("/tryon", files={"photo": _photo()}, data={"item_ids": "top-1"})
-        assert r.status_code == 200
-        body = r.json()
-        assert body["image_b64"] is None and body["confidence"] == 0.0
-        assert "not configured" in body["reason"]
+        r = _client().post(
+            "/tryon",
+            files={"photo": ("p.png", io.BytesIO(b"not an image"), "image/png")},
+            data={"item_ids": "top-1"},
+        )
+        assert r.status_code == 503
+        assert "not available" in r.json()["detail"]
     finally:
         app.dependency_overrides.clear()
 
@@ -361,7 +366,9 @@ def test_tryon_renders_and_logs_events():
 
 def test_tryon_unknown_items_404():
     try:
-        r = _client().post("/tryon", files={"photo": _photo()}, data={"item_ids": "ghost"})
+        r = _client(renderer=_StubRenderer()).post(
+            "/tryon", files={"photo": _photo()}, data={"item_ids": "ghost"}
+        )
         assert r.status_code == 404
     finally:
         app.dependency_overrides.clear()
@@ -369,7 +376,7 @@ def test_tryon_unknown_items_404():
 
 def test_tryon_rejects_non_image_upload():
     try:
-        r = _client().post(
+        r = _client(renderer=_StubRenderer()).post(
             "/tryon",
             files={"photo": ("evil.png", io.BytesIO(b"not an image"), "image/png")},
             data={"item_ids": "top-1"},

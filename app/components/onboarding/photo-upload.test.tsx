@@ -10,7 +10,14 @@ import { PhotoUpload } from "./photo-upload";
 
 const uploadPhoto = vi.fn();
 const putConsent = vi.fn().mockResolvedValue({ data_processing: true });
-vi.mock("@/lib/api-client", () => ({ browserApi: () => ({ uploadPhoto, putConsent }) }));
+// F1b capability gate: the deployment advertises a usable photo lane, so the
+// upload UI renders in these tests.
+const systemStatus = vi
+  .fn()
+  .mockResolvedValue({ capabilities: { photo_skin_tone: { status: "live" } } });
+vi.mock("@/lib/api-client", () => ({
+  browserApi: () => ({ uploadPhoto, putConsent, systemStatus }),
+}));
 
 beforeAll(() => {
   // jsdom has no object-URL support; the component only needs it not to throw.

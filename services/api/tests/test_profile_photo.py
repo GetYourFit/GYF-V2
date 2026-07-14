@@ -172,6 +172,15 @@ def test_both_modules_absent_is_503():
     assert _upload(client).status_code == 503
 
 
+def test_capability_gate_precedes_upload_validation():
+    # F1b: with no estimator configured the 503 must fire BEFORE the body is
+    # validated or decoded — an oversized upload proves it (else it would 413).
+    client = _client(skin=None, body=None)
+    huge = io.BytesIO(b"x" * (main.settings.max_photo_bytes + 10))
+    r = client.post("/profile/photo", files={"photo": ("p.jpg", huge, "image/jpeg")})
+    assert r.status_code == 503
+
+
 def test_one_module_absent_still_succeeds(monkeypatch):
     # Body runtime absent (GPU-gated locally), skin present + enabled → still works.
     monkeypatch.setattr(main.settings, "skin_tone_enabled", True)

@@ -131,6 +131,13 @@ async def upsert_profile_from_photo(
     if not consent.get("data_processing", False):
         raise HTTPException(status_code=403, detail="data_processing consent required")
 
+    # Capability gate (F1b): if neither estimator can run on this deployment,
+    # refuse before the photo is validated, decoded or processed — never take a
+    # sensitive upload the deployment cannot use. The later 503 covers the
+    # runtime case where configured modules both abstain on this photo.
+    if skin_adapter is None and body_adapter is None:
+        raise HTTPException(status_code=503, detail="photo onboarding unavailable")
+
     if photo.content_type not in _ACCEPTED_PHOTO_TYPES:
         raise HTTPException(status_code=415, detail="unsupported image type (use jpeg, png, webp)")
 

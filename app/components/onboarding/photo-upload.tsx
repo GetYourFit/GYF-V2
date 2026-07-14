@@ -7,6 +7,7 @@ import { UploadCloud, X, CheckCircle } from "lucide-react";
 import { ApiError } from "@/lib/api";
 import { browserApi } from "@/lib/api-client";
 import { FIELD_LABELS, type EstimatedField } from "@/lib/estimate";
+import { useCapability } from "@/lib/use-capability";
 import type { Profile } from "@gyf/types";
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
@@ -29,6 +30,7 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
   const [missingFields, setMissingFields] = useState<EstimatedField[]>([]);
   const [missed, setMissed] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const capable = useCapability("photo_body_type", "photo_skin_tone");
 
   // Revoke the object URL when the component unmounts (e.g. the wizard navigates
   // to another step and remounts this) — otherwise each preview blob leaks for the
@@ -91,6 +93,40 @@ export function PhotoUpload({ onEstimated }: PhotoUploadProps) {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (capable === false) {
+    // Capability gate (F1b): photo estimation isn't running on this deployment,
+    // so never ask for the photo — the manual form below is the honest path.
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "0.6rem",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--secondary)",
+            margin: 0,
+          }}
+        >
+          Photo estimates · Unavailable
+        </p>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "0.8125rem",
+            lineHeight: 1.55,
+            color: "var(--text-faint)",
+            margin: 0,
+          }}
+        >
+          Photo onboarding isn&apos;t available on this deployment, so GYF doesn&apos;t ask for a
+          photo it couldn&apos;t use. Fill in the fields below instead — everything stays editable.
+        </p>
+      </div>
+    );
   }
 
   return (

@@ -107,6 +107,13 @@ function TwoColumns({ children }: { children: React.ReactNode[] }) {
   );
 }
 
+// Browse (/items/browse) honours NO user filter — it is only legal when the
+// user asked for nothing. Exported for the regression test (F1b): a set
+// occasion/style used to fall through to browse and get silently ignored.
+export function isPlainBrowse(f: ExploreFilters): boolean {
+  return !f.q && !f.slot && !f.occasion && !f.style && !f.maxPrice && f.sort === "relevance";
+}
+
 interface ExploreGridProps {
   filters: ExploreFilters;
   onSelectItem?: (item: SearchResult) => void;
@@ -191,11 +198,10 @@ export function ExploreGrid({ filters, onSelectItem }: ExploreGridProps) {
           ...(gender ? { gender } : {}),
           sort: filters.sort,
         };
-        // Pure empty state = no query, no slot chip, no price/sort filter. Only
-        // then use the cheap /items/browse (no ML). The moment ANY filter is set,
-        // fall back to vector search, which honours max_price + sort (browse can't).
-        const plainBrowse =
-          !filters.q && !filters.slot && !filters.maxPrice && filters.sort === "relevance";
+        // Pure empty state only — the moment ANY filter is set (query, slot,
+        // occasion, style, price, sort) fall back to vector search, which honours
+        // all of them; browse honours none and would silently drop the filter.
+        const plainBrowse = isPlainBrowse(filters);
         let results: SearchResult[];
         if (plainBrowse) {
           // NOT a real query, so never pay a text embed + vector scan (5–18s on the

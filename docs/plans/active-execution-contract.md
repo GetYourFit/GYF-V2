@@ -57,12 +57,13 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 
 A failed candidate is rolled back or skipped; it never silently degrades production or blocks an independent slice.
 
-## Current handoff: F1b (F1a shipped 2026-07-14, commit `6f78bed`)
+## Current handoff: F1c (F1a shipped 2026-07-14 `6f78bed`; F1b shipped 2026-07-14)
 
-Make the filter, confidence-label and sensitive-upload capability claims truthful. Trace every place the UI or API asserts a filter was applied, a confidence level holds, or a photo upload will be processed; fix each false claim once at its shared boundary and add one regression per fixed claim that fails if it goes false again.
+Add password recovery and an exact deployed authenticated-session integration check.
 
-Exact slice verification:
+- Password recovery: a working reset path on the deployed auth stack (Supabase Auth), covered by a regression that fails if the flow breaks.
+- Deployed-session check: one exact, runnable integration command that signs in against the deployed stack and proves an authenticated round trip; it must be reproducible by the owner verbatim.
 
-Slice verification: the targeted tests added with each fixed claim, plus the full phase verification set above.
+Slice verification: the targeted tests added with each fixed claim, plus the full phase verification set above. The F1 gate closes when F1a+F1b+F1c and the full verification set pass together; F2 cannot begin before that gate.
 
-Do not run a claimed deployed-auth journey in F1b; F1c must first define an exact runnable integration command. F1b must not touch payment, migration, model replacement or deletion.
+F1c must not touch payment, migration, model replacement or deletion.
