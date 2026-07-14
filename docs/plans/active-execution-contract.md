@@ -59,7 +59,42 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 
 A failed candidate is rolled back or skipped; it never silently degrades production or blocks an independent slice.
 
-## Current handoff: F2 (F1 gate closed 2026-07-14 — F1a `6f78bed`, F1b, F1c all shipped)
+## Current handoff: F2.5 (F2 gate closed 2026-07-14)
+
+**F2 gate — closed.** Consent, erasure (tombstone + nightly purge job), the complete
+`GET /account/export`, and explicit global session revocation all ship with regressions; RLS is
+built and proven (2026-07-12 review, remainder owner-gated). Full verification set green.
+
+**F2.5 — performance floor. Code lane done; two owner-gated infra flips remain.**
+
+Measured *before* (prod, from India, 2026-07-14, `python3 scripts/measure_slo.py`):
+`health` 0.44 s p50 · `browse` 1.66 s p50 / 12.5 s cold · `search` (cached query) 1.29 s p50 ·
+`search` (uncached) **10.2 s p50** — every surface except `/health` misses the
+[`scale-3k-inr.md`](./scale-3k-inr.md) §2 SLO.
+
+Shipped in code:
+- **Query-embedding cache** (migration `0016`, `app/catalog/query_cache.py`): read-through
+  `(normalized_query, model_id) -> vector` in Postgres, wrapping the encoder *port* — so a
+  repeated query costs a primary-key read instead of a remote encode, and a promoted model
+  invalidates by construction. Database failure degrades to a direct encode, never to a failed
+  search. LRU-pruned to 5k rows (~15 MB) to respect the 500 MB free tier.
+- **`HttpEncoder`** + `GYF_ENCODER_REMOTE_KIND` (`ml/perception/remote.py`) and the Modal
+  scale-to-zero CPU lane (`ml/serving/modal_encoder.py`): the SigLIP text tower needs no GPU, so
+  the search miss path stops paying the ZeroGPU cold start. The Space stays the image-embed lane.
+- **`scripts/measure_slo.py`**: the §2 SLO gate itself — before/after, from the user's vantage.
+
+Owner-gated (each is one step, both inside the ₹3,000 ceiling):
+1. `modal deploy ml/serving/modal_encoder.py`, then set `GYF_ENCODER_REMOTE_URL` /
+   `GYF_ENCODER_REMOTE_KIND=http` / `GYF_ENCODER_REMOTE_KEY` on Render (recipe:
+   `docs/deploy/gpu-lane.md`).
+2. Render **Starter, Singapore** (~₹600/mo): kills the ~26 s sleep wake and halves the RTT.
+   Region cannot be changed on an existing Render service — this means recreating `gyf-api` and
+   re-entering its dashboard secrets, so it is not encoded in `render.yaml`.
+
+F2.5 closes when `measure_slo.py` passes §2 from an Indian connection after those flips; the
+Supabase Singapore co-location (the remaining cross-Pacific hop) is F10's migration, gated there.
+
+## Previous handoff: F2 (F1 gate closed 2026-07-14 — F1a `6f78bed`, F1b, F1c all shipped)
 
 F1c delivered `/forgot-password` + `/reset-password` on Supabase Auth (regressions in
 `password-recovery.test.tsx`) and the exact deployed check `scripts/verify_deployed_auth.sh`,

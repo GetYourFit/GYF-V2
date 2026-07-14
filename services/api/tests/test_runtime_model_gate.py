@@ -165,7 +165,9 @@ def test_dependency_providers_construct_only_registry_approved_models(monkeypatc
     monkeypatch.setattr(deps.settings, "fal_api_key", "configured")
     monkeypatch.setattr(deps.settings, "fashn_api_key", "configured")
 
-    assert deps.get_text_embedder() is sentinel
+    # The approved encoder is what gets constructed; the query-embedding cache (F2.5)
+    # wraps it without changing which model may be built.
+    assert deps.get_text_embedder()._inner is sentinel
     assert deps.get_skin_adapter() is None
     assert deps.get_body_adapter() is None
     assert isinstance(deps.get_tryon_renderer(), NullTryOnRenderer)

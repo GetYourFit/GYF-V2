@@ -10,13 +10,44 @@ GPU work goes through a single port — `perception.model.Encoder` — so nothin
 changes regardless of where the GPU is. `perception.default_encoder()` (and the bake-off)
 pick the backend from one env var:
 
-| `GYF_ENCODER_REMOTE_URL` | Backend | When |
-| --- | --- | --- |
-| **unset** (default) | `SiglipEncoder` — local CPU or local CUDA | laptop dev, CI |
-| set to a Gradio URL | `RemoteEncoder` — calls a remote GPU endpoint | a hosted GPU: HF Space, RunPod/Modal Gradio, etc. |
+| `GYF_ENCODER_REMOTE_URL` | `GYF_ENCODER_REMOTE_KIND` | Backend | When |
+| --- | --- | --- | --- |
+| **unset** (default) | — | `SiglipEncoder` — local CPU or local CUDA | laptop dev, CI |
+| a Gradio URL | `gradio` (default) | `RemoteEncoder` — HF ZeroGPU Space | the **image**-embed batch lane (catalog backfill) |
+| a JSON URL | `http` | `HttpEncoder` — plain JSON POST | the **search** lane: Modal CPU, scale-to-zero (F2.5) |
 
 That's the whole design: the local encoder is the always-present baseline (invariant #5);
-the remote one is an optional swap, never a requirement.
+the remote ones are optional swaps, never a requirement.
+
+---
+
+## ▶ Search lane (F2.5) — Modal CPU, scale-to-zero
+
+Why it exists: `/items/search` embeds the user's text. On the ZeroGPU Space that cost
+**29.7 s** cold from India (`docs/plans/scale-3k-inr.md` §1) — product-killing. The SigLIP
+**text tower needs no GPU**, so it runs on a CPU container that scales to zero, cold-starts
+in seconds (weights in a Modal Volume + memory snapshot), and stays inside Modal's $30/month
+free credits. In front of it sits the Postgres query-embedding cache
+(`services/api/app/catalog/query_cache.py`), so a repeated query never re-embeds at all.
+
+```bash
+pip install modal && modal setup
+modal secret create gyf-encoder-key GYF_ENCODER_API_KEY=$(openssl rand -hex 32)
+modal deploy ml/serving/modal_encoder.py     # prints https://<workspace>--gyf-encoder-web.modal.run
+```
+
+Then, on the API (Render dashboard — these are the only three vars):
+
+```
+GYF_ENCODER_REMOTE_URL=https://<workspace>--gyf-encoder-web.modal.run
+GYF_ENCODER_REMOTE_KIND=http
+GYF_ENCODER_REMOTE_KEY=<the same key>
+```
+
+The lane serves exactly one model — the promoted production encoder baked in at deploy time
+— and refuses any other `model_id`, so no research checkpoint can reach it by config drift.
+Verify with `python3 scripts/measure_slo.py` from an Indian connection: `search_uncached`
+must land under 3 s p95, `search_cached` under 0.9 s.
 
 ---
 

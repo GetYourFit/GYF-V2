@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     # locally; unset = local SiglipEncoder baseline (invariant #5: a baseline
     # always sits behind the port). Example: "https://<user>-gyf-gpu.hf.space".
     encoder_remote_url: str = ""
+    # Wire protocol of that lane: "gradio" (HF ZeroGPU Space) or "http" (plain JSON,
+    # e.g. the Modal CPU text lane that serves /items/search — F2.5). Same port either
+    # way; see ml/serving/modal_encoder.py and docs/deploy/gpu-lane.md.
+    encoder_remote_kind: str = "gradio"
+    # Bearer token for the http lane (Modal proxy auth); unused by the gradio lane.
+    encoder_remote_key: str = ""
     # HF token for private Spaces / higher ZeroGPU quota; passed to gradio_client.
     hf_token: str = ""
 

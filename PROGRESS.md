@@ -2456,3 +2456,35 @@ verify_taste_cycle2, verify_skintone_cycle3, verify_workstream_c). Flutter clien
 Verification: fmt/lint/typecheck green, doctrine green (doc gate: 8 plans subordinate), API
 356 passed / 5 env-gated skips, web 62 passed, build cached-green. Next: F2 gate close, then
 F2.5 implementation (query-embedding cache + Singapore flip + Modal miss lane).
+
+### 2026-07-14 (cont. 9) — F2 gate closed; F2.5 performance floor (code lane) shipped
+
+F2 closed: consent, tombstone + nightly purge, complete `GET /account/export`, global session
+revocation, RLS built+proven — all with regressions, full gate green.
+
+F2.5 (owner's ₹3k amendment). Measured prod from India first (`scripts/measure_slo.py`, the new
+SLO gate): health 0.44s p50, browse 1.66s p50 / 12.5s cold, search-cached 1.29s p50,
+search-uncached **10.2s p50** — only /health meets scale-3k-inr.md §2.
+
+Root cause of the search disaster is the encoder round trip, not the algorithm. Fixed at the
+port (D1), not the call sites:
+- **Migration 0016 + `app/catalog/query_cache.py`** — read-through Postgres cache
+  `(normalized_query, model_id) -> real[] vector` wrapping any `TextEmbedder`. Hit = one PK read;
+  miss = encode + upsert + LRU prune to 5k rows (~15MB; the free tier is 500MB). Cache errors
+  degrade to a direct encode (and above it, an encode failure still degrades to keyword search) —
+  the cache can never fail a search. Model id is part of the key, so a promotion invalidates by
+  construction. Live-PG regression `test_query_cache.py` (CI's real-PG lane) covers hit/miss,
+  key isolation and the prune bound; the local Apple-container PG could not be started from this
+  shell (apiserver XPC needs the login session), so that lane's proof is CI's.
+- **`HttpEncoder` + `GYF_ENCODER_REMOTE_KIND`** (`ml/perception/remote.py`, stdlib urllib — the
+  API image is deliberately torch-free) and **`ml/serving/modal_encoder.py`**: a Modal CPU,
+  scale-to-zero SigLIP *text* lane (the text tower needs no GPU), one-model-only by construction
+  so no research checkpoint can be served by config drift. ZeroGPU stays the image-embed lane.
+  Nightly warm from plan §4 was NOT built: search queries are not logged anywhere yet (that's F3),
+  so it had no honest data source, and with the cache + a seconds-cold miss lane there is no 30s
+  path left to hide.
+
+Owner-gated remainder (both inside the ceiling): `modal deploy` + three Render env vars; and
+Render Starter/Singapore (a region change means recreating the service, so it is documented in
+render.yaml rather than encoded). Verification: fmt/lint/typecheck/doctrine green, API 358 passed
+/ 8 env-gated skips, ML 86 passed, web 62 passed, build green.

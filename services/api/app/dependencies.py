@@ -91,13 +91,21 @@ def get_text_embedder() -> TextEmbedder | None:
     Returning ``None`` (rather than raising) lets ``/items/search`` fall back to a
     keyword title match, so search keeps working on the encoder-less prod image
     instead of 503-ing.
+
+    Wrapped in the shared query-embedding cache (F2.5): a repeated query never pays
+    the remote encode again, so search is a pgvector scan instead of a GPU round trip.
     """
     if not runtime_model_verdict("encoder", configured_model_uri=settings.perception_model)[0]:
         return None
     try:
         from .catalog.perception_adapter import cached_text_embedder
+        from .catalog.query_cache import CachedTextEmbedder
 
-        return cached_text_embedder()
+        return CachedTextEmbedder(
+            cached_text_embedder(),
+            shared_pool(settings.database_url),
+            settings.perception_model,
+        )
     except ImportError:  # perception runtime / torch not installed
         return None
 

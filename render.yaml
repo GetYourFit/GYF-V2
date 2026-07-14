@@ -12,6 +12,13 @@ services:
   - type: web
     name: gyf-api
     runtime: docker
+    # OWNER-GATED (F2.5, docs/plans/scale-3k-inr.md §3): the always-on Singapore flip
+    # is `plan: starter` (~₹600/mo, kills the ~26 s free-tier sleep wake) + Singapore
+    # (100–150 ms from India vs 250–300 ms to Oregon). Both are deliberately NOT set
+    # here: `starter` fails the deploy until billing is active, and Render cannot change
+    # the region of an existing service — Singapore means creating the service anew and
+    # re-entering the dashboard secrets. Do it as one owner step, then re-run
+    # `python3 scripts/measure_slo.py` from India for the after-numbers.
     plan: free
     region: oregon
     dockerfilePath: ./services/api/Dockerfile
@@ -69,6 +76,22 @@ services:
       # (secret, conversions sync only) lives in GitHub Actions, not here.
       - key: GYF_CUELINKS_CID
         value: "274785"
+      # --- Encoder lane (F2.5: kill the cold-GPU search path) ---
+      # /items/search embeds the query text through the encoder port. Two lanes:
+      #   gradio (default) = HF ZeroGPU Space — cold start measured at 29.7 s from
+      #     India on 2026-07-14. Keep it for the image-embed batch backfill only.
+      #   http = the Modal CPU text lane (ml/serving/modal_encoder.py): scale-to-zero,
+      #     seconds-cold, inside Modal's free credits. See docs/deploy/gpu-lane.md.
+      # In front of BOTH sits the Postgres query-embedding cache (migration 0016), so a
+      # repeated query never re-embeds. URL + key stay in the dashboard (the key is a
+      # secret; the URL is workspace-specific), KIND is a routing choice, so it is pinned
+      # here — the same reason GYF_EVENT_SINK is.
+      - key: GYF_ENCODER_REMOTE_KIND
+        value: gradio # flip to "http" the moment the Modal lane is deployed
+      - key: GYF_ENCODER_REMOTE_URL
+        sync: false
+      - key: GYF_ENCODER_REMOTE_KEY
+        sync: false
       # Sentry project DSN (Settings → Projects → gyf-api → Client Keys).
       # The API already initializes Sentry only when this is present.
       - key: GYF_SENTRY_DSN

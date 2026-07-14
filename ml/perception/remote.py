@@ -109,18 +109,104 @@ class RemoteEncoder(GradioSpaceClient):
         return self._embeddings_from_payload(payload)
 
 
+class HttpEncoder:
+    """Encoder port over a plain JSON endpoint (the Modal text lane, F2.5).
+
+    Same contract as :class:`RemoteEncoder`, different wire: ``POST {url}/embed_texts``
+    (and ``/embed_images``) with ``{"model_id": ..., "texts": [...]}`` returning
+    ``{"embeddings": [[...]]}``. Why a second adapter rather than reusing the Gradio
+    one: the search hot path needs a *scale-to-zero, fast-cold* text encoder, and the
+    ZeroGPU/Gradio lane cold-starts in tens of seconds. A CPU JSON container serving
+    the SigLIP text tower cold-starts in seconds — the text tower needs no GPU at all.
+
+    stdlib ``urllib`` on purpose: this must import and run inside the API image, whose
+    ML extra is deliberately torch-free and dependency-light.
+    """
+
+    def __init__(
+        self,
+        model_id: str,
+        url: str,
+        *,
+        api_key: str | None = None,
+        dim: int = EMBEDDING_DIM,
+        logit_scale: float = DEFAULT_LOGIT_SCALE,
+        timeout_s: float = 60.0,
+    ) -> None:
+        if not url:
+            raise ValueError("HttpEncoder requires a non-empty url")
+        self._url = url.rstrip("/")
+        self._api_key = api_key or None
+        self._model_id = model_id
+        self._logit_scale = logit_scale
+        self._timeout_s = timeout_s
+        self.dim = dim
+
+    @property
+    def logit_scale(self) -> float:
+        return self._logit_scale
+
+    def _post(self, path: str, payload: dict) -> np.ndarray:
+        import json
+        import urllib.request
+
+        request = urllib.request.Request(
+            f"{self._url}{path}",
+            data=json.dumps({"model_id": self._model_id, **payload}).encode(),
+            headers={
+                "Content-Type": "application/json",
+                **({"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}),
+            },
+        )
+        with urllib.request.urlopen(request, timeout=self._timeout_s) as response:  # noqa: S310
+            body = json.loads(response.read())
+        arr = np.asarray(body["embeddings"], dtype=np.float32)
+        if arr.ndim != 2:
+            raise ValueError(f"http encoder returned non-2D embeddings, shape {arr.shape}")
+        self.dim = int(arr.shape[1])
+        return l2_normalize(arr)
+
+    def encode_texts(self, texts: list[str]) -> np.ndarray:
+        if not texts:
+            return np.empty((0, self.dim), dtype=np.float32)
+        return self._post(_EMBED_TEXTS_API, {"texts": list(texts)})
+
+    def encode_images(self, images: list[Image], *, batch_size: int = 16) -> np.ndarray:
+        if not images:
+            return np.empty((0, self.dim), dtype=np.float32)
+        chunks = [
+            self._post(
+                _EMBED_IMAGES_API,
+                {
+                    "images_b64": [
+                        image_to_b64_png(img) for img in images[start : start + batch_size]
+                    ]
+                },
+            )
+            for start in range(0, len(images), batch_size)
+        ]
+        return np.concatenate(chunks, axis=0)
+
+
 def encoder_for(model_id: str) -> Encoder:
     """Build the configured encoder for ``model_id``: remote lane if set, else local.
 
     Central factory honoring the doctrine's "baseline always behind the port"
     invariant — when ``GYF_ENCODER_REMOTE_URL`` is unset, callers transparently get
     the local :class:`~perception.model.SiglipEncoder`.
+
+    ``GYF_ENCODER_REMOTE_KIND`` picks the wire: ``gradio`` (HF ZeroGPU Space, the
+    image-embed batch lane) or ``http`` (the JSON/Modal lane that serves search).
     """
     from common.config import settings
 
     from .model import SiglipEncoder
 
     if settings.encoder_remote_url:
+        if settings.encoder_remote_kind == "http":
+            return HttpEncoder(
+                model_id, settings.encoder_remote_url, api_key=settings.encoder_remote_key or None
+            )
         return RemoteEncoder(
             model_id, settings.encoder_remote_url, hf_token=settings.hf_token or None
         )
