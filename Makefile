@@ -96,7 +96,10 @@ typecheck: ## Typecheck JS workspaces
 	bun run typecheck
 
 types: ## Generate FE API types from the FastAPI OpenAPI schema (single source of truth — never hand-edit api.ts)
-	cd $(API_DIR) && uv run python -c "import json, app.main as m; print(json.dumps(m.app.openapi()))" > ../../packages/types/openapi.json
+	@# Write the schema to the file directly: importing the app configures logging, which
+	@# legitimately owns stdout — a `> openapi.json` redirect captured the telemetry line
+	@# as line 1 and produced a JSON file the generator could not parse.
+	cd $(API_DIR) && uv run python -c "import json, pathlib, app.main as m; pathlib.Path('../../packages/types/openapi.json').write_text(json.dumps(m.app.openapi()))"
 	bunx openapi-typescript packages/types/openapi.json -o packages/types/src/api.ts
 	@echo "regenerated packages/types/src/api.ts — run 'make typecheck' to confirm FE/BE lockstep"
 

@@ -2568,3 +2568,43 @@ consented eval panel.
 Next code slice = F8's durable try-on spine (private Postgres jobs, bounded retries, cancellation,
 TTL deletion, per-user quotas, global kill switch) — all code, no paid account. Only owned-weights
 training (Kaggle/GPU) and the F9 eval gate need the owner. Try-on stays closed to users until F9.
+
+## 2026-07-15 — F8 durable try-on spine SHIPPED (try-on still closed to users)
+
+Asked: research system design / frontend / backend / design, fold into the execution contract,
+continue the implementation. Four parallel research passes ran; the decision record (including
+every rejected alternative and the stated ceilings) is now a section of
+docs/plans/active-execution-contract.md.
+
+Found first, fixed first: 9 staged doc deletions in the tree BROKE `make doctrine`
+(scripts/check_doc_alignment.py reads docs/roadmap.md + docs/implementation-plan.md, both staged
+for deletion → FileNotFoundError). Also violated the contract's own "F13 — deletion last". Restored.
+
+Also fixed (pre-existing, blocked `make types`): the target redirected stdout into openapi.json,
+but importing the app configures logging, which owns stdout — the telemetry line landed as line 1
+and the generator could not parse the JSON. Now writes the file directly.
+
+Shipped: POST /tryon is a QUEUE (202), not a blocking render.
+- migration 0018: tryon_jobs (CHECK'd state machine, RLS, partial claim index), person_png NULLed
+  at every terminal transition (D8: the body photo lives for the render, not the TTL).
+- app/tryon/jobs.py: repo (Protocol/Postgres/InMemory). FOR UPDATE SKIP LOCKED claim, SQL-counted
+  quota + daily kill switch (survives restart/replica), TTL + stale-running sweep.
+- app/tryon/worker.py: in-process thread (latency) + `python -m app.tryon.worker` on GH Actions
+  cron (durability). Both safe together *because* of SKIP LOCKED. --sweep added to purge.yml.
+- Endpoints: enqueue / poll / list+quota / cancel / stream-the-render. The render is a ROUTE, never
+  base64 in JSON. Abstention = terminal success, never retried, never implies an image.
+- Frontend rewritten to the job shape; useCapabilityStrict added (the old hook fails OPEN — wrong
+  when the ask is a body photo). The user's own photo is the waiting state. No invented progress.
+- Deleted (replace-then-delete): the synchronous render path + client tryOn() + TryOnResponse.
+
+A test caught a real defect in the in-memory double: requeue ignored next_attempt_at, so it burned
+every retry in one drain while Postgres would not. Double now models the backoff.
+
+Gate: 378 API + 69 FE tests, lint, typecheck, doctrine — all green. The Postgres-lane tests
+(test_tryon_jobs_postgres.py: SKIP LOCKED gives one job to exactly one worker, photo really gone,
+erasure cascades, RLS hides another user's render) are WRITTEN BUT UNRUN LOCALLY — Apple container
+would not start from the agent shell; CI runs that lane.
+
+Try-on stays CLOSED (GYF_TRYON_ENABLED=false). Opening it is F9's gate and a flag flip, not a
+rewrite. Owner still needed for: owned-weights training, the F9 scorecard, and the F2.5 Render
+Starter flip (F8's latency depends on it).

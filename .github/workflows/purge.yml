@@ -46,3 +46,14 @@ jobs:
         env:
           GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
         run: uv run --extra postgres python -m app.profile.purge
+
+      # The other half of the retention promise (F8): a try-on render is deleted after its
+      # TTL, and a job stranded 'running' by a dead worker is returned to the queue. Same
+      # runner, same secret, same schedule — the sweep is retention, not rendering, so it
+      # runs even while try-on is closed.
+      - name: Sweep expired try-on renders
+        if: steps.gate.outputs.configured == 'true'
+        working-directory: services/api
+        env:
+          GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
+        run: uv run --extra postgres python -m app.tryon.worker --sweep

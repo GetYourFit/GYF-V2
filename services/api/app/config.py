@@ -108,6 +108,38 @@ class Settings(BaseSettings):
     # "quality" (~15s). Cost is identical (1 credit/image) — this trades latency.
     tryon_mode: str = "balanced"
 
+    # --- Durable free try-on (F8) ---
+    # The master switch. Try-on stays CLOSED to users until the F9 evaluation gate
+    # passes, so this ships OFF: the endpoints exist and are tested, but refuse.
+    # Flipping it without a promoted rendering lane changes nothing — the port still
+    # returns NullTryOnRenderer and the route still refuses (invariant #5).
+    tryon_enabled: bool = False
+    # Global cost kill switch: renders the whole deployment will start in a UTC day.
+    # Counted in SQL from the jobs table, so it survives a restart and a second replica.
+    # Tripping it leaves queued jobs queued (they drain tomorrow) rather than failing
+    # them — nothing is wrong with the job, the deployment is just at its ceiling.
+    tryon_daily_render_cap: int = 200
+    # Durable per-user quota (calendar month, database clock). Distinct from
+    # rate_limit_tryon, which is a per-IP burst window that does not survive a restart:
+    # that one blunts floods, this one bounds GPU spend. Both stay.
+    tryon_monthly_quota_per_user: int = 20
+    # How long a finished render is kept before the sweep deletes it. This is also the
+    # number the UI promises the user, so it is the privacy contract, not a tuning knob.
+    # Raising it past ~72h makes the 500MB Postgres tier the binding constraint — see
+    # the ceiling documented in migration 0018.
+    tryon_job_ttl_hours: int = 24
+    # Retries for TRANSIENT vendor/network failures only. An abstention is never retried.
+    tryon_max_attempts: int = 3
+    # A worker killed mid-render (a deploy, a runner timeout) leaves its job 'running'.
+    # After this long the sweep returns it to the queue; its attempts are already
+    # counted, so a job that keeps dying still exhausts its retry budget.
+    tryon_stale_running_seconds: int = 600
+    # In-process drain loop: the latency path (a render starts seconds after enqueue on
+    # a warm instance). Best-effort by design — the scheduled worker is the guarantee,
+    # and FOR UPDATE SKIP LOCKED makes running both safe.
+    tryon_inproc_worker: bool = True
+    tryon_worker_poll_seconds: int = 5
+
     # --- Observability (P0-E). All env-driven; unset = no-op (free-tier first). ---
     service_name: str = "gyf-api"
     # OTLP traces endpoint (e.g. http://localhost:4318). Unset = tracing disabled.

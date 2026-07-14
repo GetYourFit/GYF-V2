@@ -14,6 +14,7 @@ them) keep working unchanged.
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Response, status
@@ -77,11 +78,28 @@ _GALLERY_HTML = (Path(__file__).resolve().parent / "static" / "gallery.html").re
     encoding="utf-8"
 )
 
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    """Start the in-process try-on drain loop (F8).
+
+    A no-op unless try-on is enabled *and* a rendering lane is configured, so this is
+    inert until the F9 gate opens. It is the latency path only: the scheduled worker
+    (``python -m app.tryon.worker``) is what guarantees a queued job eventually renders,
+    including while this instance is asleep or mid-deploy.
+    """
+    from .tryon.worker import start_background_worker
+
+    start_background_worker()
+    yield
+
+
 app = FastAPI(
     title="GYF — AI Personal Stylist API",
     version="0.1.0",
     summary="Learns what looks good on you and builds complete, explained outfits.",
     description=_API_DESCRIPTION,
+    lifespan=_lifespan,
     contact={"name": "GYF", "url": "https://github.com/"},
     license_info={"name": "Proprietary"},
     docs_url="/docs",

@@ -59,7 +59,84 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 
 A failed candidate is rolled back or skipped; it never silently degrades production or blocks an independent slice.
 
-## Current handoff: F8 spine — F5 held (correctly), F6/F7 blocked on evidence
+## F8 design record: the durable try-on spine (researched 2026-07-15, shipped)
+
+Four parallel research passes (system design, backend, frontend, product design) preceded
+the code. What follows is the binding record of what was decided and, more importantly,
+*what was rejected and why* — so the next slice does not relitigate it, and so the
+ceilings are stated instead of discovered.
+
+### The shape: a job, not a request
+
+A render takes 10-60s on a GPU. The synchronous `POST /tryon` therefore could not survive
+its own success: Render's proxy kills the request, a deploy drops it, the client cannot
+recover it, nothing retries, nothing bounds the cost, and the body photo sits in memory
+for the whole call. **The queue-and-poll shape is not a UX preference — it is the only
+shape this budget supports**, because scale-to-zero GPU means the first render after idle
+is cold. The product must therefore promise "we'll have it shortly, and you can walk
+away", never "instant". The durable half is the feature: *close the page, the render is
+waiting when you come back.*
+
+### Decisions, with the rejected alternative
+
+| Decision | Rejected, and why |
+| --- | --- |
+| **Claim with `FOR UPDATE SKIP LOCKED`** | Advisory locks / `LISTEN-NOTIFY`: Supabase's transaction pooler does not support `LISTEN`, and NOTIFY buys nothing for a 30s job. SKIP LOCKED is also what makes a Render zero-downtime deploy (old + new instance live at once) safe *by construction* rather than by luck. |
+| **Two drainers: in-process thread (latency) + GitHub Actions cron (durability)** | A separate Render worker: +₹600/mo to babysit work that is ~100% network wait. A Render cron: 1-minute granularity on top of a 60s render. GH Actions *alone*: 5-10min granularity, unusable as the interactive path. Running both is safe precisely because of SKIP LOCKED, and needs no coordination. |
+| **Photo + render as `BYTEA` in the job row** | Supabase Storage: needs `GYF_SUPABASE_SERVICE_ROLE_KEY`, **which is recorded as exposed and unrotated** — F8 will not stand up a new trust boundary on a key that must be rotated first. The ceiling is stated in migration `0018`: safe only because TTL (24h) × daily cap (200) bounds resident bytes to ~50MB. **Trigger to move to R2: TTL past ~72h or cap past ~700.** |
+| **The render is served by a route, never inlined in JSON** | base64 in the poll response: every "still working" poll would move megabytes. The route also makes TTL expiry a real 404 instead of a stale blob in React state. |
+| **Quota derived by `COUNT(*)` over the jobs table** | A counter table/Redis counter: a second source of truth that drifts from reality after a rollback or a purge. The jobs table *is* the ledger, and erasure takes the quota with it for free. |
+| **Cancel is honest about the GPU** | Claiming a running job is "cancelled" and refunded. It is not: the vendor's HTTP call is not interruptible, so a pre-claim cancel is genuinely free (and refunds) while a mid-render cancel stops the *wait*, not the *spend*. Neither the UI nor the docs may say otherwise. |
+| **Abstention is a terminal success, never a retry** | Retrying it: the renderer looked and honestly declined (D6). Re-asking burns GPU to get the same "no". |
+| **The UI fails CLOSED on the capability check** | The existing `useCapability` fails *open*, which is right when the fallback is a manual form — and wrong here, where the ask is a photo of the user's body. A `/system/status` blip must never be the reason GYF solicits one. `useCapabilityStrict` added. |
+| **No invented progress** | A percentage bar the server never sent. The product's entire thesis is that it does not lie to users; that does not carve out an exception for chrome. Honest stage text, and a real bar *only* if a lane ever streams true step counts. |
+| **The user's own photo is the waiting state** | A spinner, or worse a shimmering skeleton over a picture of someone's body. Waiting to see your own body judged is an intimate, anxious moment; the photo stays on screen, dimmed, visibly still theirs. |
+
+### Ceilings — stated, not discovered later
+
+1. **F8 depends on the F2.5 Render Starter flip.** On the free tier the instance sleeps, so
+   the in-process drainer sleeps and latency is bounded only by the cron. Jobs stay durable
+   (nothing is lost); the experience is not acceptable until that flip.
+2. **The kill switch is load-bearing, not a safety net.** 100 users × 3 renders/day × 30 is
+   9,000 renders/month against a cap of a few thousand. The break-even is
+   `DAU% × daily_quota × 30 × users ≤ cap` — a number the owner needs *before* F11's beta,
+   not after the bill.
+3. **Mid-render cancellation cannot refund GPU seconds.** Only pre-claim cancels are free.
+4. **Storage, not GPU, becomes the binding constraint** if the TTL or cap is raised past the
+   thresholds in `0018`.
+5. **Serving lane correction (evidence, not preference):** `free-vton-moat.md` names ZeroGPU
+   as primary. F2.5 measured its cold start at 29.7s and the quota is recorded as dead; the
+   text lane was already migrated off it for exactly this reason. The owned-Leffa serving
+   lane should follow the proven `ml/serving/modal_encoder.py` pattern (scale-to-zero, weights
+   in a volume, one-model allow-list) rather than ZeroGPU. Flagged for the F9 lane decision;
+   not silently changed here, since F8 ships no serving lane.
+
+### Design system correction
+
+The design brief said "Editorial Noir — dark/ivory/**gold**". The live tokens
+(`app/app/globals.css`) are **"GYF Cosmos Dark" and strictly monochrome**: `--bg #000000`,
+`--text #f5f5f4`, `--accent #ffffff`. **There is no gold token** — `badge.tsx` still carries
+a stale "Gold — reserved for confidence" comment that resolves to white. No new hue was
+introduced for try-on: on this surface the render is the only colour, because the accent is
+the user's own body.
+
+### What F8 shipped, and what it did not
+
+Shipped (this slice): migration `0018` (jobs table, RLS, CHECK'd state machine), the job
+repository, the worker (in-process + `python -m app.tryon.worker` + `--sweep`), the queue/
+poll/cancel/image endpoints, per-user quota, the global daily kill switch, TTL retention,
+bounded retries with backoff, the rewritten async frontend, and the deletion of the
+synchronous render path (replace-then-delete). The `TryOnRenderer` port is reused byte-for-
+byte and no adapter changed.
+
+**Not shipped, by design: try-on remains CLOSED to users.** `GYF_TRYON_ENABLED` ships
+`false` and every route refuses; the spine is testable end-to-end against
+`NullTryOnRenderer` (a job that queues, claims, abstains honestly, sheds its photo, and
+reports a reason). Opening it is F9's gate, and a flag flip — not a rewrite. The owned-
+weights training (Kaggle/GPU) and the F9 evaluation scorecard are where the owner's
+involvement begins.
+
+## Previous handoff: F8 spine — F5 held (correctly), F6/F7 blocked on evidence
 
 **F5 — free recommendation incumbent. No change, and that is the pass condition.** The contract
 says: keep SigLIP 2 / pgvector / rules / MMR, and add anchored refinement or multi-interest context

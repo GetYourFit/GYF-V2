@@ -40,8 +40,12 @@ export type Capability = components["schemas"]["Capability"];
 export type ModelRegistryStatus = components["schemas"]["ModelRegistryStatus"];
 export type ModelStatus = components["schemas"]["ModelStatus"];
 
-/** Virtual try-on (M9): a render on the user's photo, or an honest abstention. */
-export type TryOnResponse = components["schemas"]["TryOnResponse"];
+/** Virtual try-on (M9/F8): a durable render job. The render is fetched from the job's
+ *  `image_url` — it is never inlined, and it is absent whenever the renderer abstained. */
+export type TryOnJob = components["schemas"]["TryOnJobView"];
+export type TryOnJobCreated = components["schemas"]["TryOnJobCreated"];
+export type TryOnQuota = components["schemas"]["TryOnQuota"];
+export type TryOnJobStatus = TryOnJob["status"];
 
 /** Interaction actions captured as the behavioral event spine. */
 export const INTERACTION_ACTIONS = [

@@ -24,7 +24,9 @@ import type {
   SaveOutfitRequest,
   SearchResult,
   SystemStatus,
-  TryOnResponse,
+  TryOnJob,
+  TryOnJobCreated,
+  TryOnQuota,
   WardrobeItem,
   WardrobeItemInput,
 } from "@gyf/types";
@@ -57,6 +59,12 @@ export class ApiError extends Error {
   /** The account is tombstoned (right-to-erasure in flight) or the caller is signed out. */
   get isUnauthorized(): boolean {
     return this.status === 401 || this.status === 403;
+  }
+
+  /** The free monthly try-on quota is spent. Not a paywall — there is nothing to buy,
+   *  and the UI must never present one. The GPU is finite; that is all this means. */
+  get isQuotaExhausted(): boolean {
+    return this.status === 429;
   }
 }
 
@@ -310,13 +318,43 @@ export class GyfApi {
 
   // --- Virtual try-on (M9) ---
 
-  /** Render an outfit on the user's photo. Returns a render or an honest
-   *  abstention (`image_b64: null` + reason) — never a fabricated image. */
-  tryOn(photo: File, itemIds: string[]): Promise<TryOnResponse> {
+  /** Queue a try-on render (202). The render happens in a durable background job, so the
+   *  user can close the page — poll `tryOnJob` for the outcome.
+   *
+   *  Deliberately NOT retried: a retried POST would enqueue a second job and spend a
+   *  second render from the user's quota. */
+  createTryOnJob(photo: File, itemIds: string[], signal?: AbortSignal): Promise<TryOnJobCreated> {
     const form = new FormData();
     form.append("photo", photo);
     form.append("item_ids", itemIds.join(","));
-    return this.requestMultipart<TryOnResponse>("/tryon", form);
+    return this.requestMultipart<TryOnJobCreated>("/tryon", form, signal);
+  }
+
+  /** Poll one try-on job. Inherits `request`'s 502-504 retry, which is what makes the
+   *  poll survive a sleeping API instance without any retry logic of its own. */
+  tryOnJob(jobId: string, signal?: AbortSignal): Promise<TryOnJob> {
+    return this.request<TryOnJob>(
+      "GET",
+      `/tryon/jobs/${encodeURIComponent(jobId)}`,
+      undefined,
+      signal,
+    );
+  }
+
+  /** The caller's recent renders and their remaining free quota. */
+  tryOnJobs(signal?: AbortSignal): Promise<{ jobs: TryOnJob[]; quota: TryOnQuota }> {
+    return this.request<{ jobs: TryOnJob[]; quota: TryOnQuota }>(
+      "GET",
+      "/tryon/jobs",
+      undefined,
+      signal,
+    );
+  }
+
+  /** Cancel a render. A queued job is genuinely cancelled and the quota refunded; a job
+   *  already on the GPU stops being waited for, but its seconds are spent. Idempotent. */
+  cancelTryOnJob(jobId: string): Promise<TryOnJob> {
+    return this.request<TryOnJob>("DELETE", `/tryon/jobs/${encodeURIComponent(jobId)}`);
   }
 
   // --- Social (shared looks) ---
@@ -428,13 +466,25 @@ export class GyfApi {
   }
 
   /** Like `request`, but sends multipart form data — the browser sets the
-   *  `Content-Type` (with boundary) itself, so we must NOT set it here. */
-  private async requestMultipart<T>(path: string, form: FormData): Promise<T> {
+   *  `Content-Type` (with boundary) itself, so we must NOT set it here.
+   *
+   *  Never retried (unlike `request`'s safe GETs): these POSTs upload a photo and start
+   *  paid work, so a silent retry would double-spend the user's quota. */
+  private async requestMultipart<T>(
+    path: string,
+    form: FormData,
+    signal?: AbortSignal,
+  ): Promise<T> {
     const token = await this.getToken();
     const headers = new Headers({ Accept: "application/json" });
     if (token) headers.set("Authorization", `Bearer ${token}`);
 
-    const res = await fetch(`${this.base}${path}`, { method: "POST", headers, body: form });
+    const res = await fetch(`${this.base}${path}`, {
+      method: "POST",
+      headers,
+      body: form,
+      signal,
+    });
     return this.handle<T>(res);
   }
 

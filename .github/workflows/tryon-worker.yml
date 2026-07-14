@@ -1,0 +1,62 @@
+name: Try-on worker
+
+# The DURABILITY half of the try-on queue (F8). The API also drains the queue in-process
+# (that is the latency path — a render starts seconds after the enqueue on a warm
+# instance), but a free-tier Render instance sleeps, and a deploy drops whatever it was
+# doing. This job is what guarantees a queued render eventually happens anyway.
+#
+# Both drainers claim with FOR UPDATE SKIP LOCKED, so running them concurrently can never
+# render the same job twice. There is no coordination to get wrong.
+#
+# Guarded like purge/data-export: a no-op until the GYF_PROD_DATABASE_URL secret is set.
+# It is also inert until GYF_TRYON_ENABLED is true (the F9 gate) — the drain loop refuses
+# to start a render with no promoted lane, so this costs nothing until try-on opens.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never let two scheduled drains overlap — harmless (SKIP LOCKED), but pointless, and it
+# burns the Actions minute budget twice.
+concurrency:
+  group: tryon-worker
+  cancel-in-progress: false
+
+jobs:
+  drain:
+    name: Drain the try-on job queue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secret configured
+        id: gate
+        env:
+          DSN: ${{ secrets.GYF_PROD_DATABASE_URL }}
+        run: |
+          if [ -z "$DSN" ]; then
+            echo "GYF_PROD_DATABASE_URL not set — skipping (set the repo secret to activate)."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: astral-sh/setup-uv@v5
+        if: steps.gate.outputs.configured == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Render queued try-on jobs
+        if: steps.gate.outputs.configured == 'true'
+        working-directory: services/api
+        env:
+          GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
+          GYF_TRYON_ENABLED: ${{ vars.GYF_TRYON_ENABLED }}
+          GYF_TRYON_PROVIDER: ${{ vars.GYF_TRYON_PROVIDER }}
+          GYF_FAL_API_KEY: ${{ secrets.GYF_FAL_API_KEY }}
+          GYF_FASHN_API_KEY: ${{ secrets.GYF_FASHN_API_KEY }}
+        run: uv run --extra postgres python -m app.tryon.worker

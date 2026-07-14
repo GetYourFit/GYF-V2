@@ -57,7 +57,21 @@ _EXPORT_TABLES: tuple[tuple[str, str], ...] = (
     ("social_posts", "user_id"),
     ("support_messages", "user_id"),
     ("follows", "follower_id"),
+    ("tryon_jobs", "user_id"),
 )
+
+# Tables whose export needs an explicit column list instead of ``*``. Only tryon_jobs
+# so far, and for one reason: it holds image BYTEA. ``row_to_json`` would base64 every
+# render into the export payload and turn a portability download into hundreds of MB —
+# and the person photo, if a job were somehow mid-flight, would be *in* that file. The
+# user's renders are already downloadable one-by-one from the try-on surface; the export
+# carries the job's facts, not its pixels. Fixed literals, so still not injectable.
+_EXPORT_COLUMNS: dict[str, str] = {
+    "tryon_jobs": (
+        "id, user_id, status, item_ids, confidence, model_version, rendered_slots, "
+        "reason, error_code, attempts, created_at, started_at, finished_at, expires_at"
+    ),
+}
 
 
 class AccountRepository(Protocol):
@@ -181,11 +195,12 @@ class PostgresAccountRepository:
         out: dict[str, list[dict]] = {}
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             for table, col in _EXPORT_TABLES:
-                # table/col are fixed literals from _EXPORT_TABLES; only the
-                # user id is a parameter.
+                # table/col/cols are fixed literals from _EXPORT_TABLES and
+                # _EXPORT_COLUMNS; only the user id is a parameter.
+                cols = _EXPORT_COLUMNS.get(table, "*")
                 row = conn.execute(
                     f"SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json) "
-                    f"FROM (SELECT * FROM {table} WHERE {col} = %s) t",
+                    f"FROM (SELECT {cols} FROM {table} WHERE {col} = %s) t",
                     (user_id,),
                 ).fetchone()
                 rows = row[0] if row else []

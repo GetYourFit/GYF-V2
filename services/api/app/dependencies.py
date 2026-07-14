@@ -299,6 +299,15 @@ def get_summary_repo() -> SummaryRepository:
     return PostgresSummaryRepository(settings.database_url, pool=shared_pool(settings.database_url))
 
 
+def get_tryon_job_repo():
+    """The durable try-on job queue (F8)."""
+    from .tryon.jobs import PostgresTryOnJobRepository
+
+    return PostgresTryOnJobRepository(
+        settings.database_url, pool=shared_pool(settings.database_url)
+    )
+
+
 def get_tryon_renderer():
     """The configured TryOnRenderer port (M9, doctrine D1/D2).
 
