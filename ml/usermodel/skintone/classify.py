@@ -8,7 +8,7 @@ single, reviewable table rather than opaque weights.
 ⚠ The ``L*`` anchors below are **provisional**, pending calibration against a
 balanced full-MST image set (``fairness_eval.py``). Until that gate passes, the
 module runs in shadow (computed, not surfaced) — see
-docs/plans/p1b-cycle3-photo-skin-tone.md.
+PROGRESS.md (p1b cycle 3, skin tone).
 """
 
 from __future__ import annotations

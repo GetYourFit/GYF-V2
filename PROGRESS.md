@@ -2425,3 +2425,34 @@ delete-account call supabase signOut({scope:"global"}) — refresh tokens revoke
 device; API already fail-closes on the tombstone. Verification: fmt/lint/typecheck green, API
 356 passed / 5 env-gated skips, web 62 passed. Remaining F2: least-privilege DB
 ownership/RLS is built+proven (2026-07-12 review; remainder owner-gated) — F2 gate next.
+
+### 2026-07-14 (cont. 8) — Owner amendments: ₹3k ceiling, F2.5 perf slice, consolidation executed
+
+Owner set the total hosting+GPU ceiling to <₹3,000/month (India-effective services), granted
+rewrite-when-measurably-better, and hoisted doc/code bloat deletion from F13 to now. Recorded
+in the contract (new binding decision + new F2.5 slice) and executed:
+
+**Research & plans.** Measured prod from India: browse 1.7s, search COLD 29.7s (ZeroGPU embed
+cold start), warm 3.6s, Render free sleep ~26s. Researched (2026-07-14): Render Starter
+Singapore $7/mo always-on (100–150ms from India vs 250–300ms Oregon); Supabase free tier has
+Singapore/Mumbai regions; Modal $30/mo free credits (~187 T4-hours); RunPod A4000 flex
+$0.58/hr; Vultr Mumbai ₹590 VPS (rejected: self-ops for one person; revisit on SLO miss).
+New docs/plans/scale-3k-inr.md (architecture, SLOs, region-move recipe, F-slice mapping) and
+docs/plans/gyf-complete-plan.md (consolidated mission→moat plan replacing deleted docs).
+
+**Doc consolidation.** Deleted 16 historical/superseded plan docs (~2,200 lines: m0/m1/m2/m3,
+p1b×2, p1c, accuracy-precision-trust, reliability-trustworthiness, elevation, sota-app,
+v2-launch, az-audit, photo-ai-unblock, qol-ux, ai-stylist-overhaul); durable content lives in
+shipped code, PROGRESS.md, and gyf-complete-plan.md. Fixed every live reference (CLAUDE.md §8
+loop text, body-type plan pointer, ml docstrings ×3, gpu-lane.md, CODEMAPS). docs/plans is now
+7 files: contract + 4 ACTIVE + master-plan evidence + parked monetization.
+
+**Code lean.** Deleted the never-used Kafka/Redpanda event lane (KafkaSink, broker/topic
+settings, kafka extra, redpanda service in container-stack.sh — prod spine is
+GYF_EVENT_SINK=postgres) and 4 one-off cycle-verification scripts (verify_cycle3,
+verify_taste_cycle2, verify_skintone_cycle3, verify_workstream_c). Flutter client stays PARKED
+(owner's 2026-07-11 decision stands until an explicit call).
+
+Verification: fmt/lint/typecheck green, doctrine green (doc gate: 8 plans subordinate), API
+356 passed / 5 env-gated skips, web 62 passed, build cached-green. Next: F2 gate close, then
+F2.5 implementation (query-embedding cache + Singapore flip + Modal miss lane).

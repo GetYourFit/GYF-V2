@@ -93,7 +93,7 @@ GetYourFit-New/
 
 ```bash
 make install     # JS workspaces + Python API deps (bun install; uv sync)
-make up          # local infra: Postgres+pgvector, Redis, Redpanda (infra/container-stack.sh)
+make up          # local infra: Postgres+pgvector, Redis (infra/container-stack.sh)
 make stack       # FULL stack on Apple container (web :3000 + api :8000 + Postgres/Redis) — host needs NO local deps
 make nuke        # stop the stack and delete its volumes + locally-built images (reclaim every byte)
 make dev         # web (:3000) + API (:8000) together
@@ -254,7 +254,7 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 | --- | --- | --- |
 | Frontend | **Next.js (App Router) + React 19 + TypeScript**, Tailwind + shadcn/ui, Framer Motion, tRPC | Production/professional UI from day one; accessible (WCAG 2.2); inspiration-first. |
 | Backend | **Python 3.12 + FastAPI** (async); Next.js Route Handlers (BFF); gRPC + events | Same language as ML; typed contracts. |
-| Data | **PostgreSQL 16** (free: Supabase/Neon) + **pgvector** → Qdrant → Milvus; Redis; **Kafka/Redpanda**; S3-compatible storage | Behavioral events are the learning backbone. |
+| Data | **PostgreSQL 16** (free: Supabase/Neon) + **pgvector** → Qdrant → Milvus; Redis; S3-compatible storage | Behavioral events are the learning backbone. |
 | Auth | OIDC, JWT + refresh, WebAuthn passkeys 🔜 | Per-user private data; full deletion. |
 | Serving | **NVIDIA Triton** (vision/diffusion), **vLLM** (LLM reasoning) 🔜 | GPU inference. |
 | Infra | Docker + Kubernetes, GitHub Actions, Terraform, MLflow, OpenTelemetry + Prometheus + Grafana + Sentry | Free-tier first (see §7). |
@@ -264,7 +264,7 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 
 1. **Visual style understanding:** `Marqo-FashionSigLIP` (fashion-tuned embeddings, +57% MRR; open/free). Color harmony scored in **CIELAB/CAM16**.
 2. **User modeling from a photo — TWO separate modules:**
-   - **Body-type module** — monocular **SAM 3D Body (3DB) → MHR** (Apache-2.0, SMPL-free) + **Anny** calibration → measurements → body-type taxonomy. *(well-supported; SMPL/SMPL-X rejected as non-commercial-gated — see `docs/plans/p1b-cycle2-photo-body-type.md`)*
+   - **Body-type module** — monocular **SAM 3D Body (3DB) → MHR** (Apache-2.0, SMPL-free) + **Anny** calibration → measurements → body-type taxonomy. *(well-supported; SMPL/SMPL-X rejected as non-commercial-gated — see `docs/research/deep-research-report.md`)*
    - **Skin-tone module (separate, custom, fairness-gated) ⚠️** — face/skin segmentation → illumination-robust **CIELAB** tone → undertone palette; **must pass full-spectrum fairness eval** (e.g. Monk Skin Tone) before shipping; manual fallback always available. *(low-confidence; never block the product on it)*
 3. **Controllable styling:** intent parser (light LLM/NLU) maps free text → visual-effect goal (`elongate`/`slim`/`broaden`); a **color-theory + body-type effects engine** turns goals into garment-attribute constraints that re-weight the ranker and feed explanations. Occasion + region/culture are first-class conditioning features.
 4. **Personal taste & recommendation:** launch with **two-tower retrieval + transformer ranker**; content-based **cold start**; scale to **generative recommendation with Semantic IDs (TIGER/HSTU)**. Every rec ships a reason + calibrated confidence.
@@ -344,11 +344,9 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
   possible** — parallelize deep-dives across specialized agents, gate every workstream with
   eval/verification loops, and prefer continuous closed loops over one-shot fixes.
   **Never trade quality for session cost** — cost is not a constraint on doing it right.
-  This governs how every milestone below is executed (see `plans/accuracy-precision-trust.md`
-  §5 for the L1–L6 loop catalog, `plans/reliability-trustworthiness.md` for the gates, and
-  `plans/gyf-elevation-program.md` for the real-data / premium-surface / clean-codebase track —
-  every workstream there runs as a bounded `rubric → generate → evaluate → specialist-review →
-  GATE → promote|iterate` loop with the per-workstream reviewer agents named in §0 of that doc).
+  This governs how every slice of the active execution contract is executed: every
+  workstream runs as a bounded `rubric → generate → evaluate → specialist-review →
+  GATE → promote|iterate` loop with the relevant ECC reviewer agents.
 - **Read the source docs first** (`ideas-complete.md`, `tech-stack.md`, `research/deep-research-report.md`) before proposing or building anything.
 - **Follow the engineering doctrine** (`docs/engineering-doctrine.md`) — it is binding for every ML pillar: consume capabilities through a **port** (never import a model in app code), keep a **research vs production lane** with a **CI license gate** so nothing non-commercial is served, prefer **clean foundation + our-data adapter** over non-commercial task weights, and **promote only through evaluation**. The five invariants are non-negotiable.
 - **Plan before code.** Surface a plan; do not implement until it's agreed.

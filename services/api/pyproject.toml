@@ -23,9 +23,6 @@ gyf-contracts = { path = "../../packages/contracts", editable = true }
 gyf-ml = { path = "../../ml", editable = true }
 
 [project.optional-dependencies]
-kafka = [
-  "kafka-python>=2.0.2",
-]
 # Photo onboarding remote client. The RTMW body candidate stays in gyf-ml's research
 # extra and is deliberately absent from the production API runtime until promotion.
 photo-remote = [

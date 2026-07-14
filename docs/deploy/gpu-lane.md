@@ -93,5 +93,5 @@ print(c.predict("hf-hub:Marqo/marqo-fashionSigLIP", ["a red dress"], api_name="/
 
 A bake-off never auto-promotes. If a candidate beats the incumbent (`is_improvement` true),
 flip its registry lane to `production`, point its `eval_report` at the committed report, and
-re-run `scripts/check_promotion.py` (M1 gate). See `docs/plans/m2-embedding-upgrade.md`.
+re-run `scripts/check_promotion.py` (M1 gate). See PROGRESS.md (M2 embedding upgrade).
 ```

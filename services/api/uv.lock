@@ -405,9 +405,6 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
-kafka = [
-    { name = "kafka-python" },
-]
 migrate = [
     { name = "alembic" },
     { name = "sqlalchemy" },
@@ -436,7 +433,6 @@ requires-dist = [
     { name = "gyf-contracts", editable = "../../packages/contracts" },
     { name = "gyf-ml", marker = "extra == 'photo-remote'", editable = "../../ml" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
-    { name = "kafka-python", marker = "extra == 'kafka'", specifier = ">=2.0.2" },
     { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'otel'", specifier = ">=1.27.0" },
     { name = "opentelemetry-instrumentation-fastapi", marker = "extra == 'otel'", specifier = ">=0.48b0" },
     { name = "opentelemetry-sdk", marker = "extra == 'otel'", specifier = ">=1.27.0" },
@@ -453,7 +449,7 @@ requires-dist = [
     { name = "sqlalchemy", marker = "extra == 'migrate'", specifier = ">=2.0.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
 ]
-provides-extras = ["kafka", "photo-remote", "postgres", "migrate", "otel", "sentry", "dev"]
+provides-extras = ["photo-remote", "postgres", "migrate", "otel", "sentry", "dev"]
 
 [[package]]
 name = "gyf-contracts"
@@ -635,15 +631,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
-]
-
-[[package]]
-name = "kafka-python"
-version = "3.0.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2d/5f/868bd4444b57fb410f63cf9c641d9a84fd6a51ac5eaf11140f99db8821fe/kafka_python-3.0.2.tar.gz", hash = "sha256:1921af12d8bc9e37843025b89c782d1c90498d80373af590aad45ba4fcfa6e77", size = 499942, upload-time = "2026-06-18T13:32:32.655Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/c3/9fe1a3f29c1f68b478f01a94d9bafea978d67a7c403672f2bd01cbfd95c6/kafka_python-3.0.2-py3-none-any.whl", hash = "sha256:8f674afff08d40c981db903b6eb8ae9f3652909081158921437ee80e465bd9c7", size = 606623, upload-time = "2026-06-18T13:32:34.297Z" },
 ]
 
 [[package]]

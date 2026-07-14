@@ -14,6 +14,7 @@ This is the single source of truth for execution order. Product intent remains i
 - Learned challengers train on GYF's own data and iterate until they measurably beat the production incumbent on the frozen evaluation, then the shadow and cohort gates; promotion happens only on that measured win, and the deterministic incumbent always remains the fallback.
 - Provider, migration and ₹2,000 budget proposals in older plans are hypotheses until measured; no provider is selected merely by a planning estimate.
 - Replace-then-delete (owner amendment 2026-07-14): when a gated replacement ships, the implementation it replaces is deleted in the same slice, after that phase gate passes. Everything else obsolete or duplicate is deleted only in F13, after behaviour is protected or explicitly rejected. Do not replace deleted code with speculative abstractions.
+- Budget ceiling (owner amendment 2026-07-14, evening): total hosting + GPU spend stays **under ₹3,000/month**, India-effective services preferred; the researched serving/performance spec is [`scale-3k-inr.md`](./scale-3k-inr.md). Rewrite-when-better: existing code may be rewritten where the replacement is measurably better (debuggability, maintainability, security, speed) — with before/after evidence, never by assertion.
 
 ## Reproducible baseline
 
@@ -43,6 +44,7 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
    - **F1c:** add password recovery and an exact deployed authenticated-session integration check.
    - **F1 gate:** all three slices and the full verification set pass. **F2 cannot begin before this gate.**
 3. **F2 — Privacy and isolation.** Consent, export, deletion, session revocation, private storage and least-privilege database ownership/RLS.
+4. **F2.5 — Performance floor** (owner amendment 2026-07-14): kill the cold-GPU search path (query-embedding cache + nightly warm + scale-to-zero miss lane), move the API to always-on Singapore, and prove the SLOs in [`scale-3k-inr.md`](./scale-3k-inr.md) §2 with before/after measurements from an Indian vantage. No other reordering; F3 follows.
 4. **F3 — Learning-event truth.** Real exposures/outcomes, deterministic IDs, consent/deletion and exact delayed-outcome joins before training.
 5. **F4 — Catalogue truth.** Rights, price/currency, availability, freshness, removal reconciliation and purchasable outputs.
 6. **F5 — Free recommendation incumbent.** Keep SigLIP 2/pgvector/rules/MMR; add anchored refinement and multi-interest context only when evaluation proves value.

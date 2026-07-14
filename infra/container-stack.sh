@@ -9,10 +9,10 @@
 # depends_on) as explicit health-wait loops, because `container run` has neither.
 #
 # Networking parity: every service runs on the default network and is named after
-# its compose service (postgres/redis/redpanda/api/web). With the system default
+# its compose service (postgres/redis/api/web). With the system default
 # DNS domain `gyf.test` (see ~/.config/container/config.toml), containers register
 # as <name>.gyf.test and resolve each other by short name — so the API still reaches
-# `postgres:5432`, `redis:6379`, `redpanda:9092` unchanged.
+# `postgres:5432`, `redis:6379` unchanged.
 #
 # Usage:  bash infra/container-stack.sh <up|down|nuke|status|logs> [args]
 #   up [--build]   start the full stack (─-build rebuilds api+web images first)
@@ -28,13 +28,12 @@ cd "$ROOT"
 # ── Images ───────────────────────────────────────────────────────────────────
 PG_IMAGE="pgvector/pgvector:pg16"
 REDIS_IMAGE="redis:7-alpine"
-REDPANDA_IMAGE="redpandadata/redpanda:latest"
 API_IMAGE="gyf-api"
 WEB_IMAGE="gyf-web"
 
-INFRA_SERVICES=(postgres redis redpanda)
+INFRA_SERVICES=(postgres redis)
 APP_SERVICES=(api web)
-ALL_SERVICES=(postgres redis redpanda api web)
+ALL_SERVICES=(postgres redis api web)
 VOLUMES=(gyf-pgdata gyf-web-root-modules gyf-web-app-modules gyf-web-next-cache)
 
 # ── Small helpers ─────────────────────────────────────────────────────────────
@@ -100,17 +99,6 @@ start_redis() {
   wait_until redis 30 container exec redis redis-cli ping
 }
 
-start_redpanda() {
-  log "redpanda"
-  # Same args as compose. advertise=localhost:9092 is kept verbatim for parity;
-  # the verified taste loop uses GYF_EVENT_SINK=postgres, not the broker.
-  run_svc redpanda -p 9092:9092 "$REDPANDA_IMAGE" \
-    redpanda start --smp 1 --overprovisioned --node-id 0 \
-    --kafka-addr PLAINTEXT://0.0.0.0:9092 \
-    --advertise-kafka-addr PLAINTEXT://localhost:9092
-  wait_until redpanda 30 sh -c "container exec redpanda rpk cluster health | grep -q 'Healthy:.*true'"
-}
-
 start_api() {
   log "api (FastAPI, migrates to head on boot)"
   # Source bind-mounted for hot reload; the venv lives at /opt/venv (outside /app)
@@ -119,7 +107,6 @@ start_api() {
   run_svc api \
     -e GYF_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/gyf \
     -e GYF_REDIS_URL=redis://redis:6379/0 \
-    -e GYF_EVENT_BROKER_URL=redpanda:9092 \
     -e GYF_ENV=local \
     -e GYF_AUTH_DISABLED=true \
     -e GYF_EVENT_SINK=postgres \
@@ -185,9 +172,8 @@ cmd_infra() {
   ensure_volumes
   start_postgres
   start_redis
-  start_redpanda
-  echo
-  log "infra up →  postgres :5432   redis :6379   redpanda :9092"
+    echo
+  log "infra up →  postgres :5432   redis :6379"
 }
 
 cmd_up() {
@@ -196,8 +182,7 @@ cmd_up() {
   ensure_volumes
   start_postgres
   start_redis
-  start_redpanda
-  start_api   # depends_on postgres + redis (healthy) — guaranteed by the waits above
+    start_api   # depends_on postgres + redis (healthy) — guaranteed by the waits above
   start_web   # depends_on api
   echo
   log "stack up →  web http://localhost:3000   api http://localhost:8000"
@@ -220,7 +205,7 @@ cmd_nuke() {
 
 cmd_status() {
   ensure_system
-  container ls -a 2>/dev/null | awk 'NR==1 || $1 ~ /^(postgres|redis|redpanda|api|web)$/'
+  container ls -a 2>/dev/null | awk 'NR==1 || $1 ~ /^(postgres|redis|api|web)$/'
 }
 
 cmd_logs() {

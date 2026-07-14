@@ -6,7 +6,7 @@ ranks the candidates against the incumbent via the M1 regression gate. Reproduci
 DB-free: the dataset is read from the committed `feed.jsonl` (image path + raw category), so the
 bake-off needs only the images and the model weights, not a live Postgres.
 
-This is the heavy step of `docs/plans/m2-embedding-upgrade.md`; it runs in the `ml` Docker image
+This is the heavy step of the M2 embedding upgrade (see PROGRESS.md); it runs in the `ml` Docker image
 (`make m2-bakeoff`) on CPU or GPU. Promotion stays manual and gated: a winner's report is written
 as evidence here, then a human flips the registry lane and re-runs `check_promotion.py`.
 """

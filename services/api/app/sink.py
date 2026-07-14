@@ -3,8 +3,7 @@
 Two interchangeable backends, chosen by ``GYF_EVENT_SINK``:
 - ``local`` (default): append-only JSONL — genuinely persists events end-to-end
   with no external infra (dev, tests).
-- ``kafka``: publishes to Kafka/Redpanda (``GYF_EVENT_BROKER_URL`` / ``GYF_EVENT_TOPIC``).
-  The ``kafka-python`` dependency is imported lazily so the local path needs nothing.
+- ``postgres``: the interactions table — the prod behavioural spine.
 """
 
 from __future__ import annotations
@@ -43,26 +42,6 @@ class LocalFileSink:
             return
         with self._path.open("a", encoding="utf-8") as fh:
             fh.writelines(e.model_dump_json() + "\n" for e in events)
-
-
-class KafkaSink:
-    """Publishes events to Kafka/Redpanda. Lazy dependency so local needs nothing."""
-
-    def __init__(self, broker_url: str, topic: str) -> None:
-        from kafka import KafkaProducer  # type: ignore[import-untyped]
-
-        self._topic = topic
-        self._producer = KafkaProducer(
-            bootstrap_servers=broker_url,
-            value_serializer=lambda v: v.encode("utf-8"),
-        )
-
-    def publish(self, event: InteractionEvent) -> None:
-        self._producer.send(self._topic, event.model_dump_json())
-
-    def publish_many(self, events: list[InteractionEvent]) -> None:
-        for event in events:  # producer batches internally; per-send is already async
-            self.publish(event)
 
 
 # SQL kept as module constants so tests can assert against them without a live DB.
@@ -127,8 +106,6 @@ def get_sink(pool: object | None = None) -> EventSink:
     ``pool`` (when given) is the process-wide shared pool the Postgres sink reuses
     instead of opening its own — keeps total connections bounded.
     """
-    if settings.event_sink == "kafka":
-        return KafkaSink(settings.event_broker_url, settings.event_topic)
     if settings.event_sink == "postgres":
         return PostgresSink(settings.database_url, pool=pool)
     return LocalFileSink()

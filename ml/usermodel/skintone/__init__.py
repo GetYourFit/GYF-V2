@@ -8,7 +8,7 @@ so orchestration and tests run with an injected fake readout.
 
 Surfaced in production only behind the fairness gate (``fairness_eval``); until it
 passes, the module runs in shadow (computed, not shown) — see
-docs/plans/p1b-cycle3-photo-skin-tone.md.
+PROGRESS.md (p1b cycle 3, skin tone).
 """
 
 from __future__ import annotations
