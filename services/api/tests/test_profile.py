@@ -355,6 +355,33 @@ def test_purge_expired_hard_deletes_tombstoned():
     assert DEV_USER not in accounts.users
 
 
+def test_export_returns_owned_data_as_download():
+    # F2 data portability: the export is a JSON attachment containing the
+    # caller's account data (consent flags included) and nobody else's.
+    accounts = InMemoryAccountRepository(existing={DEV_USER, "other-user"})
+    accounts.update_consent(DEV_USER, {"data_processing": True})
+    try:
+        resp = _client(accounts=accounts).get("/account/export")
+        assert resp.status_code == 200
+        assert resp.headers["content-disposition"].startswith("attachment")
+        body = resp.json()
+        assert body["user_id"] == DEV_USER
+        rows = body["data"]["users"]
+        assert [r["id"] for r in rows] == [DEV_USER]
+        assert rows[0]["consent_flags"] == {"data_processing": True}
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_export_rejected_for_tombstoned_account():
+    accounts = InMemoryAccountRepository(existing={DEV_USER})
+    accounts.soft_delete(DEV_USER)
+    try:
+        assert _client(accounts=accounts).get("/account/export").status_code == 403
+    finally:
+        app.dependency_overrides.clear()
+
+
 # --- Consent ----------------------------------------------------------------
 
 

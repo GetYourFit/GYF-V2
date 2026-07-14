@@ -2409,3 +2409,19 @@ data export endpoint. Gap 1 closed: new `.github/workflows/purge.yml` runs the p
 (03:30 IST) against prod via the existing GYF_PROD_DATABASE_URL secret, no-ops gracefully
 until the secret is present, `workflow_dispatch` for manual runs; module entrypoint
 smoke-verified. Gap 2 (export) is the next F2 slice, then session-revocation review.
+
+### 2026-07-14 (cont. 7) — F2: data-portability export + explicit global session revocation
+
+GET /account/export ships the read-side counterpart of DELETE /account: every row the user
+owns, keyed by table, from the same ownership map erasure cascades over (_EXPORT_TABLES =
+0006 RLS list + social_posts/support_messages/follows). Postgres impl = one
+json_agg(row_to_json) query per fixed-literal table; regression
+test_export_postgres.py (CI real-PG lane) proves every owned table appears — empty ones
+included — with only the caller's rows; in-memory endpoint tests prove the attachment shape,
+consent flags, and 403 for tombstoned accounts. The account page's Export button now downloads
+this complete server export (v2) instead of the old 6-endpoint client stitch that silently
+missed interactions/posts/follows/support. Session revocation made explicit: both sign-out and
+delete-account call supabase signOut({scope:"global"}) — refresh tokens revoked on every
+device; API already fail-closes on the tombstone. Verification: fmt/lint/typecheck green, API
+356 passed / 5 env-gated skips, web 62 passed. Remaining F2: least-privilege DB
+ownership/RLS is built+proven (2026-07-12 review; remainder owner-gated) — F2 gate next.

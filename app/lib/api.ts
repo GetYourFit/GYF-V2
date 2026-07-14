@@ -164,6 +164,13 @@ export class GyfApi {
     return this.request<void>("DELETE", "/account");
   }
 
+  exportAccount(): Promise<{ user_id: string; data: Record<string, unknown[]> }> {
+    return this.request<{ user_id: string; data: Record<string, unknown[]> }>(
+      "GET",
+      "/account/export",
+    );
+  }
+
   // --- Recommendation & feedback (the stylist loop) ---
 
   recommend(params: RecommendParams = {}): Promise<OutfitRecommendation> {

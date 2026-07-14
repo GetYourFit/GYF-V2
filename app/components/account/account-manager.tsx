@@ -137,24 +137,14 @@ export function AccountManager() {
   const exportData = useCallback(async () => {
     setExporting(true);
     try {
-      const api = browserApi();
-      const [profile, savedItems, savedOutfits, wardrobe, summary, consent] = await Promise.all([
-        api.getProfile().catch(() => null),
-        api.listSaved().catch(() => []),
-        api.listSavedOutfits().catch(() => []),
-        api.listWardrobe().catch(() => []),
-        api.getProfileSummary().catch(() => null),
-        api.getConsent().catch(() => ({})),
-      ]);
+      // Server-side export (F2): GET /account/export returns EVERY owned row —
+      // the same ownership map erasure cascades over — so nothing (interactions,
+      // posts, follows, support threads) is missing from the download.
+      const account = await browserApi().exportAccount();
       const bundle = {
         exported_at: new Date().toISOString(),
-        format: "gyf-data-export/v1",
-        profile,
-        consent,
-        summary,
-        saved_items: savedItems,
-        saved_outfits: savedOutfits,
-        wardrobe,
+        format: "gyf-data-export/v2",
+        ...account,
       };
       const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -179,7 +169,9 @@ export function AccountManager() {
 
   const signOut = useCallback(async () => {
     try {
-      await createSupabaseBrowserClient().auth.signOut();
+      // scope global = revoke the refresh token on EVERY device, not just this
+      // one (F2 session revocation); access tokens then die at their ≤1h expiry.
+      await createSupabaseBrowserClient().auth.signOut({ scope: "global" });
       router.push("/login");
       router.refresh();
     } catch {
@@ -191,7 +183,9 @@ export function AccountManager() {
     setDeleting(true);
     try {
       await browserApi().deleteAccount();
-      await createSupabaseBrowserClient().auth.signOut();
+      // Deleting the account revokes every session everywhere; the API also
+      // fail-closes on the tombstone immediately, so a stale token is useless.
+      await createSupabaseBrowserClient().auth.signOut({ scope: "global" });
       toast({
         variant: "success",
         title: "Account deleted",

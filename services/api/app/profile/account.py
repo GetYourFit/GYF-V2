@@ -43,6 +43,21 @@ _GET_PROFILE_FIELDS = (
     "SELECT display_name, created_at, phone_country_code, phone_number, avatar_url "
     "FROM users WHERE id = %s"
 )
+# Data-portability export (F2): every user-owned table and its owning column —
+# the same ownership map erasure cascades over (0006 RLS list + social/follows/
+# support). Fixed literals, so the f-string query below cannot be injected into.
+_EXPORT_TABLES: tuple[tuple[str, str], ...] = (
+    ("users", "id"),
+    ("profiles", "user_id"),
+    ("interactions", "user_id"),
+    ("collections", "user_id"),
+    ("saved_outfits", "user_id"),
+    ("wardrobe_items", "user_id"),
+    ("post_reactions", "user_id"),
+    ("social_posts", "user_id"),
+    ("support_messages", "user_id"),
+    ("follows", "follower_id"),
+)
 
 
 class AccountRepository(Protocol):
@@ -91,6 +106,10 @@ class AccountRepository(Protocol):
     ) -> tuple[str | None, object | None, str | None, str | None, str | None]:
         """``(display_name, created_at, phone_country_code, phone_number, avatar_url)``
         in one read — the profile-summary hot path. All ``None`` if the user is absent."""
+        ...
+
+    def export_data(self, user_id: str) -> dict[str, list[dict]]:
+        """Data-portability export: every row the user owns, keyed by table."""
         ...
 
 
@@ -157,6 +176,21 @@ class PostgresAccountRepository:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             row = conn.execute(_GET_PROFILE_FIELDS, (user_id,)).fetchone()
         return tuple(row) if row else (None, None, None, None, None)  # type: ignore[return-value]
+
+    def export_data(self, user_id: str) -> dict[str, list[dict]]:
+        out: dict[str, list[dict]] = {}
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            for table, col in _EXPORT_TABLES:
+                # table/col are fixed literals from _EXPORT_TABLES; only the
+                # user id is a parameter.
+                row = conn.execute(
+                    f"SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json) "
+                    f"FROM (SELECT * FROM {table} WHERE {col} = %s) t",
+                    (user_id,),
+                ).fetchone()
+                rows = row[0] if row else []
+                out[table] = rows if isinstance(rows, list) else json.loads(rows)
+        return out
 
 
 class InMemoryAccountRepository:
@@ -232,3 +266,15 @@ class InMemoryAccountRepository:
             user.get("phone_number"),
             user.get("avatar_url"),
         )
+
+    def export_data(self, user_id: str) -> dict[str, list[dict]]:
+        # In-memory holds only the users row; the Postgres impl covers every
+        # owned table (see _EXPORT_TABLES) and is proven in test_export_postgres.
+        user = self.users.get(user_id)
+        if user is None:
+            return {"users": []}
+        row = {k: v for k, v in user.items() if k != "deleted"}
+        row["id"] = user_id
+        row["consent_flags"] = dict(user.get("consent", {}))
+        row.pop("consent", None)
+        return {"users": [row]}

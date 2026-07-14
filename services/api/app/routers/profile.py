@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import json
 import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
@@ -218,6 +219,25 @@ def update_consent(
 ) -> dict[str, bool]:
     """Grant/revoke consent. Merges known flags; unknown keys are ignored."""
     return repo.update_consent(principal.user_id, payload.flags)
+
+
+@router.get(
+    "/account/export",
+    summary="Data-portability export",
+    dependencies=[Depends(rate_limit("export", "rate_limit_mutation"))],
+)
+def export_account(
+    principal: Principal = Depends(require_active_principal),
+    repo: AccountRepository = Depends(get_account_repo),
+) -> Response:
+    """Everything GYF stores about the user, keyed by table, as a JSON download
+    (F2 data portability — the read-side counterpart of DELETE /account)."""
+    data = repo.export_data(principal.user_id)
+    return Response(
+        content=json.dumps({"user_id": principal.user_id, "data": data}, default=str),
+        media_type="application/json",
+        headers={"Content-Disposition": 'attachment; filename="gyf-export.json"'},
+    )
 
 
 @router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
