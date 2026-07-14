@@ -1,7 +1,8 @@
 # RELIABILITY & TRUSTWORTHINESS — the cross-cutting plan to make GYF provably dependable
 
-> **Status:** plan created 2026-06-29, in response to a class of failures (not one bug).
-> **Owner doc:** this is binding cross-cutting law alongside `engineering-doctrine.md`.
+> **Status:** historical/evidence only (created 2026-06-29, in response to a class of failures).
+> Execution authority is [`active-execution-contract.md`](./active-execution-contract.md).
+> **Owner doc:** formerly binding cross-cutting law alongside `engineering-doctrine.md`.
 > Referenced from `roadmap.md` (§ Reliability track) and `CLAUDE.md` §0.5.
 >
 > **Thesis.** GYF's intelligence is strong, but features have been marked "deployed"

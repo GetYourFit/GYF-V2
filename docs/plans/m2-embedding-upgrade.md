@@ -1,7 +1,7 @@
 # M2 · Embedding upgrade — eval-driven bake-off (not a forced swap)
 
 > **Roadmap:** STAGE 1 → M2. **Doctrine:** D3 (clean foundation), D5 (eval-gated promotion via M1),
-> D1/D2 (port + license gate). **Dep:** M1 (✅). **Status:** shipped; evaluation scope corrected
+> D1/D2 (port + license gate). **Dep:** M1 (✅). **Status:** shipped; historical/evidence only under the active execution contract; evaluation scope corrected
 > 2026-07-13. See `docs/research/encoder-eval-alignment-2026-07-13.md`.
 
 ## Research finding that reshapes this milestone

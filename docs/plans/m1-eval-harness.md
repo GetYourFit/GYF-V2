@@ -2,7 +2,7 @@
 
 > **Roadmap:** `docs/roadmap.md` STAGE 0 → M1. **Doctrine:** `engineering-doctrine.md` D5
 > (eval-gated promotion), D1/D2 (ports + license gate, already shipped in M0).
-> **Dep:** M0 (✅). **Status:** in progress (2026-06-20).
+> **Dep:** M0 (✅). **Status:** shipped ✅. Historical/evidence only under the active execution contract.
 
 ## Problem (the gap M1 closes)
 

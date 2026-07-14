@@ -1,5 +1,9 @@
 # AI Stylist Overhaul — Plan (no code yet)
 
+> **Status: historical/evidence only.** Execution authority is
+> [`active-execution-contract.md`](./active-execution-contract.md); nothing here independently
+> authorises implementation.
+
 Goal (from feedback v6): recommendations that feel *personal* — skin tone, body
 type, budget, location, evolving taste — using only free/self-hostable pieces,
 no paid inference.

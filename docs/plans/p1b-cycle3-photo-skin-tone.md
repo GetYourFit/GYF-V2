@@ -1,6 +1,7 @@
 # P1-B Cycle 3 — Photo-based Skin-Tone Onboarding (⚠ fairness-gated)
 
-> **Status:** planned, not built. Execution-ready. The **second half** of photo
+> **Status:** historical/evidence only — superseded by the active execution contract (F7);
+> the fairness gate still fails DoD, the manual path stays live. The **second half** of photo
 > onboarding, paired with [`p1b-cycle2-photo-body-type.md`](./p1b-cycle2-photo-body-type.md)
 > (body-type, M3). Together they complete the **photo path** of the two onboarding
 > routes (CLAUDE.md §"Cold start & onboarding"). The manual path stays the always-on

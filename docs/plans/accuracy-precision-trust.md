@@ -1,7 +1,8 @@
 # ACCURACY, PRECISION & TRUST — the plan to make GYF's intelligence provably good
 
-> **Status:** master plan created 2026-06-29 (synthesized from a 3-track deep-dive).
-> **Binding cross-cutting law** alongside `engineering-doctrine.md` and
+> **Status:** historical/evidence only (created 2026-06-29, synthesized from a 3-track deep-dive).
+> Execution authority is [`active-execution-contract.md`](./active-execution-contract.md).
+> Formerly binding cross-cutting law alongside `engineering-doctrine.md` and
 > `reliability-trustworthiness.md`. Referenced from `roadmap.md` as the **Accuracy & Trust track**.
 >
 > **The distinction from the Reliability plan.** `reliability-trustworthiness.md` makes sure

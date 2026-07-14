@@ -1,6 +1,7 @@
 # P1-C Cycle 3 — Controllable Styling (NL goal box)
 
-> **Status:** planned, not built. Execution-ready. Builds on Cycle 1 (cold-start
+> **Status:** shipped ✅ (NL styling goals are live). Historical/evidence only under the
+> active execution contract. Builds on Cycle 1 (cold-start
 > composition) + Cycle 2 (online taste model), both shipped & live-DB verified.
 > **Goal (CLAUDE.md §2, plan §3):** a text box where the user types *"I want to
 > look taller / slimmer / broader"*; GYF applies **color theory + body-type

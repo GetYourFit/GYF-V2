@@ -1,5 +1,10 @@
 # Free-Forever, GYF-Trained Virtual Try-On — the Moat Plan
 
+> **Status: historical/evidence only.** Superseded by
+> [`tryon-subscription-monetization.md`](./tryon-subscription-monetization.md) and the
+> [`active-execution-contract.md`](./active-execution-contract.md) (try-on is F8/F9);
+> nothing here independently authorises implementation.
+
 > **Question answered:** how does GYF get virtual try-on that is (1) **$0 forever**,
 > (2) **commercially clean**, and (3) **a real moat** because it trains on GYF's own
 > data? This doc is the researched answer + the phased build. Written 2026-07-10.

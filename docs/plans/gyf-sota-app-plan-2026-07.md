@@ -1,5 +1,9 @@
 # GYF — Complete SOTA App Plan (whole-stack, empirically measured) — 2026-07-12
 
+> **Status: historical/evidence only.** Execution authority is
+> [`active-execution-contract.md`](./active-execution-contract.md); nothing here independently
+> authorises implementation.
+
 > Scope: the **entire** app — frontend, backend, data, ML, infra, observability, security — not just
 > ML. Organizing principle: **measure everything, gate every change on measured improvement.** Binding
 > law: `engineering-doctrine.md`. Sequenced under `gyf-az-audit-2026-07.md`. This plan is an **upgrade

@@ -1,5 +1,9 @@
 # Photo AI + Recommendation — SOTA Unblock Plan (2026-07-12)
 
+> **Status: historical/evidence only.** Execution authority is
+> [`active-execution-contract.md`](./active-execution-contract.md); nothing here independently
+> authorises implementation.
+
 > Deepens `gyf-az-audit-2026-07.md` Phase F. Binding law: `engineering-doctrine.md` (D2 license
 > gate, D3 foundation+adapter, D4 real-data flywheel, D5 eval-gated, D6 honest/abstain). Registry
 > is the machine gate (`models.registry.json` + `gyf_contracts.model_policy.is_servable`).

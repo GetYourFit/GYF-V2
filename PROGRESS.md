@@ -2292,3 +2292,23 @@ Verification: slice gate green (`pytest tests/test_profile.py` 25 passed; ruff c
 gate green: fmt-check, lint, typecheck, doctrine, API pytest 353 passed / 4 skipped (the four
 known env-gated live-Postgres tests — no local PG running), web 55 passed, production build OK.
 F1b (truthful filters/labels/capability checks) is next; deletion stays parked until F13.
+
+### 2026-07-14 (cont.) — Doc consolidation: one authority, machine-enforced; ML flywheel plan
+
+Owner asked for status, markdown consolidation/dedup, vision-alignment enforcement, and a deep
+ML data-flywheel plan. Findings: no byte-duplicate markdown exists and older plans are retained
+as evidence per the contract (doc deletion itself is F13), so consolidation = labelling, not
+deleting. Fourteen plan docs gained or corrected supersession/status headers (including three
+that falsely read "planned, not built" for shipped work: m0, m1, p1c NL goals; free-vton-moat
+now points at tryon-subscription-monetization.md). New doctrine gate
+`scripts/check_doc_alignment.py` (wired into `make doctrine`) fails the build if any plan under
+docs/plans/ lacks an evidence-only/subordinate header — exactly one execution authority can
+exist. New `docs/plans/ml-data-flywheel.md` (ACTIVE, subordinate to the contract) deepens
+F3/F5/F6/F7/F12: training-grade event truth with exact exposure↔outcome joins and erasure
+propagation, same-slate pairwise auto-labelling with position debiasing, corrections as gold
+labels, small pairwise logistic challenger before any deep ranker, colour theory seeded then
+behaviour-calibrated per undertone with empirical-Bayes shrinkage, an owner-gated no-pixel
+correction flywheel toward the fairness set, and per-surface north-star metrics for F12
+keep/cut decisions. The uncommitted F0 amendment docs (AGENTS.md, CLAUDE.md, contract, try-on
+monetization plan) are committed separately from this doc-governance work. Current slice
+remains F1b next; no application code touched.

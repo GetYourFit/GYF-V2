@@ -1,5 +1,9 @@
 # GYF A-Z Production Plan — 2026-07-11
 
+> **Status: historical/evidence only.** Execution authority is
+> [`active-execution-contract.md`](./active-execution-contract.md); nothing here independently
+> authorises implementation.
+
 > Evidence: `PROGRESS.md`, product/engineering vision, current code and tests, a live
 > production smoke, and a July 2026 arXiv sweep. This plan replaces the stale four-blocker
 > snapshot. Work in order; each phase has a measurable exit gate.

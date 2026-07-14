@@ -1,5 +1,9 @@
 # QoL & UX Program — intuitive, engaging, psychologically-grounded GYF
 
+> **Status: historical/evidence only.** Execution authority is
+> [`active-execution-contract.md`](./active-execution-contract.md); nothing here independently
+> authorises implementation.
+
 > Compiled 2026-07-03. Scope: the live web surface (stylist feed, Explore,
 > collections/saved, wardrobe, social, profile, onboarding, account).
 > Ordering inside each section = impact per unit effort, highest first.

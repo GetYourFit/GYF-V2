@@ -1,6 +1,7 @@
 # P1-B Cycle 2 — Photo-based Body-Type Onboarding
 
-> **Status:** planned, not built. Execution-ready. Builds on B Cycle 1 (manual
+> **Status:** historical/evidence only — superseded by the active execution contract
+> (photo assistance is F7; this route was never installed in production). Builds on B Cycle 1 (manual
 > onboarding, shipped & live-DB verified) — this adds the **photo path** of the
 > two onboarding routes (CLAUDE.md §"Cold start & onboarding").
 > **Goal (CLAUDE.md §1 Phase 1, plan §Workstream B):** a user uploads a photo →

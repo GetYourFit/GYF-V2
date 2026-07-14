@@ -1,6 +1,7 @@
 # M0 — Model Registry + CI License Gate + Import Lint
 
-> **Status:** planned, execution-ready. The first **Stage 0** control in `roadmap.md`;
+> **Status:** shipped ✅ (license gate live in CI). Historical/evidence only under
+> [`active-execution-contract.md`](./active-execution-contract.md). The first **Stage 0** control in `roadmap.md`;
 > implements `engineering-doctrine.md` **D1 (ports) + D2 (two-lane license gate)**.
 > **Why first:** the license/eval gates must exist *before* any model flows through them —
 > otherwise we retrofit safety later (expensive) or ship a non-commercial weight (illegal).
