@@ -2334,3 +2334,14 @@ fal Leffa/FASHN $0.075–0.10/render as optional bridge; self-hosted rented GPU 
 doing 100+ renders/hr implies <$0.01/render (hypothesis until measured in F9). CLAUDE.md and
 AGENTS.md headers updated; contract handoff advanced to F1b (F1a shipped, 6f78bed). Doc-only
 change; application code untouched.
+
+### 2026-07-14 (cont. 3) — Owner decision: GYF trains its own try-on weights; rented bridge dropped
+
+The owned checkpoint (MIT Leffa architecture, LoRA fine-tuned on GYF catalogue pairs, free
+Kaggle quota or rented burst, ZeroGPU/scale-to-zero serving) is now the ONLY production try-on
+lane. The optional licensed rented bridge (fal Leffa/FASHN) is dropped; those adapters stay
+research-lane and are deleted when the owned checkpoint promotes (replace-then-delete) or in
+F13. Training-data rights for catalogue on-model photos are explicitly verified in F4 before
+any pair enters training. Contract + free-vton-moat.md updated; training work itself still
+starts at F8 per the contract order (pairing pipeline depends on F4 catalogue rights/truth).
+Doc-only change.

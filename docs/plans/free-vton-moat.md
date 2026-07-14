@@ -135,7 +135,7 @@ signal — a data position, not an algorithm secret.
 **Phase 0 — Port (DONE ✅, commit `0c07002`).** `TryOnRenderer` port, `/tryon` router,
 UI, events, `NullTryOnRenderer` baseline all restored. Any lane drops in behind it.
 
-**Phase 1 — Ship on the rented lane (cheap bridge, optional).** `GYF_TRYON_PROVIDER=
+**Phase 1 — Rented bridge: SKIPPED (owner decision 2026-07-14 — owned weights are the only production lane).** `GYF_TRYON_PROVIDER=
 fal-leffa` + a fal.ai key → renders today, commercial-clean, ~$0.10/render. fal free
 credits ≈ 10–30 renders (a demo, not beta). *Use only to validate the UX end-to-end
 while Phase 2 builds; skip if you'd rather wait for free.*
@@ -143,7 +143,8 @@ while Phase 2 builds; skip if you'd rather wait for free.*
 **Phase 2 — Data pipeline (the real work starts).**
 `ml/pipelines/vton_pairs.py`: from the catalog, emit `(garment, on-model)` pairs;
 generate agnostic-mask (parse) + DWPose + DensePose per pair; write a DressCode-format
-dataset to storage. Gate every preprocessing model through the license check (§1.4).
+dataset to storage. Gate every preprocessing model through the license check (§1.4); catalogue on-model photo
+training rights are verified in contract F4 before any pair enters training.
 
 **Phase 3 — Fine-tune Leffa on GYF pairs (Kaggle).**
 LoRA fine-tune from SD1.5-inpaint base on the Phase-2 dataset, chunked across weekly
@@ -184,8 +185,8 @@ GYF's data forever, free.
 1. **Build Phase 2 first** — the paired-data pipeline is the gating asset and the moat;
    nothing else matters without it, and it's pure engineering (no GPU cost).
 2. **Fine-tune (Phase 3) on Kaggle**, serve on ZeroGPU (Phase 4) → free + commercial.
-3. **Skip the rented bridge** unless you need the UX validated this week — the free
-   path is the destination, and fal's free credits don't cover a beta anyway.
+3. **Rented bridge: skipped — decided** (owner 2026-07-14). The owned checkpoint is the only
+   production lane; fal/FASHN adapters are research-lane deletion candidates.
 4. **Extend the CI license gate to preprocessing models** before any of this ships.
 
 The moat isn't the model — it's GYF's paired catalog + conversion data. Leffa's MIT
