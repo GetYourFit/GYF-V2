@@ -202,9 +202,19 @@ def _fetch_rows(dsn: str) -> list[dict[str, Any]]:
     from psycopg.rows import dict_row
 
     with psycopg.connect(dsn, row_factory=dict_row) as conn:
+        # Consent is enforced at the training boundary too, not only at write time
+        # (F3): a user who switches "Learn from my activity" off must also drop out
+        # of the training set for the behaviour they generated *before* the switch,
+        # and out of rows written server-side (e.g. the affiliate purchase sync,
+        # which does not go through the API's consent-gated sink). Absent flag =
+        # allowed; only an explicit opt-out excludes.
         rows = conn.execute(
-            "SELECT user_id::text, target_type, target_id, action, weight, context, ts "
-            "FROM interactions ORDER BY ts"
+            "SELECT i.user_id::text, i.target_type, i.target_id, i.action, i.weight, "
+            "       i.context, i.ts "
+            "FROM interactions i JOIN users u ON u.id = i.user_id "
+            "WHERE u.consent_flags ->> 'behavioral_learning' IS DISTINCT FROM 'false' "
+            "  AND u.deleted_at IS NULL "
+            "ORDER BY i.ts"
         ).fetchall()
     for r in rows:
         r["ts"] = r["ts"].isoformat()

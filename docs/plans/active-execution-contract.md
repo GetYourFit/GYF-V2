@@ -59,7 +59,38 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 
 A failed candidate is rolled back or skipped; it never silently degrades production or blocks an independent slice.
 
-## Current handoff: F2.5 (F2 gate closed 2026-07-14)
+## Current handoff: F4 — catalogue truth (F3 gate closed 2026-07-14)
+
+**F3 — learning-event truth. Closed.** Audit-first, one true gap found and closed.
+
+Already true (verified, not rebuilt): impressions are emitted server-side per served item with
+`recommendation_id`, rank, ranking score, occasion and goals (`recsys/service.py::_log_impressions`);
+`IMPRESSION`/`PURCHASE` are refused from clients so a forged label cannot poison training; event ids
+are client-stable and the insert is `ON CONFLICT (event_id) DO NOTHING` (migration `0014`), so a
+retry cannot double-count; delayed outcomes join exactly — `pipelines/export_events.py` labels each
+impression with the strongest later engagement by the same user on the same item, preferring an
+echoed `recommendation_id` over a time-window fallback — and affiliate conversions join back through
+the deeplink subid (`scripts/sync_conversions.py`). Propensity stays `null` and is documented as
+such: the slate is a deterministic top-k MMR selection, so IPS/counterfactual evaluation needs
+randomized logging first (that is F5/F6's gate, not a claim made today).
+
+**The gap (a real lie to users):** the account page's "Learn from my activity" switch promised that
+turning it off "keeps styling on your stated preferences only" — and *nothing in the API read the
+flag*. Feedback was still written, impressions were still logged, and the taste vector was still
+built from that history. Closed at the two providers every learning caller routes through, so no
+route can forget the check: `get_event_sink` returns a `NullEventSink` and `get_taste_repo` returns
+a `NoTasteRepository` when the user has opted out. Enforced at the training boundary too — the
+event export now excludes opted-out *and* tombstoned users, which also covers rows written
+server-side (the affiliate purchase sync bypasses the API sink) and behaviour generated before the
+switch was flipped. Absent flag = allowed: accounts predating the switch keep learning, only an
+explicit opt-out stops it. Regressions in `test_learning_consent.py` (provider-level and through
+the live `/feedback` route).
+
+Deliberately not built: Explore/search impression logging (no model trains on that surface yet, and
+organic engagements already export honestly with a null propensity) and viewport-verified exposures
+(served-slate impressions are the standard; a "seen" signal needs client viewport events).
+
+## Previous handoff: F2.5 (F2 gate closed 2026-07-14)
 
 **F2 gate — closed.** Consent, erasure (tombstone + nightly purge job), the complete
 `GET /account/export`, and explicit global session revocation all ship with regressions; RLS is

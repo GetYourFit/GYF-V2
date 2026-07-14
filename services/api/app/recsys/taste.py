@@ -160,6 +160,20 @@ class PostgresTasteRepository:
             ]
 
 
+class NoTasteRepository:
+    """Reports no engagement history — the taste repo a user gets when they switch
+    off "Learn from my activity" (F3 consent).
+
+    The account page promises that turning it off "keeps styling on your stated
+    preferences only". This is that promise in code: recommendations and the Explore
+    feed fall back to the profile-conditioned cold-start path, which already works
+    without any behaviour (invariant #5).
+    """
+
+    def engagements(self, user_id: str, limit: int) -> list[EngagedItem]:
+        return []
+
+
 class InMemoryTasteRepository:
     """List-backed taste repo for tests."""
 

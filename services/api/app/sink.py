@@ -26,6 +26,23 @@ class EventSink(Protocol):
         ...
 
 
+class NullEventSink:
+    """Drops every event — the sink a user gets when they switch off
+    "Learn from my activity" (F3 consent).
+
+    Not a test double: this is the honest implementation of a promise the account
+    page makes. Learning events are the *only* thing this sink would carry, so
+    withholding consent means we never write them, rather than writing them and
+    promising not to look.
+    """
+
+    def publish(self, event: InteractionEvent) -> None:
+        return None
+
+    def publish_many(self, events: list[InteractionEvent]) -> None:
+        return None
+
+
 class LocalFileSink:
     """Append-only JSONL sink for local/dev and tests."""
 

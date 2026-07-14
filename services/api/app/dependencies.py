@@ -18,7 +18,7 @@ from functools import lru_cache
 from fastapi import Depends, HTTPException, status
 from gyf_contracts.eval_report import runtime_model_verdict
 
-from .auth import Principal, get_current_principal
+from .auth import Principal, get_current_principal, get_optional_principal
 from .catalog.directory import ItemDirectory
 from .catalog.retrieval import TextEmbedder, VectorSearchRepository
 from .collections import CollectionRepository
@@ -207,19 +207,50 @@ def get_candidate_repo() -> CandidateRepository:
     )
 
 
-def get_taste_repo() -> TasteRepository:
-    """The Postgres-backed taste repository (lazy connection pool)."""
-    from .recsys.taste import PostgresTasteRepository
+def behavioral_learning_allowed(
+    principal: Principal | None = Depends(get_optional_principal),
+    repo: AccountRepository = Depends(get_account_repo),
+) -> bool:
+    """Whether this caller's behaviour may be learned from (F3 consent).
 
+    The account page ships a "Learn from my activity" switch whose copy promises
+    that turning it off "keeps styling on your stated preferences only". This is
+    the single seam that makes that true: it gates the event sink (nothing is
+    written) and the taste repository (nothing is read) — every learning caller
+    routes through one of those two providers, so no route can forget the check.
+
+    Absent flag = allowed: existing accounts predate the switch and are already
+    learned from; only an explicit opt-out disables it. Anonymous callers have no
+    stored behaviour to learn from at all.
+    """
+    if principal is None:
+        return False
+    # ponytail: one indexed PK read per request on the learning paths. Fold into the
+    # principal if a profiler ever shows it mattering.
+    return repo.get_consent(principal.user_id).get("behavioral_learning", True) is not False
+
+
+def get_taste_repo(allowed: bool = Depends(behavioral_learning_allowed)) -> TasteRepository:
+    """The Postgres-backed taste repository — or an empty one when the user has
+    switched behavioural learning off (their history is never read)."""
+    from .recsys.taste import NoTasteRepository, PostgresTasteRepository
+
+    if not allowed:
+        return NoTasteRepository()
     return PostgresTasteRepository(settings.database_url, pool=shared_pool(settings.database_url))
 
 
-def get_event_sink() -> EventSink:
-    """The configured event sink (overridable in tests to avoid real writes).
+def get_event_sink(allowed: bool = Depends(behavioral_learning_allowed)) -> EventSink:
+    """The configured event sink (overridable in tests to avoid real writes) — or a
+    dropping sink when the user has switched behavioural learning off.
 
     Reads the module attribute each call so a test that monkeypatches
     ``app.dependencies.sink`` (e.g. to a real Postgres sink) is honoured.
     """
+    if not allowed:
+        from .sink import NullEventSink
+
+        return NullEventSink()
     return sink
 
 

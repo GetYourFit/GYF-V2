@@ -2494,3 +2494,31 @@ p50 · search-cached 1.45s p50 · search-uncached 11.5s p50. Cache proven live i
 query took 13.1s, its immediate repeat 1.25s. The §2 SLO gate still FAILS — a first encode still
 hits the cold ZeroGPU Space, and every request still crosses to a sleeping Oregon free instance.
 Both are the owner flips (Modal deploy + Render Starter/Singapore); no further code removes them.
+
+### 2026-07-14 (cont. 10) — F3 closed: the "learn from my activity" switch was a lie; now it isn't
+
+Owner (2026-07-14, evening): paid subscriptions come at the end — keep implementing everything that
+does not need them. So F2.5's two infra flips stay owner-gated and execution moves on.
+
+F3 (learning-event truth), audit-first. Already true and left alone: server-emitted impressions with
+recommendation_id/rank/score/occasion/goals; IMPRESSION+PURCHASE refused from clients; client-stable
+event_id + ON CONFLICT DO NOTHING (0014) so retries can't double-count; exact delayed-outcome joins
+in pipelines/export_events.py (recommendation_id preferred, time-ordered fallback) and the affiliate
+subid purchase join. Propensity stays null — deterministic MMR slates have no logged propensity, and
+IPS needs randomized logging (F5/F6's gate, not a claim we make now).
+
+The one real gap: the account page's "Learn from my activity" toggle wrote `consent_flags` and NOTHING
+READ IT. Feedback still stored, impressions still logged, taste vector still built from history — the
+UI copy ("keeps styling on your stated preferences only") was false. Fixed at the two providers every
+learning caller routes through — `get_event_sink` -> `NullEventSink`, `get_taste_repo` ->
+`NoTasteRepository` when opted out (no route can forget it) — plus the training boundary:
+export_events now excludes opted-out AND tombstoned users, which also catches rows the API sink never
+saw (the affiliate purchase sync writes directly) and behaviour generated before the toggle flip.
+Absent flag = allowed, so accounts predating the switch keep learning; only an explicit opt-out stops
+it. Regressions: test_learning_consent.py (providers + the live /feedback route).
+
+Skipped deliberately: Explore/search impression logging (nothing trains on that surface; organic
+engagements already export with a null propensity) and viewport-verified "seen" exposures.
+
+Verification: fmt/lint/typecheck/doctrine green, API 362 passed / 8 env-gated skips, ML 86 passed,
+web 62 passed, build green.
