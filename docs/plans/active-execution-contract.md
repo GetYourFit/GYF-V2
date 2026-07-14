@@ -59,7 +59,31 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 
 A failed candidate is rolled back or skipped; it never silently degrades production or blocks an independent slice.
 
-## Current handoff: F5 — free recommendation incumbent (F4 gate closed 2026-07-14)
+## Current handoff: F8 spine — F5 held (correctly), F6/F7 blocked on evidence
+
+**F5 — free recommendation incumbent. No change, and that is the pass condition.** The contract
+says: keep SigLIP 2 / pgvector / rules / MMR, and add anchored refinement or multi-interest context
+*only when evaluation proves value*. GYF has no labelled outcome data yet — the flywheel only
+started producing joinable exposures with real consent this week, and there are no beta users
+generating them. So there is nothing to evaluate against, and any "improvement" shipped now would
+be an assertion, not a measurement. The incumbent stands; F5 reopens the moment F11's closed beta
+produces enough joined (context, slate, label) tuples for `pipelines/export_events.py` to feed an
+offline comparison.
+
+**F6 — small learned challenger. Blocked on the same evidence**, by construction: a pairwise/logistic
+ranker trains on exactly the data F5 lacks. Not startable, not faked.
+
+**F7 — colour and photo assistance. Blocked at the gate, not at the code.** The skin-tone module
+still fails its fairness eval (max band gap 3.2 vs the ≤1.0 DoD), so it stays shadowed and manual
+entry stays the truth — which is the honest state, not a gap to close by loosening the gate.
+Promotion needs an owner-approved consented evaluation panel.
+
+**Next code slice: F8's durable try-on spine** — private Postgres jobs, bounded retries,
+cancellation, TTL deletion, per-user quotas and the global cost kill switch. All of that is code and
+needs no paid account; only the *owned-weights training* (Kaggle/GPU) and the F9 evaluation gate
+need the owner. Try-on stays closed to users until F9 passes, per the contract.
+
+## Previous handoff: F5 — free recommendation incumbent (F4 gate closed 2026-07-14)
 
 **F4 — catalogue truth. Closed for availability/freshness/removal; rights and price verified.**
 

@@ -2550,3 +2550,21 @@ proof that a delisted item vanishes from search/browse/keyword/candidates).
 
 Verification: fmt/lint/typecheck/doctrine green, API 366 passed / 9 env-gated skips, ML 86, web 62,
 build green.
+
+### 2026-07-14 (cont. 12) — F5 held on purpose; F6/F7 blocked on evidence, not on code
+
+F5 (free recommendation incumbent): NO CHANGE, which is the contract's pass condition — anchored
+refinement / multi-interest ship "only when evaluation proves value", and there is no labelled
+outcome data to evaluate against (the flywheel only started emitting consent-clean joinable
+exposures this week; there are no beta users). Shipping a ranker change now would be an assertion.
+Reopens when F11's closed beta yields enough joined (context, slate, label) tuples.
+
+F6 (learned challenger): blocked on exactly that data, by construction. Not startable, not faked.
+
+F7 (colour/photo assistance): blocked at the GATE, not the code — skin tone still fails fairness
+(max band gap 3.2 vs ≤1.0 DoD), stays shadowed, manual stays the truth. Needs an owner-approved
+consented eval panel.
+
+Next code slice = F8's durable try-on spine (private Postgres jobs, bounded retries, cancellation,
+TTL deletion, per-user quotas, global kill switch) — all code, no paid account. Only owned-weights
+training (Kaggle/GPU) and the F9 eval gate need the owner. Try-on stays closed to users until F9.
