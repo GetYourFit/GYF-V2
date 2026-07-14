@@ -10,10 +10,13 @@ are evidence only when they conflict with it.
 
 ## Binding owner decisions
 
-- Virtual try-on is free. Do not implement payment, billing, subscriptions, entitlements,
-  checkout or paid ranking.
-- Preserve every incumbent until an evaluated replacement passes the contract's promotion and
-  rollback gates. Never trade quality, security, privacy or reliability for cost.
+- Virtual try-on is behind a subscription (owner amendment 2026-07-14; see
+  `docs/plans/tryon-subscription-monetization.md`). Every other surface is free. Payment work is
+  authorised only for that try-on subscription, lands in F8, and goes on sale only after F9
+  promotes a provider. No paid ranking or any other paywall.
+- Owner (2026-07-14): incumbent-preservation and migration-parity caution are relaxed —
+  replacements may ship once licensed and secure. Never trade security, privacy or reliability
+  for cost.
 - Delete obsolete and duplicate code only in F13, after its behaviour is protected or rejected.
 - The current slice is F1a only: fix partial profile updates at the shared boundary and prove
   omitted values survive.
