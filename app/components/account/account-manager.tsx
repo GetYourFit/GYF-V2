@@ -119,21 +119,7 @@ export function AccountManager() {
   const saveName = useCallback(async () => {
     setSavingName(true);
     try {
-      const api = browserApi();
-      // PUT /profile is a full upsert, so re-send the current style profile
-      // alongside the new name — an empty payload would blank the styling fields.
-      const p = await api.getProfile().catch(() => null);
-      await api.putProfile({
-        skin_tone: p?.skin_tone ?? null,
-        undertone: p?.undertone ?? null,
-        body_type: p?.body_type ?? null,
-        gender: p?.gender ?? null,
-        measurements: p?.measurements ?? {},
-        style_intent: p?.style_intent ?? [],
-        budget_range: p?.budget_range ?? null,
-        occasion: p?.occasion ?? null,
-        display_name: nameDraft.trim() || null,
-      });
+      await browserApi().putProfile({ display_name: nameDraft.trim() || null });
       setSavedName(nameDraft.trim());
       setNameDraft(nameDraft.trim());
       toast({

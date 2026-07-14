@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from threading import Event, Thread
+
+import pytest
 from fastapi.testclient import TestClient
 
+from app.profile import repository as profile_repository
 from app.main import app, get_account_repo, get_profile_repo
 from app.profile.account import InMemoryAccountRepository
-from app.profile.models import ProfileInput, profile_from_manual
+from app.profile.models import Profile, ProfileInput, profile_from_manual
+from app.profile.photo import BodyResult
 from app.profile.repository import InMemoryProfileRepository, _style_intent_out
 
 DEV_USER = "00000000-0000-0000-0000-000000000001"
@@ -117,6 +122,134 @@ def test_put_profile_is_editable_idempotent_upsert():
         client.put("/profile", json={"body_type": "oval"})
         client.put("/profile", json={"body_type": "hourglass"})
         assert repo.get(DEV_USER).body_type == "hourglass"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_put_profile_preserves_omitted_fields():
+    repo = InMemoryProfileRepository()
+    try:
+        client = _client(repo)
+        client.put(
+            "/profile",
+            json={
+                "skin_tone": "mst6",
+                "body_type": "rectangle",
+                "style_intent": ["classic"],
+                "occasion": "casual",
+            },
+        )
+
+        avatar = client.put("/profile", json={"avatar_url": "https://example.com/avatar.jpg"})
+        assert avatar.json()["body_type"] == "rectangle"
+        assert avatar.json()["style_intent"] == ["classic"]
+
+        partial = client.put("/profile", json={"style_intent": ["streetwear"]})
+        assert partial.json()["skin_tone"] == "mst6"
+        assert partial.json()["body_type"] == "rectangle"
+        assert partial.json()["style_intent"] == ["streetwear"]
+        assert partial.json()["occasion"] == "casual"
+        assert partial.json()["field_confidence"] == {
+            "skin_tone": 1.0,
+            "body_type": 1.0,
+            "style_intent": 1.0,
+            "occasion": 1.0,
+        }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_put_profile_partial_edit_preserves_photo_provenance():
+    repo = InMemoryProfileRepository()
+    repo.upsert(
+        DEV_USER,
+        Profile(
+            body_type="rectangle",
+            style_intent=["classic"],
+            source="photo",
+            field_confidence={"body_type": 0.8},
+            model_version="body-v1",
+        ),
+    )
+    try:
+        response = _client(repo).put("/profile", json={"style_intent": ["streetwear"]})
+        assert response.json()["source"] == "photo"
+        assert response.json()["model_version"] == "body-v1"
+        assert response.json()["field_confidence"] == {
+            "body_type": 0.8,
+            "style_intent": 1.0,
+        }
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.parametrize("body_type", ["hourglass", None])
+def test_manual_change_to_last_estimate_clears_photo_provenance(body_type):
+    existing = Profile(
+        body_type="rectangle",
+        source="photo",
+        field_confidence={"body_type": 0.8},
+        model_version="body-v1",
+    )
+    updated = profile_from_manual(ProfileInput(body_type=body_type), existing)
+    assert updated.body_type == body_type
+    assert updated.source == "manual"
+    assert updated.model_version is None
+
+
+def test_manual_and_photo_patches_serialize_without_lost_fields(monkeypatch):
+    repo = InMemoryProfileRepository()
+    repo.upsert(DEV_USER, Profile(style_intent=["classic"]))
+    manual_holds_lock = Event()
+    release_manual = Event()
+    photo_started = Event()
+    real_merge = profile_repository.profile_from_manual
+
+    def paused_manual_merge(payload, existing=None):
+        manual_holds_lock.set()
+        assert release_manual.wait(1)
+        return real_merge(payload, existing)
+
+    monkeypatch.setattr(profile_repository, "profile_from_manual", paused_manual_merge)
+    manual = Thread(
+        target=repo.patch_manual,
+        args=(DEV_USER, ProfileInput(style_intent=["streetwear"])),
+    )
+
+    def write_photo():
+        photo_started.set()
+        repo.patch_photo(
+            DEV_USER,
+            None,
+            BodyResult(
+                body_type="hourglass",
+                field_confidence={"body_type": 0.8},
+                model_version="body-v1",
+            ),
+        )
+
+    photo = Thread(target=write_photo)
+    manual.start()
+    assert manual_holds_lock.wait(1)
+    photo.start()
+    assert photo_started.wait(1)
+    release_manual.set()
+    manual.join(1)
+    photo.join(1)
+    assert not manual.is_alive()
+    assert not photo.is_alive()
+
+    stored = repo.get(DEV_USER)
+    assert stored.style_intent == ["streetwear"]
+    assert stored.body_type == "hourglass"
+
+
+def test_put_identity_only_does_not_create_style_profile():
+    repo = InMemoryProfileRepository()
+    try:
+        response = _client(repo).put("/profile", json={"display_name": "Atharv"})
+        assert response.status_code == 200
+        assert repo.get(DEV_USER) is None
     finally:
         app.dependency_overrides.clear()
 
@@ -292,3 +425,69 @@ def test_postgres_profile_upsert_binds_all_columns_and_envelopes_occasion():
         "occasion": 1.0,
         "gender": 1.0,
     }
+
+
+def test_postgres_manual_patch_locks_and_preserves_omitted_fields():
+    import json
+
+    from app.profile.repository import PostgresProfileRepository
+
+    statements: list[tuple[str, tuple]] = []
+    existing = (
+        "mst6",
+        "warm",
+        "rectangle",
+        {},
+        {"intents": ["classic"], "occasion": "casual", "gender": "women"},
+        None,
+        "photo",
+        {"body_type": 0.8},
+        "body-v1",
+    )
+
+    class Result:
+        def __init__(self, row=None):
+            self.row = row
+
+        def fetchone(self):
+            return self.row
+
+    class Transaction:
+        def __enter__(self):
+            statements.append(("BEGIN", ()))
+
+        def __exit__(self, *exc):
+            statements.append(("COMMIT", ()))
+
+    class FakeConn:
+        def execute(self, sql, params):
+            statements.append((sql, params))
+            return Result(existing if "FOR UPDATE" in sql else None)
+
+        def transaction(self):
+            return Transaction()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    class FakePool:
+        def connection(self):
+            return FakeConn()
+
+    repo = PostgresProfileRepository("postgresql://unused", pool=FakePool())
+    profile = repo.patch_manual(DEV_USER, ProfileInput(style_intent=["streetwear"]))
+
+    assert "pg_advisory_xact_lock" in statements[1][0]
+    assert "FOR UPDATE" in statements[2][0]
+    params = statements[3][1]
+    assert json.loads(params[5]) == {
+        "intents": ["streetwear"],
+        "occasion": "casual",
+        "gender": "women",
+    }
+    assert params[7] == "photo"
+    assert params[9] == "body-v1"
+    assert profile.body_type == "rectangle"

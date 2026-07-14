@@ -20,8 +20,8 @@ from ..dependencies import (
     require_active_principal,
 )
 from ..profile.account import AccountRepository
-from ..profile.models import ConsentInput, Profile, ProfileInput, profile_from_manual
-from ..profile.photo import BodyAdapter, SkinToneAdapter, profile_from_photo
+from ..profile.models import ConsentInput, Profile, ProfileInput
+from ..profile.photo import BodyAdapter, SkinToneAdapter
 from ..profile.repository import ProfileRepository
 from ..profile.summary import (
     ProfileSummary,
@@ -75,8 +75,7 @@ def upsert_profile(
     (surviving profile erasure) and only touched when the client actually sent
     the field — an omitted key never clears an existing name.
     """
-    profile = profile_from_manual(payload)
-    repo.upsert(principal.user_id, profile)
+    profile = repo.patch_manual(principal.user_id, payload)
     if "display_name" in payload.model_fields_set:
         account_repo.set_display_name(principal.user_id, payload.display_name)
     if (
@@ -91,7 +90,7 @@ def upsert_profile(
         account_repo.set_phone(principal.user_id, country_code, number)
     if "avatar_url" in payload.model_fields_set:
         account_repo.set_avatar_url(principal.user_id, payload.avatar_url)
-    return profile
+    return profile or Profile()
 
 
 @router.delete("/profile", status_code=status.HTTP_204_NO_CONTENT)
@@ -173,9 +172,9 @@ async def upsert_profile_from_photo(
 
     # Sync psycopg calls — offload to the threadpool like the decode/estimate above,
     # or they block the event loop (this is the only async route) for the DB round trip.
-    existing = await run_in_threadpool(profile_repo.get, principal.user_id)
-    profile = profile_from_photo(skin=surfaced_skin, body=body, existing=existing)
-    await run_in_threadpool(profile_repo.upsert, principal.user_id, profile)
+    profile = await run_in_threadpool(
+        profile_repo.patch_photo, principal.user_id, surfaced_skin, body
+    )
 
     # Observability at the decision point (no PII — only which modules ran, the coarse
     # outcome, and adoption confidences). Lets a "fields didn't fill" report be diagnosed

@@ -1,5 +1,14 @@
 # CLAUDE.md — GYF (Get Your Fit)
 
+> **Active execution authority (owner decision, 2026-07-14).**
+> [`docs/plans/active-execution-contract.md`](./docs/plans/active-execution-contract.md) is the
+> sole source of truth for execution order, phase gates and the current slice. It supersedes
+> older roadmap, implementation-plan, provider, payment and "Next" guidance in this file and
+> elsewhere. The current slice is **F1a only**. Virtual try-on is free; do no payment, billing,
+> subscription, entitlement, checkout or paid-ranking work. Preserve the incumbent until an
+> evaluated replacement passes promotion and rollback gates. Delete obsolete or duplicate code
+> only in **F13**. Complete the contract's phase verification before committing or pushing.
+
 > **Purpose.** This is the operating guide for any AI agent or developer working on GYF.
 > It consolidates the full product vision, feature set, technology stack, and engineering
 > rules into one structured reference. Read it before doing anything.

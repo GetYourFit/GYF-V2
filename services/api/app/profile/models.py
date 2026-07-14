@@ -32,6 +32,17 @@ from pydantic import BaseModel, Field, field_validator
 # Manual onboarding asserts ground truth about oneself: full confidence.
 MANUAL_CONFIDENCE = 1.0
 
+PROFILE_FIELDS = (
+    "skin_tone",
+    "undertone",
+    "body_type",
+    "gender",
+    "measurements",
+    "style_intent",
+    "budget_range",
+    "occasion",
+)
+
 # Controlled set of consent keys the user can grant/revoke (CLAUDE.md §2 privacy).
 # A closed vocabulary keeps the legal surface auditable; unknown keys are dropped.
 CONSENT_KEYS: frozenset[str] = frozenset(
@@ -203,12 +214,15 @@ class Profile(BaseModel):
     model_version: str | None = None
 
 
-def profile_from_manual(payload: ProfileInput) -> Profile:
-    """Build a stored :class:`Profile` from validated manual onboarding input.
+def profile_from_manual(payload: ProfileInput, existing: Profile | None = None) -> Profile:
+    """Build or partially update a stored profile from validated manual input.
 
     Records ``MANUAL_CONFIDENCE`` for each field the user actually supplied (a
     non-empty value), leaving skipped fields absent from ``field_confidence`` so
-    the recommender can tell "stated unknown" from "not asked".
+    the recommender can tell "stated unknown" from "not asked". On an update,
+    omitted fields retain their stored values. Explicit null clears a nullable
+    field; an empty collection or accepted empty string clears its field. Either
+    form also removes that field's confidence.
     """
     # Out-of-vocabulary input canonicalizes to the "unknown" sentinel (not None).
     # Recording MANUAL_CONFIDENCE for it produced the prod contradiction: a stored
@@ -231,7 +245,7 @@ def profile_from_manual(payload: ProfileInput) -> Profile:
     if payload.budget_range is not None:
         confidence["budget_range"] = MANUAL_CONFIDENCE
 
-    return Profile(
+    manual = Profile(
         skin_tone=canonical["skin_tone"],
         undertone=canonical["undertone"],
         body_type=canonical["body_type"],
@@ -244,3 +258,25 @@ def profile_from_manual(payload: ProfileInput) -> Profile:
         field_confidence=confidence,
         model_version=None,
     )
+    if existing is None:
+        return manual
+
+    updated = existing.model_copy(deep=True)
+    changed = payload.model_fields_set.intersection(PROFILE_FIELDS)
+    for field_name in changed:
+        setattr(updated, field_name, getattr(manual, field_name))
+        if field_name in manual.field_confidence:
+            updated.field_confidence[field_name] = MANUAL_CONFIDENCE
+        else:
+            updated.field_confidence.pop(field_name, None)
+    # The schema has one coarse provenance pair, not per-field provenance. Manual
+    # fields are confidence 1.0; while any lower-confidence estimate remains, keep
+    # the photo model provenance. Clear it once the last estimate is corrected or
+    # removed, or when a complete manual form replaces the profile.
+    has_estimate = any(
+        confidence < MANUAL_CONFIDENCE for confidence in updated.field_confidence.values()
+    )
+    if changed == set(PROFILE_FIELDS) or (updated.source == "photo" and not has_estimate):
+        updated.source = "manual"
+        updated.model_version = None
+    return updated

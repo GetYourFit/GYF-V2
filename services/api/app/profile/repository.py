@@ -10,9 +10,11 @@ idempotent upsert on the primary key.
 from __future__ import annotations
 
 import json
-from typing import Protocol
+from threading import Lock
+from typing import Callable, Protocol
 
-from .models import BudgetRange, Profile
+from .models import PROFILE_FIELDS, BudgetRange, Profile, ProfileInput, profile_from_manual
+from .photo import BodyResult, SkinToneResult, profile_from_photo
 
 # SQL kept as module constants so tests can assert against them without a live DB.
 _UPSERT_PROFILE = """
@@ -40,6 +42,8 @@ FROM profiles WHERE user_id = %s
 """
 
 _DELETE_PROFILE = "DELETE FROM profiles WHERE user_id = %s"
+_LOCK_PROFILE = "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))"
+_SELECT_PROFILE_FOR_UPDATE = _SELECT_PROFILE.rstrip() + " FOR UPDATE"
 
 
 def _occasion_into(profile: Profile) -> dict[str, object]:
@@ -78,6 +82,16 @@ class ProfileRepository(Protocol):
         """Return the stored profile for ``user_id``, or ``None``."""
         ...
 
+    def patch_manual(self, user_id: str, payload: ProfileInput) -> Profile | None:
+        """Atomically apply only manually supplied profile fields."""
+        ...
+
+    def patch_photo(
+        self, user_id: str, skin: SkinToneResult | None, body: BodyResult | None
+    ) -> Profile:
+        """Atomically merge non-abstaining photo estimates."""
+        ...
+
     def delete(self, user_id: str) -> bool:
         """Delete the profile for ``user_id``. Returns True if a row was removed."""
         ...
@@ -94,23 +108,8 @@ class PostgresProfileRepository:
         self._pool = pool
 
     def upsert(self, user_id: str, profile: Profile) -> None:
-        budget = profile.budget_range.model_dump() if profile.budget_range else None
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
-            conn.execute(
-                _UPSERT_PROFILE,
-                (
-                    user_id,
-                    profile.skin_tone,
-                    profile.undertone,
-                    profile.body_type,
-                    json.dumps(profile.measurements),
-                    json.dumps(_occasion_into(profile)),
-                    json.dumps(budget) if budget is not None else None,
-                    profile.source,
-                    json.dumps(profile.field_confidence),
-                    profile.model_version,
-                ),
-            )
+            _upsert(conn, user_id, profile)
 
     def get(self, user_id: str) -> Profile | None:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
@@ -118,6 +117,29 @@ class PostgresProfileRepository:
         if row is None:
             return None
         return _row_to_profile(row)
+
+    def patch_manual(self, user_id: str, payload: ProfileInput) -> Profile | None:
+        if not payload.model_fields_set.intersection(PROFILE_FIELDS):
+            return self.get(user_id)
+        return self._patch(user_id, lambda existing: profile_from_manual(payload, existing))
+
+    def patch_photo(
+        self, user_id: str, skin: SkinToneResult | None, body: BodyResult | None
+    ) -> Profile:
+        return self._patch(
+            user_id, lambda existing: profile_from_photo(skin=skin, body=body, existing=existing)
+        )
+
+    def _patch(self, user_id: str, merge: Callable[[Profile | None], Profile]) -> Profile:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            with conn.transaction():
+                # The advisory lock also serializes concurrent first writes, when
+                # there is no profile row for SELECT FOR UPDATE to lock yet.
+                conn.execute(_LOCK_PROFILE, (user_id,))
+                row = conn.execute(_SELECT_PROFILE_FOR_UPDATE, (user_id,)).fetchone()
+                profile = merge(_row_to_profile(row) if row is not None else None)
+                _upsert(conn, user_id, profile)
+        return profile
 
     def delete(self, user_id: str) -> bool:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
@@ -154,17 +176,55 @@ def _row_to_profile(row: tuple) -> Profile:
     )
 
 
+def _upsert(conn: object, user_id: str, profile: Profile) -> None:
+    budget = profile.budget_range.model_dump() if profile.budget_range else None
+    conn.execute(  # type: ignore[attr-defined]
+        _UPSERT_PROFILE,
+        (
+            user_id,
+            profile.skin_tone,
+            profile.undertone,
+            profile.body_type,
+            json.dumps(profile.measurements),
+            json.dumps(_occasion_into(profile)),
+            json.dumps(budget) if budget is not None else None,
+            profile.source,
+            json.dumps(profile.field_confidence),
+            profile.model_version,
+        ),
+    )
+
+
 class InMemoryProfileRepository:
     """Dict-backed repo for tests and dry runs. Keyed by ``user_id``."""
 
     def __init__(self) -> None:
         self.profiles: dict[str, Profile] = {}
+        self._lock = Lock()
 
     def upsert(self, user_id: str, profile: Profile) -> None:
         self.profiles[user_id] = profile
 
     def get(self, user_id: str) -> Profile | None:
         return self.profiles.get(user_id)
+
+    def patch_manual(self, user_id: str, payload: ProfileInput) -> Profile | None:
+        if not payload.model_fields_set.intersection(PROFILE_FIELDS):
+            return self.get(user_id)
+        return self._patch(user_id, lambda existing: profile_from_manual(payload, existing))
+
+    def patch_photo(
+        self, user_id: str, skin: SkinToneResult | None, body: BodyResult | None
+    ) -> Profile:
+        return self._patch(
+            user_id, lambda existing: profile_from_photo(skin=skin, body=body, existing=existing)
+        )
+
+    def _patch(self, user_id: str, merge: Callable[[Profile | None], Profile]) -> Profile:
+        with self._lock:
+            profile = merge(self.profiles.get(user_id))
+            self.profiles[user_id] = profile
+            return profile
 
     def delete(self, user_id: str) -> bool:
         return self.profiles.pop(user_id, None) is not None

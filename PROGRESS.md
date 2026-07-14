@@ -2274,3 +2274,21 @@ new browse query is still disabled by the committed false flag, so no unmeasured
 production behavior change is made. Space deployment still needs the owner's write-scoped HF token,
 and production browse promotion still needs controlled flag-on latency/variety measurement plus
 representative `EXPLAIN (ANALYZE, BUFFERS)` evidence.
+
+### 2026-07-14 — F1a shipped: partial profile updates preserve omitted fields
+
+Per the active execution contract (`docs/plans/active-execution-contract.md`, slice F1a only),
+`PUT /profile` no longer rebuilds the whole profile from each request. `profile_from_manual` now
+merges only fields present in `model_fields_set` into the existing profile; repositories gained
+atomic `patch_manual`/`patch_photo` (Postgres: `pg_advisory_xact_lock` + `SELECT … FOR UPDATE`
+inside one transaction; in-memory: mutex) so concurrent manual/photo writes cannot lose fields.
+The web account manager drops its read-modify-write workaround and sends
+`{ display_name }` alone; an identity-only PUT no longer creates an empty style profile.
+Photo provenance (`source`/`model_version`) survives partial manual edits while any
+lower-confidence estimate remains, and clears when the last estimate is corrected or a full
+manual form replaces it. AGENTS.md added and CLAUDE.md headed with the contract's authority.
+
+Verification: slice gate green (`pytest tests/test_profile.py` 25 passed; ruff clean). Full phase
+gate green: fmt-check, lint, typecheck, doctrine, API pytest 353 passed / 4 skipped (the four
+known env-gated live-Postgres tests — no local PG running), web 55 passed, production build OK.
+F1b (truthful filters/labels/capability checks) is next; deletion stays parked until F13.
