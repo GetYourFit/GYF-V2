@@ -2714,3 +2714,16 @@ Compose/createPost + recreatePost deliberately deferred to a separate authoring 
 
 Expo typecheck clean, 32 tests pass, web export builds. Remaining placeholders: profile, account,
 canvas, contact, grievance, status, design; social compose (create/recreate post).
+
+### 2026-07-16 — Expo parity slice: Profile (session: ponytail)
+
+**Shipped:** `apps/expo/src/app/(app)/(tabs)/profile.tsx` replaces the placeholder — read-only
+profile: avatar (remote image or initials disc), display name, member-since/email meta, badge
+chips, 3×2 stat grid (Outfits/Saved/Wardrobe/Posts/Reactions/Badges), and a "Manage account"
+route to /account. Loading/error states + pull-to-refresh. Pure model in `lib/profile-summary.ts`
+(`formatMemberSince` UTC month/year, `initials`, `statCells`) with `profile-summary.test.ts`
+(3 cases). No API code (`getProfileSummary` inherited). Avatar upload + profile editing deferred to
+the Account slice (needs an image picker).
+
+Expo typecheck clean, 35 tests pass, web export builds. Remaining placeholders: account, canvas,
+contact, grievance, status, design; social compose.
