@@ -6,6 +6,15 @@ Product intent is [`ideas-complete.md`](../vision/ideas-complete.md); engineerin
 [`scale-3k-inr.md`](./scale-3k-inr.md). If this document conflicts with those sources, this
 document loses.
 
+## Requirement and document closure
+
+[`../README.md`](../README.md) is the complete documentation graph and requirement traceability
+matrix. Every vision, feedback, security/privacy, catalogue, recommendation, wardrobe, social,
+try-on, design, deployment, cost and cleanup requirement maps there to an F-phase and an explicit
+gate. A requirement is not “covered” because code exists: it closes only when its listed test,
+runtime evidence and phase gate pass. Historical feedback remains evidence and cannot override the
+owner amendments or this plan's parent contract.
+
 ## 0. Execution ledger
 
 This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md` and
@@ -13,12 +22,12 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 
 | Field | Current truth |
 |---|---|
-| Current permitted application slice | Local sequential implementation: EXPO-05 auth and onboarding; F2.5 production promotion remains externally blocked |
-| F1b implementation state | Present in the application baseline; local regressions verified |
-| Latest local evidence | 378 API tests passed; 72 web + 13 Expo tests passed; typecheck, doctrine, formatting and production build passed; Expo export enumerates 49 routes; CI `29412486474` green; CD wiring ran with EAS/Vercel deploy steps skipped for missing credentials |
+| Current permitted application slice | F2.5 catalogue/search diagnosis and SLO closure; then sequential Expo parity |
+| F1b implementation state | Shipped with the F1 gate; retained as historical evidence |
+| Latest automated evidence | Commit `d8ca37f`; CI `29420027112` and CD `29420121072` passed; Expo deployment is live |
 | Known warnings/skips | 17 API tests skipped; existing `<img>` lint warning; framework/deprecation and React `act()` test warnings |
-| F2.5 live state | **FAIL** — SLO probe returned non-passing browse, cached-search and uncached-search rows |
-| Next candidate after explicit phase transition | EXPO-05 photo capability smoke/evidence, then EXPO-06 stylist and feedback; F2.5 closeout remains an external deployment task |
+| F2.5 live state | **FAIL** — fresh India p50: health 0.86s, browse 17.01s, cached search 1.36s, uncached search 9.29s |
+| Next candidate after explicit phase transition | Instrument and isolate catalogue stages; fix the measured root cause; prove all SLO rows; continue incomplete Expo vertical slices |
 | Explicitly not next | New model training, try-on opening, payment, F13 cleanup |
 
 F2.5 is not promoted by this document. Its remaining work is external deployment and a passing
@@ -29,8 +38,8 @@ marked complete without its own evidence gate.
 ## 1. Decision
 
 The owner has chosen a **full Expo migration**. Expo Router becomes GYF's primary client for
-iOS, Android, and web. The repository has no Expo client today; the live frontend is `app/` and
-the deployed stack is Vercel + FastAPI + Supabase/Render. The existing Next.js client is kept as
+iOS, Android, and web. The Expo client exists under `apps/expo` and is deployed, but parity is
+incomplete. The existing Next.js client is kept as
 a read-only rollback surface until Expo passes parity; it is deleted only after the migration
 gate and the contract's F13 deletion rules.
 
@@ -42,7 +51,7 @@ The migration is a client replacement, not a backend or ML rewrite. It happens i
 slices behind the same OpenAPI contracts, event IDs, capability states, and feature flags. A
 rewrite of a component is allowed only when a before/after measurement proves a material gain in
 security, reliability, debuggability, or latency and the old behavior has a regression shield.
-No production client cutover happens during the current F1b slice.
+No production client cutover happens before the Expo parity, security, accessibility and rollback gate.
 
 ## 2. Product contract
 

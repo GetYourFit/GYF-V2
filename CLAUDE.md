@@ -44,11 +44,12 @@ GetYourFit-New/
 ├── spaces/gyf-gpu/                    # HuggingFace ZeroGPU Space (generated deploy bundle of ml/usermodel + contracts)
 ├── docs/
 │   ├── engineering-doctrine.md        # THE HIGHEST-IQ WAY — cross-cutting design law (how every pillar is built)
-│   ├── roadmap.md                     # the SEQUENCE — dependency-correct build order (M0→M12→P2–P5)
 │   ├── vision/
 │   │   └── ideas-complete.md          # canonical product/vision brief
 │   ├── tech-stack.md                  # authoritative tech & architecture decisions
-│   ├── implementation-plan.md         # phased build plan (P0–P5) with gates
+│   ├── plans/
+│   │   ├── active-execution-contract.md # sole F0–F13 authority
+│   │   └── gyf-launch-refactor-plan.md  # subordinate ticket board
 │   └── research/
 │       └── deep-research-report.md    # cited SOTA research per pillar
 └── ECC/                               # ECC plugin: reusable skills/agents (see §7)
@@ -60,7 +61,8 @@ GetYourFit-New/
 | `docs/engineering-doctrine.md` | **The highest-IQ way — authoritative cross-cutting design law.** *How* every ML pillar is built so GYF is SOTA, commercially clean, never quality-compromised, and never dev-blocked: capability ports, two-lane (research/production) model lifecycle with a CI license gate, foundation+adapter, the data-flywheel moat, eval-gated promotion. Read alongside `tech-stack.md`. |
 | `docs/vision/ideas-complete.md` | **Canonical product/vision brief** — the merged superset of all `ideas*.md`. Authoritative for *what* GYF is. |
 | `docs/tech-stack.md` | **Authoritative for *how*** — every technology, model, and architecture decision with rationale and alternatives. |
-| `docs/implementation-plan.md` | **Phased build plan** (P0–P5) with workstreams, DoD, gates, risks, and next steps. |
+| `docs/plans/active-execution-contract.md` | **Sole execution authority** for order, current state, gates and next work. |
+| `docs/plans/gyf-launch-refactor-plan.md` | Detailed subordinate F0–F13 and Expo execution packets. |
 | `docs/research/deep-research-report.md` | Cited state-of-the-art research backing each technical pillar (models, papers, alternatives, confidence levels, cost notes). |
 | `ECC/` | ECC plugin folder — reusable skills/agents to leverage during development (see §7). |
 
@@ -68,14 +70,16 @@ GetYourFit-New/
 > 1. `docs/vision/ideas-complete.md` — **what** GYF is (canonical product brief).
 > 2. `docs/engineering-doctrine.md` — **how** every pillar is built (binding design law: ports, license gate, foundation+adapter, real data, eval-gated).
 > 3. `docs/tech-stack.md` — **which** model/tech per pillar + rationale. `docs/research/deep-research-report.md` — cited SOTA backing.
-> 4. `docs/roadmap.md` — **the order** (dependency-correct build sequence M0→M12→P2–P5). `docs/implementation-plan.md` — phase detail + DoD. `docs/plans/*` — per-cycle execution specs.
+> 4. `docs/plans/active-execution-contract.md` — **the only execution order** (F0→F13). `docs/plans/gyf-launch-refactor-plan.md` is its subordinate ticket board; research and runbooks contain evidence, not competing order.
 > 5. `CLAUDE.md` (this file) — structured summary + operating rules. When it disagrees with a source doc, **the source doc wins — fix this file.** Keep all in lockstep (DRY: each fact lives in one doc; others reference it).
 
 ---
 
 ## 0.5 Current Status (body lane updated 2026-07-13)
 
-**Done & verified:** P0 infra; P1-A/B/C (perception & catalog, manual onboarding + consent/erasure, cold-start → taste model → NL goals); **M0** (license gate) and **M1** (eval harness + promotion gate) ✅; **M2 ✅** — `google-siglip2-base-v1` promoted via a real ZeroGPU bake-off, prod catalog seeded with ~24k items + embeddings; **the full product surface is built, wired to prod, and deployed** (Vercel web + Render API + Supabase): auth, onboarding (manual + photo path), stylist feed with explanations/confidence/NL goals/occasion, Explore search + facets + price filter/sort, collections & saved looks, wardrobe, social posts/reactions/recreate, profile + badges, account (consent + erasure). Security hardening (headers, rate limits, bounded queries) and a full lint/type/test/doctrine CI gate are green.
+**Implemented, not fully promoted:** the Next.js behavioural oracle covers auth, onboarding, Stylist, Explore, saved/collections, wardrobe, social, profile, account and trust surfaces; the FastAPI/Supabase backend, deterministic SigLIP2/pgvector recommendation path, consent/erasure/event/catalogue truth and closed durable try-on job spine exist. Expo is deployed with partial auth/onboarding/Stylist/Explore parity. CI/CD is green at `d8ca37f`, but green automation is not a completeness claim.
+
+**Production verdict (2026-07-15): not launch-ready.** Fresh India SLO measurement failed every row: health 0.86s p50, browse 17.01s p50, cached search 1.36s p50, uncached search 9.29s p50/23.03s p95. Expo still has placeholder/partial surfaces, try-on remains closed pending F9, F6 lacks behavioural data and F7 remains fairness-blocked. Current state and next work are authoritative only in `docs/plans/active-execution-contract.md`.
 
 **The honest gaps (requirements not yet met — see the 2026-07-02 audit):**
 1. **Virtual try-on (M9) surface is built, rendering is not promoted** — the `TryOnRenderer` port, `/tryon` router, outfit-detail UI, null baseline, and licensed fal-Leffa/FASHN adapters exist. Production remains an honest abstention until a configured provider passes its eval/registry gate.
@@ -85,7 +89,7 @@ GetYourFit-New/
 
 **Done since the audit:** follow-graph ✅ (follow/unfollow endpoints, Following feed, 2026-07-02) and **wardrobe-aware recommendations ✅** (closet-anchored styling: owned garments join the candidate pools as anchors, new pieces scored for versatility against the owned palette, "You own this" badges, 2026-07-03).
 
-**Next:** validate live catalog/price coverage and affiliate conversion sync; fund and evaluate the existing licensed try-on adapter before configuring it. Photo research promotes only after its consented eval gates pass.
+**Next:** close F2.5 from measured stage/query evidence, then continue Expo parity slices. Try-on and photo assistance remain closed until their explicit gates pass.
 
 ---
 

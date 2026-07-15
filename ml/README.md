@@ -1,6 +1,6 @@
 # ml/
 
-The GYF ML platform. Modules (built per `docs/implementation-plan.md`, grounded in
+The GYF ML platform. Modules (gated by `docs/plans/active-execution-contract.md`, grounded in
 `docs/research/deep-research-report.md`):
 
 - `perception/` — fashion embeddings (Marqo-FashionSigLIP), attributes, color (CIELAB/CAM16)

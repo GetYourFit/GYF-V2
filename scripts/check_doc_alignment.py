@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Doctrine gate: exactly one execution authority.
 
-Every plan under docs/plans/ (plus the old roadmap/implementation plan) must either BE the
+Every plan under docs/plans/ must either BE the
 active execution contract, declare itself subordinate to it, or carry an evidence-only /
 historical / superseded status in its head — so no stale plan can be read as authority.
 """
@@ -9,6 +9,7 @@ historical / superseded status in its head — so no stale plan can be read as a
 import pathlib
 import re
 import sys
+import urllib.parse
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 AUTHORITY = "active-execution-contract.md"
@@ -18,10 +19,7 @@ MARKER = re.compile(
     re.IGNORECASE,
 )
 
-checked = sorted((ROOT / "docs" / "plans").glob("*.md")) + [
-    ROOT / "docs" / "roadmap.md",
-    ROOT / "docs" / "implementation-plan.md",
-]
+checked = sorted((ROOT / "docs" / "plans").glob("*.md"))
 
 bad = []
 for f in checked:
@@ -38,4 +36,35 @@ if bad:
     print(f"Label them or fold them into docs/plans/{AUTHORITY}.")
     sys.exit(1)
 
-print(f"doc-alignment gate OK — {len(checked) - 1} plans subordinate to {AUTHORITY}")
+docs_root = ROOT / "docs"
+index = docs_root / "README.md"
+index_text = index.read_text(encoding="utf-8")
+documents = sorted(docs_root.rglob("*.md"))
+orphaned = [
+    path.relative_to(docs_root)
+    for path in documents
+    if path != index and f"./{path.relative_to(docs_root).as_posix()}" not in index_text
+]
+
+link_pattern = re.compile(r"\[[^\]]*\]\((?!https?://|mailto:|#)([^)#]+)(?:#[^)]*)?\)")
+broken = []
+for source in [ROOT / "README.md", ROOT / "AGENTS.md", ROOT / "CLAUDE.md", *documents]:
+    text = source.read_text(encoding="utf-8")
+    for raw_target in link_pattern.findall(text):
+        target = urllib.parse.unquote(raw_target.strip().strip("<>"))
+        resolved = (source.parent / target).resolve()
+        if not resolved.exists():
+            broken.append((source.relative_to(ROOT), target))
+
+if orphaned or broken:
+    print("doc-alignment gate FAILED")
+    for path in orphaned:
+        print(f"  orphaned from docs/README.md: docs/{path}")
+    for source, target in broken:
+        print(f"  broken link: {source} -> {target}")
+    sys.exit(1)
+
+print(
+    f"doc-alignment gate OK — {len(checked) - 1} plans subordinate; "
+    f"{len(documents)} documents indexed; local links resolve"
+)

@@ -1,8 +1,8 @@
 # GYF active execution contract
 
-Status: **ACTIVE** · owner-authorised 2026-07-14 (amended same day, twice: try-on subscription, then try-on free lane) · execution amendment 2026-07-15 · application baseline `eb800965beeb5835c35bd8b8a269589f407e58f9`
+Status: **ACTIVE** · owner-authorised 2026-07-14 · amended 2026-07-15 (free try-on, Expo replacement, ₹3,000 ceiling, region-neutral measured hosting) · application baseline `eb800965beeb5835c35bd8b8a269589f407e58f9`
 
-This is the single source of truth for execution order. Product intent remains in `docs/vision/ideas-complete.md`; non-negotiable engineering rules remain in `docs/engineering-doctrine.md`; the July master plan and older plans are evidence only.
+This is the single source of truth for execution order. Product intent remains in `docs/vision/ideas-complete.md`; non-negotiable engineering rules remain in `docs/engineering-doctrine.md`; the launch/refactor ticket board is subordinate and research/runbooks are evidence only.
 
 ## Binding decisions
 
@@ -14,7 +14,7 @@ This is the single source of truth for execution order. Product intent remains i
 - Learned challengers train on GYF's own data and iterate until they measurably beat the production incumbent on the frozen evaluation, then the shadow and cohort gates; promotion happens only on that measured win, and the deterministic incumbent always remains the fallback.
 - Provider, migration and ₹2,000 budget proposals in older plans are hypotheses until measured; no provider is selected merely by a planning estimate.
 - Replace-then-delete (owner amendment 2026-07-14): when a gated replacement ships, the implementation it replaces is deleted in the same slice, after that phase gate passes. Everything else obsolete or duplicate is deleted only in F13, after behaviour is protected or explicitly rejected. Do not replace deleted code with speculative abstractions.
-- Budget ceiling (owner amendment 2026-07-14, evening): total hosting + GPU spend stays **under ₹3,000/month**, India-effective services preferred; the researched serving/performance spec is [`scale-3k-inr.md`](./scale-3k-inr.md). Rewrite-when-better: existing code may be rewritten where the replacement is measurably better (debuggability, maintainability, security, speed) — with before/after evidence, never by assertion.
+- Budget ceiling (owner amendment 2026-07-14, evening): total hosting + GPU spend stays **under ₹3,000/month**. Provider geography is not a requirement (owner amendment 2026-07-15); select topology only from measured Indian-user latency, reliability, security, payment compatibility and total cost. The researched serving/performance spec is [`scale-3k-inr.md`](./scale-3k-inr.md). Rewrite-when-better: existing code may be rewritten where the replacement is measurably better (debuggability, maintainability, security, speed) — with before/after evidence, never by assertion.
 - Execution amendment (owner, 2026-07-15): local implementation may continue sequentially through the Expo replacement and later locally actionable phases while F2.5 external deployment/SLO promotion remains blocked. This permits code and test work only; it does not promote F2.5, open try-on, claim production parity, or bypass security, privacy, license, evaluation, rollback or cost gates.
 
 ## Reproducible baseline
@@ -36,6 +36,25 @@ bun run build
 
 Every skip and failure must be reported. A phase cannot promote with an unexplained data/identity/object mismatch, cross-user access, missing export/deletion/restore evidence, unlicensed dependency, false user-facing claim, critical journey/accessibility/slice regression, unbounded retry/concurrency/GPU spend, cost above the owner-approved ceiling, or no tested fallback and rollback.
 
+## Current truth and next work (audited 2026-07-15)
+
+- Current commit: `d8ca37f80c1145ef1e98c435d180fdaeb1a25ba5`; `main` is clean and matches `origin/main`.
+- Latest CI and CD runs for that commit pass. This proves the automated contract, not product completeness.
+- F1, F2, F3, F4 and the closed F8 durable spine are implemented. F5 stays on the deterministic incumbent; F6 lacks sufficient behavioural data; F7 remains fairness-blocked; F9 has not promoted a try-on lane.
+- Expo is deployed and auth, onboarding shell, basic Stylist feedback and basic Explore are wired. Wardrobe, social, profile, saved/collections, support/trust, full Stylist controls, full Explore details and device auth/recovery remain parity work. Next.js remains the behavioural oracle until the Expo cutover gate.
+- Production is **not healthy enough to call complete**. Fresh India measurements (`scripts/measure_slo.py --samples 3`) were: health 0.86s p50, browse 17.01s p50, cached search 1.36s p50 and uncached search 9.29s p50/23.03s p95. Every row failed its SLO.
+- The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
+- The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
+
+### Immediate sequential slice
+
+1. Instrument browse/search stages and DB pool wait without changing ranking behaviour.
+2. Capture production `EXPLAIN (ANALYZE, BUFFERS)` for anonymous/authenticated browse and filtered/deep-page cases.
+3. Separate cache, encoder DNS/connect/TTFB/model-load, ANN SQL, taste/MMR and hydration timings.
+4. Fix only the measured root cause; compare warm/cold and cached/uncached paths from India.
+5. Require all four SLO rows to pass before F2.5 promotion. Region/provider changes are experiments, not assumptions.
+6. Continue Expo parity in vertical slices behind unchanged API contracts; each slice needs unit, integration, accessibility, device/web smoke and production deployment proof.
+
 ## Execution order
 
 1. **F0 — Contract and baseline.** Documentation only. Complete when this file and document statuses agree.
@@ -45,7 +64,7 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
    - **F1c:** add password recovery and an exact deployed authenticated-session integration check.
    - **F1 gate:** all three slices and the full verification set pass. **F2 cannot begin before this gate.**
 3. **F2 — Privacy and isolation.** Consent, export, deletion, session revocation, private storage and least-privilege database ownership/RLS.
-4. **F2.5 — Performance floor** (owner amendment 2026-07-14): kill the cold-GPU search path (query-embedding cache + nightly warm + scale-to-zero miss lane), move the API to always-on Singapore, and prove the SLOs in [`scale-3k-inr.md`](./scale-3k-inr.md) §2 with before/after measurements from an Indian vantage. No other reordering; F3 follows.
+4. **F2.5 — Performance floor** (amended 2026-07-15): kill the cold-encoder and catalogue hot-path latency, choose any API/DB/encoder topology that wins the fixed India-vantage scorecard within budget, and prove the SLOs in [`scale-3k-inr.md`](./scale-3k-inr.md) §2 with before/after measurements. No provider or region is promoted by preference.
 4. **F3 — Learning-event truth.** Real exposures/outcomes, deterministic IDs, consent/deletion and exact delayed-outcome joins before training.
 5. **F4 — Catalogue truth.** Rights, price/currency, availability, freshness, removal reconciliation and purchasable outputs.
 6. **F5 — Free recommendation incumbent.** Keep SigLIP 2/pgvector/rules/MMR; add anchored refinement and multi-interest context only when evaluation proves value.

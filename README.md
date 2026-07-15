@@ -5,13 +5,13 @@ coordinated outfits you can trust — getting smarter with every person it dress
 
 ## Documentation
 
+- [`docs/README.md`](./docs/README.md) — complete documentation graph and requirement traceability.
 - [`CLAUDE.md`](./CLAUDE.md) — operating guide & entry point.
 - [`docs/vision/ideas-complete.md`](./docs/vision/ideas-complete.md) — canonical product/vision brief.
 - [`docs/plans/active-execution-contract.md`](./docs/plans/active-execution-contract.md) — **single active execution contract** and current handoff.
 - [`docs/engineering-doctrine.md`](./docs/engineering-doctrine.md) — standing quality, licence, privacy and evaluation rules.
 - [`docs/tech-stack.md`](./docs/tech-stack.md) — researched technology reference; selections require active-contract gates.
-- [`docs/implementation-plan.md`](./docs/implementation-plan.md) — historical phased plan; evidence only.
-- [`docs/plans/gyf-master-plan.md`](./docs/plans/gyf-master-plan.md) — the consolidated end-to-end plan (mission → moat under ₹3,000/month); subordinate to the execution contract.
+- [`docs/plans/gyf-launch-refactor-plan.md`](./docs/plans/gyf-launch-refactor-plan.md) — detailed subordinate F0–F13 and Expo execution board.
 - [`docs/research/deep-research-report.md`](./docs/research/deep-research-report.md) — cited SOTA research.
 
 ## Repository layout
@@ -23,7 +23,7 @@ ml/         # ML platform (perception, user model, recsys, compat, try-on, eval)
 packages/   # shared types (TS) + contracts (Python), config
 infra/      # IaC (Terraform) + local Apple-container stack (container-stack.sh), CI config
 scripts/    # ops + verification scripts (gates, e2e, seeders, flywheel)
-docs/       # documentation (vision, doctrine, tech-stack, roadmap, plans)
+docs/       # documentation (vision, doctrine, tech stack, one active plan, evidence, runbooks)
 ```
 
 ## Getting started
@@ -39,8 +39,8 @@ make dev         # boot web (:3000) + API (:8000) together
 Prefer running pieces individually? See `make help` for all targets
 (`dev-web`, `dev-api`, `up`/`down` for infra, `fmt`, `lint`, `test`, `ci`).
 
-Copy `.env.example` to `.env` and fill values. See `docs/implementation-plan.md` §10 for
-environments and process.
+Copy `.env.example` to `.env` and fill values. See `docs/deploy/free-deploy-checklist.md` for
+the current environment names and setup process.
 
 ### Local services (optional)
 

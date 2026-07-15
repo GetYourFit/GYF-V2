@@ -95,7 +95,7 @@ frontend Sentry, or PostHog integration is configured yet.
 - **Event broker** stays on the local JSONL sink (`services/api/app/sink.py`) through early
   beta; swap to a managed broker by setting `GYF_EVENT_BROKER_URL` and selecting the broker
   sink — no API code changes beyond `get_sink()`.
-- **Cost discipline:** everything above is free tier. Graduate to paid GPU/vector infra only
-  when scale forces it (see `docs/implementation-plan.md` §7, P3+).
+- **Cost discipline:** provider promotion requires the cost and SLO gates in
+  `docs/plans/active-execution-contract.md`; free-tier status alone is not production evidence.
 - Never commit `terraform.tfvars` or state — both are gitignored.
   </content>
