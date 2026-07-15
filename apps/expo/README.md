@@ -20,6 +20,16 @@ SecureStore; web uses browser session storage. Never put service-role keys or ac
 SDK 57.0.6, React Native 0.86.0, and the new architecture are pinned in `package.json` and
 `app.json`. The route directory contains routes only; components and utilities live under `src`.
 
+## Live surfaces
+
+The signed-in `Stylist` tab calls `/outfits/recommend` and records save/skip feedback against the
+returned recommendation. `Explore` calls `/items/browse` for an unfiltered catalogue page and
+switches to `/items/search` whenever a query, slot, sort, or maximum-price filter is active. This
+keeps filters truthful because browse intentionally ignores those search filters. It also loads
+`/items/facets` for server-reported catalogue coverage, saves items through `/collections`, and
+uses only HTTPS catalogue and purchase URLs. Missing images, prices, unavailable ML search, and
+expired sessions are shown as explicit states; the client never invents catalogue items or scores.
+
 ## Production
 
 `.github/workflows/cd.yml` deploys Expo web to EAS Hosting after the `main` CI workflow succeeds.
