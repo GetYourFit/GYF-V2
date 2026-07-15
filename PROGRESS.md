@@ -2638,3 +2638,26 @@ pgvector + Zipfian query cache → sub-100ms search on the free tier; (4) arxiv 
 component keep-with-upgrade-path; (5) moat incl. on-device taste model (privacy+latency+free
 compute); (8) explicit NO ground-up rewrite (surgical replacement behind ports); (10) the four
 owner flips (Modal deploy, Render Singapore ₹600, Supabase Singapore, rent-GPU env). No code changed.
+
+### 2026-07-15 (evening) — F2.5 instrumentation slice finished + pushed (session: ponytail)
+
+**User asked:** "start sequential execution of F0–F14 and replace the current system with the
+newly planned system design and architecture and aesthetic." Boil-the-ocean standing directive.
+
+**Reality check (per active-execution-contract.md, not re-litigated):** F0–F4 + F8 durable spine
+are built; F2.5 code lane was done with a large uncommitted diagnostic slice in the tree; F5/F6
+blocked on absent behavioural data; F7 fairness-blocked; F8 try-on CLOSED until F9. **There is no
+separate "new system" rewrite** — the contract explicitly forbids speculative ground-up rewrite
+(replace-then-delete per slice, deletion only in F13). So "replace the whole system" was NOT done;
+it would violate the owner's own binding contract.
+
+**Done (commit `8008f0f`, pushed):** finished + verified the in-flight F2.5 instrumentation slice
+(contract immediate-slice items 1–3): `gyf_catalog_stage_duration_seconds{surface,stage,outcome}`
+histogram + `stage_timer` over pool/SQL/MMR/hydration/cache/encoder; HttpEncoder DNS/connect/TTFB/
+model_load split (redirect-reject SSRF guard kept); Modal lane reports load/inference; browse CTEs
+JOIN→EXISTS semi-join. API 390 passed / 17 skipped, ML http 8 passed, all 4 doctrine gates green,
+ruff clean.
+
+**Still OWNER-gated (no code unblocks these):** F2.5 promotion = Modal deploy + Render Singapore
+recreate; F7 = consented fairness panel; F8/F9 try-on open = Kaggle/GPU Leffa training + frozen
+scorecard. Next locally-actionable lane = Expo parity vertical slices (contract item 6).
