@@ -17,7 +17,9 @@ export function RoutePlaceholder({ title, description }: { title: string; descri
           padding: spacing.lg,
         }}
       >
-        <GyfText variant="title">{title}</GyfText>
+        <GyfText accessibilityRole="header" variant="title">
+          {title}
+        </GyfText>
         <GyfText tone="muted" variant="body">
           {description}
         </GyfText>

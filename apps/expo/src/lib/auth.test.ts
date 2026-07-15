@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
+import { getSession } from "./auth";
 import { readSupabaseEnv } from "./auth-config";
 
 describe("readSupabaseEnv", () => {
@@ -29,5 +30,22 @@ describe("readSupabaseEnv", () => {
         EXPO_PUBLIC_SUPABASE_ANON_KEY: "anon",
       }),
     ).toThrow(/http\(s\)/);
+  });
+});
+
+describe("getSession", () => {
+  it("returns a rejected promise when configuration is missing", async () => {
+    const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env.EXPO_PUBLIC_SUPABASE_URL;
+    delete process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+    try {
+      await expect(getSession()).rejects.toThrow(/Supabase auth is not configured/);
+    } finally {
+      if (url === undefined) delete process.env.EXPO_PUBLIC_SUPABASE_URL;
+      else process.env.EXPO_PUBLIC_SUPABASE_URL = url;
+      if (key === undefined) delete process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+      else process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = key;
+    }
   });
 });

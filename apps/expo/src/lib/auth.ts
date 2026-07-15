@@ -33,15 +33,19 @@ export function getSupabaseClient(storage: AuthStorage = secureStorage): Supabas
 
 export function getSession(): Promise<Session | null> {
   if (sessionRequest) return sessionRequest;
-  sessionRequest = getSupabaseClient()
-    .auth.getSession()
-    .then(({ data, error }) => {
-      if (error) throw error;
-      return data.session;
-    })
-    .finally(() => {
-      sessionRequest = null;
-    });
+  try {
+    sessionRequest = getSupabaseClient()
+      .auth.getSession()
+      .then(({ data, error }) => {
+        if (error) throw error;
+        return data.session;
+      })
+      .finally(() => {
+        sessionRequest = null;
+      });
+  } catch (error) {
+    return Promise.reject(error);
+  }
   return sessionRequest;
 }
 

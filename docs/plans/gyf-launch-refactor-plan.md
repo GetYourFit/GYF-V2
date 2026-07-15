@@ -13,12 +13,12 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 
 | Field | Current truth |
 |---|---|
-| Current permitted application slice | Local sequential implementation: EXPO-04 navigation shell; F2.5 production promotion remains externally blocked |
+| Current permitted application slice | Local sequential implementation: EXPO-05 auth and onboarding; F2.5 production promotion remains externally blocked |
 | F1b implementation state | Present in the application baseline; local regressions verified |
-| Latest local evidence | 378 API tests passed; 72 web + 10 Expo tests passed; typecheck, doctrine, formatting and production build passed; CI `29412486474` green; CD wiring ran with EAS/Vercel deploy steps skipped for missing credentials |
+| Latest local evidence | 378 API tests passed; 72 web + 13 Expo tests passed; typecheck, doctrine, formatting and production build passed; Expo export enumerates 49 routes; CI `29412486474` green; CD wiring ran with EAS/Vercel deploy steps skipped for missing credentials |
 | Known warnings/skips | 17 API tests skipped; existing `<img>` lint warning; framework/deprecation and React `act()` test warnings |
 | F2.5 live state | **FAIL** — SLO probe returned non-passing browse, cached-search and uncached-search rows |
-| Next candidate after explicit phase transition | EXPO-05 auth and onboarding; F2.5 closeout remains an external deployment task |
+| Next candidate after explicit phase transition | EXPO-06 stylist and feedback; F2.5 closeout remains an external deployment task |
 | Explicitly not next | New model training, try-on opening, payment, F13 cleanup |
 
 F2.5 is not promoted by this document. Its remaining work is external deployment and a passing
@@ -34,9 +34,9 @@ the deployed stack is Vercel + FastAPI + Supabase/Render. The existing Next.js c
 a read-only rollback surface until Expo passes parity; it is deleted only after the migration
 gate and the contract's F13 deletion rules.
 
-The first executable slice remains **F1b only**: truthful filters, confidence labels, and
-sensitive-upload capability claims, with one regression for each fixed claim. No feature work,
-dependency migration, model promotion, payment, or broad cleanup starts before that slice passes.
+F1b is complete in the application baseline. The current migration executes the approved Expo
+vertical slices sequentially; each slice must retain truthful capability states and regression
+coverage. No model promotion, payment, or broad cleanup starts before its own phase gate.
 
 The migration is a client replacement, not a backend or ML rewrite. It happens in vertical
 slices behind the same OpenAPI contracts, event IDs, capability states, and feature flags. A
@@ -1408,10 +1408,14 @@ but it never reorders the backend contract.
   shareable web paths without custom navigation state.
 - Added honest route placeholders for surfaces whose API wiring belongs to later vertical slices;
   they explicitly say the data contract is not connected, so no unavailable capability is shown.
-- Refactored loading, error and not-found routes onto the shared tokens/primitives. Expo typecheck,
-  10 Expo tests and static web export pass; export enumerates the root and five tab URLs.
-- Remaining gate: auth route screens and protected-content gating are EXPO-05, so no authenticated
-  navigation or production mobile parity is claimed yet.
+- Added a root `SessionGate` with synchronous-failure handling, retry, loading accessibility state,
+  and signed-out redirects. Safe-area insets are applied at the root and tab bar, and every legacy
+  app path plus `/design` has an explicit Expo target.
+- Ported functional native sign-in, sign-up, password recovery and reset forms with shared
+  validation and truthful email-confirmation/session states. Expo typecheck, 13 Expo tests and
+  static web export pass; export enumerates auth, root, legacy, design and five tab URLs.
+- On-device authentication and Supabase recovery-link smoke tests remain required in EXPO-05;
+  no production mobile parity or hosted URL is claimed without deployment credentials.
 
 ### EXPO-05 — Auth and onboarding
 

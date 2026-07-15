@@ -1,5 +1,11 @@
 import { Stack } from "expo-router";
 
+import { SessionGate } from "@/components/navigation/session-gate";
+
 export default function AppLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <SessionGate>
+      <Stack screenOptions={{ headerShown: false }} />
+    </SessionGate>
+  );
 }
