@@ -117,6 +117,7 @@ def test_cold_browse_uses_four_bounded_seeded_index_windows():
     assert sql.count("i.price IS NULL") == 2
     assert sql.count("hashtextextended(i.id::text, 0) >= s.pivot") == 2
     assert sql.count("hashtextextended(i.id::text, 0) < s.pivot") == 2
+    assert sql.count("JOIN item_embeddings e ON e.item_id = i.id") == 4
     branch_filters = ["IN", ["men", "unisex"], ["shirt"]] * 4
     assert params == ("session-a", 6, 12, *branch_filters, 6, 12)
 

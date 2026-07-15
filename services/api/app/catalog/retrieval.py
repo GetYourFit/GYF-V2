@@ -162,7 +162,7 @@ WITH browse_seed AS (
 ), candidates AS (
   (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
           hashtextextended(i.id::text, 0) AS seed_rank
-   FROM items i CROSS JOIN browse_seed s
+   FROM items i JOIN item_embeddings e ON e.item_id = i.id CROSS JOIN browse_seed s
    WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.price IS NOT NULL AND hashtextextended(i.id::text, 0) >= s.pivot
@@ -171,7 +171,7 @@ WITH browse_seed AS (
   UNION ALL
   (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
           hashtextextended(i.id::text, 0) AS seed_rank
-   FROM items i CROSS JOIN browse_seed s
+   FROM items i JOIN item_embeddings e ON e.item_id = i.id CROSS JOIN browse_seed s
    WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.price IS NOT NULL AND hashtextextended(i.id::text, 0) < s.pivot
@@ -180,7 +180,7 @@ WITH browse_seed AS (
   UNION ALL
   (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
           hashtextextended(i.id::text, 0) AS seed_rank
-   FROM items i CROSS JOIN browse_seed s
+   FROM items i JOIN item_embeddings e ON e.item_id = i.id CROSS JOIN browse_seed s
    WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.price IS NULL AND hashtextextended(i.id::text, 0) >= s.pivot
@@ -189,7 +189,7 @@ WITH browse_seed AS (
   UNION ALL
   (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
           hashtextextended(i.id::text, 0) AS seed_rank
-   FROM items i CROSS JOIN browse_seed s
+   FROM items i JOIN item_embeddings e ON e.item_id = i.id CROSS JOIN browse_seed s
    WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.price IS NULL AND hashtextextended(i.id::text, 0) < s.pivot
