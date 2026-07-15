@@ -2814,3 +2814,16 @@ result for 60s, splits each count into a narrow index-only scalar read, and adds
 uses `jsonb_array_length(image_refs) > 0` instead of the incorrect JSON-object comparison. A
 repository regression proves one exact read, bounded timeout, correct image predicate and cache
 reuse.
+
+### 2026-07-16 — Expo parity COMPLETE: design gallery + placeholder deleted (session: ponytail)
+
+Authoritative rescan: every Expo user route was already real except the dev-only `design` gallery
+(contact/grievance/status/canvas were built in prior commits; my mid-session "remaining" list was
+stale). Built `src/app/design.tsx` as a real Atelier-kit gallery (typography, tones, buttons, card,
+confidence label, palette from live tokens) and **deleted the now-dead `route-placeholder.tsx`** —
+no route renders a placeholder anymore. Updated the contract's parity line to reality.
+
+Expo gate: typecheck clean, 51 tests pass, web export builds. Expo parity is functionally complete;
+remaining Expo items are enhancements (social compose, avatar upload, deeper Stylist/Explore
+detail), not placeholders. The real launch blocker stays the two owner infra flips (Modal deploy +
+Render Singapore) for F2.5, plus F7/F9 owner gates.
