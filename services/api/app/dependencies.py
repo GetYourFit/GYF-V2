@@ -48,7 +48,13 @@ def shared_pool(dsn: str):
     """
     from psycopg_pool import ConnectionPool
 
-    return ConnectionPool(dsn, min_size=1, max_size=settings.db_pool_max_size, open=True)
+    return ConnectionPool(
+        dsn,
+        min_size=0,
+        max_size=settings.db_pool_max_size,
+        kwargs={"prepare_threshold": None},
+        open=True,
+    )
 
 
 # Process-wide event sink (local JSONL in dev; broker/Postgres-backed once infra

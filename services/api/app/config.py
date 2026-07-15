@@ -60,7 +60,10 @@ class Settings(BaseSettings):
     # Sync routes run on Starlette's threadpool (default 40 concurrent), so under
     # load more coroutines can want a connection than this caps — tune up (DB tier
     # permitting) as beta traffic grows. Env: GYF_DB_POOL_MAX_SIZE.
-    db_pool_max_size: int = 10
+    # Supabase's shared session pooler defaults to 15 clients. Keep one API
+    # instance from consuming the whole project budget; transaction mode can
+    # serve the rest without holding a backend session per idle client.
+    db_pool_max_size: int = 3
 
     # Candidate cold-browse index path. Default-off until the deployed latency,
     # query-plan, and variety gates pass; flipping this env var is also the

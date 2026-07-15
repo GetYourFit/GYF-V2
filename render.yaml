@@ -12,14 +12,10 @@ services:
   - type: web
     name: gyf-api
     runtime: docker
-    # OWNER-GATED (F2.5, docs/plans/scale-3k-inr.md §3): the always-on Singapore flip
-    # is `plan: starter` (~₹600/mo, kills the ~26 s free-tier sleep wake) + Singapore
-    # (100–150 ms from India vs 250–300 ms to Oregon). Both are deliberately NOT set
-    # here: `starter` fails the deploy until billing is active, and Render cannot change
-    # the region of an existing service — Singapore means creating the service anew and
-    # re-entering the dashboard secrets. Do it as one owner step, then re-run
-    # `python3 scripts/measure_slo.py` from India for the after-numbers.
-    plan: free
+    # Starter is required for an always-on API; the free plan sleeps after idle.
+    # Singapore is a separate migration because Render cannot change an existing
+    # service's region without recreating it.
+    plan: starter
     region: oregon
     dockerfilePath: ./services/api/Dockerfile
     dockerContext: .
@@ -99,6 +95,10 @@ services:
       # Keep production performance telemetry useful without tracing every request.
       - key: GYF_TRACE_SAMPLE_RATE
         value: "0.1"
+      # Runtime uses Supabase transaction pooling (6543); keep the pool small
+      # because the free Supabase project exposes only 15 session clients.
+      - key: GYF_DB_POOL_MAX_SIZE
+        value: "3"
       # Virtual try-on (M9): the licensed rendering lane. Primary pick (2026-07-06
       # license/infra research pass, see models.registry.json fal-leffa-vto-v1
       # notes): fal.ai hosting Leffa (MIT-licensed, independently verified — not
@@ -115,14 +115,15 @@ services:
       - key: GYF_FASHN_API_KEY
         sync: false
       # --- Secrets: set in dashboard / `render` CLI, not committed ---
-      # The entrypoint runs `alembic upgrade head` on boot. The current free service
+      # The entrypoint runs `alembic upgrade head` on boot. The current service
       # is a singleton; before adding replicas, move migrations to one serialized
-      # release job so multiple booting instances never race the same DDL. DDL must NOT go through
-      # the transaction pooler (:6543) — pgbouncer transaction mode breaks Alembic's
-      # locks/prepared statements. Use the :5432 session connection here (runtime
-      # queries work over it too on free tier). A fresh Supabase DB also needs the
+      # release job so multiple booting instances never race the same DDL. Runtime
+      # queries use the transaction pooler (:6543); migrations use the separate
+      # :5432 session URL below. A fresh Supabase DB also needs the
       # catalog ingested after migrating, or /outfits/recommend returns nothing.
       - key: GYF_DATABASE_URL # Supabase connection (use :5432 session URL for migrations)
+        sync: false
+      - key: GYF_MIGRATION_DATABASE_URL # optional :5432 session URL; runtime GYF_DATABASE_URL should use :6543
         sync: false
       # Auth: modern Supabase signs ES256 — verified against the project JWKS, which
       # is PREFERRED over the legacy HS256 secret (see app/auth.py + config.py). This

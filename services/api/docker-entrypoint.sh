@@ -13,6 +13,9 @@
 set -e
 
 echo "entrypoint: alembic upgrade head"
-python -m alembic upgrade head
+# Runtime uses Supabase transaction pooling (6543); migrations need a
+# session/direct connection (5432) for advisory locks and DDL.
+GYF_DATABASE_URL="${GYF_MIGRATION_DATABASE_URL:-$GYF_DATABASE_URL}" \
+  python -m alembic upgrade head
 
 exec "$@"
