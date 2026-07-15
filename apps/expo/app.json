@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Get Your Fit",
+    "slug": "get-your-fit",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "scheme": "gyf",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -83,14 +83,14 @@ nuke: ## Stop the stack and delete its volumes + locally-built images (reclaim e
 
 fmt: ## Auto-format everything (Prettier + Ruff)
 	bun run format
-	cd $(API_DIR) && uv run ruff format . && uv run ruff check --fix .
+	cd $(API_DIR) && $(CACHE_ENV) uv run ruff format . && $(CACHE_ENV) uv run ruff check --fix .
 
 fmt-check: ## Check formatting without writing
 	bun run format:check
 
 lint: ## Lint JS + Python
 	bun run lint
-	cd $(API_DIR) && uv run ruff check .
+	cd $(API_DIR) && $(CACHE_ENV) uv run ruff check .
 
 typecheck: ## Typecheck JS workspaces
 	bun run typecheck
@@ -99,7 +99,7 @@ types: ## Generate FE API types from the FastAPI OpenAPI schema (single source o
 	@# Write the schema to the file directly: importing the app configures logging, which
 	@# legitimately owns stdout — a `> openapi.json` redirect captured the telemetry line
 	@# as line 1 and produced a JSON file the generator could not parse.
-	cd $(API_DIR) && uv run python -c "import json, pathlib, app.main as m; pathlib.Path('../../packages/types/openapi.json').write_text(json.dumps(m.app.openapi()))"
+	cd $(API_DIR) && $(CACHE_ENV) uv run python -c "import json, pathlib, app.main as m; pathlib.Path('../../packages/types/openapi.json').write_text(json.dumps(m.app.openapi()))"
 	bunx openapi-typescript packages/types/openapi.json -o packages/types/src/api.ts
 	@echo "regenerated packages/types/src/api.ts — run 'make typecheck' to confirm FE/BE lockstep"
 
@@ -107,7 +107,7 @@ test: test-api ## Run all tests
 	bun run test
 
 test-api: ## Run API tests
-	cd $(API_DIR) && uv run pytest -q
+	cd $(API_DIR) && $(CACHE_ENV) uv run pytest -q
 
 doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1 + doc alignment)
 	python3 scripts/check_model_licenses.py
