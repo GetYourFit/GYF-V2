@@ -1,7 +1,12 @@
 export type SupabaseEnv = { url: string; anonKey: string };
 
 export function readSupabaseEnv(
-  values: Record<string, string | undefined> = process.env,
+  values: Record<string, string | undefined> = {
+    // Keep direct EXPO_PUBLIC_* references: Expo statically inlines these at export time.
+    // Passing the whole `process.env` object defeats that replacement in web bundles.
+    EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  },
 ): SupabaseEnv {
   const url = values.EXPO_PUBLIC_SUPABASE_URL?.trim();
   const anonKey = values.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
