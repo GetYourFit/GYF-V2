@@ -63,8 +63,9 @@ bucket. (Idempotent — safe to re-run.)
 ## Step 5 — Expo feedback surface
 GitHub → repository **Settings → Environments → `EXPO_TOKEN`**:
 
-- Secrets: `EXPO_TOKEN`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
-- Variable: `EXPO_PUBLIC_API_URL=https://gyf-api.onrender.com`.
+- Secrets: `EXPO_TOKEN`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+- Variables: `EXPO_PUBLIC_API_URL=https://gyf-api.onrender.com`,
+  `EXPO_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co`.
 - Vercel deploy secrets can live in the same environment: `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
   `VERCEL_PROJECT_ID`.
 

@@ -24,8 +24,8 @@ SDK 57.0.6, React Native 0.86.0, and the new architecture are pinned in `package
 
 `.github/workflows/cd.yml` deploys Expo web to EAS Hosting after the `main` CI workflow succeeds.
 The deploy job uses the GitHub Actions environment named `EXPO_TOKEN` and reads
-`EXPO_TOKEN`, `EXPO_PUBLIC_SUPABASE_URL`, and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from its secrets,
-plus `EXPO_PUBLIC_API_URL` from its variables. The EAS project is pinned in `app.json`; CI passes
+`EXPO_TOKEN` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from its secrets, plus
+`EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SUPABASE_URL` from its variables. The EAS project is pinned in `app.json`; CI passes
 `--dev-domain=get-your-fit` so the first non-interactive deploy activates Hosting at
 `https://get-your-fit.expo.app`. `eas.json` holds native production and internal-build profiles. Store submission
 remains credential-gated; no fake store deployment is claimed until Apple/Google credentials and

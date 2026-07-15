@@ -13,8 +13,8 @@ name: CD
 #   VERCEL_TOKEN      — a Vercel access token (Account Settings → Tokens)
 #   VERCEL_ORG_ID     — Vercel team/org id (.vercel/project.json → orgId)
 #   VERCEL_PROJECT_ID — Vercel project id  (.vercel/project.json → projectId)
-# Expo production web additionally requires `EXPO_TOKEN`, public API/Supabase vars, and the
-# Supabase anon key configured in GitHub Actions; native store credentials stay in EAS.
+# Expo production web additionally requires `EXPO_TOKEN`, public API/Supabase variables, and the
+# Supabase anon/publishable key configured in GitHub Actions; native store credentials stay in EAS.
 
 on:
   workflow_run:
@@ -79,7 +79,7 @@ jobs:
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
-      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -94,6 +94,9 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           elif [ -z "$EXPO_PUBLIC_API_URL" ] || [ -z "$EXPO_PUBLIC_SUPABASE_URL" ] || [ -z "$EXPO_PUBLIC_SUPABASE_ANON_KEY" ]; then
             echo "Expo public production environment is incomplete." >&2
+            exit 1
+          elif [[ "$EXPO_PUBLIC_API_URL" != https://* ]] || [[ "$EXPO_PUBLIC_SUPABASE_URL" != https://* ]]; then
+            echo "Expo API and Supabase URLs must use HTTPS." >&2
             exit 1
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
