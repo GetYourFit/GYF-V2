@@ -7,15 +7,18 @@ auth header, and that returned vectors are L2-normalized like every other encode
 from __future__ import annotations
 
 import json
-from concurrent.futures import ThreadPoolExecutor
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import time
+import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 
 import numpy as np
+import pytest
 
-from perception.remote import HttpEncoder
+from perception.remote import HttpEncoder, _RejectRedirectHandler
 
 
 @contextmanager
@@ -113,6 +116,67 @@ def test_empty_input_short_circuits(monkeypatch):
 def test_remote_timeout_is_bounded_for_search_fallback():
     enc = HttpEncoder("model-x", "https://encoder.example")
     assert enc._timeout_s == 8.0
+
+
+def test_redirects_are_rejected_before_credentials_can_move_origins():
+    request = urllib.request.Request(
+        "https://encoder.example/embed_texts",
+        headers={"Authorization": "Bearer secret"},
+    )
+
+    with pytest.raises(urllib.error.HTTPError, match="redirects are not allowed"):
+        _RejectRedirectHandler().redirect_request(
+            request,
+            None,
+            302,
+            "Found",
+            {},
+            "https://attacker.example/steal",
+        )
+
+
+def test_remote_timeout_is_an_end_to_end_caller_deadline(monkeypatch):
+    class SlowOpener:
+        def open(self, request, timeout=None):
+            time.sleep(0.2)
+            return _response({"embeddings": [[3.0, 4.0]]})
+
+    monkeypatch.setattr(urllib.request, "build_opener", lambda *_handlers: SlowOpener())
+    enc = HttpEncoder("model-x", "https://encoder.example", timeout_s=0.03)
+
+    started = time.perf_counter()
+    with pytest.raises(TimeoutError, match="timed out"):
+        enc.encode_texts(["slow"])
+    elapsed = time.perf_counter() - started
+
+    assert elapsed < 0.15
+    snapshot = enc.consume_timings()
+    frozen = dict(snapshot)
+    time.sleep(0.22)
+    assert snapshot == frozen
+
+
+def test_environment_proxy_configuration_is_preserved(monkeypatch):
+    seen: dict = {}
+
+    class FakeOpener:
+        def open(self, request, timeout=None):
+            return _response({"embeddings": [[3.0, 4.0]]})
+
+    def build_opener(*handlers):
+        seen["proxy"] = next(
+            handler for handler in handlers if isinstance(handler, urllib.request.ProxyHandler)
+        )
+        return FakeOpener()
+
+    proxy_url = "http://proxy.example:8080"
+    monkeypatch.setenv("HTTPS_PROXY", proxy_url)
+    monkeypatch.setenv("https_proxy", proxy_url)
+    monkeypatch.setattr(urllib.request, "build_opener", build_opener)
+
+    HttpEncoder("model-x", "https://encoder.example").encode_texts(["proxied"])
+
+    assert seen["proxy"].proxies["https"] == proxy_url
 
 
 def test_local_server_records_network_timings():

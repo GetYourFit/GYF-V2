@@ -19,7 +19,8 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
     # are similarly distributed, while tiny integer UUIDs would all sit before
     # every SHA-derived pivot and could not exercise rotation.
     ids = [UUID(f"{n * 17:02x}" + "0" * 30) for n in range(16)]
-    no_embedding_id = UUID("ff" + "0" * 30)
+    no_embedding_id = UUID("fe" + "0" * 30)
+    assert no_embedding_id not in ids
     embedding = "[1," + ",".join(["0"] * 767) + "]"
     with psycopg.connect(live_db) as conn:
         cursor = conn.cursor()
