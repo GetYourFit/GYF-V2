@@ -23,10 +23,10 @@ SDK 57.0.6, React Native 0.86.0, and the new architecture are pinned in `package
 ## Production
 
 `.github/workflows/cd.yml` deploys Expo web to EAS Hosting after the `main` CI workflow succeeds.
-Link this app once with an authenticated EAS account, then configure the repository's
-`EXPO_TOKEN`, `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SUPABASE_URL`, and
-`EXPO_PUBLIC_SUPABASE_ANON_KEY` Actions values. `eas.json` holds native production and
-internal-build profiles. The current repository has not configured those credentials, so CD
-reports the Expo deploy as disabled rather than claiming a production URL. Store submission
+The deploy job uses the GitHub Actions environment named `EXPO_TOKEN` and reads
+`EXPO_TOKEN`, `EXPO_PUBLIC_SUPABASE_URL`, and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from its secrets,
+plus `EXPO_PUBLIC_API_URL` from its variables. It runs `eas init --non-interactive --force` before
+the first deploy, so the token's Expo account creates/links the project without putting a project
+ID or token in git. `eas.json` holds native production and internal-build profiles. Store submission
 remains credential-gated; no fake store deployment is claimed until Apple/Google credentials and
 a successful build exist.

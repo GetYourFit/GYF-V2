@@ -60,6 +60,24 @@ bucket. (Idempotent — safe to re-run.)
 1. In Render, set `GYF_ALLOWED_ORIGINS` = your real website URL from Step 3.
 2. Redeploy the API (or it picks up the env change).
 
+## Step 5 — Expo feedback surface
+GitHub → repository **Settings → Environments → `EXPO_TOKEN`**:
+
+- Secrets: `EXPO_TOKEN`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+- Variable: `EXPO_PUBLIC_API_URL=https://gyf-api.onrender.com`.
+- Vercel deploy secrets can live in the same environment: `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
+  `VERCEL_PROJECT_ID`.
+
+Push to `main`. CI must pass first; CD then installs the pinned Bun workspace, exports Expo web,
+initializes/links the EAS project and deploys to EAS Hosting. The EAS URL is printed in the CD log;
+open `/login`, create a real Supabase account, complete onboarding, and then give UI feedback.
+
+These are separate from Render runtime settings. Render receives only the `GYF_*` API variables in
+`render.yaml`: `GYF_DATABASE_URL`, `GYF_SUPABASE_URL`, `GYF_SUPABASE_JWT_SECRET`,
+`GYF_ALLOWED_ORIGINS`, and optional `GYF_ENCODER_REMOTE_KEY`/Sentry keys. Never put
+`EXPO_TOKEN`, `VERCEL_TOKEN`, Supabase service-role keys or user JWTs in the Expo client or Render
+public variables.
+
 ---
 
 ## Done — smoke test
