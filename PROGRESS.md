@@ -2765,3 +2765,14 @@ PostgreSQL scanned 16,867 wide item rows to return 24 (6,236ms, 17,878 buffer hi
 pivot inside each ring branch turns it into `Index Cond` on the existing partial browse index;
 the same production-data plan returns 24 rows in 3.4ms with 213 buffer hits. The query contract,
 embedding requirement, stable pagination, variety and priced-first behavior remain protected.
+
+### 2026-07-16 — Expo parity slice: Canvas (session: ponytail)
+
+Replaced the Canvas placeholder with a real visual-discovery field wired to the production
+catalogue and SigLIP similarity contract: deterministic portrait mosaic, stable paginated browse,
+tap-to-recluster around a garment, stale-request rejection, focused commerce card, optimistic
+save/unsave with rollback, retailer link, pull-to-refresh, loading/error/empty states and complete
+accessibility semantics. Pure `canvas-cluster.ts` protects deterministic tile silhouettes,
+boundary de-duplication and selected-item pinning (3 regressions). Expo typecheck clean, 42 tests
+pass and the 49-route web export builds. Remaining placeholders: contact, grievance, status,
+design; social compose; avatar upload.
