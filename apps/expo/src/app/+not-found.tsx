@@ -1,14 +1,24 @@
 import { Link } from "expo-router";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+
+import { GyfText } from "@/components/ui/gyf-text";
+import { colors, spacing } from "@/theme/tokens";
 
 export default function NotFoundRoute() {
   return (
-    <View style={{ flex: 1, gap: 16, alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <Text selectable style={{ color: "#f5f5f4", fontSize: 24, fontWeight: "600" }}>
-        This look does not exist.
-      </Text>
-      <Link href="/" style={{ color: "#d6d3d1", fontSize: 16 }}>
-        Return to GYF
+    <View
+      style={{
+        alignItems: "center",
+        backgroundColor: colors.dark.bg,
+        flex: 1,
+        gap: spacing.lg,
+        justifyContent: "center",
+        padding: spacing.lg,
+      }}
+    >
+      <GyfText variant="title">This look does not exist.</GyfText>
+      <Link href="/">
+        <GyfText tone="muted">Return to GYF</GyfText>
       </Link>
     </View>
   );

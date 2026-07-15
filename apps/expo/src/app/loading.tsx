@@ -1,11 +1,18 @@
 import { ActivityIndicator, View } from "react-native";
 
+import { colors } from "@/theme/tokens";
+
 export default function LoadingRoute() {
   return (
     <View
-      style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#000" }}
+      style={{
+        alignItems: "center",
+        backgroundColor: colors.dark.bg,
+        flex: 1,
+        justifyContent: "center",
+      }}
     >
-      <ActivityIndicator color="#f5f5f4" />
+      <ActivityIndicator color={colors.dark.text} />
     </View>
   );
 }

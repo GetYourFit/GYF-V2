@@ -13,12 +13,12 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 
 | Field | Current truth |
 |---|---|
-| Current permitted application slice | Local sequential implementation: EXPO-03 tokens/primitives; F2.5 production promotion remains externally blocked |
+| Current permitted application slice | Local sequential implementation: EXPO-04 navigation shell; F2.5 production promotion remains externally blocked |
 | F1b implementation state | Present in the application baseline; local regressions verified |
-| Latest local evidence | 378 API tests passed; 72 web + 10 Expo tests passed; typecheck, doctrine, formatting and production build passed; CI Bun pin and seeded browse regression fixed |
+| Latest local evidence | 378 API tests passed; 72 web + 10 Expo tests passed; typecheck, doctrine, formatting and production build passed; CI `29412486474` green; CD wiring ran with EAS/Vercel deploy steps skipped for missing credentials |
 | Known warnings/skips | 17 API tests skipped; existing `<img>` lint warning; framework/deprecation and React `act()` test warnings |
 | F2.5 live state | **FAIL** — SLO probe returned non-passing browse, cached-search and uncached-search rows |
-| Next candidate after explicit phase transition | EXPO-04 navigation shell; F2.5 closeout remains an external deployment task |
+| Next candidate after explicit phase transition | EXPO-05 auth and onboarding; F2.5 closeout remains an external deployment task |
 | Explicitly not next | New model training, try-on opening, payment, F13 cleanup |
 
 F2.5 is not promoted by this document. Its remaining work is external deployment and a passing
@@ -1400,6 +1400,18 @@ but it never reorders the backend contract.
 - **Acceptance:** every old deep link has a new target or explicit redirect; tab state survives
   navigation; authenticated routes cannot flash private content; web URLs are shareable.
 - **Guard:** no dynamic tab addition/removal; no custom navigation state that duplicates Router.
+
+#### EXPO-04 execution evidence — 2026-07-15
+
+- Added Expo Router `(app)` and `(auth)` layouts plus a static five-tab shell for Stylist,
+  Explore, Wardrobe, Social and Profile. The tabs use the Atelier token contract and preserve
+  shareable web paths without custom navigation state.
+- Added honest route placeholders for surfaces whose API wiring belongs to later vertical slices;
+  they explicitly say the data contract is not connected, so no unavailable capability is shown.
+- Refactored loading, error and not-found routes onto the shared tokens/primitives. Expo typecheck,
+  10 Expo tests and static web export pass; export enumerates the root and five tab URLs.
+- Remaining gate: auth route screens and protected-content gating are EXPO-05, so no authenticated
+  navigation or production mobile parity is claimed yet.
 
 ### EXPO-05 — Auth and onboarding
 
