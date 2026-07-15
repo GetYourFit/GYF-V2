@@ -30,6 +30,14 @@ keeps filters truthful because browse intentionally ignores those search filters
 uses only HTTPS catalogue and purchase URLs. Missing images, prices, unavailable ML search, and
 expired sessions are shown as explicit states; the client never invents catalogue items or scores.
 
+Pull requests also run the `Supabase Preview` GitHub check. GYF keeps Alembic as the single
+database migration source, so the check applies `services/api/db/migrations` to a disposable
+Postgres service and runs the API suite. To use an isolated hosted Supabase branch as well, add
+`SUPABASE_ACCESS_TOKEN` as a secret and `SUPABASE_PROJECT_REF` as a variable in the existing
+`EXPO_TOKEN` GitHub Actions environment. The workflow names branches `pr-<number>`, never copies
+production data, and deletes the branch when the pull request closes. Without those optional
+credentials, the local preview contract still runs and production remains untouched.
+
 ## Production
 
 `.github/workflows/cd.yml` deploys Expo web to EAS Hosting after the `main` CI workflow succeeds.

@@ -74,6 +74,21 @@ activates the pinned EAS Hosting project on its first deployment, and deploys to
 Production URL is `https://get-your-fit.expo.app`; open `/login`, create a real Supabase account,
 complete onboarding, and then give UI feedback.
 
+### Pull-request Supabase preview
+
+The repository does not duplicate the Alembic schema under `supabase/migrations`; the canonical
+source is `services/api/db/migrations`. Every pull request therefore runs the `Supabase Preview`
+GitHub check against disposable Postgres before merge. For a hosted isolated branch, add these to
+GitHub → Settings → Environments → `EXPO_TOKEN`:
+
+- Secret: `SUPABASE_ACCESS_TOKEN` from Supabase Account → Access Tokens.
+- Variable: `SUPABASE_PROJECT_REF` (`tabjvaatrikogutkrjom` for the current project).
+
+The workflow creates `pr-<number>`, runs the same Alembic chain there, and deletes it on PR close.
+It never uses `GYF_PROD_DATABASE_URL`, copies production data, or changes the production project.
+Supabase’s native GitHub integration can remain enabled for status comments, but it must not be
+treated as the migration source for this Alembic-owned repository.
+
 These are separate from Render runtime settings. Render receives only the `GYF_*` API variables in
 `render.yaml`: `GYF_DATABASE_URL`, `GYF_SUPABASE_URL`, `GYF_SUPABASE_JWT_SECRET`,
 `GYF_ALLOWED_ORIGINS`, and optional `GYF_ENCODER_REMOTE_KEY`/Sentry keys. Never put
