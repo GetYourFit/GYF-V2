@@ -449,7 +449,7 @@ export function OnboardingWizard() {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: "linear-gradient(90deg, var(--secondary) 0%, #f0bd8f 100%)",
+                      background: "linear-gradient(90deg, var(--secondary) 0%, var(--text) 100%)",
                       display: "block",
                       borderRadius: "999px",
                     }}
@@ -630,7 +630,7 @@ export function OnboardingWizard() {
               gap: "0.5rem",
               minHeight: "44px",
               padding: "0 1.5rem",
-              background: "linear-gradient(135deg, var(--text) 0%, #322a28 100%)",
+              background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-press) 100%)",
               color: "var(--bg)",
               border: "none",
               borderRadius: "999px",

@@ -1,6 +1,6 @@
 // Inline status / meta label — one editorial-gallery treatment of the small
 // caps-tracked tags scattered across surfaces (categories, "estimated", counts,
-// and the gold confidence callout), so they stop being hand-rolled per feature.
+// and the confidence callout), so they stop being hand-rolled per feature.
 
 import { forwardRef, type HTMLAttributes } from "react";
 
@@ -11,7 +11,7 @@ type Variant = "default" | "outline" | "confidence";
 const VARIANTS: Record<Variant, string> = {
   default: "border border-transparent bg-surface-2 text-text-mid",
   outline: "border border-border-mid bg-transparent text-text-mid",
-  // Gold — reserved for confidence / editorial callouts (design token discipline).
+  // Accent (the theme's ink) — reserved for confidence / editorial callouts.
   confidence: "border border-accent/30 bg-transparent text-accent",
 };
 
