@@ -188,22 +188,31 @@ def test_cold_browse_uses_bounded_uuid_ring_windows():
     assert "hashtextextended" not in sql
     assert sql.count("EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)") == 4
     assert "JOIN item_embeddings e ON e.item_id = i.id" not in sql
-    assert "WITH browse_seed" in sql
+    assert "WITH browse_seed" not in sql
+    assert sql.count("i.id >= %s::uuid") == 2
+    assert sql.count("i.id < %s::uuid") == 2
     assert isinstance(params[0], UUID)
-    assert params[1] == 18  # k + offset bounds each ring branch
-    assert params[2:] == (
+    assert params == (
+        params[0],
         "IN",
         ["men", "unisex"],
         ["shirt"],
+        18,
+        params[0],
         "IN",
         ["men", "unisex"],
         ["shirt"],
+        18,
+        params[0],
         "IN",
         ["men", "unisex"],
         ["shirt"],
+        18,
+        params[0],
         "IN",
         ["men", "unisex"],
         ["shirt"],
+        18,
         6,
         12,
     )

@@ -157,48 +157,42 @@ _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
 # the ring wrap. This keeps per-session variety without the retired hash-sort query
 # that timed out on the live Supabase catalogue.
 _BROWSE_INDEXED = """
-WITH browse_seed AS (
-  SELECT %s::uuid AS pivot, %s::integer AS take
-), candidates AS (
+WITH candidates AS (
   (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs
    FROM items i
-   CROSS JOIN browse_seed s
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND i.price IS NOT NULL AND i.id >= s.pivot
+     AND i.price IS NOT NULL AND i.id >= %s::uuid
      {region} {gender} {category}
    ORDER BY i.id
-   LIMIT (SELECT take FROM browse_seed))
+   LIMIT %s)
   UNION ALL
   (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs
    FROM items i
-   CROSS JOIN browse_seed s
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND i.price IS NOT NULL AND i.id < s.pivot
+     AND i.price IS NOT NULL AND i.id < %s::uuid
      {region} {gender} {category}
    ORDER BY i.id
-   LIMIT (SELECT take FROM browse_seed))
+   LIMIT %s)
   UNION ALL
   (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs
    FROM items i
-   CROSS JOIN browse_seed s
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND i.price IS NULL AND i.id >= s.pivot
+     AND i.price IS NULL AND i.id >= %s::uuid
      {region} {gender} {category}
    ORDER BY i.id
-   LIMIT (SELECT take FROM browse_seed))
+   LIMIT %s)
   UNION ALL
   (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs
    FROM items i
-   CROSS JOIN browse_seed s
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND i.price IS NULL AND i.id < s.pivot
+     AND i.price IS NULL AND i.id < %s::uuid
      {region} {gender} {category}
    ORDER BY i.id
-   LIMIT (SELECT take FROM browse_seed))
+   LIMIT %s)
 )
 SELECT id, title, score, image_refs
 FROM candidates
@@ -473,17 +467,22 @@ class PostgresVectorSearchRepository:
             return self._run(sql, tuple(params), surface="browse")
 
         pivot = UUID(bytes=sha256(browse_seed.encode("utf-8")).digest()[:16])
-        params = [pivot, k + offset]
+        params = []
         # The same optional predicates occur in each ring branch. Keep bindings
         # in SQL order so region/gender/category filters stay identical at every
         # wrap boundary.
         for _ in range(4):
+            # Bind the pivot inside each branch rather than through a one-row CTE.
+            # PostgreSQL can then use it as an `id` index bound instead of scanning
+            # the ring and applying the pivot as a join filter.
+            params.append(pivot)
             if region:
                 params.append(region)
             if gender_list:
                 params.append(gender_list)
             if categories:
                 params.append(categories)
+            params.append(k + offset)
         params.extend([k, offset])
         return self._run(sql, tuple(params), surface="browse")
 

@@ -2755,3 +2755,13 @@ the full Core API suite); Vercel production and Expo EAS Hosting both deployed s
 Also fixed the scheduled try-on worker's closed-gate configuration: an unset Actions variable
 expanded to an invalid empty boolean. It now defaults to literal `false`, so F9 remains safely
 closed and scheduled drains can parse configuration without failing.
+
+### 2026-07-16 — F2.5 browse planner root cause fixed (session: ponytail)
+
+Fresh India SLO evidence still failed catalogue surfaces (browse 0.90s p50/25.92s p95; cached
+search 1.21s/2.40s; uncached search 2.39s/8.99s). Deployed stage metrics isolated browse SQL,
+and a read-only production `EXPLAIN ANALYZE` found the pivot CTE prevented an index bound:
+PostgreSQL scanned 16,867 wide item rows to return 24 (6,236ms, 17,878 buffer hits). Binding the
+pivot inside each ring branch turns it into `Index Cond` on the existing partial browse index;
+the same production-data plan returns 24 rows in 3.4ms with 213 buffer hits. The query contract,
+embedding requirement, stable pagination, variety and priced-first behavior remain protected.
