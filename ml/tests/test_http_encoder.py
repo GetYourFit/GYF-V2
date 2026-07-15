@@ -50,6 +50,11 @@ def test_empty_input_short_circuits(monkeypatch):
     assert HttpEncoder("model-x", "https://encoder.example").encode_texts([]).shape == (0, 768)
 
 
+def test_remote_timeout_is_bounded_for_search_fallback():
+    enc = HttpEncoder("model-x", "https://encoder.example")
+    assert enc._timeout_s == 8.0
+
+
 def test_encoder_for_selects_the_http_lane(monkeypatch):
     from common.config import settings
     from perception.remote import encoder_for

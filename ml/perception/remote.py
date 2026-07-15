@@ -133,7 +133,9 @@ class HttpEncoder:
         api_key: str | None = None,
         dim: int = EMBEDDING_DIM,
         logit_scale: float = DEFAULT_LOGIT_SCALE,
-        timeout_s: float = 60.0,
+        # Search has a keyword fallback. Keep a dead/cold remote lane from
+        # holding a catalog request for a minute before that fallback runs.
+        timeout_s: float = 8.0,
     ) -> None:
         if not url:
             raise ValueError("HttpEncoder requires a non-empty url")

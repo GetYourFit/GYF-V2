@@ -42,10 +42,11 @@ services:
       # dashboard, to make the launch-critical default impossible to forget.
       - key: GYF_EVENT_SINK
         value: postgres
-      # Candidate query stays off until deployed EXPLAIN/latency/variety gates pass.
-      # This switch is also the immediate rollback path during controlled evaluation.
+      # The seeded browse index is the production cold-start path. The legacy
+      # hash-sort query exceeded statement_timeout on the live catalogue.
+      # Set false to roll back if the indexed query ever regresses.
       - key: GYF_BROWSE_INDEXED_RING_ENABLED
-        value: "false"
+        value: "true"
       # Catalog images are served from a public Supabase Storage bucket (the
       # local /media mount is absent on Render), so image_url points at the CDN.
       - key: GYF_MEDIA_BASE_URL

@@ -57,10 +57,17 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     # CPU-only torch: the CUDA wheels are ~5x larger and this lane has no GPU, so
     # they would only slow the cold start we exist to remove.
-    .pip_install("torch>=2.2.0", index_url="https://download.pytorch.org/whl/cpu")
+    # Pin the Torch/TorchVision pair. Leaving torchvision unbounded lets pip
+    # combine Modal's preinstalled torch with an incompatible vision wheel
+    # (the import then fails at torchvision::nms before the app starts).
     .pip_install(
-        "open-clip-torch>=2.24.0",
-        "transformers>=4.40.0",
+        "torch==2.6.0",
+        "torchvision==0.21.0",
+        index_url="https://download.pytorch.org/whl/cpu",
+    )
+    .pip_install(
+        "open-clip-torch==2.24.0",
+        "transformers>=4.40.0,<5",
         "numpy>=1.26",
         "pillow>=10.0",
         "fastapi[standard]",
@@ -82,7 +89,9 @@ app = modal.App("gyf-encoder")
     # fires several searches, and only the first should ever pay a cold start.
     scaledown_window=300,
     enable_memory_snapshot=True,
-    secrets=[modal.Secret.from_name("gyf-encoder-key")],
+    # Reuse the existing production secret so a deployment cannot silently
+    # rotate the bearer shared with the API.
+    secrets=[modal.Secret.from_name("gyf-encoder")],
 )
 class Encoder:
     @modal.enter(snap=True)
