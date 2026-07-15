@@ -1,6 +1,6 @@
 """Index the bounded deterministic browse order.
 
-Revision ID: 0020_available_browse_order_index
+Revision ID: 0020_browse_order_index
 Revises: 0019_available_browse_seed_index
 Create Date: 2026-07-15
 """
@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "0020_available_browse_order_index"
+revision: str = "0020_browse_order_index"
 down_revision: str | None = "0019_available_browse_seed_index"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
