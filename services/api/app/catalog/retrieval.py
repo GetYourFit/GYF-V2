@@ -148,57 +148,18 @@ _GENDER_FILTER = (
 
 _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
 
-# Default browse: no embedding or vector scan. A fixed pseudorandom item rank is
-# indexed; the session seed chooses a cyclic pivot in that ordering. Each branch
-# returns at most ``k + offset`` candidates, but selective region/gender/category/
-# embedding filters can make its index scan examine more rows. Four branches preserve
-# the priced-first contract across the pivot wrap; latency requires deployed EXPLAIN.
-# ponytail: one fixed ring gives fresh starting windows but weaker neighbour diversity
-# than a full per-seed permutation. Add a measured multi-ring/cursor only if deployed
-# coverage/overlap regresses. OFFSET remains O(offset), capped by the API at 10,000.
+# Default browse: no embedding or vector scan. The production feed is deliberately
+# ordered by a partial index: priced rows first, then primary key. The old seeded
+# hash permutation timed out on the live Supabase catalogue even after adding its
+# matching expression index, so ``seed`` remains accepted for API compatibility but
+# does not participate in this bounded hot read.
 _BROWSE_INDEXED = """
-WITH browse_seed AS (
-  SELECT hashtextextended(%s::text, 0) AS pivot, (%s::integer + %s::integer) AS take
-), candidates AS (
-  (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
-          hashtextextended(i.id::text, 0) AS seed_rank
-   FROM items i JOIN item_embeddings e ON e.item_id = i.id CROSS JOIN browse_seed s
-   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
-     AND i.price IS NOT NULL AND hashtextextended(i.id::text, 0) >= s.pivot
-     {region} {gender} {category}
-   ORDER BY seed_rank, i.id LIMIT (SELECT take FROM browse_seed))
-  UNION ALL
-  (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
-          hashtextextended(i.id::text, 0) AS seed_rank
-   FROM items i JOIN item_embeddings e ON e.item_id = i.id CROSS JOIN browse_seed s
-   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
-     AND i.price IS NOT NULL AND hashtextextended(i.id::text, 0) < s.pivot
-     {region} {gender} {category}
-   ORDER BY seed_rank, i.id LIMIT (SELECT take FROM browse_seed))
-  UNION ALL
-  (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
-          hashtextextended(i.id::text, 0) AS seed_rank
-   FROM items i JOIN item_embeddings e ON e.item_id = i.id CROSS JOIN browse_seed s
-   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
-     AND i.price IS NULL AND hashtextextended(i.id::text, 0) >= s.pivot
-     {region} {gender} {category}
-   ORDER BY seed_rank, i.id LIMIT (SELECT take FROM browse_seed))
-  UNION ALL
-  (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs,
-          hashtextextended(i.id::text, 0) AS seed_rank
-   FROM items i JOIN item_embeddings e ON e.item_id = i.id CROSS JOIN browse_seed s
-   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
-     AND i.price IS NULL AND hashtextextended(i.id::text, 0) < s.pivot
-     {region} {gender} {category}
-   ORDER BY seed_rank, i.id LIMIT (SELECT take FROM browse_seed))
-)
-SELECT id, title, score, image_refs
-FROM candidates
-ORDER BY band, seed_rank, id
+SELECT i.id, i.title, 0.0 AS score, i.image_refs
+FROM items i
+JOIN item_embeddings e ON e.item_id = i.id
+WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+  {region} {gender} {category}
+ORDER BY (i.price IS NOT NULL) DESC, i.id
 LIMIT %s OFFSET %s
 """
 
@@ -459,16 +420,13 @@ class PostgresVectorSearchRepository:
             params.extend([k, offset])
             return self._run(sql, tuple(params))
 
-        params = [browse_seed, k, offset]
-        # The same optional predicates occur in each cyclic branch. Bind them in
-        # SQL order so every branch preserves the exact browse filter contract.
-        for _ in range(4):
-            if region:
-                params.append(region)
-            if gender_list:
-                params.append(gender_list)
-            if categories:
-                params.append(categories)
+        params = []
+        if region:
+            params.append(region)
+        if gender_list:
+            params.append(gender_list)
+        if categories:
+            params.append(categories)
         params.extend([k, offset])
         return self._run(sql, tuple(params))
 

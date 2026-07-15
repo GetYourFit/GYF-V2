@@ -82,7 +82,7 @@ def test_browse_personalizes_by_taste_vector():
     repo.browse(categories=None, k=10, region=None)  # no taste -> cold-start path
     cold_sql, _ = pool.calls[-1]
     assert "embedding <=>" not in cold_sql.split("ORDER BY")[1]  # not a vector scan
-    assert "hashtextextended(i.id::text, 0)" in cold_sql  # indexed fixed random rank
+    assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in cold_sql
 
 
 def test_indexed_browse_candidate_is_default_off():
@@ -97,7 +97,7 @@ def test_indexed_browse_candidate_is_default_off():
     assert params == ("session-a", 10, 0)
 
 
-def test_cold_browse_uses_four_bounded_seeded_index_windows():
+def test_cold_browse_uses_one_bounded_ordered_index_window():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
 
@@ -111,15 +111,9 @@ def test_cold_browse_uses_four_bounded_seeded_index_windows():
     )
 
     sql, params = pool.calls[-1]
-    assert "hashtext(i.id::text ||" not in sql  # no per-seed whole-catalog sort
-    assert sql.count("LIMIT (SELECT take FROM browse_seed)") == 4
-    assert sql.count("i.price IS NOT NULL") == 2
-    assert sql.count("i.price IS NULL") == 2
-    assert sql.count("hashtextextended(i.id::text, 0) >= s.pivot") == 2
-    assert sql.count("hashtextextended(i.id::text, 0) < s.pivot") == 2
-    assert sql.count("JOIN item_embeddings e ON e.item_id = i.id") == 4
-    branch_filters = ["IN", ["men", "unisex"], ["shirt"]] * 4
-    assert params == ("session-a", 6, 12, *branch_filters, 6, 12)
+    assert "hashtextextended" not in sql
+    assert "JOIN item_embeddings e ON e.item_id = i.id" in sql
+    assert params == ("IN", ["men", "unisex"], ["shirt"], 6, 12)
 
 
 def test_mmr_rerank_breaks_near_duplicate_run():
