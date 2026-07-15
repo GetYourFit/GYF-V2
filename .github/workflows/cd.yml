@@ -2,6 +2,7 @@ name: CD
 
 # Continuous delivery. Runs only after CI succeeds on main.
 # Deploys the web to Vercel (project gyf-v2-app) via the Vercel CLI.
+# Expo web deploys to EAS Hosting from this workflow; native builds use `apps/expo/eas.json`.
 # CLI/token deploy means the private repo needs no third-party Git OAuth.
 # The API ships separately on Render from render.yaml.
 #
@@ -12,6 +13,8 @@ name: CD
 #   VERCEL_TOKEN      — a Vercel access token (Account Settings → Tokens)
 #   VERCEL_ORG_ID     — Vercel team/org id (.vercel/project.json → orgId)
 #   VERCEL_PROJECT_ID — Vercel project id  (.vercel/project.json → projectId)
+# Expo production web additionally requires `EXPO_TOKEN`, public API/Supabase vars, and the
+# Supabase anon key configured in GitHub Actions; native store credentials stay in EAS.
 
 on:
   workflow_run:
@@ -55,3 +58,41 @@ jobs:
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --token="$VERCEL_TOKEN"
           vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+  deploy-expo-web:
+    name: Deploy Expo web (EAS Hosting)
+    runs-on: ubuntu-latest
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_branch == 'main' }}
+    defaults:
+      run:
+        working-directory: apps/expo
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Check EAS configuration
+        id: gate
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is not configured; Expo production deploy is not enabled." >&2
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$EXPO_PUBLIC_API_URL" ] || [ -z "$EXPO_PUBLIC_SUPABASE_URL" ] || [ -z "$EXPO_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "Expo public production environment is incomplete." >&2
+            exit 1
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy Expo web to EAS Hosting
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          npx expo export --platform web
+          npm exec --yes eas-cli@latest -- deploy --prod --non-interactive

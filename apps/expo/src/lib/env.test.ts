@@ -16,6 +16,12 @@ describe("readPublicEnv", () => {
 
   it("rejects malformed or unsafe URLs", () => {
     expect(() => readPublicEnv({ EXPO_PUBLIC_API_URL: "not-a-url" })).toThrow(/complete http/);
-    expect(() => readPublicEnv({ EXPO_PUBLIC_API_URL: "file:///secret" })).toThrow(/http or https/);
+    expect(() => readPublicEnv({ EXPO_PUBLIC_API_URL: "file:///secret" })).toThrow(/https/);
+    expect(() => readPublicEnv({ EXPO_PUBLIC_API_URL: "http://api.example.test" })).toThrow(
+      /https/,
+    );
+    expect(readPublicEnv({ EXPO_PUBLIC_API_URL: "http://localhost:8000" }).apiUrl).toBe(
+      "http://localhost:8000",
+    );
   });
 });

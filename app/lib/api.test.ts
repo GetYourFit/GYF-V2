@@ -128,4 +128,21 @@ describe("GyfApi", () => {
     expect(err).toBeInstanceOf(ApiError);
     expect((err as ApiError).status).toBe(503);
   });
+
+  it("aborts a stalled request at the client timeout", async () => {
+    const fetchSpy = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("timed out", "AbortError")),
+          );
+        }),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const err = await new GyfApi(() => null, "http://api", 1).recommend().catch((e: unknown) => e);
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect((err as DOMException).name).toBe("AbortError");
+  });
 });

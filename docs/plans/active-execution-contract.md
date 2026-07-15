@@ -1,6 +1,6 @@
 # GYF active execution contract
 
-Status: **ACTIVE** · owner-authorised 2026-07-14 (amended same day, twice: try-on subscription, then try-on free lane) · application baseline `eb800965beeb5835c35bd8b8a269589f407e58f9`
+Status: **ACTIVE** · owner-authorised 2026-07-14 (amended same day, twice: try-on subscription, then try-on free lane) · execution amendment 2026-07-15 · application baseline `eb800965beeb5835c35bd8b8a269589f407e58f9`
 
 This is the single source of truth for execution order. Product intent remains in `docs/vision/ideas-complete.md`; non-negotiable engineering rules remain in `docs/engineering-doctrine.md`; the July master plan and older plans are evidence only.
 
@@ -15,6 +15,7 @@ This is the single source of truth for execution order. Product intent remains i
 - Provider, migration and ₹2,000 budget proposals in older plans are hypotheses until measured; no provider is selected merely by a planning estimate.
 - Replace-then-delete (owner amendment 2026-07-14): when a gated replacement ships, the implementation it replaces is deleted in the same slice, after that phase gate passes. Everything else obsolete or duplicate is deleted only in F13, after behaviour is protected or explicitly rejected. Do not replace deleted code with speculative abstractions.
 - Budget ceiling (owner amendment 2026-07-14, evening): total hosting + GPU spend stays **under ₹3,000/month**, India-effective services preferred; the researched serving/performance spec is [`scale-3k-inr.md`](./scale-3k-inr.md). Rewrite-when-better: existing code may be rewritten where the replacement is measurably better (debuggability, maintainability, security, speed) — with before/after evidence, never by assertion.
+- Execution amendment (owner, 2026-07-15): local implementation may continue sequentially through the Expo replacement and later locally actionable phases while F2.5 external deployment/SLO promotion remains blocked. This permits code and test work only; it does not promote F2.5, open try-on, claim production parity, or bypass security, privacy, license, evaluation, rollback or cost gates.
 
 ## Reproducible baseline
 

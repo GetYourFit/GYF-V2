@@ -32,6 +32,7 @@ import type {
 } from "@gyf/types";
 
 const DEFAULT_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const REQUEST_TIMEOUT_MS = 15_000;
 
 /** An HTTP-level failure from the API, carrying the status so callers can branch
  *  honestly (404 = not onboarded yet, 503 = a capability is unavailable, …) rather
@@ -126,6 +127,7 @@ export class GyfApi {
   constructor(
     private readonly getToken: TokenProvider = () => null,
     private readonly base: string = DEFAULT_BASE,
+    private readonly timeoutMs: number = REQUEST_TIMEOUT_MS,
   ) {}
 
   // --- Profile & onboarding (manual path) ---
@@ -441,6 +443,11 @@ export class GyfApi {
     for (let i = 0; i < attempts; i++) {
       if (i > 0) await new Promise((r) => setTimeout(r, 1500 * i));
       if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+      const timeoutController = new AbortController();
+      const timeout = setTimeout(() => timeoutController.abort(), this.timeoutMs);
+      const requestSignal = signal
+        ? AbortSignal.any([signal, timeoutController.signal])
+        : timeoutController.signal;
       try {
         const res = await fetch(`${this.base}${path}`, {
           method,
@@ -449,7 +456,7 @@ export class GyfApi {
           // Forwarded so callers can actually cancel: a superseded search/browse
           // (fast filter changes) aborts its fetch instead of resolving late and
           // clobbering newer results.
-          signal,
+          signal: requestSignal,
         });
         if (res.status >= 502 && res.status <= 504 && i < attempts - 1) {
           lastErr = new ApiError(res.status, res.statusText, null);
@@ -457,9 +464,15 @@ export class GyfApi {
         }
         return await this.handle<T>(res);
       } catch (e) {
-        if ((e as { name?: string }).name === "AbortError") throw e;
+        if (signal?.aborted) throw e;
+        if ((e as { name?: string }).name === "AbortError") {
+          lastErr = e;
+          continue;
+        }
         if (e instanceof ApiError) throw e;
         lastErr = e; // network drop (TypeError) — retry
+      } finally {
+        clearTimeout(timeout);
       }
     }
     throw lastErr;
@@ -478,14 +491,23 @@ export class GyfApi {
     const token = await this.getToken();
     const headers = new Headers({ Accept: "application/json" });
     if (token) headers.set("Authorization", `Bearer ${token}`);
+    const timeoutController = new AbortController();
+    const timeout = setTimeout(() => timeoutController.abort(), this.timeoutMs);
+    const requestSignal = signal
+      ? AbortSignal.any([signal, timeoutController.signal])
+      : timeoutController.signal;
 
-    const res = await fetch(`${this.base}${path}`, {
-      method: "POST",
-      headers,
-      body: form,
-      signal,
-    });
-    return this.handle<T>(res);
+    try {
+      const res = await fetch(`${this.base}${path}`, {
+        method: "POST",
+        headers,
+        body: form,
+        signal: requestSignal,
+      });
+      return this.handle<T>(res);
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private async handle<T>(res: Response): Promise<T> {

@@ -4,7 +4,9 @@
 > [`docs/plans/active-execution-contract.md`](./docs/plans/active-execution-contract.md) is the
 > sole source of truth for execution order, phase gates and the current slice. It supersedes
 > older roadmap, implementation-plan, provider, payment and "Next" guidance in this file and
-> elsewhere. The current slice is **F1b only**. Every surface is free, **including virtual
+> elsewhere. The current production gate is **F2.5 external SLO promotion pending**; local
+> implementation continues sequentially by owner amendment 2026-07-15. Every surface is free,
+> **including virtual
 > try-on** (owner amendment 2026-07-14, superseding the same-day subscription decision): the
 > owned free lane per [`docs/plans/free-vton-moat.md`](./docs/plans/free-vton-moat.md), quota-
 > and kill-switch-bounded, lands in F8/F9. Payment work is cancelled; no paywall anywhere.

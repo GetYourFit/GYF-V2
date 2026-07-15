@@ -20,8 +20,10 @@ are evidence only when they conflict with it.
   for cost.
 - A gated replacement deletes what it replaces in the same slice; everything else obsolete
   or duplicate is deleted only in F13, after its behaviour is protected or rejected.
-- The current slice is F1b only: make filter, confidence-label and sensitive-upload
-  capability claims truthful, one regression per fixed claim. (F1a shipped, commit `6f78bed`.)
+- The current production gate is F2.5: external deployment/SLO promotion remains pending.
+  By owner execution amendment 2026-07-15, local implementation may continue sequentially
+  through the Expo replacement and later phases while that gate is pending; no phase may claim
+  production promotion before its evidence gate passes. F1a/F1b shipped (`6f78bed`, `7087825`).
 
 ## Working rule
 
