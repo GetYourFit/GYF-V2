@@ -50,8 +50,14 @@ def _remote_reachable(url: str) -> bool:
     hit = _probe_cache.get(url)
     if hit is not None and now - hit[0] < _PROBE_TTL_S:
         return hit[1]
+    probe_url = url.rstrip("/")
+    # Modal's web function is mounted below the app URL. Probing the root
+    # returns 404 even when the encoder is healthy, which falsely advertised
+    # keyword fallback in /system/status.
+    if os.environ.get("GYF_ENCODER_REMOTE_KIND", "gradio") == "http":
+        probe_url += "/health"
     try:
-        status_code = httpx.get(url, timeout=2.0, follow_redirects=True).status_code
+        status_code = httpx.get(probe_url, timeout=2.0, follow_redirects=True).status_code
         ok = 200 <= status_code < 300
     except Exception:  # noqa: BLE001 — unreachable == not live; the status must never 500
         ok = False
