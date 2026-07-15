@@ -2700,3 +2700,17 @@ manufacture exactly that dupe, so `(app)/collections.tsx` now `export { default 
 Route resolves for nav parity; one screen to delete at F13. Typecheck + prettier clean.
 
 Remaining Expo placeholders: social, profile, account, canvas, contact, grievance, status, design.
+
+### 2026-07-16 — Expo parity slice: Social feed (session: ponytail)
+
+**Shipped:** `apps/expo/src/app/(app)/(tabs)/social.tsx` replaces the placeholder — real community
+feed: For-you/Following scope toggle, post cards (up-to-3 image cover strip, occasion, caption),
+optimistic like/unlike with clamped count, optimistic follow/unfollow (hidden for self via `me()`
+viewer id), loading/error/empty states (scope-aware empty copy), pull-to-refresh, infinite scroll
+with a stale-request ticket so a scope switch mid-fetch can't clobber the new feed. Pure logic in
+`lib/social-feed.ts` (`applyReaction` count math, immutable `toggleId`, `postCoverImages`,
+`appendUniquePosts`) with `social-feed.test.ts` (4 cases). No API code (inherited from web GyfApi).
+Compose/createPost + recreatePost deliberately deferred to a separate authoring slice.
+
+Expo typecheck clean, 32 tests pass, web export builds. Remaining placeholders: profile, account,
+canvas, contact, grievance, status, design; social compose (create/recreate post).
