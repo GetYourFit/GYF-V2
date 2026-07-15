@@ -18,7 +18,7 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 | Latest local evidence | 378 API tests passed; 72 web + 13 Expo tests passed; typecheck, doctrine, formatting and production build passed; Expo export enumerates 49 routes; CI `29412486474` green; CD wiring ran with EAS/Vercel deploy steps skipped for missing credentials |
 | Known warnings/skips | 17 API tests skipped; existing `<img>` lint warning; framework/deprecation and React `act()` test warnings |
 | F2.5 live state | **FAIL** — SLO probe returned non-passing browse, cached-search and uncached-search rows |
-| Next candidate after explicit phase transition | EXPO-06 stylist and feedback; F2.5 closeout remains an external deployment task |
+| Next candidate after explicit phase transition | EXPO-05 photo capability smoke/evidence, then EXPO-06 stylist and feedback; F2.5 closeout remains an external deployment task |
 | Explicitly not next | New model training, try-on opening, payment, F13 cleanup |
 
 F2.5 is not promoted by this document. Its remaining work is external deployment and a passing
@@ -1424,6 +1424,19 @@ but it never reorders the backend contract.
   picker/camera, preview lifecycle and editable corrections.
 - **Acceptance:** F1b capability and consent semantics match API; object URLs/temporary files are
   cleaned; cancel/retry works; onboarding survives app restart without stale sensitive media.
+
+#### EXPO-05 execution evidence — 2026-07-15
+
+- Added functional native sign-in, sign-up, recovery and reset routes with shared validation,
+  session transitions, truthful email-confirmation copy and retryable protected navigation.
+- Added manual profile onboarding against the existing typed API: required gender slice, occasion,
+  style intent, budget/currency and consent flags persist through `PUT /profile` and `PUT /consent`.
+  Existing profile data is reloaded and remains editable; required processing consent is fail-closed.
+- Photo picker/camera integration is intentionally not claimed: the Expo image-picker install is
+  unavailable in this checkout's restricted package temp directory, so the screen labels photo
+  assistance unavailable and keeps manual fields authoritative. It remains the next EXPO-05 gate.
+- Expo typecheck and 17 Expo tests pass. Device smoke testing and sensitive-media lifecycle tests
+  remain open until the native picker dependency and Supabase recovery-link configuration exist.
 
 ### EXPO-06 — Stylist and feedback
 

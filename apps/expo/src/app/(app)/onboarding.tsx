@@ -1,5 +1,5 @@
-import { RoutePlaceholder } from "@/components/navigation/route-placeholder";
+import { OnboardingForm } from "@/components/onboarding/onboarding-form";
 
 export default function OnboardingRoute() {
-  return <RoutePlaceholder title="Your profile" description="Personal onboarding is next." />;
+  return <OnboardingForm />;
 }
