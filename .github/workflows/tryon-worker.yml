@@ -55,7 +55,9 @@ jobs:
         working-directory: services/api
         env:
           GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
-          GYF_TRYON_ENABLED: ${{ vars.GYF_TRYON_ENABLED }}
+          # An unset Actions variable expands to an empty string, which is not a
+          # valid boolean. Default closed so the F9 gate is safe and parseable.
+          GYF_TRYON_ENABLED: ${{ vars.GYF_TRYON_ENABLED || 'false' }}
           GYF_TRYON_PROVIDER: ${{ vars.GYF_TRYON_PROVIDER }}
           GYF_FAL_API_KEY: ${{ secrets.GYF_FAL_API_KEY }}
           GYF_FASHN_API_KEY: ${{ secrets.GYF_FASHN_API_KEY }}

@@ -2742,3 +2742,16 @@ Share text, move to expo-file-system for bundles that outgrow a share sheet.
 
 Expo typecheck clean, 39 tests pass, web export builds. Remaining placeholders: canvas, contact,
 grievance, status, design; social compose; avatar upload.
+
+### 2026-07-16 — F2.5 CI and deployment gate restored (session: ponytail)
+
+The Core API failure was a contradictory PostgreSQL test fixture: the UUID labelled
+"without embedding" was also the final embedded UUID. A distinct sentinel plus an explicit
+fixture invariant restored the intended regression. Added direct HttpEncoder regressions for
+cross-origin redirect rejection, environment-proxy preservation, and the end-to-end caller
+deadline. Commit `f83891f` passed all six GitHub CI jobs (including fresh pgvector migrations and
+the full Core API suite); Vercel production and Expo EAS Hosting both deployed successfully.
+
+Also fixed the scheduled try-on worker's closed-gate configuration: an unset Actions variable
+expanded to an invalid empty boolean. It now defaults to literal `false`, so F9 remains safely
+closed and scheduled drains can parse configuration without failing.
