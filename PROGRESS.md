@@ -2776,3 +2776,13 @@ accessibility semantics. Pure `canvas-cluster.ts` protects deterministic tile si
 boundary de-duplication and selected-item pinning (3 regressions). Expo typecheck clean, 42 tests
 pass and the 49-route web export builds. Remaining placeholders: contact, grievance, status,
 design; social compose; avatar upload.
+
+### 2026-07-16 — Expo parity slice: Contact (session: ponytail)
+
+Replaced the Contact placeholder with a real authenticated support form over the existing
+`POST /support/messages` contract. It shares the repository's single public-email constant,
+validates and normalizes name/email/message, reports field errors accessibly, exposes direct
+mailto fallback, disables duplicate sends, and shows success only after the API returns the
+persisted message receipt. Three pure-model regressions protect invalid-input rejection, payload
+normalization and valid submission. Expo typecheck clean, 45 tests pass and web export builds.
+Remaining placeholders: grievance, status, design; social compose; avatar upload.
