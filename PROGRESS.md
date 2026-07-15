@@ -2661,3 +2661,20 @@ ruff clean.
 **Still OWNER-gated (no code unblocks these):** F2.5 promotion = Modal deploy + Render Singapore
 recreate; F7 = consented fairness panel; F8/F9 try-on open = Kaggle/GPU Leffa training + frozen
 scorecard. Next locally-actionable lane = Expo parity vertical slices (contract item 6).
+
+### 2026-07-15 (night) — Expo parity slice: Saved (session: ponytail)
+
+**User:** re-fired the F0–F14 boil-the-ocean prompt. Aesthetic lane already polished; the one
+large local lane per the contract (item 6) is Expo parity, so drove one complete vertical.
+
+**Shipped:** `apps/expo/src/app/(app)/saved.tsx` replaces the `RoutePlaceholder` — real Saved
+screen (saved looks + saved items) behind the unchanged `/collections` + `/collections/outfits`
+API contracts (the Expo `GyfApi` already extends the web client, so no API code). Mirrors the
+explore-screen patterns exactly: FlatList, loading/error/empty states, `RefreshControl`, optimistic
+remove with revert-on-failure, full accessibility labels, Atelier UI kit + tokens. New
+`src/lib/saved-feed.ts` holds the pure, tested logic (`summariseOutfit`, `outfitCoverImage`,
+`mergeSavedLists` — the independent-degrade rule). Tests `saved-feed.test.ts` (3 cases).
+
+**Verified:** expo typecheck clean, `bun test` 25 pass, prettier clean, `expo export --platform web`
+builds the route. Remaining Expo placeholders: profile, social, wardrobe, collections, account,
+canvas, contact, grievance, status, design.
