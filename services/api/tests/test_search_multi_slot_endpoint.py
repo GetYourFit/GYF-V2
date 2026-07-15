@@ -9,6 +9,8 @@ actually receives.
 
 from __future__ import annotations
 
+import re
+
 from fastapi.testclient import TestClient
 
 from app.catalog.retrieval import SearchResult
@@ -118,3 +120,46 @@ def test_browse_endpoint_single_page_without_slots():
     assert resp.status_code == 200
     assert len(repo.calls) == 1  # one mixed page, no per-slot fan-out
     assert repo.calls[0][1] == 0
+
+
+def test_browse_and_search_emit_fixed_stage_labels():
+    from app.metrics import _STAGE_TIMING, metrics_enabled
+
+    if not metrics_enabled():
+        return
+
+    def count(surface, stage, outcome):
+        labels = {"surface": surface, "stage": stage, "outcome": outcome}
+        return next(
+            (
+                sample.value
+                for metric in _STAGE_TIMING.collect()
+                for sample in metric.samples
+                if sample.name.endswith("_count") and sample.labels == labels
+            ),
+            0,
+        )
+
+    triples = (
+        ("search", "remote_encode", "success"),
+        ("browse", "taste", "empty"),
+        ("browse", "directory_lookup", "success"),
+    )
+    before = {triple: count(*triple) for triple in triples}
+    _call("?q=fashion", path="/items/search")
+    _call("?k=24", path="/items/browse")
+    after = {triple: count(*triple) for triple in triples}
+    assert all(after[triple] == before[triple] + 1 for triple in triples)
+    body = TestClient(app).get("/metrics").text
+    lines = [
+        line
+        for line in body.splitlines()
+        if line.startswith("gyf_catalog_stage_duration_seconds_count")
+    ]
+    for line in lines:
+        assert set(re.findall(r"(\w+)=", line.split("}", 1)[0])) == {
+            "surface",
+            "stage",
+            "outcome",
+        }
+        assert not any(value in line for value in ("query", "user", "item", "sql="))

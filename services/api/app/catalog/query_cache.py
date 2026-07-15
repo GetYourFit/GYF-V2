@@ -20,7 +20,10 @@ promotion invalidates by construction rather than serving stale vectors.
 from __future__ import annotations
 
 import logging
+import math
+from collections.abc import Mapping
 
+from ..metrics import observe_stage_duration, stage_timer
 from .retrieval import TextEmbedder
 
 logger = logging.getLogger(__name__)
@@ -36,6 +39,16 @@ MAX_QUERY_CHARS = 200
 # delete hot, move the prune to the nightly workflow.
 MAX_ROWS = 5_000
 
+_ENCODER_TIMING_STAGES = (
+    ("encoder_dns", "dns_seconds", "dns"),
+    ("encoder_connect", "connect_seconds", "connect"),
+    ("encoder_ttfb", "ttfb_seconds", "ttfb"),
+    ("encoder_model_load", "model_load_seconds", "model_load"),
+)
+_ERROR_PHASES = {phase: stage for stage, _field, phase in _ENCODER_TIMING_STAGES} | {
+    stage: stage for stage, _field, _phase in _ENCODER_TIMING_STAGES
+}
+
 
 def normalize_query(text: str) -> str:
     """Cache key: case- and whitespace-insensitive, so "Red  Dress " and "red dress"
@@ -46,6 +59,8 @@ def normalize_query(text: str) -> str:
 class CachedTextEmbedder:
     """A :class:`TextEmbedder` that reads through a Postgres query-embedding cache."""
 
+    handles_stage_timing = True
+
     def __init__(self, inner: TextEmbedder, pool, model_id: str) -> None:
         self._inner = inner
         self._pool = pool
@@ -54,19 +69,89 @@ class CachedTextEmbedder:
     def embed_query(self, text: str) -> list[float]:
         key = normalize_query(text)
         if not key or len(key) > MAX_QUERY_CHARS:
-            return self._inner.embed_query(text)
+            with stage_timer("search", "cache_read", "bypass"):
+                pass
+            try:
+                vec = self._encode(text)
+            except Exception:
+                with stage_timer("search", "cache_write", "bypass"):
+                    pass
+                raise
+            with stage_timer("search", "cache_write", "bypass"):
+                pass
+            return vec
 
-        cached = self._read(key)
+        with stage_timer("search", "cache_read") as timer:
+            cached, read_outcome = self._read(key)
+            timer.set_outcome(read_outcome)
         if cached is not None:
+            with stage_timer("search", "remote_encode", "bypass"):
+                pass
+            self._bypass_encoder_timings()
+            with stage_timer("search", "cache_write", "bypass"):
+                pass
             return cached
 
-        vec = self._inner.embed_query(text)
-        self._write(key, vec)
+        try:
+            vec = self._encode(text)
+        except Exception:
+            with stage_timer("search", "cache_write", "bypass"):
+                pass
+            raise
+        with stage_timer("search", "cache_write") as timer:
+            timer.set_outcome(self._write(key, vec))
         return vec
 
-    def _read(self, key: str) -> list[float] | None:
-        """Hit -> the stored vector (and a usage bump, which also drives the LRU
-        prune). One statement: the ``UPDATE ... RETURNING`` *is* the read."""
+    def _encode(self, text: str) -> list[float]:
+        try:
+            with stage_timer("search", "remote_encode"):
+                vec = self._inner.embed_query(text)
+        finally:
+            self._observe_encoder_timings()
+        return vec
+
+    def _observe_encoder_timings(self) -> None:
+        consume = getattr(self._inner, "consume_timings", None)
+        if not callable(consume):
+            timings = None
+        else:
+            try:
+                timings = consume()
+            except Exception:  # noqa: BLE001 — telemetry must not break search
+                logger.warning("encoder timing consumption failed", exc_info=True)
+                timings = None
+
+        if not isinstance(timings, Mapping):
+            timings = {}
+        error_stage = _ERROR_PHASES.get(timings.get("error_phase"))
+        for stage, field, _phase in _ENCODER_TIMING_STAGES:
+            raw_duration = timings.get(field)
+            valid_duration = (
+                isinstance(raw_duration, (int, float))
+                and not isinstance(raw_duration, bool)
+                and math.isfinite(raw_duration)
+                and raw_duration >= 0
+            )
+            outcome = (
+                "error"
+                if error_stage == stage or (raw_duration is not None and not valid_duration)
+                else "success"
+                if raw_duration is not None
+                else "bypass"
+            )
+            observe_stage_duration(
+                "search",
+                stage,
+                outcome,
+                float(raw_duration) if valid_duration else 0.0,
+            )
+
+    def _bypass_encoder_timings(self) -> None:
+        for stage, _field, _phase in _ENCODER_TIMING_STAGES:
+            observe_stage_duration("search", stage, "bypass", 0.0)
+
+    def _read(self, key: str) -> tuple[list[float] | None, str]:
+        """Hit -> the stored vector; a DB error is an observable safe miss."""
         try:
             with self._pool.connection() as conn:
                 row = conn.execute(
@@ -76,10 +161,10 @@ class CachedTextEmbedder:
                 ).fetchone()
         except Exception:  # noqa: BLE001 — a cache miss is the safe read of any DB error
             logger.warning("query-embedding cache read failed; embedding directly", exc_info=True)
-            return None
-        return [float(x) for x in row[0]] if row else None
+            return None, "read_error"
+        return ([float(x) for x in row[0]], "hit") if row else (None, "miss")
 
-    def _write(self, key: str, vec: list[float]) -> None:
+    def _write(self, key: str, vec: list[float]) -> str:
         try:
             with self._pool.connection() as conn:
                 conn.execute(
@@ -99,3 +184,5 @@ class CachedTextEmbedder:
                 )
         except Exception:  # noqa: BLE001 — never fail a search because the cache could not store
             logger.warning("query-embedding cache write failed", exc_info=True)
+            return "write_error"
+        return "success"

@@ -18,8 +18,20 @@ pattern in :class:`~perception.model.SiglipEncoder`.
 
 from __future__ import annotations
 
+import contextvars
+import http.client
 import logging
+import math
+import queue
+import socket
+import ssl
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from collections.abc import Callable
+from functools import partial
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -34,6 +46,97 @@ if TYPE_CHECKING:
 # gradio_client serializes JSON args; these api_names match the Space's app.py.
 _EMBED_IMAGES_API = "/embed_images"
 _EMBED_TEXTS_API = "/embed_texts"
+
+
+def _timed_socket(connection, timings: dict) -> socket.socket:
+    dns_started = time.perf_counter()
+    try:
+        addresses = socket.getaddrinfo(connection.host, connection.port, type=socket.SOCK_STREAM)
+    except Exception:
+        HttpEncoder._add_timing(timings, "dns_seconds", time.perf_counter() - dns_started)
+        timings["error_phase"] = "dns"
+        raise
+    HttpEncoder._add_timing(timings, "dns_seconds", time.perf_counter() - dns_started)
+
+    connect_started = time.perf_counter()
+    last_error: OSError | None = None
+    for family, socktype, proto, _canonname, address in addresses:
+        sock = socket.socket(family, socktype, proto)
+        try:
+            sock.settimeout(connection.timeout)
+            if connection.source_address:
+                sock.bind(connection.source_address)
+            sock.connect(address)
+            HttpEncoder._add_timing(
+                timings, "connect_seconds", time.perf_counter() - connect_started
+            )
+            return sock
+        except OSError as exc:
+            last_error = exc
+            sock.close()
+    HttpEncoder._add_timing(timings, "connect_seconds", time.perf_counter() - connect_started)
+    timings["error_phase"] = "connect"
+    if last_error is not None:
+        raise last_error
+    raise OSError("no address available for encoder endpoint")
+
+
+class _TimedHTTPConnection(http.client.HTTPConnection):
+    def __init__(self, *args, timings: dict, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._timings = timings
+
+    def connect(self) -> None:
+        self.sock = _timed_socket(self, self._timings)
+
+    def getresponse(self):
+        started = time.perf_counter()
+        try:
+            return super().getresponse()
+        except Exception:
+            self._timings["error_phase"] = "ttfb"
+            raise
+        finally:
+            HttpEncoder._add_timing(self._timings, "ttfb_seconds", time.perf_counter() - started)
+
+
+class _TimedHTTPSConnection(_TimedHTTPConnection, http.client.HTTPSConnection):
+    def connect(self) -> None:
+        sock = _timed_socket(self, self._timings)
+        tls_started = time.perf_counter()
+        try:
+            self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
+        except Exception:
+            HttpEncoder._add_timing(
+                self._timings, "connect_seconds", time.perf_counter() - tls_started
+            )
+            sock.close()
+            self._timings["error_phase"] = "connect"
+            raise
+        HttpEncoder._add_timing(self._timings, "connect_seconds", time.perf_counter() - tls_started)
+
+
+class _TimedHTTPHandler(urllib.request.HTTPHandler):
+    def __init__(self, connection):
+        super().__init__()
+        self._connection = connection
+
+    def http_open(self, request):
+        return self.do_open(self._connection, request)
+
+
+class _TimedHTTPSHandler(urllib.request.HTTPSHandler):
+    def __init__(self, connection):
+        super().__init__(context=ssl.create_default_context())
+        self._connection = connection
+
+    def https_open(self, request):
+        return self.do_open(self._connection, request, context=self._context)
+
+
+class _RejectRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise urllib.error.HTTPError(req, code, "redirects are not allowed", headers, None)
 
 
 class RemoteEncoder(GradioSpaceClient):
@@ -145,14 +248,36 @@ class HttpEncoder:
         self._logit_scale = logit_scale
         self._timeout_s = timeout_s
         self.dim = dim
+        self._call_timings: contextvars.ContextVar[dict | None] = contextvars.ContextVar(
+            f"http_encoder_timings_{id(self)}", default=None
+        )
 
     @property
     def logit_scale(self) -> float:
         return self._logit_scale
 
-    def _post(self, path: str, payload: dict) -> np.ndarray:
+    def consume_timings(self) -> dict:
+        """Return and clear timings for this caller's most recent encode call."""
+        timings = self._call_timings.get() or self._new_timings()
+        self._call_timings.set(None)
+        return dict(timings)
+
+    @staticmethod
+    def _new_timings() -> dict:
+        return {
+            "dns_seconds": None,
+            "connect_seconds": None,
+            "ttfb_seconds": None,
+            "model_load_seconds": None,
+            "error_phase": None,
+        }
+
+    @staticmethod
+    def _add_timing(timings: dict, key: str, seconds: float) -> None:
+        timings[key] = (timings[key] or 0.0) + max(0.0, seconds)
+
+    def _post(self, path: str, payload: dict, timings: dict) -> np.ndarray:
         import json
-        import urllib.request
 
         request = urllib.request.Request(
             f"{self._url}{path}",
@@ -162,8 +287,61 @@ class HttpEncoder:
                 **({"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}),
             },
         )
-        with urllib.request.urlopen(request, timeout=self._timeout_s) as response:  # noqa: S310
-            body = json.loads(response.read())
+        split = urllib.parse.urlsplit(request.full_url)
+        if split.scheme not in {"http", "https"}:
+            raise ValueError(f"unsupported http encoder URL scheme: {split.scheme}")
+        result: queue.Queue[tuple[object, BaseException | None]] = queue.Queue(maxsize=1)
+
+        def worker() -> None:
+            # The daemon owns this explicit timing dict; the caller only snapshots it after join/timeout.
+            connection = partial(
+                _TimedHTTPSConnection if split.scheme == "https" else _TimedHTTPConnection,
+                timings=timings,
+            )
+            handlers = [
+                urllib.request.ProxyHandler(),
+                _RejectRedirectHandler(),
+                _TimedHTTPSHandler(connection)
+                if split.scheme == "https"
+                else _TimedHTTPHandler(connection),
+            ]
+            try:
+                with urllib.request.build_opener(*handlers).open(
+                    request, timeout=self._timeout_s
+                ) as response:
+                    body = json.loads(response.read())
+                outcome = (body, None)
+            except BaseException as exc:  # transport errors must reach the caller
+                if timings["error_phase"] is None:
+                    timings["error_phase"] = "ttfb"
+                outcome = (None, exc)
+            result.put(outcome)
+
+        threading.Thread(target=worker, daemon=True).start()
+        try:
+            body, error = result.get(timeout=self._timeout_s)
+        except queue.Empty:
+            phase = next(
+                (
+                    key.removesuffix("_seconds")
+                    for key in ("dns_seconds", "connect_seconds", "ttfb_seconds")
+                    if timings[key] is None
+                ),
+                "model_load",
+            )
+            timings["error_phase"] = phase
+            raise TimeoutError(f"http encoder request timed out during {phase}") from None
+        if error is not None:
+            raise error
+        reported = body.get("timings") if isinstance(body, dict) else None
+        if isinstance(reported, dict):
+            error_phase = reported.get("error_phase")
+            if error_phase in {"dns", "connect", "ttfb", "model_load"}:
+                timings["error_phase"] = error_phase
+            model_load_ms = reported.get("model_load_ms")
+            if isinstance(model_load_ms, (int, float)) and not isinstance(model_load_ms, bool):
+                if math.isfinite(model_load_ms) and model_load_ms >= 0:
+                    self._add_timing(timings, "model_load_seconds", model_load_ms / 1000)
         arr = np.asarray(body["embeddings"], dtype=np.float32)
         if arr.ndim != 2:
             raise ValueError(f"http encoder returned non-2D embeddings, shape {arr.shape}")
@@ -172,24 +350,35 @@ class HttpEncoder:
 
     def encode_texts(self, texts: list[str]) -> np.ndarray:
         if not texts:
+            self._call_timings.set(self._new_timings())
             return np.empty((0, self.dim), dtype=np.float32)
-        return self._post(_EMBED_TEXTS_API, {"texts": list(texts)})
+        timings = self._new_timings()
+        try:
+            return self._post(_EMBED_TEXTS_API, {"texts": list(texts)}, timings)
+        finally:
+            self._call_timings.set(dict(timings))
 
     def encode_images(self, images: list[Image], *, batch_size: int = 16) -> np.ndarray:
         if not images:
+            self._call_timings.set(self._new_timings())
             return np.empty((0, self.dim), dtype=np.float32)
-        chunks = [
-            self._post(
-                _EMBED_IMAGES_API,
-                {
-                    "images_b64": [
-                        image_to_b64_png(img) for img in images[start : start + batch_size]
-                    ]
-                },
-            )
-            for start in range(0, len(images), batch_size)
-        ]
-        return np.concatenate(chunks, axis=0)
+        timings = self._new_timings()
+        try:
+            chunks = [
+                self._post(
+                    _EMBED_IMAGES_API,
+                    {
+                        "images_b64": [
+                            image_to_b64_png(img) for img in images[start : start + batch_size]
+                        ]
+                    },
+                    timings,
+                )
+                for start in range(0, len(images), batch_size)
+            ]
+            return np.concatenate(chunks, axis=0)
+        finally:
+            self._call_timings.set(dict(timings))
 
 
 class FallbackEncoder:

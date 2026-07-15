@@ -19,6 +19,7 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
     # are similarly distributed, while tiny integer UUIDs would all sit before
     # every SHA-derived pivot and could not exercise rotation.
     ids = [UUID(f"{n * 17:02x}" + "0" * 30) for n in range(16)]
+    no_embedding_id = UUID("ff" + "0" * 30)
     embedding = "[1," + ",".join(["0"] * 767) + "]"
     with psycopg.connect(live_db) as conn:
         cursor = conn.cursor()
@@ -44,6 +45,26 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
                 )
                 for n, item_id in enumerate(ids)
             ],
+        )
+        cursor.execute(
+            """
+            INSERT INTO items (
+                id, title, category, attributes, price, currency, region_tags, image_refs,
+                source_provider, source_license, dedupe_key
+            ) VALUES (%s, %s, %s, %s::jsonb, %s, 'USD', %s::text[], '[\"test.jpg\"]',
+                      %s, 'research', %s)
+            ON CONFLICT (id) DO NOTHING
+            """,
+            (
+                no_embedding_id,
+                "Browse test without embedding",
+                _CATEGORY,
+                '{"taxonomy":{"gender":"men"}}',
+                10.0,
+                ["IN"],
+                _SOURCE,
+                f"{_SOURCE}-no-embedding",
+            ),
         )
         cursor.executemany(
             "INSERT INTO item_embeddings (item_id, embedding, model_version) "
@@ -84,8 +105,13 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
         assert median(overlaps) <= 0.6
 
         whole = repo.browse(k=16, seed="price-order", **filters)
+        embedding_ids = {str(item_id) for item_id in ids}
+        whole_ids = [item.item_id for item in whole]
         priced_ids = {str(item_id) for item_id in ids[:8]}
         assert len(whole) == 16
+        assert len(whole_ids) == len(set(whole_ids))
+        assert set(whole_ids) <= embedding_ids
+        assert str(no_embedding_id) not in whole_ids
         assert all(item.item_id in priced_ids for item in whole[:8])
         assert all(item.item_id not in priced_ids for item in whole[8:])
         assert all(item.score == 0.0 for item in whole)

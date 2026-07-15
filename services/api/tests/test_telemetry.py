@@ -46,3 +46,15 @@ def test_metrics_records_request_labels():
     body = client.get("/metrics").text
     # The matched route template is used as the label, not the raw path.
     assert 'route="/health"' in body
+
+
+def test_observe_stage_duration_validates_fixed_labels_and_duration():
+    from app.metrics import observe_stage_duration
+
+    observe_stage_duration("search", "encoder_dns", "success", 0.25)
+    with pytest.raises(ValueError):
+        observe_stage_duration("search", "unknown", "success", 0.25)
+    with pytest.raises(ValueError):
+        observe_stage_duration("search", "encoder_dns", "unknown", 0.25)
+    with pytest.raises(TypeError):
+        observe_stage_duration("search", "encoder_dns", "success", None)

@@ -29,6 +29,10 @@ class SiglipTextEmbedder:
     def embed_query(self, text: str) -> list[float]:
         return list(_cached_query_vec(self._encoder, text))
 
+    def consume_timings(self) -> dict[str, float | str | None] | None:
+        consume = getattr(self._encoder, "consume_timings", None)
+        return consume() if callable(consume) else None
+
 
 @lru_cache(maxsize=512)
 def _cached_query_vec(encoder, text: str) -> tuple[float, ...]:

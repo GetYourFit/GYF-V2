@@ -39,6 +39,79 @@ class FakePool:
         return _Conn()
 
 
+def test_postgres_repo_emits_fixed_retrieval_stage_metrics():
+    from app.metrics import metrics_enabled, _STAGE_TIMING
+
+    if not metrics_enabled():
+        return
+
+    def count(stage, outcome):
+        labels = {"surface": "search", "stage": stage, "outcome": outcome}
+        return next(
+            (
+                sample.value
+                for metric in _STAGE_TIMING.collect()
+                for sample in metric.samples
+                if sample.name == "gyf_catalog_stage_duration_seconds_count"
+                and sample.labels == labels
+            ),
+            0,
+        )
+
+    before_pool = count("pool_acquire", "success")
+    before_sql = count("retrieval_sql", "empty")
+
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=FakePool([]))
+    assert repo.search_by_vector([0.1, 0.2], k=3, region=None) == []
+
+    assert count("pool_acquire", "success") == before_pool + 1
+    assert count("retrieval_sql", "empty") == before_sql + 1
+
+
+def test_postgres_repo_emits_one_mmr_metric_per_path():
+    from app.metrics import _STAGE_OUTCOMES, _STAGE_TIMING, metrics_enabled
+
+    assert _STAGE_OUTCOMES["mmr"] == frozenset({"success", "empty", "bypass", "error"})
+    if not metrics_enabled():
+        return
+
+    def count(surface, outcome):
+        labels = {"surface": surface, "stage": "mmr", "outcome": outcome}
+        return next(
+            (
+                sample.value
+                for metric in _STAGE_TIMING.collect()
+                for sample in metric.samples
+                if sample.name == "gyf_catalog_stage_duration_seconds_count"
+                and sample.labels == labels
+            ),
+            0,
+        )
+
+    before_success = count("browse", "success")
+    before_bypass = count("search", "bypass")
+    before_empty = count("browse", "empty")
+
+    mmr_pool = FakePool(
+        [
+            ("a", "A", 0.99, ["/a.jpg"], [1.0, 0.0]),
+            ("b", "B", 0.98, ["/b.jpg"], [0.999, 0.045]),
+            ("c", "C", 0.90, ["/c.jpg"], [0.0, 1.0]),
+        ]
+    )
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=mmr_pool)
+    assert [r.item_id for r in repo.browse(None, 2, None, taste_vector=[0.1, 0.2])] == ["a", "c"]
+    assert count("browse", "success") == before_success + 1
+
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=FakePool([]))
+    assert repo.search_by_vector([0.1, 0.2], k=2, region=None) == []
+    assert count("search", "bypass") == before_bypass + 1
+
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=FakePool([]))
+    assert repo.browse(None, 2, None, taste_vector=[0.1, 0.2]) == []
+    assert count("browse", "empty") == before_empty + 1
+
+
 def test_similar_sql_excludes_self_and_orders_by_distance():
     pool = FakePool([("22222222", "Other Tee", 0.91, ["/imgs/22222222.jpg"])])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
@@ -113,7 +186,8 @@ def test_cold_browse_uses_bounded_uuid_ring_windows():
 
     sql, params = pool.calls[-1]
     assert "hashtextextended" not in sql
-    assert "JOIN item_embeddings e ON e.item_id = i.id" in sql
+    assert sql.count("EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)") == 4
+    assert "JOIN item_embeddings e ON e.item_id = i.id" not in sql
     assert "WITH browse_seed" in sql
     assert isinstance(params[0], UUID)
     assert params[1] == 18  # k + offset bounds each ring branch

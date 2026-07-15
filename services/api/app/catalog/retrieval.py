@@ -14,12 +14,14 @@ unit-tested with an in-memory cosine repo and a fake embedder.
 from __future__ import annotations
 
 import re
+from contextlib import ExitStack
 from dataclasses import dataclass, replace
 from hashlib import sha256
 from typing import Protocol
 from uuid import UUID
 
 from ..media import image_url_from_refs
+from ..metrics import stage_timer
 from .directory import ItemDirectory
 
 # Keyword-fallback tokenization. Stopwords must never become search terms: a
@@ -160,9 +162,9 @@ WITH browse_seed AS (
 ), candidates AS (
   (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs
    FROM items i
-   JOIN item_embeddings e ON e.item_id = i.id
    CROSS JOIN browse_seed s
-   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+   WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
+     AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND i.price IS NOT NULL AND i.id >= s.pivot
      {region} {gender} {category}
    ORDER BY i.id
@@ -170,9 +172,9 @@ WITH browse_seed AS (
   UNION ALL
   (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs
    FROM items i
-   JOIN item_embeddings e ON e.item_id = i.id
    CROSS JOIN browse_seed s
-   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+   WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
+     AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND i.price IS NOT NULL AND i.id < s.pivot
      {region} {gender} {category}
    ORDER BY i.id
@@ -180,9 +182,9 @@ WITH browse_seed AS (
   UNION ALL
   (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs
    FROM items i
-   JOIN item_embeddings e ON e.item_id = i.id
    CROSS JOIN browse_seed s
-   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+   WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
+     AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND i.price IS NULL AND i.id >= s.pivot
      {region} {gender} {category}
    ORDER BY i.id
@@ -190,9 +192,9 @@ WITH browse_seed AS (
   UNION ALL
   (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs
    FROM items i
-   JOIN item_embeddings e ON e.item_id = i.id
    CROSS JOIN browse_seed s
-   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+   WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
+     AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND i.price IS NULL AND i.id < s.pivot
      {region} {gender} {category}
    ORDER BY i.id
@@ -332,7 +334,7 @@ class PostgresVectorSearchRepository:
         if categories:
             params.append(categories)
         params.extend([k, offset])
-        return self._run(sql, tuple(params), depth=k + offset)
+        return self._run(sql, tuple(params), depth=k + offset, surface="search")
 
     def search_by_vector(
         self,
@@ -379,7 +381,7 @@ class PostgresVectorSearchRepository:
         {order}
         LIMIT %s OFFSET %s
         """
-        return self._run(sql, tuple(params), depth=depth)
+        return self._run(sql, tuple(params), depth=depth, surface="search")
 
     def catalog_facets(self, region: str | None) -> CatalogFacets:
         # Facets MUST describe the *searchable* set, so this joins item_embeddings
@@ -440,7 +442,13 @@ class PostgresVectorSearchRepository:
             # consecutive pages stay disjoint — no cross-page duplicates from paging.
             params.extend([k * _OVERFETCH, offset * _OVERFETCH])
             # HNSW scan: size ef_search to the deepest fetched row.
-            return self._run(sql, tuple(params), depth=(k + offset) * _OVERFETCH, mmr_k=k)
+            return self._run(
+                sql,
+                tuple(params),
+                depth=(k + offset) * _OVERFETCH,
+                mmr_k=k,
+                surface="browse",
+            )
         # Cold-start / anonymous path: plain relational read, no vector scan.
         browse_query = _BROWSE_INDEXED if self._indexed_browse else _BROWSE_LEGACY
         sql = browse_query.format(
@@ -462,7 +470,7 @@ class PostgresVectorSearchRepository:
             if categories:
                 params.append(categories)
             params.extend([k, offset])
-            return self._run(sql, tuple(params))
+            return self._run(sql, tuple(params), surface="browse")
 
         pivot = UUID(bytes=sha256(browse_seed.encode("utf-8")).digest()[:16])
         params = [pivot, k + offset]
@@ -477,7 +485,7 @@ class PostgresVectorSearchRepository:
             if categories:
                 params.append(categories)
         params.extend([k, offset])
-        return self._run(sql, tuple(params))
+        return self._run(sql, tuple(params), surface="browse")
 
     def keyword_search(
         self,
@@ -544,35 +552,45 @@ class PostgresVectorSearchRepository:
         {order}
         LIMIT %s OFFSET %s
         """
-        return self._run(sql, tuple(params))
+        return self._run(sql, tuple(params), surface="search")
 
     def _run(
-        self, sql: str, params: tuple, *, depth: int = 0, mmr_k: int | None = None
+        self,
+        sql: str,
+        params: tuple,
+        *,
+        depth: int = 0,
+        mmr_k: int | None = None,
+        surface: str,
     ) -> list[SearchResult]:
-        with self._pool.connection() as conn:  # type: ignore[attr-defined]
-            if depth:
-                # HNSW only surfaces ef_search candidates per scan (default 40), so a
-                # LIMIT/OFFSET page deeper than that silently truncates — infinite
-                # scroll would dead-end at item 40. Scale the beam to the page depth;
-                # SET LOCAL scopes it to this transaction. Capped at 6000, not 1000:
-                # Explore/Canvas are meant to feel like an endless browse over the
-                # whole ~27k-item catalog, and a 1k beam was cutting every query
-                # (worse per-slot on Canvas, which splits k across 4 slots) off
-                # long before a real "end of results" — this raises how deep
-                # infinite scroll can go before the ANN scan runs dry, at the cost
-                # of a slower query on the deepest pages.
-                conn.execute(
-                    "SELECT set_config('hnsw.ef_search', %s, true)",
-                    (str(min(6000, max(40, depth))),),
-                )
-                # Post-filter starvation: WHERE clauses (gender/region/price) apply
-                # AFTER the ANN scan, so a selective filter can kill every candidate
-                # in the beam — e.g. "dress" + gender=men returned an empty first
-                # page while thousands of men's items matched. Iterative scan
-                # (pgvector >= 0.8) keeps walking the graph until the LIMIT is
-                # satisfied (bounded by hnsw.max_scan_tuples, default 20k).
-                conn.execute("SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true)")
-            rows = list(conn.execute(sql, params))
+        with ExitStack() as stack:
+            with stage_timer(surface, "pool_acquire"):
+                conn = stack.enter_context(self._pool.connection())  # type: ignore[attr-defined]
+            with stage_timer(surface, "retrieval_sql") as timer:
+                if depth:
+                    # HNSW only surfaces ef_search candidates per scan (default 40), so a
+                    # LIMIT/OFFSET page deeper than that silently truncates — infinite
+                    # scroll would dead-end at item 40. Scale the beam to the page depth;
+                    # SET LOCAL scopes it to this transaction. Capped at 6000, not 1000:
+                    # Explore/Canvas are meant to feel like an endless browse over the
+                    # whole ~27k-item catalog, and a 1k beam was cutting every query
+                    # (worse per-slot on Canvas, which splits k across 4 slots) off
+                    # long before a real "end of results" — this raises how deep
+                    # infinite scroll can go before the ANN scan runs dry, at the cost
+                    # of a slower query on the deepest pages.
+                    conn.execute(
+                        "SELECT set_config('hnsw.ef_search', %s, true)",
+                        (str(min(6000, max(40, depth))),),
+                    )
+                    # Post-filter starvation: WHERE clauses (gender/region/price) apply
+                    # AFTER the ANN scan, so a selective filter can kill every candidate
+                    # in the beam — e.g. "dress" + gender=men returned an empty first
+                    # page while thousands of men's items matched. Iterative scan
+                    # (pgvector >= 0.8) keeps walking the graph until the LIMIT is
+                    # satisfied (bounded by hnsw.max_scan_tuples, default 20k).
+                    conn.execute("SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true)")
+                rows = list(conn.execute(sql, params))
+                timer.set_outcome("success" if rows else "empty")
         results = [
             SearchResult(
                 item_id=str(r[0]),
@@ -583,10 +601,15 @@ class PostgresVectorSearchRepository:
             for r in rows
         ]
         if mmr_k is None:
-            return results
-        # MMR path: the query SELECTs the embedding as a 5th column (see _BROWSE_TASTE).
-        ranked = [(res, _parse_vec(r[4])) for res, r in zip(results, rows)]
-        return _mmr_rerank(ranked, mmr_k, _MMR_RELEVANCE)
+            with stage_timer(surface, "mmr", "bypass"):
+                return results
+        with stage_timer(surface, "mmr") as timer:
+            if not rows:
+                timer.set_outcome("empty")
+                return results
+            # MMR path: the query SELECTs the embedding as a 5th column (see _BROWSE_TASTE).
+            ranked = [(res, _parse_vec(r[4])) for res, r in zip(results, rows)]
+            return _mmr_rerank(ranked, mmr_k, _MMR_RELEVANCE)
 
 
 def search_text(

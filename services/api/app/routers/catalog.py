@@ -26,6 +26,7 @@ from ..dependencies import (
     get_taste_repo,
     get_text_embedder,
 )
+from ..metrics import stage_timer
 from ..ratelimit import rate_limit
 from ..recsys.taste import TasteRepository, build_taste
 
@@ -53,12 +54,22 @@ def _embed_or_none(embedder: TextEmbedder | None, query: str) -> list[float] | N
     """Embed the query, or ``None`` if no encoder is available or the encode fails
     (remote lane down/cold). Callers fall back to keyword search — never a 500."""
     if embedder is None:
-        return None
-    try:
-        return embedder.embed_query(query)
-    except Exception:  # noqa: BLE001 — any encode failure degrades to keyword search
-        logger.warning("text encoder failed; falling back to keyword search", exc_info=True)
-        return None
+        with stage_timer("search", "remote_encode", "bypass"):
+            return None
+    if getattr(embedder, "handles_stage_timing", False):
+        try:
+            return embedder.embed_query(query)
+        except Exception:  # noqa: BLE001 — any encode failure degrades to keyword search
+            logger.warning("text encoder failed; falling back to keyword search", exc_info=True)
+            return None
+    with stage_timer("search", "remote_encode") as timer:
+        try:
+            vec = embedder.embed_query(query)
+        except Exception:  # noqa: BLE001 — any encode failure degrades to keyword search
+            timer.set_outcome("error")
+            logger.warning("text encoder failed; falling back to keyword search", exc_info=True)
+            return None
+    return vec
 
 
 @router.get(
@@ -150,9 +161,13 @@ def browse_items(
     read as anonymous users, so the first grid does not block on the remote encoder.
     ``offset`` is the global count shown, split across slots."""
     taste_vector = None
-    if principal is not None:
-        taste = build_taste(taste_repo.engagements(principal.user_id, _TASTE_HISTORY))
-        taste_vector = taste.vector if taste.has_signal else None
+    with stage_timer("browse", "taste") as timer:
+        if principal is None:
+            timer.set_outcome("bypass")
+        else:
+            taste = build_taste(taste_repo.engagements(principal.user_id, _TASTE_HISTORY))
+            taste_vector = taste.vector if taste.has_signal else None
+            timer.set_outcome("signal" if taste.has_signal else "empty")
     if taste_vector is not None:
         response.headers["Cache-Control"] = "private, max-age=30"  # per-user, never shared
     else:
@@ -172,9 +187,19 @@ def browse_items(
         )
     else:
         hits = repo.browse(
-            None, k, region, offset, genders=_genders(gender), taste_vector=taste_vector, seed=seed
+            None,
+            k,
+            region,
+            offset,
+            genders=_genders(gender),
+            taste_vector=taste_vector,
+            seed=seed,
         )
-    return {"results": enrich_results(hits, directory)}
+    with stage_timer("browse", "directory_lookup") as timer:
+        if not hits:
+            timer.set_outcome("bypass")
+        results = enrich_results(hits, directory)
+    return {"results": results}
 
 
 @router.get("/items/search", dependencies=[Depends(rate_limit("search", "rate_limit_search"))])
@@ -269,4 +294,8 @@ def search_items(
             genders=_genders(gender),
             categories=_slot_categories(slot),
         )
-    return {"results": enrich_results(hits, directory)}
+    with stage_timer("search", "directory_lookup") as timer:
+        if not hits:
+            timer.set_outcome("bypass")
+        results = enrich_results(hits, directory)
+    return {"results": results}

@@ -37,6 +37,7 @@ import base64
 import binascii
 import io
 import os
+import time
 
 import modal
 
@@ -154,6 +155,16 @@ class Encoder:
                     detail=f"this lane serves only '{MODEL_ID}' (the promoted production encoder)",
                 )
 
+        def _response(embeddings: list[list[float]], started: float) -> dict:
+            return {
+                "embeddings": embeddings,
+                "timings": {
+                    # snap=True loads during snapshot build; TTFB captures restore.
+                    "model_load_ms": None,
+                    "inference_ms": max(0.0, (time.perf_counter() - started) * 1000),
+                },
+            }
+
         @api.get("/health")
         def health() -> dict[str, str]:
             return {"status": "ok", "model_id": MODEL_ID}
@@ -161,7 +172,7 @@ class Encoder:
         @api.post("/embed_texts")
         def embed_texts(
             payload: dict = Body(...), authorization: str | None = Header(None)
-        ) -> dict[str, list[list[float]]]:
+        ) -> dict:
             _authorize(authorization)
             _check_model(payload.get("model_id", MODEL_ID))
             texts = payload.get("texts") or []
@@ -171,12 +182,13 @@ class Encoder:
                 raise HTTPException(status_code=422, detail=f"text batch exceeds {MAX_TEXT_BATCH}")
             if any(len(t) > MAX_TEXT_CHARS for t in texts):
                 raise HTTPException(status_code=422, detail=f"text exceeds {MAX_TEXT_CHARS} chars")
-            return {"embeddings": self._embed_texts(texts) if texts else []}
+            started = time.perf_counter()
+            return _response(self._embed_texts(texts) if texts else [], started)
 
         @api.post("/embed_images")
         def embed_images(
             payload: dict = Body(...), authorization: str | None = Header(None)
-        ) -> dict[str, list[list[float]]]:
+        ) -> dict:
             _authorize(authorization)
             _check_model(payload.get("model_id", MODEL_ID))
             images = payload.get("images_b64") or []
@@ -189,7 +201,8 @@ class Encoder:
             if any(len(i) > MAX_IMAGE_B64_CHARS for i in images):
                 raise HTTPException(status_code=422, detail="an encoded image is too large")
             try:
-                return {"embeddings": self._embed_images(images) if images else []}
+                started = time.perf_counter()
+                return _response(self._embed_images(images) if images else [], started)
             except ValueError as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
 
