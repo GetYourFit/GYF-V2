@@ -137,7 +137,7 @@ services:
       # to the custom domain once attached so CORS lets the browser in.
       # Comma-separate to allow several origins (e.g. preview + production).
       - key: GYF_ALLOWED_ORIGINS # the web origin (public, not a secret) — exact, no trailing slash
-        value: https://gyf-v2-app.vercel.app
+        value: https://gyf-v2-app.vercel.app,https://get-your-fit.expo.app
 
   # The web (Next.js) is deployed on Vercel (project gyf-v2-app), not Render —
   # Vercel's Git integration auto-deploys app/ on push; see vercel.json.

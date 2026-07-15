@@ -69,8 +69,9 @@ GitHub → repository **Settings → Environments → `EXPO_TOKEN`**:
   `VERCEL_PROJECT_ID`.
 
 Push to `main`. CI must pass first; CD then installs the pinned Bun workspace, exports Expo web,
-initializes/links the EAS project and deploys to EAS Hosting. The EAS URL is printed in the CD log;
-open `/login`, create a real Supabase account, complete onboarding, and then give UI feedback.
+activates the pinned EAS Hosting project on its first deployment, and deploys to EAS Hosting.
+Production URL is `https://get-your-fit.expo.app`; open `/login`, create a real Supabase account,
+complete onboarding, and then give UI feedback.
 
 These are separate from Render runtime settings. Render receives only the `GYF_*` API variables in
 `render.yaml`: `GYF_DATABASE_URL`, `GYF_SUPABASE_URL`, `GYF_SUPABASE_JWT_SECRET`,

@@ -111,6 +111,5 @@ jobs:
       - name: Deploy Expo web to EAS Hosting
         if: steps.gate.outputs.enabled == 'true'
         run: |
-          npm exec --yes eas-cli@latest -- init --non-interactive --force
           npx expo export --platform web
-          npm exec --yes eas-cli@latest -- deploy --prod --non-interactive
+          npm exec --yes eas-cli@latest -- deploy --prod --non-interactive --dev-domain=get-your-fit

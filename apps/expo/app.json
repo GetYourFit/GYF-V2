@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "getyourfit",
     "name": "Get Your Fit",
     "slug": "get-your-fit",
     "version": "0.0.0",
@@ -12,6 +13,11 @@
       "output": "static"
     },
     "plugins": ["expo-router"],
+    "extra": {
+      "eas": {
+        "projectId": "cdc5a042-8bfb-4618-a161-c0f364851cf8"
+      }
+    },
     "experiments": {
       "typedRoutes": true
     }
