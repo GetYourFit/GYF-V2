@@ -127,6 +127,11 @@ class Encoder:
             feats = model.encode_image(torch.stack(tensors))
         return self._l2(feats.cpu().numpy())
 
+    @modal.method()
+    def selfcheck(self, model_id: str, texts: list[str]) -> list[list[float]]:
+        """Remote-callable wrapper so `modal run` exercises the real model in-container."""
+        return self.embed_texts(model_id, texts)
+
     @modal.asgi_app()
     def web(self):
         import os
@@ -158,13 +163,11 @@ class Encoder:
 
 @app.local_entrypoint()
 def main() -> None:
-    """Self-check: `modal run infra/modal/encoder.py` embeds a query and asserts the
-    contract (2D, unit-norm rows). Fails loudly if the model or math breaks."""
-    import numpy as np
-
-    enc = Encoder()
-    out = enc.embed_texts.remote("hf-hub:timm/ViT-B-16-SigLIP2", ["a red summer dress"])
-    arr = np.asarray(out, dtype=np.float32)
-    assert arr.ndim == 2 and arr.shape[0] == 1, f"bad shape {arr.shape}"
-    assert abs(float(np.linalg.norm(arr[0])) - 1.0) < 1e-3, "rows must be L2-normalized"
-    print(f"OK — dim={arr.shape[1]}, ||v||={float(np.linalg.norm(arr[0])):.4f}")
+    """Self-check: `modal run infra/modal/encoder.py` embeds a query *in the container* and
+    asserts the contract (one unit-norm row). Pure stdlib on purpose — the local `modal` venv
+    has no numpy; the embedding math runs remotely, only the assertion runs here."""
+    out = Encoder().selfcheck.remote("hf-hub:timm/ViT-B-16-SigLIP2", ["a red summer dress"])
+    assert len(out) == 1, f"expected 1 row, got {len(out)}"
+    norm = sum(x * x for x in out[0]) ** 0.5
+    assert abs(norm - 1.0) < 1e-3, f"row must be L2-normalized, got ||v||={norm}"
+    print(f"OK — dim={len(out[0])}, ||v||={norm:.4f}")
