@@ -9,6 +9,7 @@ from app.main import app
 from app.routers.system import (
     CatalogHealth,
     InMemorySystemStatsRepository,
+    PostgresSystemStatsRepository,
     get_system_stats_repo,
 )
 
@@ -70,6 +71,44 @@ def test_status_survives_stats_repo_failure():
     resp = _get(stats=_ExplodingStats())
     assert resp.status_code == 200
     assert resp.json()["catalog"]["items"] is None
+
+
+def test_catalog_health_finishes_exact_read_once_then_uses_cache():
+    class FakeConnection:
+        def __init__(self):
+            self.queries: list[str] = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def execute(self, query):
+            self.queries.append(query)
+            return self
+
+        def fetchone(self):
+            return (64822, 64651, 64822, 64822)
+
+    class FakePool:
+        def __init__(self):
+            self.conn = FakeConnection()
+
+        def connection(self):
+            return self.conn
+
+    pool = FakePool()
+    repo = PostgresSystemStatsRepository("unused", pool=pool)
+    expected = CatalogHealth(
+        items=64822, with_embedding=64651, with_price=64822, with_image=64822
+    )
+
+    assert repo.catalog_health() == expected
+    assert repo.catalog_health() == expected
+    assert len(pool.conn.queries) == 2  # SET LOCAL + one aggregate, not a second aggregate
+    assert "statement_timeout = '5s'" in pool.conn.queries[0]
+    assert "jsonb_array_length(image_refs) > 0" in pool.conn.queries[1]
 
 
 def test_text_search_reports_remote_gpu_lane(monkeypatch):

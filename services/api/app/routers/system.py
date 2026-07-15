@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import threading
 import time
+from functools import lru_cache
 from typing import Literal, Protocol
 
 import httpx
@@ -104,12 +106,14 @@ class SystemStatsRepository(Protocol):
 
 _CATALOG_HEALTH = """
 SELECT
-    count(*),
+    (SELECT count(*) FROM items),
     (SELECT count(*) FROM item_embeddings),
-    count(price),
-    count(*) FILTER (WHERE image_refs <> '{}')
-FROM items
+    (SELECT count(*) FROM items WHERE price IS NOT NULL),
+    (SELECT count(*) FROM items WHERE jsonb_array_length(image_refs) > 0)
 """
+
+_CATALOG_HEALTH_TTL_S = 60.0
+_CATALOG_HEALTH_TIMEOUT = "5s"
 
 
 class PostgresSystemStatsRepository:
@@ -121,13 +125,27 @@ class PostgresSystemStatsRepository:
 
             pool = ConnectionPool(dsn, min_size=0, max_size=2, open=True)
         self._pool = pool
+        self._cached: tuple[float, CatalogHealth] | None = None
+        self._cache_lock = threading.Lock()
 
     def catalog_health(self) -> CatalogHealth:
-        with self._pool.connection() as conn:  # type: ignore[attr-defined]
-            row = conn.execute(_CATALOG_HEALTH).fetchone()
-        return CatalogHealth(
-            items=row[0], with_embedding=row[1], with_price=row[2], with_image=row[3]
-        )
+        now = time.monotonic()
+        if self._cached is not None and now - self._cached[0] < _CATALOG_HEALTH_TTL_S:
+            return self._cached[1]
+        with self._cache_lock:
+            now = time.monotonic()
+            if self._cached is not None and now - self._cached[0] < _CATALOG_HEALTH_TTL_S:
+                return self._cached[1]
+            with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                # Keep the wider budget local to this exact aggregate; other API
+                # statements retain the production role's tighter timeout.
+                conn.execute(f"SET LOCAL statement_timeout = '{_CATALOG_HEALTH_TIMEOUT}'")
+                row = conn.execute(_CATALOG_HEALTH).fetchone()
+            health = CatalogHealth(
+                items=row[0], with_embedding=row[1], with_price=row[2], with_image=row[3]
+            )
+            self._cached = (now, health)
+            return health
 
 
 class InMemorySystemStatsRepository:
@@ -140,6 +158,7 @@ class InMemorySystemStatsRepository:
         return self.health
 
 
+@lru_cache(maxsize=1)
 def get_system_stats_repo() -> SystemStatsRepository:
     from ..dependencies import shared_pool
 

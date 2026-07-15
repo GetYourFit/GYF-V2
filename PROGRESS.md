@@ -2796,3 +2796,21 @@ email/message validation, sensitive-data guidance, duplicate-submit protection, 
 failure states and success only after receiving a persisted receipt. Three pure-model regressions
 protect invalid-input rejection, payload normalization and valid submission. Remaining
 placeholders: status, design; social compose; avatar upload.
+
+### 2026-07-16 — Expo parity slice: live System status (session: ponytail)
+
+Replaced the Status placeholder with the real public `GET /system/status` capability report and
+best-effort `GET /system/models` policy view. The native surface distinguishes runtime state from
+model eligibility, reports database/catalogue facts, exposes live/beta/shadow/degraded/planned
+states and lanes verbatim, refuses to show a stale snapshot as current after failure, rejects
+stale requests on unmount/retry, and supports explicit refresh. Three presentation regressions
+protect capability naming, the complete runtime-state vocabulary and the crucial
+eligible-not-serving distinction. Remaining placeholders: design; social compose; avatar upload.
+The production smoke then caught database-ready with unknown catalogue counts: the exact aggregate
+took ~2.3s against the API role's tighter statement budget and silently degraded by design. The
+repository now grants only that query a bounded 5s transaction-local budget, caches the exact
+result for 60s, splits each count into a narrow index-only scalar read, and adds the partial
+`idx_items_has_image` index for exact image coverage instead of scanning wide JSON rows. It also
+uses `jsonb_array_length(image_refs) > 0` instead of the incorrect JSON-object comparison. A
+repository regression proves one exact read, bounded timeout, correct image predicate and cache
+reuse.
