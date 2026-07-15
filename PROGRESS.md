@@ -2786,3 +2786,13 @@ mailto fallback, disables duplicate sends, and shows success only after the API 
 persisted message receipt. Three pure-model regressions protect invalid-input rejection, payload
 normalization and valid submission. Expo typecheck clean, 45 tests pass and web export builds.
 Remaining placeholders: grievance, status, design; social compose; avatar upload.
+
+### 2026-07-16 — Expo parity slice: Grievance (session: ponytail)
+
+Replaced the Grievance placeholder with a real authenticated operator-review channel over the
+existing `POST /support/messages` contract. The native surface has truthful GYF-specific concern
+categories (with obsolete billing removed), accessible radio semantics and field errors, strict
+email/message validation, sensitive-data guidance, duplicate-submit protection, network/session
+failure states and success only after receiving a persisted receipt. Three pure-model regressions
+protect invalid-input rejection, payload normalization and valid submission. Remaining
+placeholders: status, design; social compose; avatar upload.
