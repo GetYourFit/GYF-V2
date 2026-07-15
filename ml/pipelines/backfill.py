@@ -38,6 +38,14 @@ ImageLoader = Callable[[str], Image]
 class BackfillStore(Protocol):
     def pending(self, model_version: str, limit: int | None) -> Iterator[PendingItem]: ...
 
+    def pending_count(self, model_version: str) -> int:
+        """How much work exists *before* this run starts.
+
+        This is the number that tells "the catalogue is fully embedded" apart from "the
+        embedder is dead" — without it, both look like ``processed=0`` and both go green.
+        """
+        ...
+
     def save(self, item_id: str, result: PerceptionResult, model_version: str) -> None: ...
 
     def save_batch(self, results: list[tuple[str, PerceptionResult]], model_version: str) -> None:
@@ -52,6 +60,32 @@ class BackfillStore(Protocol):
 class BackfillResult:
     processed: int = 0
     skipped: int = 0
+    # Work outstanding before the run began. 0 = genuinely caught up.
+    pending_before: int = 0
+    # Which encoder lane actually ran ("remote" = the ZeroGPU Space, "local" = the CPU
+    # baseline). A silent demotion is exactly the kind of fact a nightly job must report.
+    lane: str = "local"
+    fallback_reason: str = ""
+
+    @property
+    def is_dead(self) -> bool:
+        """There was work to do and this run embedded none of it.
+
+        The one condition that must never be a green tick. Note what it is NOT: an empty
+        queue. A caught-up catalogue legitimately embeds zero every night, and failing on
+        that would cry wolf until the alarm is ignored — which is the same outcome as
+        having no alarm.
+        """
+        return self.pending_before > 0 and self.processed == 0
+
+    def summary(self) -> str:
+        head = (
+            f"embedded={self.processed} skipped={self.skipped} "
+            f"pending_before={self.pending_before} lane={self.lane}"
+        )
+        if self.fallback_reason:
+            head += f" fallback_reason={self.fallback_reason!r}"
+        return head
 
 
 def run_backfill(
@@ -72,6 +106,11 @@ def run_backfill(
     fatal. Behaviour matches one-at-a-time processing; only throughput differs.
     """
     result = BackfillResult()
+    # Counted before any work, so an empty queue is provably an empty queue rather than an
+    # embedder that silently produced nothing.
+    counter = getattr(store, "pending_count", None)
+    if counter is not None:
+        result.pending_before = counter(model_version)
     for batch in _batched(store.pending(model_version, limit), batch_size):
         loaded = _load_batch(batch, loader, io_workers)
         result.skipped += len(batch) - len(loaded)
@@ -167,6 +206,11 @@ WHERE jsonb_array_length(i.image_refs) > 0
 """
 _ORDER = "ORDER BY i.created_at\n"
 
+# Deliberately NOT sharded and NOT limited: this is the whole outstanding debt, which is
+# what makes "zero embedded" interpretable. A per-shard or per-limit count would make a
+# dead run look done.
+_PENDING_COUNT = _PENDING.replace("SELECT i.id, i.image_refs", "SELECT count(*)")
+
 
 class PostgresBackfillStore:
     """Reads pending items and writes embeddings + attributes. Lazy pool, injectable."""
@@ -180,6 +224,10 @@ class PostgresBackfillStore:
             pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
         self._pool = pool
         self._shard = shard  # (index, count): stable id-hash split for concurrent workers
+
+    def pending_count(self, model_version: str) -> int:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            return conn.execute(_PENDING_COUNT, (model_version,)).fetchone()[0]
 
     def pending(self, model_version: str, limit: int | None) -> Iterator[PendingItem]:
         sql, params = _PENDING, [model_version]
@@ -239,7 +287,7 @@ class PostgresBackfillStore:
 
 def main(argv: Iterable[str] | None = None) -> None:
     from common.config import settings
-    from perception.model import default_encoder
+    from perception.remote import batch_encoder_for
 
     parser = argparse.ArgumentParser(description="Backfill perception (embeddings + attributes).")
     parser.add_argument("--limit", type=int, default=None, help="Max items to process.")
@@ -267,17 +315,63 @@ def main(argv: Iterable[str] | None = None) -> None:
             f"registry version '{model_version}' for model '{settings.perception_model}'"
         )
     store = PostgresBackfillStore(settings.database_url, shard=shard)
-    perceptor = Perceptor(default_encoder())
+    encoder = batch_encoder_for(settings.perception_model)
     result = run_backfill(
         store,
-        perceptor,
+        Perceptor(encoder),
         default_image_loader,
         model_version,
         limit=args.limit,
         batch_size=settings.perception_batch_size,
         io_workers=settings.perception_io_workers,
     )
-    print(f"backfill: processed={result.processed} skipped={result.skipped}")
+    result.lane = getattr(encoder, "lane", "local")
+    result.fallback_reason = getattr(encoder, "fallback_reason", "")
+
+    print(f"backfill: {result.summary()}")
+    _report(result)
+
+    if result.is_dead:
+        # The whole point. A run that had work and embedded none of it is a failure, and it
+        # must look like one — a green tick you cannot distinguish from a no-op is worse than
+        # no tick at all, because it actively tells you everything is fine.
+        raise SystemExit(
+            f"backfill embedded NOTHING while {result.pending_before} items are still pending "
+            f"(skipped={result.skipped}, lane={result.lane}). "
+            "Every image failed to load, or the encoder is not working."
+        )
+
+
+def _report(result: BackfillResult) -> None:
+    """Write the counts where a human will actually see them (the GH run summary)."""
+    import os
+    from pathlib import Path
+
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not summary_path:
+        return
+
+    if result.is_dead:
+        head = f"### 🔴 Perception backfill embedded NOTHING ({result.pending_before} pending)"
+    elif result.pending_before == 0:
+        head = "### ✅ Perception backfill — catalogue fully embedded, nothing to do"
+    else:
+        head = f"### ✅ Perception backfill — embedded {result.processed}"
+
+    lines = [
+        head,
+        "",
+        f"- **embedded:** {result.processed}",
+        f"- **skipped (no loadable image):** {result.skipped}",
+        f"- **pending before this run:** {result.pending_before}",
+        f"- **encoder lane:** `{result.lane}`",
+    ]
+    if result.fallback_reason:
+        lines.append(
+            f"- ⚠️ **the ZeroGPU lane failed and this run fell back to CPU:** "
+            f"`{result.fallback_reason}`"
+        )
+    Path(summary_path).open("a", encoding="utf-8").write("\n".join(lines) + "\n\n")
 
 
 if __name__ == "__main__":

@@ -18,6 +18,8 @@ pattern in :class:`~perception.model.SiglipEncoder`.
 
 from __future__ import annotations
 
+import logging
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -188,6 +190,77 @@ class HttpEncoder:
         return np.concatenate(chunks, axis=0)
 
 
+class FallbackEncoder:
+    """The remote lane, with the local baseline behind it — and a record of which ran.
+
+    ZeroGPU is the right home for the nightly catalogue embed: it is slow, throughput
+    work with no latency SLO, and the Space is free. But a free Space is *allowed* to be
+    unavailable — quota exhausted, asleep, mid-rebuild — and when it was, the exception
+    propagated out of ``encode_images`` and killed the whole night's backfill. A batch job
+    that embeds nothing because a GPU it did not need was busy is a batch job that does not
+    work.
+
+    So: try the remote lane, and on failure fall through to the local CPU SigLIP. It is the
+    same model id in the same 768-dim space (invariant #5 — a working baseline always sits
+    behind the port), so the embeddings are interchangeable and the run still makes progress.
+
+    ``lane`` records what actually happened, because "it fell back" is exactly the kind of
+    fact a nightly job must not keep to itself.
+    """
+
+    def __init__(self, remote: Encoder, local_factory: Callable[[], Encoder]) -> None:
+        self._remote = remote
+        self._local_factory = local_factory
+        self._local: Encoder | None = None
+        self.lane = "remote"
+        self.fallback_reason = ""
+
+    @property
+    def dim(self) -> int:
+        return self._active.dim
+
+    @property
+    def logit_scale(self) -> float:
+        return self._active.logit_scale
+
+    @property
+    def _active(self) -> Encoder:
+        if self.lane == "remote":
+            return self._remote
+        if self._local is None:
+            self._local = self._local_factory()
+        return self._local
+
+    def _demote(self, exc: Exception) -> None:
+        """Give up on the remote lane for the rest of the run.
+
+        Once, not per batch: if the Space is out of quota it will be out of quota for every
+        remaining batch too, and re-probing it would pay the timeout thousands of times.
+        """
+        self.lane = "local"
+        self.fallback_reason = f"{type(exc).__name__}: {exc}"
+        logging.getLogger(__name__).warning(
+            "remote encoder lane failed (%s) — falling back to the local CPU baseline",
+            self.fallback_reason,
+        )
+
+    def encode_images(self, images: list[Image], **kwargs) -> np.ndarray:
+        if self.lane == "remote":
+            try:
+                return self._remote.encode_images(images, **kwargs)
+            except Exception as exc:  # noqa: BLE001 — any remote failure demotes the lane
+                self._demote(exc)
+        return self._active.encode_images(images, **kwargs)
+
+    def encode_texts(self, texts: list[str]) -> np.ndarray:
+        if self.lane == "remote":
+            try:
+                return self._remote.encode_texts(texts)
+            except Exception as exc:  # noqa: BLE001
+                self._demote(exc)
+        return self._active.encode_texts(texts)
+
+
 def encoder_for(model_id: str) -> Encoder:
     """Build the configured encoder for ``model_id``: remote lane if set, else local.
 
@@ -211,3 +284,24 @@ def encoder_for(model_id: str) -> Encoder:
             model_id, settings.encoder_remote_url, hf_token=settings.hf_token or None
         )
     return SiglipEncoder(model_id, device=settings.perception_device)
+
+
+def batch_encoder_for(model_id: str) -> Encoder:
+    """The encoder for *batch* work (the nightly catalogue embed), not the hot path.
+
+    Same lane selection as :func:`encoder_for`, but wrapped so a dead remote Space demotes
+    to the local CPU baseline instead of killing the run. Search deliberately does NOT use
+    this: there, a slow local encode on the API box would be worse than an honest failure,
+    and the query cache already absorbs the miss (F2.5).
+    """
+    from common.config import settings
+
+    from .model import SiglipEncoder
+
+    remote = encoder_for(model_id)
+    if not settings.encoder_remote_url:
+        return remote  # already the local baseline — nothing to fall back to
+    return FallbackEncoder(
+        remote,
+        lambda: SiglipEncoder(model_id, device=settings.perception_device),
+    )

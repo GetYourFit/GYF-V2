@@ -195,6 +195,9 @@ class InMemoryBackfillStore:
         todo = [i for i in self._items if i.item_id not in self.saved]
         yield from (todo[:limit] if limit else todo)
 
+    def pending_count(self, model_version) -> int:
+        return sum(1 for i in self._items if i.item_id not in self.saved)
+
     def save(self, item_id, result, model_version) -> None:
         self.saved[item_id] = result
 
@@ -244,6 +247,36 @@ def test_backfill_processes_loadable_and_skips_broken(monkeypatch):
     assert result.processed == 2  # a and b
     assert result.skipped == 1  # c
     assert set(store.saved) == {"a", "b"}
+
+
+def test_backfill_records_pending_before_the_run():
+    store = InMemoryBackfillStore([PendingItem("a", ["ok"]), PendingItem("b", ["ok"])])
+    result = run_backfill(store, Perceptor(FakeEncoder()), lambda r: _solid_image(), "v1")
+    assert result.pending_before == 2
+
+
+def test_dead_run_is_flagged_when_work_pending_but_nothing_embedded():
+    # Every image fails to load: work was there, none got done. This is the one case that
+    # must never read as success.
+    store = InMemoryBackfillStore([PendingItem("a", ["broken"]), PendingItem("b", ["broken"])])
+
+    def loader(ref: str) -> Image.Image:
+        raise OSError("cannot load")
+
+    result = run_backfill(store, Perceptor(FakeEncoder()), loader, "v1")
+    assert result.processed == 0
+    assert result.skipped == 2
+    assert result.is_dead is True
+
+
+def test_empty_queue_is_not_dead():
+    # A fully-embedded catalogue embeds zero every night. That is success, not an alarm —
+    # firing on it would train everyone to ignore the alarm.
+    store = InMemoryBackfillStore([])
+    result = run_backfill(store, Perceptor(FakeEncoder()), lambda r: _solid_image(), "v1")
+    assert result.processed == 0
+    assert result.pending_before == 0
+    assert result.is_dead is False
 
 
 def test_backfill_is_resumable_after_partial_progress():

@@ -117,3 +117,79 @@ def test_encoder_for_selects_remote_when_set(monkeypatch) -> None:
     monkeypatch.setattr(config.settings, "encoder_remote_url", "https://x.hf.space", raising=False)
     enc = encoder_for("hf-hub:Marqo/marqo-fashionSigLIP")
     assert isinstance(enc, RemoteEncoder)
+
+
+class _DeadEncoder:
+    """A remote lane that always fails — the out-of-quota / asleep ZeroGPU Space."""
+
+    dim = 768
+    logit_scale = 1.0
+
+    def encode_images(self, images, **kwargs):
+        raise RuntimeError("ZeroGPU quota exhausted")
+
+    def encode_texts(self, texts):
+        raise RuntimeError("ZeroGPU quota exhausted")
+
+
+class _LiveEncoder:
+    dim = 768
+    logit_scale = 1.0
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def encode_images(self, images, **kwargs):
+        import numpy as np
+
+        self.calls += 1
+        return np.ones((len(images), 3), dtype="float32")
+
+    encode_texts = encode_images
+
+
+def test_fallback_demotes_to_local_when_the_remote_lane_dies() -> None:
+    from perception.remote import FallbackEncoder
+
+    local = _LiveEncoder()
+    enc = FallbackEncoder(_DeadEncoder(), lambda: local)
+
+    out = enc.encode_images([Image.new("RGB", (8, 8))])
+
+    assert out.shape[0] == 1  # the run made progress despite the dead Space
+    assert enc.lane == "local"
+    assert "ZeroGPU quota exhausted" in enc.fallback_reason
+    assert local.calls == 1
+
+
+def test_fallback_stops_probing_the_dead_lane_after_the_first_failure() -> None:
+    # Once demoted, it must not pay the remote timeout on every remaining batch.
+    from perception.remote import FallbackEncoder
+
+    remote = _DeadEncoder()
+    probes = {"n": 0}
+
+    def counting_encode(images, **kwargs):
+        probes["n"] += 1
+        raise RuntimeError("still dead")
+
+    remote.encode_images = counting_encode  # type: ignore[method-assign]
+    enc = FallbackEncoder(remote, _LiveEncoder)
+
+    for _ in range(3):
+        enc.encode_images([Image.new("RGB", (8, 8))])
+
+    assert probes["n"] == 1  # probed once, then stayed local
+
+
+def test_fallback_stays_remote_while_the_lane_works() -> None:
+    from perception.remote import FallbackEncoder
+
+    live = _LiveEncoder()
+    enc = FallbackEncoder(live, lambda: (_ for _ in ()).throw(AssertionError("must not build local")))
+
+    enc.encode_images([Image.new("RGB", (8, 8))])
+    enc.encode_images([Image.new("RGB", (8, 8))])
+
+    assert enc.lane == "remote"
+    assert live.calls == 2

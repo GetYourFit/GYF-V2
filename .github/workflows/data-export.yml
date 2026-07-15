@@ -83,11 +83,18 @@ jobs:
         working-directory: ml
         env:
           GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
-          # Optional: remote ZeroGPU lane; unset → local CPU SigLIP baseline
-          # (invariant #5 — a working baseline behind every port).
+          # ZeroGPU is the primary lane for this slow overnight embed (no latency SLO, free
+          # GPU). But a free Space may be out of quota/asleep — the backfill now demotes to
+          # the local CPU SigLIP for the rest of the run rather than embedding nothing, and
+          # reports which lane ran in the step summary. CPU must be pinned: MPS returns
+          # non-unit SigLIP embeddings, and the fallback path must stay in the same space.
           GYF_ENCODER_REMOTE_URL: ${{ secrets.GYF_ENCODER_REMOTE_URL }}
+          GYF_PERCEPTION_DEVICE: cpu
           GYF_HF_TOKEN: ${{ secrets.GYF_HF_TOKEN }}
           HF_HOME: ${{ github.workspace }}/ml/.hf-cache
+        # No `continue-on-error`: the backfill exits non-zero when items are pending but zero
+        # were embedded, and that MUST turn the run red — a silent no-op is the whole failure
+        # this step was rewritten to end.
         run: |
           uv run --extra postgres --extra remote --extra perception \
             python -m pipelines.backfill --limit ${{ steps.gate.outputs.backfill_limit }}
