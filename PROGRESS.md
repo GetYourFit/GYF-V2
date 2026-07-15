@@ -2691,3 +2691,12 @@ extends the web client). Expo typecheck clean, 28 tests pass, web export builds.
 
 Remaining Expo placeholders: collections, social, profile, account, canvas, contact, grievance,
 status, design.
+
+### 2026-07-16 — Expo parity: Collections = Saved re-export (not a dupe) (session: ponytail)
+
+Collections renders the SAME data as Saved (`listSaved` + `listSavedOutfits`) on both web and
+Expo — a duplicate surface the contract's F13 deletes. Building a second Expo screen would
+manufacture exactly that dupe, so `(app)/collections.tsx` now `export { default } from "./saved"`.
+Route resolves for nav parity; one screen to delete at F13. Typecheck + prettier clean.
+
+Remaining Expo placeholders: social, profile, account, canvas, contact, grievance, status, design.
