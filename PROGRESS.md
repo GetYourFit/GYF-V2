@@ -2727,3 +2727,18 @@ the Account slice (needs an image picker).
 
 Expo typecheck clean, 35 tests pass, web export builds. Remaining placeholders: account, canvas,
 contact, grievance, status, design; social compose.
+
+### 2026-07-16 — Expo parity slice: Account (session: ponytail)
+
+**Shipped:** `apps/expo/src/app/(app)/account.tsx` replaces the placeholder — full trust surface:
+display-name edit (`putProfile`), three consent switches with dirty-gated save (`putConsent`, only
+known flags sent), data export (`exportAccount` → web blob download / native Share sheet), global
+sign-out, and DELETE-typed account erasure (`deleteAccount` + local `signOut` + redirect). Pure model
+`lib/account.ts` (`consentDirty`/`consentPayload`/`isDeleteConfirmed`/`exportFilename`) with
+`account.test.ts` (4 cases — the erasure-confirmation and stray-flag guards are the load-bearing
+ones). No API code (all inherited). Trust boundary kept strict: only the exact word DELETE enables
+erasure; consent payload never carries stray keys. `ponytail:` ceiling noted — native export uses
+Share text, move to expo-file-system for bundles that outgrow a share sheet.
+
+Expo typecheck clean, 39 tests pass, web export builds. Remaining placeholders: canvas, contact,
+grievance, status, design; social compose; avatar upload.
