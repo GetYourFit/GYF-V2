@@ -1,22 +1,35 @@
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { Stack } from "expo-router";
 
+import { AtelierCard } from "@/components/ui/atelier-card";
+import { ConfidenceLabel } from "@/components/ui/confidence-label";
+import { GyfText } from "@/components/ui/gyf-text";
 import { publicEnv } from "@/lib/env";
+import { colors, spacing } from "@/theme/tokens";
 
 export default function IndexRoute() {
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ flexGrow: 1 }}>
       <Stack.Screen options={{ title: "Get Your Fit", headerShown: true }} />
-      <View style={{ flex: 1, gap: 20, justifyContent: "center", padding: 24 }}>
-        <Text selectable style={{ color: "#f5f5f4", fontSize: 42, fontWeight: "700" }}>
-          Get Your Fit
-        </Text>
-        <Text selectable style={{ color: "#a8a29e", fontSize: 18, lineHeight: 26 }}>
+      <View
+        style={{
+          backgroundColor: colors.dark.bg,
+          flex: 1,
+          gap: spacing.lg,
+          justifyContent: "center",
+          padding: spacing.lg,
+        }}
+      >
+        <GyfText variant="display">Get Your Fit</GyfText>
+        <GyfText tone="muted" variant="body">
           Your personal stylist is coming with you.
-        </Text>
-        <Text selectable style={{ color: "#78716c", fontSize: 13 }}>
-          API: {publicEnv.apiUrl} · {publicEnv.source}
-        </Text>
+        </GyfText>
+        <AtelierCard>
+          <GyfText variant="mono" tone="faint">
+            API: {publicEnv.apiUrl} · {publicEnv.source}
+          </GyfText>
+          <ConfidenceLabel reason="Styling intelligence is being connected. No recommendation is shown until it has evidence." />
+        </AtelierCard>
       </View>
     </ScrollView>
   );

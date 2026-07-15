@@ -13,12 +13,12 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 
 | Field | Current truth |
 |---|---|
-| Current permitted application slice | Local sequential implementation: EXPO-02 shared transport/auth; F2.5 production promotion remains externally blocked |
+| Current permitted application slice | Local sequential implementation: EXPO-03 tokens/primitives; F2.5 production promotion remains externally blocked |
 | F1b implementation state | Present in the application baseline; local regressions verified |
-| Latest local evidence | 378 API tests passed; 71 web + 3 Expo tests passed; typecheck, doctrine, formatting and production build passed |
+| Latest local evidence | 378 API tests passed; 72 web + 10 Expo tests passed; typecheck, doctrine, formatting and production build passed; CI Bun pin and seeded browse regression fixed |
 | Known warnings/skips | 17 API tests skipped; existing `<img>` lint warning; framework/deprecation and React `act()` test warnings |
 | F2.5 live state | **FAIL** — SLO probe returned non-passing browse, cached-search and uncached-search rows |
-| Next candidate after explicit phase transition | EXPO-02 shared API/auth transport; F2.5 closeout remains an external deployment task |
+| Next candidate after explicit phase transition | EXPO-04 navigation shell; F2.5 closeout remains an external deployment task |
 | Explicitly not next | New model training, try-on opening, payment, F13 cleanup |
 
 F2.5 is not promoted by this document. Its remaining work is external deployment and a passing
@@ -1339,6 +1339,22 @@ but it never reorders the backend contract.
   targets, reduced motion and tablet/desktop layouts pass.
 - **Guard:** no CSS/Tailwind, `Dimensions.get`, legacy shadows/elevation, or invisible white-on-
   white controls.
+
+#### EXPO-03 execution evidence — 2026-07-15
+
+- Added typed Cosmos light/dark tokens with bounded spacing, continuous radii, typography and
+  motion values; `GyfText`, `AtelierCard`, `AtelierButton` and `ConfidenceLabel` use native
+  primitives and keep capability claims evidence-bound.
+- The Expo shell now consumes the token layer instead of raw colour/typography literals. Token
+  regressions cover readable primary text and bounded layout values.
+- Evidence: Expo tests `10 passed`; Expo typecheck passed; web tests `72 passed`; API tests
+  `378 passed, 17 skipped`; formatting, lint, doctrine and forced production build passed.
+- CI root cause fixed in the same slice: the Expo/web workspace is pinned to Bun `1.3.14`, which
+  prevents the Bun `1.1.30` React workspace-resolution failure. Indexed cold browse now uses a
+  bounded UUID pivot ring for session variation; the real-Postgres seeded-browse regression
+  covers stable paging, variation, coverage, disjoint pages and priced-first ordering.
+- Remaining gate: visual fixtures, device accessibility smoke and route parity are not claimed;
+  EXPO-04 is the next local slice.
 
 ### EXPO-03A — Atelier token contract
 

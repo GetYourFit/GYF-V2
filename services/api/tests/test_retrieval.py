@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
+from uuid import UUID
 
+from fastapi.testclient import TestClient
 from app.catalog.directory import InMemoryItemDirectory
 from app.catalog.retrieval import (
     CatalogFacets,
@@ -82,7 +83,7 @@ def test_browse_personalizes_by_taste_vector():
     repo.browse(categories=None, k=10, region=None)  # no taste -> cold-start path
     cold_sql, _ = pool.calls[-1]
     assert "embedding <=>" not in cold_sql.split("ORDER BY")[1]  # not a vector scan
-    assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in cold_sql
+    assert "ORDER BY band, id" in cold_sql
 
 
 def test_indexed_browse_candidate_is_default_off():
@@ -97,7 +98,7 @@ def test_indexed_browse_candidate_is_default_off():
     assert params == ("session-a", 10, 0)
 
 
-def test_cold_browse_uses_one_bounded_ordered_index_window():
+def test_cold_browse_uses_bounded_uuid_ring_windows():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
 
@@ -113,7 +114,25 @@ def test_cold_browse_uses_one_bounded_ordered_index_window():
     sql, params = pool.calls[-1]
     assert "hashtextextended" not in sql
     assert "JOIN item_embeddings e ON e.item_id = i.id" in sql
-    assert params == ("IN", ["men", "unisex"], ["shirt"], 6, 12)
+    assert "WITH browse_seed" in sql
+    assert isinstance(params[0], UUID)
+    assert params[1] == 18  # k + offset bounds each ring branch
+    assert params[2:] == (
+        "IN",
+        ["men", "unisex"],
+        ["shirt"],
+        "IN",
+        ["men", "unisex"],
+        ["shirt"],
+        "IN",
+        ["men", "unisex"],
+        ["shirt"],
+        "IN",
+        ["men", "unisex"],
+        ["shirt"],
+        6,
+        12,
+    )
 
 
 def test_mmr_rerank_breaks_near_duplicate_run():

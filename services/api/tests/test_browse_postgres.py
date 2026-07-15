@@ -1,4 +1,4 @@
-"""Seeded cold-browse properties that require real PostgreSQL hash/index semantics."""
+"""Seeded cold-browse properties that require real PostgreSQL UUID-ring/index semantics."""
 
 from __future__ import annotations
 
@@ -15,7 +15,10 @@ _CATEGORY = "browse_test"
 
 
 def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
-    ids = [UUID(int=i + 1) for i in range(16)]
+    # Spread deterministic UUIDs across the ring; production IDs are UUIDv4 and
+    # are similarly distributed, while tiny integer UUIDs would all sit before
+    # every SHA-derived pivot and could not exercise rotation.
+    ids = [UUID(f"{n * 17:02x}" + "0" * 30) for n in range(16)]
     embedding = "[1," + ",".join(["0"] * 767) + "]"
     with psycopg.connect(live_db) as conn:
         cursor = conn.cursor()

@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, replace
+from hashlib import sha256
 from typing import Protocol
+from uuid import UUID
 
 from ..media import image_url_from_refs
 from .directory import ItemDirectory
@@ -148,18 +150,57 @@ _GENDER_FILTER = (
 
 _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
 
-# Default browse: no embedding or vector scan. The production feed is deliberately
-# ordered by a partial index: priced rows first, then primary key. The old seeded
-# hash permutation timed out on the live Supabase catalogue even after adding its
-# matching expression index, so ``seed`` remains accepted for API compatibility but
-# does not participate in this bounded hot read.
+# Default browse: no embedding or vector scan. A seed selects a pivot in a stable
+# UUID ring, and four bounded index-range reads preserve priced-first ordering across
+# the ring wrap. This keeps per-session variety without the retired hash-sort query
+# that timed out on the live Supabase catalogue.
 _BROWSE_INDEXED = """
-SELECT i.id, i.title, 0.0 AS score, i.image_refs
-FROM items i
-JOIN item_embeddings e ON e.item_id = i.id
-WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-  {region} {gender} {category}
-ORDER BY (i.price IS NOT NULL) DESC, i.id
+WITH browse_seed AS (
+  SELECT %s::uuid AS pivot, %s::integer AS take
+), candidates AS (
+  (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs
+   FROM items i
+   JOIN item_embeddings e ON e.item_id = i.id
+   CROSS JOIN browse_seed s
+   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+     AND i.price IS NOT NULL AND i.id >= s.pivot
+     {region} {gender} {category}
+   ORDER BY i.id
+   LIMIT (SELECT take FROM browse_seed))
+  UNION ALL
+  (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs
+   FROM items i
+   JOIN item_embeddings e ON e.item_id = i.id
+   CROSS JOIN browse_seed s
+   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+     AND i.price IS NOT NULL AND i.id < s.pivot
+     {region} {gender} {category}
+   ORDER BY i.id
+   LIMIT (SELECT take FROM browse_seed))
+  UNION ALL
+  (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs
+   FROM items i
+   JOIN item_embeddings e ON e.item_id = i.id
+   CROSS JOIN browse_seed s
+   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+     AND i.price IS NULL AND i.id >= s.pivot
+     {region} {gender} {category}
+   ORDER BY i.id
+   LIMIT (SELECT take FROM browse_seed))
+  UNION ALL
+  (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs
+   FROM items i
+   JOIN item_embeddings e ON e.item_id = i.id
+   CROSS JOIN browse_seed s
+   WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+     AND i.price IS NULL AND i.id < s.pivot
+     {region} {gender} {category}
+   ORDER BY i.id
+   LIMIT (SELECT take FROM browse_seed))
+)
+SELECT id, title, score, image_refs
+FROM candidates
+ORDER BY band, id
 LIMIT %s OFFSET %s
 """
 
@@ -405,7 +446,10 @@ class PostgresVectorSearchRepository:
         sql = browse_query.format(
             region=region_clause, gender=gender_clause, category=category_clause
         )
-        # No client seed → daily rotation, the old behavior.
+        # No client seed → daily rotation, preserving a stable order while a user
+        # pages through the feed. The indexed path uses the same ring contract as
+        # the legacy query, but derives its pivot in Python so Postgres can use the
+        # `(price IS NOT NULL, id)` index for each bounded range.
         from datetime import date
 
         browse_seed = seed or str(date.today())
@@ -420,13 +464,18 @@ class PostgresVectorSearchRepository:
             params.extend([k, offset])
             return self._run(sql, tuple(params))
 
-        params = []
-        if region:
-            params.append(region)
-        if gender_list:
-            params.append(gender_list)
-        if categories:
-            params.append(categories)
+        pivot = UUID(bytes=sha256(browse_seed.encode("utf-8")).digest()[:16])
+        params = [pivot, k + offset]
+        # The same optional predicates occur in each ring branch. Keep bindings
+        # in SQL order so region/gender/category filters stay identical at every
+        # wrap boundary.
+        for _ in range(4):
+            if region:
+                params.append(region)
+            if gender_list:
+                params.append(gender_list)
+            if categories:
+                params.append(categories)
         params.extend([k, offset])
         return self._run(sql, tuple(params))
 

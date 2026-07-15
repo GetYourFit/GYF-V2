@@ -3,14 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "description": "GYF (Get Your Fit) — AI-native personal stylist",
-  "packageManager": "bun@1.1.30",
+  "packageManager": "bun@1.3.14",
   "workspaces": [
     "app",
     "apps/*",
     "packages/*"
   ],
   "engines": {
-    "bun": ">=1.1"
+    "bun": ">=1.3.14"
   },
   "scripts": {
     "dev": "turbo run dev",
