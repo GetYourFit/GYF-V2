@@ -126,15 +126,21 @@ def run_gender_backfill(
 
 
 # Module-level SQL so tests can assert against it without a live DB.
+# Only serialize the (large) embedding for rows that actually reach the zero-shot tier —
+# i.e. items with no gender yet. Already-gendered rows need only their title for the
+# override rule, so text-casting their 1152-dim vector was pure waste: on the ~24k-item
+# prod catalogue that per-row `embedding::text` is what pushed the statement past
+# Supabase's statement_timeout. No ORDER BY: the backfill is order-independent and
+# idempotent, so the sort was needless work too.
 _PENDING = """
 SELECT i.id,
        i.title,
        i.attributes #>> '{taxonomy,raw_category}',
        i.attributes #>> '{taxonomy,gender}',
-       e.embedding::text
+       CASE WHEN i.attributes #>> '{taxonomy,gender}' IS NULL
+            THEN e.embedding::text END
 FROM items i
 LEFT JOIN item_embeddings e ON e.item_id = i.id
-ORDER BY i.created_at
 """
 _SET_GENDER = """
 UPDATE items
@@ -157,6 +163,11 @@ class PostgresGenderStore:
 
     def pending(self) -> Iterator[GenderPendingItem]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            # This is nightly batch maintenance with no latency SLO; the whole-catalogue
+            # scan legitimately runs longer than the request-path statement_timeout Supabase
+            # sets. Lift it for this connection only. ponytail: SET LOCAL scopes to this
+            # transaction, so it can never leak to a hot-path query on a pooled connection.
+            conn.execute("SET LOCAL statement_timeout = 0")
             for row in conn.execute(_PENDING):
                 emb = None
                 if row[4]:
