@@ -2678,3 +2678,16 @@ remove with revert-on-failure, full accessibility labels, Atelier UI kit + token
 **Verified:** expo typecheck clean, `bun test` 25 pass, prettier clean, `expo export --platform web`
 builds the route. Remaining Expo placeholders: profile, social, wardrobe, collections, account,
 canvas, contact, grievance, status, design.
+
+### 2026-07-16 — Expo parity slice: Wardrobe (session: ponytail)
+
+**Shipped:** `apps/expo/src/app/(app)/(tabs)/wardrobe.tsx` replaces the placeholder — real
+Wardrobe: list, add-by-title (auto-classified via `addWardrobeItem({title})`), remove, and
+category filter chips derived from the owned set. Optimistic add (prepend) + optimistic remove
+(revert on failure); loading/error/empty states; pull-to-refresh; a11y labels. New pure
+`lib/wardrobe-feed.ts` (`wardrobeCategories`/`resolveWardrobeFilter`/`visibleWardrobe` — including
+the vanished-filter→ALL fallback) with `wardrobe-feed.test.ts` (3 cases). No API code (Expo GyfApi
+extends the web client). Expo typecheck clean, 28 tests pass, web export builds.
+
+Remaining Expo placeholders: collections, social, profile, account, canvas, contact, grievance,
+status, design.
