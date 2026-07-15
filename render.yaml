@@ -80,13 +80,12 @@ services:
       #   http = the Modal CPU text lane (ml/serving/modal_encoder.py): scale-to-zero,
       #     seconds-cold, inside Modal's free credits. See docs/deploy/gpu-lane.md.
       # In front of BOTH sits the Postgres query-embedding cache (migration 0016), so a
-      # repeated query never re-embeds. URL + key stay in the dashboard (the key is a
-      # secret; the URL is workspace-specific), KIND is a routing choice, so it is pinned
-      # here — the same reason GYF_EVENT_SINK is.
+      # Repeated queries never re-embed. The URL is the deployed Modal web function;
+      # only the bearer key remains secret-managed in Render.
       - key: GYF_ENCODER_REMOTE_KIND
-        value: http # Modal JSON lane (infra/modal/encoder.py); set _URL + _KEY in the dashboard
+        value: http
       - key: GYF_ENCODER_REMOTE_URL
-        sync: false
+        value: https://gyf1ltd--gyf-encoder-encoder-web.modal.run
       - key: GYF_ENCODER_REMOTE_KEY
         sync: false
       # Sentry project DSN (Settings → Projects → gyf-api → Client Keys).
