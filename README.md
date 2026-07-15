@@ -11,7 +11,7 @@ coordinated outfits you can trust — getting smarter with every person it dress
 - [`docs/engineering-doctrine.md`](./docs/engineering-doctrine.md) — standing quality, licence, privacy and evaluation rules.
 - [`docs/tech-stack.md`](./docs/tech-stack.md) — researched technology reference; selections require active-contract gates.
 - [`docs/implementation-plan.md`](./docs/implementation-plan.md) — historical phased plan; evidence only.
-- [`docs/plans/gyf-free-first-beta-master-plan-2026-07.md`](./docs/plans/gyf-free-first-beta-master-plan-2026-07.md) — July audit/research evidence; not an execution sequence.
+- [`docs/plans/gyf-master-plan.md`](./docs/plans/gyf-master-plan.md) — the consolidated end-to-end plan (mission → moat under ₹3,000/month); subordinate to the execution contract.
 - [`docs/research/deep-research-report.md`](./docs/research/deep-research-report.md) — cited SOTA research.
 
 ## Repository layout
