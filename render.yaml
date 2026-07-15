@@ -87,7 +87,7 @@ services:
       # secret; the URL is workspace-specific), KIND is a routing choice, so it is pinned
       # here — the same reason GYF_EVENT_SINK is.
       - key: GYF_ENCODER_REMOTE_KIND
-        value: gradio # flip to "http" the moment the Modal lane is deployed
+        value: http # Modal JSON lane (infra/modal/encoder.py); set _URL + _KEY in the dashboard
       - key: GYF_ENCODER_REMOTE_URL
         sync: false
       - key: GYF_ENCODER_REMOTE_KEY
