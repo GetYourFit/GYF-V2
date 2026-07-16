@@ -7,6 +7,7 @@ import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
+import { hitSlopFor } from "@/components/ui/pressable-scale";
 import { ApiError, createApi } from "@/lib/api";
 import {
   DEFAULT_CONSENT,
@@ -43,6 +44,7 @@ function OptionChip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
+      hitSlop={hitSlopFor(42)}
       style={{
         alignItems: "center",
         backgroundColor: selected ? palette.text : palette.surface,

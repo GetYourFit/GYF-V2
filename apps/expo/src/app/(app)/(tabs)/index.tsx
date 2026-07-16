@@ -16,6 +16,7 @@ import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { FilterChip } from "@/components/ui/filter-chip";
 import { GyfText } from "@/components/ui/gyf-text";
+import { hitSlopFor } from "@/components/ui/pressable-scale";
 import {
   ApiError,
   createApi,
@@ -124,6 +125,7 @@ function ItemTile({
           accessibilityRole="button"
           accessibilityState={{ busy: completeBusy, disabled: completeBusy }}
           disabled={completeBusy}
+          hitSlop={hitSlopFor(40)}
           onPress={onComplete}
           style={{ minHeight: 40, justifyContent: "center" }}
         >
@@ -139,6 +141,7 @@ function ItemTile({
             disabled: alternatesBusy || correctionBlocked,
           }}
           disabled={alternatesBusy || correctionBlocked}
+          hitSlop={hitSlopFor(40)}
           onPress={onLoadAlternates}
           style={{ minHeight: 40, justifyContent: "center" }}
         >
@@ -154,6 +157,7 @@ function ItemTile({
           <Pressable
             accessibilityLabel={`Shop ${item.title}`}
             accessibilityRole="link"
+            hitSlop={hitSlopFor(40)}
             onPress={onShop}
             style={{ minHeight: 40, justifyContent: "center" }}
           >
@@ -165,6 +169,7 @@ function ItemTile({
             accessibilityLabel={`Use ${alternate.title} instead of ${item.title}`}
             accessibilityRole="button"
             disabled={correctionBlocked}
+            hitSlop={hitSlopFor(40)}
             key={alternate.item_id}
             onPress={() => onSwap(alternate)}
             style={{
