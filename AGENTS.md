@@ -1,43 +1,51 @@
 # GYF agent instructions
 
-Read [`CLAUDE.md`](./CLAUDE.md) for repository conventions. Product intent lives in
-[`docs/vision/ideas-complete.md`](./docs/vision/ideas-complete.md), and engineering invariants
-live in [`docs/engineering-doctrine.md`](./docs/engineering-doctrine.md).
+Read [`CLAUDE.md`](./CLAUDE.md) before working. The authority chain is:
 
-[`docs/plans/active-execution-contract.md`](./docs/plans/active-execution-contract.md) is the
-sole authority for execution order, phase gates and the current slice. Older roadmaps and plans
-are evidence only when they conflict with it.
+1. [`docs/vision/ideas-complete.md`](./docs/vision/ideas-complete.md) — product intent.
+2. [`docs/engineering-doctrine.md`](./docs/engineering-doctrine.md) — engineering invariants.
+3. [`docs/plans/active-execution-contract.md`](./docs/plans/active-execution-contract.md) — sole
+   execution order, current slice and phase gates.
+4. [`docs/plans/gyf-launch-refactor-plan.md`](./docs/plans/gyf-launch-refactor-plan.md) — subordinate
+   hard-launch tickets and vision/feedback traceability.
+
+Older plans, progress logs and feedback responses are evidence, never execution authority.
 
 ## Binding owner decisions
 
-- Every surface is free, including virtual try-on (owner amendment 2026-07-14, superseding
-  the same-day subscription decision; see `docs/plans/free-vton-moat.md`). Owner amendment
-  2026-07-16: FASHN VTON v1.5 is the first external serving candidate if its full license,
-  privacy, quality, cost and operability gates pass, while GYF prepares a rights-clean owned lane
-  and trains it only after ≥2,000 authorised pairs plus a stable ≥10% FASHN failure cluster exist,
-  so production is not permanently provider/checkpoint-dependent. Try-on opens only
-  after F9 promotes a lane. Payment work is cancelled; no paywall anywhere.
-- Owner (2026-07-14): incumbent-preservation and migration-parity caution are relaxed —
-  replacements may ship once licensed and secure. Never trade security, privacy or reliability
-  for cost.
-- A gated replacement deletes what it replaces in the same slice; everything else obsolete
-  or duplicate is deleted only in F13, after its behaviour is protected or rejected.
-- The current production gate is F2.5: external deployment/SLO promotion remains pending.
-  By owner execution amendment 2026-07-15, local implementation may continue sequentially
-  through the Expo replacement and later phases while that gate is pending; no phase may claim
-  production promotion before its evidence gate passes. F1a/F1b shipped (`6f78bed`, `7087825`).
-- Owner (2026-07-16): the paid Render Starter service already exists in Oregon. Do not create or
-  plan a Singapore Render/Supabase migration. Keep the current topology while closing measured
-  software/query causes; any later non-Singapore topology experiment needs evidence and a separate
-  owner decision.
-- Owner (2026-07-16, latest): every non-conflicting capability and quality requirement in
-  `docs/vision/ideas-complete.md` and every `docs/feedbacks/*.md` file is hard-public-launch scope.
-  Implement them sequentially as complete, gated vertical slices; do not defer them merely as
-  post-launch ideas. Conflicting feedback must be resolved explicitly and tested, not silently
-  cherry-picked.
+- All user surfaces are free. Payment, paywalls and paid ranking are cancelled.
+- FASHN VTON v1.5 is the first external try-on candidate after F9 gates. Prepare the rights-clean
+  owned lane; train only after ≥2,000 authorised pairs and a stable ≥10% FASHN failure cluster.
+- The production gate is F2.5. Local work may continue in contract order, but no phase may claim
+  production promotion without its evidence gate.
+- Keep the existing paid Oregon Render Starter. Do not plan or provision Singapore. A later
+  non-Singapore topology experiment requires measured failure and a separate owner decision.
+- Every non-conflicting requirement in the canonical vision and `docs/feedbacks/*.md` is hard-launch
+  scope. Execute the traceability matrix sequentially; security, privacy, licensing, accessibility
+  and truthful claims resolve conflicts.
+- A licensed, secure replacement may ship when its gate passes and deletes what it replaces in the
+  same slice. Other obsolete/duplicate material waits for protected F13 deletion.
+- Hosting plus GPU remains below ₹3,000/month during the beta envelope. Growth requires the
+  contract's explicit spend step-up decision; never claim that this ceiling supports one million
+  users.
+- Hard-launch defaults: India, 18+; owner/founder is launch commander and privacy/security incident
+  owner until delegated; `gyf1ltd@gmail.com` is the support/grievance channel. Use the launch plan's
+  frozen activation/D7/D30 thresholds and approved 2×-coverage-for-three-months spend step-up rule.
 
 ## Working rule
 
-Stay inside the current slice, reuse existing code, and make the smallest root-cause change.
-Run the slice checks and the contract's phase verification before committing or pushing; report
-every skip or failure. Do not include unrelated working-tree changes in a commit.
+Stay inside the current slice. Reuse existing code, prefer deletion, and make the smallest
+root-cause change. Do not add infrastructure, abstractions or models without a measured requirement.
+
+Before commit/push, run the slice checks plus:
+
+```bash
+make fmt-check
+make lint
+make typecheck
+make doctrine
+make test
+bun run build
+```
+
+Report every warning, skip and failure. Never include unrelated working-tree changes.

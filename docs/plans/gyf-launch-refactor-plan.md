@@ -2254,11 +2254,29 @@ does not justify hiding a safety failure.
 
 ### Owner feedback required before execution
 
-The plan can proceed through engineering gates without inventing these decisions, but HL-01 cannot
-close until the owner supplies:
+Owner inputs recorded 2026-07-16:
 
-1. The launch-country and minimum-age policy; default is India and 18+ while child-consent
-   operations remain unproven.
-2. Frozen activation, D7 and D30 target/failure floors and minimum evaluable cohort.
-3. The named launch commander, privacy/security incident owner and support response target.
-4. The approved spend step-up rule once retained growth cannot remain under ₹3,000/month.
+1. **Launch policy:** India, 18+. Under-18 sensitive-photo processing and accounts remain blocked
+   until child-consent and safety operations pass a separately approved gate.
+2. **Beta decision defaults:**
+   - Activation denominator: consented new accounts completing signup; success is a first-session
+     explained complete-outfit save. GO ≥35%; HOLD 20–34.9%; failure <20%.
+   - D7 denominator: activated users eligible for seven days; success is another save, correction
+     or wardrobe decision. GO ≥20%; HOLD 10–19.9%; failure <10%.
+   - D30 denominator: activated users eligible for 30 days; same retained action. GO ≥10%; HOLD
+     5–9.9%; failure <5%.
+   - Minimum evaluable cohort: ≥200 consented new accounts and ≥100 activated users, with the full
+     confidence interval and segment counts reported. If either minimum is missed, extend beta;
+     never infer launch approval.
+   - Security/privacy, cross-user access, deletion/export, India SLO, critical accessibility and
+     unbounded-cost floors remain zero-tolerance regardless of product-metric performance.
+3. **Ownership and support:** owner/founder is launch commander and privacy/security incident owner
+   until explicitly delegated. Public support/grievance channel: `gyf1ltd@gmail.com`. Sev-1
+   security/privacy/data-loss acknowledgement ≤1 hour, other launch-blocking incidents ≤4 hours,
+   ordinary user support ≤1 business day.
+4. **Spend step-up:** approved. Increase recurring infrastructure/GPU spend only when trailing
+   confirmed contribution covers the next tier with 2× safety for three months, or through a new
+   explicit owner amendment.
+
+These are launch-decision defaults, not vanity targets. Before F11 recruitment, the beta packet
+must verify instrumentation can compute each denominator and action exactly.

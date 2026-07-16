@@ -39,6 +39,13 @@ This is the single source of truth for execution order. Product intent remains i
   half-built work: each vertical slice must pass its evidence gate before the next dependent slice.
   Contradictions are resolved in the launch/refactor traceability matrix; security, privacy,
   licensing, truthfulness and accessibility always outrank literal wording.
+- **Hard-launch operating inputs (owner, 2026-07-16):** launch scope is India and 18+ until child
+  consent/safety operations pass a later gate. The owner/founder is launch commander and
+  privacy/security incident owner until explicitly delegated; `gyf1ltd@gmail.com` is the public
+  support/grievance channel. The frozen beta metric defaults and response targets live in the
+  launch/refactor plan. The spend step-up rule is approved: increase recurring infrastructure/GPU
+  spend only after trailing confirmed contribution covers the next tier with 2× safety for three
+  months, or through a new explicit owner amendment.
 - **Commercial hosting correction (researched 2026-07-16):** Vercel Hobby is personal/non-commercial
   and explicitly treats affiliate-primary deployments as commercial. It is acceptable only for
   non-commercial preview. Before affiliate monetisation, Expo web must pass a static-host parity
