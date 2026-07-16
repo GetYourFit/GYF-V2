@@ -109,9 +109,13 @@ export function ProductCard({
           </View>
         )}
         {onToggleSave ? (
-          <Animated.View style={[{ position: "absolute", right: spacing.xs, top: spacing.xs }, heartStyle]}>
+          <Animated.View
+            style={[{ position: "absolute", right: spacing.xs, top: spacing.xs }, heartStyle]}
+          >
             <PressableScale
-              accessibilityLabel={item.saved ? `Remove ${item.title} from saved` : `Save ${item.title}`}
+              accessibilityLabel={
+                item.saved ? `Remove ${item.title} from saved` : `Save ${item.title}`
+              }
               accessibilityRole="button"
               accessibilityState={{ selected: Boolean(item.saved) }}
               hitSlop={hitSlopFor(32)}
@@ -125,7 +129,11 @@ export function ProductCard({
                 width: 32,
               }}
             >
-              <IconHeart color={item.saved ? palette.error : palette.text} filled={item.saved} size={16} />
+              <IconHeart
+                color={item.saved ? palette.error : palette.text}
+                filled={item.saved}
+                size={16}
+              />
             </PressableScale>
           </Animated.View>
         ) : null}
@@ -139,7 +147,9 @@ export function ProductCard({
         <GyfText maxFontSizeMultiplier={1.6} numberOfLines={2} theme={theme} variant="bodySmall">
           {item.title}
         </GyfText>
-        <View style={{ alignItems: "center", flexDirection: "row", justifyContent: "space-between" }}>
+        <View
+          style={{ alignItems: "center", flexDirection: "row", justifyContent: "space-between" }}
+        >
           {item.price ? (
             <GyfText maxFontSizeMultiplier={1.4} theme={theme} variant="mono">
               {item.price}

@@ -246,7 +246,13 @@ function QuickPreview({
               paddingBottom: spacing.xl,
             }}
           >
-            <View style={{ alignItems: "center", flexDirection: "row", justifyContent: "space-between" }}>
+            <View
+              style={{
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
               <View style={{ flex: 1, gap: 2 }}>
                 {item.brand ? (
                   <GyfText theme={theme} tone="faint" variant="label">
@@ -267,7 +273,13 @@ function QuickPreview({
                 <IconClose color={palette.textMuted} size={20} />
               </PressableScale>
             </View>
-            <View style={{ alignItems: "center", flexDirection: "row", justifyContent: "space-between" }}>
+            <View
+              style={{
+                alignItems: "center",
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
               {item.price ? (
                 <GyfText theme={theme} variant="mono">
                   {item.price}

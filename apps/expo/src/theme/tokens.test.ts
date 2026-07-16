@@ -1,6 +1,14 @@
 import { describe, expect, it } from "bun:test";
 
-import { breakpoints, colors, contrastRatio, radii, spacing, tierForWidth, typography } from "./tokens";
+import {
+  breakpoints,
+  colors,
+  contrastRatio,
+  radii,
+  spacing,
+  tierForWidth,
+  typography,
+} from "./tokens";
 
 describe("Atelier tokens", () => {
   it("keeps primary text readable in both themes", () => {
