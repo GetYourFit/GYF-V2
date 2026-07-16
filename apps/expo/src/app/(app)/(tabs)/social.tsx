@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, View } from "react-native";
+import { FlatList, Image, RefreshControl, View } from "react-native";
 
-import { AtelierButton } from "@/components/ui/atelier-button";
+import { IconHeart } from "@/components/icons";
+import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
 import { AtelierCard } from "@/components/ui/atelier-card";
+import { EmptyState, ErrorState } from "@/components/ui/empty-state";
+import { FilterChip } from "@/components/ui/filter-chip";
 import { GyfText } from "@/components/ui/gyf-text";
+import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type Post } from "@/lib/api";
 import {
   appendUniquePosts,
@@ -14,6 +19,7 @@ import {
   type FeedScope,
 } from "@/lib/social-feed";
 import { colors, radii, spacing } from "@/theme/tokens";
+import { useResponsive } from "@/theme/use-responsive";
 
 type Status = "loading" | "ready" | "error";
 
@@ -25,39 +31,6 @@ function readableError(error: unknown): string {
     return "The feed is temporarily unavailable. Try again shortly.";
   }
   return "GYF could not load the feed. Check your connection and try again.";
-}
-
-function ScopeChip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={{
-        backgroundColor: selected ? colors.dark.text : colors.dark.surfaceRaised,
-        borderColor: selected ? colors.dark.text : colors.dark.border,
-        borderRadius: radii.capsule,
-        borderWidth: 1,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-      }}
-    >
-      <GyfText
-        style={selected ? { color: colors.dark.textInverse } : undefined}
-        variant="bodySmall"
-      >
-        {label}
-      </GyfText>
-    </Pressable>
-  );
 }
 
 function PostCard({
@@ -87,17 +60,18 @@ function PostCard({
             YOU
           </GyfText>
         ) : (
-          <Pressable
+          <PressableScale
             accessibilityLabel={following ? "Unfollow this stylist" : "Follow this stylist"}
             accessibilityRole="button"
             accessibilityState={{ selected: following, disabled: pending }}
             disabled={pending}
+            hitSlop={hitSlopFor(28)}
             onPress={onFollow}
           >
             <GyfText style={{ color: following ? colors.dark.textMuted : colors.dark.text }}>
               {following ? "Following" : "Follow"}
             </GyfText>
-          </Pressable>
+          </PressableScale>
         )}
       </View>
 
@@ -136,7 +110,7 @@ function PostCard({
 
       {post.caption ? <GyfText variant="body">{post.caption}</GyfText> : null}
 
-      <Pressable
+      <PressableScale
         accessibilityLabel={
           post.reacted
             ? `Remove your like; ${post.reaction_count} likes`
@@ -144,18 +118,34 @@ function PostCard({
         }
         accessibilityRole="button"
         accessibilityState={{ selected: post.reacted }}
+        hitSlop={hitSlopFor(32)}
         onPress={onReact}
-        style={{ alignSelf: "flex-start" }}
+        style={{
+          alignItems: "center",
+          alignSelf: "flex-start",
+          flexDirection: "row",
+          gap: spacing.xs,
+          minHeight: 32,
+        }}
       >
-        <GyfText style={{ color: post.reacted ? colors.dark.text : colors.dark.textMuted }}>
-          {post.reacted ? "♥" : "♡"} {post.reaction_count}
+        <IconHeart
+          color={post.reacted ? colors.dark.error : colors.dark.textMuted}
+          filled={post.reacted}
+          size={18}
+        />
+        <GyfText
+          style={{ color: post.reacted ? colors.dark.text : colors.dark.textMuted }}
+          variant="mono"
+        >
+          {post.reaction_count}
         </GyfText>
-      </Pressable>
+      </PressableScale>
     </AtelierCard>
   );
 }
 
 export default function SocialRoute() {
+  const { insets } = useResponsive();
   const api = useMemo(() => createApi(), []);
   const [scope, setScope] = useState<FeedScope>("all");
   const [posts, setPosts] = useState<Post[]>([]);
@@ -246,7 +236,12 @@ export default function SocialRoute() {
   return (
     <FlatList
       accessibilityLabel="Community feed"
-      contentContainerStyle={{ gap: spacing.md, padding: spacing.lg, paddingBottom: spacing.xxl }}
+      contentContainerStyle={{
+        gap: spacing.md,
+        padding: spacing.lg,
+        paddingBottom: spacing.xxl * 2 + insets.bottom,
+        paddingTop: spacing.lg + insets.top,
+      }}
       data={posts}
       keyExtractor={(post) => post.id}
       onEndReached={() => {
@@ -285,40 +280,42 @@ export default function SocialRoute() {
             </GyfText>
           </View>
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            <ScopeChip label="For you" onPress={() => setScope("all")} selected={scope === "all"} />
-            <ScopeChip
+            <FilterChip
+              label="For you"
+              onPress={() => setScope("all")}
+              selected={scope === "all"}
+            />
+            <FilterChip
               label="Following"
               onPress={() => setScope("following")}
               selected={scope === "following"}
             />
           </View>
-          {loadingMore ? <ActivityIndicator color={colors.dark.text} /> : null}
+          {loadingMore ? <Skeleton height={120} /> : null}
         </View>
       }
       ListEmptyComponent={
         status === "loading" ? (
-          <View style={{ alignItems: "center", gap: spacing.md, paddingVertical: spacing.xxl }}>
-            <ActivityIndicator color={colors.dark.text} />
-            <GyfText tone="muted">Loading the feed…</GyfText>
+          <View style={{ gap: spacing.md }}>
+            <Skeleton height={280} />
+            <Skeleton height={280} />
           </View>
         ) : status === "error" ? (
-          <AtelierCard>
-            <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
-              {readableError(feedError)}
-            </GyfText>
-            <AtelierButton label="Try again" onPress={() => void load(0, true)} />
-          </AtelierCard>
+          <ErrorState
+            illustration={<IllustrationLooseThread color={colors.dark.textMuted} />}
+            message={readableError(feedError)}
+            onRetry={() => void load(0, true)}
+          />
         ) : (
-          <AtelierCard>
-            <GyfText variant="title">
-              {scope === "following" ? "Nothing here yet" : "No looks yet"}
-            </GyfText>
-            <GyfText tone="muted" variant="bodySmall">
-              {scope === "following"
+          <EmptyState
+            description={
+              scope === "following"
                 ? "Follow a stylist and their looks appear here."
-                : "Be the first to share a look from the Stylist."}
-            </GyfText>
-          </AtelierCard>
+                : "Be the first to share a look from the Stylist."
+            }
+            headline={scope === "following" ? "Nothing here yet" : "No looks yet"}
+            illustration={<IllustrationEmptyHanger color={colors.dark.textMuted} />}
+          />
         )
       }
     />
