@@ -20,6 +20,7 @@ import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useResponsive } from "@/theme/use-responsive";
 import { colors, motion, radii, shadows, spacing, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 import { cardWidthFor, columnsForWidth } from "./column-count";
 import { collectionView } from "./collection-state";
 
@@ -55,7 +56,7 @@ export function ExpandableCollectionGrid({
   containerWidth,
   onToggleSave,
   primaryAction,
-  theme = "dark",
+  theme: themeProp,
 }: {
   title: string;
   subtitle?: string | null;
@@ -68,6 +69,7 @@ export function ExpandableCollectionGrid({
   primaryAction?: CollectionAction;
   theme?: ThemeName;
 }) {
+  const theme = useTheme(themeProp);
   const palette = colors[theme];
   const { tier } = useResponsive();
   const [expanded, setExpanded] = useState(false);

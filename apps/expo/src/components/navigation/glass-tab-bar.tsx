@@ -11,7 +11,8 @@ import Animated, {
 
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale } from "@/components/ui/pressable-scale";
-import { colors, motion, radii, spacing, type ThemeName } from "@/theme/tokens";
+import { colors, motion, radii, spacing } from "@/theme/tokens";
+import { useAppColorScheme } from "@/theme/use-color-scheme";
 
 let haptics: typeof import("expo-haptics") | null = null;
 if (process.env.EXPO_OS && process.env.EXPO_OS !== "web") {
@@ -36,7 +37,7 @@ interface TabBarProps {
  * does the wayfinding, no stock glyphs.
  */
 export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarProps) {
-  const theme: ThemeName = "dark";
+  const theme = useAppColorScheme();
   const palette = colors[theme];
   const [slots, setSlots] = useState<Record<number, { x: number; width: number }>>({});
   const pillX = useSharedValue(-1);

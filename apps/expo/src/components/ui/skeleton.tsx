@@ -9,6 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { colors, radii, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 
 /**
  * Pulsing placeholder that mirrors the final layout — never a spinner.
@@ -18,13 +19,14 @@ export function Skeleton({
   height,
   width = "100%",
   radius = radii.control,
-  theme = "dark",
+  theme: themeProp,
 }: {
   height: number;
   width?: DimensionValue;
   radius?: number;
   theme?: ThemeName;
 }) {
+  const theme = useTheme(themeProp);
   const pulse = useSharedValue(0);
 
   useEffect(() => {

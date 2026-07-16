@@ -15,3 +15,9 @@ export function useAppColorScheme(): ThemeName {
 export function useThemeColors() {
   return colors[useAppColorScheme()];
 }
+
+/** Component theme resolution: explicit prop wins, else the app scheme. */
+export function useTheme(override?: ThemeName): ThemeName {
+  const scheme = useAppColorScheme();
+  return override ?? scheme;
+}

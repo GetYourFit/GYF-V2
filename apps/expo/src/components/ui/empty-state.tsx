@@ -1,6 +1,7 @@
 import { View } from "react-native";
 
 import { colors, spacing, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 import { AtelierButton } from "./atelier-button";
 import { GyfText } from "./gyf-text";
 
@@ -11,7 +12,7 @@ export function EmptyState({
   actionLabel,
   onAction,
   illustration,
-  theme = "dark",
+  theme: themeProp,
 }: {
   headline: string;
   description: string;
@@ -20,6 +21,7 @@ export function EmptyState({
   illustration?: React.ReactNode;
   theme?: ThemeName;
 }) {
+  const theme = useTheme(themeProp);
   return (
     <View style={{ alignItems: "center", gap: spacing.md, paddingVertical: spacing.xl }}>
       {illustration}
@@ -48,13 +50,14 @@ export function ErrorState({
   message,
   onRetry,
   illustration,
-  theme = "dark",
+  theme: themeProp,
 }: {
   message: string;
   onRetry?: () => void;
   illustration?: React.ReactNode;
   theme?: ThemeName;
 }) {
+  const theme = useTheme(themeProp);
   return (
     <View
       accessibilityRole="alert"

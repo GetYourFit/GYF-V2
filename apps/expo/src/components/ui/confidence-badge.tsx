@@ -1,6 +1,7 @@
 import { View } from "react-native";
 
 import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 import { formatMatchPercent } from "./confidence";
 import { GyfText } from "./gyf-text";
 
@@ -10,11 +11,12 @@ import { GyfText } from "./gyf-text";
  */
 export function ConfidenceBadge({
   value,
-  theme = "dark",
+  theme: themeProp,
 }: {
   value: number | null | undefined;
   theme?: ThemeName;
 }) {
+  const theme = useTheme(themeProp);
   const label = formatMatchPercent(value);
   if (!label) return null;
   return (

@@ -11,6 +11,19 @@ import {
 } from "./tokens";
 
 describe("Atelier tokens", () => {
+  it("keeps every used text/surface pairing readable in both themes", () => {
+    for (const theme of ["dark", "light"] as const) {
+      const c = colors[theme];
+      for (const bg of [c.bg, c.surface, c.surfaceRaised]) {
+        expect(contrastRatio(c.text, bg)).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(c.textMuted, bg)).toBeGreaterThanOrEqual(4.5);
+        // Faint is reserved for secondary/large text — AA-large threshold.
+        expect(contrastRatio(c.textFaint, bg)).toBeGreaterThanOrEqual(3);
+        expect(contrastRatio(c.error, bg)).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
   it("keeps primary text readable in both themes", () => {
     expect(contrastRatio(colors.dark.text, colors.dark.bg)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(colors.light.text, colors.light.bg)).toBeGreaterThanOrEqual(4.5);

@@ -1,6 +1,7 @@
 import { Pressable, type PressableProps } from "react-native";
 
 import { colors, radii, spacing, typography, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 import { GyfText } from "./gyf-text";
 
 type AtelierButtonProps = Omit<PressableProps, "children"> & {
@@ -10,11 +11,12 @@ type AtelierButtonProps = Omit<PressableProps, "children"> & {
 
 export function AtelierButton({
   label,
-  theme = "dark",
+  theme: themeProp,
   disabled,
   style,
   ...props
 }: AtelierButtonProps) {
+  const theme = useTheme(themeProp);
   const palette = colors[theme];
   return (
     <Pressable

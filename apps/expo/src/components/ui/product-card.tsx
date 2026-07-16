@@ -9,6 +9,7 @@ import Animated, {
 
 import { IconHeart } from "@/components/icons";
 import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 import { ConfidenceBadge } from "./confidence-badge";
 import { GyfText } from "./gyf-text";
 import { PressableScale, hitSlopFor } from "./pressable-scale";
@@ -42,7 +43,7 @@ export function ProductCard({
   width,
   onPress,
   onToggleSave,
-  theme = "dark",
+  theme: themeProp,
 }: {
   item: ProductCardItem;
   width: number;
@@ -50,6 +51,7 @@ export function ProductCard({
   onToggleSave?: (saved: boolean) => void;
   theme?: ThemeName;
 }) {
+  const theme = useTheme(themeProp);
   const palette = colors[theme];
   const pop = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));

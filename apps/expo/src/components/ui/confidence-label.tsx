@@ -1,17 +1,19 @@
 import { View } from "react-native";
 
 import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 import { GyfText } from "./gyf-text";
 
 export function ConfidenceLabel({
   confidence,
   reason,
-  theme = "dark",
+  theme: themeProp,
 }: {
   confidence?: number | null;
   reason?: string | null;
   theme?: ThemeName;
 }) {
+  const theme = useTheme(themeProp);
   const known = typeof confidence === "number" && Number.isFinite(confidence);
   const label = known
     ? `${Math.round(confidence * 100)}% confidence`

@@ -1,4 +1,5 @@
 import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 import { GyfText } from "./gyf-text";
 import { PressableScale } from "./pressable-scale";
 
@@ -8,7 +9,7 @@ export function FilterChip({
   count,
   selected,
   onPress,
-  theme = "dark",
+  theme: themeProp,
 }: {
   label: string;
   count?: number;
@@ -16,6 +17,7 @@ export function FilterChip({
   onPress: () => void;
   theme?: ThemeName;
 }) {
+  const theme = useTheme(themeProp);
   const palette = colors[theme];
   return (
     <PressableScale

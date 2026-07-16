@@ -10,12 +10,14 @@ import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { colors } from "@/theme/tokens";
+import { useAppColorScheme } from "@/theme/use-color-scheme";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {
   // Already hidden (web reload) — nothing to hold.
 });
 
 export default function RootLayout() {
+  const scheme = useAppColorScheme();
   const [fontsLoaded, fontError] = useFonts({
     Fraunces_600SemiBold,
     Fraunces_700Bold,
@@ -33,7 +35,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Stack
-        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.dark.bg } }}
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors[scheme].bg },
+        }}
       />
     </SafeAreaProvider>
   );

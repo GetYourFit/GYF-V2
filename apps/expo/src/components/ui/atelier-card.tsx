@@ -1,12 +1,14 @@
 import { View, type ViewProps } from "react-native";
 
 import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 
 export function AtelierCard({
-  theme = "dark",
+  theme: themeProp,
   style,
   ...props
 }: ViewProps & { theme?: ThemeName }) {
+  const theme = useTheme(themeProp);
   return (
     <View
       {...props}
