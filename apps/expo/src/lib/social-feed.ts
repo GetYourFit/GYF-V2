@@ -1,7 +1,27 @@
-import type { Post, SavedItem } from "./api";
+import type { Outfit, Post, PostInput, SavedItem } from "./api";
 
 export const SOCIAL_PAGE_SIZE = 20;
+export const SOCIAL_CAPTION_MAX = 1_000;
 export type FeedScope = "all" | "following";
+
+/** Build a post only from a server-returned outfit; empty looks cannot be published. */
+export function postInputForOutfit(
+  outfit: Outfit | undefined,
+  recommendationId: string,
+  occasion?: string,
+  caption?: string,
+): PostInput | null {
+  if (!outfit) return null;
+  const itemIds = outfit.items.map((item) => item.item_id).filter(Boolean);
+  if (itemIds.length === 0) return null;
+  const trimmed = caption?.trim().slice(0, SOCIAL_CAPTION_MAX);
+  return {
+    item_ids: itemIds,
+    recommendation_id: recommendationId,
+    occasion: occasion || undefined,
+    caption: trimmed || undefined,
+  };
+}
 
 /** First `max` items that actually carry a remote image — a look's preview strip. */
 export function postCoverImages(items: SavedItem[], max = 3): string[] {
