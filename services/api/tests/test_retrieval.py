@@ -282,6 +282,48 @@ def test_max_price_adds_server_side_filter():
     assert params[-2:] == (10, 10)  # limit, offset
 
 
+def test_keyword_fallback_uses_bounded_indexable_full_text_search():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+
+    repo.keyword_search(
+        "I want a red dresses for the evening",
+        k=12,
+        region="IN",
+        max_price=2500,
+        genders=frozenset({"women"}),
+        categories=["dress"],
+    )
+
+    sql, params = pool.calls[-1]
+    assert "to_tsvector('simple'::regconfig, i.title)" in sql
+    assert sql.count("to_tsquery('simple'::regconfig, %s)") == 2
+    assert "ts_rank_cd" in sql and ", 32) AS score" in sql
+    assert "ILIKE" not in sql
+    # Stopwords are removed, useful terms use safe prefix lexemes, and the same
+    # bounded query is used for ranking and the index-backed match predicate.
+    assert params[:2] == ("red:* | dresses:* | evening:*",) * 2
+    assert params[-2:] == (12, 0)
+
+
+def test_keyword_fallback_rejects_punctuation_only_without_querying_postgres():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+
+    assert repo.keyword_search("!!!", k=12, region=None) == []
+    assert pool.calls == []
+
+
+def test_keyword_fallback_preserves_indic_words_and_combining_marks():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+
+    repo.keyword_search("लाल कुर्ता चाहिए", k=12, region="IN")
+
+    _, params = pool.calls[-1]
+    assert params[:2] == ("लाल:* | कुर्ता:* | चाहिए:*",) * 2
+
+
 class _FacetsPool:
     """Pool whose cursor supports fetchone(), for the aggregate facets query."""
 
