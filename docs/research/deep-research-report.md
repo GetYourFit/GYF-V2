@@ -1,6 +1,6 @@
 # GYF — Deep Research Report: State of the Art Across All Technical Pillars
 
-*Generated: 2026-06-17 | Sources: 30+ | Confidence: High (pillars 1, 3, 5, 7, 8), Medium (pillars 2, 4, 6)*
+*Generated: 2026-06-17 | Corrected: 2026-07-16 | Historical research evidence; current decisions live in the active execution contract*
 
 > Companion to [`ideas-complete.md`](../vision/ideas-complete.md) (vision) and
 > [`tech-stack.md`](../tech-stack.md) (stack decisions). This report grounds each
@@ -12,17 +12,19 @@
 
 ## Executive Summary
 
-GYF can be built **end-to-end on open models and free tiers** through beta, with paid
-infrastructure introduced only when scale demands it. The fashion-AI field has matured
+GYF can keep its non-GPU base inside the ₹3,000/month ceiling, but a commercial beta is not
+honestly guaranteed to be end-to-end free: commercial hosting terms, GPU availability, FX and
+tax must be budgeted. The fashion-AI field has matured
 decisively toward **transformer/diffusion architectures**: fashion-specific embedding
-models (Marqo-FashionSigLIP) for perception, **generative recommenders with Semantic IDs**
-(TIGER/HSTU) for taste, **diffusion-transformer multi-garment try-on** (MuGa-VTON, Leffa,
-CatVTON) for visualization, and **graph/transformer outfit-compatibility** models for
-coordination. Rich open datasets (DeepFashion(2), Polyvore, Fashionpedia, VITON-HD,
-DressCode, FashionIQ) cover every training need, so the dominant proprietary asset becomes
-**first-party behavioral data**. For deployment, **Hugging Face ZeroGPU + Supabase/Neon
-(free pgvector)** form a genuinely $0 beta stack; serverless GPU (Modal $30/mo credit,
-RunPod) bridges to scale. The main *open* risks: illumination-robust **skin-tone fairness**
+models (Marqo-FashionSigLIP) for perception, measured simple recommenders before any
+generative recommender, permissively licensed **FASHN VTON v1.5** as a gated external
+try-on candidate plus a rights-clean GYF-owned challenger, and graph/transformer outfit models
+as research directions for coordination. Public datasets do not automatically grant commercial
+training rights, so they are research references rather than production inputs. The proprietary
+asset is rights-cleared catalogue pairs plus consented first-party behavioural outcomes.
+Commercial static hosting, one small API, free-tier Postgres and scale-to-zero GPU form the
+budget path; HF ZeroGPU is research-only, not a production dependency. The main *open* risks:
+illumination-robust **skin-tone fairness**
 and **offline→online metric gap** in recommendation — both addressable with disciplined
 evaluation.
 
@@ -163,15 +165,16 @@ near-identical looks); graceful degradation when a category is unavailable.
 
 ## Pillar 5 — Photorealistic Multi-Garment Virtual Try-On
 
-**Recommendation: start with IDM-VTON, scale to a diffusion-transformer multi-garment model
-(MuGa-VTON), keep CatVTON as the efficiency option.**
+**Corrected recommendation (2026-07-16): benchmark the pinned Apache-2.0 FASHN VTON v1.5
+artifact as the first external candidate while preparing a rights-clean GYF-owned challenger;
+train it only after ≥2,000 authorised pairs plus a stable ≥10% FASHN failure cluster exist.**
 
-- **Baseline (✅): IDM-VTON** — diffusion try-on fusing high-level garment semantics into
+- **Research ceiling only: IDM-VTON** — diffusion try-on fusing high-level garment semantics into
   cross-attention and low-level detail via a parallel UNet; strong identity/detail
   preservation in the wild (ECCV 2024). Best quality-per-cost starting point
   ([project](https://idm-vton.github.io/), [arXiv 2403.05139](https://arxiv.org/abs/2403.05139),
   [HF model](https://huggingface.co/yisol/IDM-VTON)).
-- **Efficiency: CatVTON** ("concatenation is all you need," ICLR 2025) — lightweight
+- **Research ceiling only: CatVTON** ("concatenation is all you need," ICLR 2025) — lightweight
   diffusion try-on, **SSIM ≈ 0.871, LPIPS ≈ 0.082**; cheaper inference.
 - **Multi-garment target (🔜): MuGa-VTON** — multi-garment try-on via **diffusion
   transformers** with prompt customization, preserving garment + identity — the closest match
@@ -183,6 +186,11 @@ near-identical looks); graceful degradation when a category is unavailable.
 
 **Serving.** Distilled/few-step diffusion (LCM/Turbo-style) on GPU; async job with progress;
 results cached in object storage; safety filtering on inputs/outputs.
+
+FASHN is acceleration, not lock-in. Promotion requires artifact hashes, dependency and data
+provenance, an identity/item-disjoint human scorecard, privacy/security checks and a hard
+per-success cost gate. The owned lane starts only after enough authorised pairs exist and replaces
+the incumbent only with statistically superior quality and non-inferior safety/latency/cost.
 
 **Why diffusion-DiT.** The field has converged on diffusion *transformers* as the photorealism
 leader for single- and multi-garment try-on — directly meeting the brief's "really photo
@@ -248,24 +256,23 @@ augment with synthetic data.** All names below are standard, citable open resour
 
 ## Pillar 8 — Free-Tier Deployment & Serving Infrastructure
 
-**Recommendation (beta, ~$0):** Vercel (web — GYF's chosen host; Cloudflare Workers evaluated
-as an alternative) + a free Postgres-with-pgvector
-(**Supabase** or **Neon**) + **Hugging Face ZeroGPU** for diffusion/embedding inference;
-graduate to serverless GPU (**Modal**, **RunPod**) then dedicated GPU as usage grows.
+**Corrected recommendation (2026-07-16):** commercial static hosting on Render, one
+Starter-class API, the measured Supabase Postgres/pgvector project, and scale-to-zero GPU only
+after F9. Vercel Hobby is preview-only for this affiliate product; HF ZeroGPU is research-only.
 
 | Layer | Free / low-cost option | Limits & notes |
 | --- | --- | --- |
-| Web (chosen) | **Vercel** Hobby free | Native Next.js host; Git auto-deploy, preview URLs per PR — GYF web ships here (project `gyf-v2-app`). |
+| Web (chosen) | **Render Static Sites** | Commercially usable static CDN path after Expo-web parity; Vercel Hobby remains preview-only. |
 | Web/edge (alt) | **Cloudflare Workers** free | 100K req/day, 10ms CPU/invocation — lightweight APIs only; evaluated, not chosen ([Render free-tier roundup](https://render.com/articles/platforms-with-a-real-free-tier-for-developers-in-2026)). |
 | DB + vectors | **Supabase free** (500MB DB, 50K MAU, pgvector bundled) or **Neon free** (3 GiB/branch, scale-to-zero) | `pgvector` itself is $0; pay only Postgres infra ([Koyeb Postgres free tiers](https://www.koyeb.com/blog/top-postgresql-database-free-tiers-in-2026), [DigitalApplied vector DBs 2026](https://www.digitalapplied.com/blog/vector-databases-for-ai-agents-pinecone-qdrant-2026)). |
-| GPU inference | **HF Spaces + ZeroGPU** | Free: shared RTX Pro 6000 Blackwell pool, ~5 min GPU/day; PRO $9/mo → 40 min + priority; overage $1 / 10 min ([ZeroGPU docs](https://huggingface.co/docs/hub/en/spaces-zerogpu), [eesel HF pricing](https://www.eesel.ai/blog/hugging-face-pricing)). Best true-free GPU path. |
-| Serverless GPU (scale) | **Modal** ($30/mo free credit, 10 concurrent GPUs; H100 ≈ $3.95/hr), **RunPod** | Bridge to production ([RunPod serverless GPU guide](https://www.runpod.io/articles/guides/top-serverless-gpu-clouds), [Modal pricing](https://costbench.com/software/ai-gpu-cloud/modal/)). |
+| GPU research | **HF Spaces + ZeroGPU** | Useful for grants/research, but HF PRO/payment and quota constraints make it an invalid production dependency for this India-operated plan ([ZeroGPU docs](https://huggingface.co/docs/hub/en/spaces-zerogpu)). |
+| Serverless GPU (gated serving) | **Modal / RunPod** | Benchmark real region multiplier, cold start and successful-render cost before F9; keep a hard monthly kill switch ([Modal pricing](https://modal.com/pricing)). |
 | Avoid for GPU | **Fly.io, Railway** | Fly.io dropped GPU ambitions & free tier; Railway free credit ≈ a few hrs ([ExpressTech Fly.io](https://expresstech.io/7-fly-io-alternatives-in-2026-real-pricing-after-the-free-tier-died/)). |
 | Vector at scale | **Qdrant** (usage-based; self-host free) → **Milvus** (billion-scale) | Move off pgvector beyond ~50–100M vectors. |
 
-**Cost path:** $0 beta (HF ZeroGPU + Supabase/Neon + Vercel) → Modal/RunPod credits
-for try-on bursts → dedicated GPU + Qdrant/Milvus only when scale forces it. Matches the
-brief's "free-tier first, spend only when scale demands."
+**Cost path:** Render Static + one small API + Supabase free tier, with try-on closed until
+measured scale-to-zero serving fits the ₹1,500 GPU sub-cap. Dedicated GPU or a separate vector
+database is considered only after measured capacity and economics force it.
 
 *Confidence: High — pricing/limits from multiple 2026 sources (verify quotas at signup; these
 change frequently).*

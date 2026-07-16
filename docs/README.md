@@ -26,11 +26,13 @@ source of execution order and gates.
 | Real prices, availability, rights and attribution | Vision; doctrine D2 | F4 and F10 |
 | Intelligent owned wardrobe | Vision; feedback v4/v5 | Expo parity, F5, F11 |
 | Saved looks and collections | Vision | Expo parity; merge/delete duplicate surface only at F13 |
-| Social creation, following and recreation | Vision; feedback v2/v4–v6 | Expo parity and F11 journeys |
-| Free owned virtual try-on | [`plans/free-vton-moat.md`](./plans/free-vton-moat.md) | F8 durable spine, F9 promotion, cost/privacy kill switches |
+| Social creation, following, recreation, sharing/download and reactions | Vision; feedback v2/v4–v6 | Sequential hard-launch slice after the retained-core gate |
+| UGC/generative safety and responsive moderation | Store policies; launch/refactor security floor | EXPO-09/10, F10–F11 report/block/triage/disable evidence |
+| Free virtual try-on with owned-model independence | [`plans/free-vton-moat.md`](./plans/free-vton-moat.md) | F8 FASHN + owned challenger, F9 promotion, cost/privacy kill switches |
 | Consented learning moat | [`plans/ml-data-flywheel.md`](./plans/ml-data-flywheel.md) | F3, F5–F7, F12 |
-| Premium, unique, accessible Expo UI | Feedback v2–v6; launch/refactor plan | Expo vertical slices, accessibility/device proof, F11 |
+| Premium, curved, responsive, light/dark, animated Expo UI | Feedback v2–v6; launch/refactor plan | Expo vertical slices, visual/a11y/device proof, F11 |
 | Production CI/CD, preview and rollback | Deploy runbooks; doctrine | Every slice, F10, F11 |
+| Native store policy, signing and privacy declarations | Official Apple/Play requirements; launch/refactor plan | EXPO-11, F10–F11 staged release gate |
 | Hosting + GPU below ₹3,000/month | [`plans/scale-3k-inr.md`](./plans/scale-3k-inr.md) | F2.5, F8–F12; measured provider scorecard |
 | Lean repository; remove fake/stale/duplicate work | Feedback v2/v5/v6; doctrine | Replace-then-delete and F13 protected deletion |
 
@@ -41,8 +43,8 @@ source of execution order and gates.
   [`research/signup-first-outfit-study.md`](./research/signup-first-outfit-study.md) with
   [`research/signup-first-outfit-study.csv`](./research/signup-first-outfit-study.csv), and the
   photo study linked above.
-- Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) and
-  [`deploy/gpu-lane.md`](./deploy/gpu-lane.md).
+- Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) (superseded
+  historical preview runbook retained until F13) and [`deploy/gpu-lane.md`](./deploy/gpu-lane.md).
 - Historical user evidence: [`feedbacks/gyf-feedback-v1.md`](./feedbacks/gyf-feedback-v1.md),
   [`feedbacks/gyf-feedback-v2.md`](./feedbacks/gyf-feedback-v2.md),
   [`feedbacks/gyf-feedback-v3-design.md`](./feedbacks/gyf-feedback-v3-design.md),

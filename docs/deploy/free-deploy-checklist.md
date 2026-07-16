@@ -1,6 +1,11 @@
 # GYF — Free Deploy Checklist
 
-Goal: put GYF on the internet for beta users at **$0**, so the data flywheel starts.
+Status: **SUPERSEDED HISTORICAL RUNBOOK — DO NOT EXECUTE**. It records the original free-preview
+deployment only. Current commercial hosting, migration, security, store-release and cost authority
+is [`../plans/active-execution-contract.md`](../plans/active-execution-contract.md) F10–F11 and
+[`../plans/scale-3k-inr.md`](../plans/scale-3k-inr.md). It remains until protected F13 deletion.
+
+Historical goal: put GYF on the internet for beta users at **$0**, so the data flywheel starts.
 Stack (all free tiers): **Supabase** (database + login + image storage) · **Render**
 (the API / "brain") · **Vercel** (the website, project `gyf-v2-app`).
 

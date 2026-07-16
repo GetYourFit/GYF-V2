@@ -7,15 +7,21 @@
 > elsewhere. The current production gate is **F2.5 external SLO promotion pending**; local
 > implementation continues sequentially by owner amendment 2026-07-15. Every surface is free,
 > **including virtual
-> try-on** (owner amendment 2026-07-14, superseding the same-day subscription decision): the
-> owned free lane per [`docs/plans/free-vton-moat.md`](./docs/plans/free-vton-moat.md), quota-
-> and kill-switch-bounded, lands in F8/F9. Payment work is cancelled; no paywall anywhere.
+> try-on** (owner amendment 2026-07-14, superseding the same-day subscription decision). Owner
+> amendment 2026-07-16 makes permissive FASHN VTON v1.5 the first external serving candidate after
+> F9 gates, while the rights-clean GYF-owned lane is prepared in parallel and trains only after
+> ≥2,000 authorised pairs plus a stable ≥10% FASHN failure cluster; both
+> remain quota- and kill-switch-bounded. Payment work is cancelled; no paywall anywhere.
 > Owner (2026-07-14): incumbent-preservation and migration-parity caution are relaxed —
 > replacements may ship once licensed and secure; security, privacy and reliability gates stay.
 > A gated replacement deletes what it replaces in the same slice; all other obsolete or
 > duplicate code is deleted only in **F13**. Learned challengers train on GYF's own data until
 > they measurably beat the production incumbent; promotion only on that win. Complete the
 > contract's phase verification before committing or pushing.
+> Owner amendment 2026-07-16 (latest): every non-conflicting capability and quality requirement
+> in `docs/vision/ideas-complete.md` and `docs/feedbacks/*.md` is hard-public-launch scope. The
+> trusted outfit loop remains first, then all remaining requirements close sequentially through
+> the launch/refactor traceability matrix before HL.
 
 > **Purpose.** This is the operating guide for any AI agent or developer working on GYF.
 > It consolidates the full product vision, feature set, technology stack, and engineering
@@ -273,14 +279,17 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
    - **Body-type module** — monocular **SAM 3D Body (3DB) → MHR** (Apache-2.0, SMPL-free) + **Anny** calibration → measurements → body-type taxonomy. *(well-supported; SMPL/SMPL-X rejected as non-commercial-gated — see `docs/research/deep-research-report.md`)*
    - **Skin-tone module (separate, custom, fairness-gated) ⚠️** — face/skin segmentation → illumination-robust **CIELAB** tone → undertone palette; **must pass full-spectrum fairness eval** (e.g. Monk Skin Tone) before shipping; manual fallback always available. *(low-confidence; never block the product on it)*
 3. **Controllable styling:** intent parser (light LLM/NLU) maps free text → visual-effect goal (`elongate`/`slim`/`broaden`); a **color-theory + body-type effects engine** turns goals into garment-attribute constraints that re-weight the ranker and feed explanations. Occasion + region/culture are first-class conditioning features.
-4. **Personal taste & recommendation:** launch with **two-tower retrieval + transformer ranker**; content-based **cold start**; scale to **generative recommendation with Semantic IDs (TIGER/HSTU)**. Every rec ships a reason + calibrated confidence.
-5. **Outfit composition & compatibility:** transformer-over-the-outfit-set (+ hypergraph GNN) compatibility scorer; constrained, **diverse (DPP/MMR)** ranked outfits honoring budget/occasion/body/tone/wardrobe.
-6. **Generative virtual try-on (behind a `TryOnRenderer` port):** render the **complete designed outfit on the user's photo**. **Beta = use a licensed/hosted model at inference** (no training data needed; most open try-on weights are non-commercial). **Multi-garment** (top+bottom+footwear at once, footwear weakest) is the SOTA target — **MuGa-VTON / OmniDiT / DiT-VTON** — phased in. **Own-it-later** by training a permissive (MIT/Apache) architecture on **brand on-model photos** (real paired data; no synthetic).
-7. **Continuous learning & quality:** event-sourced feedback → feature store → retraining; **offline metrics for candidate selection only**, promotion gated by **online A/B + interleaving + counterfactual/IPS**; drift monitoring, shadow deploys, auto-rollback. Never silently regress.
+4. **Personal taste & recommendation:** keep the existing deterministic/online-taste baseline; add the simplest ranker only when a frozen offline and online evaluation proves a material win. Every recommendation ships a reason + calibrated confidence.
+5. **Outfit composition & compatibility:** constrained, diverse complete outfits honoring budget, occasion and known user facts; advanced transformer/GNN rankers remain research until first-party data and evaluation earn them.
+6. **Generative virtual try-on (behind `TryOnRenderer`):** FASHN VTON v1.5 is the first gated external candidate; public access waits for F9. Prepare the rights-clean owned lane in parallel, but train only after ≥2,000 authorised pairs plus a stable ≥10% FASHN failure cluster.
+7. **Continuous learning & quality:** consented feedback → auditable datasets → candidate evaluation; offline metrics select candidates, and online/counterfactual evidence promotes them. Never silently regress.
 
 ### Social, commerce, B2B
-- Ranked social feed on the same taste/embedding stack; style-following re-rendered to the follower's tone; badge engine; "shop the look" → retailer redirect + affiliate attribution; moderation via VLM/policy classifiers.
-- **B2B engine:** event lake → privacy-preserving aggregation (DP + k-anonymity 🔜) → trend/taste/demand features → distilled models served via a versioned partner API, strictly separated from PII.
+- Preserve safe existing social/commerce parity, affiliate attribution and moderation. Complete
+  social, badges and gamification sequentially after the retained-core gate; they are hard-launch
+  requirements.
+- The consent-safe distilled B2B data/model boundary is a hard-launch requirement after lawful
+  aggregation and retained consumer use; broad B2B sales productisation is not.
 
 ---
 
@@ -288,11 +297,13 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 
 | Phase | Ships |
 | --- | --- |
-| **1 — Intelligent stylist (launch)** | Onboarding (photo/manual, separate body + skin-tone modules), cold start, explained outfits, occasion + NL styling goals, region-aware garments, feedback loop, basic try-on (IDM-VTON), social posts, affiliate redirect. |
-| **2 — Personal taste engine** | Wardrobe-aware styling, deeper personalization, context (weather/event/mood), badges; Semantic-ID generative recsys (beta). |
-| **3 — Shopping companion** | Multi-retailer recommendations, smarter buying, richer commerce. |
-| **4 — Visualization layer** | High-fidelity multi-garment on-body try-on (MuGa-VTON). |
-| **5 — Ambient stylist + B2B** | Compounding collective intelligence (HSTU scale), B2B data product. |
+| **1 — Rescue retained core** | Fast truthful catalog; manual onboarding; explained complete outfit; save/skip/shop/correct; security and instrumentation. |
+| **2 — Prove retention** | Expo parity/cutover and ≥30-day India closed beta with D1/D7/D30 and unit-economics evidence. |
+| **3 — Earned intelligence** | Measured retrieval/ranking improvements and consented learning only where simple baselines fail. |
+| **4 — Gated free VTON** | F8/F9 comparison of pinned FASHN and eligible rights-clean GYF challengers, with quotas and kill switch. |
+| **5 — Required full vision** | Social/profile/badges, photo assistance, Canvas/Lookspace, richer context and the B2B boundary after their retained-core, legal and economic gates. |
+
+All five phases close before the hard public-launch packet; sequencing is not deferral.
 
 ---
 
@@ -326,9 +337,9 @@ tagged), taste is *personal and learned* (from behavior, continuously), and good
 16. **Leverage ECC skills.** Use relevant skills from the `ECC` folder whenever they apply.
 
 ### Free-tier deployment path (cost-disciplined)
-- **$0 beta:** web on **Vercel** (project `gyf-v2-app`, Git auto-deploy of `app/`); DB+vectors on **Supabase / Neon** (free pgvector); GPU inference on **Hugging Face Spaces + ZeroGPU**.
-- **Bridge to scale:** **Modal** ($30/mo credit) / **RunPod** for try-on bursts.
-- **At scale:** dedicated GPU + Qdrant/Milvus, only when usage forces it.
+- **Commercial beta:** Expo web/static output on **Render Static Sites**; API on one Render Starter-class service; DB+vectors on the measured **Supabase** project. Vercel Hobby is preview/personal-only because its fair-use terms prohibit commercial use.
+- **GPU:** keep try-on closed until F9. Benchmark the pinned FASHN candidate and GYF-owned challenger on scale-to-zero **Modal / RunPod** serving; HF ZeroGPU is a research/grant lane, never a production dependency.
+- **At scale:** scale the measured bottleneck first. Dedicated GPU or a separate vector database is allowed only when observed load and unit economics justify it.
 - *Avoid for GPU:* Fly.io, Railway. (Quotas change — verify at signup.)
 
 ### Which ECC skills to use when

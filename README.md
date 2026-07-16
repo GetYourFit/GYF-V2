@@ -17,13 +17,14 @@ coordinated outfits you can trust — getting smarter with every person it dress
 ## Repository layout
 
 ```
-app/        # Next.js web (App Router, RSC), PWA — core stylist surface
-services/   # FastAPI core API (auth, event spine, observability); BFF, workers to come
+apps/expo/  # Expo Router replacement client for iOS, Android and web
+app/        # Next.js behavioural oracle and temporary rollback client
+services/   # FastAPI modular monolith (API, event spine, background jobs)
 ml/         # ML platform (perception, user model, recsys, compat, try-on, eval)
 packages/   # shared types (TS) + contracts (Python), config
-infra/      # IaC (Terraform) + local Apple-container stack (container-stack.sh), CI config
+infra/      # current IaC + local Apple-container stack
 scripts/    # ops + verification scripts (gates, e2e, seeders, flywheel)
-docs/       # documentation (vision, doctrine, tech stack, one active plan, evidence, runbooks)
+docs/       # vision, doctrine, one active execution contract, evidence and runbooks
 ```
 
 ## Getting started
@@ -44,14 +45,14 @@ the current environment names and setup process.
 
 ### Local services (optional)
 
-Run the full P0 spine locally (Postgres+pgvector, Redis, Redpanda):
+Run the local data services (Postgres+pgvector and Redis):
 
 ```bash
-make up          # bash infra/container-stack.sh up  (Apple container: Postgres+pgvector, Redis, Redpanda)
+make up
 ```
 
-The API uses an append-only JSONL event sink by default; set `GYF_EVENT_SINK=postgres`
-to persist to the `interactions` table, or `kafka` to publish to Redpanda.
+`make dev` and the full local stack set `GYF_EVENT_SINK=postgres`, so feedback reaches the
+same interaction spine used by training exports.
 
 ## Engineering standards
 
@@ -59,21 +60,16 @@ to persist to the `interactions` table, or `kafka` to publish to Redpanda.
 - **Pre-commit hooks** mirror CI — install once with `pre-commit install`
   (see [`.pre-commit-config.yaml`](./.pre-commit-config.yaml)).
 - **Local gate:** `make ci` runs format-check, lint, typecheck, and tests.
-- **CI:** GitHub Actions runs the web and API jobs (the API job spins up a real
-  Postgres and proves the event spine end-to-end); CD deploys to Vercel once secrets are set.
+- **CI:** GitHub Actions runs web, Expo and API checks; the API lane uses real Postgres.
+- **CD:** the Next rollback client can deploy to Vercel preview, Expo web to EAS Hosting, and the
+  FastAPI service through Render. Commercial promotion is controlled by the active contract.
 - **Reviews** routed via [`.github/CODEOWNERS`](./.github/CODEOWNERS); PRs use the
   [pull request template](./.github/pull_request_template.md).
 
 ## Status
 
-The active contract starts application work at F1a: preserve omitted profile fields on partial updates. Older P0–P5 status below is historical completion evidence.
-
-| Area | State |
-| --- | --- |
-| Repo & standards (P0-A) | ✅ monorepo, Makefile, pre-commit, CODEOWNERS, PR template |
-| CI/CD (P0-B) | ✅ CI green; CD wired (no-op until Vercel secrets set) |
-| Infra (P0-C) | ✅ Supabase + Upstash + Vercel via Terraform; local docker stack |
-| Contracts & data spine (P0-D) | ✅ schema, auth scaffold, event taxonomy, sinks — **proven end-to-end in CI** |
-| Observability (P0-E) | ✅ Prometheus metrics + structured logs + opt-in backend Sentry errors/performance; OTel remains collector-gated |
-
-Free-tier-first, no hardcoded limitations, built to scale. Current work is defined only by the active execution contract.
+GYF is not launch-ready. The current production gate is **F2.5**: catalogue/search must pass the
+fixed India-vantage SLOs. Expo replacement work may continue locally only inside the trusted
+outfit-decision journey; public try-on, learned rankers and expansion remain behind their evidence
+gates. The exact current state and next action live only in the
+[active execution contract](./docs/plans/active-execution-contract.md).

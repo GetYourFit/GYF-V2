@@ -247,6 +247,13 @@ attribute mapping is a curated, testable rule+ML layer.*
 
 ### 4.5 Generative Virtual Try-On — "see the look we designed, on *you*"
 
+> **Decision amendment (2026-07-16):** FASHN VTON v1.5 publishes Apache-2.0 inference code
+> and weights and is the first external candidate behind `TryOnRenderer`. It is not exposed
+> before F9 verifies the exact dependency graph, privacy, safety, quality, latency and unit
+> cost. In parallel, GYF prepares a rights-clean owned challenger; training starts only after
+> ≥2,000 authorised pairs plus a stable ≥10% FASHN failure cluster exist. It uses authorised
+> catalogue pairs and consented outcomes and replaces FASHN only after statistically superior evaluation.
+
 **Goal.** Not a product flat-lay. The user uploads a photo; GYF renders the **complete,
 coordinated outfit the stylist chose for them** (top + bottom + footwear, selected for their
 skin tone / body type / occasion) **on their own body**, shown *with the explanation of why
@@ -260,11 +267,11 @@ renderer — the moment GYF stops being a catalog and becomes a mirror.
   beta **rents/licenses a try-on model at inference**, no dataset, no GPU training. The garment
   comes from the brand feed (licensed), the photo from the user (consented) — both clean to use;
   the only gate is the **model's license** (engineering-doctrine D2).
-- **Licensing reality (researched 2026-06-20):** most open try-on *weights* are
+- **Licensing reality (updated 2026-07-16):** most research try-on *weights* are
   **non-commercial** (IDM-VTON, CatVTON, **FitDiT** → Tencent for commercial). **Leffa** is
-  MIT *code* but its weights derive from research-only datasets (VITON-HD/DressCode). ⟹ for a
-  monetizing product, **pay for a commercial try-on license / hosted API at inference**, or
-  later train an MIT/Apache architecture on **clean real paired data** (see below).
+  MIT *code* but its public weights derive from research-only datasets (VITON-HD/DressCode).
+  **FASHN VTON v1.5 is the permissive exception discovered later**; its exact artifact and
+  dependencies still require the same commercial and security gate.
 - **Multi-garment is the hard, cutting-edge case.** Easy/cheap models dress *one* garment;
   putting top+bottom+**footwear** on one person at once is the SOTA frontier
   (**MuGa-VTON / OmniDiT / DiT-VTON "try-all"**). **Footwear is the weakest area** across all
@@ -280,8 +287,8 @@ renderer — the moment GYF stops being a catalog and becomes a mirror.
   2. *Later* — full **multi-garment photoreal** render (whole outfit incl. footwear, on their body).
   - *Honest fallback (D6):* if a photo renders poorly, show the look on a **body matched to their
     measurements** rather than ship an uncanny result — trust over flash.
-- **Serving:** distilled/few-step diffusion (LCM/Turbo-style) off the API box (HF ZeroGPU →
-  Modal/RunPod); async job + progress; results cached; **safety filter on inputs/outputs**;
+- **Serving:** pinned model off the API box on measured scale-to-zero Modal/RunPod-class GPU;
+  async job + honest stage state; results TTL-bound; **safety filter on inputs/outputs**;
   body photos handled under `photo_storage` consent, ephemeral + erasable (D8).
 
 ### 4.6 Continuous Learning & Quality Protection
@@ -346,24 +353,23 @@ techniques 🔜; contractual + technical access controls.
 
 | Area | Choice |
 | --- | --- |
-| Containers/orchestration | **Docker + Kubernetes** (managed); GPU node pools for inference. |
-| Model serving | **NVIDIA Triton** (diffusion/vision), **vLLM** (any LLM-based reasoning/explanation) 🔜. |
-| CI/CD | **GitHub Actions**; trunk-based; preview deploys; model registry (**MLflow**). |
-| IaC & config | **Terraform**; secrets in a vault; 12-factor config. |
-| Observability | **OpenTelemetry + Prometheus + Grafana**; **Sentry**; ML-specific drift/quality dashboards. |
-| Experimentation | Feature flags + A/B framework wired to the eval harness. |
-| Security | TLS everywhere, encryption at rest, least-privilege IAM, per-user data isolation, **OWASP Top 10** review (ECC `security-reviewer`), dependency/secret scanning, PII tokenization, GDPR-style deletion. |
-| Cost/efficiency | Step-down diffusion, embedding caches, autoscaling GPU, CDN for media — "efficiency, optimization, security" mandate. |
+| Runtime | Existing **FastAPI modular monolith** plus Expo web/native; no Kubernetes or microservices under the current ceiling. |
+| Model serving | Capability ports in the API; heavy candidates on one-model, scale-to-zero GPU adapters only after evaluation. |
+| CI/CD | **GitHub Actions** with focused tests, security/license gates, immutable artifacts and rollback evidence. |
+| IaC & config | Existing `render.yaml`, database migrations and validated environment config; add infrastructure only at a measured trigger. |
+| Observability | Structured request/stage timings, pool-wait and cost metrics; Sentry where already integrated; SLO/error-budget alerts. |
+| Experimentation | Server-authoritative flags and the existing eval harness; one causal change per catalog experiment. |
+| Security | TLS, least privilege, RLS/per-user isolation, secret scanning, ephemeral sensitive photos, export/erasure and restore drills. |
+| Cost/efficiency | CDN/static delivery, bounded caches, async GPU jobs, quotas and a global monthly kill switch. |
 
-**Free-tier-first deployment path (cost-disciplined, per the brief).**
-- **$0 beta:** web on **Vercel** (Hobby free; project `gyf-v2-app`, Git auto-deploy of `app/`) · DB+vectors on
-  **Supabase** or **Neon** free pgvector · GPU inference (diffusion/embeddings) on **Hugging
-  Face Spaces + ZeroGPU** (free shared GPU pool, ~5 min/day; PRO $9/mo → 40 min + priority).
-- **Bridge to scale:** **Modal** ($30/mo free credit, 10 concurrent GPUs) or **RunPod** for
-  try-on bursts.
-- **At scale:** dedicated GPU nodes + **Qdrant/Milvus**, introduced only when usage forces it.
-- **Avoid for GPU:** Fly.io (dropped GPU + free tier), Railway (free credit ≈ a few hours).
-- *Quotas/pricing change frequently — verify at signup. Citations: research report Pillar 8.*
+**Commercial budget path (current decision).**
+- Expo web/static on **Render Static Sites**, one Render Starter-class API, and the measured
+  **Supabase Postgres + pgvector** project. Vercel Hobby is preview-only, not commercial production.
+- Try-on stays closed until F9. Benchmark FASHN and eligible owned candidates on Modal/RunPod-class
+  scale-to-zero GPU; HF ZeroGPU remains a research lane. Enforce the envelope in
+  [`plans/scale-3k-inr.md`](./plans/scale-3k-inr.md).
+- Add dedicated GPU, Qdrant/Milvus, Kafka, Temporal, a feature store or Kubernetes only when a
+  named SLO/capacity trigger proves the existing modular monolith cannot meet the requirement.
 
 **Engineering process (from the brief).** Plan before build (`/plan`); research before
 adopting any technique (this doc); TDD and code review via ECC reviewer skills; everything
@@ -375,13 +381,15 @@ genuinely functional — no mockups. Leverage relevant **ECC** skills throughout
 
 ## 8. Phased Rollout (mapped to the product arc)
 
-| Phase | Ships | Key stack additions |
+This table is strategic sequencing only; the active execution contract owns exact slices and gates.
+
+| Phase | Ships | Explicitly deferred |
 | --- | --- | --- |
-| **1 — Intelligent stylist** | Onboarding (photo/manual, separate body + skin-tone modules), cold start, explained outfits, occasion + NL styling goals, region-aware garments, feedback loop, basic try-on (IDM-VTON), social posts, affiliate redirect | Next.js, FastAPI, Postgres+pgvector (Supabase/Neon free), Marqo-FashionSigLIP, two-tower + transformer ranker, intent parser + styling-effects engine, eval harness; HF ZeroGPU serving |
-| **2 — Personal taste engine** | Wardrobe-aware styling, deeper personalization, context (weather/occasion), badges | Feast feature store, Qdrant, Semantic-ID generative recsys (beta), Temporal |
-| **3 — Shopping companion** | Multi-retailer recommendations, smarter buying, richer commerce | Partner/affiliate APIs, ClickHouse, demand signals |
-| **4 — Visualization layer** | High-fidelity multi-garment, on-body try-on | MuGa-VTON / DiT try-on, distilled diffusion serving |
-| **5 — Ambient stylist + B2B** | Compounding collective intelligence, B2B data product | HSTU-scale generative recsys, privacy-preserving B2B pipeline |
+| **1 — Rescue the retained core** | Fast truthful catalog; manual onboarding; explained complete outfit; save/skip/shop/correct; instrumentation and security | photo claims, public VTON, new social/gamification, Lookspace, B2B, generative rankers |
+| **2 — Prove retention** | Expo parity/cutover and a ≥30-day India closed beta with D1/D7/D30 cohorts and unit economics | expansion until the retained-core gate passes |
+| **3 — Earned intelligence** | Measured retrieval/ranking improvements and consented learning only where simple baselines fail | large foundation/recommender infrastructure without evidence |
+| **4 — Gated free VTON** | Pinned FASHN candidate plus rights-clean GYF challenger through F8/F9, quotas and kill switch | every unlicensed/research-only checkpoint |
+| **5 — Scale the bottleneck** | Only the database, compute, storage or organisation change proven necessary by SLO and economics | speculative microservices, Kubernetes, vector DBs and data platforms |
 
 ---
 
@@ -389,14 +397,14 @@ genuinely functional — no mockups. Leverage relevant **ECC** skills throughout
 
 | Layer | Primary | Alternatives weighed |
 | --- | --- | --- |
-| Frontend | Next.js + React + Tailwind/shadcn | Remix, SvelteKit, Nuxt |
+| Frontend | Expo Router + React Native for native/web; legacy Next app is the migration oracle until cutover | Separate permanent web/native clients |
 | Backend | FastAPI (Python) | Node/NestJS, Go |
 | OLTP | PostgreSQL | MySQL, CockroachDB |
-| Vectors | pgvector → Qdrant → Milvus | Weaviate, Pinecone, Faiss |
-| Events | Kafka/Redpanda | NATS, Pulsar |
+| Vectors | Existing pgvector until measured scale/SLO requires a change | Qdrant, Milvus, Weaviate, Pinecone, Faiss |
+| Events/jobs | Existing Postgres-backed durable jobs/outbox patterns | Kafka/Redpanda, NATS, Pulsar only at a measured trigger |
 | Fashion embeddings | Marqo-FashionSigLIP | OpenCLIP, FashionCLIP 2.0, SigLIP 2, DINOv2 |
-| Recsys | Two-tower + transformer → TIGER/HSTU | DLRM, classic CF, pure LLM-recsys |
-| Try-on | Licensed/hosted model at inference (beta) → own MIT/Apache arch on brand on-model photos (multi-garment, complete look on user) | IDM-VTON/CatVTON/FitDiT (all non-commercial), MuGa-VTON/OmniDiT/DiT-VTON (multi-garment targets) |
+| Recsys | Existing deterministic/online-taste baseline → evaluated simplest winning ranker | Two-tower, TIGER/HSTU, DLRM and LLM rankers remain research until evidence earns them |
+| Try-on | Pinned FASHN v1.5 after F9 → rights-clean GYF-owned challenger after the data trigger | IDM-VTON/CatVTON/FitDiT and public Leffa weights remain offline research ceilings |
 | Body type | SAM 3D Body (3DB) → MHR + Anny calibration (Apache-2.0, SMPL-free) | SMPL/SMPL-X/SHAPY/NLF (non-commercial-gated), MediaPipe-ratios-only, manual-only |
 | Skin tone (separate module ⚠️) | Custom CIELAB tone + fairness gate | RGB heuristics (biased), manual-only |
 | Controllable styling | Intent parser + color-theory/body-type effects engine | Free-text-only with no structure |
