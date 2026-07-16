@@ -143,7 +143,7 @@ def test_browse_and_search_emit_fixed_stage_labels():
     triples = (
         ("search", "remote_encode", "success"),
         ("browse", "taste", "empty"),
-        ("browse", "directory_lookup", "success"),
+        ("browse", "directory_lookup", "bypass"),
     )
     before = {triple: count(*triple) for triple in triples}
     _call("?q=fashion", path="/items/search")

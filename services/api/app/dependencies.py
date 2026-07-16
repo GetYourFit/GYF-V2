@@ -79,13 +79,15 @@ def get_readiness() -> bool:
 
 
 def get_search_repo() -> VectorSearchRepository:
-    """The pgvector-backed retrieval repository (lazy connection pool)."""
+    """The pgvector-backed retrieval repository, including catalog commerce data."""
+    from .affiliate import linker_from_settings
     from .catalog.retrieval import PostgresVectorSearchRepository
 
     return PostgresVectorSearchRepository(
         settings.database_url,
         pool=shared_pool(settings.database_url),
         indexed_browse=settings.browse_indexed_ring_enabled,
+        linker=linker_from_settings(),
     )
 
 
@@ -117,8 +119,7 @@ def get_text_embedder() -> TextEmbedder | None:
 
 
 def get_item_directory() -> ItemDirectory:
-    """The Postgres-backed item directory used to enrich saved/wardrobe/social ids
-    and to attach real commerce fields (price/buy_url) to catalog search hits."""
+    """The Postgres-backed item directory for saved/wardrobe/social item references."""
     from .affiliate import linker_from_settings
     from .catalog.directory import PostgresItemDirectory
 

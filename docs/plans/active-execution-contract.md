@@ -76,13 +76,22 @@ bun run build
 
 Every skip and failure must be reported. A phase cannot promote with an unexplained data/identity/object mismatch, cross-user access, missing export/deletion/restore evidence, unlicensed dependency, false user-facing claim, critical journey/accessibility/slice regression, unbounded retry/concurrency/GPU spend, cost above the owner-approved ceiling, or no tested fallback and rollback.
 
-## Current truth and next work (audited 2026-07-15)
+## Current truth and next work (audited 2026-07-16)
 
-- Current commit: `d8ca37f80c1145ef1e98c435d180fdaeb1a25ba5`; `main` is clean and matches `origin/main`.
-- Latest CI and CD runs for that commit pass. This proves the automated contract, not product completeness.
+- Production `main` and the live Render API are at `90bfc18`; the current implementation branch
+  merges that production baseline with the latest hard-launch contract and Stylist correction loop.
+- Latest CI and CD runs for production pass. This proves the automated contract, not product completeness.
 - F1, F2, F3, F4 and the closed F8 durable spine are implemented. F5 stays on the deterministic incumbent; F6 lacks sufficient behavioural data; F7 remains fairness-blocked; F9 has not promoted a try-on lane.
 - Expo is deployed. Auth, onboarding, Explore, Stylist, Saved, Collections (a Saved re-export, not a dupe), Wardrobe, Social feed, Profile, Account (consent/export/DELETE-erasure), Contact, Grievance, Status and Canvas are all wired; the last placeholder (the dev-only `design` gallery) is now a real component gallery, so no route renders a placeholder. Each screen sits behind the unchanged API contracts with pure logic unit-tested and the web export building. Remaining Expo enhancements (not placeholders): social compose (create/recreate post), avatar upload, and full Stylist controls / deep Explore detail parity. Next.js remains the behavioural oracle until the Expo cutover gate.
-- Production is **not healthy enough to call complete**. Fresh India measurements (`scripts/measure_slo.py --samples 3`) were: health 0.86s p50, browse 17.01s p50, cached search 1.36s p50 and uncached search 9.29s p50/23.03s p95. Every row failed its SLO.
+- Production is **not healthy enough to call complete**. Fresh India measurements
+  (`scripts/measure_slo.py --samples 5`) were: health 0.38s p50, browse 0.92s p50,
+  cached search 1.28s p50 and uncached search 2.30s p50. Only health passed.
+- The next local F2.5 candidate is implemented but not promoted: catalog retrieval carries commerce
+  data in its original query (removing the measured second directory lookup), ordinary first-page
+  ANN search skips two unnecessary cross-region `SET LOCAL` commands, deep/filtered scan setup is
+  one command, and the always-on API process keeps a bounded 512-query hot embedding cache above
+  durable Postgres. The complete local phase gate passes. Production deployment, before/after stage
+  deltas and all four India SLO rows remain mandatory before F2.5 closes.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 
