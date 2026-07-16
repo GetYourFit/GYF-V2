@@ -12,16 +12,24 @@ encode — that is the surface where a cold GPU lane cost 29.7 s (measured
 2026-07-14). The cached row proves the query-embedding cache actually removes it.
 
 Exit code is non-zero if any surface misses its SLO, so this can gate a promotion.
+
+Requests reuse one connection, because that is what the clients being measured do.
+Until 2026-07-16 this script opened a fresh connection per sample via ``urlopen``,
+charging every request a DNS + TCP + TLS handshake that Expo's ``fetch`` and every
+browser pay once per pool. Measured India -> production the same minute, ``/health``
+read 0.81 s per-connection versus 0.29 s pooled: the gate was reporting ~0.5 s of its
+own handshakes as GYF latency, and failed a row that in fact passes. The handshake is
+real cost, so it is measured and reported once as ``connect`` rather than smeared
+across every sample.
 """
 
 from __future__ import annotations
 
 import argparse
+import http.client
 import statistics
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 
 # (name, p50 target seconds, p95 target seconds) — lockstep with scale-3k-inr.md §2.
 SLOS = {
@@ -33,16 +41,56 @@ SLOS = {
 TIMEOUT_S = 60.0
 
 
-def timed_get(url: str) -> float:
-    """Wall-clock seconds for one request; a failed request still costs the user time,
-    so it is timed and reported, not silently dropped."""
-    start = time.perf_counter()
-    try:
-        with urllib.request.urlopen(url, timeout=TIMEOUT_S) as response:  # noqa: S310
-            response.read()
-    except (urllib.error.URLError, TimeoutError) as exc:
-        print(f"  ! request failed ({exc}) — counted at {time.perf_counter() - start:.1f}s")
-    return time.perf_counter() - start
+class Client:
+    """One pooled connection, mirroring how Expo's fetch and browsers talk to the API.
+
+    Reconnects when the server closes an idle keep-alive connection — that is normal
+    proxy behaviour, not a failed measurement, so it must not be timed as GYF latency.
+    """
+
+    def __init__(self, api: str) -> None:
+        parsed = urllib.parse.urlsplit(api)
+        self._https = parsed.scheme != "http"
+        self._host = parsed.netloc
+        self._prefix = parsed.path.rstrip("/")
+        self._conn: http.client.HTTPConnection | None = None
+
+    def _connect(self) -> http.client.HTTPConnection:
+        factory = http.client.HTTPSConnection if self._https else http.client.HTTPConnection
+        return factory(self._host, timeout=TIMEOUT_S)
+
+    def connect_seconds(self) -> float:
+        """Cost of establishing the pool: DNS + TCP + TLS + one request. Paid once."""
+        self.close()
+        start = time.perf_counter()
+        self._conn = self._connect()
+        self.get("/health")
+        return time.perf_counter() - start
+
+    def get(self, path: str) -> float:
+        """Wall-clock seconds for one request on the pooled connection. A failed request
+        still costs the user time, so it is timed and reported, not silently dropped."""
+        start = time.perf_counter()
+        for attempt in (1, 2):
+            if self._conn is None:
+                self._conn = self._connect()
+            try:
+                self._conn.request("GET", f"{self._prefix}{path}")
+                self._conn.getresponse().read()
+                return time.perf_counter() - start
+            except (http.client.HTTPException, OSError, TimeoutError) as exc:
+                self.close()
+                if attempt == 2:
+                    print(
+                        f"  ! request failed ({exc}) — counted at {time.perf_counter() - start:.1f}s"
+                    )
+                    return time.perf_counter() - start
+        raise AssertionError("unreachable")
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
 
 
 def percentile(values: list[float], p: float) -> float:
@@ -51,20 +99,24 @@ def percentile(values: list[float], p: float) -> float:
     return ordered[index]
 
 
-def measure(name: str, urls: list[str]) -> bool:
-    samples = [timed_get(url) for url in urls]
+def measure(client: Client, name: str, paths: list[str], floor: float) -> bool:
+    samples = [client.get(path) for path in paths]
     p50_target, p95_target = SLOS[name]
     p50, p95 = statistics.median(samples), percentile(samples, 95)
     ok = p50 <= p50_target and p95 <= p95_target
+    # Work = this surface's p50 minus the /health p50 measured on the same connection.
+    # /health touches no database and does no work, so what is left of it is transit. This
+    # separates "GYF is slow" from "Mumbai to Oregon is far" — only the first is fixable in code.
+    work = f"work={max(0.0, p50 - floor):5.2f}s" if name != "health" else "transit floor"
     print(
-        f"{name:<16} first={samples[0]:6.2f}s  p50={p50:6.2f}s (slo {p50_target}s)  "
-        f"p95={p95:6.2f}s (slo {p95_target}s)  {'PASS' if ok else 'FAIL'}"
+        f"{name:<16} p50={p50:6.2f}s (slo {p50_target}s)  p95={p95:6.2f}s (slo {p95_target}s)  "
+        f"{work:<16} {'PASS' if ok else 'FAIL'}"
     )
     return ok
 
 
-def search_url(api: str, query: str, k: int = 24) -> str:
-    return f"{api}/items/search?{urllib.parse.urlencode({'q': query, 'k': k})}"
+def search_path(query: str, k: int = 24) -> str:
+    return f"/items/search?{urllib.parse.urlencode({'q': query, 'k': k})}"
 
 
 def main() -> int:
@@ -77,17 +129,32 @@ def main() -> int:
 
     print(f"API: {api}   samples: {n}\n")
 
+    client = Client(api)
+    connect = client.connect_seconds()
+    print(
+        f"connect          {connect:6.2f}s  (DNS+TCP+TLS+1 request; a real client pays this once)\n"
+    )
+
     cached = "red floral summer dress"
-    timed_get(search_url(api, cached))  # prime the cache; its miss is measured below
+    client.get(search_path(cached))  # prime the cache; its miss is measured below
+
+    health_samples = [client.get("/health") for _ in range(n)]
+    floor = statistics.median(health_samples)
 
     nonce = int(time.time())
     results = [
-        measure("health", [f"{api}/health"] * n),
-        measure("browse", [f"{api}/items/browse?k=24"] * n),
-        measure("search_cached", [search_url(api, cached)] * n),
+        measure(client, "health", ["/health"] * n, floor),
+        measure(client, "browse", ["/items/browse?k=24"] * n, floor),
+        measure(client, "search_cached", [search_path(cached)] * n, floor),
         # A distinct query per sample: every one is a genuine cache miss + encode.
-        measure("search_uncached", [search_url(api, f"linen shirt {nonce}-{i}") for i in range(n)]),
+        measure(
+            client,
+            "search_uncached",
+            [search_path(f"linen shirt {nonce}-{i}") for i in range(n)],
+            floor,
+        ),
     ]
+    client.close()
 
     print("\n" + ("ALL SLOs MET" if all(results) else "SLO MISS — see FAIL rows above"))
     return 0 if all(results) else 1
