@@ -5,14 +5,14 @@ tokens. Follow top to bottom.
 
 ## 1. Create free-tier accounts
 
-| Service                            | Purpose                                  | Free tier                          |
-| ---------------------------------- | ---------------------------------------- | ---------------------------------- |
-| [Vercel](https://vercel.com)       | Web hosting (Next.js) + CD target        | Hobby free                         |
-| [Render](https://render.com)       | API hosting (FastAPI Docker)             | Free web service                   |
-| [Supabase](https://supabase.com)   | Postgres + **pgvector** + storage + auth | Free project                       |
-| [Upstash](https://upstash.com)     | Redis (cache, scale-to-zero)             | Free                               |
-| (later) Redpanda Cloud / Confluent | Event broker                             | — uses local JSONL sink until then |
-| (later) Hugging Face               | ZeroGPU model serving                    | Free                               |
+| Service                          | Purpose                                                          | Free tier        |
+| -------------------------------- | ---------------------------------------------------------------- | ---------------- |
+| [Vercel](https://vercel.com)     | Web hosting (Next.js) + CD target                                | Hobby free       |
+| [Render](https://render.com)     | API hosting (FastAPI Docker)                                     | Free web service |
+| [Supabase](https://supabase.com) | Postgres + **pgvector** + storage + auth                         | Free project     |
+| [Upstash](https://upstash.com)   | Redis (cache, scale-to-zero)                                     | Free             |
+| Events                           | Postgres `interactions` table in production; local JSONL for dev | no broker lane   |
+| (later) Hugging Face             | ZeroGPU model serving                                            | Free             |
 
 > **Deployment model.** Terraform provisions only the stateful backends
 > (Supabase, Upstash). The **web** ships to Vercel (project `gyf-v2-app`) via the
@@ -87,14 +87,13 @@ frontend Sentry, or PostHog integration is configured yet.
 
 - Web health: `https://gyf-v2-app.vercel.app/api/health` → `{"status":"ok","service":"web"}`
 - API health: `GET /health` → `ok`
-- Feedback spine: `POST /feedback` a valid event → `202`; event lands in the sink (local
-  JSONL now; broker once provisioned).
+- Feedback spine: `POST /feedback` a valid event → `202`; event lands in the configured sink
+  (Postgres in production, local JSONL for isolated development).
 
 ## Notes
 
-- **Event broker** stays on the local JSONL sink (`services/api/app/sink.py`) through early
-  beta; swap to a managed broker by setting `GYF_EVENT_BROKER_URL` and selecting the broker
-  sink — no API code changes beyond `get_sink()`.
+- **Event sink** is `postgres` in shared environments and `local` only for isolated development.
+  Do not add a broker lane without a measured trigger in the active execution contract.
 - **Cost discipline:** provider promotion requires the cost and SLO gates in
   `docs/plans/active-execution-contract.md`; free-tier status alone is not production evidence.
 - Never commit `terraform.tfvars` or state — both are gitignored.

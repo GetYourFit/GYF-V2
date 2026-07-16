@@ -31,7 +31,7 @@ uv run uvicorn app.main:app --reload --port 8000
   client-supplied id.
 - **`app/sink.py`** — pluggable write side, selected by `GYF_EVENT_SINK`:
   `local` (append-only JSONL, default), `postgres` (the `interactions` table,
-  queryable serving side), or `kafka` (Redpanda/Kafka). Optional deps load lazily.
+  queryable serving side). Optional deps load lazily.
 - **`app/metrics.py` / `app/telemetry.py`** — observability (P0-E): always-on
   Prometheus metrics; opt-in backend Sentry errors/performance; and structured
   JSON logs. OTLP export is supported but disabled in production until an owner

@@ -26,18 +26,21 @@ import {
   type OutfitRecommendation,
 } from "@/lib/api";
 import {
+  feedbackReceipt,
   feedbackForOutfit,
   replaceOutfitItem,
   safeShopUrl,
   savedOutfitInput,
+  shopFeedbackForItem,
   STYLIST_GOAL_MAX,
+  type StylistFeedbackStatus,
 } from "@/lib/stylist-feed";
 import { capabilityUsable } from "@/lib/system-status";
 import { OCCASIONS } from "@/lib/vocab";
 import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
-type FeedbackStatus = "saved" | "skipped";
+type FeedbackStatus = StylistFeedbackStatus;
 
 function readableError(error: unknown): string {
   if (error instanceof ApiError && error.isNotOnboarded) {
@@ -206,6 +209,7 @@ function OutfitCard({
   onComplete,
   onShop,
   onSwap,
+  onNextLook,
   onRetryCorrection,
 }: {
   outfit: Outfit;
@@ -221,11 +225,13 @@ function OutfitCard({
   correctionRetryAvailable: boolean;
   onLoadAlternates: (index: number, item: OutfitItem) => void;
   onComplete: (item: OutfitItem) => void;
-  onShop: (item: OutfitItem) => void;
+  onShop: (index: number, item: OutfitItem) => void;
   onSwap: (index: number, replacedItemId: string, alternate: OutfitItem) => void;
+  onNextLook: () => void;
   onRetryCorrection: (index: number) => void;
 }) {
   const palette = useThemeColors();
+  const receipt = feedbackReceipt(status);
   return (
     <AtelierCard style={{ gap: spacing.lg }}>
       <View style={{ gap: spacing.sm }}>
@@ -247,7 +253,7 @@ function OutfitCard({
             key={item.item_id}
             onLoadAlternates={() => onLoadAlternates(index, item)}
             onComplete={() => onComplete(item)}
-            onShop={() => onShop(item)}
+            onShop={() => onShop(index, item)}
             onSwap={(alternate) => onSwap(index, item.item_id, alternate)}
           />
         ))}
@@ -286,10 +292,18 @@ function OutfitCard({
           style={{ flex: 1 }}
         />
       </View>
-      {status === "skipped" ? (
-        <GyfText accessibilityLabel="Feedback recorded" tone="muted" variant="bodySmall">
-          Got it. GYF will use this signal to refine future looks.
-        </GyfText>
+      {receipt ? (
+        <View style={{ gap: spacing.xs }}>
+          <GyfText accessibilityLabel="Feedback recorded" tone="muted" variant="bodySmall">
+            {receipt.message}
+          </GyfText>
+          <AtelierButton
+            accessibilityLabel={receipt.accessibilityLabel}
+            label={receipt.cta}
+            onPress={onNextLook}
+            variant="secondary"
+          />
+        </View>
       ) : null}
     </AtelierCard>
   );
@@ -531,19 +545,12 @@ export default function StylistRoute() {
     void syncSwap(index, event);
   };
 
-  const shopItem = (item: OutfitItem) => {
+  const shopItem = (index: number, item: OutfitItem) => {
     if (!data) return;
     const url = safeShopUrl(item);
     if (!url) return;
-    void api
-      .feedback({
-        event_id: crypto.randomUUID(),
-        target_type: "item",
-        target_id: item.item_id,
-        action: "cart",
-        context: { recommendation_id: data.recommendation_id },
-      })
-      .catch(() => undefined);
+    const event = shopFeedbackForItem(item, data.recommendation_id, index, crypto.randomUUID());
+    if (event) void api.feedback(event).catch(() => undefined);
     void Linking.openURL(url).catch(() =>
       setActionError("Could not open the retailer link. Your look is unchanged; try again."),
     );
@@ -763,6 +770,7 @@ export default function StylistRoute() {
           onComplete={completeAround}
           onLoadAlternates={loadAlternates}
           onFeedback={handleFeedback}
+          onNextLook={() => setReload((value) => value + 1)}
           onRetryCorrection={(outfitIndex) => {
             const event = swapRetries[outfitIndex];
             if (event) void syncSwap(outfitIndex, event);

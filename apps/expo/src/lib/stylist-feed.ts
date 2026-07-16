@@ -1,6 +1,19 @@
 import type { FeedbackRequest, Outfit, OutfitItem } from "@gyf/types";
 
 export const STYLIST_GOAL_MAX = 200;
+export type StylistFeedbackStatus = "saved" | "skipped";
+
+export function feedbackReceipt(status: StylistFeedbackStatus | undefined) {
+  if (!status) return null;
+  return {
+    accessibilityLabel: "Get the next stylist look",
+    cta: "Get next look",
+    message:
+      status === "saved"
+        ? "Saved. GYF can use this signal on your next slate."
+        : "Got it. GYF can use this signal to refine future looks.",
+  } as const;
+}
 
 export function feedbackForOutfit(
   outfit: Outfit,
@@ -39,6 +52,22 @@ export function safeShopUrl(item: OutfitItem): string | null {
   } catch {
     return null;
   }
+}
+
+export function shopFeedbackForItem(
+  item: OutfitItem,
+  recommendationId: string,
+  rank: number,
+  eventId: string,
+): FeedbackRequest | null {
+  if (!safeShopUrl(item)) return null;
+  return {
+    event_id: eventId,
+    target_type: "item",
+    target_id: item.item_id,
+    action: "cart",
+    context: { recommendation_id: recommendationId, rank },
+  };
 }
 
 export function savedOutfitInput(

@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  feedbackReceipt,
   feedbackForOutfit,
   replaceOutfitItem,
   safeShopUrl,
   savedOutfitInput,
+  shopFeedbackForItem,
 } from "./stylist-feed";
 
 const outfit = {
@@ -77,6 +79,45 @@ describe("Expo stylist feed model", () => {
     ).toBeNull();
     expect(
       safeShopUrl({ owned: false, affiliate_url: "javascript:alert(1)", item_id: "1" } as never),
+    ).toBeNull();
+  });
+
+  test("shows the next-look receipt only after save or skip", () => {
+    expect(feedbackReceipt(undefined)).toBeNull();
+    expect(feedbackReceipt("saved")).toMatchObject({
+      accessibilityLabel: "Get the next stylist look",
+      cta: "Get next look",
+      message: expect.stringContaining("next slate"),
+    });
+    expect(feedbackReceipt("skipped")?.message).toContain("refine future looks");
+  });
+
+  test("joins shop intent to the served slate and rank", () => {
+    expect(
+      shopFeedbackForItem(
+        {
+          item_id: "top-1",
+          affiliate_url: "https://shop.test/item",
+          owned: false,
+        } as never,
+        "rec-1",
+        3,
+        "event-cart",
+      ),
+    ).toEqual({
+      event_id: "event-cart",
+      target_type: "item",
+      target_id: "top-1",
+      action: "cart",
+      context: { recommendation_id: "rec-1", rank: 3 },
+    });
+    expect(
+      shopFeedbackForItem(
+        { item_id: "owned-1", affiliate_url: "https://shop.test/item", owned: true } as never,
+        "rec-1",
+        0,
+        "event-cart",
+      ),
     ).toBeNull();
   });
 });

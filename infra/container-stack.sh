@@ -3,7 +3,7 @@
 #
 # Apple `container` (1.0+) has no `docker compose`, so this script is the single
 # idempotent orchestrator for the full local spine: Postgres+pgvector, Redis,
-# Redpanda, the FastAPI service, and the Next.js web app. It mirrors
+# the FastAPI service, and the Next.js web app. It mirrors
 # infra/docker-compose.yml exactly — same images, env, ports, mounts, and boot
 # order — but expresses the bits compose did declaratively (healthchecks +
 # depends_on) as explicit health-wait loops, because `container run` has neither.

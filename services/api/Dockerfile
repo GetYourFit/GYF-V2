@@ -43,7 +43,6 @@ EXPOSE 8000
 # In-container env points at the compose service names, not localhost.
 ENV GYF_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/gyf \
     GYF_REDIS_URL=redis://redis:6379/0 \
-    GYF_EVENT_BROKER_URL=redpanda:9092 \
     GYF_ENV=local \
     GYF_AUTH_DISABLED=true \
     GYF_EVENT_SINK=postgres

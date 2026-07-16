@@ -60,7 +60,7 @@ deploy-web-preview: ## Build + deploy a Vercel preview (no prod promote)
 dev-api: check-uv ## Run only the API service
 	cd $(API_DIR) && $(DEV_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000
 
-up: ## Start local infra only (Postgres+pgvector, Redis, Redpanda)
+up: ## Start local infra only (Postgres+pgvector, Redis)
 	$(STACK) infra
 
 down: ## Stop everything (keeps data volumes)
