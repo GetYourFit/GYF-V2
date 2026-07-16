@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-MIGRATION = Path(__file__).parents[1] / "db" / "migrations" / "versions" / "0023_avatar_storage.py"
+MIGRATION = Path(__file__).parents[1] / "db" / "migrations" / "versions" / "0024_avatar_storage.py"
 
 
 def test_avatar_storage_migration_is_guarded_and_owner_scoped() -> None:

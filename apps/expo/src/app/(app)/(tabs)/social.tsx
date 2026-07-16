@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, Image, RefreshControl, View } from "react-native";
+import { FlatList, Image, RefreshControl, TextInput, View } from "react-native";
 
 import { IconHeart } from "@/components/icons";
 import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
+import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { FilterChip } from "@/components/ui/filter-chip";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiError, createApi, type Post } from "@/lib/api";
+import { ApiError, createApi, type OutfitRecommendation, type Post } from "@/lib/api";
 import {
   appendUniquePosts,
   applyReaction,
   postCoverImages,
+  postInputForOutfit,
+  SOCIAL_CAPTION_MAX,
   SOCIAL_PAGE_SIZE,
   toggleId,
   type FeedScope,
@@ -34,6 +37,65 @@ function readableError(error: unknown): string {
   return "GYF could not load the feed. Check your connection and try again.";
 }
 
+/** A post rebuilt for the viewer's own profile — never a copy of someone else's look. */
+function RecreatedLook({ result }: { result: OutfitRecommendation }) {
+  const palette = useThemeColors();
+  const outfit = result.outfits[0];
+  if (!outfit) {
+    return (
+      <GyfText tone="muted" variant="bodySmall">
+        GYF could not build a complete look from your profile for this one yet.
+      </GyfText>
+    );
+  }
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <GyfText variant="label">YOUR RE-CREATION</GyfText>
+      <GyfText tone="muted" variant="bodySmall">
+        Rebuilt for your profile and context — a new composition, not a copy or a try-on.
+      </GyfText>
+      <View style={{ flexDirection: "row", gap: spacing.xs }}>
+        {outfit.items.slice(0, 3).map((item) =>
+          item.image_url && /^https:\/\//i.test(item.image_url) ? (
+            <Image
+              accessibilityLabel={item.title}
+              key={item.item_id}
+              source={{ uri: item.image_url }}
+              style={{
+                backgroundColor: palette.surfaceRaised,
+                borderRadius: radii.control,
+                flex: 1,
+                height: 120,
+              }}
+            />
+          ) : (
+            <View
+              accessibilityLabel={`${item.title}; image unavailable`}
+              key={item.item_id}
+              style={{
+                alignItems: "center",
+                backgroundColor: palette.surfaceRaised,
+                borderRadius: radii.control,
+                flex: 1,
+                height: 120,
+                justifyContent: "center",
+                padding: spacing.xs,
+              }}
+            >
+              <GyfText tone="faint" variant="mono">
+                IMAGE UNAVAILABLE
+              </GyfText>
+            </View>
+          ),
+        )}
+      </View>
+      <GyfText tone="muted" variant="bodySmall">
+        {outfit.explanation}
+      </GyfText>
+    </View>
+  );
+}
+
 function PostCard({
   post,
   isSelf,
@@ -41,6 +103,8 @@ function PostCard({
   pending,
   onReact,
   onFollow,
+  onRecreate,
+  recreatePending,
 }: {
   post: Post;
   isSelf: boolean;
@@ -48,6 +112,8 @@ function PostCard({
   pending: boolean;
   onReact: () => void;
   onFollow: () => void;
+  onRecreate: () => void;
+  recreatePending: boolean;
 }) {
   const palette = useThemeColors();
   const covers = postCoverImages(post.items, 3);
@@ -139,6 +205,15 @@ function PostCard({
           {post.reaction_count}
         </GyfText>
       </PressableScale>
+
+      {isSelf ? null : (
+        <AtelierButton
+          accessibilityLabel="Recreate this look for my profile"
+          disabled={recreatePending}
+          label={recreatePending ? "Recreating…" : "Recreate for me"}
+          onPress={onRecreate}
+        />
+      )}
     </AtelierCard>
   );
 }
@@ -159,6 +234,98 @@ export default function SocialRoute() {
   const [pending, setPending] = useState<string | null>(null);
   const [feedError, setFeedError] = useState<unknown>(null);
   const requestId = useRef(0);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [composerLoading, setComposerLoading] = useState(false);
+  const [composerError, setComposerError] = useState<unknown>(null);
+  const [composerLook, setComposerLook] = useState<OutfitRecommendation | null>(null);
+  const [caption, setCaption] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [recreating, setRecreating] = useState<string | null>(null);
+  const [recreated, setRecreated] = useState<Record<string, OutfitRecommendation>>({});
+  const [recreateErrors, setRecreateErrors] = useState<Record<string, string>>({});
+  const composerRequestId = useRef(0);
+
+  const closeComposer = useCallback(() => {
+    ++composerRequestId.current;
+    setComposerOpen(false);
+    setComposerLoading(false);
+    setPublishing(false);
+  }, []);
+
+  const openComposer = useCallback(async () => {
+    const ticket = ++composerRequestId.current;
+    setComposerOpen(true);
+    setComposerLoading(true);
+    setPublishing(false);
+    setComposerError(null);
+    setComposerLook(null);
+    setCaption("");
+    try {
+      const look = await api.recommend({ k: 1 });
+      if (ticket === composerRequestId.current) setComposerLook(look);
+    } catch (error) {
+      if (ticket === composerRequestId.current) setComposerError(error);
+    } finally {
+      if (ticket === composerRequestId.current) setComposerLoading(false);
+    }
+  }, [api]);
+
+  const publish = useCallback(async () => {
+    // Only ids the server just returned can be published — a look cannot be hand-assembled.
+    const input = postInputForOutfit(
+      composerLook?.outfits[0],
+      composerLook?.recommendation_id ?? "",
+      composerLook?.occasion,
+      caption,
+    );
+    if (!input) {
+      setComposerError(new Error("No complete look is available to share yet."));
+      return;
+    }
+    const ticket = composerRequestId.current;
+    setPublishing(true);
+    setComposerError(null);
+    try {
+      const post = await api.createPost(input);
+      // Prepended unconditionally: the post exists server-side now, so showing it is the
+      // honest thing even if the composer was closed mid-publish.
+      setPosts((current) => [post, ...current.filter((item) => item.id !== post.id)]);
+      if (ticket === composerRequestId.current) {
+        closeComposer();
+        setComposerLook(null);
+        setCaption("");
+      }
+    } catch (error) {
+      if (ticket === composerRequestId.current) setComposerError(error);
+    } finally {
+      if (ticket === composerRequestId.current) setPublishing(false);
+    }
+  }, [api, caption, closeComposer, composerLook]);
+
+  const recreate = useCallback(
+    async (postId: string) => {
+      if (recreating) return;
+      setRecreating(postId);
+      setRecreateErrors((current) => ({ ...current, [postId]: "" }));
+      setRecreated((current) => {
+        const next = { ...current };
+        delete next[postId];
+        return next;
+      });
+      try {
+        const result = await api.recreatePost(postId);
+        setRecreated((current) => ({ ...current, [postId]: result }));
+      } catch {
+        setRecreateErrors((current) => ({
+          ...current,
+          [postId]: "GYF could not recreate this look for your profile. Try again shortly.",
+        }));
+      } finally {
+        setRecreating(null);
+      }
+    },
+    [api, recreating],
+  );
 
   const load = useCallback(
     async (nextPage: number, replace: boolean) => {
@@ -260,14 +427,28 @@ export default function SocialRoute() {
         />
       }
       renderItem={({ item }) => (
-        <PostCard
-          following={follows.has(item.user_id)}
-          isSelf={item.user_id === viewerId}
-          onFollow={() => void toggleFollow(item.user_id)}
-          onReact={() => void react(item)}
-          pending={pending === item.user_id}
-          post={item}
-        />
+        <View style={{ gap: spacing.sm }}>
+          <PostCard
+            following={follows.has(item.user_id)}
+            isSelf={item.user_id === viewerId}
+            onFollow={() => void toggleFollow(item.user_id)}
+            onReact={() => void react(item)}
+            onRecreate={() => void recreate(item.id)}
+            pending={pending === item.user_id}
+            post={item}
+            recreatePending={recreating === item.id}
+          />
+          {recreated[item.id] ? (
+            <AtelierCard>
+              <RecreatedLook result={recreated[item.id]} />
+            </AtelierCard>
+          ) : null}
+          {recreateErrors[item.id] ? (
+            <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
+              {recreateErrors[item.id]}
+            </GyfText>
+          ) : null}
+        </View>
       )}
       ListHeaderComponent={
         <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
@@ -291,6 +472,63 @@ export default function SocialRoute() {
               selected={scope === "following"}
             />
           </View>
+          {composerOpen ? (
+            <AtelierCard style={{ gap: spacing.md }}>
+              <View
+                style={{
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <GyfText variant="title">Share a real look</GyfText>
+                <PressableScale
+                  accessibilityLabel="Close share composer"
+                  accessibilityRole="button"
+                  hitSlop={hitSlopFor(32)}
+                  onPress={closeComposer}
+                >
+                  <GyfText tone="muted" variant="mono">
+                    CLOSE
+                  </GyfText>
+                </PressableScale>
+              </View>
+              {composerLoading ? (
+                <Skeleton height={120} />
+              ) : composerError ? (
+                <GyfText accessibilityRole="alert" style={{ color: palette.error }}>
+                  {readableError(composerError)}
+                </GyfText>
+              ) : composerLook ? (
+                <>
+                  <RecreatedLook result={composerLook} />
+                  <TextInput
+                    accessibilityLabel="Caption for your look"
+                    maxLength={SOCIAL_CAPTION_MAX}
+                    multiline
+                    onChangeText={setCaption}
+                    placeholder="Say something about this look (optional)"
+                    placeholderTextColor={palette.textFaint}
+                    style={{
+                      backgroundColor: palette.surfaceRaised,
+                      borderRadius: radii.control,
+                      color: palette.text,
+                      minHeight: 64,
+                      padding: spacing.sm,
+                    }}
+                    value={caption}
+                  />
+                  <AtelierButton
+                    disabled={publishing}
+                    label={publishing ? "Sharing…" : "Share this look"}
+                    onPress={() => void publish()}
+                  />
+                </>
+              ) : null}
+            </AtelierCard>
+          ) : (
+            <AtelierButton label="Share a look" onPress={() => void openComposer()} />
+          )}
           {loadingMore ? <Skeleton height={120} /> : null}
         </View>
       }
