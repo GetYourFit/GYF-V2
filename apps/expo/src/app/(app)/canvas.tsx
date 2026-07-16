@@ -305,7 +305,11 @@ export default function CanvasRoute() {
               </Pressable>
             ) : null}
           </View>
-          <Pressable accessibilityRole="button" onPress={() => void loadUniverse()}>
+          <Pressable
+            accessibilityLabel="Return to the full Canvas field"
+            accessibilityRole="button"
+            onPress={() => void loadUniverse()}
+          >
             <GyfText style={{ textAlign: "center" }} tone="muted" variant="bodySmall">
               Release focus · return to the full field
             </GyfText>
@@ -324,7 +328,11 @@ export default function CanvasRoute() {
 
       {loading ? (
         <View style={{ alignItems: "center", gap: spacing.md, paddingVertical: spacing.xxl }}>
-          <ActivityIndicator color={palette.text} size="large" />
+          <ActivityIndicator
+            accessibilityLabel="Loading Canvas field"
+            color={palette.text}
+            size="large"
+          />
           <GyfText tone="muted" variant="bodySmall">
             Assembling the field…
           </GyfText>
@@ -364,7 +372,10 @@ export default function CanvasRoute() {
             justifyContent: "center",
           }}
         >
-          <ActivityIndicator color={palette.textMuted} />
+          <ActivityIndicator
+            accessibilityLabel="Finding visual neighbours"
+            color={palette.textMuted}
+          />
           <GyfText tone="muted" variant="bodySmall">
             Finding the nearest visual neighbours…
           </GyfText>

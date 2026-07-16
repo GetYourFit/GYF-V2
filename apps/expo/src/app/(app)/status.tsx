@@ -76,7 +76,7 @@ export default function StatusRoute() {
 
       {loadState === "loading" && !status ? (
         <AtelierCard style={{ alignItems: "center", gap: spacing.md }}>
-          <ActivityIndicator color={palette.text} />
+          <ActivityIndicator accessibilityLabel="Loading system status" color={palette.text} />
           <GyfText accessibilityRole="alert" tone="muted" variant="bodySmall">
             Reading the live capability report…
           </GyfText>

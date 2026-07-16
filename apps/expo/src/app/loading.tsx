@@ -14,7 +14,7 @@ export default function LoadingRoute() {
         justifyContent: "center",
       }}
     >
-      <ActivityIndicator color={palette.text} />
+      <ActivityIndicator accessibilityLabel="Loading GYF" color={palette.text} />
     </View>
   );
 }

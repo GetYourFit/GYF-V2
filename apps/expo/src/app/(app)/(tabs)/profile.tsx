@@ -163,7 +163,7 @@ export default function ProfileRoute() {
     >
       {status === "loading" ? (
         <View style={{ alignItems: "center", gap: spacing.md, paddingVertical: spacing.xxl }}>
-          <ActivityIndicator color={palette.text} />
+          <ActivityIndicator accessibilityLabel="Loading your profile" color={palette.text} />
           <GyfText tone="muted">Loading your profile…</GyfText>
         </View>
       ) : status === "error" || !summary ? (

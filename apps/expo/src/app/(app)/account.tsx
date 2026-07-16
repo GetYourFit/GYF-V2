@@ -166,7 +166,7 @@ export default function AccountRoute() {
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator color={palette.text} />
+        <ActivityIndicator accessibilityLabel="Loading your account" color={palette.text} />
         <GyfText tone="muted">Loading your account…</GyfText>
       </View>
     );
