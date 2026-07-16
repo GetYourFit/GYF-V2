@@ -328,7 +328,13 @@ organic engagements already export honestly with a null propensity) and viewport
 `GET /account/export`, and explicit global session revocation all ship with regressions; RLS is
 built and proven (2026-07-12 review, remainder owner-gated). Full verification set green.
 
-**F2.5 — performance floor. Local remediation green; production promotion remains open.**
+**F2.5 — performance floor. CLOSED 2026-07-16 (owner-accepted).** All four India SLO rows pass in
+production against `gyf-api-va` (Virginia), measured with the hardened gate (`e679ff1`) and zero
+non-200s, with Oregon suspended: `health` 0.25 s · `browse` 0.27 s · `search` cached 0.28 s ·
+`search` uncached 0.74 s. Root cause was topology, not SQL — see `scale-3k-inr.md` §1b for the
+before/after work deltas and the mechanism. Owner accepted Virginia as sufficient and did not
+require a Mumbai database migration. Honest residual: this is a per-region run on a warm service,
+not a multi-day observation window; treat a sustained regression as a re-opener, not a surprise.
 
 Measured *before* (prod, from India, 2026-07-14, `python3 scripts/measure_slo.py`):
 `health` 0.44 s p50 · `browse` 1.66 s p50 / 12.5 s cold · `search` (cached query) 1.29 s p50 ·
