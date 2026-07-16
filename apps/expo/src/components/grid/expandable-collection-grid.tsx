@@ -25,9 +25,9 @@ import { collectionView } from "./collection-state";
 
 export type CollectionStatus = "loaded" | "loading";
 
-/** Replaces the save toggle in the quick preview (e.g. wardrobe "Remove"). */
+/** Extra quick-preview action (e.g. "Remove from wardrobe", "Buy"). Return null to hide for an item. */
 export interface CollectionAction {
-  label: (item: CollectionItem) => string;
+  label: (item: CollectionItem) => string | null;
   onPress: (item: CollectionItem) => void;
 }
 
@@ -305,7 +305,7 @@ function QuickPreview({
                 {item.aiReason}
               </GyfText>
             ) : null}
-            {primaryAction ? (
+            {primaryAction?.label(item) ? (
               <PressableScale
                 accessibilityRole="button"
                 onPress={() => {
@@ -325,7 +325,7 @@ function QuickPreview({
                 </GyfText>
               </PressableScale>
             ) : null}
-            {!primaryAction && onToggleSave ? (
+            {onToggleSave ? (
               <PressableScale
                 accessibilityRole="button"
                 onPress={() => {

@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Linking,
-  Pressable,
-  RefreshControl,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Image, Linking, RefreshControl, ScrollView, View } from "react-native";
 
+import {
+  ExpandableCollectionGrid,
+  type CollectionItem,
+} from "@/components/grid/expandable-collection-grid";
+import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
+import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { GyfText } from "@/components/ui/gyf-text";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type SavedItem, type SavedOutfit } from "@/lib/api";
 import {
   formatCatalogPrice,
@@ -22,6 +20,7 @@ import {
   summariseOutfit,
 } from "@/lib/saved-feed";
 import { colors, radii, spacing } from "@/theme/tokens";
+import { useResponsive } from "@/theme/use-responsive";
 
 type Status = "loading" | "ready" | "error";
 
@@ -39,48 +38,6 @@ function readableError(error: unknown): string {
   return "GYF could not load your saves. Check your connection and try again.";
 }
 
-function ImageBox({
-  uri,
-  label,
-  height,
-}: {
-  uri: string | null | undefined;
-  label: string;
-  height: number;
-}) {
-  if (isRemoteImage(uri)) {
-    return (
-      <Image
-        accessibilityLabel={label}
-        source={{ uri }}
-        style={{
-          backgroundColor: colors.dark.surfaceRaised,
-          borderRadius: radii.control,
-          height,
-          width: "100%",
-        }}
-      />
-    );
-  }
-  return (
-    <View
-      accessibilityLabel={`${label}; image unavailable`}
-      style={{
-        alignItems: "center",
-        backgroundColor: colors.dark.surfaceRaised,
-        borderRadius: radii.control,
-        height,
-        justifyContent: "center",
-        padding: spacing.sm,
-      }}
-    >
-      <GyfText style={{ textAlign: "center" }} tone="muted" variant="bodySmall">
-        Image unavailable
-      </GyfText>
-    </View>
-  );
-}
-
 function SavedLookCard({
   look,
   pending,
@@ -91,13 +48,37 @@ function SavedLookCard({
   onRemove: () => void;
 }) {
   const summary = summariseOutfit(look.items);
+  const cover = outfitCoverImage(look.items);
   return (
     <AtelierCard style={{ gap: spacing.md }}>
-      <ImageBox
-        height={260}
-        label={`Saved look: ${summary || "outfit"}`}
-        uri={outfitCoverImage(look.items)}
-      />
+      {isRemoteImage(cover) ? (
+        <Image
+          accessibilityLabel={`Saved look: ${summary || "outfit"}`}
+          source={{ uri: cover }}
+          style={{
+            backgroundColor: colors.dark.surfaceRaised,
+            borderRadius: radii.control,
+            height: 260,
+            width: "100%",
+          }}
+        />
+      ) : (
+        <View
+          accessibilityLabel="Saved look; image unavailable"
+          style={{
+            alignItems: "center",
+            backgroundColor: colors.dark.surfaceRaised,
+            borderRadius: radii.control,
+            height: 260,
+            justifyContent: "center",
+            padding: spacing.sm,
+          }}
+        >
+          <GyfText tone="muted" variant="bodySmall">
+            Image unavailable
+          </GyfText>
+        </View>
+      )}
       <View style={{ gap: spacing.xs }}>
         <GyfText variant="title">{look.occasion ? `${look.occasion} look` : "Saved look"}</GyfText>
         {summary ? (
@@ -106,11 +87,6 @@ function SavedLookCard({
           </GyfText>
         ) : null}
       </View>
-      {look.explanation ? (
-        <GyfText tone="muted" variant="bodySmall">
-          {look.explanation}
-        </GyfText>
-      ) : null}
       <ConfidenceLabel confidence={look.confidence} reason={look.explanation} />
       <AtelierButton
         accessibilityLabel={`Remove ${look.occasion ?? "saved"} look`}
@@ -122,63 +98,8 @@ function SavedLookCard({
   );
 }
 
-function SavedItemCard({
-  item,
-  width,
-  pending,
-  onRemove,
-}: {
-  item: SavedItem;
-  width: number;
-  pending: boolean;
-  onRemove: () => void;
-}) {
-  return (
-    <AtelierCard style={{ gap: spacing.sm, padding: spacing.sm, width }}>
-      <ImageBox height={width * 1.28} label={item.title} uri={item.image_url} />
-      <View style={{ gap: spacing.xs }}>
-        <GyfText numberOfLines={2} variant="bodySmall">
-          {item.title}
-        </GyfText>
-        <GyfText tone="faint" variant="mono">
-          {formatCatalogPrice(item.price, item.currency)}
-        </GyfText>
-      </View>
-      <View style={{ flexDirection: "row", gap: spacing.xs }}>
-        <AtelierButton
-          accessibilityLabel={`Remove ${item.title} from saved`}
-          disabled={pending}
-          label={pending ? "…" : "Remove"}
-          onPress={onRemove}
-          style={{ flex: 1, minHeight: 42, paddingHorizontal: spacing.sm }}
-        />
-        {isRemoteImage(item.buy_url) ? (
-          <Pressable
-            accessibilityLabel={`Open ${item.title} link`}
-            accessibilityRole="link"
-            onPress={() => void Linking.openURL(item.buy_url!)}
-            style={{
-              alignItems: "center",
-              borderColor: colors.dark.border,
-              borderRadius: radii.control,
-              borderWidth: 1,
-              justifyContent: "center",
-              minHeight: 42,
-              paddingHorizontal: spacing.sm,
-            }}
-          >
-            <GyfText tone="muted" variant="bodySmall">
-              Buy
-            </GyfText>
-          </Pressable>
-        ) : null}
-      </View>
-    </AtelierCard>
-  );
-}
-
 export default function SavedRoute() {
-  const { width } = useWindowDimensions();
+  const { width, insets } = useResponsive();
   const api = useMemo(() => createApi(), []);
   const [looks, setLooks] = useState<SavedOutfit[]>([]);
   const [items, setItems] = useState<SavedItem[]>([]);
@@ -213,14 +134,14 @@ export default function SavedRoute() {
   }, [load]);
 
   const removeItem = useCallback(
-    async (item: SavedItem) => {
+    async (itemId: string) => {
       if (pending) return;
-      setPending(item.item_id);
+      setPending(itemId);
       setActionError(null);
       const previous = items;
-      setItems((current) => current.filter((row) => row.item_id !== item.item_id));
+      setItems((current) => current.filter((row) => row.item_id !== itemId));
       try {
-        await api.unsaveItem(item.item_id);
+        await api.unsaveItem(itemId);
       } catch (error) {
         setItems(previous); // restore — the save is still real if the delete failed
         setActionError(error);
@@ -250,17 +171,27 @@ export default function SavedRoute() {
     [api, looks, pending],
   );
 
-  const cardWidth = Math.max(140, (width - spacing.lg * 2 - spacing.md) / 2);
+  const screenPad = spacing.lg;
+  const containerWidth = width - screenPad * 2;
   const empty = looks.length === 0 && items.length === 0;
+  const buyUrls = new Map(items.map((row) => [row.item_id, row.buy_url]));
+  const gridItems: CollectionItem[] = items.map((row) => ({
+    id: row.item_id,
+    title: row.title,
+    imageUrl: row.image_url,
+    price: formatCatalogPrice(row.price, row.currency),
+    saved: true,
+  }));
 
   return (
-    <FlatList
+    <ScrollView
       accessibilityLabel="Saved looks and items"
-      columnWrapperStyle={{ gap: spacing.md }}
-      contentContainerStyle={{ gap: spacing.md, padding: spacing.lg, paddingBottom: spacing.xxl }}
-      data={items}
-      keyExtractor={(item) => item.item_id}
-      numColumns={2}
+      contentContainerStyle={{
+        gap: spacing.lg,
+        padding: screenPad,
+        paddingBottom: spacing.xxl * 2 + insets.bottom,
+        paddingTop: screenPad + insets.top,
+      }}
       refreshControl={
         <RefreshControl
           onRefresh={async () => {
@@ -272,36 +203,45 @@ export default function SavedRoute() {
           tintColor={colors.dark.text}
         />
       }
-      renderItem={({ item }) => (
-        <SavedItemCard
-          item={item}
-          onRemove={() => void removeItem(item)}
-          pending={pending === item.item_id}
-          width={cardWidth}
+    >
+      <View style={{ gap: spacing.sm }}>
+        <GyfText accessibilityRole="header" variant="display">
+          Saved
+        </GyfText>
+        <GyfText tone="muted" variant="body">
+          The looks and pieces you kept — ready to wear, buy or restyle.
+        </GyfText>
+      </View>
+
+      {actionError ? (
+        <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }} variant="bodySmall">
+          {readableError(actionError)}
+        </GyfText>
+      ) : null}
+
+      {status === "loading" ? (
+        <View style={{ gap: spacing.md }}>
+          <Skeleton height={260} />
+          <Skeleton height={220} />
+        </View>
+      ) : status === "error" ? (
+        <ErrorState
+          illustration={<IllustrationLooseThread color={colors.dark.textMuted} />}
+          message={readableError(actionError)}
+          onRetry={() => {
+            setStatus("loading");
+            void load().catch(() => setStatus("error"));
+          }}
         />
-      )}
-      ListHeaderComponent={
-        <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-          <View style={{ gap: spacing.sm }}>
-            <GyfText accessibilityRole="header" variant="display">
-              Saved
-            </GyfText>
-            <GyfText tone="muted" variant="body">
-              The looks and pieces you kept — ready to wear, buy or restyle.
-            </GyfText>
-          </View>
-
-          {actionError ? (
-            <GyfText
-              accessibilityRole="alert"
-              style={{ color: colors.dark.error }}
-              variant="bodySmall"
-            >
-              {readableError(actionError)}
-            </GyfText>
-          ) : null}
-
-          {status === "ready" && looks.length > 0 ? (
+      ) : empty ? (
+        <EmptyState
+          description="Save a look or a piece from Explore or the Stylist and it lands here."
+          headline="Nothing saved yet"
+          illustration={<IllustrationEmptyHanger color={colors.dark.textMuted} />}
+        />
+      ) : (
+        <>
+          {looks.length > 0 ? (
             <View style={{ gap: spacing.md }}>
               <GyfText variant="label">SAVED LOOKS</GyfText>
               {looks.map((look) => (
@@ -314,40 +254,25 @@ export default function SavedRoute() {
               ))}
             </View>
           ) : null}
-
-          {status === "ready" && items.length > 0 ? (
-            <GyfText variant="label">SAVED ITEMS</GyfText>
-          ) : null}
-        </View>
-      }
-      ListEmptyComponent={
-        status === "loading" ? (
-          <View style={{ alignItems: "center", gap: spacing.md, paddingVertical: spacing.xxl }}>
-            <ActivityIndicator color={colors.dark.text} />
-            <GyfText tone="muted">Loading your saves…</GyfText>
-          </View>
-        ) : status === "error" ? (
-          <AtelierCard>
-            <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
-              {readableError(actionError)}
-            </GyfText>
-            <AtelierButton
-              label="Try again"
-              onPress={() => {
-                setStatus("loading");
-                void load().catch(() => setStatus("error"));
+          {gridItems.length > 0 ? (
+            <ExpandableCollectionGrid
+              containerWidth={containerWidth}
+              items={gridItems}
+              onToggleSave={(item, saved) => {
+                if (!saved) void removeItem(item.id);
               }}
+              primaryAction={{
+                label: (item) => (isRemoteImage(buyUrls.get(item.id)) ? "Buy" : null),
+                onPress: (item) => {
+                  const url = buyUrls.get(item.id);
+                  if (isRemoteImage(url)) void Linking.openURL(url);
+                },
+              }}
+              title="Saved items"
             />
-          </AtelierCard>
-        ) : empty ? (
-          <AtelierCard>
-            <GyfText variant="title">Nothing saved yet</GyfText>
-            <GyfText tone="muted" variant="bodySmall">
-              Save a look or a piece from Explore or the Stylist and it lands here.
-            </GyfText>
-          </AtelierCard>
-        ) : null
-      }
-    />
+          ) : null}
+        </>
+      )}
+    </ScrollView>
   );
 }
