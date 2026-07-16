@@ -1810,13 +1810,16 @@ but it never reorders the backend contract.
   and 87 Expo passed in 21 files. The web export builds 49 routes. Device accessibility and
   deployed smoke remain part of EXPO-11.
 
-#### EXPO-06 execution evidence — 2026-07-17 (Synthetic R2 helper composition)
+#### EXPO-06 execution evidence — 2026-07-17 (Mocked R2 transport journey)
 
-- `apps/expo/src/lib/activation-loop.test.ts` covers the pure helper composition used by the
-  manual profile-ready → complete outfit snapshot → save/skip feedback receipt path, preserving
-  recommendation, rank and event IDs through the existing onboarding and stylist helpers.
-- This is synthetic Bun helper evidence only; it does not prove API mutation, shop/correct, a
-  better subsequent outfit, or close EXPO-11 device/store evidence.
+- `apps/expo/src/lib/activation-loop.test.ts` now drives the existing Expo `GyfApi` through an
+  ordered, route-aware mocked `fetch`: authenticated manual `PUT /profile`, recommendation slate,
+  saved outfit, save/cart/swap/correction/skip feedback with stable explicit event IDs,
+  alternates, and a distinct second recommendation/outfit. Assertions cover request paths,
+  bearer headers, bodies, recommendation/rank attribution and `replaced_item_id` context.
+- This is transport-level mocked integration evidence. It does not prove live API mutations,
+  backend event joins/ranking quality, device accessibility, or store/deployed evidence; those
+  remain open in EXPO-11 and the production gates.
 
 ### EXPO-07 — Explore and commerce
 
