@@ -135,10 +135,7 @@ function PostCard({
           filled={post.reacted}
           size={18}
         />
-        <GyfText
-          style={{ color: post.reacted ? palette.text : palette.textMuted }}
-          variant="mono"
-        >
+        <GyfText style={{ color: post.reacted ? palette.text : palette.textMuted }} variant="mono">
           {post.reaction_count}
         </GyfText>
       </PressableScale>

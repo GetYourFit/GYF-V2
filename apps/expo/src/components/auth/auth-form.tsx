@@ -144,9 +144,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         label={busy ? "Working…" : mode === "login" ? "Sign in" : "Create account"}
         onPress={() => void submit()}
       />
-      {busy ? (
-        <ActivityIndicator accessibilityLabel="Signing you in" color={palette.text} />
-      ) : null}
+      {busy ? <ActivityIndicator accessibilityLabel="Signing you in" color={palette.text} /> : null}
       <Pressable
         accessibilityRole="link"
         onPress={() => router.push(mode === "login" ? "/signup" : "/login")}
