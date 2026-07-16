@@ -13,6 +13,7 @@ import {
   type ContactDraft,
 } from "@/lib/contact";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 const EMPTY: ContactDraft = { name: "", email: "", message: "" };
 
@@ -24,6 +25,7 @@ function readableError(error: unknown): string {
 }
 
 export default function ContactRoute() {
+  const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
   const [draft, setDraft] = useState<ContactDraft>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof ContactDraft, string>>>({});
@@ -56,10 +58,10 @@ export default function ContactRoute() {
   const inputStyle = [
     typography.body,
     {
-      borderColor: colors.dark.border,
+      borderColor: palette.border,
       borderRadius: radii.control,
       borderWidth: 1,
-      color: colors.dark.text,
+      color: palette.text,
       minHeight: 50,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
@@ -72,7 +74,7 @@ export default function ContactRoute() {
       contentContainerStyle={{ gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
-      style={{ backgroundColor: colors.dark.bg }}
+      style={{ backgroundColor: palette.bg }}
     >
       <View style={{ gap: spacing.sm }}>
         <GyfText tone="faint" variant="label">
@@ -95,7 +97,7 @@ export default function ContactRoute() {
           <View
             style={{
               alignItems: "center",
-              backgroundColor: colors.dark.surfaceRaised,
+              backgroundColor: palette.surfaceRaised,
               borderRadius: radii.control,
               height: 44,
               justifyContent: "center",
@@ -119,7 +121,7 @@ export default function ContactRoute() {
             style={{
               alignItems: "center",
               alignSelf: "center",
-              borderColor: colors.dark.success,
+              borderColor: palette.success,
               borderRadius: radii.capsule,
               borderWidth: 1,
               height: 52,
@@ -127,7 +129,7 @@ export default function ContactRoute() {
               width: 52,
             }}
           >
-            <GyfText style={{ color: colors.dark.success }} variant="title">
+            <GyfText style={{ color: palette.success }} variant="title">
               ✓
             </GyfText>
           </View>
@@ -160,14 +162,14 @@ export default function ContactRoute() {
               maxLength={120}
               onChangeText={(value) => update("name", value)}
               placeholder="How should we address you?"
-              placeholderTextColor={colors.dark.textFaint}
+              placeholderTextColor={palette.textFaint}
               style={inputStyle}
               value={draft.name}
             />
             {errors.name ? (
               <GyfText
                 accessibilityRole="alert"
-                style={{ color: colors.dark.error }}
+                style={{ color: palette.error }}
                 variant="bodySmall"
               >
                 {errors.name}
@@ -186,14 +188,14 @@ export default function ContactRoute() {
               maxLength={254}
               onChangeText={(value) => update("email", value)}
               placeholder="you@example.com"
-              placeholderTextColor={colors.dark.textFaint}
+              placeholderTextColor={palette.textFaint}
               style={inputStyle}
               value={draft.email}
             />
             {errors.email ? (
               <GyfText
                 accessibilityRole="alert"
-                style={{ color: colors.dark.error }}
+                style={{ color: palette.error }}
                 variant="bodySmall"
               >
                 {errors.email}
@@ -210,7 +212,7 @@ export default function ContactRoute() {
               numberOfLines={6}
               onChangeText={(value) => update("message", value)}
               placeholder="Tell us what happened or what you would love GYF to become."
-              placeholderTextColor={colors.dark.textFaint}
+              placeholderTextColor={palette.textFaint}
               style={[inputStyle, { minHeight: 150, textAlignVertical: "top" }]}
               value={draft.message}
             />
@@ -224,7 +226,7 @@ export default function ContactRoute() {
             {errors.message ? (
               <GyfText
                 accessibilityRole="alert"
-                style={{ color: colors.dark.error }}
+                style={{ color: palette.error }}
                 variant="bodySmall"
               >
                 {errors.message}
@@ -235,7 +237,7 @@ export default function ContactRoute() {
           {submitError ? (
             <GyfText
               accessibilityRole="alert"
-              style={{ color: colors.dark.error }}
+              style={{ color: palette.error }}
               variant="bodySmall"
             >
               {submitError}

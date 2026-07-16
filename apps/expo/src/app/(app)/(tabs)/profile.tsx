@@ -8,6 +8,7 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi, type ProfileSummary } from "@/lib/api";
 import { formatMemberSince, initials, statCells } from "@/lib/profile-summary";
 import { colors, radii, spacing } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 type Status = "loading" | "ready" | "error";
 
@@ -19,6 +20,7 @@ function readableError(error: unknown): string {
 }
 
 function Avatar({ url, name }: { url: string | null | undefined; name: string }) {
+  const palette = useThemeColors();
   if (url && /^https:\/\//i.test(url)) {
     return (
       <Image
@@ -33,8 +35,8 @@ function Avatar({ url, name }: { url: string | null | undefined; name: string })
       accessibilityLabel={`${name} — no profile picture`}
       style={{
         alignItems: "center",
-        backgroundColor: colors.dark.surfaceRaised,
-        borderColor: colors.dark.border,
+        backgroundColor: palette.surfaceRaised,
+        borderColor: palette.border,
         borderRadius: radii.capsule,
         borderWidth: 1,
         height: 96,
@@ -48,6 +50,7 @@ function Avatar({ url, name }: { url: string | null | undefined; name: string })
 }
 
 export default function ProfileRoute() {
+  const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
   const [summary, setSummary] = useState<ProfileSummary | null>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -87,18 +90,18 @@ export default function ProfileRoute() {
             setRefreshing(false);
           }}
           refreshing={refreshing}
-          tintColor={colors.dark.text}
+          tintColor={palette.text}
         />
       }
     >
       {status === "loading" ? (
         <View style={{ alignItems: "center", gap: spacing.md, paddingVertical: spacing.xxl }}>
-          <ActivityIndicator color={colors.dark.text} />
+          <ActivityIndicator color={palette.text} />
           <GyfText tone="muted">Loading your profile…</GyfText>
         </View>
       ) : status === "error" || !summary ? (
         <AtelierCard>
-          <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
+          <GyfText accessibilityRole="alert" style={{ color: palette.error }}>
             {readableError(error)}
           </GyfText>
           <AtelierButton label="Try again" onPress={() => void load()} />
@@ -125,8 +128,8 @@ export default function ProfileRoute() {
                 <View
                   key={badge}
                   style={{
-                    backgroundColor: colors.dark.surfaceRaised,
-                    borderColor: colors.dark.border,
+                    backgroundColor: palette.surfaceRaised,
+                    borderColor: palette.border,
                     borderRadius: radii.capsule,
                     borderWidth: 1,
                     paddingHorizontal: spacing.md,

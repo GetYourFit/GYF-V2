@@ -12,6 +12,7 @@ import {
   type GrievanceDraft,
 } from "@/lib/grievance";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 const EMPTY: GrievanceDraft = { category: "", email: "", message: "" };
 
@@ -23,6 +24,7 @@ function readableError(error: unknown): string {
 }
 
 export default function GrievanceRoute() {
+  const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
   const [draft, setDraft] = useState<GrievanceDraft>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof GrievanceDraft, string>>>({});
@@ -58,10 +60,10 @@ export default function GrievanceRoute() {
   const inputStyle = [
     typography.body,
     {
-      borderColor: colors.dark.border,
+      borderColor: palette.border,
       borderRadius: radii.control,
       borderWidth: 1,
-      color: colors.dark.text,
+      color: palette.text,
       minHeight: 50,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
@@ -74,7 +76,7 @@ export default function GrievanceRoute() {
       contentContainerStyle={{ gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
-      style={{ backgroundColor: colors.dark.bg }}
+      style={{ backgroundColor: palette.bg }}
     >
       <View style={{ gap: spacing.sm }}>
         <GyfText tone="faint" variant="label">
@@ -94,7 +96,7 @@ export default function GrievanceRoute() {
             style={{
               alignItems: "center",
               alignSelf: "center",
-              borderColor: colors.dark.success,
+              borderColor: palette.success,
               borderRadius: radii.capsule,
               borderWidth: 1,
               height: 52,
@@ -102,7 +104,7 @@ export default function GrievanceRoute() {
               width: 52,
             }}
           >
-            <GyfText style={{ color: colors.dark.success }} variant="title">
+            <GyfText style={{ color: palette.success }} variant="title">
               ✓
             </GyfText>
           </View>
@@ -137,8 +139,8 @@ export default function GrievanceRoute() {
                     key={category}
                     onPress={() => update("category", category)}
                     style={({ pressed }) => ({
-                      backgroundColor: selected ? colors.dark.text : colors.dark.surfaceRaised,
-                      borderColor: selected ? colors.dark.text : colors.dark.border,
+                      backgroundColor: selected ? palette.text : palette.surfaceRaised,
+                      borderColor: selected ? palette.text : palette.border,
                       borderRadius: radii.capsule,
                       borderWidth: 1,
                       opacity: pressed ? 0.78 : 1,
@@ -147,7 +149,7 @@ export default function GrievanceRoute() {
                     })}
                   >
                     <GyfText
-                      style={selected ? { color: colors.dark.textInverse } : undefined}
+                      style={selected ? { color: palette.textInverse } : undefined}
                       variant="bodySmall"
                     >
                       {category}
@@ -159,7 +161,7 @@ export default function GrievanceRoute() {
             {errors.category ? (
               <GyfText
                 accessibilityRole="alert"
-                style={{ color: colors.dark.error }}
+                style={{ color: palette.error }}
                 variant="bodySmall"
               >
                 {errors.category}
@@ -178,14 +180,14 @@ export default function GrievanceRoute() {
               maxLength={254}
               onChangeText={(value) => update("email", value)}
               placeholder="you@example.com"
-              placeholderTextColor={colors.dark.textFaint}
+              placeholderTextColor={palette.textFaint}
               style={inputStyle}
               value={draft.email}
             />
             {errors.email ? (
               <GyfText
                 accessibilityRole="alert"
-                style={{ color: colors.dark.error }}
+                style={{ color: palette.error }}
                 variant="bodySmall"
               >
                 {errors.email}
@@ -202,7 +204,7 @@ export default function GrievanceRoute() {
               numberOfLines={7}
               onChangeText={(value) => update("message", value)}
               placeholder="Describe the concern, when it happened, and what outcome would put it right."
-              placeholderTextColor={colors.dark.textFaint}
+              placeholderTextColor={palette.textFaint}
               style={[inputStyle, { minHeight: 175, textAlignVertical: "top" }]}
               value={draft.message}
             />
@@ -216,7 +218,7 @@ export default function GrievanceRoute() {
             {errors.message ? (
               <GyfText
                 accessibilityRole="alert"
-                style={{ color: colors.dark.error }}
+                style={{ color: palette.error }}
                 variant="bodySmall"
               >
                 {errors.message}
@@ -226,7 +228,7 @@ export default function GrievanceRoute() {
 
           <View
             style={{
-              backgroundColor: colors.dark.surfaceRaised,
+              backgroundColor: palette.surfaceRaised,
               borderRadius: radii.control,
               gap: spacing.xs,
               padding: spacing.md,
@@ -244,7 +246,7 @@ export default function GrievanceRoute() {
           {submitError ? (
             <GyfText
               accessibilityRole="alert"
-              style={{ color: colors.dark.error }}
+              style={{ color: palette.error }}
               variant="bodySmall"
             >
               {submitError}

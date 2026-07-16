@@ -19,6 +19,7 @@ import {
   type ExploreSort,
 } from "@/lib/explore-feed";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
 
 const SLOT_OPTIONS = [
@@ -52,6 +53,7 @@ function readableError(error: unknown): string {
 }
 
 export default function ExploreRoute() {
+  const palette = useThemeColors();
   const { width, insets } = useResponsive();
   const api = useMemo(() => createApi(), []);
   const browseSeed = useMemo(() => `expo-${Date.now()}`, []);
@@ -181,7 +183,7 @@ export default function ExploreRoute() {
             setRefreshing(false);
           }}
           refreshing={refreshing}
-          tintColor={colors.dark.text}
+          tintColor={palette.text}
         />
       }
       renderItem={({ item }) => (
@@ -208,7 +210,7 @@ export default function ExploreRoute() {
           </View>
         ) : error ? (
           <ErrorState
-            illustration={<IllustrationLooseThread color={colors.dark.textMuted} />}
+            illustration={<IllustrationLooseThread color={palette.textMuted} />}
             message={readableError(error)}
             onRetry={() => void load(0, true)}
           />
@@ -216,7 +218,7 @@ export default function ExploreRoute() {
           <EmptyState
             description="Change the search or remove a filter. GYF will not invent catalogue results."
             headline="No pieces matched"
-            illustration={<IllustrationEmptyHanger color={colors.dark.textMuted} />}
+            illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
           />
         )
       }
@@ -238,15 +240,15 @@ export default function ExploreRoute() {
                 onChangeText={setQueryInput}
                 onSubmitEditing={submitQuery}
                 placeholder="Red linen shirt…"
-                placeholderTextColor={colors.dark.textFaint}
+                placeholderTextColor={palette.textFaint}
                 returnKeyType="search"
                 style={[
                   typography.body,
                   {
-                    borderColor: colors.dark.border,
+                    borderColor: palette.border,
                     borderRadius: radii.control,
                     borderWidth: 1,
-                    color: colors.dark.text,
+                    color: palette.text,
                     flex: 1,
                     minHeight: 48,
                     paddingHorizontal: spacing.md,
@@ -265,14 +267,14 @@ export default function ExploreRoute() {
                 placeholder={
                   facets?.price_max ? `Max ${Math.round(facets.price_max)}` : "Max price"
                 }
-                placeholderTextColor={colors.dark.textFaint}
+                placeholderTextColor={palette.textFaint}
                 style={[
                   typography.body,
                   {
-                    borderColor: colors.dark.border,
+                    borderColor: palette.border,
                     borderRadius: radii.control,
                     borderWidth: 1,
-                    color: colors.dark.text,
+                    color: palette.text,
                     flex: 1,
                     minHeight: 48,
                     paddingHorizontal: spacing.md,
@@ -337,7 +339,7 @@ export default function ExploreRoute() {
           {error && items.length > 0 ? (
             <GyfText
               accessibilityRole="alert"
-              style={{ color: colors.dark.error }}
+              style={{ color: palette.error }}
               variant="bodySmall"
             >
               {readableError(error)}

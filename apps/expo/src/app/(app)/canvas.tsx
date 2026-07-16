@@ -17,6 +17,7 @@ import { ApiError, createApi, type SearchResult } from "@/lib/api";
 import { appendUniqueItems, focusConstellation, tileAspect } from "@/lib/canvas-cluster";
 import { formatCatalogPrice } from "@/lib/explore-feed";
 import { colors, radii, spacing } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 const PAGE_SIZE = 24;
 
@@ -45,6 +46,7 @@ function CanvasTile({
   width: number;
   onPress: () => void;
 }) {
+  const palette = useThemeColors();
   const height = width * tileAspect(item.item_id);
   return (
     <Pressable
@@ -54,7 +56,7 @@ function CanvasTile({
       accessibilityState={{ selected }}
       onPress={onPress}
       style={({ pressed }) => ({
-        borderColor: selected ? colors.dark.text : colors.dark.border,
+        borderColor: selected ? palette.text : palette.border,
         borderCurve: "continuous",
         borderRadius: radii.card,
         borderWidth: selected ? 2 : 1,
@@ -67,13 +69,13 @@ function CanvasTile({
         <Image
           accessibilityIgnoresInvertColors
           source={{ uri: item.image_url }}
-          style={{ backgroundColor: colors.dark.surfaceRaised, height, width: "100%" }}
+          style={{ backgroundColor: palette.surfaceRaised, height, width: "100%" }}
         />
       ) : (
         <View
           style={{
             alignItems: "center",
-            backgroundColor: colors.dark.surfaceRaised,
+            backgroundColor: palette.surfaceRaised,
             height,
             justifyContent: "center",
             padding: spacing.md,
@@ -84,7 +86,7 @@ function CanvasTile({
           </GyfText>
         </View>
       )}
-      <View style={{ backgroundColor: colors.dark.surface, gap: spacing.xs, padding: spacing.sm }}>
+      <View style={{ backgroundColor: palette.surface, gap: spacing.xs, padding: spacing.sm }}>
         <GyfText numberOfLines={2} variant="bodySmall">
           {item.title}
         </GyfText>
@@ -97,6 +99,7 @@ function CanvasTile({
 }
 
 export default function CanvasRoute() {
+  const palette = useThemeColors();
   const { width } = useWindowDimensions();
   const api = useMemo(() => createApi(), []);
   const seed = useMemo(() => `expo-canvas-${Date.now()}`, []);
@@ -217,7 +220,7 @@ export default function CanvasRoute() {
   return (
     <ScrollView
       contentContainerStyle={{
-        backgroundColor: colors.dark.bg,
+        backgroundColor: palette.bg,
         gap: spacing.lg,
         minHeight: "100%",
         padding: horizontalPadding,
@@ -227,11 +230,11 @@ export default function CanvasRoute() {
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
-          tintColor={colors.dark.text}
+          tintColor={palette.text}
           onRefresh={() => void loadUniverse(true)}
         />
       }
-      style={{ backgroundColor: colors.dark.bg }}
+      style={{ backgroundColor: palette.bg }}
     >
       <View style={{ gap: spacing.sm, paddingTop: spacing.md }}>
         <GyfText tone="faint" variant="label">
@@ -251,7 +254,7 @@ export default function CanvasRoute() {
                 accessibilityIgnoresInvertColors
                 source={{ uri: focused.image_url }}
                 style={{
-                  backgroundColor: colors.dark.surfaceRaised,
+                  backgroundColor: palette.surfaceRaised,
                   borderRadius: radii.control,
                   height: 138,
                   width: 104,
@@ -289,7 +292,7 @@ export default function CanvasRoute() {
                 onPress={() => void Linking.openURL(focused.buy_url!)}
                 style={({ pressed }) => ({
                   alignItems: "center",
-                  borderColor: colors.dark.border,
+                  borderColor: palette.border,
                   borderRadius: radii.control,
                   borderWidth: 1,
                   justifyContent: "center",
@@ -311,8 +314,8 @@ export default function CanvasRoute() {
       ) : null}
 
       {error ? (
-        <AtelierCard style={{ borderColor: colors.dark.error }}>
-          <GyfText style={{ color: colors.dark.error }} variant="bodySmall">
+        <AtelierCard style={{ borderColor: palette.error }}>
+          <GyfText style={{ color: palette.error }} variant="bodySmall">
             {readableError(error)}
           </GyfText>
           <AtelierButton label="Try again" onPress={() => void loadUniverse()} />
@@ -321,7 +324,7 @@ export default function CanvasRoute() {
 
       {loading ? (
         <View style={{ alignItems: "center", gap: spacing.md, paddingVertical: spacing.xxl }}>
-          <ActivityIndicator color={colors.dark.text} size="large" />
+          <ActivityIndicator color={palette.text} size="large" />
           <GyfText tone="muted" variant="bodySmall">
             Assembling the field…
           </GyfText>
@@ -361,7 +364,7 @@ export default function CanvasRoute() {
             justifyContent: "center",
           }}
         >
-          <ActivityIndicator color={colors.dark.textMuted} />
+          <ActivityIndicator color={palette.textMuted} />
           <GyfText tone="muted" variant="bodySmall">
             Finding the nearest visual neighbours…
           </GyfText>

@@ -7,6 +7,7 @@ import { normalizeEmail, validateEmail, validatePassword } from "@/lib/auth-vali
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { GyfText } from "@/components/ui/gyf-text";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 function RecoveryField({
   label,
@@ -19,6 +20,7 @@ function RecoveryField({
   onChangeText: (value: string) => void;
   secureTextEntry?: boolean;
 }) {
+  const palette = useThemeColors();
   return (
     <TextInput
       accessibilityLabel={label}
@@ -27,13 +29,13 @@ function RecoveryField({
       keyboardType={secureTextEntry ? "default" : "email-address"}
       onChangeText={onChangeText}
       placeholder={label}
-      placeholderTextColor={colors.dark.textFaint}
+      placeholderTextColor={palette.textFaint}
       secureTextEntry={secureTextEntry}
       style={{
-        borderColor: colors.dark.border,
+        borderColor: palette.border,
         borderRadius: radii.control,
         borderWidth: 1,
-        color: colors.dark.text,
+        color: palette.text,
         fontSize: typography.body.fontSize,
         minHeight: 52,
         paddingHorizontal: spacing.md,
@@ -55,6 +57,7 @@ function BackToLogin() {
 }
 
 export function PasswordRecoveryForm() {
+  const palette = useThemeColors();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -92,7 +95,7 @@ export function PasswordRecoveryForm() {
         <>
           <RecoveryField label="Email address" onChangeText={setEmail} value={email} />
           {error ? (
-            <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
+            <GyfText accessibilityRole="alert" style={{ color: palette.error }}>
               {error}
             </GyfText>
           ) : null}
@@ -102,7 +105,7 @@ export function PasswordRecoveryForm() {
             onPress={() => void submit()}
           />
           {busy ? (
-            <ActivityIndicator accessibilityLabel="Sending reset link" color={colors.dark.text} />
+            <ActivityIndicator accessibilityLabel="Sending reset link" color={palette.text} />
           ) : null}
         </>
       ) : null}
@@ -112,6 +115,7 @@ export function PasswordRecoveryForm() {
 }
 
 export function ResetPasswordForm() {
+  const palette = useThemeColors();
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [hasSession, setHasSession] = useState<boolean | null>(null);
@@ -175,7 +179,7 @@ export function ResetPasswordForm() {
             value={password}
           />
           {error ? (
-            <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
+            <GyfText accessibilityRole="alert" style={{ color: palette.error }}>
               {error}
             </GyfText>
           ) : null}
@@ -185,7 +189,7 @@ export function ResetPasswordForm() {
             onPress={() => void submit()}
           />
           {busy ? (
-            <ActivityIndicator accessibilityLabel="Updating password" color={colors.dark.text} />
+            <ActivityIndicator accessibilityLabel="Updating password" color={palette.text} />
           ) : null}
         </>
       ) : null}

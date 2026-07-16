@@ -8,19 +8,21 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { createApi } from "@/lib/api";
 import { capabilityLabel, modelEligibility, stateLabel } from "@/lib/system-status";
 import { colors, radii, spacing } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 type LoadState = "loading" | "ready" | "error";
 type Capability = SystemStatus["capabilities"][string];
 
-const STATE_COLOR: Record<Capability["status"], string> = {
-  live: colors.dark.success,
-  beta: colors.dark.warning,
-  shadow: colors.dark.textMuted,
-  degraded: colors.dark.error,
-  planned: colors.dark.textFaint,
-};
+const STATE_COLOR = {
+  live: "success",
+  beta: "warning",
+  shadow: "textMuted",
+  degraded: "error",
+  planned: "textFaint",
+} as const satisfies Record<Capability["status"], string>;
 
 export default function StatusRoute() {
+  const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
   const requestId = useRef(0);
   const [loadState, setLoadState] = useState<LoadState>("loading");
@@ -58,7 +60,7 @@ export default function StatusRoute() {
     <ScrollView
       contentContainerStyle={{ gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl }}
       contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: colors.dark.bg }}
+      style={{ backgroundColor: palette.bg }}
     >
       <View style={{ gap: spacing.sm }}>
         <GyfText tone="faint" variant="label">
@@ -74,7 +76,7 @@ export default function StatusRoute() {
 
       {loadState === "loading" && !status ? (
         <AtelierCard style={{ alignItems: "center", gap: spacing.md }}>
-          <ActivityIndicator color={colors.dark.text} />
+          <ActivityIndicator color={palette.text} />
           <GyfText accessibilityRole="alert" tone="muted" variant="bodySmall">
             Reading the live capability report…
           </GyfText>
@@ -83,7 +85,7 @@ export default function StatusRoute() {
 
       {loadState === "error" ? (
         <AtelierCard style={{ gap: spacing.md }}>
-          <GyfText style={{ color: colors.dark.error }} variant="title">
+          <GyfText style={{ color: palette.error }} variant="title">
             The status report is unreachable
           </GyfText>
           <GyfText tone="muted" variant="bodySmall">
@@ -99,12 +101,12 @@ export default function StatusRoute() {
             <BackboneCard
               label="DATABASE"
               state={status.database === "ready" ? "READY" : "UNREACHABLE"}
-              color={status.database === "ready" ? colors.dark.success : colors.dark.error}
+              color={status.database === "ready" ? palette.success : palette.error}
             />
             <BackboneCard
               label="ENVIRONMENT"
               state={status.environment.toUpperCase()}
-              color={colors.dark.text}
+              color={palette.text}
             />
           </View>
 
@@ -163,6 +165,7 @@ export default function StatusRoute() {
 }
 
 function BackboneCard({ label, state, color }: { label: string; state: string; color: string }) {
+  const palette = useThemeColors();
   return (
     <AtelierCard style={{ flex: 1, gap: spacing.xs, padding: spacing.md }}>
       <GyfText tone="faint" variant="label">
@@ -176,7 +179,8 @@ function BackboneCard({ label, state, color }: { label: string; state: string; c
 }
 
 function StatusPill({ capability }: { capability: Capability }) {
-  const color = STATE_COLOR[capability.status];
+  const palette = useThemeColors();
+  const color = palette[STATE_COLOR[capability.status]];
   return (
     <View
       style={{
@@ -195,6 +199,7 @@ function StatusPill({ capability }: { capability: Capability }) {
 }
 
 function Metric({ label, value }: { label: string; value: number | null | undefined }) {
+  const palette = useThemeColors();
   return (
     <View style={{ minWidth: 64 }}>
       <GyfText variant="title">{value ?? "—"}</GyfText>
@@ -206,6 +211,7 @@ function Metric({ label, value }: { label: string; value: number | null | undefi
 }
 
 function ModelLanes({ models }: { models: ModelRegistryStatus["models"] }) {
+  const palette = useThemeColors();
   return (
     <View style={{ gap: spacing.sm }}>
       <View style={{ gap: spacing.xs }}>
@@ -232,7 +238,7 @@ function ModelLanes({ models }: { models: ModelRegistryStatus["models"] }) {
                 {model.name}
               </GyfText>
               <GyfText
-                style={{ color: eligible ? colors.dark.success : colors.dark.textFaint }}
+                style={{ color: eligible ? palette.success : palette.textFaint }}
                 variant="mono"
               >
                 {eligibility.label}

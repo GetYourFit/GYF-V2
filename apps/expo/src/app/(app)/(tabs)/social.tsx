@@ -19,6 +19,7 @@ import {
   type FeedScope,
 } from "@/lib/social-feed";
 import { colors, radii, spacing } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
 
 type Status = "loading" | "ready" | "error";
@@ -48,6 +49,7 @@ function PostCard({
   onReact: () => void;
   onFollow: () => void;
 }) {
+  const palette = useThemeColors();
   const covers = postCoverImages(post.items, 3);
   return (
     <AtelierCard style={{ gap: spacing.md }}>
@@ -68,7 +70,7 @@ function PostCard({
             hitSlop={hitSlopFor(28)}
             onPress={onFollow}
           >
-            <GyfText style={{ color: following ? colors.dark.textMuted : colors.dark.text }}>
+            <GyfText style={{ color: following ? palette.textMuted : palette.text }}>
               {following ? "Following" : "Follow"}
             </GyfText>
           </PressableScale>
@@ -83,7 +85,7 @@ function PostCard({
               key={uri}
               source={{ uri }}
               style={{
-                backgroundColor: colors.dark.surfaceRaised,
+                backgroundColor: palette.surfaceRaised,
                 borderRadius: radii.control,
                 flex: 1,
                 height: 200,
@@ -96,7 +98,7 @@ function PostCard({
           accessibilityLabel="Look preview unavailable"
           style={{
             alignItems: "center",
-            backgroundColor: colors.dark.surfaceRaised,
+            backgroundColor: palette.surfaceRaised,
             borderRadius: radii.control,
             height: 160,
             justifyContent: "center",
@@ -129,12 +131,12 @@ function PostCard({
         }}
       >
         <IconHeart
-          color={post.reacted ? colors.dark.error : colors.dark.textMuted}
+          color={post.reacted ? palette.error : palette.textMuted}
           filled={post.reacted}
           size={18}
         />
         <GyfText
-          style={{ color: post.reacted ? colors.dark.text : colors.dark.textMuted }}
+          style={{ color: post.reacted ? palette.text : palette.textMuted }}
           variant="mono"
         >
           {post.reaction_count}
@@ -145,6 +147,7 @@ function PostCard({
 }
 
 export default function SocialRoute() {
+  const palette = useThemeColors();
   const { insets } = useResponsive();
   const api = useMemo(() => createApi(), []);
   const [scope, setScope] = useState<FeedScope>("all");
@@ -256,7 +259,7 @@ export default function SocialRoute() {
             setRefreshing(false);
           }}
           refreshing={refreshing}
-          tintColor={colors.dark.text}
+          tintColor={palette.text}
         />
       }
       renderItem={({ item }) => (
@@ -302,7 +305,7 @@ export default function SocialRoute() {
           </View>
         ) : status === "error" ? (
           <ErrorState
-            illustration={<IllustrationLooseThread color={colors.dark.textMuted} />}
+            illustration={<IllustrationLooseThread color={palette.textMuted} />}
             message={readableError(feedError)}
             onRetry={() => void load(0, true)}
           />
@@ -314,7 +317,7 @@ export default function SocialRoute() {
                 : "Be the first to share a look from the Stylist."
             }
             headline={scope === "following" ? "Nothing here yet" : "No looks yet"}
-            illustration={<IllustrationEmptyHanger color={colors.dark.textMuted} />}
+            illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
           />
         )
       }

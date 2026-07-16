@@ -20,6 +20,7 @@ import {
   summariseOutfit,
 } from "@/lib/saved-feed";
 import { colors, radii, spacing } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
 
 type Status = "loading" | "ready" | "error";
@@ -47,6 +48,7 @@ function SavedLookCard({
   pending: boolean;
   onRemove: () => void;
 }) {
+  const palette = useThemeColors();
   const summary = summariseOutfit(look.items);
   const cover = outfitCoverImage(look.items);
   return (
@@ -56,7 +58,7 @@ function SavedLookCard({
           accessibilityLabel={`Saved look: ${summary || "outfit"}`}
           source={{ uri: cover }}
           style={{
-            backgroundColor: colors.dark.surfaceRaised,
+            backgroundColor: palette.surfaceRaised,
             borderRadius: radii.control,
             height: 260,
             width: "100%",
@@ -67,7 +69,7 @@ function SavedLookCard({
           accessibilityLabel="Saved look; image unavailable"
           style={{
             alignItems: "center",
-            backgroundColor: colors.dark.surfaceRaised,
+            backgroundColor: palette.surfaceRaised,
             borderRadius: radii.control,
             height: 260,
             justifyContent: "center",
@@ -99,6 +101,7 @@ function SavedLookCard({
 }
 
 export default function SavedRoute() {
+  const palette = useThemeColors();
   const { width, insets } = useResponsive();
   const api = useMemo(() => createApi(), []);
   const [looks, setLooks] = useState<SavedOutfit[]>([]);
@@ -200,7 +203,7 @@ export default function SavedRoute() {
             setRefreshing(false);
           }}
           refreshing={refreshing}
-          tintColor={colors.dark.text}
+          tintColor={palette.text}
         />
       }
     >
@@ -214,7 +217,7 @@ export default function SavedRoute() {
       </View>
 
       {actionError ? (
-        <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }} variant="bodySmall">
+        <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
           {readableError(actionError)}
         </GyfText>
       ) : null}
@@ -226,7 +229,7 @@ export default function SavedRoute() {
         </View>
       ) : status === "error" ? (
         <ErrorState
-          illustration={<IllustrationLooseThread color={colors.dark.textMuted} />}
+          illustration={<IllustrationLooseThread color={palette.textMuted} />}
           message={readableError(actionError)}
           onRetry={() => {
             setStatus("loading");
@@ -237,7 +240,7 @@ export default function SavedRoute() {
         <EmptyState
           description="Save a look or a piece from Explore or the Stylist and it lands here."
           headline="Nothing saved yet"
-          illustration={<IllustrationEmptyHanger color={colors.dark.textMuted} />}
+          illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
         />
       ) : (
         <>

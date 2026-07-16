@@ -17,6 +17,7 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi, type Outfit, type OutfitRecommendation } from "@/lib/api";
 import { feedbackForOutfit, savedOutfitInput } from "@/lib/stylist-feed";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 type FeedbackStatus = "saved" | "skipped";
 
@@ -38,6 +39,7 @@ function isRemoteImage(url: string | null | undefined): url is string {
 }
 
 function ItemTile({ item }: { item: Outfit["items"][number] }) {
+  const palette = useThemeColors();
   return (
     <View style={{ gap: spacing.sm, width: 148 }}>
       {isRemoteImage(item.image_url) ? (
@@ -45,7 +47,7 @@ function ItemTile({ item }: { item: Outfit["items"][number] }) {
           accessibilityLabel={item.title}
           source={{ uri: item.image_url }}
           style={{
-            backgroundColor: colors.dark.surfaceRaised,
+            backgroundColor: palette.surfaceRaised,
             borderRadius: radii.control,
             height: 190,
             width: 148,
@@ -56,8 +58,8 @@ function ItemTile({ item }: { item: Outfit["items"][number] }) {
           accessibilityLabel={`${item.title}; image unavailable`}
           style={{
             alignItems: "center",
-            backgroundColor: colors.dark.surfaceRaised,
-            borderColor: colors.dark.border,
+            backgroundColor: palette.surfaceRaised,
+            borderColor: palette.border,
             borderRadius: radii.control,
             borderWidth: 1,
             height: 190,
@@ -95,6 +97,7 @@ function OutfitCard({
   pending: boolean;
   onFeedback: (index: number, action: "save" | "skip") => void;
 }) {
+  const palette = useThemeColors();
   return (
     <AtelierCard style={{ gap: spacing.lg }}>
       <View style={{ gap: spacing.sm }}>
@@ -119,7 +122,7 @@ function OutfitCard({
           onPress={() => onFeedback(index, "skip")}
           style={{
             alignItems: "center",
-            borderColor: colors.dark.border,
+            borderColor: palette.border,
             borderRadius: radii.control,
             borderWidth: 1,
             flex: 1,
@@ -149,6 +152,7 @@ function OutfitCard({
 }
 
 export default function StylistRoute() {
+  const palette = useThemeColors();
   const router = useRouter();
   const api = useMemo(() => createApi(), []);
   const [goalInput, setGoalInput] = useState("");
@@ -210,10 +214,10 @@ export default function StylistRoute() {
         <RefreshControl
           onRefresh={() => setReload((value) => value + 1)}
           refreshing={loading}
-          tintColor={colors.dark.text}
+          tintColor={palette.text}
         />
       }
-      style={{ backgroundColor: colors.dark.bg }}
+      style={{ backgroundColor: palette.bg }}
     >
       <View style={{ gap: spacing.sm }}>
         <GyfText accessibilityRole="header" variant="display">
@@ -234,15 +238,15 @@ export default function StylistRoute() {
             setReload((value) => value + 1);
           }}
           placeholder="Look taller, slimmer, broader…"
-          placeholderTextColor={colors.dark.textFaint}
+          placeholderTextColor={palette.textFaint}
           returnKeyType="search"
           style={[
             typography.body,
             {
-              borderColor: colors.dark.border,
+              borderColor: palette.border,
               borderRadius: radii.control,
               borderWidth: 1,
-              color: colors.dark.text,
+              color: palette.text,
               minHeight: 48,
               paddingHorizontal: spacing.md,
             },
@@ -275,7 +279,7 @@ export default function StylistRoute() {
 
       {loading && !data ? (
         <AtelierCard style={{ alignItems: "center" }}>
-          <ActivityIndicator accessibilityLabel="Loading stylist looks" color={colors.dark.text} />
+          <ActivityIndicator accessibilityLabel="Loading stylist looks" color={palette.text} />
           <GyfText tone="muted" variant="bodySmall">
             Reading your style context…
           </GyfText>

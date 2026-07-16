@@ -20,6 +20,7 @@ import {
   wardrobeCategories,
 } from "@/lib/wardrobe-feed";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
 
 type Status = "loading" | "ready" | "error";
@@ -39,6 +40,7 @@ function toCollectionItem(item: WardrobeItem): CollectionItem {
 }
 
 export default function WardrobeRoute() {
+  const palette = useThemeColors();
   const { width, insets } = useResponsive();
   const api = useMemo(() => createApi(), []);
   const [items, setItems] = useState<WardrobeItem[]>([]);
@@ -134,7 +136,7 @@ export default function WardrobeRoute() {
             setRefreshing(false);
           }}
           refreshing={refreshing}
-          tintColor={colors.dark.text}
+          tintColor={palette.text}
         />
       }
     >
@@ -155,15 +157,15 @@ export default function WardrobeRoute() {
             onChangeText={setTitleInput}
             onSubmitEditing={() => void addGarment()}
             placeholder="Navy linen blazer…"
-            placeholderTextColor={colors.dark.textFaint}
+            placeholderTextColor={palette.textFaint}
             returnKeyType="done"
             style={[
               typography.body,
               {
-                borderColor: colors.dark.border,
+                borderColor: palette.border,
                 borderRadius: radii.control,
                 borderWidth: 1,
-                color: colors.dark.text,
+                color: palette.text,
                 flex: 1,
                 minHeight: 48,
                 paddingHorizontal: spacing.md,
@@ -184,7 +186,7 @@ export default function WardrobeRoute() {
       </AtelierCard>
 
       {actionError ? (
-        <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }} variant="bodySmall">
+        <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
           {readableError(actionError)}
         </GyfText>
       ) : null}
@@ -218,7 +220,7 @@ export default function WardrobeRoute() {
         </View>
       ) : status === "error" ? (
         <ErrorState
-          illustration={<IllustrationLooseThread color={colors.dark.textMuted} />}
+          illustration={<IllustrationLooseThread color={palette.textMuted} />}
           message={readableError(actionError)}
           onRetry={() => {
             setStatus("loading");
@@ -229,7 +231,7 @@ export default function WardrobeRoute() {
         <EmptyState
           description="Add a garment above and it joins the pieces GYF styles around."
           headline="Your wardrobe is empty"
-          illustration={<IllustrationEmptyHanger color={colors.dark.textMuted} />}
+          illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
         />
       ) : (
         sections.map((section) => (
