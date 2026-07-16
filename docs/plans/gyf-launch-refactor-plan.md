@@ -1810,6 +1810,14 @@ but it never reorders the backend contract.
   and 87 Expo passed in 21 files. The web export builds 49 routes. Device accessibility and
   deployed smoke remain part of EXPO-11.
 
+#### EXPO-06 execution evidence — 2026-07-17 (Synthetic R2 helper composition)
+
+- `apps/expo/src/lib/activation-loop.test.ts` covers the pure helper composition used by the
+  manual profile-ready → complete outfit snapshot → save/skip feedback receipt path, preserving
+  recommendation, rank and event IDs through the existing onboarding and stylist helpers.
+- This is synthetic Bun helper evidence only; it does not prove API mutation, shop/correct, a
+  better subsequent outfit, or close EXPO-11 device/store evidence.
+
 ### EXPO-07 — Explore and commerce
 
 - **Write set:** Explore/search/facet/detail routes/components, affiliate/share handlers.
