@@ -1,12 +1,23 @@
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Image, RefreshControl, ScrollView, View } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  View,
+} from "react-native";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi, type ProfileSummary } from "@/lib/api";
+import { getSession } from "@/lib/auth";
+import { replaceAvatar, validateAvatarAsset } from "@/lib/avatar-upload";
 import { formatMemberSince, initials, statCells } from "@/lib/profile-summary";
+import { capabilityUsable } from "@/lib/system-status";
 import { colors, radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
@@ -56,6 +67,11 @@ export default function ProfileRoute() {
   const [status, setStatus] = useState<Status>("loading");
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<unknown>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  // Fails closed: until GYF has confirmed it can also erase a picture, it does not ask
+  // for one. Initials carry the surface, which is the honest state, not a degraded one.
+  const [avatarUploads, setAvatarUploads] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -66,11 +82,62 @@ export default function ProfileRoute() {
       setError(nextError);
       setStatus("error");
     }
+    try {
+      setAvatarUploads(capabilityUsable(await api.systemStatus(), "profile_avatar"));
+    } catch {
+      setAvatarUploads(false);
+    }
   }, [api]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const pickAvatar = useCallback(async () => {
+    if (avatarBusy) return;
+    setAvatarError(null);
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setAvatarError("Photo library permission is needed to add a profile picture.");
+      return;
+    }
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      base64: true,
+      exif: false,
+      mediaTypes: ["images"],
+      quality: 0.85,
+    });
+    if (picked.canceled || !picked.assets[0]) return;
+    const asset = picked.assets[0];
+    const validationError = validateAvatarAsset(asset);
+    if (validationError) {
+      setAvatarError(validationError);
+      return;
+    }
+    // Checked outside the catch below: that handler turns any throw into one generic retry
+    // message, which is right for an opaque storage/network failure and wrong for this — the
+    // one failure the user can actually act on.
+    const session = await getSession();
+    if (!session?.user.id) {
+      setAvatarError("Your session expired. Sign in again.");
+      return;
+    }
+    setAvatarBusy(true);
+    try {
+      const url = await replaceAvatar(asset, session.user.id, summary?.avatar_url, (avatarUrl) =>
+        api.putProfile({ avatar_url: avatarUrl }),
+      );
+      setSummary((current) => (current ? { ...current, avatar_url: url } : current));
+    } catch {
+      // Deliberately generic: the underlying Supabase/API error text is not user-safe. The
+      // "unchanged" claim is true by construction — replaceAvatar rolls its upload back.
+      setAvatarError("Could not save your picture. Your previous picture is unchanged. Try again.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  }, [api, avatarBusy, summary?.avatar_url]);
 
   const displayName = summary?.display_name?.trim() || "Style Explorer";
   const since = formatMemberSince(summary?.member_since);
@@ -109,7 +176,42 @@ export default function ProfileRoute() {
       ) : (
         <>
           <View style={{ alignItems: "center", gap: spacing.md }}>
-            <Avatar name={displayName} url={summary.avatar_url} />
+            {avatarUploads ? (
+              <Pressable
+                accessibilityLabel={
+                  summary.avatar_url ? "Change profile picture" : "Add profile picture"
+                }
+                accessibilityRole="button"
+                accessibilityState={{ busy: avatarBusy, disabled: avatarBusy }}
+                disabled={avatarBusy}
+                onPress={() => void pickAvatar()}
+              >
+                <Avatar name={displayName} url={summary.avatar_url} />
+              </Pressable>
+            ) : (
+              <Avatar name={displayName} url={summary.avatar_url} />
+            )}
+            {avatarUploads ? (
+              <AtelierButton
+                accessibilityLabel={
+                  summary.avatar_url ? "Change profile picture" : "Add profile picture"
+                }
+                disabled={avatarBusy}
+                label={
+                  avatarBusy
+                    ? "Saving picture…"
+                    : summary.avatar_url
+                      ? "Change picture"
+                      : "Add picture"
+                }
+                onPress={() => void pickAvatar()}
+              />
+            ) : null}
+            {avatarError ? (
+              <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
+                {avatarError}
+              </GyfText>
+            ) : null}
             <View style={{ alignItems: "center", gap: spacing.xs }}>
               <GyfText accessibilityRole="header" variant="title">
                 {displayName}

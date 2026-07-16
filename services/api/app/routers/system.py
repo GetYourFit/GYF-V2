@@ -27,6 +27,7 @@ from pydantic import BaseModel
 
 from ..config import settings
 from ..observability import database_ready
+from ..profile.avatar import avatar_uploads_available
 
 router = APIRouter(tags=["system"])
 
@@ -242,6 +243,30 @@ def _photo_module(name: str, runtime: str) -> Capability:
     )
 
 
+def _avatar_capability() -> Capability:
+    """Avatar uploads are offered only when their erasure can also be honoured.
+
+    The bucket is public and the client uploads under its own token, so once an account
+    is erased nothing user-authenticated can delete the bytes — that needs the
+    service-role key. Without it GYF could take someone's face and never be able to
+    remove it, so it must not ask. Fails closed, like the F8 try-on capability.
+    """
+    if avatar_uploads_available():
+        return Capability(
+            status="live",
+            lane="supabase-storage",
+            detail="Profile pictures upload to owner-scoped storage and are erased with the account.",
+        )
+    return Capability(
+        status="degraded",
+        lane="initials-fallback",
+        detail=(
+            "Profile picture upload is unavailable because GYF cannot yet guarantee "
+            "deleting the image on account erasure; your initials are shown instead."
+        ),
+    )
+
+
 def _body_photo_module() -> Capability:
     """Body candidate is local RTMW/ONNX; the retired remote URL has no effect."""
     if not _configured_runtime_verdict("body")[0]:
@@ -353,6 +378,7 @@ def system_status(
         "photo_body_type": _body_photo_module(),
         "photo_skin_tone": skin,
         "virtual_try_on": tryon,
+        "profile_avatar": _avatar_capability(),
         "affiliate_commerce": Capability(
             status="live",
             lane="cuelinks",

@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     # JWT Secret). Used only when a token is HS256-signed. Asymmetric ES256 tokens
     # are verified via the JWKS instead and need no secret.
     supabase_jwt_secret: str = ""
+    # Service-role key, used for exactly one thing: deleting a purged account's avatar
+    # objects. RLS scopes every other Storage call to the user's own token, but an erased
+    # account has no token left, so erasure cannot be user-authenticated. Unset = GYF
+    # cannot honour erasure for avatar bytes, so `avatar_uploads_available()` reports
+    # false and the client refuses to solicit a picture at all. Never send to a client.
+    supabase_service_role_key: str = ""
     jwt_audience: str = "authenticated"
     # Local dev convenience: when true, missing/invalid tokens resolve to a dev
     # principal so the service runs with no auth provider wired. Never enable in prod.
