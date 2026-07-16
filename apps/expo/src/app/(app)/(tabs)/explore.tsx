@@ -337,11 +337,7 @@ export default function ExploreRoute() {
             </View>
           ) : null}
           {error && items.length > 0 ? (
-            <GyfText
-              accessibilityRole="alert"
-              style={{ color: palette.error }}
-              variant="bodySmall"
-            >
+            <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
               {readableError(error)}
             </GyfText>
           ) : null}

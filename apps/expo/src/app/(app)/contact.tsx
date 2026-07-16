@@ -235,11 +235,7 @@ export default function ContactRoute() {
           </View>
 
           {submitError ? (
-            <GyfText
-              accessibilityRole="alert"
-              style={{ color: palette.error }}
-              variant="bodySmall"
-            >
+            <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
               {submitError}
             </GyfText>
           ) : null}

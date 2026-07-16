@@ -75,10 +75,7 @@ function OptionChip({
         paddingHorizontal: spacing.md,
       }}
     >
-      <GyfText
-        style={selected ? { color: palette.textInverse } : undefined}
-        variant="bodySmall"
-      >
+      <GyfText style={selected ? { color: palette.textInverse } : undefined} variant="bodySmall">
         {label}
       </GyfText>
     </Pressable>
