@@ -1,6 +1,7 @@
 # Expo Frontend — Design System Plan
 
-Status: proposed. Scope: `apps/expo`. Companion doc: `expo-industrial-frontend-implementation.md`.
+Status: **PROPOSED, subordinate to** [`active-execution-contract.md`](./active-execution-contract.md).
+Scope: `apps/expo`. Companion doc: `expo-industrial-frontend-implementation.md`.
 
 ## Why
 

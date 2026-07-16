@@ -1,6 +1,7 @@
 # Expo Frontend — Implementation Plan
 
-Status: proposed. Scope: `apps/expo`. Companion doc: `expo-industrial-frontend-design.md` (read first — this plan assumes its typography pairing, Liquid Glass rules, motion/SVG/density decisions, and responsive-sizing constraints).
+Status: **PROPOSED, subordinate to** [`active-execution-contract.md`](./active-execution-contract.md).
+Scope: `apps/expo`. Companion doc: `expo-industrial-frontend-design.md` (read first — this plan assumes its typography pairing, Liquid Glass rules, motion/SVG/density decisions, and responsive-sizing constraints).
 
 Do not implement without confirmation on phase boundaries below — each phase ends in a working, testable app state; land and verify before moving to the next.
 
