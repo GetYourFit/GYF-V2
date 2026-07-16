@@ -1,26 +1,20 @@
 import { Tabs } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors, typography } from "@/theme/tokens";
+import { GlassTabBar } from "@/components/navigation/glass-tab-bar";
+import { colors } from "@/theme/tokens";
+import { useAppColorScheme } from "@/theme/use-color-scheme";
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
+  const scheme = useAppColorScheme();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.dark.text,
-        tabBarInactiveTintColor: colors.dark.textFaint,
-        tabBarLabelStyle: typography.label,
-        tabBarStyle: {
-          backgroundColor: colors.dark.surface,
-          borderTopColor: colors.dark.border,
-          borderTopWidth: 1,
-          height: 62 + insets.bottom,
-          paddingBottom: Math.max(10, insets.bottom),
-          paddingTop: 8,
-        },
+        // The glass bar floats; scenes keep their own bottom padding so
+        // content scrolls under the blur instead of stopping above it.
+        sceneStyle: { backgroundColor: colors[scheme].bg },
       }}
+      tabBar={(props) => <GlassTabBar {...props} />}
     >
       <Tabs.Screen name="index" options={{ title: "Stylist" }} />
       <Tabs.Screen name="explore" options={{ title: "Explore" }} />

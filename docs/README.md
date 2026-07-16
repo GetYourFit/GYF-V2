@@ -10,7 +10,10 @@ source of execution order and gates.
 2. [`engineering-doctrine.md`](./engineering-doctrine.md) — binding security, privacy, model, evaluation and cost invariants.
 3. [`plans/active-execution-contract.md`](./plans/active-execution-contract.md) — sole F0–F13 order, current truth and promotion gates.
 4. [`plans/gyf-launch-refactor-plan.md`](./plans/gyf-launch-refactor-plan.md) — subordinate implementation packets and Expo parity/cutover board.
-5. [`tech-stack.md`](./tech-stack.md) and research — options and evidence; never authority to promote.
+5. [`plans/expo-industrial-frontend-design.md`](./plans/expo-industrial-frontend-design.md) and
+   [`plans/expo-industrial-frontend-implementation.md`](./plans/expo-industrial-frontend-implementation.md) —
+   subordinate Expo design proposals; active-contract slices and gates remain authoritative.
+6. [`tech-stack.md`](./tech-stack.md) and research — options and evidence; never authority to promote.
 
 ## Requirement traceability
 

@@ -1,6 +1,7 @@
 import { Text, type TextProps } from "react-native";
 
 import { colors, typography, type ThemeName } from "@/theme/tokens";
+import { useTheme } from "@/theme/use-color-scheme";
 
 type GyfTextProps = TextProps & {
   tone?: "text" | "muted" | "faint";
@@ -11,10 +12,11 @@ type GyfTextProps = TextProps & {
 export function GyfText({
   tone = "text",
   variant = "body",
-  theme = "dark",
+  theme: themeProp,
   style,
   ...props
 }: GyfTextProps) {
+  const theme = useTheme(themeProp);
   const palette = colors[theme];
   const color =
     tone === "muted" ? palette.textMuted : tone === "faint" ? palette.textFaint : palette.text;

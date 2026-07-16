@@ -4,9 +4,11 @@ import { Redirect } from "expo-router";
 
 import { getSession, onAuthStateChange } from "@/lib/auth";
 import { colors, spacing } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 import { GyfText } from "@/components/ui/gyf-text";
 
 export function SessionGate({ children }: { children: ReactNode }) {
+  const palette = useThemeColors();
   const [state, setState] = useState<"loading" | "signed-in" | "signed-out" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
 
@@ -43,12 +45,12 @@ export function SessionGate({ children }: { children: ReactNode }) {
       <View
         style={{
           alignItems: "center",
-          backgroundColor: colors.dark.bg,
+          backgroundColor: palette.bg,
           flex: 1,
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator accessibilityLabel="Checking your session" color={colors.dark.text} />
+        <ActivityIndicator accessibilityLabel="Checking your session" color={palette.text} />
       </View>
     );
   }
@@ -57,7 +59,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
       <View
         style={{
           alignItems: "center",
-          backgroundColor: colors.dark.bg,
+          backgroundColor: palette.bg,
           flex: 1,
           gap: spacing.sm,
           justifyContent: "center",
@@ -71,7 +73,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
           Sign-in configuration is missing or could not be reached.
         </GyfText>
         <Pressable accessibilityRole="button" onPress={() => setAttempt((value) => value + 1)}>
-          <GyfText style={{ color: colors.dark.text }} variant="bodySmall">
+          <GyfText style={{ color: palette.text }} variant="bodySmall">
             Try again
           </GyfText>
         </Pressable>

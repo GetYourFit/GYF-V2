@@ -31,7 +31,8 @@ import {
   STYLIST_GOAL_MAX,
   STYLIST_OCCASIONS,
 } from "@/lib/stylist-feed";
-import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 type FeedbackStatus = "saved" | "skipped";
 
@@ -73,6 +74,7 @@ function ItemTile({
   onShop: () => void;
   onSwap: (alternate: OutfitItem) => void;
 }) {
+  const palette = useThemeColors();
   const shopUrl = safeShopUrl(item);
   return (
     <View style={{ gap: spacing.sm, width: 148 }}>
@@ -81,7 +83,7 @@ function ItemTile({
           accessibilityLabel={item.title}
           source={{ uri: item.image_url }}
           style={{
-            backgroundColor: colors.dark.surfaceRaised,
+            backgroundColor: palette.surfaceRaised,
             borderRadius: radii.control,
             height: 190,
             width: 148,
@@ -92,8 +94,8 @@ function ItemTile({
           accessibilityLabel={`${item.title}; image unavailable`}
           style={{
             alignItems: "center",
-            backgroundColor: colors.dark.surfaceRaised,
-            borderColor: colors.dark.border,
+            backgroundColor: palette.surfaceRaised,
+            borderColor: palette.border,
             borderRadius: radii.control,
             borderWidth: 1,
             height: 190,
@@ -164,7 +166,7 @@ function ItemTile({
             key={alternate.item_id}
             onPress={() => onSwap(alternate)}
             style={{
-              borderColor: colors.dark.border,
+              borderColor: palette.border,
               borderRadius: radii.control,
               borderWidth: 1,
               minHeight: 40,
@@ -216,6 +218,7 @@ function OutfitCard({
   onSwap: (index: number, replacedItemId: string, alternate: OutfitItem) => void;
   onRetryCorrection: (index: number) => void;
 }) {
+  const palette = useThemeColors();
   return (
     <AtelierCard style={{ gap: spacing.lg }}>
       <View style={{ gap: spacing.sm }}>
@@ -244,11 +247,7 @@ function OutfitCard({
       </ScrollView>
       {alternateError ? (
         <View style={{ gap: spacing.xs }}>
-          <GyfText
-            accessibilityRole="alert"
-            style={{ color: colors.dark.error }}
-            variant="bodySmall"
-          >
+          <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
             {alternateError}
           </GyfText>
           {correctionRetryAvailable ? (
@@ -265,7 +264,7 @@ function OutfitCard({
           onPress={() => onFeedback(index, "skip")}
           style={{
             alignItems: "center",
-            borderColor: colors.dark.border,
+            borderColor: palette.border,
             borderRadius: radii.control,
             borderWidth: 1,
             flex: 1,
@@ -303,6 +302,7 @@ function OutfitCard({
 }
 
 export default function StylistRoute() {
+  const palette = useThemeColors();
   const router = useRouter();
   const api = useMemo(() => createApi(), []);
   const [goalInput, setGoalInput] = useState("");
@@ -571,10 +571,10 @@ export default function StylistRoute() {
         <RefreshControl
           onRefresh={() => setReload((value) => value + 1)}
           refreshing={loading}
-          tintColor={colors.dark.text}
+          tintColor={palette.text}
         />
       }
-      style={{ backgroundColor: colors.dark.bg }}
+      style={{ backgroundColor: palette.bg }}
     >
       <View style={{ gap: spacing.sm }}>
         <GyfText accessibilityRole="header" variant="display">
@@ -603,8 +603,8 @@ export default function StylistRoute() {
                 key={option.value}
                 onPress={() => setOccasion(selected ? "" : option.value)}
                 style={{
-                  backgroundColor: selected ? colors.dark.text : colors.dark.surfaceRaised,
-                  borderColor: selected ? colors.dark.text : colors.dark.border,
+                  backgroundColor: selected ? palette.text : palette.surfaceRaised,
+                  borderColor: selected ? palette.text : palette.border,
                   borderRadius: radii.capsule,
                   borderWidth: 1,
                   minHeight: 40,
@@ -613,7 +613,7 @@ export default function StylistRoute() {
                 }}
               >
                 <GyfText
-                  style={{ color: selected ? colors.dark.bg : colors.dark.text }}
+                  style={{ color: selected ? palette.bg : palette.text }}
                   variant="bodySmall"
                 >
                   {option.label}
@@ -633,15 +633,15 @@ export default function StylistRoute() {
             setReload((value) => value + 1);
           }}
           placeholder="Look taller, slimmer, broader…"
-          placeholderTextColor={colors.dark.textFaint}
+          placeholderTextColor={palette.textFaint}
           returnKeyType="search"
           style={[
             typography.body,
             {
-              borderColor: colors.dark.border,
+              borderColor: palette.border,
               borderRadius: radii.control,
               borderWidth: 1,
-              color: colors.dark.text,
+              color: palette.text,
               minHeight: 48,
               paddingHorizontal: spacing.md,
             },
@@ -675,11 +675,7 @@ export default function StylistRoute() {
 
       {actionError ? (
         <AtelierCard style={{ gap: spacing.sm }}>
-          <GyfText
-            accessibilityRole="alert"
-            style={{ color: colors.dark.error }}
-            variant="bodySmall"
-          >
+          <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
             {actionError}
           </GyfText>
           <AtelierButton label="Dismiss" onPress={() => setActionError(null)} />
@@ -688,7 +684,7 @@ export default function StylistRoute() {
 
       {loading && !data ? (
         <AtelierCard style={{ alignItems: "center" }}>
-          <ActivityIndicator accessibilityLabel="Loading stylist looks" color={colors.dark.text} />
+          <ActivityIndicator accessibilityLabel="Loading stylist looks" color={palette.text} />
           <GyfText tone="muted" variant="bodySmall">
             {warming
               ? "Your stylist is warming up. Your profile is safe; this can take a little longer."

@@ -24,6 +24,7 @@ import {
 } from "@/lib/account";
 import { signOut } from "@/lib/auth";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 type Status = "loading" | "ready" | "error";
 type Note = { tone: "ok" | "error"; text: string } | null;
@@ -53,6 +54,7 @@ async function deliverExport(json: string, filename: string): Promise<void> {
 }
 
 export default function AccountRoute() {
+  const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
   const [status, setStatus] = useState<Status>("loading");
   const [saved, setSaved] = useState<Record<string, boolean>>({});
@@ -158,13 +160,13 @@ export default function AccountRoute() {
       <View
         style={{
           alignItems: "center",
-          backgroundColor: colors.dark.bg,
+          backgroundColor: palette.bg,
           flex: 1,
           gap: spacing.md,
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator color={colors.dark.text} />
+        <ActivityIndicator color={palette.text} />
         <GyfText tone="muted">Loading your account…</GyfText>
       </View>
     );
@@ -174,14 +176,14 @@ export default function AccountRoute() {
     return (
       <View
         style={{
-          backgroundColor: colors.dark.bg,
+          backgroundColor: palette.bg,
           flex: 1,
           gap: spacing.md,
           padding: spacing.lg,
           justifyContent: "center",
         }}
       >
-        <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
+        <GyfText accessibilityRole="alert" style={{ color: palette.error }}>
           Could not load your account. Check your connection and try again.
         </GyfText>
         <AtelierButton label="Try again" onPress={() => void load()} />
@@ -194,10 +196,10 @@ export default function AccountRoute() {
   const inputStyle = [
     typography.body,
     {
-      borderColor: colors.dark.border,
+      borderColor: palette.border,
       borderRadius: radii.control,
       borderWidth: 1,
-      color: colors.dark.text,
+      color: palette.text,
       minHeight: 48,
       paddingHorizontal: spacing.md,
     },
@@ -206,7 +208,7 @@ export default function AccountRoute() {
   return (
     <ScrollView
       accessibilityLabel="Account settings"
-      style={{ backgroundColor: colors.dark.bg }}
+      style={{ backgroundColor: palette.bg }}
       contentContainerStyle={{ gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl }}
     >
       <GyfText accessibilityRole="header" variant="display">
@@ -216,7 +218,7 @@ export default function AccountRoute() {
       {note ? (
         <GyfText
           accessibilityRole="alert"
-          style={{ color: note.tone === "ok" ? colors.dark.text : colors.dark.error }}
+          style={{ color: note.tone === "ok" ? palette.text : palette.error }}
           variant="bodySmall"
         >
           {note.text}
@@ -229,7 +231,7 @@ export default function AccountRoute() {
           accessibilityLabel="Display name"
           onChangeText={setNameDraft}
           placeholder="How GYF greets you"
-          placeholderTextColor={colors.dark.textFaint}
+          placeholderTextColor={palette.textFaint}
           style={inputStyle}
           value={nameDraft}
         />
@@ -278,8 +280,8 @@ export default function AccountRoute() {
 
       <AtelierButton label="Sign out everywhere" onPress={() => void endSession()} />
 
-      <AtelierCard style={{ borderColor: colors.dark.error }}>
-        <GyfText style={{ color: colors.dark.error }} variant="label">
+      <AtelierCard style={{ borderColor: palette.error }}>
+        <GyfText style={{ color: palette.error }} variant="label">
           DELETE ACCOUNT
         </GyfText>
         <GyfText tone="muted" variant="bodySmall">
@@ -291,7 +293,7 @@ export default function AccountRoute() {
           autoCapitalize="characters"
           onChangeText={setConfirmText}
           placeholder="DELETE"
-          placeholderTextColor={colors.dark.textFaint}
+          placeholderTextColor={palette.textFaint}
           style={inputStyle}
           value={confirmText}
         />
@@ -303,14 +305,14 @@ export default function AccountRoute() {
           onPress={() => void deleteAccount()}
           style={{
             alignItems: "center",
-            backgroundColor: colors.dark.error,
+            backgroundColor: palette.error,
             borderRadius: radii.control,
             justifyContent: "center",
             minHeight: 48,
             opacity: !isDeleteConfirmed(confirmText) || deleting ? 0.4 : 1,
           }}
         >
-          <GyfText style={{ color: colors.dark.textInverse }} variant="bodySmall">
+          <GyfText style={{ color: palette.textInverse }} variant="bodySmall">
             {deleting ? "Deleting…" : "Delete my account"}
           </GyfText>
         </Pressable>

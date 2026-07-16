@@ -5,6 +5,7 @@ import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 // Live component gallery — the Expo counterpart of the web /design tester. Renders
 // every primitive from real tokens so a token change is visible here first.
@@ -22,10 +23,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function DesignRoute() {
+  const palette = useThemeColors();
   return (
     <ScrollView
       accessibilityLabel="Design system gallery"
-      style={{ backgroundColor: colors.dark.bg }}
+      style={{ backgroundColor: palette.bg }}
       contentContainerStyle={{ gap: spacing.xl, padding: spacing.lg, paddingBottom: spacing.xxl }}
     >
       <GyfText accessibilityRole="header" variant="display">
@@ -73,19 +75,19 @@ export default function DesignRoute() {
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
           {(
             [
-              ["bg", colors.dark.bg],
-              ["surface", colors.dark.surface],
-              ["surfaceRaised", colors.dark.surfaceRaised],
-              ["text", colors.dark.text],
-              ["textMuted", colors.dark.textMuted],
-              ["error", colors.dark.error],
+              ["bg", palette.bg],
+              ["surface", palette.surface],
+              ["surfaceRaised", palette.surfaceRaised],
+              ["text", palette.text],
+              ["textMuted", palette.textMuted],
+              ["error", palette.error],
             ] as const
           ).map(([name, value]) => (
             <View key={name} style={{ alignItems: "center", gap: spacing.xs }}>
               <View
                 style={{
                   backgroundColor: value,
-                  borderColor: colors.dark.border,
+                  borderColor: palette.border,
                   borderRadius: radii.control,
                   borderWidth: 1,
                   height: 56,

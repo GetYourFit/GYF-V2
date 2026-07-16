@@ -15,6 +15,7 @@ import {
   mergeProfile,
 } from "@/lib/onboarding-validation";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 import type { ProfileInput } from "@gyf/types";
 
 const GENDERS = [
@@ -57,6 +58,7 @@ function OptionChip({
   selected: boolean;
   onPress: () => void;
 }) {
+  const palette = useThemeColors();
   return (
     <Pressable
       accessibilityRole="button"
@@ -64,8 +66,8 @@ function OptionChip({
       onPress={onPress}
       style={{
         alignItems: "center",
-        backgroundColor: selected ? colors.dark.text : colors.dark.surface,
-        borderColor: selected ? colors.dark.text : colors.dark.border,
+        backgroundColor: selected ? palette.text : palette.surface,
+        borderColor: selected ? palette.text : palette.border,
         borderRadius: radii.capsule,
         borderWidth: 1,
         justifyContent: "center",
@@ -73,10 +75,7 @@ function OptionChip({
         paddingHorizontal: spacing.md,
       }}
     >
-      <GyfText
-        style={selected ? { color: colors.dark.textInverse } : undefined}
-        variant="bodySmall"
-      >
+      <GyfText style={selected ? { color: palette.textInverse } : undefined} variant="bodySmall">
         {label}
       </GyfText>
     </Pressable>
@@ -84,6 +83,7 @@ function OptionChip({
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const palette = useThemeColors();
   return (
     <View style={{ gap: spacing.sm }}>
       <GyfText variant="label">{title}</GyfText>
@@ -103,6 +103,7 @@ function ConsentRow({
   onPress: () => void;
   required?: boolean;
 }) {
+  const palette = useThemeColors();
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -114,8 +115,8 @@ function ConsentRow({
       <View
         style={{
           alignItems: "center",
-          backgroundColor: value ? colors.dark.text : colors.dark.surface,
-          borderColor: colors.dark.border,
+          backgroundColor: value ? palette.text : palette.surface,
+          borderColor: palette.border,
           borderRadius: 6,
           borderWidth: 1,
           height: 22,
@@ -123,7 +124,7 @@ function ConsentRow({
           width: 22,
         }}
       >
-        <GyfText style={value ? { color: colors.dark.textInverse } : undefined}>✓</GyfText>
+        <GyfText style={value ? { color: palette.textInverse } : undefined}>✓</GyfText>
       </View>
       <GyfText style={{ flex: 1 }} variant="bodySmall">
         {label}
@@ -134,6 +135,7 @@ function ConsentRow({
 }
 
 export function OnboardingForm() {
+  const palette = useThemeColors();
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileInput>(EMPTY_PROFILE);
   const [consent, setConsent] = useState<ConsentState>({ ...DEFAULT_CONSENT });
@@ -193,7 +195,7 @@ export function OnboardingForm() {
   }
 
   if (loading)
-    return <ActivityIndicator accessibilityLabel="Loading your profile" color={colors.dark.text} />;
+    return <ActivityIndicator accessibilityLabel="Loading your profile" color={palette.text} />;
   if (saved) {
     return (
       <AuthScreen>
@@ -281,12 +283,12 @@ export function OnboardingForm() {
                 });
               }}
               placeholder="No maximum"
-              placeholderTextColor={colors.dark.textFaint}
+              placeholderTextColor={palette.textFaint}
               style={{
-                borderColor: colors.dark.border,
+                borderColor: palette.border,
                 borderRadius: radii.control,
                 borderWidth: 1,
-                color: colors.dark.text,
+                color: palette.text,
                 fontSize: typography.body.fontSize,
                 minHeight: 52,
                 paddingHorizontal: spacing.md,
@@ -349,7 +351,7 @@ export function OnboardingForm() {
           <ConfidenceLabel reason="Photo assistance is not live in this build. Manual fields remain the source of truth." />
         </Section>
         {error ? (
-          <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
+          <GyfText accessibilityRole="alert" style={{ color: palette.error }}>
             {error}
           </GyfText>
         ) : null}

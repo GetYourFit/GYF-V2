@@ -171,6 +171,31 @@ def test_indexed_browse_candidate_is_default_off():
     assert params == ("session-a", 10, 0)
 
 
+def test_legacy_browse_binds_filters_before_order_seed():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+
+    repo.browse(
+        categories=["shirt"],
+        k=6,
+        region="IN",
+        offset=12,
+        genders=frozenset({"unisex", "men"}),
+        seed="session-a",
+    )
+
+    sql, params = pool.calls[-1]
+    assert sql.index("i.region_tags") < sql.index("hashtext")
+    assert params == (
+        "IN",
+        ["men", "unisex"],
+        ["shirt"],
+        "session-a",
+        6,
+        12,
+    )
+
+
 def test_cold_browse_uses_bounded_uuid_ring_windows():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)

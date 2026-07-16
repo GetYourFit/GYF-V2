@@ -7,6 +7,7 @@ import { normalizeEmail, validateEmail, validatePassword } from "@/lib/auth-vali
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { GyfText } from "@/components/ui/gyf-text";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 type Mode = "login" | "signup";
 
@@ -25,6 +26,7 @@ function Field({
   keyboardType?: "default" | "email-address";
   autoComplete?: "email" | "password" | "new-password";
 }) {
+  const palette = useThemeColors();
   return (
     <View style={{ gap: spacing.xs }}>
       <GyfText accessibilityRole="text" tone="muted" variant="label">
@@ -38,13 +40,13 @@ function Field({
         keyboardType={keyboardType}
         onChangeText={onChangeText}
         placeholder={label}
-        placeholderTextColor={colors.dark.textFaint}
+        placeholderTextColor={palette.textFaint}
         secureTextEntry={secureTextEntry}
         style={{
-          borderColor: colors.dark.border,
+          borderColor: palette.border,
           borderRadius: radii.control,
           borderWidth: 1,
-          color: colors.dark.text,
+          color: palette.text,
           fontSize: typography.body.fontSize,
           minHeight: 52,
           paddingHorizontal: spacing.md,
@@ -63,6 +65,7 @@ function Field({
 }
 
 export function AuthForm({ mode }: { mode: Mode }) {
+  const palette = useThemeColors();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -126,13 +129,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <GyfText
           accessibilityLiveRegion="polite"
           accessibilityRole="alert"
-          style={{ color: colors.dark.error }}
+          style={{ color: palette.error }}
         >
           {error}
         </GyfText>
       ) : null}
       {notice ? (
-        <GyfText accessibilityLiveRegion="polite" style={{ color: colors.dark.success }}>
+        <GyfText accessibilityLiveRegion="polite" style={{ color: palette.success }}>
           {notice}
         </GyfText>
       ) : null}
@@ -141,9 +144,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         label={busy ? "Working…" : mode === "login" ? "Sign in" : "Create account"}
         onPress={() => void submit()}
       />
-      {busy ? (
-        <ActivityIndicator accessibilityLabel="Signing you in" color={colors.dark.text} />
-      ) : null}
+      {busy ? <ActivityIndicator accessibilityLabel="Signing you in" color={palette.text} /> : null}
       <Pressable
         accessibilityRole="link"
         onPress={() => router.push(mode === "login" ? "/signup" : "/login")}
