@@ -2000,6 +2000,22 @@ Store evidence sources: [Play Data Safety](https://support.google.com/googleplay
   privacy labels/manifest, ratings, review demo account, screenshots, staged rollout). None of that
   is provable from a workstation; internal builds alone do not satisfy the ticket.
 
+#### EXPO-11 execution evidence — 2026-07-17 (catalogue runtime configuration)
+
+- The reported Expo catalogue outage was configuration, not retrieval: the typed Expo client and
+  live Virginia API returned 61,705 catalogue rows and a four-item multi-slot browse page with real
+  images, while this checkout had no Expo env file and a stale local web env still targeted the
+  suspended Oregon rollback.
+- `apps/expo/.env.example` now pins the public Virginia API and leaves Supabase public values
+  explicit. The local ignored Expo env was corrected without committing client configuration, and
+  first-run guidance clears Metro because Expo inlines `EXPO_PUBLIC_*` values into cached bundles.
+- Expo CD now refuses deployment unless the configured API URL is present in the exported bundle,
+  matching its existing Supabase URL/key assertions. A cache-cleared export embedded Virginia and
+  produced all 49 static routes; focused env/Explore tests and the typed live catalogue smoke pass.
+- **EXPO-11 remains open.** This proves configuration and deployed catalogue reachability, not the
+  required iOS/Android device, accessibility, offline/deep-link, signing, store or staged-rollout
+  evidence.
+
 ### EXPO-12 — Install and validate the graphics engine
 
 - **Write set:** `apps/expo/package.json`, Expo config/CI, `src/components/lookspace/**`, test

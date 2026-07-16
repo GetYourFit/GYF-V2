@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web",
+    "build": "EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "bun test"

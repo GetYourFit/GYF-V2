@@ -114,9 +114,13 @@ jobs:
       - name: Deploy Expo web to EAS Hosting
         if: steps.gate.outputs.enabled == 'true'
         run: |
-          npx expo export --platform web
+          npx expo export --platform web --clear
           if ! grep -R -F -- "$EXPO_PUBLIC_SUPABASE_URL" dist >/dev/null; then
             echo "Expo bundle does not contain configured Supabase URL; refusing deploy." >&2
+            exit 1
+          fi
+          if ! grep -R -F -- "$EXPO_PUBLIC_API_URL" dist >/dev/null; then
+            echo "Expo bundle does not contain configured API URL; refusing deploy." >&2
             exit 1
           fi
           if ! grep -R -F -- "$EXPO_PUBLIC_SUPABASE_ANON_KEY" dist >/dev/null; then

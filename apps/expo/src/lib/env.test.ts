@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { readPublicEnv } from "./env";
 
 describe("readPublicEnv", () => {
-  it("uses a safe local API default", () => {
+  it("uses the local API fallback when no override is configured", () => {
     expect(readPublicEnv({})).toEqual({ apiUrl: "http://localhost:8000", source: "local-default" });
   });
 

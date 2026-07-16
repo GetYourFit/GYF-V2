@@ -8,11 +8,16 @@ the rollback/oracle surface until route parity and production cutover gates pass
 
 ```bash
 bun install
-bun --cwd apps/expo start
+cp apps/expo/.env.example apps/expo/.env.local
+bun --cwd apps/expo start --clear
 ```
 
 Try Expo Go first. Set `EXPO_PUBLIC_API_URL` to point at the API; it is public configuration,
-not a secret. The shell defaults to `http://localhost:8000`; configured production origins must use HTTPS.
+not a secret. Copy `.env.example` to `.env.local` and fill in the Supabase public values.
+When unset, the client uses `http://localhost:8000`; this is safe only when a local API is running.
+Physical-device users must set a reachable HTTPS API override; loopback HTTP is only for a
+simulator or web client sharing the API host. Clear Metro after changing `.env.local`; cached
+bundles keep their previous inlined values.
 Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for auth. Native sessions use
 SecureStore; web uses browser session storage. Never put service-role keys or access tokens in
 `EXPO_PUBLIC_*` values.
