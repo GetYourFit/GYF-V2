@@ -8,6 +8,15 @@
 #
 # Secrets (DB URL, JWT secret, allowed origins) are set in the Render dashboard
 # or via `render` CLI — never committed (sync: false).
+#
+# WARNING — this file does NOT own the running service. A Render Blueprint is linked
+# to it, but production `gyf-api-va` was created directly (Render cannot change a
+# service's region in place, so co-locating with the database required a new service).
+# The Blueprint therefore cannot adopt it: on every service-name change here it creates
+# its OWN copy with a `-46e6` suffix instead. That is what `gyf-api-46e6` (2026-07-04)
+# and `gyf-api-va-46e6` (2026-07-16) are — both suspended duplicates, not replicas.
+# Before renaming a service here, expect a duplicate and suspend it, or unlink the
+# Blueprint first. Treat this file as the config/env record; the dashboard is the truth.
 services:
   - type: web
     name: gyf-api-va

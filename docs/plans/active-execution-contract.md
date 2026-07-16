@@ -86,15 +86,31 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   control, including the fail-closed try-on section (EXPO-10's closed half); its open queue/poll
   flow stays unbuilt until F9 promotes a rendering lane. No Expo route renders a placeholder and no
   Stylist control is missing. Next.js remains the behavioural oracle until the Expo cutover gate.
-- Production is **not healthy enough to call complete**. Fresh India measurements
-  (`scripts/measure_slo.py --samples 5`) were: health 0.38s p50, browse 0.92s p50,
-  cached search 1.28s p50 and uncached search 2.30s p50. Only health passed.
-- The next local F2.5 candidate is implemented but not promoted: catalog retrieval carries commerce
-  data in its original query (removing the measured second directory lookup), ordinary first-page
-  ANN search skips two unnecessary cross-region `SET LOCAL` commands, deep/filtered scan setup is
-  one command, and the always-on API process keeps a bounded 512-query hot embedding cache above
-  durable Postgres. The complete local phase gate passes. Production deployment, before/after stage
-  deltas and all four India SLO rows remain mandatory before F2.5 closes.
+- **F2.5's measured root cause is fixed (owner-approved 2026-07-16, evening).** The cause was
+  topology: the API ran in Render Oregon while Supabase holds the data in Virginia, so every query
+  crossed North America. The indexed browse ring already ran 0.4 ms warm, so browse's 0.28 s of work
+  was round trips and no software change could reach a 0.3 s SLO whose transit floor alone was
+  0.29 s. The API is now co-located with the database (`gyf-api-va`, Render Starter, `virginia`).
+  Measured from India on the same commit `2e046b4`, minutes apart, only the region differing:
+  browse work 0.28 s → 0.02 s, cached search 0.62 s → 0.03 s, uncached search 1.66 s → 0.36 s.
+  **Oregon failed three of four SLO rows; Virginia passes all four.** This is not the cancelled
+  Singapore migration — Virginia already held the data, nothing moved, no region was introduced.
+  Cost is unchanged once Oregon is suspended; Oregon is the rollback. Evidence: `scale-3k-inr.md`
+  §1b.
+- **The SLO gate greened on errors until `e679ff1`.** `measure_slo.py` timed responses without
+  checking status; a newly created service's edge intermittently 404'd and the gate printed "ALL
+  SLOs MET" with every surface at the transit floor while serving no data, because an error is
+  fast. Any non-200 now voids its row. Treat any pre-`e679ff1` SLO evidence as unverified.
+- The earlier local F2.5 candidate shipped and is deployed (`640bb82`): catalog retrieval carries
+  commerce data in its original query, ordinary first-page ANN search skips two cross-region
+  `SET LOCAL` commands, deep/filtered scan setup is one command, and the always-on API keeps a
+  bounded 512-query hot embedding cache above durable Postgres. It bounded the software causes but
+  did not close the gate on its own; the residual was the round trips the topology fix removed.
+- **F2.5 promotion still requires the owner's sign-off on two open items**, both honest gaps rather
+  than measurements: the four passing rows are a single India run per region on a warm service, not
+  a sustained observation window (`scale-3k-inr.md` §4 step 5 asks for one), and the Oregon service
+  stays live as rollback until the Expo web bundle is confirmed rebuilt against Virginia. Only then
+  is Oregon suspended and the cost back to one Starter.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 

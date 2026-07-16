@@ -79,9 +79,20 @@ mechanism, not just the outcome: co-locating the API with the database collapses
 round trips, so browse's work falls 0.28 s → 0.02 s. The 87 ms closer transit floor is a bonus, not
 the main effect. Nothing about the SQL, the ranking or the cache changed.
 
-**Cost is unchanged** (one Starter replaces one Starter, so the ₹3,000 ceiling holds) once the
-Oregon service is suspended. Rollback: unsuspend `gyf-api` and point `NEXT_PUBLIC_API_URL` /
-`EXPO_PUBLIC_API_URL` back at `gyf-api.onrender.com`.
+**Cost is unchanged** (one Starter replaces one Starter, so the ₹3,000 ceiling holds). Cutover
+completed 2026-07-16: both client bundles were verified to be rebuilt against
+`gyf-api-va.onrender.com` (the URL is inlined at build time, so an env change alone does nothing),
+CORS preflight was confirmed from both real client origins, and only then was Oregon suspended. The
+post-cutover run with Oregon down passed all four rows. Rollback: unsuspend `gyf-api` and point
+`NEXT_PUBLIC_API_URL` (Vercel) / `EXPO_PUBLIC_API_URL` (GitHub *environment* `EXPO_TOKEN`) back at
+`gyf-api.onrender.com`, then redeploy both clients.
+
+**Renaming a service in `render.yaml` spawns a duplicate.** The linked Blueprint does not own the
+running service (it was created directly, because Render cannot move a region in place), so a name
+change makes the Blueprint create its own `-46e6` copy rather than adopt it: `gyf-api-va-46e6`
+appeared as a *running* Starter 16 minutes after the rename and was suspended. `gyf-api-46e6`
+(2026-07-04) is the same trap. Running fleet is now exactly one service; the other three are
+suspended and are the rollback/duplicates.
 
 ### The gate was lying before this run
 
