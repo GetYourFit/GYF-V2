@@ -32,7 +32,7 @@ jobs:
           # the first real catalog request after a lull still paid 10–13s.
           for i in 1 2 3; do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 70 \
-              "https://gyf-api.onrender.com/items/browse?k=1" || echo "000")
+              "https://gyf-api-va.onrender.com/items/browse?k=1" || echo "000")
             echo "attempt $i -> HTTP $code"
             [ "$code" = "200" ] && exit 0
             sleep 15

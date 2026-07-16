@@ -59,6 +59,42 @@ Measured TCP RTT from India: **Oregon 320.8 ms · Virginia 233.4 ms · Mumbai 26
 stateless API with it is the costed non-Singapore experiment the contract requires — presented for
 an owner decision, never silently provisioned.
 
+## 1b. The experiment ran (owner-approved 2026-07-16): Virginia passes
+
+The owner approved the co-location experiment. `gyf-api-va` (Render Starter, `virginia`) was created
+beside the database with the Oregon service's 22 environment variables copied exactly, deployed from
+the same commit `2e046b4`, and measured from India minutes apart from Oregon. Only the region
+differed. Parity was proven before the numbers were trusted: byte-identical `/openapi.json`,
+identical `/system/status` capabilities and an identical 24-item browse page in identical order.
+
+| Surface | Oregon p50 | Oregon work | Virginia p50 | Virginia work | SLO | Virginia |
+| --- | --- | --- | --- | --- | --- | --- |
+| `/health` | 0.29 s | transit floor | 0.25 s | transit floor | 0.5 s | PASS |
+| `/items/browse` | 0.57 s | 0.28 s | 0.27 s | **0.02 s** | 0.3 s | PASS |
+| `/items/search` cached | 0.90 s | 0.62 s | 0.28 s | **0.03 s** | 0.4 s | PASS |
+| `/items/search` uncached | 1.95 s | 1.66 s | 0.61 s | **0.36 s** | 1.5 s | PASS |
+
+**Oregon fails three of four rows; Virginia passes all four.** The `work` column is the proof of
+mechanism, not just the outcome: co-locating the API with the database collapses the cross-country
+round trips, so browse's work falls 0.28 s → 0.02 s. The 87 ms closer transit floor is a bonus, not
+the main effect. Nothing about the SQL, the ranking or the cache changed.
+
+**Cost is unchanged** (one Starter replaces one Starter, so the ₹3,000 ceiling holds) once the
+Oregon service is suspended. Rollback: unsuspend `gyf-api` and point `NEXT_PUBLIC_API_URL` /
+`EXPO_PUBLIC_API_URL` back at `gyf-api.onrender.com`.
+
+### The gate was lying before this run
+
+The first Virginia measurement printed **"ALL SLOs MET" with every surface at 0.25 s and
+`work= 0.00s`** — while the service was intermittently returning 404s through Render's edge, which
+was still propagating the newly created hostname. `measure_slo.py` timed responses without ever
+checking their status, and an error is *fast*: it costs the server nothing and lands exactly at the
+transit floor, so a broken surface scored as its best possible result. The gate would have promoted
+F2.5 on nothing. It now returns the status with the latency and **voids any row with a non-200**
+(`e679ff1`). The 404s were transient and cleared on their own (0/30 afterwards); the numbers above
+are from the hardened gate with zero non-200s. A promotion gate that greens on errors is worse than
+no gate, because it is trusted.
+
 ## 2. Target SLOs (the gate for F2.5/F10 promotion)
 
 From an Indian connection, warm service, p50 / p95:

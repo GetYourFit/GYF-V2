@@ -140,7 +140,7 @@ def search_path(query: str, k: int = 24) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--api", default="https://gyf-api.onrender.com")
+    parser.add_argument("--api", default="https://gyf-api-va.onrender.com")
     parser.add_argument("--samples", type=int, default=10)
     args = parser.parse_args()
     api = args.api.rstrip("/")
