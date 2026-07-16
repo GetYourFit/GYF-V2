@@ -23,6 +23,9 @@ and the contract disagree, the contract wins. ML depth lives in
 
 ## 1. Measured baseline (latest contract evidence: 2026-07-16, from India, prod)
 
+Superseded by the pooled measurement below. These numbers were taken with a client that opened a
+fresh connection per sample, so each row carries ~0.5 s of the gate's own handshakes:
+
 | Surface | Measured | Verdict |
 | --- | --- | --- |
 | `/health` | 0.40 s p50 / 0.86 s p95 | passes the fixed scorecard |
@@ -30,12 +33,31 @@ and the contract disagree, the contract wins. ML depth lives in
 | `/items/search` cached | 1.20 s p50 / 1.23 s p95 | cache works; cross-region DB/API path misses |
 | `/items/search` uncached | 3.68 s p50 / **45.93 s p95** | encoder-error fallback is catastrophic |
 
-Known facts: HNSW, bounded browse, a shared pool and query cache already exist. The deployed
-fixed-label metrics now isolate two causes: repeated cross-region database round trips (directory
-~0.19 s, cache ~0.18–0.28 s) and an unindexed title fallback after encoder failure (the outlier had
-an 8-second encoder error followed by retrieval SQL above 10 seconds). Search SQL averaged ~2.12 s
-over the cumulative live sample. Production `EXPLAIN (ANALYZE, BUFFERS)` remains the index gate;
-stage timing is evidence for where to act, not a substitute for the query plan.
+## 1a. Corrected baseline (2026-07-16, pooled connection, from India)
+
+`measure_slo.py` now reuses one connection, as Expo's `fetch` and browsers do (fixed in `d8c7f44`;
+the per-connection gate reported `/health` at 0.81 s versus 0.29 s pooled). Work is each surface's
+p50 minus the `/health` p50 on the same connection — `/health` touches no database, so what is left
+of it is transit.
+
+| Surface | p50 / p95 | work | SLO | Verdict |
+| --- | --- | --- | --- | --- |
+| `/health` | 0.31 / 0.35 s | transit floor | 0.5 / 1.0 s | **PASS** |
+| `/items/browse` | 0.61 / 0.68 s | 0.31 s | 0.3 / 0.8 s | p50 FAIL, p95 PASS |
+| `/items/search` cached | 0.89 / 0.97 s | 0.59 s | 0.4 / 0.9 s | FAIL |
+| `/items/search` uncached | 2.05 / 7.00 s | 1.74 s | 1.5 / 3.0 s | FAIL |
+
+**The remaining cause is topology, not SQL.** Production `EXPLAIN (ANALYZE, BUFFERS)`: the indexed
+browse ring (`GYF_BROWSE_INDEXED_RING_ENABLED=true` in `render.yaml`) runs in **0.4 ms warm /
+17 ms cold**; the dead legacy hash-sort path would take 5.7 s warm / 20.7 s cold, spilling 18.7 MB
+per worker to disk across 61,710 available items. Browse's 0.31 s of work is therefore round
+trips: **the API is in Render Oregon and the database is in Supabase `aws-1-us-east-1`
+(Virginia)**, so every round trip crosses North America.
+
+Measured TCP RTT from India: **Oregon 320.8 ms · Virginia 233.4 ms · Mumbai 26.2 ms.** Virginia is
+87 ms closer to Indian users than Oregon *and* already hosts the database. Co-locating the
+stateless API with it is the costed non-Singapore experiment the contract requires — presented for
+an owner decision, never silently provisioned.
 
 ## 2. Target SLOs (the gate for F2.5/F10 promotion)
 
