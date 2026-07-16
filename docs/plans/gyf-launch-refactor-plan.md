@@ -1799,6 +1799,75 @@ but it never reorders the backend contract.
 - **Acceptance:** filter parity fixtures match API; no repeated products across intended session;
   retailer redirect preserves attribution; failed pages retry without duplicate events.
 
+#### EXPO-07 execution evidence — 2026-07-16 (Deep Explore detail parity)
+
+Audited against the web oracle (`app/components/explore/*`) before writing. Six real gaps existed;
+all six are closed behind unchanged API contracts.
+
+- **Item detail.** A card tap opened the retailer link directly — the catalogue had no detail
+  surface at all. `components/explore/item-detail-sheet.tsx` now opens a glass sheet reusing the
+  collection grid's quick-preview language (blur, specular hairline, `Modal` + `onRequestClose`),
+  carrying the image, price, "why this works", complete-the-look pairings, add-to-wardrobe and
+  shop. Browsing context is never lost.
+- **Complete the look.** Pins `POST /outfits/complete` (`k: 1`) to the item and renders the
+  stylist's own pairings and explanation — the same engine as the feed, not a similar-items
+  lookup. A failure degrades to "none available yet"; it never breaks the sheet or invents a pair.
+- **Occasion and style filters** were absent. They now fold into the scored query
+  (`exploreQuery`), exactly as the oracle does, because browse honours neither — falling through
+  to browse would have silently dropped the chip the user just tapped.
+- **Slot filters** covered 4 of the contract's 6; outerwear and accessories were unreachable. The
+  browse *interleave* deliberately stays at the four garment slots so the default feed is not
+  crowded.
+- **Gender scoping** was missing entirely: Explore browsed the whole catalogue while the oracle
+  scoped to the user's slice + unisex (HL-STYLE). The first load now waits for the profile so the
+  grid is never built from the wrong slice and re-filtered; no stated gender never narrows to a
+  guess.
+- **Price controls** rendered against an unpriced catalogue, where they return an empty grid and
+  read as a bug. `priceFiltersUsable`/`withUsablePriceFilters` gate them on live facets and drop a
+  filter the catalogue cannot honour.
+
+Truthfulness: `compatibilityReason()` states what the *score* means, never a per-item analysis this
+surface does not have (D6). A browse row carries the retrieval placeholder `0.0`; it is labelled
+unscored and can never render as a confident 0% match — regression-tested across `0`, negatives,
+`null`, `undefined` and `NaN`.
+
+Confidence: the pairing shows `ConfidenceLabel`, deliberately **not** the oracle's unconditional
+`X% match` (`wear-it-with-row.tsx:147`). That line renders a cold-start or abstained look as a hard
+number, which is the claim F1b exists to forbid; the Expo surface says "not yet measured" when the
+engine did not measure. Parity here means the honest behaviour, not the oracle's bug.
+
+Correctness found in review, all three closed:
+
+1. **Stale response repaints the grid.** Rapid chip taps left several requests in flight; a slow
+   earlier one could land last and show results the current filters contradict. Closed with the
+   Stylist feed's `loadSequence` ref guard — only the newest load may write.
+2. **A hung profile fetch stalled first paint forever** — a real regression against the oracle,
+   which bounds it (`explore-grid.tsx:161`). `gender` starts `undefined` and the load effect waits
+   for it, so a request that never settles left the grid on its skeleton with no way out. Closed
+   with the same 500 ms fallback to an ungendered grid; a late profile re-filters once.
+3. **Superseded requests kept running.** The sequence guard stopped a stale response from being
+   *applied*, but the request still finished — and an uncached search pays a remote text embed
+   (~10 s p50), so abandoned fetches burn the encoder lane and the ₹3,000 budget for a grid nobody
+   will see. Closed with an `AbortController` per load (aborted on supersede and on unmount), the
+   signal threaded through the existing `browse`/`search` parameters. A deliberately cancelled
+   request is not reported as an error.
+
+Watch-item, not fixed: the search/price inputs re-render the whole route per keystroke (no
+memoized header). No measured jank; revisit if a low-end Android device shows typing lag.
+
+Deletion (replace-then-delete): the occasion/style vocabulary existed in three drifting copies
+(`onboarding-form.tsx`, `stylist-feed.ts`, and the oracle) rendering raw contract values
+(`business_casual`) as user-facing labels. One `lib/vocab.ts` now mirrors `usermodel.py`/
+`taxonomy.py`; `STYLIST_OCCASIONS` and both inline lists are gone. The hand-rolled chip and skip
+button collapsed onto `FilterChip` and a new `AtelierButton variant="secondary"`.
+
+Evidence: 87 Expo tests passed (14 in `explore-feed.test.ts`, covering every new pure behaviour:
+occasion/style query folding, gender scoping and the `unknown` sentinel, the price-facet gate and
+its identity-preserving no-op, the unscored-score bands, and page-boundary dedupe), 416 API tests
+passed with 18 environment-gated real-Postgres skips (pre-existing; Apple `container` is not
+running locally — CI covers that lane), format, lint, typecheck, doctrine and the Expo web export
+(49 routes) all passed. Device accessibility and deployed smoke remain part of EXPO-11.
+
 ### EXPO-08 — Wardrobe, saved, collections
 
 - **Write set:** wardrobe/collections/saved routes and media components.

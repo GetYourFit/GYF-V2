@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
+import { FilterChip } from "@/components/ui/filter-chip";
 import { GyfText } from "@/components/ui/gyf-text";
 import {
   ApiError,
@@ -29,8 +30,8 @@ import {
   safeShopUrl,
   savedOutfitInput,
   STYLIST_GOAL_MAX,
-  STYLIST_OCCASIONS,
 } from "@/lib/stylist-feed";
+import { OCCASIONS } from "@/lib/vocab";
 import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
@@ -256,27 +257,14 @@ function OutfitCard({
         </View>
       ) : null}
       <View style={{ flexDirection: "row", gap: spacing.sm }}>
-        <Pressable
+        <AtelierButton
           accessibilityLabel={`Not interested in look ${index + 1}`}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: pending || Boolean(status) }}
           disabled={pending || Boolean(status)}
+          label={status === "skipped" ? "Skipped" : "Not for me"}
           onPress={() => onFeedback(index, "skip")}
-          style={{
-            alignItems: "center",
-            borderColor: palette.border,
-            borderRadius: radii.control,
-            borderWidth: 1,
-            flex: 1,
-            justifyContent: "center",
-            minHeight: 48,
-            opacity: pending || status ? 0.6 : 1,
-          }}
-        >
-          <GyfText tone="muted" variant="bodySmall">
-            {status === "skipped" ? "Skipped" : "Not for me"}
-          </GyfText>
-        </Pressable>
+          style={{ flex: 1 }}
+          variant="secondary"
+        />
         <AtelierButton
           disabled={pending || Boolean(status)}
           label={
@@ -592,33 +580,17 @@ export default function StylistRoute() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}
         >
-          {STYLIST_OCCASIONS.map((option) => {
+          {OCCASIONS.map((option) => {
             const selected = occasion === option.value;
             return (
-              <Pressable
+              <FilterChip
                 accessibilityLabel={`Style for ${option.label}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected, disabled: loading }}
                 disabled={loading}
                 key={option.value}
+                label={option.label}
                 onPress={() => setOccasion(selected ? "" : option.value)}
-                style={{
-                  backgroundColor: selected ? palette.text : palette.surfaceRaised,
-                  borderColor: selected ? palette.text : palette.border,
-                  borderRadius: radii.capsule,
-                  borderWidth: 1,
-                  minHeight: 40,
-                  justifyContent: "center",
-                  paddingHorizontal: spacing.md,
-                }}
-              >
-                <GyfText
-                  style={{ color: selected ? palette.bg : palette.text }}
-                  variant="bodySmall"
-                >
-                  {option.label}
-                </GyfText>
-              </Pressable>
+                selected={selected}
+              />
             );
           })}
         </ScrollView>

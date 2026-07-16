@@ -14,6 +14,7 @@ import {
   isOnboardingReady,
   mergeProfile,
 } from "@/lib/onboarding-validation";
+import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 import type { ProfileInput } from "@gyf/types";
@@ -23,28 +24,6 @@ const GENDERS = [
   ["men", "Menswear"],
   ["unisex", "Unisex"],
   ["nonbinary", "Show me everything"],
-] as const;
-const OCCASIONS = [
-  "casual",
-  "business",
-  "formal",
-  "wedding",
-  "festive",
-  "party",
-  "athleisure",
-  "vacation",
-] as const;
-const STYLES = [
-  "minimalist",
-  "classic",
-  "streetwear",
-  "bohemian",
-  "preppy",
-  "edgy",
-  "romantic",
-  "sporty",
-  "business_casual",
-  "glam",
 ] as const;
 const CURRENCIES = ["USD", "EUR", "GBP", "INR"] as const;
 type ConsentState = Record<keyof typeof DEFAULT_CONSENT, boolean>;
@@ -237,10 +216,10 @@ export function OnboardingForm() {
         </Section>
         <Section title="What are you dressing for?">
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
-            {OCCASIONS.map((value) => (
+            {OCCASIONS.map(({ value, label }) => (
               <OptionChip
                 key={value}
-                label={value}
+                label={label}
                 onPress={() => update("occasion", profile.occasion === value ? "" : value)}
                 selected={profile.occasion === value}
               />
@@ -249,12 +228,12 @@ export function OnboardingForm() {
         </Section>
         <Section title="Your style signals">
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
-            {STYLES.map((value) => {
+            {STYLE_INTENTS.map(({ value, label }) => {
               const selected = (profile.style_intent ?? []).includes(value);
               return (
                 <OptionChip
                   key={value}
-                  label={value.replace("_", " ")}
+                  label={label}
                   onPress={() =>
                     update(
                       "style_intent",

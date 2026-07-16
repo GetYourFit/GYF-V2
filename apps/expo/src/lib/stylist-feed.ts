@@ -1,16 +1,6 @@
 import type { FeedbackRequest, Outfit, OutfitItem } from "@gyf/types";
 
 export const STYLIST_GOAL_MAX = 200;
-export const STYLIST_OCCASIONS = [
-  { label: "Casual", value: "casual" },
-  { label: "Business", value: "business" },
-  { label: "Formal", value: "formal" },
-  { label: "Wedding", value: "wedding" },
-  { label: "Festive", value: "festive" },
-  { label: "Party", value: "party" },
-  { label: "Athleisure", value: "athleisure" },
-  { label: "Vacation", value: "vacation" },
-] as const;
 
 export function feedbackForOutfit(
   outfit: Outfit,

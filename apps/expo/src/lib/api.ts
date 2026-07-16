@@ -1,6 +1,7 @@
 import {
   ApiError,
   GyfApi as WebGyfApi,
+  type CatalogFacets,
   type SearchParams,
   type TokenProvider,
 } from "../../../../app/lib/api";
@@ -9,7 +10,7 @@ import { publicEnv } from "./env";
 import { getAccessToken } from "./auth";
 
 export { ApiError };
-export type { SearchParams, TokenProvider };
+export type { CatalogFacets, SearchParams, TokenProvider };
 export * from "@gyf/types";
 
 /** Expo binding for the existing typed transport; the web implementation stays untouched. */

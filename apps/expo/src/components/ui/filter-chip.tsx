@@ -6,14 +6,20 @@ import { PressableScale } from "./pressable-scale";
 /** Selectable capsule chip — extracted from wardrobe's inline version. */
 export function FilterChip({
   label,
+  accessibilityLabel,
   count,
   selected,
+  disabled,
   onPress,
   theme: themeProp,
 }: {
   label: string;
+  /** Spoken label when the visible one is too terse out of context ("Casual"
+   *  alone does not say what tapping it does). Defaults to the visible label. */
+  accessibilityLabel?: string;
   count?: number;
   selected: boolean;
+  disabled?: boolean;
   onPress: () => void;
   theme?: ThemeName;
 }) {
@@ -21,8 +27,10 @@ export function FilterChip({
   const palette = colors[theme];
   return (
     <PressableScale
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
-      accessibilityState={{ selected }}
+      accessibilityState={{ disabled: Boolean(disabled), selected }}
+      disabled={disabled}
       onPress={onPress}
       style={{
         backgroundColor: selected ? palette.text : palette.surfaceRaised,
@@ -31,6 +39,7 @@ export function FilterChip({
         borderWidth: 1,
         minHeight: 40,
         justifyContent: "center",
+        opacity: disabled ? 0.6 : 1,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
       }}
