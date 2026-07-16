@@ -38,7 +38,7 @@ EMBEDDING_DIM = 768
 STATEMENT_TIMEOUT_MS = 15_000
 LOCK_TIMEOUT_MS = 2_000
 ARTIFACT_VERSION = "f25-catalog-explain-v1"
-EXPECTED_SCHEMA_VERSION = "0023_available_category_browse_order"
+EXPECTED_SCHEMA_VERSION = "0023_category_browse_order"
 _WIDEST_SLOT_CATEGORIES = [
     "jeans",
     "trousers",

@@ -1,6 +1,6 @@
 """Index filtered catalogue browse in deterministic ring order.
 
-Revision ID: 0023_available_category_browse_order
+Revision ID: 0023_category_browse_order
 Revises: 0022_catalog_title_search_index
 Create Date: 2026-07-16
 """
@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from alembic import op
 from sqlalchemy import text
 
-revision: str = "0023_available_category_browse_order"
+revision: str = "0023_category_browse_order"
 down_revision: str | None = "0022_catalog_title_search_index"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

@@ -255,7 +255,7 @@ def test_validation_requires_buffers_and_hot_path_indexes() -> None:
         plans,
         schema_version="0021_catalog_image_count_index",
     ) == [
-        "schema: expected 0023_available_category_browse_order, found 0021_catalog_image_count_index",
+        "schema: expected 0023_category_browse_order, found 0021_catalog_image_count_index",
         "browse_deep: category browse-order index not used",
         "browse_deep: sequential items scan",
     ]

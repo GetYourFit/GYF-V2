@@ -117,3 +117,22 @@ def test_invalid_filtered_browse_index_is_dropped_then_recreated() -> None:
         "DROP INDEX CONCURRENTLY idx_items_available_category_browse_order",
         migration._CREATE,
     ]
+
+
+def test_every_alembic_revision_fits_the_version_table() -> None:
+    versions = MIGRATION.parent
+    overlong: list[tuple[str, str]] = []
+    for path in sorted(versions.glob("*.py")):
+        source = path.read_text(encoding="utf-8")
+        namespace: dict[str, object] = {}
+        for line in source.splitlines():
+            if line.startswith("revision:"):
+                exec(line, {}, namespace)
+                revision = str(namespace["revision"])
+                if len(revision) > 32:
+                    overlong.append((path.name, revision))
+                break
+
+    assert overlong == [], "alembic_version.version_num is VARCHAR(32): " + ", ".join(
+        f"{name}={revision}" for name, revision in overlong
+    )
