@@ -31,6 +31,7 @@ import {
   savedOutfitInput,
   STYLIST_GOAL_MAX,
 } from "@/lib/stylist-feed";
+import { capabilityUsable } from "@/lib/system-status";
 import { OCCASIONS } from "@/lib/vocab";
 import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
@@ -308,6 +309,9 @@ export default function StylistRoute() {
   const [alternatesBusy, setAlternatesBusy] = useState<string | null>(null);
   const [completeBusy, setCompleteBusy] = useState<string | null>(null);
   const [alternateErrors, setAlternateErrors] = useState<Record<number, string>>({});
+  // Fails closed: try-on stays shut until /system/status proves a rendering lane is live,
+  // so a status blip is never the reason GYF asks for a photo of the user's body.
+  const [tryOnOpen, setTryOnOpen] = useState(false);
   const [swapRetries, setSwapRetries] = useState<Record<number, FeedbackRequest>>({});
   const loadSequence = useRef(0);
   const retryEvents = useRef<Record<string, FeedbackRequest[]>>({});
@@ -374,6 +378,21 @@ export default function StylistRoute() {
   useEffect(() => {
     void load();
   }, [load, reload]);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .systemStatus()
+      .then((status) => {
+        if (active) setTryOnOpen(capabilityUsable(status, "virtual_try_on"));
+      })
+      .catch(() => {
+        if (active) setTryOnOpen(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [api]);
 
   useEffect(() => {
     if (!loading || data) {
@@ -695,6 +714,20 @@ export default function StylistRoute() {
               applied.
             </GyfText>
           ) : null}
+        </AtelierCard>
+      ) : null}
+
+      {/* ponytail: closed-state only (EXPO-10 half one). The queue/poll/cancel/photo flow is
+          deliberately unbuilt — F9 has promoted no rendering lane, so it would be dead code that
+          could only be verified by pretending. When F9 opens a lane, this section becomes the
+          per-outfit "See it on you" surface the web oracle already carries. */}
+      {data && data.outfits.length > 0 && !tryOnOpen ? (
+        <AtelierCard style={{ gap: spacing.xs }}>
+          <GyfText variant="label">SEE IT ON YOU</GyfText>
+          <GyfText tone="muted" variant="bodySmall">
+            Virtual try-on isn&apos;t available here yet, so GYF doesn&apos;t ask for your photo. It
+            arrives free for everyone once a rendering lane passes its evaluation gate.
+          </GyfText>
         </AtelierCard>
       ) : null}
 

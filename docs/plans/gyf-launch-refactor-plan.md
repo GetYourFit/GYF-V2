@@ -1791,6 +1791,25 @@ but it never reorders the backend contract.
 - **Acceptance:** every impression/feedback event has the same IDs as the web oracle; offline and
   timeout states are reversible; no animation blocks mutation.
 
+#### EXPO-06 execution evidence — 2026-07-16 (Stylist try-on closed state)
+
+- The Stylist's last missing web-oracle control was try-on. Every other oracle control — occasion
+  chips, natural-language goal, explanation/confidence/abstention, save/skip, swap alternates,
+  shop and complete-look — was already ported and unchanged by this slice.
+- Only EXPO-10's closed half shipped, because F9 has promoted no rendering lane: the Stylist now
+  fetches `/system/status` once and renders an honest "not available here yet" section while
+  `virtual_try_on` is unusable. The queue/poll/cancel/photo flow is deliberately unbuilt; it would
+  be unverifiable dead code until a lane opens.
+- The gate is the already-tested `capabilityUsable` helper, which fails closed on a missing key,
+  an unknown status or an unreadable status. The screen's state also defaults to closed, so the
+  UI never solicits a photo before the deployment has proven it could render one.
+- Live production `/system/status` reports `virtual_try_on: planned` on 2026-07-16, so the closed
+  section is what a real user sees; the notice is measured, not assumed.
+- `make fmt-check`, `make lint`, `make typecheck`, `make doctrine`, `make test` and `bun run build`
+  all pass. Test totals: 416 API passed with 18 environment-gated skips, 72 web passed in 18 files
+  and 87 Expo passed in 21 files. The web export builds 49 routes. Device accessibility and
+  deployed smoke remain part of EXPO-11.
+
 ### EXPO-07 — Explore and commerce
 
 - **Write set:** Explore/search/facet/detail routes/components, affiliate/share handlers.
