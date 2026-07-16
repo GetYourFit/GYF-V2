@@ -12,7 +12,15 @@
       "bundler": "metro",
       "output": "static"
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Get Your Fit to choose your profile picture."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "cdc5a042-8bfb-4618-a161-c0f364851cf8"

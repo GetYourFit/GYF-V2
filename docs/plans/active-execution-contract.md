@@ -82,7 +82,10 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   merges that production baseline with the latest hard-launch contract and Stylist correction loop.
 - Latest CI and CD runs for production pass. This proves the automated contract, not product completeness.
 - F1, F2, F3, F4 and the closed F8 durable spine are implemented. F5 stays on the deterministic incumbent; F6 lacks sufficient behavioural data; F7 remains fairness-blocked; F9 has not promoted a try-on lane.
-- Expo is deployed. Auth, onboarding, Explore, Stylist, Saved, Collections (a Saved re-export, not a dupe), Wardrobe, Social feed, Profile, Account (consent/export/DELETE-erasure), Contact, Grievance, Status and Canvas are all wired; the last placeholder (the dev-only `design` gallery) is now a real component gallery, so no route renders a placeholder. Each screen sits behind the unchanged API contracts with pure logic unit-tested and the web export building. Remaining Expo enhancements (not placeholders): social compose (create/recreate post), avatar upload, and full Stylist controls / deep Explore detail parity. Next.js remains the behavioural oracle until the Expo cutover gate.
+- Expo is deployed. Auth, onboarding, Explore, Stylist, Saved, Collections (a Saved re-export, not a dupe), Wardrobe, Social feed, Profile, Account (consent/export/DELETE-erasure), Contact, Grievance, Status and Canvas are all wired; the last placeholder (the dev-only `design` gallery) is now a real component gallery, so no route renders a placeholder. Each screen sits behind the unchanged API contracts with pure logic unit-tested and the web export building. Social compose, avatar upload and EXPO-07 deep Explore detail parity (item detail sheet, complete-the-look, occasion/style/slot filters, gender scoping, facet-gated price controls) have shipped. The Stylist now carries every web-oracle
+  control, including the fail-closed try-on section (EXPO-10's closed half); its open queue/poll
+  flow stays unbuilt until F9 promotes a rendering lane. No Expo route renders a placeholder and no
+  Stylist control is missing. Next.js remains the behavioural oracle until the Expo cutover gate.
 - Production is **not healthy enough to call complete**. Fresh India measurements
   (`scripts/measure_slo.py --samples 5`) were: health 0.38s p50, browse 0.92s p50,
   cached search 1.28s p50 and uncached search 2.30s p50. Only health passed.
@@ -374,6 +377,46 @@ Starter; reduce the largest remaining measured stage without changing ranking tr
 if every §2 row and security/cost check passes. If software-level fixes cannot pass, stop and
 present a costed non-Singapore topology experiment for owner approval. F2.5 is **not promoted** by
 this local result.
+
+**2026-07-16 measurement correction and root cause (supersedes the stage diagnosis above).**
+
+*The gate itself was wrong.* `measure_slo.py` opened a fresh connection per sample via
+`urlopen`, charging every request a DNS+TCP+TLS handshake that Expo's `fetch` and every browser
+pay once per pool. Measured India → production the same minute, `/health` read 0.81 s
+per-connection versus 0.29 s pooled, and `search_uncached` p95 read 10.55 s versus 2.06 s. The
+recorded claim that **every row failed is false**: `health` passes. Fixed in `d8c7f44`; the gate
+now reuses one connection, reports the handshake once as `connect`, and prints each surface's
+work as p50 minus the `/health` p50 on the same connection.
+
+Corrected India baseline (pooled, samples=5, commit `2f35147`):
+
+| Surface | p50 / p95 | work | SLO | Verdict |
+| --- | --- | --- | --- | --- |
+| `health` | 0.31 / 0.35 s | transit floor | 0.5 / 1.0 s | **PASS** |
+| `browse` | 0.61 / 0.68 s | 0.31 s | 0.3 / 0.8 s | p50 FAIL, p95 PASS |
+| `search_cached` | 0.89 / 0.97 s | 0.59 s | 0.4 / 0.9 s | FAIL |
+| `search_uncached` | 2.05 / 7.00 s | 1.74 s | 1.5 / 3.0 s | FAIL |
+
+*The remaining cause is topology, not code.* Production `EXPLAIN (ANALYZE, BUFFERS)` shows the
+browse SQL is **not** the problem: the indexed ring (already `true` in `render.yaml`) executes in
+**0.4 ms warm / 17 ms cold**. The legacy hash-sort query is dead code and would take 5.7 s warm /
+20.7 s cold (it spills 18.7 MB per worker to disk over 61,710 available items) — consistent with
+the `render.yaml` note that it exceeded `statement_timeout`. Verified against production that the
+live response reproduces the indexed ring exactly for the sha256 pivot of today's seed.
+
+So browse's 0.31 s of work is round trips, not query time — **the API is in Render Oregon
+(`render.yaml: region: oregon`) and the database is in Supabase `aws-1-us-east-1` (Virginia).**
+Every DB round trip crosses North America. Measured TCP RTT from India: **Oregon 320.8 ms,
+Virginia 233.4 ms, Mumbai 26.2 ms.**
+
+This reframes the retained-Oregon decision, which was taken as *Oregon versus Singapore* without
+recording that the database already sits in Virginia and that Virginia is **87 ms closer to
+Indian users than Oregon**. Co-locating the (stateless) API with the database in Virginia is a
+non-Singapore experiment that wins on both axes at unchanged cost: transit −87 ms and DB round
+trips ~70 ms → ~1 ms. It is **presented, not provisioned** — Render cannot move a service between
+regions in place, so it needs an owner-run recreate; rollback is a recreate in Oregon; no data
+moves. No further code change closes browse: its 0.3 s p50 target sits below the 0.31 s Oregon
+transit floor, so it is unreachable there by construction and reachable from Virginia.
 
 ## Previous handoff: F2 (F1 gate closed 2026-07-14 — F1a `6f78bed`, F1b, F1c all shipped)
 

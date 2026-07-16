@@ -23,10 +23,15 @@ from typing import Protocol
 # Tombstone only if not already deleted, so re-deletion is a no-op (idempotent).
 _SOFT_DELETE_USER = "UPDATE users SET deleted_at = now() WHERE id = %s AND deleted_at IS NULL"
 _IS_DELETED = "SELECT deleted_at IS NOT NULL FROM users WHERE id = %s"
-_PURGE_EXPIRED = (
-    "DELETE FROM users "
+# Listed, then purged one at a time, because a user's avatar bytes live in Supabase
+# Storage and must be erased *before* the row that records the erasure request. Row-first
+# would orphan the bytes with nothing left to retry from; bytes-first leaves the tombstone
+# standing for the next run. See profile/avatar.py.
+_LIST_EXPIRED = (
+    "SELECT id, avatar_url FROM users "
     "WHERE deleted_at IS NOT NULL AND deleted_at < now() - make_interval(days => %s)"
 )
+_PURGE_USER = "DELETE FROM users WHERE id = %s AND deleted_at IS NOT NULL"
 # Provision a user row if absent, leaving any existing row (incl. its deleted_at)
 # untouched — so this never resurrects a tombstoned account.
 _ENSURE_USER = "INSERT INTO users (id) VALUES (%s) ON CONFLICT (id) DO NOTHING"
@@ -87,8 +92,16 @@ class AccountRepository(Protocol):
         """Whether the user is tombstoned (or absent)."""
         ...
 
-    def purge_expired(self, grace_days: int) -> int:
-        """Hard-delete users tombstoned > grace_days ago. Returns rows removed."""
+    def list_expired(self, grace_days: int) -> list[tuple[str, str | None]]:
+        """``(user_id, avatar_url)`` for every user tombstoned > grace_days ago."""
+        ...
+
+    def purge_user(self, user_id: str) -> bool:
+        """Hard-delete one tombstoned user. True if a row was removed.
+
+        Refuses a user who is not tombstoned, so a purge run can never delete a live
+        account through a stale id.
+        """
         ...
 
     def get_consent(self, user_id: str) -> dict[str, bool]:
@@ -152,10 +165,15 @@ class PostgresAccountRepository:
         # Absent user is treated as "not a live account" -> True.
         return row is None or bool(row[0])
 
-    def purge_expired(self, grace_days: int) -> int:
+    def list_expired(self, grace_days: int) -> list[tuple[str, str | None]]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
-            cur = conn.execute(_PURGE_EXPIRED, (grace_days,))
-            return cur.rowcount
+            rows = conn.execute(_LIST_EXPIRED, (grace_days,)).fetchall()
+        return [(str(row[0]), row[1]) for row in rows]
+
+    def purge_user(self, user_id: str) -> bool:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            cur = conn.execute(_PURGE_USER, (user_id,))
+            return cur.rowcount > 0
 
     def get_consent(self, user_id: str) -> dict[str, bool]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
@@ -232,13 +250,19 @@ class InMemoryAccountRepository:
         user = self.users.get(user_id)
         return user is None or user["deleted"]
 
-    def purge_expired(self, grace_days: int) -> int:
-        # In-memory has no clock; purge every tombstoned user (grace assumed elapsed).
-        expired = [uid for uid, u in self.users.items() if u["deleted"]]
-        for uid in expired:
-            del self.users[uid]
-            self.purged.add(uid)
-        return len(expired)
+    def list_expired(self, grace_days: int) -> list[tuple[str, str | None]]:
+        # In-memory has no clock; every tombstoned user counts (grace assumed elapsed).
+        return [
+            (uid, u.get("avatar_url")) for uid, u in self.users.items() if u["deleted"]
+        ]
+
+    def purge_user(self, user_id: str) -> bool:
+        user = self.users.get(user_id)
+        if user is None or not user["deleted"]:
+            return False
+        del self.users[user_id]
+        self.purged.add(user_id)
+        return True
 
     def get_consent(self, user_id: str) -> dict[str, bool]:
         user = self.users.get(user_id)

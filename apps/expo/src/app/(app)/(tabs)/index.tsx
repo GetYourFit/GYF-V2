@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
+import { FilterChip } from "@/components/ui/filter-chip";
 import { GyfText } from "@/components/ui/gyf-text";
 import {
   ApiError,
@@ -29,8 +30,9 @@ import {
   safeShopUrl,
   savedOutfitInput,
   STYLIST_GOAL_MAX,
-  STYLIST_OCCASIONS,
 } from "@/lib/stylist-feed";
+import { capabilityUsable } from "@/lib/system-status";
+import { OCCASIONS } from "@/lib/vocab";
 import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
@@ -256,27 +258,14 @@ function OutfitCard({
         </View>
       ) : null}
       <View style={{ flexDirection: "row", gap: spacing.sm }}>
-        <Pressable
+        <AtelierButton
           accessibilityLabel={`Not interested in look ${index + 1}`}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: pending || Boolean(status) }}
           disabled={pending || Boolean(status)}
+          label={status === "skipped" ? "Skipped" : "Not for me"}
           onPress={() => onFeedback(index, "skip")}
-          style={{
-            alignItems: "center",
-            borderColor: palette.border,
-            borderRadius: radii.control,
-            borderWidth: 1,
-            flex: 1,
-            justifyContent: "center",
-            minHeight: 48,
-            opacity: pending || status ? 0.6 : 1,
-          }}
-        >
-          <GyfText tone="muted" variant="bodySmall">
-            {status === "skipped" ? "Skipped" : "Not for me"}
-          </GyfText>
-        </Pressable>
+          style={{ flex: 1 }}
+          variant="secondary"
+        />
         <AtelierButton
           disabled={pending || Boolean(status)}
           label={
@@ -320,6 +309,9 @@ export default function StylistRoute() {
   const [alternatesBusy, setAlternatesBusy] = useState<string | null>(null);
   const [completeBusy, setCompleteBusy] = useState<string | null>(null);
   const [alternateErrors, setAlternateErrors] = useState<Record<number, string>>({});
+  // Fails closed: try-on stays shut until /system/status proves a rendering lane is live,
+  // so a status blip is never the reason GYF asks for a photo of the user's body.
+  const [tryOnOpen, setTryOnOpen] = useState(false);
   const [swapRetries, setSwapRetries] = useState<Record<number, FeedbackRequest>>({});
   const loadSequence = useRef(0);
   const retryEvents = useRef<Record<string, FeedbackRequest[]>>({});
@@ -386,6 +378,21 @@ export default function StylistRoute() {
   useEffect(() => {
     void load();
   }, [load, reload]);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .systemStatus()
+      .then((status) => {
+        if (active) setTryOnOpen(capabilityUsable(status, "virtual_try_on"));
+      })
+      .catch(() => {
+        if (active) setTryOnOpen(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [api]);
 
   useEffect(() => {
     if (!loading || data) {
@@ -592,33 +599,17 @@ export default function StylistRoute() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}
         >
-          {STYLIST_OCCASIONS.map((option) => {
+          {OCCASIONS.map((option) => {
             const selected = occasion === option.value;
             return (
-              <Pressable
+              <FilterChip
                 accessibilityLabel={`Style for ${option.label}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected, disabled: loading }}
                 disabled={loading}
                 key={option.value}
+                label={option.label}
                 onPress={() => setOccasion(selected ? "" : option.value)}
-                style={{
-                  backgroundColor: selected ? palette.text : palette.surfaceRaised,
-                  borderColor: selected ? palette.text : palette.border,
-                  borderRadius: radii.capsule,
-                  borderWidth: 1,
-                  minHeight: 40,
-                  justifyContent: "center",
-                  paddingHorizontal: spacing.md,
-                }}
-              >
-                <GyfText
-                  style={{ color: selected ? palette.bg : palette.text }}
-                  variant="bodySmall"
-                >
-                  {option.label}
-                </GyfText>
-              </Pressable>
+                selected={selected}
+              />
             );
           })}
         </ScrollView>
@@ -723,6 +714,20 @@ export default function StylistRoute() {
               applied.
             </GyfText>
           ) : null}
+        </AtelierCard>
+      ) : null}
+
+      {/* ponytail: closed-state only (EXPO-10 half one). The queue/poll/cancel/photo flow is
+          deliberately unbuilt — F9 has promoted no rendering lane, so it would be dead code that
+          could only be verified by pretending. When F9 opens a lane, this section becomes the
+          per-outfit "See it on you" surface the web oracle already carries. */}
+      {data && data.outfits.length > 0 && !tryOnOpen ? (
+        <AtelierCard style={{ gap: spacing.xs }}>
+          <GyfText variant="label">SEE IT ON YOU</GyfText>
+          <GyfText tone="muted" variant="bodySmall">
+            Virtual try-on isn&apos;t available here yet, so GYF doesn&apos;t ask for your photo. It
+            arrives free for everyone once a rendering lane passes its evaluation gate.
+          </GyfText>
         </AtelierCard>
       ) : null}
 

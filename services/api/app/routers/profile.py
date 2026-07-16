@@ -21,6 +21,7 @@ from ..dependencies import (
     require_active_principal,
 )
 from ..profile.account import AccountRepository
+from ..profile.avatar import is_owned_avatar_url
 from ..profile.models import ConsentInput, Profile, ProfileInput
 from ..profile.photo import BodyAdapter, SkinToneAdapter
 from ..profile.repository import ProfileRepository
@@ -90,6 +91,16 @@ def upsert_profile(
             number = payload.phone_number
         account_repo.set_phone(principal.user_id, country_code, number)
     if "avatar_url" in payload.model_fields_set:
+        # Migration 0023's RLS proves who may write the *bytes*; nothing but this proves
+        # who may write the *pointer*. Without it any account could aim its avatar at an
+        # arbitrary URL -- no upload, RLS never consulted -- and every viewer of that
+        # profile would fetch attacker-chosen content. None clears the avatar, which is
+        # always the user's to do.
+        if payload.avatar_url and not is_owned_avatar_url(payload.avatar_url, principal.user_id):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="avatar_url must be an avatar uploaded by this account",
+            )
         account_repo.set_avatar_url(principal.user_id, payload.avatar_url)
     return profile or Profile()
 

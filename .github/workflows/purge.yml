@@ -40,11 +40,18 @@ jobs:
         with:
           python-version: "3.12"
 
+      # A purged account's avatar lives in a public Supabase Storage bucket, outside the
+      # database cascade, and its RLS is scoped to auth.uid() — so an erased account has
+      # no token left to delete its own image. Erasure needs the service-role key here or
+      # the job defers every account that has one (keeping the tombstone) and exits
+      # non-zero rather than half-erasing it. Accounts with no avatar purge regardless.
       - name: Purge expired tombstones
         if: steps.gate.outputs.configured == 'true'
         working-directory: services/api
         env:
           GYF_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
+          GYF_SUPABASE_URL: ${{ secrets.GYF_SUPABASE_URL }}
+          GYF_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.GYF_SUPABASE_SERVICE_ROLE_KEY }}
         run: uv run --extra postgres python -m app.profile.purge
 
       # The other half of the retention promise (F8): a try-on render is deleted after its

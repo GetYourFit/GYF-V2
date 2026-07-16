@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { appendUniquePosts, applyReaction, postCoverImages, toggleId } from "./social-feed";
+import {
+  appendUniquePosts,
+  applyReaction,
+  postCoverImages,
+  postInputForOutfit,
+  toggleId,
+} from "./social-feed";
 
 const post = (over: Record<string, unknown> = {}) =>
   ({ id: "p1", user_id: "u1", reaction_count: 2, reacted: false, items: [], ...over }) as never;
@@ -37,5 +43,29 @@ describe("Expo Social feed model", () => {
     expect(
       appendUniquePosts([post({ id: "a" })], [post({ id: "a" }), post({ id: "b" })]),
     ).toHaveLength(2);
+  });
+
+  test("composer submits only ids from a real server outfit and trims context", () => {
+    const result = postInputForOutfit(
+      { items: [{ item_id: "catalog-top" }, { item_id: "catalog-shoe" }] } as never,
+      "rec-1",
+      "casual",
+      "  Weekend uniform  ",
+    );
+    expect(result).toEqual({
+      item_ids: ["catalog-top", "catalog-shoe"],
+      recommendation_id: "rec-1",
+      occasion: "casual",
+      caption: "Weekend uniform",
+    });
+    expect(postInputForOutfit({ items: [] } as never, "rec-1")).toBeNull();
+    expect(
+      postInputForOutfit(
+        { items: [{ item_id: "catalog-top" }] } as never,
+        "rec-1",
+        undefined,
+        "x".repeat(1_001),
+      )?.caption,
+    ).toHaveLength(1_000);
   });
 });

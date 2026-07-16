@@ -23,6 +23,9 @@ and the contract disagree, the contract wins. ML depth lives in
 
 ## 1. Measured baseline (latest contract evidence: 2026-07-16, from India, prod)
 
+Superseded by the pooled measurement below. These numbers were taken with a client that opened a
+fresh connection per sample, so each row carries ~0.5 s of the gate's own handshakes:
+
 | Surface | Measured | Verdict |
 | --- | --- | --- |
 | `/health` | 0.40 s p50 / 0.86 s p95 | passes the fixed scorecard |
@@ -30,12 +33,67 @@ and the contract disagree, the contract wins. ML depth lives in
 | `/items/search` cached | 1.20 s p50 / 1.23 s p95 | cache works; cross-region DB/API path misses |
 | `/items/search` uncached | 3.68 s p50 / **45.93 s p95** | encoder-error fallback is catastrophic |
 
-Known facts: HNSW, bounded browse, a shared pool and query cache already exist. The deployed
-fixed-label metrics now isolate two causes: repeated cross-region database round trips (directory
-~0.19 s, cache ~0.18–0.28 s) and an unindexed title fallback after encoder failure (the outlier had
-an 8-second encoder error followed by retrieval SQL above 10 seconds). Search SQL averaged ~2.12 s
-over the cumulative live sample. Production `EXPLAIN (ANALYZE, BUFFERS)` remains the index gate;
-stage timing is evidence for where to act, not a substitute for the query plan.
+## 1a. Corrected baseline (2026-07-16, pooled connection, from India)
+
+`measure_slo.py` now reuses one connection, as Expo's `fetch` and browsers do (fixed in `d8c7f44`;
+the per-connection gate reported `/health` at 0.81 s versus 0.29 s pooled). Work is each surface's
+p50 minus the `/health` p50 on the same connection — `/health` touches no database, so what is left
+of it is transit.
+
+| Surface | p50 / p95 | work | SLO | Verdict |
+| --- | --- | --- | --- | --- |
+| `/health` | 0.31 / 0.35 s | transit floor | 0.5 / 1.0 s | **PASS** |
+| `/items/browse` | 0.61 / 0.68 s | 0.31 s | 0.3 / 0.8 s | p50 FAIL, p95 PASS |
+| `/items/search` cached | 0.89 / 0.97 s | 0.59 s | 0.4 / 0.9 s | FAIL |
+| `/items/search` uncached | 2.05 / 7.00 s | 1.74 s | 1.5 / 3.0 s | FAIL |
+
+**The remaining cause is topology, not SQL.** Production `EXPLAIN (ANALYZE, BUFFERS)`: the indexed
+browse ring (`GYF_BROWSE_INDEXED_RING_ENABLED=true` in `render.yaml`) runs in **0.4 ms warm /
+17 ms cold**; the dead legacy hash-sort path would take 5.7 s warm / 20.7 s cold, spilling 18.7 MB
+per worker to disk across 61,710 available items. Browse's 0.31 s of work is therefore round
+trips: **the API is in Render Oregon and the database is in Supabase `aws-1-us-east-1`
+(Virginia)**, so every round trip crosses North America.
+
+Measured TCP RTT from India: **Oregon 320.8 ms · Virginia 233.4 ms · Mumbai 26.2 ms.** Virginia is
+87 ms closer to Indian users than Oregon *and* already hosts the database. Co-locating the
+stateless API with it is the costed non-Singapore experiment the contract requires — presented for
+an owner decision, never silently provisioned.
+
+## 1b. The experiment ran (owner-approved 2026-07-16): Virginia passes
+
+The owner approved the co-location experiment. `gyf-api-va` (Render Starter, `virginia`) was created
+beside the database with the Oregon service's 22 environment variables copied exactly, deployed from
+the same commit `2e046b4`, and measured from India minutes apart from Oregon. Only the region
+differed. Parity was proven before the numbers were trusted: byte-identical `/openapi.json`,
+identical `/system/status` capabilities and an identical 24-item browse page in identical order.
+
+| Surface | Oregon p50 | Oregon work | Virginia p50 | Virginia work | SLO | Virginia |
+| --- | --- | --- | --- | --- | --- | --- |
+| `/health` | 0.29 s | transit floor | 0.25 s | transit floor | 0.5 s | PASS |
+| `/items/browse` | 0.57 s | 0.28 s | 0.27 s | **0.02 s** | 0.3 s | PASS |
+| `/items/search` cached | 0.90 s | 0.62 s | 0.28 s | **0.03 s** | 0.4 s | PASS |
+| `/items/search` uncached | 1.95 s | 1.66 s | 0.61 s | **0.36 s** | 1.5 s | PASS |
+
+**Oregon fails three of four rows; Virginia passes all four.** The `work` column is the proof of
+mechanism, not just the outcome: co-locating the API with the database collapses the cross-country
+round trips, so browse's work falls 0.28 s → 0.02 s. The 87 ms closer transit floor is a bonus, not
+the main effect. Nothing about the SQL, the ranking or the cache changed.
+
+**Cost is unchanged** (one Starter replaces one Starter, so the ₹3,000 ceiling holds) once the
+Oregon service is suspended. Rollback: unsuspend `gyf-api` and point `NEXT_PUBLIC_API_URL` /
+`EXPO_PUBLIC_API_URL` back at `gyf-api.onrender.com`.
+
+### The gate was lying before this run
+
+The first Virginia measurement printed **"ALL SLOs MET" with every surface at 0.25 s and
+`work= 0.00s`** — while the service was intermittently returning 404s through Render's edge, which
+was still propagating the newly created hostname. `measure_slo.py` timed responses without ever
+checking their status, and an error is *fast*: it costs the server nothing and lands exactly at the
+transit floor, so a broken surface scored as its best possible result. The gate would have promoted
+F2.5 on nothing. It now returns the status with the latency and **voids any row with a non-200**
+(`e679ff1`). The 404s were transient and cleared on their own (0/30 afterwards); the numbers above
+are from the hardened gate with zero non-200s. A promotion gate that greens on errors is worse than
+no gate, because it is trusted.
 
 ## 2. Target SLOs (the gate for F2.5/F10 promotion)
 

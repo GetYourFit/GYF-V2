@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.profile import repository as profile_repository
+from app.config import settings
 from app.main import app, get_account_repo, get_profile_repo
 from app.profile.account import InMemoryAccountRepository
 from app.profile.models import Profile, ProfileInput, profile_from_manual
@@ -115,6 +116,34 @@ def test_put_then_get_profile_round_trip():
         app.dependency_overrides.clear()
 
 
+def test_put_profile_refuses_an_avatar_url_this_account_did_not_upload(monkeypatch):
+    """The pointer is a trust boundary of its own: 0023's RLS never sees this request.
+
+    Without the check the caller could aim their avatar at any host on the internet and
+    every viewer of their profile would fetch it.
+    """
+    monkeypatch.setattr(settings, "supabase_url", "https://project.supabase.co")
+    monkeypatch.setattr(settings, "auth_disabled", True)
+    repo = InMemoryProfileRepository()
+    try:
+        client = _client(repo)
+        forged = client.put("/profile", json={"avatar_url": "https://attacker.example/track.gif"})
+        assert forged.status_code == 422
+        # Another user's real, publicly-readable slot is still not this caller's to claim.
+        stolen = client.put(
+            "/profile",
+            json={
+                "avatar_url": "https://project.supabase.co/storage/v1/object/public/avatars/"
+                "99999999-e89b-42d3-a456-426614174000/avatar-a"
+            },
+        )
+        assert stolen.status_code == 422
+        # Clearing your own avatar is always allowed.
+        assert client.put("/profile", json={"avatar_url": None}).status_code == 200
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_put_profile_is_editable_idempotent_upsert():
     repo = InMemoryProfileRepository()
     try:
@@ -126,7 +155,16 @@ def test_put_profile_is_editable_idempotent_upsert():
         app.dependency_overrides.clear()
 
 
-def test_put_profile_preserves_omitted_fields():
+def test_put_profile_preserves_omitted_fields(monkeypatch):
+    # avatar_url must be one this account actually uploaded (see test_avatar_lifecycle);
+    # this case is about F1a field preservation, so it sends a legitimate one. Setting
+    # supabase_url also wires the JWKS source, which correctly turns auth verification on
+    # (config.auth_is_open) — so the local bypass has to be explicit here.
+    monkeypatch.setattr(settings, "supabase_url", "https://project.supabase.co")
+    monkeypatch.setattr(settings, "auth_disabled", True)
+    owned_avatar = (
+        f"https://project.supabase.co/storage/v1/object/public/avatars/{DEV_USER}/avatar-a?v=1"
+    )
     repo = InMemoryProfileRepository()
     try:
         client = _client(repo)
@@ -140,7 +178,7 @@ def test_put_profile_preserves_omitted_fields():
             },
         )
 
-        avatar = client.put("/profile", json={"avatar_url": "https://example.com/avatar.jpg"})
+        avatar = client.put("/profile", json={"avatar_url": owned_avatar})
         assert avatar.json()["body_type"] == "rectangle"
         assert avatar.json()["style_intent"] == ["classic"]
 
@@ -347,12 +385,21 @@ def test_delete_account_soft_deletes_and_disables():
         app.dependency_overrides.clear()
 
 
-def test_purge_expired_hard_deletes_tombstoned():
+def test_purge_hard_deletes_tombstoned():
     accounts = InMemoryAccountRepository(existing={DEV_USER})
     accounts.soft_delete(DEV_USER)
-    assert accounts.purge_expired(30) == 1
+    assert accounts.list_expired(30) == [(DEV_USER, None)]
+    assert accounts.purge_user(DEV_USER) is True
     assert DEV_USER in accounts.purged
     assert DEV_USER not in accounts.users
+
+
+def test_purge_refuses_a_live_account():
+    # A stale id must never take a live account with it.
+    accounts = InMemoryAccountRepository(existing={DEV_USER})
+    assert accounts.list_expired(30) == []
+    assert accounts.purge_user(DEV_USER) is False
+    assert DEV_USER in accounts.users
 
 
 def test_export_returns_owned_data_as_download():

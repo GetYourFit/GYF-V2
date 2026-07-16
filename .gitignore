@@ -59,7 +59,7 @@ crash.log
 # Local scratch / tool caches (never commit)
 .tmpcache/
 .tmp/
-.bun-tmp/
+.bun-tmp*/
 .bun-cache/
 .cache-local/
 

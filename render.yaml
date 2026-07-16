@@ -10,12 +10,25 @@
 # or via `render` CLI — never committed (sync: false).
 services:
   - type: web
-    name: gyf-api
+    name: gyf-api-va
     runtime: docker
-    # Existing owner-paid service. Owner decision 2026-07-16: retain Oregon and do
-    # not create a Singapore migration plan.
+    # Owner decision 2026-07-16 (evening): co-locate the API with the database.
+    #
+    # The database is Supabase `aws-1-us-east-1` (Virginia). While the API sat in
+    # Oregon, every query crossed North America and F2.5 could not pass: measured
+    # from India on the same commit (2e046b4), minutes apart, browse work was 0.28 s
+    # in Oregon versus 0.02 s in Virginia, cached search 0.62 s versus 0.03 s, and
+    # uncached search 1.66 s versus 0.36 s. Oregon failed three of four SLO rows;
+    # Virginia passed all four. Virginia is also 87 ms closer to Indian users than
+    # Oregon (TCP RTT 233.4 ms versus 320.8 ms), so the transit floor fell too.
+    #
+    # This is NOT the cancelled Singapore migration — Virginia already hosts the
+    # data, so nothing moved and no new region was introduced. Render cannot change
+    # a service's region in place, so this is a second service; the Oregon service
+    # `gyf-api` is kept suspended as the rollback (unsuspend it and point
+    # NEXT_PUBLIC_API_URL / EXPO_PUBLIC_API_URL back at gyf-api.onrender.com).
     plan: starter
-    region: oregon
+    region: virginia
     dockerfilePath: ./services/api/Dockerfile
     dockerContext: .
     # Exec form (Render word-splits this — no shell, so no $PORT expansion).
@@ -131,6 +144,16 @@ services:
       - key: GYF_SUPABASE_URL # public project URL — enables JWKS (ES256) verification
         value: https://tabjvaatrikogutkrjom.supabase.co
       - key: GYF_SUPABASE_JWT_SECRET # legacy HS256 fallback (Settings → API → JWT Secret)
+        sync: false
+      # Service-role key (Settings → API → service_role). Used for exactly one thing:
+      # deleting a purged account's avatar objects. The avatars bucket is public and its
+      # RLS is scoped to auth.uid(), so an erased account has no token left to delete its
+      # own image — without this key a deleted user's face stays publicly readable
+      # forever, and the nightly purge defers (keeps the tombstone) rather than
+      # half-erasing the account. Absent = /system/status reports profile_avatar
+      # degraded and the client shows initials instead of soliciting a picture it could
+      # not later remove. Secret: never expose to a client, never log.
+      - key: GYF_SUPABASE_SERVICE_ROLE_KEY
         sync: false
       # The web origin is the Vercel deployment (project gyf-v2-app). Update this
       # to the custom domain once attached so CORS lets the browser in.
