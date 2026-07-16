@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -25,7 +26,9 @@ def test_matrix_is_fixed_and_uses_repository_sql() -> None:
     queries = evidence.capture_query_matrix()
 
     assert {query.case_id for query in queries} == EXPECTED_CASES
-    assert all(query.sql.lstrip().lower().startswith(("select", "with")) for query in queries)
+    assert all(
+        query.sql.lstrip().lower().startswith(("select", "with")) for query in queries
+    )
     by_id = {query.case_id: query for query in queries}
     assert "ORDER BY e.embedding <=>" in by_id["search_semantic"].sql
     assert "price_asc" not in by_id["search_price"].sql
@@ -33,8 +36,12 @@ def test_matrix_is_fixed_and_uses_repository_sql() -> None:
     assert "to_tsvector('simple'::regconfig, i.title)" in by_id["fts_english"].sql
     assert "linen:* | shirt:*" in by_id["fts_english"].params
     assert "लाल:* | कुर्ता:*" in by_id["fts_hindi"].params
-    assert any("hnsw.ef_search" in setup_sql for setup_sql, _ in by_id["browse_taste"].setup)
-    assert {query.case_id for query in evidence.capture_query_matrix(browse_only=True)} == {
+    assert any(
+        "hnsw.ef_search" in setup_sql for setup_sql, _ in by_id["browse_taste"].setup
+    )
+    assert {
+        query.case_id for query in evidence.capture_query_matrix(browse_only=True)
+    } == {
         "browse_anonymous",
         "browse_filtered",
         "browse_deep",
@@ -65,7 +72,10 @@ class _FakeConnection:
             return _FakeResult([("0022_catalog_title_search_index",)])
         if sql.startswith("EXPLAIN"):
             return _FakeResult(
-                [("Index Scan using idx_items_available_title_fts",), ("Buffers: shared hit=1",)]
+                [
+                    ("Index Scan using idx_items_available_title_fts",),
+                    ("Buffers: shared hit=1",),
+                ]
             )
         return _FakeResult([])
 
@@ -93,9 +103,13 @@ def test_explains_are_read_only_bounded_and_secret_free() -> None:
         or sql.startswith(("BEGIN", "SELECT", "EXPLAIN"))
         for sql in statements
     )
-    explain_calls = [(sql, params) for sql, params in connection.calls if sql.startswith("EXPLAIN")]
+    explain_calls = [
+        (sql, params) for sql, params in connection.calls if sql.startswith("EXPLAIN")
+    ]
     assert len(explain_calls) == len(queries)
-    assert all("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)" in sql for sql, _ in explain_calls)
+    assert all(
+        "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)" in sql for sql, _ in explain_calls
+    )
 
     artifact = evidence.build_artifact(
         queries,
@@ -123,6 +137,85 @@ def test_explains_are_read_only_bounded_and_secret_free() -> None:
     assert artifact["schema_version"] == "0022_catalog_title_search_index"
     assert artifact["validation"] == {"passed": True, "errors": []}
     assert re.fullmatch(r"[0-9a-f]{64}", artifact["cases"][0]["query_sha256"])
+
+
+def test_capture_failure_is_classified_without_driver_message() -> None:
+    class SecretConnectionError(Exception):
+        sqlstate = "08006"
+
+    def fail_connect(_dsn: str):
+        raise SecretConnectionError("postgresql://user:secret@example.invalid/gyf")
+
+    try:
+        evidence.run_explains(
+            "postgresql://user:secret@example.invalid/gyf",
+            evidence.capture_query_matrix(),
+            connect=fail_connect,
+        )
+    except evidence.EvidenceCaptureError as exc:
+        assert str(exc) == "stage=connect type=SecretConnectionError sqlstate=08006"
+        assert "secret" not in str(exc)
+        assert exc.plans == {}
+        assert exc.schema_version == "unknown"
+    else:
+        raise AssertionError("expected secret-safe capture failure")
+
+
+def test_query_failure_preserves_only_completed_plans() -> None:
+    class PartialConnection(_FakeConnection):
+        def __init__(self) -> None:
+            super().__init__()
+            self.explain_count = 0
+
+        def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
+            if sql.startswith("EXPLAIN"):
+                self.explain_count += 1
+                if self.explain_count == 2:
+                    raise RuntimeError("password=secret query failed")
+            return super().execute(sql, params)
+
+    connection = PartialConnection()
+    queries = evidence.capture_query_matrix()
+    try:
+        evidence.run_explains(
+            "postgresql://user:secret@example.invalid/gyf",
+            queries,
+            connect=lambda _dsn: connection,
+        )
+    except evidence.EvidenceCaptureError as exc:
+        assert str(exc) == "stage=browse_filtered type=RuntimeError sqlstate=unknown"
+        assert set(exc.plans) == {"browse_anonymous"}
+        assert "secret" not in str(exc)
+        assert connection.closed
+    else:
+        raise AssertionError("expected secret-safe query failure")
+
+
+def test_main_writes_diagnostic_artifact_on_capture_failure(
+    monkeypatch, tmp_path: Path
+) -> None:
+    output = tmp_path / "evidence" / "plans.json"
+    dsn = "postgresql://user:secret@example.invalid/gyf"
+    monkeypatch.setenv("GYF_PROD_DATABASE_URL", dsn)
+
+    def fail(_dsn: str, _queries):
+        raise evidence.EvidenceCaptureError(
+            stage="schema",
+            cause=RuntimeError(f"could not connect to {dsn}"),
+        )
+
+    monkeypatch.setattr(evidence, "run_explains", fail)
+
+    assert evidence.main(["--output", str(output)]) == 1
+    artifact = json.loads(output.read_text(encoding="utf-8"))
+    encoded = json.dumps(artifact)
+    assert artifact["validation"] == {
+        "passed": False,
+        "errors": ["capture: stage=schema type=RuntimeError sqlstate=unknown"],
+    }
+    assert "secret" not in encoded
+    assert "postgresql://" not in encoded
+    assert {case["id"] for case in artifact["cases"]} == EXPECTED_CASES
 
 
 def test_validation_requires_buffers_and_hot_path_indexes() -> None:

@@ -77,6 +77,34 @@ class _Case:
     invoke: Callable[[PostgresVectorSearchRepository], None]
 
 
+class EvidenceCaptureError(RuntimeError):
+    """Secret-safe failure metadata plus any plans captured before the failure."""
+
+    def __init__(
+        self,
+        *,
+        stage: str,
+        cause: Exception,
+        plans: dict[str, str] | None = None,
+        schema_version: str = "unknown",
+    ) -> None:
+        self.stage = re.sub(r"[^A-Za-z0-9_.-]", "_", stage)[:80] or "unknown"
+        self.error_type = (
+            re.sub(r"[^A-Za-z0-9_.-]", "_", type(cause).__name__)[:80] or "Exception"
+        )
+        sqlstate = getattr(cause, "sqlstate", None)
+        self.sqlstate = (
+            str(sqlstate)
+            if sqlstate and re.fullmatch(r"[A-Z0-9]{5}", str(sqlstate))
+            else "unknown"
+        )
+        self.plans = dict(plans or {})
+        self.schema_version = schema_version
+        super().__init__(
+            f"stage={self.stage} type={self.error_type} sqlstate={self.sqlstate}"
+        )
+
+
 def _vector() -> list[float]:
     """A deterministic, valid FashionSigLIP-sized probe vector."""
     return [1.0] + [0.0] * (EMBEDDING_DIM - 1)
@@ -92,7 +120,9 @@ def _cases() -> tuple[_Case, ...]:
     return (
         _Case(
             "browse_anonymous",
-            lambda repo: repo.browse(categories=None, k=24, region="IN", seed="f25-anonymous"),
+            lambda repo: repo.browse(
+                categories=None, k=24, region="IN", seed="f25-anonymous"
+            ),
         ),
         _Case(
             "browse_filtered",
@@ -189,7 +219,9 @@ def capture_query_matrix(
         case.invoke(repo)
         if not pool.sql:
             raise RuntimeError(f"repository did not render SQL for {case.case_id}")
-        captured.append(CapturedQuery(case.case_id, pool.sql, pool.params, tuple(pool.setup)))
+        captured.append(
+            CapturedQuery(case.case_id, pool.sql, pool.params, tuple(pool.setup))
+        )
     return tuple(captured)
 
 
@@ -197,7 +229,9 @@ def _connect(dsn: str) -> _Connection:
     try:
         import psycopg
     except ImportError as exc:  # pragma: no cover - CI installs the postgres extra
-        raise RuntimeError("psycopg is required; run with the API postgres extra") from exc
+        raise RuntimeError(
+            "psycopg is required; run with the API postgres extra"
+        ) from exc
     return psycopg.connect(dsn)
 
 
@@ -220,15 +254,23 @@ def run_explains(
     connect: _Connect = _connect,
 ) -> dict[str, str]:
     """Return one text plan per case; errors are raised without exposing the DSN."""
-    conn = connect(dsn)
+    try:
+        conn = connect(dsn)
+    except Exception as exc:
+        raise EvidenceCaptureError(stage="connect", cause=exc) from None
     try:
         # Schema identity is evidence metadata, not a user-facing response.
-        schema_version = _read_schema_version(conn)
+        try:
+            schema_version = _read_schema_version(conn)
+        except Exception as exc:
+            raise EvidenceCaptureError(stage="schema", cause=exc) from None
         plans: dict[str, str] = {}
         for query in queries:
-            conn.execute("BEGIN TRANSACTION READ ONLY")
             try:
-                conn.execute(f"SET LOCAL statement_timeout = '{STATEMENT_TIMEOUT_MS}ms'")
+                conn.execute("BEGIN TRANSACTION READ ONLY")
+                conn.execute(
+                    f"SET LOCAL statement_timeout = '{STATEMENT_TIMEOUT_MS}ms'"
+                )
                 conn.execute(f"SET LOCAL lock_timeout = '{LOCK_TIMEOUT_MS}ms'")
                 for setup_sql, setup_params in query.setup:
                     conn.execute(setup_sql, setup_params)
@@ -237,13 +279,26 @@ def run_explains(
                     query.params,
                 ).fetchall()
                 plans[query.case_id] = "\n".join(str(row[0]) for row in rows)
-            finally:
                 conn.rollback()
+            except Exception as exc:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                raise EvidenceCaptureError(
+                    stage=query.case_id,
+                    cause=exc,
+                    plans=plans,
+                    schema_version=schema_version,
+                ) from None
         # Keep schema metadata available to callers without another connection.
         plans["__schema_version__"] = schema_version
         return plans
     finally:
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 _SYNTHETIC_LITERALS = (
@@ -314,7 +369,9 @@ def validate_plans(
         if "idx_item_embeddings_hnsw" not in plans.get(case_id, ""):
             errors.append(f"{case_id}: HNSW index not used")
     if indexed_browse:
-        for case_id in sorted(query_ids & {"browse_anonymous", "browse_filtered", "browse_deep"}):
+        for case_id in sorted(
+            query_ids & {"browse_anonymous", "browse_filtered", "browse_deep"}
+        ):
             plan = plans.get(case_id, "")
             if "idx_items_available_browse_order" not in plan:
                 errors.append(f"{case_id}: browse-order index not used")
@@ -350,7 +407,8 @@ def build_artifact(
     safe_schema = re.sub(r"[^A-Za-z0-9_.-]", "_", str(schema_version))[:80] or "unknown"
     return {
         "artifact_version": ARTIFACT_VERSION,
-        "captured_at": captured_at or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "captured_at": captured_at
+        or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "commit": commit or _commit_id(),
         "schema_version": safe_schema,
         "browse_mode": browse_mode,
@@ -369,6 +427,13 @@ def build_artifact(
             for query in queries
         ],
     }
+
+
+def _write_artifact(path: Path, artifact: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(artifact, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -395,9 +460,36 @@ def main(argv: list[str] | None = None) -> int:
     )
     try:
         plans = run_explains(dsn, queries)
-    except Exception:  # noqa: BLE001 - do not print driver errors containing DSNs
+    except EvidenceCaptureError as exc:
+        error = f"capture: {exc}"
+        artifact = build_artifact(
+            queries,
+            exc.plans,
+            schema_version=exc.schema_version,
+            dsn=dsn,
+            browse_mode="legacy" if args.legacy_browse else "indexed",
+            validation_errors=(error,),
+        )
+        _write_artifact(args.output, artifact)
         print(
-            "production EXPLAIN failed (connection/query error; secret details suppressed)",
+            f"production EXPLAIN failed ({exc}; secret details suppressed)",
+            file=sys.stderr,
+        )
+        return 1
+    except Exception as exc:  # noqa: BLE001 - never print exception messages or DSNs
+        error_type = re.sub(r"[^A-Za-z0-9_.-]", "_", type(exc).__name__)[:80]
+        error = f"capture: stage=unexpected type={error_type or 'Exception'} sqlstate=unknown"
+        artifact = build_artifact(
+            queries,
+            {},
+            schema_version="unknown",
+            dsn=dsn,
+            browse_mode="legacy" if args.legacy_browse else "indexed",
+            validation_errors=(error,),
+        )
+        _write_artifact(args.output, artifact)
+        print(
+            f"production EXPLAIN failed ({error}; secret details suppressed)",
             file=sys.stderr,
         )
         return 1
@@ -416,10 +508,7 @@ def main(argv: list[str] | None = None) -> int:
         browse_mode="legacy" if args.legacy_browse else "indexed",
         validation_errors=validation_errors,
     )
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        json.dumps(artifact, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    _write_artifact(args.output, artifact)
     print(f"wrote {len(queries)} sanitized production plans to {args.output}")
     if validation_errors:
         for error in validation_errors:
