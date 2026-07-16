@@ -38,7 +38,17 @@ EMBEDDING_DIM = 768
 STATEMENT_TIMEOUT_MS = 15_000
 LOCK_TIMEOUT_MS = 2_000
 ARTIFACT_VERSION = "f25-catalog-explain-v1"
-EXPECTED_SCHEMA_VERSION = "0022_catalog_title_search_index"
+EXPECTED_SCHEMA_VERSION = "0023_category_browse_order"
+_WIDEST_SLOT_CATEGORIES = [
+    "jeans",
+    "trousers",
+    "shorts",
+    "skirt",
+    "salwar",
+    "churidar",
+    "palazzo",
+    "dhoti",
+]
 
 
 class _Result(Protocol):
@@ -115,7 +125,10 @@ def _cases() -> tuple[_Case, ...]:
     filters = dict(
         region="IN",
         genders=frozenset({"women", "unisex"}),
-        categories=["shirt"],
+        # Exact production `slot=bottom` expansion from the shared taxonomy.
+        # This is the widest slot today and prevents a single-category ideal
+        # case from falsely approving the filtered/deep production path.
+        categories=_WIDEST_SLOT_CATEGORIES,
     )
     return (
         _Case(
@@ -252,8 +265,8 @@ def run_explains(
     queries: Iterable[CapturedQuery],
     *,
     connect: _Connect = _connect,
-) -> dict[str, str]:
-    """Return one text plan per case; errors are raised without exposing the DSN."""
+) -> tuple[dict[str, str], list[str]]:
+    """Return every obtainable plan and secret-safe per-case capture errors."""
     try:
         conn = connect(dsn)
     except Exception as exc:
@@ -265,6 +278,7 @@ def run_explains(
         except Exception as exc:
             raise EvidenceCaptureError(stage="schema", cause=exc) from None
         plans: dict[str, str] = {}
+        capture_errors: list[str] = []
         for query in queries:
             try:
                 conn.execute("BEGIN TRANSACTION READ ONLY")
@@ -285,15 +299,16 @@ def run_explains(
                     conn.rollback()
                 except Exception:
                     pass
-                raise EvidenceCaptureError(
+                failure = EvidenceCaptureError(
                     stage=query.case_id,
                     cause=exc,
-                    plans=plans,
                     schema_version=schema_version,
-                ) from None
+                )
+                capture_errors.append(f"capture: {failure}")
+                continue
         # Keep schema metadata available to callers without another connection.
         plans["__schema_version__"] = schema_version
-        return plans
+        return plans, capture_errors
     finally:
         try:
             conn.close()
@@ -369,12 +384,16 @@ def validate_plans(
         if "idx_item_embeddings_hnsw" not in plans.get(case_id, ""):
             errors.append(f"{case_id}: HNSW index not used")
     if indexed_browse:
-        for case_id in sorted(
-            query_ids & {"browse_anonymous", "browse_filtered", "browse_deep"}
-        ):
+        for case_id in sorted(query_ids & {"browse_anonymous"}):
             plan = plans.get(case_id, "")
             if "idx_items_available_browse_order" not in plan:
-                errors.append(f"{case_id}: browse-order index not used")
+                errors.append(f"{case_id}: anonymous browse-order index not used")
+            if re.search(r"\bSeq Scan on items\b", plan):
+                errors.append(f"{case_id}: sequential items scan")
+        for case_id in sorted(query_ids & {"browse_filtered", "browse_deep"}):
+            plan = plans.get(case_id, "")
+            if "idx_items_available_category_browse_order" not in plan:
+                errors.append(f"{case_id}: category browse-order index not used")
             if re.search(r"\bSeq Scan on items\b", plan):
                 errors.append(f"{case_id}: sequential items scan")
     return errors
@@ -459,7 +478,7 @@ def main(argv: list[str] | None = None) -> int:
         browse_only=args.browse_only,
     )
     try:
-        plans = run_explains(dsn, queries)
+        plans, capture_errors = run_explains(dsn, queries)
     except EvidenceCaptureError as exc:
         error = f"capture: {exc}"
         artifact = build_artifact(
@@ -500,6 +519,7 @@ def main(argv: list[str] | None = None) -> int:
         schema_version=schema_version,
         indexed_browse=not args.legacy_browse,
     )
+    validation_errors.extend(capture_errors)
     artifact = build_artifact(
         queries,
         plans,

@@ -33,6 +33,7 @@ def test_matrix_is_fixed_and_uses_repository_sql() -> None:
     assert "ORDER BY e.embedding <=>" in by_id["search_semantic"].sql
     assert "price_asc" not in by_id["search_price"].sql
     assert "ORDER BY i.price ASC NULLS LAST" in by_id["search_price"].sql
+    assert evidence._WIDEST_SLOT_CATEGORIES in by_id["browse_filtered"].params
     assert "to_tsvector('simple'::regconfig, i.title)" in by_id["fts_english"].sql
     assert "linen:* | shirt:*" in by_id["fts_english"].params
     assert "लाल:* | कुर्ता:*" in by_id["fts_hindi"].params
@@ -90,9 +91,12 @@ def test_explains_are_read_only_bounded_and_secret_free() -> None:
     connection = _FakeConnection()
     queries = evidence.capture_query_matrix()
     dsn = "postgresql://postgres:super-secret@example.invalid/gyf"
-    plans = evidence.run_explains(dsn, queries, connect=lambda _dsn: connection)
+    plans, capture_errors = evidence.run_explains(
+        dsn, queries, connect=lambda _dsn: connection
+    )
 
     assert plans["__schema_version__"] == "0022_catalog_title_search_index"
+    assert capture_errors == []
     assert connection.closed
     assert connection.rollbacks == len(queries) + 1
     statements = [sql for sql, _ in connection.calls]
@@ -161,7 +165,7 @@ def test_capture_failure_is_classified_without_driver_message() -> None:
         raise AssertionError("expected secret-safe capture failure")
 
 
-def test_query_failure_preserves_only_completed_plans() -> None:
+def test_query_failure_preserves_completed_plans_and_continues() -> None:
     class PartialConnection(_FakeConnection):
         def __init__(self) -> None:
             super().__init__()
@@ -176,19 +180,18 @@ def test_query_failure_preserves_only_completed_plans() -> None:
 
     connection = PartialConnection()
     queries = evidence.capture_query_matrix()
-    try:
-        evidence.run_explains(
-            "postgresql://user:secret@example.invalid/gyf",
-            queries,
-            connect=lambda _dsn: connection,
-        )
-    except evidence.EvidenceCaptureError as exc:
-        assert str(exc) == "stage=browse_filtered type=RuntimeError sqlstate=unknown"
-        assert set(exc.plans) == {"browse_anonymous"}
-        assert "secret" not in str(exc)
-        assert connection.closed
-    else:
-        raise AssertionError("expected secret-safe query failure")
+    plans, capture_errors = evidence.run_explains(
+        "postgresql://user:secret@example.invalid/gyf",
+        queries,
+        connect=lambda _dsn: connection,
+    )
+
+    assert set(plans) == EXPECTED_CASES - {"browse_filtered"} | {"__schema_version__"}
+    assert capture_errors == [
+        "capture: stage=browse_filtered type=RuntimeError sqlstate=unknown"
+    ]
+    assert "secret" not in str(capture_errors)
+    assert connection.closed
 
 
 def test_main_writes_diagnostic_artifact_on_capture_failure(
@@ -227,7 +230,11 @@ def test_validation_requires_buffers_and_hot_path_indexes() -> None:
             else "Index Scan using idx_item_embeddings_hnsw on item_embeddings\n"
             "Buffers: shared hit=1"
             if query.case_id in {"browse_taste", "search_semantic"}
-            else "Index Scan using idx_items_available_browse_order on items\nBuffers: shared hit=1"
+            else "Index Scan using idx_items_available_browse_order on items\n"
+            "Buffers: shared hit=1"
+            if query.case_id == "browse_anonymous"
+            else "Index Scan using idx_items_available_category_browse_order on items\n"
+            "Buffers: shared hit=1"
         )
         for query in queries
     }
@@ -248,7 +255,7 @@ def test_validation_requires_buffers_and_hot_path_indexes() -> None:
         plans,
         schema_version="0021_catalog_image_count_index",
     ) == [
-        "schema: expected 0022_catalog_title_search_index, found 0021_catalog_image_count_index",
-        "browse_deep: browse-order index not used",
+        "schema: expected 0023_category_browse_order, found 0021_catalog_image_count_index",
+        "browse_deep: category browse-order index not used",
         "browse_deep: sequential items scan",
     ]

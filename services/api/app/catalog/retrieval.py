@@ -476,14 +476,17 @@ class PostgresVectorSearchRepository:
 
         browse_seed = seed or str(date.today())
         if not self._indexed_browse:
-            params = [browse_seed]
+            params = []
             if region:
                 params.append(region)
             if gender_list:
                 params.append(gender_list)
             if categories:
                 params.append(categories)
-            params.extend([k, offset])
+            # Optional predicates appear before the ORDER BY seed placeholder.
+            # Keep bindings in SQL order; putting the seed first silently bound it
+            # as a region and made filtered browse fail with PostgreSQL 22P02.
+            params.extend([browse_seed, k, offset])
             return self._run(sql, tuple(params), surface="browse")
 
         pivot = UUID(bytes=sha256(browse_seed.encode("utf-8")).digest()[:16])
