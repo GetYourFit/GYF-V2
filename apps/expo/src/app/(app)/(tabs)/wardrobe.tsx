@@ -184,11 +184,7 @@ export default function WardrobeRoute() {
       </AtelierCard>
 
       {actionError ? (
-        <GyfText
-          accessibilityRole="alert"
-          style={{ color: colors.dark.error }}
-          variant="bodySmall"
-        >
+        <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }} variant="bodySmall">
           {readableError(actionError)}
         </GyfText>
       ) : null}
