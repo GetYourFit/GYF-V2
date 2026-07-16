@@ -84,6 +84,24 @@ def test_broken_cache_still_returns_the_embedding():
     assert embedder.embed_query("red dress") == pytest.approx([0.1, 0.2, 0.3])
 
 
+def test_process_hot_query_skips_the_second_postgres_read(monkeypatch):
+    encoder = FakeEncoder()
+    embedder = CachedTextEmbedder(encoder, object(), "memory-hit")
+    reads: list[str] = []
+
+    def read(key):
+        reads.append(key)
+        return None, "miss"
+
+    monkeypatch.setattr(embedder, "_read", read)
+    monkeypatch.setattr(embedder, "_write", lambda _key, _vec: "success")
+
+    assert embedder.embed_query("  Red   Dress ") == pytest.approx([0.1, 0.2, 0.3])
+    assert embedder.embed_query("red dress") == pytest.approx([0.1, 0.2, 0.3])
+    assert reads == ["red dress"]
+    assert encoder.calls == ["  Red   Dress "]
+
+
 def test_siglip_adapter_delegates_encoder_timings():
     from app.catalog.perception_adapter import SiglipTextEmbedder
 

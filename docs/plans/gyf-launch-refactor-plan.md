@@ -15,6 +15,327 @@ gate. A requirement is not “covered” because code exists: it closes only whe
 runtime evidence and phase gate pass. Historical feedback remains evidence and cannot override the
 owner amendments or this plan's parent contract.
 
+## Rescue amendment — 2026-07-16
+
+This is the consolidated product, engineering, AI, security, finance and competitive plan. It
+sequences the portfolio around the trusted core. The latest full-vision amendment requires the
+remaining canonical vision/feedback surfaces before hard launch, after their gates.
+
+### Diagnosis and rescue principle
+
+GYF does not have a “not enough advanced AI” problem. It has a **core-value proof problem**:
+
+- Production misses every India SLO: browse is 17.01 seconds p50 and uncached search is 9.29
+  seconds p50 / 23.03 seconds p95.
+- The product spans stylist, Explore, wardrobe, social, badges, photo inference, Lookspace, VTON
+  and B2B before one retained cohort has proved the central job.
+- Behavioural learning and owned VTON are not moats yet: F6 lacks sufficient joined behaviour,
+  F7 lacks fairness evidence and F9 has no promoted lane.
+- The modular monolith is already the right shape. Microservices, Kubernetes, a new vector store,
+  a second cache or a backend rewrite would add failure modes before measuring the bottleneck.
+- Infrastructure/model assumptions had drifted: Vercel Hobby is non-commercial, Modal's $30
+  credit is ~50.8 base-price T4 hours, HF ZeroGPU is not dependable India-payable production, and
+  FASHN VTON v1.5 now publishes permissive code and weights.
+
+The rescue principle is: **make one trusted outfit decision fast, learn whether people return for
+it, then earn every additional surface.** “Generational” is a result of compounding user value,
+not a reason to own more systems.
+
+### Product strategy and portfolio
+
+**Job to be done:** “Given my context, budget and clothes, tell me one complete outfit to wear or
+buy, explain why it works, and let me correct you.”
+
+| Posture | Capabilities | Rule |
+| --- | --- | --- |
+| **Invest now** | manual onboarding; one hero complete outfit; explanation/confidence/abstention; save/skip/shop/correct; fast Explore support; wardrobe anchor; next recommendation | must shorten time to a trusted decision or improve the next one |
+| **Maintain** | auth/recovery; consent/export/erasure; catalogue truth; deterministic fallback; account/trust; closed try-on job spine | truth, security and rollback foundations only |
+| **Sequence after core gate** | social/gamification; Lookspace/Skia; B2B boundary; photo assistance; VTON opening | all are hard-launch scope, but each waits for its prerequisite evidence |
+| **Delete later** | losing/duplicate clients, surfaces, model/provider lanes, scaffolds and docs | protected F13 groups after behaviour/decision evidence |
+
+The core loop remains first. The latest owner amendment makes the remaining vision and feedback
+requirements hard-launch scope; they return sequentially after their prerequisite gates.
+
+### Full-vision hard-launch amendment — 2026-07-16
+
+Every non-conflicting requirement in [`ideas-complete.md`](../vision/ideas-complete.md) and all
+[`feedbacks`](../feedbacks/gyf-feedback-v1.md) is required before public launch. “Everything”
+means requirement → implementation → test → deployed evidence; it does not mean opening many
+half-built surfaces at once.
+
+Conflict rules:
+
+1. Later owner amendments beat earlier feedback.
+2. Security, privacy, licensing, accessibility and truthful claims beat literal wording.
+3. Conflicting presentation requests share one coherent system when practical: the requested
+   soothing light palette and the later praised dark aesthetic become accessible light and dark
+   themes using the same tokens.
+4. “Infinite” means cursor-paginated, deduplicated and virtualized until the real catalogue is
+   exhausted—not fabricated products or an unbounded client query.
+5. “Perfect,” “accurate” and “unbreakable” become frozen measurable thresholds, adversarial tests,
+   confidence/abstention and rollback. No release may claim literal perfection.
+6. Historical response audits are evidence, not proof that a complaint remains fixed; re-test
+   every claimed fix on the final Expo client and deployed stack.
+
+### Complete vision and feedback hard-launch traceability
+
+| ID | Required outcome | Execution | Hard-launch evidence |
+| --- | --- | --- | --- |
+| HL-AUTH | Secure auth/recovery, verified ownership, sessions/revocation, profile, consent, export and deletion | F1–F2, EXPO-02/09/11 | real Postgres/RLS and deployed journeys; erasure/restore; no cross-user access |
+| HL-COLD | First-time user gets a useful complete outfit immediately; manual/no-photo always works | EXPO-03/06, F5 | timed first session, honest gap/abstention, first-save activation |
+| HL-PHOTO | Optional photo estimates editable body/tone/undertone only after accuracy/fairness/privacy gates | F7, EXPO-03/09 | diverse consented panel, slice error/calibration, corrections, EXIF/TTL/erasure |
+| HL-STYLE | Complete looks respect gender, culture/region, occasion, budget, goals, wardrobe, body/tone and taste | F4–F7, EXPO-06 | blinded review, constraint tests, kids/gender hygiene, regional slices, purchasable truth |
+| HL-DIVERSE | Stylist, Explore and Canvas avoid repeated slots/items/styles across deep real paging | F2.5, F4–F6, EXPO-05/12–21 | duplicate limits, shared seen-set, cursor exhaustion, stable virtualization |
+| HL-EXPLAIN | Reasons use actual outfit facts with calibrated confidence or abstention | F5–F7, EXPO-06 | reason-fact tests, comprehension study, calibration; no repeated mad-lib |
+| HL-LEARN | Save/cart/shop/skip/react/share/follow/try-on plus undo improve later output with consent | F3, F5–F6, F12 | ≥99% joins, idempotency/reversal, temporal split, shadow/cohort lift, tombstones |
+| HL-DATA | Real, legal retailer/catalogue, on-model, consented user and behaviour data; open datasets only for licensed offline bootstrap; no synthetic user truth | F3–F4/F7–F9 | rights ledger, lineage/hash, consent purpose, quarantine, deletion lineage and dataset/model licenses |
+| HL-WARDROBE | Camera/upload/manual garment capture, recognition/correction and honest own-vs-buy styling | F4/F7, EXPO-08 | private media, classification panel, editable attributes, closet journey |
+| HL-CONTEXT | Outfit decisions can use editable occasion, culture/region, budget, natural-language visual goal, weather and mood without pretending certainty | F4–F7, EXPO-03/06 | source/time freshness, manual override, constraint tests, explanation provenance and abstention |
+| HL-EXPLORE | Fast deep search/browse/facets/similar/complete-look with live price/availability and affiliate redirect | F2.5/F4/F10, EXPO-05 | India SLO/EXPLAIN, freshness/dedupe, handoff and reversal reconciliation |
+| HL-SOCIAL | Populated feed, create/recreate, follow, react, comment, share, download and shop; re-style inspiration for the follower's tone, body, budget and preferences | EXPO-10/11, F10–F11 | scoped media, moderation/report/block, deep links/download, adapted-look provenance and no blind copying |
+| HL-PROFILE | Personalized professional profile with outfits, likes, posts, followers and honest earned badges/perks | EXPO-09/10 | uncluttered facts, anti-abuse badge rules, privacy and device review |
+| HL-VTON | Free async photorealistic top+bottom+apparel/footwear try-on on the user's photo with honest limits | F8–F9, EXPO-10 | license/privacy, multi-garment blinded scorecard, cost/success, TTL/delete, quota/kill switch |
+| HL-TRUST | User/operator status, reasons, confidence, correction and reporting are truthful | F2/F7/F10–F12 | status accuracy, support/incident paths, model/eval IDs, unsafe-output report |
+| HL-DESIGN | Visible logo on every specified surface, curved frames/controls, premium icons matching approved Stitch utility/placement, purposeful motion/haptics, light/dark themes and responsive accessible UI | EXPO-01–13, F11 | token/visual audit against approved references, iOS/Android/web, screen readers, reduced motion, contrast/touch targets |
+| HL-RELOAD | One action works once: retry/refresh/state restore/back/deep-link/offline recovery without duplicate mutation | EXPO-02–11 | state/idempotency tests and slow/offline device proof |
+| HL-CANVAS | Fast uniform non-repeating effectively limitless Canvas/Lookspace with accessible fallback | EXPO-12–21 | frame/memory/bundle budgets, no blank holes, paging/dedupe, list equivalent |
+| HL-CLOUD | Apple Container local, Docker Linux production, CI/CD, monitoring, restore, rollback and traffic controls | F10–F11/HL | reproducible build, scan, staged deploy, synthetic monitor, RPO/RTO and incident rehearsal |
+| HL-LOOP | Production is continuously checked and improved from real evidence rather than one-off manual claims | F10–F12/HL | scheduled critical-journey monitor, alert ownership, regression corpus, weekly evidence review and closed corrective loop |
+| HL-SCALE | Architecture has measured upgrade triggers and configurable quotas/pagination/concurrency; no user-facing hardcoded fake ceiling | F10–F12 | load/capacity test, provider-limit alerts, configuration audit, step-up/rollback plan and unit cost |
+| HL-LEAN | One client/implementation per concern; obsolete clients/docs/assets/providers/workflows removed | F13 | protected deletion groups, dependency/import scan, clean full gate and repo map |
+| HL-B2B | Consent-safe aggregated/distilled styling intelligence has a separate non-reidentifying contract | F12 | data/product contract, privacy attack review, aggregation floor and deletion lineage |
+| HL-QUALITY | Reproducible evaluation rejects degraded ML, UX and system candidates | F5–F12 | evaluation_run_id, frozen slices, degraded-candidate test, canary rollback |
+| HL-BUSINESS | Free product, no paid ranking/paywall, clear affiliate disclosure and sustainable spend gates | F10–F12/HL | disclosure review, statement reconciliation, invoices, contribution/budget decision |
+
+No row closes because a route, file or model exists. It closes only with final-column evidence on
+the promoted Expo client and deployed stack.
+
+Source-closure index:
+
+| Source | Covered by |
+| --- | --- |
+| Vision §§1–4 mission/problem/AI/trust | Product evidence contract; HL-COLD/STYLE/EXPLAIN/LEARN/QUALITY |
+| Vision §5 complete feature set | HL-AUTH through HL-TRUST |
+| Vision §§6–7 technology and full arc | AI/ML ladder; HL-LEARN/CONTEXT/VTON/QUALITY/SCALE |
+| Vision §§7.5–7.6 business/moat/data | HL-DATA/B2B/BUSINESS; profitability and scaling |
+| Vision §§8–9 design/engineering principles | HL-DESIGN/CLOUD/LEAN/LOOP/SCALE and phase verification |
+| Feedback v1 | HL-PHOTO/EXPLAIN: low-confidence errors must abstain or remain editable |
+| Feedback v2 | complete matrix, especially HL-PHOTO/SOCIAL/CLOUD/LEAN/QUALITY |
+| Feedback v3-design | HL-DESIGN |
+| Feedback v4 | HL-STYLE/WARDROBE/EXPLORE/SOCIAL/PROFILE/DESIGN |
+| Feedback v5 | HL-DATA through HL-LOOP, with end-to-end slice completion before new work |
+| Feedback v6 | HL-DIVERSE/EXPLORE/CANVAS/RELOAD/DESIGN/CLOUD/LEAN |
+| Live agent evaluation | F2.5 plus HL-DIVERSE/EXPLAIN/STYLE/AUTH |
+| v6 response audit | regression evidence to re-run under HL-DIVERSE/RELOAD/DESIGN/LOOP |
+
+### Product evidence contract
+
+**North star:** weekly users saving an explained complete outfit. **Activation:** a new user saves
+one during the first session. The event must join to a real served recommendation ID.
+
+| Layer | Metric | Decision rule |
+| --- | --- | --- |
+| Value | weekly explained-outfit savers; saves/activated user | non-zero and stable/improving by cohort |
+| Activation | first-session save; median time to first save | fix the largest funnel loss before adding a surface |
+| Retention | D1/D7/D30 repeated save, correction or wardrobe decision | no PMF/expansion claim before D30 |
+| Learning | exposure join rate; save/skip/correction/undo; next-slate lift | ≥99% join integrity before training; reversals preserved |
+| Trust | explanation comprehension; confidence correction; deletion/export success | false claim, deletion failure or cross-user event blocks launch |
+| Commerce | handoff success; confirmed affiliate order/reversal | optimize after trust; never paid ranking |
+| Guardrails | p50/p95, crash/error, accessibility, privacy/security, cost/user | hard floors; lift cannot compensate for a breach |
+
+F11 runs at least 30 days, not two weeks. Start with a small consented India cohort segmented by
+new/returning, wardrobe/no-wardrobe, gender/region/occasion and network quality. A single
+participant is an anecdote. A later required capability may enter a bounded experiment only when the core
+journey passes SLO/security/accessibility, D30 evidence exists, and the capability has a causal
+hypothesis, success/stop thresholds and clean deletion. Promote only with lift and non-inferior
+guardrails.
+
+Before recruitment, the owner freezes each metric's denominator, cohort anchor, minimum evaluable
+sample, target, failure threshold and action. Report confidence intervals and the full cohort curve;
+“non-zero” usage alone cannot approve public launch. If the cohort cannot distinguish the target
+from the failure floor, extend the beta or run qualitative problem interviews—do not invent PMF.
+
+### Competitive position
+
+Whering leads free social wardrobe, Acloset is the nearest AI wardrobe/VTON bundle, LTK owns
+creator commerce, and Google is the existential distribution/VTON threat in India. GYF cannot win
+by copying their feature lists. Its wedge is **India-native complete-outfit decisions with visible
+evidence and control**: regional garments/occasions, real local price/availability, owned-wardrobe
+utility, honest confidence, fast correction and privacy-minimal photos.
+
+Run a quarterly reproducible scorecard against those four on India availability, activation time,
+complete-outfit coherence, wardrobe effort, regional coverage, explanation/trust, latency, price
+truth, VTON quality/privacy and retained use. Unknown stays unknown; no invented competitor score.
+The defensible asset is rights-cleared catalogue history joined to consented user × outfit ×
+correction × outcome data. It exists only after retained use creates it.
+
+### Production architecture and budget
+
+Keep one Expo client after cutover, one typed FastAPI modular monolith, Postgres/pgvector/RLS as
+the source of truth, one event spine, and existing encoder/ranker/try-on ports. Do not add Kafka,
+microservices, Kubernetes, a feature store, Qdrant/Milvus, a second cache/UI system, an agent
+framework or a custom model server before a measured ceiling.
+
+| Layer | Monthly hard plan | Trigger |
+| --- | ---: | --- |
+| Render Static Expo web | ₹0 while allowance holds | meter [outbound bandwidth](https://render.com/docs/new-workspace-plans); prove commercial terms, headers, custom domain and rollback |
+| Existing Render Starter API (Oregon) | ≤₹700 | retain the paid service; no Singapore migration; optimize measured causes first |
+| Supabase + Upstash free | ₹0 | review at 70% of any DB/MAU/storage/egress/connection limit |
+| Modal credits | ₹0 cash while verified | credits are not an availability promise; reconcile invoice and export audit evidence beyond the provider's [short Starter log retention](https://modal.com/pricing) |
+| Optional VTON cash cap | ₹1,500 | zero before F9; quota from successful-render cost |
+| Bandwidth/tax/FX reserve | ₹650 | alert at 50%; stop discretionary GPU at 80% |
+| **Maximum** | **₹2,850** | ₹150 emergency margin; no silent overage |
+
+Planning rate is ₹100/USD. Supabase Pro plus the API cannot fit the fixed ceiling with safe
+reserves. At 70% of a free-tier limit, start a topology review before an outage. Growth pays for
+the next tier only after trailing confirmed contribution covers it with a 2× safety factor for
+three months, or the owner explicitly changes the ceiling. Vercel Hobby remains preview-only;
+Render Static is the commercial default after Expo-web parity, with Cloudflare Pages as a measured
+fallback.
+
+App-store memberships and review fees are business distribution costs, not hosting/GPU, and are
+budgeted separately before native public release; they may not be hidden inside the ₹150 margin
+([Apple memberships](https://developer.apple.com/support/compare-memberships/)).
+
+### Catalogue performance recovery
+
+1. Freeze a request matrix: anonymous/authenticated; browse/filtered/deep-page; cached/uncached;
+   cold/warm; fixed queries and item IDs.
+2. Trace one request ID through client, API, pool acquire, taste, cache/encoder, retrieval SQL,
+   MMR, directory hydration and serialization; record DNS/connect/TTFB for remote calls.
+3. Capture production `EXPLAIN (ANALYZE, BUFFERS)` with representative parameters and redaction.
+4. Rank stages by p95 contribution. Change one measured boundary: encoder deployment, pool/SQL/
+   index, hydration fan-out, API CPU/sleep or API↔DB topology.
+5. Re-run the identical India matrix and compare p50/p95/error/cost; revert on regression.
+6. Promote only when every contract SLO passes through the observation window; then delete the
+   loser or record the rollback expiry.
+
+Reuse `shared_pool`, `CachedTextEmbedder`, HNSW, the indexed browse ring, MMR, stage timers and
+typed clients. `pg_trgm`, halfvec, materialized views, new caches and topology migration are
+conditional experiments, not default work. The owner rejected Singapore on 2026-07-16; any later
+non-Singapore comparison requires measured failure and a separate decision.
+
+### AI/ML evidence ladder
+
+| Stage | Serving decision | Promotion evidence |
+| --- | --- | --- |
+| Cold start | SigLIP 2/pgvector + deterministic rules/MMR | catalogue-slice Recall@K/MRR, outfit review, latency, honest confidence |
+| Personal ranker | smallest pairwise/logistic challenger | ≥99% joined events, temporal/user split, NDCG/save lift, calibration/diversity, shadow/cohort rollback |
+| Compatibility | rules first; set model only on a persistent failure cluster | item-disjoint scorecard and blinded outfit review; no public-dataset-only promotion |
+| Body/tone | manual truth | separate consented accuracy/fairness panels, correction and abstention |
+| Generative/HSTU/agentic styling | research only | event scale and measured lift must justify cost/complexity |
+
+Every candidate needs exact code/weight/data licenses and hashes, lineage, consent basis, model
+card, reproducible eval, slice metrics, latency/memory/cost, deterministic fallback, flag and
+rollback. No paper or “SOTA” badge promotes a model.
+
+**VTON dual lane (owner amendment 2026-07-16):**
+
+- Pin FASHN VTON v1.5 code/weights and every parser/pose/runtime dependency; self-host behind the
+  shipped `TryOnRenderer` only after the complete license/privacy gate.
+- Build rights-cleared GYF garment/on-model pairs and train an owned candidate after ≥2,000 valid
+  pairs and a stable ≥10% FASHN failure cluster. Behavioural tuning additionally waits for ≥10,000
+  consented joined try-on outcomes.
+- Evaluate ≥100 identity/item-disjoint cases with three blinded reviewers. Require ≥90% usable,
+  ≤5% critical garment errors, ≤5% severe identity/body artifacts, zero critical safety/privacy
+  failures, p95 queue+render ≤60 seconds, ≤₹5/success and monthly budget fit.
+- Roll out internal→1%→5%→25%; stop on any privacy incident, >2% system error, cost breach or
+  guardrail regression. The owned lane replaces FASHN only when its 95% confidence interval wins
+  blinded preference with all guardrails non-inferior.
+
+Public Leffa, IDM-VTON, CatVTON and research-dataset weights stay offline unless their exact
+artifacts independently pass. FASHN is useful acceleration; the owned lane prevents dependency.
+
+### Security, privacy and reliability gate
+
+- Rotate the recorded exposed Supabase service-role credential and dependants; prove MFA, least
+  privilege, CI isolation, secret scanning and no client leakage.
+- Threat-test credential stuffing, IDOR/private media, decompression bombs, dependency/model
+  compromise, vendor retention/training, GPU abuse and backup failure.
+- Use purpose-specific consent; manual/no-photo remains first class; strip EXIF; validate real
+  signature/bytes/pixels/dimensions; never log media; private access; declared ≤24-hour TTL unless
+  the user explicitly saves an output.
+- Block sensitive-photo processing for minors until verified parental-consent and child-safety
+  requirements are approved; never infer age from a photo.
+- Treat a photo-processing vendor as Tier 1: no secondary training, bounded retention/deletion,
+  subprocessor/transfer disclosure, breach notice, access controls and deletion verification.
+- Prove owner-scoped export/erasure, session revocation, training tombstones and a restore that
+  cannot resurrect deleted users/media.
+- Ship alertable audit/access logs, rate/quota limits, incident tabletop/notice workflow,
+  encrypted backups and measured RPO/RTO. Buy no compliance platform pre-PMF.
+- For social UGC: require accepted terms, content/user reporting, user blocking, bounded triage,
+  takedown/appeal and an emergency disable. For VTON/other generative output: add an in-product
+  offensive-output report path before opening the capability
+  ([Play UGC](https://support.google.com/googleplay/android-developer/answer/9876937),
+  [Play AI-generated content](https://support.google.com/googleplay/android-developer/answer/13985936),
+  [Apple review guidelines](https://developer.apple.com/app-store/review/guidelines/)).
+
+India DPDP controls are built now; qualified counsel validates final notices, child treatment,
+cross-border/vendor terms and breach obligations before public beta.
+
+### Profitability and scaling
+
+The app stays free and never ranks by commission. Revenue is transparent affiliate attribution
+after the outfit decision; every commission-bearing recommendation and outbound handoff carries a
+prominent “Affiliate” or “Ad” disclosure before the user acts, never only in Terms or after the
+click ([ASCI disclosure guidance](https://www.ascionline.in/social/tools/)). B2B starts only with a
+prepaid design partner. Use actual statements:
+`net commission = confirmed commission − reversals − taxes/fees`. Illustrative only: a ₹3,000
+order × 5% × 80% realization yields ₹120; ₹2,850 infrastructure contribution break-even is 24
+confirmed orders/month. This excludes labour, CAC, support, overhead and tax and is not company
+profitability. Paid acquisition stays zero until organic/partner cohorts retain and confirmed
+contribution is positive.
+
+Scaling ladder: 0–100 activated users prove value/SLO/events with VTON closed; 100–1,000 MAU may
+open gated FASHN quotas after F9; at 70% free-tier capacity or 80% cash cap freeze discretionary
+inference and review topology/unit economics; beyond the ceiling, scale only on proven economics
+or an explicit owner amendment.
+
+### Phased rescue sequence
+
+| Packet | Scope | Exit evidence | Not included |
+| --- | --- | --- | --- |
+| R0/docs | authority cleanup, corrected research/focus/budget | doc alignment; no competing plan | product code |
+| R1/F2.5 | catalogue trace, EXPLAIN, one measured fix | all SLO rows; rollback rehearsal | ranking rewrite/UI masking |
+| R2/Expo core | auth→manual onboarding→hero outfit→explain→save/skip/shop/correct→next look; Explore/account support | unit/integration/device/web/a11y and synthetic journey | Lookspace, social expansion, photo models |
+| R3/data truth | exposure/outcome/reversal joins and metric definitions | ≥99% joins; consent/erasure proof | model training |
+| R4/catalogue | rights, freshness, price, availability, region/taxonomy/dedupe | no stale/unavailable/mismatched output; feed quarantine | coverage vanity |
+| R5/beta | 30-day India cohort/interviews | activation, D1/D7/D30, trust/SLO/cost report | public launch claims |
+| R6/ranker | smallest challenger if data threshold passes | offline→shadow→cohort win and rollback | HSTU/generative recsys |
+| R7/VTON | gated FASHN + owned data/training lane | F8/F9 scorecard, quota/cost/privacy | research-only weights |
+| R8/cutover | commercial static web, restore/canary, affiliate reconciliation | terms/SLO/security/cost/rollback | Vercel Hobby production |
+| R9/full vision | photo, wardrobe, social/profile/badges, Canvas/Lookspace, F9 VTON and B2B boundary—one complete slice at a time | every traceability row and integrated guardrail passes | parallel half-built portfolio |
+| R10/F13 | protected deletion groups | one implementation/concern; clean journeys/build | speculative rewrites |
+
+Local Expo work may proceed while external F2.5 promotion is pending only inside R2's activation
+write set. No phase claims production before its gate.
+
+### Specification and stop rules
+
+- **FR-1:** manual input MUST yield a real complete purchasable outfit or honest gap without a
+  photo/optional model.
+- **FR-2:** every outfit MUST expose used facts, honest confidence/abstention and correction.
+- **FR-3:** save/skip/shop/correct/reversal MUST join to the served recommendation and consent.
+- **FR-4:** filters, availability, currency, region and ownership MUST be server truth.
+- **FR-5:** remote failure MUST preserve a deterministic useful path.
+- **FR-6:** export/erasure/revocation MUST cover every owned/training-eligible artifact.
+- **NFR-1:** India SLOs MUST pass; no client illusion substitutes for speed.
+- **NFR-2:** the core journey MUST pass keyboard/web, VoiceOver, TalkBack, scaling, contrast and
+  reduced-motion checks.
+- **NFR-3:** hosting + GPU MUST stay under ₹3,000 with alerts and kill controls.
+- **NFR-4:** no critical security/privacy/license issue or unexplained skip may promote.
+
+Out of hard-launch scope: autonomous shopping agents, chat as primary UI, real-time online
+learning, 3D body twins, WebGPU/custom graphics beyond the approved Canvas implementation,
+microservices, Kubernetes, dedicated always-on GPUs, paid acquisition and compliance badges.
+The B2B-ready distilled boundary is required; a broad speculative B2B sales platform is not.
+
+Every packet ends with requirements/AC trace, changed-file manifest, focused/full checks,
+before/after evidence, security/privacy/accessibility and cost results, rollout/rollback, skips and
+risks. Stop and diagnose when attribution is absent, rights/fallback are missing, cost counts free
+credits as an SLA, a claim is unmeasurable, a feature cannot be deleted, a hard floor fails or the
+approved packet must expand.
+
 ## 0. Execution ledger
 
 This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md` and
@@ -22,13 +343,13 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 
 | Field | Current truth |
 |---|---|
-| Current permitted application slice | F2.5 catalogue/search diagnosis and SLO closure; then sequential Expo parity |
+| Current permitted application slice | F2.5 catalogue/search diagnosis/SLO closure; local Expo core activation loop, followed sequentially by the hard-launch matrix |
 | F1b implementation state | Shipped with the F1 gate; retained as historical evidence |
 | Latest automated evidence | Commit `d8ca37f`; CI `29420027112` and CD `29420121072` passed; Expo deployment is live |
 | Known warnings/skips | 17 API tests skipped; existing `<img>` lint warning; framework/deprecation and React `act()` test warnings |
 | F2.5 live state | **FAIL** — fresh India p50: health 0.86s, browse 17.01s, cached search 1.36s, uncached search 9.29s |
-| Next candidate after explicit phase transition | Instrument and isolate catalogue stages; fix the measured root cause; prove all SLO rows; continue incomplete Expo vertical slices |
-| Explicitly not next | New model training, try-on opening, payment, F13 cleanup |
+| Next candidate after explicit phase transition | Instrument and isolate catalogue stages; fix the measured root cause; prove all SLO rows; finish the smallest Expo outfit-decision journey |
+| Explicitly not next | Parallel expansion, payment, unlicensed/unevaluated models, infrastructure rewrites and F13 cleanup |
 
 F2.5 is not promoted by this document. Its remaining work is external deployment and a passing
 `python3 scripts/measure_slo.py` result from an Indian vantage. Owner execution amendment
@@ -69,10 +390,11 @@ Launch surfaces:
   hygiene, complete-the-look composition.
 - Wardrobe: upload or add a garment, classify it, correct it, and style around owned items;
   recommendations must say whether the closet completes the look or a purchase is needed.
-- Saved looks/collections, social posts/follows/reactions/recreate, profile/badges, account and
-  trust/status surfaces.
+- Saved looks/collections, professional profile/badges, account and trust/status surfaces.
+- Social feed, create/recreate, follow, react/comment, share/download and shop with moderation.
 - Try-on remains closed until F9. When opened it is free, async, quota-bounded, erasable, and
-  backed by the GYF-owned lane only.
+  backed by whichever F9-promoted lane passes—FASHN may serve first while the owned challenger
+  remains the independence path.
 
 Non-goals:
 
@@ -98,7 +420,7 @@ Supabase Postgres + pgvector + RLS + Redis rate limits + private media
         │
 Consent-filtered event spine → offline export → eval report → shadow/cohort → promotion
         │
-Vercel web + always-on India-effective API + scale-to-zero GPU miss lanes
+Commercial Expo web host + always-on Oregon Render Starter + scale-to-zero GPU lanes
 ```
 
 The application layer imports no model package directly. New capability means: contract/port,
@@ -106,6 +428,9 @@ production adapter, research adapter if useful, model card and license metadata,
 report, deterministic fallback, observability, and rollback flag.
 
 ### 3.1 The GYF Lookspace Engine
+
+**Status: REQUIRED FOR HARD LAUNCH by the latest 2026-07-16 owner amendment.** Execute
+EXPO-12–EXPO-21 only after the core activation, performance and accessibility prerequisites pass.
 
 The Expo client will include one distinctive product engine: **Lookspace**. It is not a carousel
 with unusual animation and it is not a client-side recommendation model. It is a GPU-rendered,
@@ -291,6 +616,9 @@ Ponytail bloat budget:
 
 ### 3.5 Differentiation bets: three ideas worth earning
 
+**Status: FROZEN pre-PMF.** These enter one-at-a-time experiments only after the rescue amendment's
+D30 expansion gate; they are not part of activation or launch readiness.
+
 “Unique” is not permission to add a second product. These are the only novel product bets in the
 launch plan; each reuses existing GYF facts and is deleted if it does not improve a named outcome.
 
@@ -467,7 +795,7 @@ rollback. The model registry and existing doctrine gates remain authoritative.
 | Body assistance | manual truth + RTMW candidate | SAM 3D Body/MHR, Fast SAM 3D Body, Anny/Anny-Fit ([SAM 3D Body](https://arxiv.org/abs/2602.15989), [Fast SAM 3D Body](https://arxiv.org/abs/2603.15603), [Anny](https://arxiv.org/abs/2511.03589)) | separately consented diverse panel; accuracy × fairness, latency, commercial license check |
 | Skin-tone assistance | manual truth; photo shadow only | robust face/skin segmentation + CIELAB/CAM16 calibration; no production claim until fairness gate | consented panel across tones/lighting; Monk-spectrum fairness gap, abstention and correction rate |
 | Intent and explanation | structured rules + reason templates | small structured-output open model behind `IntentParser`; explanations must cite actual item signals | goal-shift/no-goal parity, invalid-input abstention, factuality review, license gate |
-| Try-on | closed async `TryOnRenderer` spine | GYF-owned Leffa-architecture fine-tune; MuGa-VTON is an offline research reference for multi-garment direction ([Leffa/related research](https://arxiv.org/abs/2508.08488)) | rights-cleared GYF pairs; garment fidelity, identity, human review, safety, p95 GPU seconds, cost kill switch |
+| Try-on | closed async `TryOnRenderer` spine | pinned Apache-2.0 FASHN candidate plus rights-clean GYF-owned challenger; Leffa/MuGa-VTON remain offline architecture references ([related research](https://arxiv.org/abs/2508.08488)) | rights-cleared GYF pairs; garment fidelity, identity, human review, safety, p95 GPU seconds, cost kill switch |
 | Confidence | calibrated incumbent scores | temperature/isotonic calibration, conformal sets where semantics are valid | ECE/Brier/coverage, abstention utility, per-user and slice audits |
 
 The important research conclusion is restraint: SigLIP 2 and MRL support a strong retrieval
@@ -582,7 +910,7 @@ Additional gates by area:
 - ML: provenance/license registry, frozen eval report, calibration/fairness/compatibility/
   diversity metrics, latency/cost report, shadow and rollback evidence.
 - Production: Indian-vantage SLO measurement, synthetic journeys, error-budget review, backup
-  restore, secret rotation drill, and two-week beta report.
+  restore, secret rotation drill, and 30-day beta report.
 
 ### 9.1 Recursive evaluation and controlled autonomy
 
@@ -633,20 +961,18 @@ rule, UI build, facts, consent basis and evaluation run—and later corrected, d
 
 ## 10. Immediate next action
 
-F1b code and local verification are complete in the current baseline. Do not rewrite it. The next
-candidate is **F2.5 closeout**, but it starts only after the phase transition is recorded by the
-authoritative contract owner:
+F1/F2 code is complete in the recorded baseline. Do not rewrite it. The next external packet is
+**F2.5 diagnosis and closeout**:
 
-1. prove the deployed Modal HTTP encoder is the active search miss lane;
-2. move the always-on API to an India-effective topology (Singapore is one option, not a product
-   requirement) without losing auth, database, media, secrets or rollback;
-3. run `python3 scripts/measure_slo.py` from India and attach the full output;
-4. promote F2.5 only if every target passes; otherwise keep the deterministic path and fix the
-   failing deployment boundary.
+1. emit/reconcile the existing stage and DB-pool timings without ranking changes;
+2. capture production `EXPLAIN (ANALYZE, BUFFERS)` for the fixed request matrix;
+3. fix only the largest measured stage, testing topology/provider changes as experiments;
+4. run `python3 scripts/measure_slo.py` from India and attach full warm/cold evidence;
+5. promote only if every target passes and rollback is rehearsed.
 
-Until that gate passes, do not start F3, Expo scaffolding, new model training, payment, or F13
-cleanup. This ordering is deliberate: an exceptional product cannot learn or feel good on a
-known-slow production path.
+While that external gate is pending, local Expo work is limited to the rescue amendment's R2
+activation journey. Do not start F3 training, Lookspace/Skia, social expansion, photo models,
+public try-on, payment or F13 cleanup.
 
 ## 11. Ticket-level execution board
 
@@ -992,9 +1318,11 @@ all F1 slices pass and all skips/failures are reported.
 - **Write set:** `packages/contracts/gyf_contracts/usermodel.py`, profile/account models,
   `services/api/app/dependencies.py`, `services/api/app/profile/account.py`, consent tests.
 - **Work:** define the minimum consent flags for data processing, photo storage, learning,
-  social publishing, and try-on; enforce them at endpoint and sink boundaries.
+  social publishing, and try-on; version the presented notice and persist a consent receipt;
+  enforce them at endpoint and sink boundaries.
 - **Acceptance:** every sensitive endpoint has a negative no-consent test and a positive audit
-  path; revocation stops future processing without deleting unrelated account data.
+  path containing notice/purpose/version/time; revocation stops future processing without deleting
+  unrelated account data.
 - **Guard:** no single broad consent flag substituted for a purpose-specific one.
 
 ### F2-02 — RLS and owner-scope audit
@@ -1245,28 +1573,33 @@ gates. One failing module does not block the manual or other module.
 - **Acceptance:** close/reopen client resumes polling; duplicate workers cannot double-claim; a
   failed/abstained job sheds sensitive bytes; mid-render cancel does not claim a refund.
 
-### F8-02 — Owned training data and preprocessing
+### F8-02 — FASHN artifact gate plus owned training data
 
-- **Write set:** `ml/pipelines/vton_pairs.py`, new owned-lane training/preprocessing modules,
-  manifests, model cards, license checks, tests.
-- **Work:** deterministic real-pair preprocessing, split by person/item, no synthetic substitute,
-  licensed segmentation/pose/preprocessing, leakage checks, and deletion mapping.
-- **Acceptance:** rerun produces identical manifest hashes; held-out identities/items remain
-  isolated; all assets pass the model/data license gate.
+- **Write set:** the smallest FASHN adapter/package manifest behind `TryOnRenderer`,
+  `ml/pipelines/vton_pairs.py`, owned-lane training/preprocessing modules, model cards, license
+  checks and tests.
+- **Work:** pin/hash FASHN code, weights, parser, pose and runtime dependencies; verify terms and
+  photo handling. In parallel, create deterministic rights-cleared real-pair preprocessing, split
+  by person/item, with leakage checks and deletion mapping. Start owned training only at the
+  rescue amendment's pair/failure-cluster trigger.
+- **Acceptance:** FASHN artifacts and every dependency pass provenance; reruns produce identical
+  manifests; held-out identities/items remain isolated; no unlicensed or deleted asset enters.
 
-### F8-03 — Leffa-architecture training and serving
+### F8-03 — Scale-to-zero serving and owned challenger
 
-- **Write set:** owned training scripts/config, `ml/serving/**`, `infra/modal/**` or approved
-  scale-to-zero lane, `models.registry.json`.
-- **Work:** fine-tune only the permitted architecture on GYF pairs; expose through
-  `TryOnRenderer`; bound GPU seconds, concurrency and queue age; keep owned checkpoint as the
-  only intended production lane.
-- **Acceptance:** checkpoint loads through the port, security scan passes, cost stays below the
-  cap, fallback/kill switch works, and no provider adapter leaks into production.
+- **Write set:** owned training scripts/config after trigger, `ml/serving/**`, approved
+  scale-to-zero adapter and `models.registry.json`.
+- **Work:** serve the pinned FASHN candidate and future owned challenger only through
+  `TryOnRenderer`; benchmark T4/L4/Flex cost per successful render; bound GPU seconds, concurrency
+  and queue age. Train the rights-clean owned candidate without making FASHN a permanent dependency.
+- **Acceptance:** each candidate loads through the same port; security/privacy scans pass; cost
+  and SLO gates pass; deterministic fallback and kill switch work; checkpoint/provider details do
+  not leak into the product contract.
 
 ### F8 gate
 
-Spine E2E passes with `NullTryOnRenderer` and owned-lane staging; try-on remains closed to users.
+Spine E2E passes with `NullTryOnRenderer`, pinned FASHN staging and any eligible owned challenger;
+try-on remains closed to users.
 
 ## 22. F9 — try-on evaluation and opening
 
@@ -1282,10 +1615,13 @@ Spine E2E passes with `NullTryOnRenderer` and owned-lane staging; try-on remains
 ### F9-02 — Candidate comparison
 
 - **Write set:** eval runner/reports, model registry and promotion tests.
-- **Work:** compare owned checkpoint against only commercially eligible candidates; research-only
-  references remain offline and cannot be promoted.
-- **Acceptance:** owned lane wins the required quality gate or try-on stays closed; losing adapters
-  are not silently retained as production fallbacks.
+- **Work:** compare the pinned FASHN candidate with every eligible GYF-owned challenger;
+  research-only references remain offline.
+- **Acceptance:** one lane passes the rescue amendment's quality/privacy/cost/SLO gate or try-on
+  stays closed. FASHN may serve first; the owned lane replaces it only on a statistically superior
+  result with guardrails non-inferior. Losing adapters are not silently retained. Provider exit is
+  rehearsed: stop traffic, activate fallback, revoke credentials, request/verify retained-data
+  deletion and preserve non-sensitive evidence.
 
 ### F9-03 — Free opening
 
@@ -1475,15 +1811,48 @@ but it never reorders the backend contract.
 
 - **Write set:** social/profile/account/status/contact/grievance routes/components.
 - **Work:** feed/post/reactions/follows/recreate, badges, identity display, consent/export/delete,
-  status/capability copy, support and grievance forms.
-- **Acceptance:** moderation/status failures are clear; posts honor privacy; profile facts are not
-  duplicated; destructive actions require confirmation and are idempotent.
+  status/capability copy, support and grievance forms; accepted UGC terms, report content/user,
+  block user, triage/takedown/appeal states and emergency social disable.
+- **Acceptance:** moderation/status failures are clear; a report reaches the owned queue and a
+  block takes effect immediately; posts honor privacy; profile facts are not duplicated;
+  destructive actions require confirmation and are idempotent. Grievances have receipt, owner,
+  status and closure evidence.
+
+#### EXPO-09 execution evidence — 2026-07-16 (Social create/recreate)
+
+- Expo Social now publishes one server-returned, profile-aware recommendation through the existing
+  `POST /social/posts` contract. Caption input is bounded to the API's 1,000-character limit and
+  no item IDs are invented client-side.
+- Each feed post exposes `Recreate for me`, calling `POST /social/posts/{id}/recreate`; the result
+  is shown as a new personalized composition with explicit non-copy/non-try-on wording. Failures
+  remain visible and retryable without claiming success. Feed reactions, follows and pagination stay
+  unchanged; list padding includes safe-area insets.
+- Final evidence: 391 API tests passed (17 integration skips), 72 web tests passed, 52 Expo tests
+  passed; formatting, lint, typecheck, doctrine and both production builds passed. Expo web exported
+  49 routes. Device accessibility and deployment smoke remain part of EXPO-11.
+
+#### EXPO-09 execution evidence — 2026-07-16 (Avatar upload)
+
+- Profile avatar/add-change opens the authenticated Expo image library only after a user gesture,
+  requests permission, accepts JPEG/PNG/WebP, excludes EXIF, bounds decoded base64 bytes to 5 MB,
+  disables duplicate uploads, and keeps the prior avatar visible on every failure.
+- Supabase Storage alternates only between `${user_id}/avatar-a.jpg` and `avatar-b.jpg`: upload the
+  inactive slot, persist its cache-busted URL through `PUT /profile`, delete the new slot if that
+  write fails, then best-effort delete the old slot after success. Migration `0023_avatar_storage` no-ops on local
+  PostgreSQL without Storage; its statically tested policies grant authenticated users access only
+  to those two exact owned names and the bucket accepts JPEG output up to 5 MB.
+- Evidence: 58 Expo tests, Expo typecheck and web export (49 routes), and the focused migration
+  policy-definition test passed. Native device permission/accessibility and deployed Supabase
+  policy-enforcement smoke remain
+  open under EXPO-11; package installation was blocked by this checkout's Bun temp-directory
+  permission, so the Expo package and lock entries were recorded from the official 57.0.2 tarball.
 
 ### EXPO-10 — Try-on client
 
 - **Write set:** try-on route/components and job polling tests.
 - **Work:** closed-state UI first; then queue/poll/cancel/image/TTL behaviour after F9. Show the
-  user's own photo as waiting context, honest stage text, and no fabricated progress.
+  user's own photo as waiting context, honest stage text, no fabricated progress, and an
+  in-product offensive/unsafe-output report action.
 - **Acceptance:** client cannot solicit a photo while capability is closed; closing/reopening
   resumes job; terminal abstention is not retried automatically.
 
@@ -1491,9 +1860,21 @@ but it never reorders the backend contract.
 
 - **Write set:** Expo E2E/visual tests, CI, deployment config.
 - **Work:** test iOS, Android, web, keyboard, screen reader, reduced motion, slow network, offline
-  restart, deep links, image permissions, back navigation and app store builds.
+  restart, deep links, image permissions, back navigation and app store builds. Produce the store
+  packet: signing/account ownership and MFA, privacy-policy and public web deletion URLs, Play Data
+  Safety, Apple privacy labels/manifest, permissions, age/content rating, review demo account,
+  screenshots/metadata, required personal-account testing evidence where applicable, review
+  submission, staged rollout and store rollback.
 - **Acceptance:** critical journey parity with the oracle, no high-severity accessibility issue,
-  crash-free canary, bundle/load budgets, and no auth/privacy regression.
+  crash-free canary, bundle/load budgets, no auth/privacy regression, and declarations match the
+  shipped binary and every third-party SDK. Internal builds alone do not satisfy this ticket.
+
+Store evidence sources: [Play Data Safety](https://support.google.com/googleplay/android-developer/answer/10787469),
+[Play account deletion](https://support.google.com/googleplay/android-developer/answer/13327111),
+[Play review requirements](https://support.google.com/googleplay/android-developer/answer/10788890),
+[new personal-account testing](https://support.google.com/googleplay/android-developer/answer/14151465),
+[Apple privacy details](https://developer.apple.com/app-store/app-privacy-details/) and
+[Apple privacy manifests](https://developer.apple.com/documentation/bundleresources/adding-a-privacy-manifest-to-your-app-or-third-party-sdk).
 
 ### EXPO-12 — Install and validate the graphics engine
 
@@ -1652,17 +2033,22 @@ full Expo/native/web verification set passes. It is a product capability, not a 
 ### F10-02 — Data/identity/restore rehearsal
 
 - **Write set:** migration/restore scripts and runbook only; no destructive production action.
-- **Work:** rehearse database copy, auth redirect, RLS, media, event and model registry restore;
-  verify Expo client against restored staging.
-- **Acceptance:** golden authenticated path, deletion, export, private media and rollback pass.
+- **Work:** record backup/PITR owner, schedule, retention and encryption; rehearse database copy,
+  auth redirect, RLS, media, event and model registry restore; verify Expo client against restored
+  staging and prove deleted users/media are not resurrected.
+- **Acceptance:** measured RPO/RTO meet the frozen targets; golden authenticated path, deletion,
+  export, private media and rollback pass from a real backup artifact.
 
 ### F10-03 — Canary and cutover
 
 - **Write set:** feature flag/config, release workflow, monitoring dashboards/runbook.
 - **Work:** release Expo web/native build to internal users, then small beta cohort, then full
-  traffic. Keep Next.js rollback until the observation window ends.
+  traffic. Keep Next.js rollback until the observation window ends. Define severity/acknowledgement,
+  recovery and notification owners, escalation, post-incident review, provider budget alerts/hard
+  caps and the store rollout/rollback procedure.
 - **Acceptance:** error budget, SLO, crash, auth, event, cost and user-journey thresholds pass;
-  one-command rollback is tested, not merely documented.
+  one-command rollback is tested, not merely documented; an incident tabletop and cost-limit test
+  reach the named owner without exposing PII.
 
 ## 25. F11 — closed free beta
 
@@ -1670,8 +2056,10 @@ full Expo/native/web verification set passes. It is a product capability, not a 
 
 - **Write set:** beta runbook, synthetic fixtures, support labels, no product behaviour changes.
 - **Work:** recruit a consented diverse cohort; define test accounts for gender/region/occasion,
-  manual/photo/no-photo, empty/full wardrobe, low connectivity, and deletion.
-- **Acceptance:** two weeks of real use with daily review of crashes, latency, privacy, catalogue,
+  manual/photo/no-photo, empty/full wardrobe, low connectivity, and deletion. Before recruitment,
+  freeze metric definitions, minimum evaluable sample, targets/failure floors and actions; assign
+  the support/grievance inbox, response target, escalation and closure owner.
+- **Acceptance:** at least 30 days of real use with daily review of crashes, latency, privacy, catalogue,
   ML quality, accessibility and cost.
 
 ### F11-02 — Critical-journey synthetic monitor
@@ -1680,13 +2068,17 @@ full Expo/native/web verification set passes. It is a product capability, not a 
 - **Work:** signup → onboarding → stylist → feedback → explore → wardrobe → social → export/delete;
   try-on closed/open according to F9.
 - **Acceptance:** no PII in monitor logs; failures page the owner with request IDs and rollback
-  instructions.
+  instructions. Rehearse one availability incident and one privacy/abuse incident through
+  acknowledgement, escalation, recovery/disable, required notice assessment and post-incident review.
 
 ### F11-03 — Launch decision
 
 - **Write set:** beta report and release decision.
 - **Acceptance:** all blocking defects closed or explicitly rejected by owner; no unexplained
   regression, false capability claim, cross-user access, unbounded cost, or missing fallback.
+  Activation and D7/D30 cohorts meet their pre-registered targets with uncertainty reported;
+  support/grievance, store-policy, affiliate-disclosure and counsel gates pass. Otherwise extend
+  the beta or stop—do not relabel weak evidence as launch approval.
 
 ## 26. F12 — evidence-led improvement
 
@@ -1708,9 +2100,12 @@ full Expo/native/web verification set passes. It is a product capability, not a 
 
 ### F12-03 — Cost and quota reconciliation
 
-- **Write set:** cost reports, quota config, kill-switch runbook.
+- **Write set:** cost and affiliate-reconciliation reports, quota config, kill-switch runbook.
+- **Work:** reconcile provider invoices/meters and affiliate network statements against click,
+  confirmed-order, reversal and payout events; investigate every material mismatch.
 - **Acceptance:** actual hosting/GPU spend stays under ₹3,000/month; quota changes are based on
-  reconciled usage, not demand estimates.
+  reconciled usage, not demand estimates; net commission is derived from statement-confirmed
+  commission minus reversals, taxes and fees, not clicks or attributed estimates.
 
 ### F12-04 — Recursive evaluation control plane
 
@@ -1752,8 +2147,9 @@ full Expo/native/web verification set passes. It is a product capability, not a 
 
 - **Write set:** parked Next.js client, parked Flutter client if not retained by an explicit owner
   decision, losing Canvas/Explore or Saved/Collections surface, stale assets/docs/scaffolds.
-- **Work:** delete only after Expo parity, public links, analytics, support and rollback window
-  pass. Keep one canonical surface per capability.
+- **Work:** delete only after Expo parity plus the closed production beta prove links, analytics,
+  support and the rollback window. Keep the last verified Expo build/config as rollback and one
+  canonical surface per capability.
 - **Acceptance:** no imports/links/workflows refer to deleted paths; full gate passes.
 
 ### F13-03 — Delete losing ML/infra/payment paths
@@ -1770,7 +2166,10 @@ restore, export/deletion, security, accessibility, model-policy and cost checks.
 
 ## 28. Final release checklist
 
-The app is launch-ready only when all answers are “yes” and evidence is attached:
+This is the **hard public-launch gate**, after the contract's preceding phases and F13 deletion.
+The app is launch-ready only when all applicable answers are “yes” and evidence is attached.
+Capabilities outside the complete traceability matrix are not launch dependencies and cannot be
+used to delay or decorate a weak core product:
 
 - Does every critical route load on iOS, Android, web and a slow network?
 - Can an unauthenticated user never see private data or trigger a sensitive operation?
@@ -1784,8 +2183,6 @@ The app is launch-ready only when all answers are “yes” and evidence is atta
 - Is try-on closed until F9 and free/quota-bounded after F9?
 - Are Expo web/native deep links, uploads, camera permissions, share links, recovery links and
   store builds proven?
-- Does Lookspace render real server-backed compatibility/wardrobe facts at the frame-time budget,
-  with an equivalent accessible list and a safe CanvasKit/Skia fallback?
 - Does every route follow the Atelier/Cosmos visual laws, use one clear primary action, preserve
   the calm evidence hierarchy, and pass visual, accessibility, responsive, reduced-motion and
   error-state review?
@@ -1794,10 +2191,92 @@ The app is launch-ready only when all answers are “yes” and evidence is atta
   basis and decision, with quality, fairness, comprehension, latency, cost and safety evidence?
 - Does the recursive loop quarantine bad data, reject degraded candidates, stage rollouts and
   automatically stop/rollback without inventing labels or changing sensitive behaviour?
-- Have the Style Constitution, Counterfactual Lookspace and Wardrobe Coverage Compass each either
-  earned a measured product win or been deleted?
 - Is rollback one command and has it been executed in rehearsal?
 - Has every obsolete path been deleted only after behaviour protection?
+- Does every HL-AUTH through HL-BUSINESS traceability row have deployed evidence with no
+  unexplained skip?
+- Has the owner reviewed the 30-day beta evidence, unresolved risks, provider invoices, support
+  readiness and store declarations and signed the launch decision?
 
 If any answer is “no”, the release remains in the current phase; it is not hidden behind copy,
 retry loops, a fake loading state, a paywall, or a confident AI label.
+
+Post-launch candidates are limited to capabilities not required by the matrix: autonomous
+shopping, ambient integrations, broad B2B productisation, larger/generative rankers and new
+experiments beyond the approved Canvas/Lookspace. Each enters one at a time and must improve a
+pre-registered user outcome with guardrails non-inferior, or be deleted.
+
+## 29. HL — hard public-launch execution
+
+This packet starts only after F13 and every applicable §28 answer is “yes.” It changes release
+state, not product scope.
+
+### HL-01 — Freeze and decision packet
+
+- Cut one signed release candidate from a clean tree; freeze schema, model, provider, feature-flag
+  and store-metadata versions. Emergency security fixes restart affected verification.
+- Attach: commit/build IDs; migration and rollback manifests; India SLO/crash/error results;
+  30-day cohort curves; accessibility/device evidence; threat/restore/erasure results; model and
+  catalogue rights; provider invoices and hard caps; support/escalation owners; store/privacy/
+  affiliate declarations; every skip with owner.
+- Owner records **GO**, **HOLD** or **ROLLBACK**. Missing evidence is HOLD, never presumed GO.
+
+### HL-02 — Staged public rollout
+
+1. Internal production accounts and synthetic journeys.
+2. Store/web rollout to 1%; observe one full peak Indian usage window.
+3. 5%, 25%, 50%, then 100%, with a written review between stages.
+4. Do not widen two risky dimensions together: client build, database migration, model/provider
+   promotion and try-on quota changes receive separate observation windows.
+
+Automatic HOLD/ROLLBACK triggers: any cross-user access or privacy/security incident; failed
+export/deletion/recovery; false catalogue or ML claim; data loss; crash-free/session, API error,
+India p95 or recommendation-empty-rate breach; unbounded retries; provider spend above alert or
+quota; support queue beyond its frozen response target. Product-metric weakness pauses growth but
+does not justify hiding a safety failure.
+
+### HL-03 — First 72 hours
+
+- Named launch commander, backend/client/data/privacy/support owners and one incident channel.
+- Review live journeys, SLOs, crashes, auth, recommendation availability, event joins, affiliate
+  handoffs, GPU jobs, cost and support at launch, +2h, +8h, +24h, +48h and +72h.
+- Use the tested rollback; do not hot-patch around schema, consent, identity or model gates.
+- Publish one owner-facing launch report at +72h: reached cohort, incidents, rollback actions,
+  activation, outfit saves, cost, support load and GO/HOLD/ROLLBACK for continued acquisition.
+
+### HL-04 — Post-launch operating cadence
+
+- Daily for week one, weekly through day 30: reliability/privacy/catalogue/cost review.
+- No paid acquisition or additional out-of-scope expansion until the public cohort meets the same
+  pre-registered retention and contribution rules as the beta.
+- The first post-launch roadmap item is the largest measured user or reliability loss, not the
+  most novel feature.
+
+### Owner feedback required before execution
+
+Owner inputs recorded 2026-07-16:
+
+1. **Launch policy:** India, 18+. Under-18 sensitive-photo processing and accounts remain blocked
+   until child-consent and safety operations pass a separately approved gate.
+2. **Beta decision defaults:**
+   - Activation denominator: consented new accounts completing signup; success is a first-session
+     explained complete-outfit save. GO ≥35%; HOLD 20–34.9%; failure <20%.
+   - D7 denominator: activated users eligible for seven days; success is another save, correction
+     or wardrobe decision. GO ≥20%; HOLD 10–19.9%; failure <10%.
+   - D30 denominator: activated users eligible for 30 days; same retained action. GO ≥10%; HOLD
+     5–9.9%; failure <5%.
+   - Minimum evaluable cohort: ≥200 consented new accounts and ≥100 activated users, with the full
+     confidence interval and segment counts reported. If either minimum is missed, extend beta;
+     never infer launch approval.
+   - Security/privacy, cross-user access, deletion/export, India SLO, critical accessibility and
+     unbounded-cost floors remain zero-tolerance regardless of product-metric performance.
+3. **Ownership and support:** owner/founder is launch commander and privacy/security incident owner
+   until explicitly delegated. Public support/grievance channel: `gyf1ltd@gmail.com`. Sev-1
+   security/privacy/data-loss acknowledgement ≤1 hour, other launch-blocking incidents ≤4 hours,
+   ordinary user support ≤1 business day.
+4. **Spend step-up:** approved. Increase recurring infrastructure/GPU spend only when trailing
+   confirmed contribution covers the next tier with 2× safety for three months, or through a new
+   explicit owner amendment.
+
+These are launch-decision defaults, not vanity targets. Before F11 recruitment, the beta packet
+must verify instrumentation can compute each denominator and action exactly.

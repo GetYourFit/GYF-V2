@@ -21,7 +21,9 @@ from __future__ import annotations
 
 import logging
 import math
+from collections import OrderedDict
 from collections.abc import Mapping
+from threading import RLock
 
 from ..metrics import observe_stage_duration, stage_timer
 from .retrieval import TextEmbedder
@@ -38,6 +40,7 @@ MAX_QUERY_CHARS = 200
 # ponytail: fixed cap, pruned on every miss; if the miss rate ever makes that
 # delete hot, move the prune to the nightly workflow.
 MAX_ROWS = 5_000
+MAX_MEMORY_ROWS = 512
 
 _ENCODER_TIMING_STAGES = (
     ("encoder_dns", "dns_seconds", "dns"),
@@ -65,6 +68,11 @@ class CachedTextEmbedder:
         self._inner = inner
         self._pool = pool
         self._model_id = model_id
+        # Render Starter is always on. Keep the hot Zipfian head in-process so a
+        # repeated query does not cross the network merely to rediscover the same
+        # Postgres row. Postgres remains the durable cache across deploys.
+        self._memory: OrderedDict[str, tuple[float, ...]] = OrderedDict()
+        self._memory_lock = RLock()
 
     def embed_query(self, text: str) -> list[float]:
         key = normalize_query(text)
@@ -82,7 +90,13 @@ class CachedTextEmbedder:
             return vec
 
         with stage_timer("search", "cache_read") as timer:
-            cached, read_outcome = self._read(key)
+            cached = self._memory_get(key)
+            if cached is None:
+                cached, read_outcome = self._read(key)
+                if cached is not None:
+                    self._memory_put(key, cached)
+            else:
+                read_outcome = "hit"
             timer.set_outcome(read_outcome)
         if cached is not None:
             with stage_timer("search", "remote_encode", "bypass"):
@@ -98,9 +112,25 @@ class CachedTextEmbedder:
             with stage_timer("search", "cache_write", "bypass"):
                 pass
             raise
+        self._memory_put(key, vec)
         with stage_timer("search", "cache_write") as timer:
             timer.set_outcome(self._write(key, vec))
         return vec
+
+    def _memory_get(self, key: str) -> list[float] | None:
+        with self._memory_lock:
+            cached = self._memory.get(key)
+            if cached is None:
+                return None
+            self._memory.move_to_end(key)
+            return list(cached)
+
+    def _memory_put(self, key: str, vec: list[float]) -> None:
+        with self._memory_lock:
+            self._memory[key] = tuple(float(x) for x in vec)
+            self._memory.move_to_end(key)
+            while len(self._memory) > MAX_MEMORY_ROWS:
+                self._memory.popitem(last=False)
 
     def _encode(self, text: str) -> list[float]:
         try:

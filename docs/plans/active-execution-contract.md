@@ -1,13 +1,13 @@
 # GYF active execution contract
 
-Status: **ACTIVE** · owner-authorised 2026-07-14 · amended 2026-07-15 (free try-on, Expo replacement, ₹3,000 ceiling, region-neutral measured hosting) · application baseline `eb800965beeb5835c35bd8b8a269589f407e58f9`
+Status: **ACTIVE** · owner-authorised 2026-07-14 · amended 2026-07-15 (free try-on, Expo replacement, ₹3,000 ceiling, region-neutral measured hosting) and 2026-07-16 (pre-PMF rescue focus; retain existing Oregon Render Starter; no Singapore migration) · application baseline `eb800965beeb5835c35bd8b8a269589f407e58f9`
 
 This is the single source of truth for execution order. Product intent remains in `docs/vision/ideas-complete.md`; non-negotiable engineering rules remain in `docs/engineering-doctrine.md`; the launch/refactor ticket board is subordinate and research/runbooks are evidence only.
 
 ## Binding decisions
 
 - GYF delivers meaningful, explainable outfit decisions from real catalogue facts, user control and consented learning.
-- Every surface is free, **including virtual try-on** (owner amendment 2026-07-14, second same-day amendment — supersedes the morning subscription decision). Try-on runs on GYF-trained, GYF-owned weights (owner decision 2026-07-14): fine-tune the MIT Leffa architecture on GYF's own catalogue pairs, serve on ZeroGPU or a rented scale-to-zero GPU — detail in [`free-vton-moat.md`](./free-vton-moat.md). GPU cost stays controlled by transparent per-user quotas and the global kill switch; quality is never a price lever and there is only one quality lane. The prior try-on subscription/paywall planning is deleted (owner reconfirmed 2026-07-15, payment cancelled); git history retains it if a future owner amendment ever revives a billing rail.
+- Every surface is free, **including virtual try-on** (owner amendment 2026-07-14, second same-day amendment — supersedes the morning subscription decision). Owner amendment 2026-07-16: FASHN VTON v1.5 is the first external serving candidate when commercially eligible and only after the F9 license/dependency, privacy, quality, cost and operability gates; GYF prepares a rights-clean owned checkpoint lane in parallel and starts training only after ≥2,000 authorised pairs plus a stable ≥10% FASHN failure cluster exist, so it does not become permanently checkpoint/provider-dependent. Both lanes use `TryOnRenderer`, scale-to-zero serving, transparent per-user quotas and the global kill switch; quality is never a price lever and only one quality level is exposed. Detail: [`free-vton-moat.md`](./free-vton-moat.md). The prior subscription/paywall planning is deleted; payment remains cancelled.
 - Payment work is **cancelled again** (nothing was built; the Razorpay/`BillingProvider` spine stays unbuilt). Paid ranking, paid recommendations and any paywall remain cancelled; a billing rail returns only through a future owner amendment.
 - Preserve the deterministic recommendation path when optional ML or GPU services fail.
 - Promote a model after commercial permission, privacy and security checks pass. Owner amendment 2026-07-14: incumbent-preservation, quality-parity and migration-parity requirements are relaxed — a licensed, secure replacement may ship directly; rollback stays available via the port.
@@ -15,7 +15,47 @@ This is the single source of truth for execution order. Product intent remains i
 - Provider, migration and ₹2,000 budget proposals in older plans are hypotheses until measured; no provider is selected merely by a planning estimate.
 - Replace-then-delete (owner amendment 2026-07-14): when a gated replacement ships, the implementation it replaces is deleted in the same slice, after that phase gate passes. Everything else obsolete or duplicate is deleted only in F13, after behaviour is protected or explicitly rejected. Do not replace deleted code with speculative abstractions.
 - Budget ceiling (owner amendment 2026-07-14, evening): total hosting + GPU spend stays **under ₹3,000/month**. Provider geography is not a requirement (owner amendment 2026-07-15); select topology only from measured Indian-user latency, reliability, security, payment compatibility and total cost. The researched serving/performance spec is [`scale-3k-inr.md`](./scale-3k-inr.md). Rewrite-when-better: existing code may be rewritten where the replacement is measurably better (debuggability, maintainability, security, speed) — with before/after evidence, never by assertion.
+- Hosting amendment (owner, 2026-07-16): the paid Render Starter service already exists in Oregon.
+  Retain it while closing measured query, fallback, hydration and round-trip causes. Do not create
+  or plan a Singapore Render/Supabase migration. If the current topology still misses SLOs after
+  software-level causes are bounded, present a measured non-Singapore topology experiment for a
+  separate owner decision; do not silently provision it.
 - Execution amendment (owner, 2026-07-15): local implementation may continue sequentially through the Expo replacement and later locally actionable phases while F2.5 external deployment/SLO promotion remains blocked. This permits code and test work only; it does not promote F2.5, open try-on, claim production parity, or bypass security, privacy, license, evaluation, rollback or cost gates.
+- **Pre-PMF rescue amendment (owner request, 2026-07-16):** the only product investment before
+  retained-use evidence is the trustworthy outfit-decision loop: manual onboarding → one complete
+  outfit → explanation/confidence/abstention → save/skip/shop/correct → a better next outfit.
+  Auth, privacy, catalogue truth, deterministic fallback and the closed try-on spine are maintained
+  as foundations. Social expansion, badges/gamification, Lookspace/Skia, B2B productisation,
+  photo-derived claims, large learned recommenders and try-on opening are frozen—not deleted—until
+  the beta gate proves they lift retained trusted outfit decisions. The north star is **weekly users
+  saving an explained complete outfit**; activation is the first such save in the first session.
+  This focus changes investment order, not the long-term vision or protected F13 deletion rule.
+- **Full-vision hard-launch amendment (owner, 2026-07-16, latest):** every non-conflicting
+  requirement in `ideas-complete.md` and `docs/feedbacks/*.md` is required before HL. The rescue
+  loop remains the first sequential quality gate, but its earlier post-launch deferrals are
+  superseded: photo onboarding, intelligent wardrobe, deep Explore/Canvas, full social sharing,
+  professional profile/badges, free F9-promoted VTON, B2B-ready distilled data/model boundary and
+  the complete premium UX must all close before public launch. This is not permission for parallel
+  half-built work: each vertical slice must pass its evidence gate before the next dependent slice.
+  Contradictions are resolved in the launch/refactor traceability matrix; security, privacy,
+  licensing, truthfulness and accessibility always outrank literal wording.
+- **Hard-launch operating inputs (owner, 2026-07-16):** launch scope is India and 18+ until child
+  consent/safety operations pass a later gate. The owner/founder is launch commander and
+  privacy/security incident owner until explicitly delegated; `gyf1ltd@gmail.com` is the public
+  support/grievance channel. The frozen beta metric defaults and response targets live in the
+  launch/refactor plan. The spend step-up rule is approved: increase recurring infrastructure/GPU
+  spend only after trailing confirmed contribution covers the next tier with 2× safety for three
+  months, or through a new explicit owner amendment.
+- **Commercial hosting correction (researched 2026-07-16):** Vercel Hobby is personal/non-commercial
+  and explicitly treats affiliate-primary deployments as commercial. It is acceptable only for
+  non-commercial preview. Before affiliate monetisation, Expo web must pass a static-host parity
+  gate on a commercially permitted host; Render Static is the current zero-cost candidate. Provider
+  promotion still requires measured latency, security, rollback and cost evidence.
+- **VTON research and owner correction (2026-07-16):** FASHN VTON v1.5 publishes code and weights
+  under Apache-2.0, so the older claim that no commercially permissive open checkpoint exists is
+  false. It is the first serving candidate and frozen external benchmark, subject to full artifact
+  provenance and F9. The GYF-owned challenger trains concurrently once the rights/data trigger is
+  met and replaces the external checkpoint only after a statistically superior gated result.
 
 ## Reproducible baseline
 
@@ -36,13 +76,22 @@ bun run build
 
 Every skip and failure must be reported. A phase cannot promote with an unexplained data/identity/object mismatch, cross-user access, missing export/deletion/restore evidence, unlicensed dependency, false user-facing claim, critical journey/accessibility/slice regression, unbounded retry/concurrency/GPU spend, cost above the owner-approved ceiling, or no tested fallback and rollback.
 
-## Current truth and next work (audited 2026-07-15)
+## Current truth and next work (audited 2026-07-16)
 
-- Current commit: `d8ca37f80c1145ef1e98c435d180fdaeb1a25ba5`; `main` is clean and matches `origin/main`.
-- Latest CI and CD runs for that commit pass. This proves the automated contract, not product completeness.
+- Production `main` and the live Render API are at `90bfc18`; the current implementation branch
+  merges that production baseline with the latest hard-launch contract and Stylist correction loop.
+- Latest CI and CD runs for production pass. This proves the automated contract, not product completeness.
 - F1, F2, F3, F4 and the closed F8 durable spine are implemented. F5 stays on the deterministic incumbent; F6 lacks sufficient behavioural data; F7 remains fairness-blocked; F9 has not promoted a try-on lane.
 - Expo is deployed. Auth, onboarding, Explore, Stylist, Saved, Collections (a Saved re-export, not a dupe), Wardrobe, Social feed, Profile, Account (consent/export/DELETE-erasure), Contact, Grievance, Status and Canvas are all wired; the last placeholder (the dev-only `design` gallery) is now a real component gallery, so no route renders a placeholder. Each screen sits behind the unchanged API contracts with pure logic unit-tested and the web export building. Remaining Expo enhancements (not placeholders): social compose (create/recreate post), avatar upload, and full Stylist controls / deep Explore detail parity. Next.js remains the behavioural oracle until the Expo cutover gate.
-- Production is **not healthy enough to call complete**. Fresh India measurements (`scripts/measure_slo.py --samples 3`) were: health 0.86s p50, browse 17.01s p50, cached search 1.36s p50 and uncached search 9.29s p50/23.03s p95. Every row failed its SLO.
+- Production is **not healthy enough to call complete**. Fresh India measurements
+  (`scripts/measure_slo.py --samples 5`) were: health 0.38s p50, browse 0.92s p50,
+  cached search 1.28s p50 and uncached search 2.30s p50. Only health passed.
+- The next local F2.5 candidate is implemented but not promoted: catalog retrieval carries commerce
+  data in its original query (removing the measured second directory lookup), ordinary first-page
+  ANN search skips two unnecessary cross-region `SET LOCAL` commands, deep/filtered scan setup is
+  one command, and the always-on API process keeps a bounded 512-query hot embedding cache above
+  durable Postgres. The complete local phase gate passes. Production deployment, before/after stage
+  deltas and all four India SLO rows remain mandatory before F2.5 closes.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 
@@ -54,6 +103,12 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 4. Fix only the measured root cause; compare warm/cold and cached/uncached paths from India.
 5. Require all four SLO rows to pass before F2.5 promotion. Region/provider changes are experiments, not assumptions.
 6. Continue Expo parity in vertical slices behind unchanged API contracts; each slice needs unit, integration, accessibility, device/web smoke and production deployment proof.
+7. Complete Expo work sequentially: activation loop and trust/account parity first, then the
+   remaining vision/feedback vertical slices in the launch/refactor matrix. Do not implement them
+   in parallel or bypass their data/model/security gates.
+8. After F2.5 and the core Expo journey pass, run a consented closed beta through D30 while the
+   remaining hard-launch slices continue through staged internal/closed cohorts. Every required
+   surface must pass its own guardrails and the integrated beta before F13 and HL.
 
 ## Execution order
 
@@ -70,12 +125,19 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 6. **F5 — Free recommendation incumbent.** Keep SigLIP 2/pgvector/rules/MMR; add anchored refinement and multi-interest context only when evaluation proves value.
 7. **F6 — Small learned challenger.** Minimum pairwise/logistic ranker through offline, shadow, cohort and rollback gates.
 8. **F7 — Colour and photo assistance.** Manual truth plus evaluated, correctable assistance with separate consent and deletion.
-9. **F8 — Durable free try-on.** Reuse `TryOnRenderer`; private Postgres jobs, bounded retries, cancellation, TTL deletion, per-user quotas and the global cost kill switch. Build the owned lane per [`free-vton-moat.md`](./free-vton-moat.md): catalogue pairing/preprocessing pipeline with every preprocessing model through the license gate, LoRA fine-tune of the MIT Leffa architecture on GYF pairs (Kaggle free quota, or a rented GPU burst inside the owner ceiling), then ZeroGPU or rented scale-to-zero serving behind the port. No billing spine. **Owned weights are the only production lane** (owner decision 2026-07-14): the rented-provider bridge is dropped; the fal/FASHN adapters stay research-lane and are deleted when the owned checkpoint promotes (replace-then-delete) or in F13, whichever comes first. Rights to train on catalogue on-model photos are verified as part of F4 (catalogue rights) before any pair enters training.
-10. **F9 — Try-on model evaluation.** One frozen consented scorecard for every commercially eligible provider/model, the GYF-trained checkpoint included; quality and security are not price levers. **Try-on opens to users only here** — free and quota-bounded — when a lane passes this gate, never before. The GYF lane keeps retraining on GYF pairs and behavioural signal until it beats the best eligible alternative on that scorecard; losing adapters are deleted per replace-then-delete.
-11. **F10 — Infrastructure proof/migration.** Select and promote providers only after auth, data, restore, cold-start, cost and rollback parity; migration shims stay temporary.
-12. **F11 — Closed free beta.** Prove mission-critical journeys for two weeks under realistic reliability, accessibility, privacy, catalogue, ML and cost conditions.
+9. **F8 — Durable free try-on.** Reuse `TryOnRenderer`; private Postgres jobs, bounded retries, cancellation, TTL deletion, per-user quotas and the global cost kill switch. Package the exact FASHN v1.5 artifact as the first external candidate after hashing and licensing every code/weight/parser/pose dependency. In parallel, build the rights-cleared GYF pairing/preprocessing pipeline and train the owned challenger only after its data trigger. Serve candidates through measured scale-to-zero adapters; no billing spine. Rights to train on catalogue on-model photos are verified in F4 before any pair enters training.
+10. **F9 — Try-on model evaluation.** One frozen consented scorecard covers FASHN and every commercially eligible GYF challenger; public research-only weights never enter it. **Try-on opens to users only here**—free and quota-bounded—when one lane passes, never before. FASHN may serve first; the owned lane retrains on rights-cleared GYF pairs and consented outcomes until it beats the incumbent with guardrails non-inferior, then replaces it. Losing adapters are deleted per replace-then-delete.
+11. **F10 — Infrastructure proof/migration.** Select and promote providers only after auth, data, measured RPO/RTO restore, cold-start, bandwidth/cost alerts, durable audit evidence, incident/vendor-exit rehearsal and rollback parity; native release additionally requires accurate store privacy/data-safety, deletion, content-rating and signing evidence. Migration shims stay temporary.
+12. **F11 — Closed free beta.** Before recruitment, freeze metric definitions, minimum evaluable sample, targets/failure floors, support/grievance ownership and launch/stop actions. Prove mission-critical journeys for at least 30 days under realistic reliability, accessibility, privacy, catalogue, ML and cost conditions so D30 retention is observable rather than inferred; “non-zero” use alone cannot approve launch.
 13. **F12 — Evidence-led improvement.** Retrain/version/evaluate only when clean data is sufficient; expand free try-on quotas only from reconciled cost.
-14. **F13 — Deletion last.** With behaviour protected, remove the parked Flutter client, duplicate Saved/Collections and losing Canvas/Explore surface, stale scaffolds/assets/docs, unused Kafka/Redpanda/VTON paths, migration shims and cancelled payment planning. Run the full gate after each deletion group.
+14. **F13 — Deletion last.** With behaviour protected, remove the parked Flutter and Next
+    clients, duplicate or losing surfaces, stale scaffolds/assets/docs, unused Kafka/Redpanda/VTON
+    paths, migration shims and cancelled payment material. Keep one implementation per concern.
+    Run the full gate after each deletion group.
+15. **HL — Hard public launch.** After F13 and complete vision/feedback traceability, freeze the release candidate, attach every final
+    checklist artifact, obtain the explicit owner go/no-go decision, stage the public rollout with
+    live rollback thresholds, and complete the first-72-hour observation window. Public
+    availability is a release operation, not an inference from merged code.
 
 A failed candidate is rolled back or skipped; it never silently degrades production or blocks an independent slice.
 
@@ -124,12 +186,12 @@ waiting when you come back.*
 3. **Mid-render cancellation cannot refund GPU seconds.** Only pre-claim cancels are free.
 4. **Storage, not GPU, becomes the binding constraint** if the TTL or cap is raised past the
    thresholds in `0018`.
-5. **Serving lane correction (evidence, not preference):** `free-vton-moat.md` names ZeroGPU
-   as primary. F2.5 measured its cold start at 29.7s and the quota is recorded as dead; the
-   text lane was already migrated off it for exactly this reason. The owned-Leffa serving
-   lane should follow the proven `ml/serving/modal_encoder.py` pattern (scale-to-zero, weights
-   in a volume, one-model allow-list) rather than ZeroGPU. Flagged for the F9 lane decision;
-   not silently changed here, since F8 ships no serving lane.
+5. **Serving lane correction (evidence, not preference):** F2.5 measured ZeroGPU's cold start
+   at 29.7s and the quota is recorded as dead; the text lane was already migrated off it for
+   exactly this reason. The pinned FASHN candidate and every rights-clean GYF challenger follow
+   the proven `ml/serving/modal_encoder.py` pattern (scale-to-zero, weights in a volume,
+   one-model allow-list) rather than depending on ZeroGPU. F9 selects and promotes the lane;
+   F8 packages candidates but opens none to users.
 
 ### Design system correction
 
@@ -247,7 +309,7 @@ organic engagements already export honestly with a null propensity) and viewport
 `GET /account/export`, and explicit global session revocation all ship with regressions; RLS is
 built and proven (2026-07-12 review, remainder owner-gated). Full verification set green.
 
-**F2.5 — performance floor. Code lane done; two owner-gated infra flips remain.**
+**F2.5 — performance floor. Local remediation green; production promotion remains open.**
 
 Measured *before* (prod, from India, 2026-07-14, `python3 scripts/measure_slo.py`):
 `health` 0.44 s p50 · `browse` 1.66 s p50 / 12.5 s cold · `search` (cached query) 1.29 s p50 ·
@@ -273,16 +335,45 @@ a *first* encode of any query still crosses to the cold ZeroGPU Space, and every
 the Pacific to Oregon on a sleeping 0.1-CPU instance. Those are exactly the two owner flips below;
 no further code removes them.
 
-Owner-gated (each is one step, both inside the ₹3,000 ceiling):
+The two historical owner-gated proposals were:
 1. `modal deploy ml/serving/modal_encoder.py`, then set `GYF_ENCODER_REMOTE_URL` /
    `GYF_ENCODER_REMOTE_KIND=http` / `GYF_ENCODER_REMOTE_KEY` on Render (recipe:
    `docs/deploy/gpu-lane.md`).
-2. Render **Starter, Singapore** (~₹600/mo): kills the ~26 s sleep wake and halves the RTT.
-   Region cannot be changed on an existing Render service — this means recreating `gyf-api` and
-   re-entering its dashboard secrets, so it is not encoded in `render.yaml`.
+2. Render Starter in another region. The service is now Starter in Oregon, and the 2026-07-16
+   owner amendment rejects Singapore; this proposal is superseded.
 
-F2.5 closes when `measure_slo.py` passes §2 from an Indian connection after those flips; the
-Supabase Singapore co-location (the remaining cross-Pacific hop) is F10's migration, gated there.
+F2.5 closes only when `measure_slo.py` passes §2 from an Indian connection. No region migration is
+part of the current plan.
+
+**2026-07-16 incident update (supersedes the performance diagnosis above, not its historical
+measurements):** Render API access and the deployed fixed-label stage metrics now make the failure
+attributable. The live API is Starter but remains in Oregon; the HTTP/Modal encoder lane is live.
+From the same India vantage (`python3 scripts/measure_slo.py --samples 3`), health was 0.40 s p50 /
+0.86 s p95, browse 0.80/0.99, cached search 1.20/1.23 and uncached search 3.68/**45.93**. Only health
+passed. Cumulative live stage samples showed repeated cross-region DB work (directory lookup
+~0.19 s, cache read ~0.18–0.28 s) and search SQL averaging ~2.12 s. The 45.93-second request
+coincided with an 8-second encoder error and the sequential `%ILIKE%` fallback, including a
+retrieval SQL sample above 10 seconds. This disproves the older “no further code removes it” claim.
+
+Local slice now replaces that failure path with bounded PostgreSQL-native full-text search and a
+matching partial GIN expression index (`0022_catalog_title_search_index`). It keeps Unicode-aware
+OR semantics, prefix matching and normalized relevance, returns empty without touching Postgres for
+punctuation-only input, builds the index concurrently, and repairs an interrupted invalid build.
+The migration is based directly on committed `0021`; the unrelated avatar migration was rebased to
+`0023`, preserving one shippable Alembic head. Verification: 27 focused tests passed with one real-
+Postgres skip; the full API suite passed **398 with 18 environment-gated skips**; Ruff,
+format, `git diff --check`, Alembic offline SQL and doc alignment passed. A real local PostgreSQL
+plan/run was skipped because Apple `container` failed to start its apiserver; CI's real-Postgres
+lane now seeds production-like cardinality, runs the repository's exact SQL under normal planner
+settings, and requires the GIN plan plus Hindi prefix/ranking behaviour. Production
+`EXPLAIN (ANALYZE, BUFFERS)` remains mandatory.
+
+Remaining gate, in order: review/ship migration + query together; prove the GIN plan on real
+Postgres; run the fixed cold/warm × cached/uncached India matrix against the existing Oregon
+Starter; reduce the largest remaining measured stage without changing ranking truth; promote only
+if every §2 row and security/cost check passes. If software-level fixes cannot pass, stop and
+present a costed non-Singapore topology experiment for owner approval. F2.5 is **not promoted** by
+this local result.
 
 ## Previous handoff: F2 (F1 gate closed 2026-07-14 — F1a `6f78bed`, F1b, F1c all shipped)
 

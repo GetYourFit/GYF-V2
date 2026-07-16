@@ -1,9 +1,9 @@
-# GYF — PROGRESS LEDGER (append-only, single source of session context)
+# GYF — PROGRESS LEDGER (append-only historical session context)
 
-> **Contract:** This file is the single source of truth for session context. Every working
-> session MUST (1) read this file first, (2) append what was asked, decided, and done —
-> **never delete or rewrite past entries**, only append. Newest entries at the bottom.
-> Standing directives live in §1 and are amended, never removed (strike through if revoked).
+> **Historical ledger:** This file preserves dated session evidence; it does not define current
+> execution order or gates. Read [`docs/plans/active-execution-contract.md`](./docs/plans/active-execution-contract.md)
+> first and use [`docs/README.md`](./docs/README.md) for the maintained documentation map. Past
+> entries remain append-only evidence and may describe superseded decisions.
 
 ---
 
@@ -29,18 +29,17 @@
 9. **Contact email** — `gyf1ltd@gmail.com` is THE public contact for the whole app.
 10. **Real verification, no fakes** — validate with real models/data/stacks, never stubs
     masquerading as verification. Milestone not done until built AND verified (DoD hard gate).
-11. **PROGRESS.md is the external context window** (added 2026-07-02) — read it first,
-    trust it over re-derivation, append every change, never duplicate its content into
-    other stores; duplicated or purposeless docs/lines are deleted (git history suffices);
-    never do work twice.
+11. ~~**PROGRESS.md is the external context window**~~ (added 2026-07-02; superseded by the
+    active execution contract on 2026-07-14) — preserve this file as historical evidence;
+    current order, gates and truth come only from the active contract.
 
-## 2. Where everything else lives (read in this order on session start)
+## 2. Current authority (read in this order on session start)
 
-- `PROGRESS.md` (this file) — session ledger + standing directives.
-- `CLAUDE.md` — operating guide; §0.5 = current status snapshot (keep in lockstep).
-- `docs/roadmap.md`, `docs/plans/gyf-v2-launch-program.md` — build order + launch program.
+- `docs/plans/active-execution-contract.md` — sole execution order, current slice and gates.
+- `docs/vision/ideas-complete.md` — product mission and capability intent.
 - `docs/engineering-doctrine.md` — binding design law (ports, license gate, real data, eval-gated).
-- Auto-memory (`~/.claude/.../memory/MEMORY.md`) — machine-local session facts.
+- `docs/README.md` — maintained document index and traceability map.
+- `PROGRESS.md` (this file) — append-only historical evidence; never current authority.
 
 ---
 

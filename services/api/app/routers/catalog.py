@@ -8,20 +8,17 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query, Response
 from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 
-from ..catalog.directory import ItemDirectory
 from ..catalog.retrieval import (
     CatalogFacets,
     SearchResult,
     TextEmbedder,
     VectorSearchRepository,
     browse_multi_slot,
-    enrich_results,
     search_text,
     search_text_multi_slot,
 )
 from ..auth import Principal, get_optional_principal
 from ..dependencies import (
-    get_item_directory,
     get_search_repo,
     get_taste_repo,
     get_text_embedder,
@@ -86,12 +83,13 @@ def similar_items(
         None, description="Styling gender: results narrow to that slice + unisex."
     ),
     repo: VectorSearchRepository = Depends(get_search_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
 ) -> dict[str, list[SearchResult]]:
     """Visually-similar items (nearest neighbours of the item's embedding)."""
     response.headers["Cache-Control"] = "public, max-age=30"
     hits = repo.similar_to_item(item_id, k, region, offset, genders=_genders(gender))
-    return {"results": enrich_results(hits, directory)}
+    with stage_timer("search", "directory_lookup", "bypass"):
+        pass
+    return {"results": hits}
 
 
 def _genders(gender: str | None) -> frozenset[str] | None:
@@ -150,7 +148,6 @@ def browse_items(
         "per-session value for a fresh order every visit; omit for daily rotation.",
     ),
     repo: VectorSearchRepository = Depends(get_search_repo),
-    directory: ItemDirectory = Depends(get_item_directory),
     principal: Principal | None = Depends(get_optional_principal),
     taste_repo: TasteRepository = Depends(get_taste_repo),
 ) -> dict[str, list[SearchResult]]:
@@ -195,11 +192,9 @@ def browse_items(
             taste_vector=taste_vector,
             seed=seed,
         )
-    with stage_timer("browse", "directory_lookup") as timer:
-        if not hits:
-            timer.set_outcome("bypass")
-        results = enrich_results(hits, directory)
-    return {"results": results}
+    with stage_timer("browse", "directory_lookup", "bypass"):
+        pass
+    return {"results": hits}
 
 
 @router.get("/items/search", dependencies=[Depends(rate_limit("search", "rate_limit_search"))])
@@ -243,7 +238,6 @@ def search_items(
     ),
     repo: VectorSearchRepository = Depends(get_search_repo),
     embedder: TextEmbedder | None = Depends(get_text_embedder),
-    directory: ItemDirectory = Depends(get_item_directory),
 ) -> dict[str, list[SearchResult]]:
     """Text->image search over the catalog (e.g. 'red floral summer dress').
 
@@ -294,8 +288,6 @@ def search_items(
             genders=_genders(gender),
             categories=_slot_categories(slot),
         )
-    with stage_timer("search", "directory_lookup") as timer:
-        if not hits:
-            timer.set_outcome("bypass")
-        results = enrich_results(hits, directory)
-    return {"results": results}
+    with stage_timer("search", "directory_lookup", "bypass"):
+        pass
+    return {"results": hits}

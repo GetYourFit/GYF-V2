@@ -1,4 +1,4 @@
-# Scale GYF on <₹3,000/month — India-first serving, measured speed, owned moat (2026-07-14)
+# Scale GYF on <₹3,000/month — India-first serving, measured speed, owned moat (updated 2026-07-16)
 
 Status: **ACTIVE, subordinate to** [`active-execution-contract.md`](./active-execution-contract.md).
 This document is the researched infrastructure/performance/budget spec the contract's **F2.5**
@@ -18,20 +18,24 @@ and the contract disagree, the contract wins. ML depth lives in
 - Lean codebase: junk/duplicate deletion remains **F13** (replace-then-delete applies earlier);
   doc consolidation is DONE structurally — the `check_doc_alignment.py` gate enforces exactly
   one execution authority and 22 subordinate/evidence plans.
+- Commercial use is real use: free tiers whose terms prohibit commercial/affiliate deployments
+  are previews, not production architecture.
 
-## 1. Measured baseline (2026-07-14, from India, prod)
+## 1. Measured baseline (latest contract evidence: 2026-07-16, from India, prod)
 
 | Surface | Measured | Verdict |
 | --- | --- | --- |
-| `/health` | 0.43 s | network floor to Oregon — irreducible without region move |
-| `/items/browse` (warm) | 1.7–1.8 s | ~3–6× too slow; mostly India→Oregon RTT + free 0.1-CPU |
-| `/items/search` (cold) | **29.7 s** | ZeroGPU text-embed cold start — product-killing |
-| `/items/search` (warm) | 3.6 s | embed round-trip + vector scan, cross-continent |
-| Idle wake (Render free) | ~26 s | free-tier sleep; keepalive workflow is a bandaid |
+| `/health` | 0.40 s p50 / 0.86 s p95 | passes the fixed scorecard |
+| `/items/browse` | 0.80 s p50 / 0.99 s p95 | improved, still misses both targets |
+| `/items/search` cached | 1.20 s p50 / 1.23 s p95 | cache works; cross-region DB/API path misses |
+| `/items/search` uncached | 3.68 s p50 / **45.93 s p95** | encoder-error fallback is catastrophic |
 
-Diagnosis, in order of harm: (1) GPU-lane cold start on the search hot path, (2) API sleeps,
-(3) API+DB a continent away from every user, (4) free-tier CPU. **Not** algorithmic: HNSW
-indexes, MMR, bounded queries and hot-path indexes are already in place and CI-proven.
+Known facts: HNSW, bounded browse, a shared pool and query cache already exist. The deployed
+fixed-label metrics now isolate two causes: repeated cross-region database round trips (directory
+~0.19 s, cache ~0.18–0.28 s) and an unindexed title fallback after encoder failure (the outlier had
+an 8-second encoder error followed by retrieval SQL above 10 seconds). Search SQL averaged ~2.12 s
+over the cumulative live sample. Production `EXPLAIN (ANALYZE, BUFFERS)` remains the index gate;
+stage timing is evidence for where to act, not a substitute for the query plan.
 
 ## 2. Target SLOs (the gate for F2.5/F10 promotion)
 
@@ -50,67 +54,95 @@ same config they shipped with.
 
 | Layer | Choice | ₹/month | Why |
 | --- | --- | --- | --- |
-| Web | **Vercel Hobby** (unchanged) | 0 | Global edge with Indian PoPs; static+RSC already fast |
-| API | **Render Starter, Singapore** | ~₹600 ($7) | Always-on (kills 26 s sleep), 100–150 ms from India vs 250–300 ms Oregon; zero ops change — same `render.yaml`, flip region + plan |
-| DB/auth/storage | **Supabase Free, Singapore** (new project, co-located with API) | 0 | Intra-region API↔DB <5 ms (today every query crosses the Pacific); 500 MB comfortably holds ~24k items + embeddings (~90 MB) |
+| Web | **Render Static after Expo-web parity** | 0 while allowance holds | Commercially permitted static CDN; meter the active workspace's outbound allowance—[Render documents](https://render.com/docs/new-workspace-plans) 5 GB included and $0.15/GB overage for migrated Hobby workspaces from 2026-08-01; Vercel Hobby cannot host the affiliate production surface |
+| API | **Existing Render Starter, Oregon** | ≤₹700 ($7 at planning rate ₹100/USD) | Already paid and always-on; owner rejected a Singapore migration |
+| DB/auth/storage | **Existing Supabase Free project** | 0 | Avoid identity/data migration before a measured need; review at 70% of every limit |
 | Cache/ratelimit | Upstash Redis free (unchanged) | 0 | already wired |
-| Text-embed (search) | **In-DB query-embedding cache** + Modal T4 scale-to-zero for misses | 0 (inside Modal's $30/mo free credits) | §4 — kills the 30 s cold path |
+| Text-embed (search) | **Existing in-DB cache** + Modal CPU/T4 scale-to-zero miss candidate | 0 while inside verified credit | Choose CPU/GPU and region only from p95 and cost-per-success; the official $30 credit equals ~50.8 base-price T4 hours, not 187; export required audit evidence because [Starter logs](https://modal.com/pricing) are retained only briefly |
 | Try-on training | Kaggle free (30 h/wk T4×2) per `free-vton-moat.md` | 0 | F8 |
-| Try-on serving | HF ZeroGPU (free) primary; Modal/RunPod flex burst within remaining budget | 0–₹1,500 | F8/F9; per-user quotas + global kill switch cap spend by construction |
-| Headroom | — | ≥₹900 | absorbs Supabase Pro ($25) later **or** GPU bursts — not both; owner chooses at F12 from reconciled cost |
+| Try-on serving | **Closed pre-PMF**; later Modal/RunPod scale-to-zero benchmark | hard cap ₹1,500 | HF ZeroGPU hosting needs PRO and India-issued cards remain an operational risk; no dependency on it for production |
+| Bandwidth/tax/FX reserve | hard cash reserve | ₹650 | ₹500 bandwidth + ₹150 tax/FX buffer |
+| Total hard ceiling | API + reserves + optional GPU | **≤₹2,850** | leaves ₹150 emergency margin; GPU cap is zero until F9 opens a lane |
 
-Rejected alternatives (researched 2026-07-14): Mumbai VPS (Vultr ₹590 / DO Bangalore / Linode $5)
-— best raw latency (sub-35 ms) but buys self-managed TLS/deploys/monitoring/patching for one
-person; revisit at F10 only if Singapore p95 misses the SLO. Fly.io Mumbai — region exists but
-CLAUDE.md standing guidance + quota churn; same revisit condition. AWS Lightsail Mumbai —
-payability fine, ops cost same as VPS. Indian GPU clouds (E2E Networks) — training is already
+Current alternatives (rechecked 2026-07-16): Mumbai VPS (Vultr / DO / Lightsail)
+— best raw latency but buys self-managed TLS/deploys/monitoring/patching for one person; revisit
+only if the current stack still misses SLOs after measured software fixes and the owner approves
+the operational burden. Fly.io Mumbai — region exists but has quota/operability tradeoffs. AWS Lightsail Mumbai —
+payability fine, but the official 4 GB tier is $20/month and consumes most of the ceiling before
+GPU. Indian GPU clouds (E2E Networks) — training is already
 free on Kaggle; serving stays scale-to-zero (a dedicated GPU is idle-billed waste at beta scale).
+Vercel Hobby is rejected for commercial production by its official fair-use terms; Vercel Pro
+($20/month) plus API and tax leaves no safe GPU/bandwidth headroom.
 
-Region-move mechanics (F10, parity-gated per the contract): new Supabase project in
-`ap-southeast-1` → schema via Alembic `upgrade head` → `pg_dump --data-only` copy (proven
-recipe: prod was seeded exactly this way) → auth users export/import → JWKS/env swap on
-Render+Vercel → `verify_deployed_auth.sh` + golden-path E2E against the new stack → DNS/env
-flip; old project paused one grace week as rollback, then deleted (replace-then-delete).
-Auth config note: update Supabase `site_url`/allowlist + JWKS URL in the same change —
-2026-07-14 taught us a stale `site_url` silently breaks recovery links.
+Topology rule (owner 2026-07-16): do not create a Singapore candidate or migrate the current
+identity/database stack. First reduce query count, remove sequential fallback scans, bound
+hydration fan-out and prove the current Oregon Starter with the fixed India matrix. If that still
+fails, F10 may prepare a time-boxed, non-Singapore comparison with secret parity and rollback, but
+provisioning requires a separate owner decision. Any future auth move must update Supabase
+`site_url`/allowlists and JWKS configuration atomically.
 
-## 4. Kill the 30-second search (F2.5, the only new code slice)
+## 4. Close the catalogue/search incident (F2.5)
 
-Root cause: every uncached text query pays a ZeroGPU Space cold start. Fix at the shared
-boundary (the encoder port), three cheap layers:
+The cache and HTTP encoder port already shipped; immediate repetition proved the cache works. The
+remaining work is evidence, not another speculative cache:
 
-1. **`query_embeddings` cache table** (Postgres, co-located): `(normalized_query, model_ver) →
-   vector`, read-through, LRU-pruned to ~50k rows. Real user queries are Zipfian — after a week
-   the hit rate makes most searches embed-free. One migration + ~40 lines in the retrieval path
-   + one regression test.
-2. **Nightly warm** of the top-N distinct queries from `interactions` context (reuses the
-   existing nightly data-export workflow; no new schedule).
-3. **Miss lane → Modal T4** (scale-to-zero, ~2–4 s cold, $30/mo free credits ≈ 187 T4-hours —
-   orders of magnitude above need) replacing the quota-dead ZeroGPU lane for *text* embeds.
-   Same `GYF_ENCODER_REMOTE_URL` port contract — an adapter redeploy, not an architecture
-   change. ZeroGPU stays the image-embed batch lane.
+1. Emit one request trace with DNS/connect/TTFB/model-load, pool acquire, taste, cache/encoder,
+   retrieval SQL, MMR and directory hydration stages. Preserve ranking behaviour.
+2. Capture production `EXPLAIN (ANALYZE, BUFFERS)` for anonymous/authenticated browse, filtered
+   browse, deep page, cached search and uncached search. Record rows, loops, buffers and index use.
+3. Run warm/cold and cached/uncached matrices from India against the current deployment, then
+   change only the largest measured stage: encoder lane, pool/SQL/index, hydration or topology.
+4. Test the existing Render Starter after each root-cause fix. Do not use a region or database
+   migration as the default answer.
+5. Pass all §2 SLO rows for a sustained observation window; rehearse rollback. Do not hide the
+   failure with keepalive traffic, client caching, skeletons or degraded ranking.
 
-Expected: cached ≤400 ms (pure pgvector HNSW), uncached ≤3 s worst-case, no 30 s path left.
+The encoder-error outlier proves keyword fallback is material. Replace dynamic `%ILIKE%` OR scans
+with PostgreSQL-native `to_tsvector`/`to_tsquery` prefix lexemes and a matching partial GIN
+expression index. GIN is PostgreSQL's preferred text-search index; using the built-in `simple`
+configuration avoids an extension dependency and preserves catalogue names. `ts_rank_cd(..., 32)`
+keeps the fallback confidence bounded. Build concurrently, verify the exact partial predicate and
+index use with production-like data, and deploy migration + query atomically. The legacy browse
+path stays only as rollback until its gate, then is deleted with its replacement or at F13.
 
-## 5. What makes it uncopyable (already planned, not re-planned here)
+## 5. What compounds into a moat (already planned, not re-planned here)
 
-The moat is **not** infrastructure — ₹3k of hosting is copyable by anyone. The moat is the
+The moat is **not** infrastructure or a paper/model name—both are copyable. The defensible asset is
+the
 closed loop this budget keeps alive: consented behavioural events with exact exposure↔outcome
 joins (F3), catalogue truth (F4), eval-gated learned rankers (F5/F6), and try-on weights
-fine-tuned on GYF's own catalogue pairs that no competitor can legally train on
+fine-tuned on rights-cleared GYF pairs that competitors cannot simply take from GYF
 ([`ml-data-flywheel.md`](./ml-data-flywheel.md), [`free-vton-moat.md`](./free-vton-moat.md)).
 Every rupee above serves that loop; nothing here duplicates it.
 
-## 6. Execution mapping (contract order preserved)
+## 6. Budget truth at scale
+
+The ₹3,000 ceiling is a **beta constraint**, not a million-user promise. On
+[current Supabase pricing](https://supabase.com/pricing), MAU overage alone would be roughly
+$2,925/month for one million MAU after the included 100,000, before database compute, storage,
+egress, support or GPU. Even if only 1% of one million users requested one 30-second T4 try-on
+each month, raw GPU time would exceed the whole ₹3,000 ceiling before cold starts and failed
+renders.
+
+Therefore GYF scales by gates:
+
+1. Stay below ₹3,000 while proving activation, D30 retention and unit economics with quotas.
+2. At 70% of a provider limit, freeze discretionary inference and prepare a costed next tier.
+3. Increase spend only when trailing confirmed contribution covers the next tier with 2× safety
+   for three months, or the owner explicitly funds growth.
+4. At large scale, negotiate committed-use/provider pricing and separate static, transactional
+   and GPU budgets. Never preserve a startup free-tier topology merely because it was cheap.
+
+## 7. Execution mapping (contract order preserved)
 
 | Contract slice | This plan's work |
 | --- | --- |
-| **F2.5** (new, owner 2026-07-14) | §4 embed cache + warm + Modal miss-lane; Render Starter+Singapore flip; before/after SLO measurement (§2) |
+| **F2.5** | §4 trace + EXPLAIN + one measured root-cause fix; before/after India SLO evidence |
 | F4 | catalogue truth incl. image hosting/CDN decision — measure image LCP first; Supabase cached egress (5 GB free) or R2 free if it's the bottleneck |
-| F8/F9 | GPU serving spend inside the ₹ ceiling, quotas + kill switch (already contract-bound) |
-| **F10** | §3 region migration with full parity gates; VPS/Fly re-evaluation only on SLO miss |
-| F12 | reconciled real cost vs ceiling; choose Supabase Pro vs GPU headroom from evidence |
-| F13 | deletion of everything replaced above (old Supabase project, ZeroGPU text lane, keepalive bandaid once always-on) |
+| F8/F9 | Frozen pre-PMF; benchmark cost per successful render, then enforce ₹1,500 cap, quotas + kill switch |
+| **F10** | current-topology proof; bandwidth/cost alerts, durable audit export and store release declarations; non-Singapore comparison only after measured SLO failure and owner approval |
+| F12 | reconciled real cost vs ceiling; no Supabase Pro upgrade fits the fixed ceiling alongside the API, so trigger a topology review before 70% of any free-tier limit |
+| F13 | deletion of everything replaced above (old project/provider lane, Vercel production config, keepalive bandaid once always-on) |
 
 Verification for every slice: the contract's phase set (`make fmt-check lint typecheck doctrine
 test`, `bun run build`) plus this plan's §2 SLO measurements from an Indian vantage.

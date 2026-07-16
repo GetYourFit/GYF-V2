@@ -137,8 +137,8 @@ Each doctrine = **principle → why → how → enforcement**.
   assert explanations.
 
 ### D7 — Free-Tier-First, Cost-Disciplined Serving
-- **Principle.** Serve on free/cheap tiers until scale forces a paid move; heavy models run
-  off the API box (HF ZeroGPU / Modal), with a **fast/efficient variant** as the cost lever
+- **Principle.** Serve on commercially eligible free/cheap tiers until scale forces a paid move;
+  heavy models run off the API box on measured scale-to-zero GPU infrastructure, with a **fast/efficient variant** as the cost lever
   (Fast SAM 3D Body, FastFit, distilled adapters).
 - **Why.** CLAUDE.md §15; keeps the clean-but-heavy foundations affordable at beta.
 - **How.** Capability ports allow a **tiered adapter** (cheap default → heavy on-demand);
@@ -169,7 +169,7 @@ research-lane north-star → data source → eval gate`.
 | **Taste / recsys** | `Ranker` | online taste (shipped) → **HSTU (Apache) trained on our events** → OneRec-arch | OneRec/ReSID weights (restricted) | first-party behaviour | NDCG/ECE + online A/B/IPS |
 | **Outfit compatibility** | `CompatibilityScorer` | content+color-theory (shipped) → **TATTOO-style training-free on Qwen-VL (Apache)** → GNN on our data | NC compatibility papers | brand catalog + first-party outfits | compat-AUC + diversity |
 | **Controllable styling** | `IntentParser` | rule-based (shipped) → **Qwen 3.x (Apache) structured output** | larger NC LLMs | goal-conditioned slates | goal-shift eval + no-goal parity |
-| **Try-on** | `TryOnRenderer` | **MIT/Apache arch (Leffa/DiT-VTON) on brand on-model photos + commercial license** | FitDiT/IDM-VTON (NC) as ceiling | brand on-model feed photos + try-on results | FID/LPIPS + human-eval |
+| **Try-on** | `TryOnRenderer` | **Pinned Apache-2.0 FASHN candidate after F9; rights-clean GYF-owned challenger trained on authorised pairs** | Leffa/DiT research architectures and NC checkpoints as offline ceilings only | rights-cleared brand pairs + consented outcomes | garment/identity/safety human eval + latency/cost |
 | **Serving** | (infra) | vLLM / SGLang (Apache) | — | — | latency/throughput/cost budget |
 
 **Reading the matrix:** the *left* of each "→" is what ships now/clean; the *right* is the

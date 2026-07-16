@@ -15,14 +15,14 @@ from __future__ import annotations
 
 import unicodedata
 from contextlib import ExitStack
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from hashlib import sha256
 from typing import Protocol
 from uuid import UUID
 
+from ..affiliate import AffiliateLinker, NullAffiliateLinker
 from ..media import image_url_from_refs
 from ..metrics import stage_timer
-from .directory import ItemDirectory
 
 # Keyword-fallback tokenization. Stopwords must never become search terms: a
 # conversational query ("something cozy for a rainy evening") otherwise ANDs
@@ -61,8 +61,8 @@ class SearchResult:
     title: str
     score: float  # cosine similarity in [-1, 1] (1 = identical)
     image_url: str | None = None  # served ``/media/<file>`` URL, or None
-    # Commerce fields — populated by ``enrich_results`` from the item directory so
-    # Explore can show real prices and shop-the-look links (never a score proxy).
+    # Commerce fields travel in the retrieval query. Catalog endpoints must stay a
+    # single database round trip; saved/wardrobe/social still use ItemDirectory.
     price: float | None = None
     currency: str | None = None
     color: str | None = None
@@ -178,7 +178,8 @@ _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
 # that timed out on the live Supabase catalogue.
 _BROWSE_INDEXED = """
 WITH candidates AS (
-  (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs
+  (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
+          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
    FROM items i
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
@@ -187,7 +188,8 @@ WITH candidates AS (
    ORDER BY i.id
    LIMIT %s)
   UNION ALL
-  (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs
+  (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
+          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
    FROM items i
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
@@ -196,7 +198,8 @@ WITH candidates AS (
    ORDER BY i.id
    LIMIT %s)
   UNION ALL
-  (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs
+  (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
+          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
    FROM items i
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
@@ -205,7 +208,8 @@ WITH candidates AS (
    ORDER BY i.id
    LIMIT %s)
   UNION ALL
-  (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs
+  (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
+          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
    FROM items i
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
@@ -214,7 +218,7 @@ WITH candidates AS (
    ORDER BY i.id
    LIMIT %s)
 )
-SELECT id, title, score, image_refs
+SELECT id, title, score, image_refs, price, currency, affiliate_url, hue_name
 FROM candidates
 ORDER BY band, id
 LIMIT %s OFFSET %s
@@ -223,7 +227,8 @@ LIMIT %s OFFSET %s
 # Current production path, retained behind the default-off candidate switch so a
 # deploy cannot promote an unmeasured query and rollback is one env-var change.
 _BROWSE_LEGACY = """
-SELECT i.id, i.title, 0.0 AS score, i.image_refs
+SELECT i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
+       i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
 FROM items i
 WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
   AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
@@ -241,7 +246,9 @@ LIMIT %s OFFSET %s
 # ANN); the evolving vector + growing catalogue supply freshness — add bandit
 # exploration if users report a static feed.
 _BROWSE_TASTE = """
-SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs, e.embedding
+SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs,
+       i.price, i.currency, i.affiliate_url,
+       i.attributes #>> '{{perception,color,hue_name}}' AS hue_name, e.embedding
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
@@ -251,7 +258,9 @@ LIMIT %s OFFSET %s
 """
 
 _SIMILAR = """
-SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score, i.image_refs
+SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score, i.image_refs,
+       i.price, i.currency, i.affiliate_url,
+       i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 CROSS JOIN (SELECT embedding FROM item_embeddings WHERE item_id = %s) q
@@ -316,7 +325,12 @@ class PostgresVectorSearchRepository:
     """pgvector-backed retrieval. Lazy pool, injectable for tests."""
 
     def __init__(
-        self, dsn: str, pool: object | None = None, *, indexed_browse: bool = False
+        self,
+        dsn: str,
+        pool: object | None = None,
+        *,
+        indexed_browse: bool = False,
+        linker: AffiliateLinker | None = None,
     ) -> None:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy
@@ -324,6 +338,7 @@ class PostgresVectorSearchRepository:
             pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
         self._pool = pool
         self._indexed_browse = indexed_browse
+        self._linker = linker or NullAffiliateLinker()
 
     def similar_to_item(
         self,
@@ -348,7 +363,13 @@ class PostgresVectorSearchRepository:
         if categories:
             params.append(categories)
         params.extend([k, offset])
-        return self._run(sql, tuple(params), depth=k + offset, surface="search")
+        return self._run(
+            sql,
+            tuple(params),
+            depth=k + offset,
+            iterative_scan=bool(region or gender_list or categories),
+            surface="search",
+        )
 
     def search_by_vector(
         self,
@@ -388,14 +409,22 @@ class PostgresVectorSearchRepository:
         params.extend([k, offset])
         depth = k + offset if sort not in _SORT_CLAUSES else 0
         sql = f"""
-        SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs
+        SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs,
+               i.price, i.currency, i.affiliate_url,
+               i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
         FROM item_embeddings e
         JOIN items i ON i.id = e.item_id
         {where}
         {order}
         LIMIT %s OFFSET %s
         """
-        return self._run(sql, tuple(params), depth=depth, surface="search")
+        return self._run(
+            sql,
+            tuple(params),
+            depth=depth,
+            iterative_scan=bool(region or max_price is not None or genders or categories),
+            surface="search",
+        )
 
     def catalog_facets(self, region: str | None) -> CatalogFacets:
         # Facets MUST describe the *searchable* set, so this joins item_embeddings
@@ -461,6 +490,7 @@ class PostgresVectorSearchRepository:
                 tuple(params),
                 depth=(k + offset) * _OVERFETCH,
                 mmr_k=k,
+                iterative_scan=bool(region or gender_list or categories),
                 surface="browse",
             )
         # Cold-start / anonymous path: plain relational read, no vector scan.
@@ -565,7 +595,9 @@ class PostgresVectorSearchRepository:
         )
         params.extend([k, offset])
         sql = f"""
-        SELECT i.id, i.title, {score_expr} AS score, i.image_refs
+        SELECT i.id, i.title, {score_expr} AS score, i.image_refs,
+               i.price, i.currency, i.affiliate_url,
+               i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
         FROM items i
         {where}
         {order}
@@ -580,13 +612,14 @@ class PostgresVectorSearchRepository:
         *,
         depth: int = 0,
         mmr_k: int | None = None,
+        iterative_scan: bool = False,
         surface: str,
     ) -> list[SearchResult]:
         with ExitStack() as stack:
             with stage_timer(surface, "pool_acquire"):
                 conn = stack.enter_context(self._pool.connection())  # type: ignore[attr-defined]
             with stage_timer(surface, "retrieval_sql") as timer:
-                if depth:
+                if depth > 40 or iterative_scan:
                     # HNSW only surfaces ef_search candidates per scan (default 40), so a
                     # LIMIT/OFFSET page deeper than that silently truncates — infinite
                     # scroll would dead-end at item 40. Scale the beam to the page depth;
@@ -597,17 +630,18 @@ class PostgresVectorSearchRepository:
                     # long before a real "end of results" — this raises how deep
                     # infinite scroll can go before the ANN scan runs dry, at the cost
                     # of a slower query on the deepest pages.
-                    conn.execute(
-                        "SELECT set_config('hnsw.ef_search', %s, true)",
-                        (str(min(6000, max(40, depth))),),
-                    )
+                    scan_depth = str(min(6000, max(40, depth)))
                     # Post-filter starvation: WHERE clauses (gender/region/price) apply
                     # AFTER the ANN scan, so a selective filter can kill every candidate
                     # in the beam — e.g. "dress" + gender=men returned an empty first
                     # page while thousands of men's items matched. Iterative scan
                     # (pgvector >= 0.8) keeps walking the graph until the LIMIT is
                     # satisfied (bounded by hnsw.max_scan_tuples, default 20k).
-                    conn.execute("SELECT set_config('hnsw.iterative_scan', 'relaxed_order', true)")
+                    conn.execute(
+                        "SELECT set_config('hnsw.ef_search', %s, true), "
+                        "set_config('hnsw.iterative_scan', 'relaxed_order', true)",
+                        (scan_depth,),
+                    )
                 rows = list(conn.execute(sql, params))
                 timer.set_outcome("success" if rows else "empty")
         results = [
@@ -616,6 +650,10 @@ class PostgresVectorSearchRepository:
                 title=r[1],
                 score=float(r[2]),
                 image_url=image_url_from_refs(r[3]),
+                price=float(r[4]) if r[4] is not None else None,
+                currency=r[5],
+                buy_url=self._linker.wrap(r[6], "catalog"),
+                color=r[7],
             )
             for r in rows
         ]
@@ -626,8 +664,8 @@ class PostgresVectorSearchRepository:
             if not rows:
                 timer.set_outcome("empty")
                 return results
-            # MMR path: the query SELECTs the embedding as a 5th column (see _BROWSE_TASTE).
-            ranked = [(res, _parse_vec(r[4])) for res, r in zip(results, rows)]
+            # MMR path appends the embedding after the eight public result columns.
+            ranked = [(res, _parse_vec(r[8])) for res, r in zip(results, rows)]
             return _mmr_rerank(ranked, mmr_k, _MMR_RELEVANCE)
 
 
@@ -730,33 +768,3 @@ def _interleave(per_slot: list[list[SearchResult]]) -> list[SearchResult]:
             if i < len(slot):
                 out.append(slot[i])
     return out
-
-
-def enrich_results(results: list[SearchResult], directory: ItemDirectory) -> list[SearchResult]:
-    """Attach real commerce fields (price/currency/colour/buy_url) to search hits.
-
-    The vector SQL stays lean (id/title/score/image); shop-the-look data comes from
-    the single source of truth — the item directory — so Explore shows real prices
-    instead of a score proxy. Unknown ids keep their None defaults.
-    """
-    if not results:
-        return results
-    details = directory.lookup([r.item_id for r in results])
-    enriched: list[SearchResult] = []
-    for r in results:
-        d = details.get(r.item_id)
-        if d is None:
-            enriched.append(r)
-            continue
-        enriched.append(
-            replace(
-                r,
-                price=d.price,
-                currency=d.currency,
-                color=d.color,
-                buy_url=d.buy_url,
-                # Prefer the directory image when search didn't resolve one.
-                image_url=r.image_url or d.image_url,
-            )
-        )
-    return enriched

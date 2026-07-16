@@ -5,14 +5,13 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi.testclient import TestClient
-from app.catalog.directory import InMemoryItemDirectory
 from app.catalog.retrieval import (
     CatalogFacets,
     PostgresVectorSearchRepository,
     SearchResult,
     search_text,
 )
-from app.main import app, get_item_directory, get_search_repo, get_text_embedder
+from app.main import app, get_search_repo, get_text_embedder
 
 
 class FakePool:
@@ -94,9 +93,9 @@ def test_postgres_repo_emits_one_mmr_metric_per_path():
 
     mmr_pool = FakePool(
         [
-            ("a", "A", 0.99, ["/a.jpg"], [1.0, 0.0]),
-            ("b", "B", 0.98, ["/b.jpg"], [0.999, 0.045]),
-            ("c", "C", 0.90, ["/c.jpg"], [0.0, 1.0]),
+            ("a", "A", 0.99, ["/a.jpg"], None, None, None, None, [1.0, 0.0]),
+            ("b", "B", 0.98, ["/b.jpg"], None, None, None, None, [0.999, 0.045]),
+            ("c", "C", 0.90, ["/c.jpg"], None, None, None, None, [0.0, 1.0]),
         ]
     )
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=mmr_pool)
@@ -113,7 +112,20 @@ def test_postgres_repo_emits_one_mmr_metric_per_path():
 
 
 def test_similar_sql_excludes_self_and_orders_by_distance():
-    pool = FakePool([("22222222", "Other Tee", 0.91, ["/imgs/22222222.jpg"])])
+    pool = FakePool(
+        [
+            (
+                "22222222",
+                "Other Tee",
+                0.91,
+                ["/imgs/22222222.jpg"],
+                799.0,
+                "INR",
+                "https://shop.example/tee",
+                "navy",
+            )
+        ]
+    )
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
     results = repo.similar_to_item("11111111", k=5, region=None)
 
@@ -122,7 +134,18 @@ def test_similar_sql_excludes_self_and_orders_by_distance():
     assert "ORDER BY e.embedding <=> q.embedding" in sql
     assert "LIMIT %s OFFSET %s" in sql
     assert params == ("11111111", "11111111", 5, 0)
-    assert results == [SearchResult("22222222", "Other Tee", 0.91, image_url="/media/22222222.jpg")]
+    assert results == [
+        SearchResult(
+            "22222222",
+            "Other Tee",
+            0.91,
+            image_url="/media/22222222.jpg",
+            price=799.0,
+            currency="INR",
+            color="navy",
+            buy_url="https://shop.example/tee",
+        )
+    ]
 
 
 def test_browse_sql_requires_an_embedding_to_exist():
@@ -402,34 +425,33 @@ def test_catalog_facets_priced_zero_yields_null_range_and_region_bind():
     assert params == ("IN",)
 
 
-def test_enrich_results_attaches_real_commerce_fields():
-    from app.catalog.directory import ItemDetail
-    from app.catalog.retrieval import enrich_results
+def test_postgres_repo_hydrates_and_attributes_results_in_one_query():
+    class PrefixLinker:
+        def wrap(self, url, subid):
+            return f"tracked:{subid}:{url}" if url else None
 
-    directory = InMemoryItemDirectory(
-        [
-            ItemDetail(
-                item_id="hit",
-                title="Linen Shirt",
-                category="top",
-                slot="top",
-                price=49.0,
-                currency="USD",
-                color="cream",
-                buy_url="https://shop.example/hit",
-                image_url="/media/hit.jpg",
-            )
-        ]
+    pool = FakePool(
+        [("hit", "Linen Shirt", 0.77, ["/hit.jpg"], 49.0, "USD", "https://shop/hit", "cream")]
     )
-    hits = [SearchResult("hit", "Linen Shirt", 0.77), SearchResult("ghost", "Unknown", 0.5)]
-    out = enrich_results(hits, directory)
+    repo = PostgresVectorSearchRepository(
+        "postgresql://unused", pool=pool, linker=PrefixLinker()
+    )
 
-    assert out[0].price == 49.0
-    assert out[0].currency == "USD"
-    assert out[0].buy_url == "https://shop.example/hit"
-    assert out[0].image_url == "/media/hit.jpg"
-    # An id the directory doesn't know keeps its None defaults — never fabricated.
-    assert out[1].price is None and out[1].buy_url is None
+    out = repo.search_by_vector([0.1, 0.2], k=1, region=None)
+
+    assert len(pool.calls) == 1  # commerce fields arrive with the single result query
+    assert out == [
+        SearchResult(
+            "hit",
+            "Linen Shirt",
+            0.77,
+            image_url="/media/hit.jpg",
+            price=49.0,
+            currency="USD",
+            color="cream",
+            buy_url="tracked:catalog:https://shop/hit",
+        )
+    ]
 
 
 def test_search_text_embeds_query_then_searches():
@@ -505,9 +527,6 @@ class StubEmbedder:
 def _client() -> TestClient:
     app.dependency_overrides[get_search_repo] = lambda: StubRepo()
     app.dependency_overrides[get_text_embedder] = lambda: StubEmbedder()
-    # Empty directory: enrichment is a no-op, so results pass through unchanged
-    # (no real DB touched). Commerce-field enrichment is covered separately.
-    app.dependency_overrides[get_item_directory] = lambda: InMemoryItemDirectory([])
     return TestClient(app)
 
 
@@ -573,7 +592,6 @@ def test_search_endpoint_validates_and_forwards_price_and_sort():
 
     app.dependency_overrides[get_search_repo] = lambda: CapturingRepo()
     app.dependency_overrides[get_text_embedder] = lambda: StubEmbedder()
-    app.dependency_overrides[get_item_directory] = lambda: InMemoryItemDirectory([])
     try:
         client = TestClient(app)
         # valid combined filter + sort is accepted and reaches the repo
@@ -601,7 +619,6 @@ def test_search_endpoint_keyword_fallback_when_embedder_unavailable():
     # falls back to a keyword title match and returns 200, never a 500/503.
     app.dependency_overrides[get_search_repo] = lambda: StubRepo()
     app.dependency_overrides[get_text_embedder] = lambda: None
-    app.dependency_overrides[get_item_directory] = lambda: InMemoryItemDirectory([])
     try:
         resp = TestClient(app).get("/items/search?q=x")
         assert resp.status_code == 200

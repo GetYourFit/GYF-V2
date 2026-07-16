@@ -1,6 +1,6 @@
-# GYF API — free-tier deployment blueprint (Render).
+# GYF API — paid always-on deployment blueprint (Render).
 #
-# Deploys the FastAPI service as a Docker web service on Render's free plan.
+# Deploys the FastAPI service as a Docker web service on Render Starter.
 # The build context is the repo root (the API has an editable path dep on
 # packages/contracts); the existing services/api/Dockerfile resolves deps into
 # /opt/venv. We override the dev CMD (--reload + bind-mount assumptions) with a
@@ -12,9 +12,8 @@ services:
   - type: web
     name: gyf-api
     runtime: docker
-    # Starter is required for an always-on API; the free plan sleeps after idle.
-    # Singapore is a separate migration because Render cannot change an existing
-    # service's region without recreating it.
+    # Existing owner-paid service. Owner decision 2026-07-16: retain Oregon and do
+    # not create a Singapore migration plan.
     plan: starter
     region: oregon
     dockerfilePath: ./services/api/Dockerfile

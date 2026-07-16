@@ -2,16 +2,14 @@
 
 Infrastructure-as-code for GYF (Terraform) and CI config.
 
-Infrastructure follows `docs/plans/active-execution-contract.md` and its measured ₹3,000 ceiling:
+The active deployment is intentionally small:
 
-- Web: Vercel (project `gyf-v2-app`, Git auto-deploy of `app/`)
-- API: Render (FastAPI Docker, `render.yaml`)
-- Database + vectors: Supabase or Neon (Postgres + pgvector)
-- Cache: Redis
-- Events: Redpanda / managed Kafka free tier
-- Object storage: S3-compatible (R2 / MinIO)
-- Secrets: vault
-- Model registry: MLflow
+- API: the existing always-on Render Starter service in Oregon (`render.yaml`)
+- Database/auth/vectors/media: Supabase Postgres, pgvector and Storage
+- Rate limits/cache: Upstash Redis
+- Web clients: Expo web candidate plus the temporary Next.js rollback client
+- Local development: Postgres+pgvector and Redis through `container-stack.sh`
 
-All environments (local → preview → staging → production) are provisioned from IaC for
-parity. Modules land here as each resource is wired.
+There is no Kafka, Redpanda, MLflow, Kubernetes, vault platform or complete environment-parity
+claim. Add infrastructure only when the active execution contract records a measured need and a
+rollback plan.
