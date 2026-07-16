@@ -1,0 +1,62 @@
+name: Production catalogue plans
+
+# Manual, read-only evidence gate for F2.5. The checked-in runner obtains SQL
+# from PostgresVectorSearchRepository itself, so this cannot silently drift from
+# the queries serving production. Artifacts contain sanitized plans only.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-catalog-plans
+  cancel-in-progress: false
+
+jobs:
+  explain:
+    name: Capture sanitized production EXPLAIN plans
+    environment: production-evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GYF_PROD_DATABASE_URL: ${{ secrets.GYF_PROD_DATABASE_URL }}
+    steps:
+      # workflow_dispatch can target another ref. Never let code from that ref
+      # receive the production DSN: execute only the reviewed default branch.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Require production read credential
+        run: |
+          if [ -z "$GYF_PROD_DATABASE_URL" ]; then
+            echo "GYF_PROD_DATABASE_URL is not configured." >&2
+            exit 1
+          fi
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Capture deployed and candidate browse plans
+        run: |
+          mkdir -p production-plan-evidence
+          uv run --project services/api --extra postgres \
+            python scripts/production_catalog_plans.py \
+            --legacy-browse \
+            --browse-only \
+            --output production-plan-evidence/deployed-legacy.json
+          uv run --project services/api --extra postgres \
+            python scripts/production_catalog_plans.py \
+            --output production-plan-evidence/indexed-candidate.json
+
+      - name: Upload short-lived private evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f25-production-catalog-plans-${{ github.run_id }}
+          path: production-plan-evidence/
+          if-no-files-found: error
+          retention-days: 7
