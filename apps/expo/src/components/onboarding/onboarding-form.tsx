@@ -7,7 +7,7 @@ import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
-import { hitSlopFor } from "@/components/ui/pressable-scale";
+import { hitSlopFor, MIN_TARGET } from "@/components/ui/pressable-scale";
 import { ApiError, createApi } from "@/lib/api";
 import {
   DEFAULT_CONSENT,
@@ -91,7 +91,14 @@ function ConsentRow({
       accessibilityState={{ checked: value, disabled: required }}
       disabled={required}
       onPress={onPress}
-      style={{ alignItems: "center", flexDirection: "row", gap: spacing.sm }}
+      // The row's height is bounded by the 22pt checkbox, so without this the consent
+      // toggles every new user must hit are half the minimum target.
+      style={{
+        alignItems: "center",
+        flexDirection: "row",
+        gap: spacing.sm,
+        minHeight: MIN_TARGET,
+      }}
     >
       <View
         style={{

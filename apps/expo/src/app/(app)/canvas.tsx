@@ -315,7 +315,7 @@ export default function CanvasRoute() {
 
       {error ? (
         <AtelierCard style={{ borderColor: palette.error }}>
-          <GyfText style={{ color: palette.error }} variant="bodySmall">
+          <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
             {readableError(error)}
           </GyfText>
           <AtelierButton label="Try again" onPress={() => void loadUniverse()} />

@@ -234,6 +234,7 @@ function QuickPreview({
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={item !== null}>
       <Pressable
         accessibilityLabel="Close preview"
+        accessibilityRole="button"
         onPress={onClose}
         style={{ backgroundColor: "rgba(0,0,0,0.45)", flex: 1 }}
       />
