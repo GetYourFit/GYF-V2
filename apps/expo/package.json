@@ -14,11 +14,18 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
+    "@expo-google-fonts/fraunces": "^0.4.1",
     "@gyf/types": "workspace:*",
     "@supabase/supabase-js": "^2.47.10",
     "expo": "57.0.6",
-    "expo-secure-store": "~57.0.1",
+    "expo-blur": "~57.0.2",
+    "expo-font": "~57.0.1",
+    "expo-haptics": "~57.0.1",
+    "expo-linear-gradient": "~57.0.1",
     "expo-router": "57.0.6",
+    "expo-secure-store": "~57.0.1",
+    "expo-splash-screen": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -27,6 +34,7 @@
     "react-native-reanimated": "~4.1.0",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.25.2",
+    "react-native-svg": "15.15.4",
     "react-native-web": "~0.21.0"
   },
   "devDependencies": {

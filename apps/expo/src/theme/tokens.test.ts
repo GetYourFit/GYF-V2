@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { colors, contrastRatio, radii, spacing } from "./tokens";
+import { breakpoints, colors, contrastRatio, radii, spacing, tierForWidth, typography } from "./tokens";
 
 describe("Atelier tokens", () => {
   it("keeps primary text readable in both themes", () => {
@@ -14,5 +14,28 @@ describe("Atelier tokens", () => {
     expect(spacing.md).toBeGreaterThan(spacing.sm);
     expect(radii.card).toBeGreaterThan(radii.control);
     expect(radii.card).toBeLessThan(radii.capsule);
+  });
+
+  it("maps widths to size tiers at every boundary", () => {
+    expect(tierForWidth(320)).toBe("compact");
+    expect(tierForWidth(breakpoints.compact - 1)).toBe("compact");
+    expect(tierForWidth(breakpoints.compact)).toBe("phone");
+    expect(tierForWidth(breakpoints.regular - 1)).toBe("phone");
+    expect(tierForWidth(breakpoints.regular)).toBe("regular");
+    expect(tierForWidth(breakpoints.wide - 1)).toBe("regular");
+    expect(tierForWidth(breakpoints.wide)).toBe("wide");
+    expect(tierForWidth(1366)).toBe("wide");
+  });
+
+  it("keeps custom faces off body copy and weight props off custom faces", () => {
+    // Body stays system sans — deliberately invisible.
+    expect("fontFamily" in typography.body).toBe(false);
+    expect("fontFamily" in typography.bodySmall).toBe(false);
+    // Custom faces encode weight in the family name; a fontWeight prop
+    // alongside breaks font resolution on Android.
+    for (const variant of [typography.display, typography.title, typography.label] as const) {
+      expect("fontFamily" in variant).toBe(true);
+      expect("fontWeight" in variant).toBe(false);
+    }
   });
 });
