@@ -132,6 +132,16 @@ services:
         value: https://tabjvaatrikogutkrjom.supabase.co
       - key: GYF_SUPABASE_JWT_SECRET # legacy HS256 fallback (Settings → API → JWT Secret)
         sync: false
+      # Service-role key (Settings → API → service_role). Used for exactly one thing:
+      # deleting a purged account's avatar objects. The avatars bucket is public and its
+      # RLS is scoped to auth.uid(), so an erased account has no token left to delete its
+      # own image — without this key a deleted user's face stays publicly readable
+      # forever, and the nightly purge defers (keeps the tombstone) rather than
+      # half-erasing the account. Absent = /system/status reports profile_avatar
+      # degraded and the client shows initials instead of soliciting a picture it could
+      # not later remove. Secret: never expose to a client, never log.
+      - key: GYF_SUPABASE_SERVICE_ROLE_KEY
+        sync: false
       # The web origin is the Vercel deployment (project gyf-v2-app). Update this
       # to the custom domain once attached so CORS lets the browser in.
       # Comma-separate to allow several origins (e.g. preview + production).
