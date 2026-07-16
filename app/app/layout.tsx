@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 
 // Runs before paint: applies the persisted theme so there is no flash of the
 // wrong theme. No attribute = dark (the default Cosmos look).
-const THEME_INIT = `try{var t=localStorage.getItem("gyf-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`;
+const THEME_INIT = `try{var t=localStorage.getItem("gyf-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch{/* storage unavailable: use default theme */}`;
 
 // Grid/Canvas fetch garment images and API responses from this origin on
 // every page — a preconnect here overlaps the DNS/TLS/TCP handshake with
