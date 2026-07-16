@@ -1964,6 +1964,34 @@ Store evidence sources: [Play Data Safety](https://support.google.com/googleplay
 [Apple privacy details](https://developer.apple.com/app-store/app-privacy-details/) and
 [Apple privacy manifests](https://developer.apple.com/documentation/bundleresources/adding-a-privacy-manifest-to-your-app-or-third-party-sdk).
 
+#### EXPO-11 execution evidence — 2026-07-16 (code-level accessibility audit)
+
+- A full WCAG 2.2 audit read every Expo screen and component. Four defects were confirmed against
+  the real code and fixed; findings that did not survive verification were not "fixed".
+- Fixed: five controls below the 44pt minimum with no padding (four Stylist item-tile actions at
+  40pt, the onboarding option chip at 42pt) and — the release blocker — the onboarding consent rows,
+  whose height was bounded by their 22pt checkbox, on the privacy toggles every new user must hit.
+  Canvas was the only screen whose error text lacked `accessibilityRole="alert"`, so a screen-reader
+  user got no announcement when browse/recluster failed. The quick-preview backdrop had a label but
+  no role.
+- Verified clean, so deliberately unchanged: colour contrast (every text/background pair in both
+  themes scores ≥4.5:1 by the theme's own `contrastRatio` math, worst case 5.07:1), `TextInput`
+  labelling (all labelled), image labelling (real label or an honest "unavailable" fallback;
+  decorative SVGs correctly expose nothing), and `accessibilityState` across chips, buttons and
+  toggles. Reduced motion needs no work: every animation uses Reanimated, which honours the OS
+  setting by default — unlike the web oracle's framer-motion, which is why only web sets it
+  explicitly.
+- `hitSlopFor`/`MIN_TARGET` moved to `lib/touch-target.ts` with tests. They previously sat beside
+  `PressableScale`, so importing them pulled in react-native and the runner could not parse it —
+  the maths every touch target depends on had no test. Expo suite 87 → 90.
+- `make fmt-check`, `make lint`, `make typecheck`, `make doctrine`, `make test` and `bun run build`
+  pass: 416 API passed with 18 environment-gated skips, 72 web, 90 Expo.
+- **EXPO-11 is not closed by this.** Its acceptance also requires iOS/Android device runs, real
+  screen-reader passes, keyboard/reduced-motion/slow-network/offline checks and the full store
+  packet (signing and account MFA, privacy policy and public deletion URLs, Play Data Safety, Apple
+  privacy labels/manifest, ratings, review demo account, screenshots, staged rollout). None of that
+  is provable from a workstation; internal builds alone do not satisfy the ticket.
+
 ### EXPO-12 — Install and validate the graphics engine
 
 - **Write set:** `apps/expo/package.json`, Expo config/CI, `src/components/lookspace/**`, test
