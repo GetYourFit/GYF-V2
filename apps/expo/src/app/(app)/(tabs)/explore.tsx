@@ -1,19 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Linking,
-  Pressable,
-  RefreshControl,
-  TextInput,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { FlatList, Linking, RefreshControl, TextInput, View } from "react-native";
 
+import { columnsForWidth, cardWidthFor } from "@/components/grid/column-count";
+import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
+import { EmptyState, ErrorState } from "@/components/ui/empty-state";
+import { FilterChip } from "@/components/ui/filter-chip";
 import { GyfText } from "@/components/ui/gyf-text";
+import { ProductCard } from "@/components/ui/product-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type SearchResult } from "@/lib/api";
 import {
   appendUniqueItems,
@@ -23,6 +19,7 @@ import {
   type ExploreSort,
 } from "@/lib/explore-feed";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { useResponsive } from "@/theme/use-responsive";
 
 const SLOT_OPTIONS = [
   { label: "All", value: null },
@@ -54,125 +51,8 @@ function readableError(error: unknown): string {
   return "GYF could not load the catalogue. Check your connection and try again.";
 }
 
-function FilterChip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={{
-        backgroundColor: selected ? colors.dark.text : colors.dark.surfaceRaised,
-        borderColor: selected ? colors.dark.text : colors.dark.border,
-        borderRadius: radii.capsule,
-        borderWidth: 1,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-      }}
-    >
-      <GyfText
-        style={selected ? { color: colors.dark.textInverse } : undefined}
-        variant="bodySmall"
-      >
-        {label}
-      </GyfText>
-    </Pressable>
-  );
-}
-
-function CatalogCard({
-  item,
-  saved,
-  width,
-  pending,
-  onSave,
-}: {
-  item: SearchResult;
-  saved: boolean;
-  width: number;
-  pending: boolean;
-  onSave: () => void;
-}) {
-  return (
-    <AtelierCard style={{ gap: spacing.sm, padding: spacing.sm, width }}>
-      {isRemoteImage(item.image_url) ? (
-        <Image
-          accessibilityLabel={item.title}
-          source={{ uri: item.image_url }}
-          style={{
-            backgroundColor: colors.dark.surfaceRaised,
-            borderRadius: radii.control,
-            height: width * 1.28,
-            width: "100%",
-          }}
-        />
-      ) : (
-        <View
-          accessibilityLabel={`${item.title}; image unavailable`}
-          style={{
-            alignItems: "center",
-            backgroundColor: colors.dark.surfaceRaised,
-            borderRadius: radii.control,
-            height: width * 1.28,
-            justifyContent: "center",
-            padding: spacing.sm,
-          }}
-        >
-          <GyfText style={{ textAlign: "center" }} tone="muted" variant="bodySmall">
-            Image unavailable
-          </GyfText>
-        </View>
-      )}
-      <View style={{ gap: spacing.xs }}>
-        <GyfText numberOfLines={2} variant="bodySmall">
-          {item.title}
-        </GyfText>
-        <GyfText tone="faint" variant="mono">
-          {formatCatalogPrice(item.price, item.currency)}
-        </GyfText>
-      </View>
-      <View style={{ flexDirection: "row", gap: spacing.xs }}>
-        <AtelierButton
-          accessibilityLabel={saved ? `Remove ${item.title} from saved` : `Save ${item.title}`}
-          disabled={pending}
-          label={saved ? "Saved" : "Save"}
-          onPress={onSave}
-          style={{ flex: 1, minHeight: 42, paddingHorizontal: spacing.sm }}
-        />
-        {isRemoteImage(item.buy_url) ? (
-          <Pressable
-            accessibilityLabel={`Open ${item.title} link`}
-            accessibilityRole="link"
-            onPress={() => void Linking.openURL(item.buy_url!)}
-            style={{
-              alignItems: "center",
-              borderColor: colors.dark.border,
-              borderRadius: radii.control,
-              borderWidth: 1,
-              justifyContent: "center",
-              minHeight: 42,
-              paddingHorizontal: spacing.sm,
-            }}
-          >
-            <GyfText tone="muted" variant="bodySmall">
-              Buy
-            </GyfText>
-          </Pressable>
-        ) : null}
-      </View>
-    </AtelierCard>
-  );
-}
-
 export default function ExploreRoute() {
-  const { width } = useWindowDimensions();
+  const { width, insets } = useResponsive();
   const api = useMemo(() => createApi(), []);
   const browseSeed = useMemo(() => `expo-${Date.now()}`, []);
   const [filters, setFilters] = useState<ExploreFilters>(EMPTY_FILTERS);
@@ -271,16 +151,24 @@ export default function ExploreRoute() {
     }
   };
 
-  const cardWidth = Math.max(140, (width - spacing.lg * 2 - spacing.md) / 2);
+  const screenPad = spacing.lg;
+  const columns = Math.max(2, columnsForWidth(width - screenPad * 2));
+  const cardWidth = cardWidthFor(width - screenPad * 2, columns, spacing.md);
 
   return (
     <FlatList
       accessibilityLabel="Explore catalogue"
       columnWrapperStyle={{ gap: spacing.md }}
-      contentContainerStyle={{ gap: spacing.md, padding: spacing.lg, paddingBottom: spacing.xxl }}
+      contentContainerStyle={{
+        gap: spacing.md,
+        padding: screenPad,
+        paddingBottom: spacing.xxl * 2 + insets.bottom,
+        paddingTop: screenPad + insets.top,
+      }}
       data={items}
+      key={`explore-${columns}`}
       keyExtractor={(item) => item.item_id}
-      numColumns={2}
+      numColumns={columns}
       onEndReached={() => {
         if (hasMore && !loading && !loadingMore) void load(page + 1, false);
       }}
@@ -297,34 +185,39 @@ export default function ExploreRoute() {
         />
       }
       renderItem={({ item }) => (
-        <CatalogCard
-          item={item}
-          pending={pendingSave === item.item_id}
-          saved={saved.has(item.item_id)}
+        <ProductCard
+          item={{
+            title: item.title,
+            imageUrl: item.image_url,
+            price: formatCatalogPrice(item.price, item.currency),
+            saved: saved.has(item.item_id),
+          }}
+          onPress={
+            isRemoteImage(item.buy_url) ? () => void Linking.openURL(item.buy_url!) : undefined
+          }
+          onToggleSave={pendingSave === item.item_id ? undefined : () => void toggleSave(item)}
           width={cardWidth}
-          onSave={() => void toggleSave(item)}
         />
       )}
       ListEmptyComponent={
         loading ? (
-          <View style={{ alignItems: "center", gap: spacing.md, paddingVertical: spacing.xxl }}>
-            <ActivityIndicator color={colors.dark.text} />
-            <GyfText tone="muted">Loading real catalogue items…</GyfText>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
+            {Array.from({ length: columns * 2 }, (_, i) => (
+              <Skeleton height={cardWidth * (4 / 3) + 64} key={i} width={cardWidth} />
+            ))}
           </View>
         ) : error ? (
-          <AtelierCard>
-            <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
-              {readableError(error)}
-            </GyfText>
-            <AtelierButton label="Try again" onPress={() => void load(0, true)} />
-          </AtelierCard>
+          <ErrorState
+            illustration={<IllustrationLooseThread color={colors.dark.textMuted} />}
+            message={readableError(error)}
+            onRetry={() => void load(0, true)}
+          />
         ) : (
-          <AtelierCard>
-            <GyfText variant="title">No pieces matched</GyfText>
-            <GyfText tone="muted" variant="bodySmall">
-              Change the search or remove a filter. GYF will not invent catalogue results.
-            </GyfText>
-          </AtelierCard>
+          <EmptyState
+            description="Change the search or remove a filter. GYF will not invent catalogue results."
+            headline="No pieces matched"
+            illustration={<IllustrationEmptyHanger color={colors.dark.textMuted} />}
+          />
         )
       }
       ListHeaderComponent={
@@ -450,8 +343,10 @@ export default function ExploreRoute() {
               {readableError(error)}
             </GyfText>
           ) : null}
-          {loadingMore ? <ActivityIndicator color={colors.dark.text} /> : null}
         </View>
+      }
+      ListFooterComponent={
+        loadingMore ? <Skeleton height={cardWidth * (4 / 3) + 64} width={cardWidth} /> : null
       }
     />
   );
