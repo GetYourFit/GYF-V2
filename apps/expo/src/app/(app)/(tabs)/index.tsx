@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,8 +15,22 @@ import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
-import { ApiError, createApi, type Outfit, type OutfitRecommendation } from "@/lib/api";
-import { feedbackForOutfit, savedOutfitInput } from "@/lib/stylist-feed";
+import {
+  ApiError,
+  createApi,
+  type FeedbackRequest,
+  type Outfit,
+  type OutfitItem,
+  type OutfitRecommendation,
+} from "@/lib/api";
+import {
+  feedbackForOutfit,
+  replaceOutfitItem,
+  safeShopUrl,
+  savedOutfitInput,
+  STYLIST_GOAL_MAX,
+  STYLIST_OCCASIONS,
+} from "@/lib/stylist-feed";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
 
 type FeedbackStatus = "saved" | "skipped";
@@ -37,7 +52,28 @@ function isRemoteImage(url: string | null | undefined): url is string {
   return Boolean(url && /^https:\/\//i.test(url));
 }
 
-function ItemTile({ item }: { item: Outfit["items"][number] }) {
+function ItemTile({
+  item,
+  alternates,
+  alternatesBusy,
+  completeBusy,
+  correctionBlocked,
+  onComplete,
+  onLoadAlternates,
+  onShop,
+  onSwap,
+}: {
+  item: Outfit["items"][number];
+  alternates?: OutfitItem[];
+  alternatesBusy: boolean;
+  completeBusy: boolean;
+  correctionBlocked: boolean;
+  onComplete: () => void;
+  onLoadAlternates: () => void;
+  onShop: () => void;
+  onSwap: (alternate: OutfitItem) => void;
+}) {
+  const shopUrl = safeShopUrl(item);
   return (
     <View style={{ gap: spacing.sm, width: 148 }}>
       {isRemoteImage(item.image_url) ? (
@@ -78,6 +114,69 @@ function ItemTile({ item }: { item: Outfit["items"][number] }) {
         {item.slot}
         {item.owned ? " · YOURS" : ""}
       </GyfText>
+      <View style={{ gap: spacing.xs }}>
+        <Pressable
+          accessibilityLabel={`Build a complete look around ${item.title}`}
+          accessibilityRole="button"
+          accessibilityState={{ busy: completeBusy, disabled: completeBusy }}
+          disabled={completeBusy}
+          onPress={onComplete}
+          style={{ minHeight: 40, justifyContent: "center" }}
+        >
+          <GyfText variant="bodySmall">
+            {completeBusy ? "Building look…" : "Build around this"}
+          </GyfText>
+        </Pressable>
+        <Pressable
+          accessibilityLabel={`Find alternatives for ${item.title}`}
+          accessibilityRole="button"
+          accessibilityState={{
+            busy: alternatesBusy,
+            disabled: alternatesBusy || correctionBlocked,
+          }}
+          disabled={alternatesBusy || correctionBlocked}
+          onPress={onLoadAlternates}
+          style={{ minHeight: 40, justifyContent: "center" }}
+        >
+          <GyfText tone="muted" variant="bodySmall">
+            {correctionBlocked
+              ? "Sync correction first"
+              : alternatesBusy
+                ? "Finding swaps…"
+                : "Swap this piece"}
+          </GyfText>
+        </Pressable>
+        {shopUrl ? (
+          <Pressable
+            accessibilityLabel={`Shop ${item.title}`}
+            accessibilityRole="link"
+            onPress={onShop}
+            style={{ minHeight: 40, justifyContent: "center" }}
+          >
+            <GyfText variant="bodySmall">Shop item</GyfText>
+          </Pressable>
+        ) : null}
+        {alternates?.map((alternate) => (
+          <Pressable
+            accessibilityLabel={`Use ${alternate.title} instead of ${item.title}`}
+            accessibilityRole="button"
+            disabled={correctionBlocked}
+            key={alternate.item_id}
+            onPress={() => onSwap(alternate)}
+            style={{
+              borderColor: colors.dark.border,
+              borderRadius: radii.control,
+              borderWidth: 1,
+              minHeight: 40,
+              padding: spacing.xs,
+            }}
+          >
+            <GyfText numberOfLines={2} variant="bodySmall">
+              {alternate.title}
+            </GyfText>
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
@@ -88,12 +187,34 @@ function OutfitCard({
   status,
   pending,
   onFeedback,
+  alternates,
+  alternatesBusy,
+  completeBusy,
+  alternateError,
+  correctionBlocked,
+  correctionRetryAvailable,
+  onLoadAlternates,
+  onComplete,
+  onShop,
+  onSwap,
+  onRetryCorrection,
 }: {
   outfit: Outfit;
   index: number;
   status?: FeedbackStatus;
   pending: boolean;
   onFeedback: (index: number, action: "save" | "skip") => void;
+  alternates: Record<string, OutfitItem[]>;
+  alternatesBusy: string | null;
+  completeBusy: string | null;
+  alternateError?: string;
+  correctionBlocked: boolean;
+  correctionRetryAvailable: boolean;
+  onLoadAlternates: (index: number, item: OutfitItem) => void;
+  onComplete: (item: OutfitItem) => void;
+  onShop: (item: OutfitItem) => void;
+  onSwap: (index: number, replacedItemId: string, alternate: OutfitItem) => void;
+  onRetryCorrection: (index: number) => void;
 }) {
   return (
     <AtelierCard style={{ gap: spacing.lg }}>
@@ -107,15 +228,40 @@ function OutfitCard({
         contentContainerStyle={{ gap: spacing.md }}
       >
         {outfit.items.map((item) => (
-          <ItemTile item={item} key={item.item_id} />
+          <ItemTile
+            alternates={alternates[item.item_id]}
+            alternatesBusy={alternatesBusy === item.item_id}
+            completeBusy={completeBusy === item.item_id}
+            correctionBlocked={correctionBlocked}
+            item={item}
+            key={item.item_id}
+            onLoadAlternates={() => onLoadAlternates(index, item)}
+            onComplete={() => onComplete(item)}
+            onShop={() => onShop(item)}
+            onSwap={(alternate) => onSwap(index, item.item_id, alternate)}
+          />
         ))}
       </ScrollView>
+      {alternateError ? (
+        <View style={{ gap: spacing.xs }}>
+          <GyfText
+            accessibilityRole="alert"
+            style={{ color: colors.dark.error }}
+            variant="bodySmall"
+          >
+            {alternateError}
+          </GyfText>
+          {correctionRetryAvailable ? (
+            <AtelierButton label="Retry correction sync" onPress={() => onRetryCorrection(index)} />
+          ) : null}
+        </View>
+      ) : null}
       <View style={{ flexDirection: "row", gap: spacing.sm }}>
         <Pressable
           accessibilityLabel={`Not interested in look ${index + 1}`}
           accessibilityRole="button"
-          accessibilityState={{ disabled: pending }}
-          disabled={pending}
+          accessibilityState={{ disabled: pending || Boolean(status) }}
+          disabled={pending || Boolean(status)}
           onPress={() => onFeedback(index, "skip")}
           style={{
             alignItems: "center",
@@ -125,16 +271,24 @@ function OutfitCard({
             flex: 1,
             justifyContent: "center",
             minHeight: 48,
-            opacity: pending ? 0.6 : 1,
+            opacity: pending || status ? 0.6 : 1,
           }}
         >
           <GyfText tone="muted" variant="bodySmall">
-            Not for me
+            {status === "skipped" ? "Skipped" : "Not for me"}
           </GyfText>
         </Pressable>
         <AtelierButton
-          disabled={pending || status === "saved"}
-          label={status === "saved" ? "Saved" : pending ? "Saving…" : "Save look"}
+          disabled={pending || Boolean(status)}
+          label={
+            status === "saved"
+              ? "Saved"
+              : status === "skipped"
+                ? "Skipped"
+                : pending
+                  ? "Saving…"
+                  : "Save look"
+          }
           onPress={() => onFeedback(index, "save")}
           style={{ flex: 1 }}
         />
@@ -153,39 +307,113 @@ export default function StylistRoute() {
   const api = useMemo(() => createApi(), []);
   const [goalInput, setGoalInput] = useState("");
   const [activeGoal, setActiveGoal] = useState("");
+  const [occasion, setOccasion] = useState("");
   const [reload, setReload] = useState(0);
   const [data, setData] = useState<OutfitRecommendation | null>(null);
   const [feedback, setFeedback] = useState<Record<number, FeedbackStatus>>({});
   const [pending, setPending] = useState<number | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [warming, setWarming] = useState(false);
+  const [alternates, setAlternates] = useState<Record<string, OutfitItem[]>>({});
+  const [alternatesBusy, setAlternatesBusy] = useState<string | null>(null);
+  const [completeBusy, setCompleteBusy] = useState<string | null>(null);
+  const [alternateErrors, setAlternateErrors] = useState<Record<number, string>>({});
+  const [swapRetries, setSwapRetries] = useState<Record<number, FeedbackRequest>>({});
+  const loadSequence = useRef(0);
+  const retryEvents = useRef<Record<string, FeedbackRequest[]>>({});
+  const swapRetryEvents = useRef<Record<number, FeedbackRequest>>({});
+
+  const flushSwapRetries = useCallback(async () => {
+    const queued = Object.entries(swapRetryEvents.current);
+    if (queued.length === 0) return true;
+    try {
+      await Promise.all(queued.map(([, event]) => api.feedback(event)));
+      for (const [index, event] of queued) {
+        const numericIndex = Number(index);
+        if (swapRetryEvents.current[numericIndex]?.event_id === event.event_id) {
+          delete swapRetryEvents.current[numericIndex];
+        }
+      }
+      setSwapRetries((current) => {
+        const next = { ...current };
+        for (const [index, event] of queued) {
+          const numericIndex = Number(index);
+          if (next[numericIndex]?.event_id === event.event_id) delete next[numericIndex];
+        }
+        return next;
+      });
+      setAlternateErrors((current) => {
+        const next = { ...current };
+        for (const [index] of queued) delete next[Number(index)];
+        return next;
+      });
+      setActionError(null);
+      return true;
+    } catch {
+      setActionError("Sync the pending correction before loading a different slate.");
+      return false;
+    }
+  }, [api]);
 
   const load = useCallback(async () => {
+    if (!(await flushSwapRetries())) return;
+    const sequence = ++loadSequence.current;
     setLoading(true);
     setError(null);
     try {
-      const result = await api.recommend({ k: 5, goal: activeGoal || undefined });
+      const result = await api.recommend({
+        k: 5,
+        goal: activeGoal || undefined,
+        occasion: occasion || undefined,
+      });
+      if (sequence !== loadSequence.current) return;
       setData(result);
       setFeedback({});
+      setAlternates({});
+      setAlternateErrors({});
+      setSwapRetries({});
+      retryEvents.current = {};
     } catch (nextError) {
+      if (sequence !== loadSequence.current) return;
       setError(nextError);
     } finally {
-      setLoading(false);
+      if (sequence === loadSequence.current) setLoading(false);
     }
-  }, [activeGoal, api]);
+  }, [activeGoal, api, flushSwapRetries, occasion]);
 
   useEffect(() => {
     void load();
   }, [load, reload]);
+
+  useEffect(() => {
+    if (!loading || data) {
+      setWarming(false);
+      return;
+    }
+    const timer = setTimeout(() => setWarming(true), 7_000);
+    return () => clearTimeout(timer);
+  }, [data, loading]);
 
   const handleFeedback = async (index: number, action: "save" | "skip") => {
     if (!data || pending !== null) return;
     const outfit = data.outfits[index];
     if (!outfit) return;
     setPending(index);
-    setError(null);
+    setActionError(null);
     try {
-      const events = feedbackForOutfit(outfit, data.recommendation_id, action, index);
+      const retryKey = `${data.recommendation_id}:${index}:${action}`;
+      const events =
+        retryEvents.current[retryKey] ??
+        feedbackForOutfit(
+          outfit,
+          data.recommendation_id,
+          action,
+          index,
+          outfit.items.map(() => crypto.randomUUID()),
+        );
+      retryEvents.current[retryKey] = events;
       if (action === "save") {
         await Promise.all([
           ...events.map((event) => api.feedback(event)),
@@ -194,11 +422,144 @@ export default function StylistRoute() {
       } else {
         await Promise.all(events.map((event) => api.feedback(event)));
       }
+      delete retryEvents.current[retryKey];
       setFeedback((current) => ({ ...current, [index]: action === "save" ? "saved" : "skipped" }));
-    } catch (nextError) {
-      setError(nextError);
+    } catch {
+      setActionError(
+        action === "save"
+          ? "Could not save this look or sync its feedback. Nothing was lost; tap Save look to retry."
+          : "Could not sync that preference. Tap Not for me to retry.",
+      );
     } finally {
       setPending(null);
+    }
+  };
+
+  const loadAlternates = async (index: number, item: OutfitItem) => {
+    if (!data || alternatesBusy) return;
+    if (swapRetries[index]) {
+      setAlternateErrors((current) => ({
+        ...current,
+        [index]: "Sync the previous correction before choosing another swap.",
+      }));
+      return;
+    }
+    const sequence = loadSequence.current;
+    setAlternatesBusy(item.item_id);
+    setAlternateErrors((current) => ({ ...current, [index]: "" }));
+    try {
+      const result = await api.alternates(item.item_id, data.recommendation_id, 3);
+      if (sequence !== loadSequence.current) return;
+      const currentIds = new Set(data.outfits[index]?.items.map((current) => current.item_id));
+      const usable = result.filter((alternate) => !currentIds.has(alternate.item_id));
+      setAlternates((current) => ({ ...current, [item.item_id]: usable }));
+      if (usable.length === 0) {
+        setAlternateErrors((current) => ({
+          ...current,
+          [index]: "No coherent alternatives are available for this piece yet.",
+        }));
+      }
+    } catch {
+      if (sequence !== loadSequence.current) return;
+      setAlternateErrors((current) => ({
+        ...current,
+        [index]: "Could not load alternatives. The current look is unchanged; try again.",
+      }));
+    } finally {
+      setAlternatesBusy(null);
+    }
+  };
+
+  const syncSwap = async (index: number, event: FeedbackRequest) => {
+    swapRetryEvents.current[index] = event;
+    setSwapRetries((current) => ({ ...current, [index]: event }));
+    try {
+      await api.feedback(event);
+      if (swapRetryEvents.current[index]?.event_id !== event.event_id) return;
+      delete swapRetryEvents.current[index];
+      setSwapRetries((current) => {
+        const next = { ...current };
+        delete next[index];
+        return next;
+      });
+      setAlternateErrors((current) => ({ ...current, [index]: "" }));
+    } catch {
+      if (swapRetryEvents.current[index]?.event_id !== event.event_id) return;
+      setAlternateErrors((current) => ({
+        ...current,
+        [index]: "The correction is visible, but its learning signal is waiting to sync.",
+      }));
+    }
+  };
+
+  const swapItem = (index: number, replacedItemId: string, alternate: OutfitItem) => {
+    if (!data) return;
+    setData({
+      ...data,
+      outfits: data.outfits.map((outfit, outfitIndex) =>
+        outfitIndex === index ? replaceOutfitItem(outfit, replacedItemId, alternate) : outfit,
+      ),
+    });
+    setAlternates((current) => {
+      const next = { ...current };
+      delete next[replacedItemId];
+      return next;
+    });
+    const event: FeedbackRequest = {
+      event_id: crypto.randomUUID(),
+      target_type: "item",
+      target_id: alternate.item_id,
+      action: "swap",
+      context: {
+        recommendation_id: data.recommendation_id,
+        rank: index,
+        replaced_item_id: replacedItemId,
+      },
+    };
+    void syncSwap(index, event);
+  };
+
+  const shopItem = (item: OutfitItem) => {
+    if (!data) return;
+    const url = safeShopUrl(item);
+    if (!url) return;
+    void api
+      .feedback({
+        event_id: crypto.randomUUID(),
+        target_type: "item",
+        target_id: item.item_id,
+        action: "cart",
+        context: { recommendation_id: data.recommendation_id },
+      })
+      .catch(() => undefined);
+    void Linking.openURL(url).catch(() =>
+      setActionError("Could not open the retailer link. Your look is unchanged; try again."),
+    );
+  };
+
+  const completeAround = async (item: OutfitItem) => {
+    if (completeBusy) return;
+    if (!(await flushSwapRetries())) return;
+    const sequence = ++loadSequence.current;
+    setCompleteBusy(item.item_id);
+    setError(null);
+    try {
+      const result = await api.completeLook(item.item_id, {
+        k: 5,
+        goal: activeGoal || undefined,
+        occasion: occasion || undefined,
+      });
+      if (sequence !== loadSequence.current) return;
+      setData(result);
+      setFeedback({});
+      setAlternates({});
+      setAlternateErrors({});
+      setSwapRetries({});
+      retryEvents.current = {};
+    } catch (nextError) {
+      if (sequence === loadSequence.current) setError(nextError);
+    } finally {
+      setCompleteBusy((current) => (current === item.item_id ? null : current));
     }
   };
 
@@ -225,9 +586,47 @@ export default function StylistRoute() {
       </View>
 
       <AtelierCard>
+        <GyfText variant="label">OCCASION · OPTIONAL</GyfText>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}
+        >
+          {STYLIST_OCCASIONS.map((option) => {
+            const selected = occasion === option.value;
+            return (
+              <Pressable
+                accessibilityLabel={`Style for ${option.label}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected, disabled: loading }}
+                disabled={loading}
+                key={option.value}
+                onPress={() => setOccasion(selected ? "" : option.value)}
+                style={{
+                  backgroundColor: selected ? colors.dark.text : colors.dark.surfaceRaised,
+                  borderColor: selected ? colors.dark.text : colors.dark.border,
+                  borderRadius: radii.capsule,
+                  borderWidth: 1,
+                  minHeight: 40,
+                  justifyContent: "center",
+                  paddingHorizontal: spacing.md,
+                }}
+              >
+                <GyfText
+                  style={{ color: selected ? colors.dark.bg : colors.dark.text }}
+                  variant="bodySmall"
+                >
+                  {option.label}
+                </GyfText>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
         <GyfText variant="label">STYLE GOAL · OPTIONAL</GyfText>
         <TextInput
           accessibilityLabel="Styling goal"
+          editable={!loading}
+          maxLength={STYLIST_GOAL_MAX}
           onChangeText={setGoalInput}
           onSubmitEditing={() => {
             setActiveGoal(goalInput.trim());
@@ -250,7 +649,8 @@ export default function StylistRoute() {
           value={goalInput}
         />
         <AtelierButton
-          label="Apply goal"
+          disabled={loading || goalInput.trim() === activeGoal}
+          label={goalInput.trim() ? "Apply goal" : activeGoal ? "Reset goal" : "Goal applied"}
           onPress={() => {
             setActiveGoal(goalInput.trim());
             setReload((value) => value + 1);
@@ -273,12 +673,60 @@ export default function StylistRoute() {
         </AtelierCard>
       ) : null}
 
+      {actionError ? (
+        <AtelierCard style={{ gap: spacing.sm }}>
+          <GyfText
+            accessibilityRole="alert"
+            style={{ color: colors.dark.error }}
+            variant="bodySmall"
+          >
+            {actionError}
+          </GyfText>
+          <AtelierButton label="Dismiss" onPress={() => setActionError(null)} />
+        </AtelierCard>
+      ) : null}
+
       {loading && !data ? (
         <AtelierCard style={{ alignItems: "center" }}>
           <ActivityIndicator accessibilityLabel="Loading stylist looks" color={colors.dark.text} />
           <GyfText tone="muted" variant="bodySmall">
-            Reading your style context…
+            {warming
+              ? "Your stylist is warming up. Your profile is safe; this can take a little longer."
+              : "Reading your style context…"}
           </GyfText>
+        </AtelierCard>
+      ) : null}
+
+      {data ? (
+        <AtelierCard style={{ gap: spacing.xs }}>
+          <GyfText variant="label">WHY THIS SLATE</GyfText>
+          <GyfText tone="muted" variant="bodySmall">
+            {data.cold_start
+              ? "Early slate: GYF is relying on your stated profile while it waits for consented feedback."
+              : data.personalized
+                ? `Personalized from your stated profile${data.taste_strength > 0 ? " and consented feedback" : ""}.`
+                : "Built from your stated profile; GYF does not yet have enough consented feedback to claim learned taste."}
+          </GyfText>
+          {data.wardrobe_grounded ? (
+            <GyfText tone="muted" variant="bodySmall">
+              Includes pieces from your wardrobe, marked YOURS.
+            </GyfText>
+          ) : null}
+          {data.anchor_item_id ? (
+            <GyfText tone="muted" variant="bodySmall">
+              Every look is built around the piece you selected.
+            </GyfText>
+          ) : null}
+          {data.applied_goals.length > 0 ? (
+            <GyfText tone="muted" variant="bodySmall">
+              Applied goal: {data.applied_goals.join(", ")}.
+            </GyfText>
+          ) : activeGoal ? (
+            <GyfText tone="muted" variant="bodySmall">
+              GYF did not recognize a safe styling effect in that goal, so it was not claimed as
+              applied.
+            </GyfText>
+          ) : null}
         </AtelierCard>
       ) : null}
 
@@ -300,7 +748,21 @@ export default function StylistRoute() {
         <OutfitCard
           index={index}
           key={`${data.recommendation_id}:${index}`}
+          alternateError={alternateErrors[index]}
+          alternates={alternates}
+          alternatesBusy={alternatesBusy}
+          completeBusy={completeBusy}
+          correctionBlocked={Object.keys(swapRetries).length > 0}
+          correctionRetryAvailable={Boolean(swapRetries[index])}
+          onComplete={completeAround}
+          onLoadAlternates={loadAlternates}
           onFeedback={handleFeedback}
+          onRetryCorrection={(outfitIndex) => {
+            const event = swapRetries[outfitIndex];
+            if (event) void syncSwap(outfitIndex, event);
+          }}
+          onShop={shopItem}
+          onSwap={swapItem}
           outfit={outfit}
           pending={pending === index}
           status={feedback[index]}
