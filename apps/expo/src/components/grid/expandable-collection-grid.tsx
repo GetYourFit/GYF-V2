@@ -25,6 +25,12 @@ import { collectionView } from "./collection-state";
 
 export type CollectionStatus = "loaded" | "loading";
 
+/** Replaces the save toggle in the quick preview (e.g. wardrobe "Remove"). */
+export interface CollectionAction {
+  label: (item: CollectionItem) => string;
+  onPress: (item: CollectionItem) => void;
+}
+
 export interface CollectionItem extends ProductCardItem {
   id: string;
   /** Why the stylist chose it — shown in the quick preview. */
@@ -48,6 +54,7 @@ export function ExpandableCollectionGrid({
   previewCount = 4,
   containerWidth,
   onToggleSave,
+  primaryAction,
   theme = "dark",
 }: {
   title: string;
@@ -58,6 +65,7 @@ export function ExpandableCollectionGrid({
   /** Width available to the grid (screen width minus screen padding). */
   containerWidth: number;
   onToggleSave?: (item: CollectionItem, saved: boolean) => void;
+  primaryAction?: CollectionAction;
   theme?: ThemeName;
 }) {
   const palette = colors[theme];
@@ -194,6 +202,7 @@ export function ExpandableCollectionGrid({
         item={preview}
         onClose={() => setPreview(null)}
         onToggleSave={onToggleSave}
+        primaryAction={primaryAction}
         theme={theme}
       />
     </Animated.View>
@@ -209,11 +218,13 @@ function QuickPreview({
   item,
   onClose,
   onToggleSave,
+  primaryAction,
   theme,
 }: {
   item: CollectionItem | null;
   onClose: () => void;
   onToggleSave?: (item: CollectionItem, saved: boolean) => void;
+  primaryAction?: CollectionAction;
   theme: ThemeName;
 }) {
   const palette = colors[theme];
@@ -294,7 +305,27 @@ function QuickPreview({
                 {item.aiReason}
               </GyfText>
             ) : null}
-            {onToggleSave ? (
+            {primaryAction ? (
+              <PressableScale
+                accessibilityRole="button"
+                onPress={() => {
+                  primaryAction.onPress(item);
+                  onClose();
+                }}
+                style={{
+                  alignItems: "center",
+                  backgroundColor: palette.text,
+                  borderRadius: radii.control,
+                  minHeight: 48,
+                  justifyContent: "center",
+                }}
+              >
+                <GyfText style={{ color: palette.textInverse }} theme={theme} variant="button">
+                  {primaryAction.label(item)}
+                </GyfText>
+              </PressableScale>
+            ) : null}
+            {!primaryAction && onToggleSave ? (
               <PressableScale
                 accessibilityRole="button"
                 onPress={() => {
