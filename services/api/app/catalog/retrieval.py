@@ -13,7 +13,7 @@ unit-tested with an in-memory cosine repo and a fake embedder.
 
 from __future__ import annotations
 
-import re
+import unicodedata
 from contextlib import ExitStack
 from dataclasses import dataclass, replace
 from hashlib import sha256
@@ -27,12 +27,32 @@ from .directory import ItemDirectory
 # Keyword-fallback tokenization. Stopwords must never become search terms: a
 # conversational query ("something cozy for a rainy evening") otherwise ANDs
 # "for"/"a" into the title match and returns an empty grid.
-_WORD_RE = re.compile(r"[a-z0-9]+")
 _STOPWORDS = frozenset(
     "a an and the for to of in on at with without is are be i want need looking "
     "look wear something anything some any that this my me you it its outfit "
     "outfits style styles wardrobe".split()
 )
+
+
+def _query_words(text: str) -> list[str]:
+    """Return Unicode words without splitting Indic combining marks.
+
+    Python's word-character regex omits marks such as Devanagari vowel signs, while an ASCII
+    regex makes every non-Latin outage query empty. NFKC + casefold gives the
+    PostgreSQL ``simple`` parser stable, safe lexemes without transliteration.
+    """
+    words: list[str] = []
+    current: list[str] = []
+    for char in unicodedata.normalize("NFKC", text).casefold():
+        category = unicodedata.category(char)
+        if char.isalnum() or (current and category.startswith("M")):
+            current.append(char)
+        elif current:
+            words.append("".join(current))
+            current = []
+    if current:
+        words.append("".join(current))
+    return words
 
 
 @dataclass(frozen=True)
@@ -497,34 +517,31 @@ class PostgresVectorSearchRepository:
         genders: frozenset[str] | None = None,
         categories: list[str] | None = None,
     ) -> list[SearchResult]:
-        # Every whitespace token must appear in the title (ANDed ILIKE), so
-        # "red dress" needs both words — cheap approximation of relevance with no
-        # embedding. ponytail: sequential ILIKE scan over the catalog; add a
-        # pg_trgm GIN index on title if keyword-fallback volume ever grows.
-        # Content tokens only (stopwords/single-chars dropped), bounded to 6.
-        # Fall back to the raw words, then the whole query, so we never end up
-        # with zero terms.
-        words = _WORD_RE.findall(query.lower())
-        tokens = (
-            [t for t in words if t not in _STOPWORDS and len(t) > 1][:6]
-            or words[:6]
-            or [query.lower()]
-        )
-        terms = [f"%{t}%" for t in tokens]
-        # score = fraction of tokens present in the title. Matching ANY token
-        # (OR) and ranking by overlap means a multi-word query surfaces its
-        # best-overlap items instead of requiring every word — the fallback
-        # never dead-ends to an empty grid when at least one token matches.
-        score_expr = " + ".join(["(i.title ILIKE %s)::int"] * len(terms))
-        params: list[object] = list(terms)  # score expression (SELECT) — positional, first
+        # Content tokens only (stopwords/single-chars dropped), bounded to 6. The
+        # fallback has to remain fast specifically when the encoder is unhealthy;
+        # an indexed PostgreSQL full-text query avoids turning that upstream outage
+        # into a sequential scan of the catalogue. Prefix lexemes keep useful
+        # partial-word behaviour ("dress" finds "dresses") without ILIKE '%...%'.
+        words = _query_words(query)
+        tokens = [t for t in words if t not in _STOPWORDS and len(t) > 1][:6] or words[:6]
+        if not tokens:
+            return []
+        tsquery = " | ".join(f"{token}:*" for token in tokens)
+        vector_expr = "to_tsvector('simple'::regconfig, i.title)"
+        query_expr = "to_tsquery('simple'::regconfig, %s)"
+        # Normalization 32 maps cover-density rank to rank/(rank+1), preserving
+        # SearchResult's bounded confidence contract. OR semantics and rank keep
+        # the strongest multi-token title matches first instead of dead-ending.
+        score_expr = f"ts_rank_cd({vector_expr}, {query_expr}, 32)"
+        params: list[object] = [tsquery]  # SELECT score expression
         # Require a stored embedding (same as browse()): a keyword hit with none
         # would dead-end on click, since recluster/similar joins item_embeddings.
         where = (
             "WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0"
             " AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)"
-            " AND (" + " OR ".join(["i.title ILIKE %s"] * len(terms)) + ")"
+            f" AND {vector_expr} @@ {query_expr}"
         )
-        params.extend(terms)  # WHERE OR block
+        params.append(tsquery)  # WHERE match expression
         if region:
             where += " " + _REGION_FILTER
             params.append(region)
@@ -545,7 +562,7 @@ class PostgresVectorSearchRepository:
         )
         params.extend([k, offset])
         sql = f"""
-        SELECT i.id, i.title, ({score_expr})::float / {len(terms)} AS score, i.image_refs
+        SELECT i.id, i.title, {score_expr} AS score, i.image_refs
         FROM items i
         {where}
         {order}
