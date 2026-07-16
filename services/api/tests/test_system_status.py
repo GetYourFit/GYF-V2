@@ -73,6 +73,33 @@ def test_status_survives_stats_repo_failure():
     assert resp.json()["catalog"]["items"] is None
 
 
+def test_tryon_provider_ready_but_feature_disabled_is_truthfully_closed(monkeypatch):
+    import app.routers.system as system_module
+
+    monkeypatch.setattr(system_module.settings, "tryon_enabled", False)
+    monkeypatch.setattr(system_module.settings, "tryon_provider", "fal-leffa")
+    monkeypatch.setattr(system_module.settings, "fal_api_key", "configured")
+    monkeypatch.setattr(system_module, "_configured_runtime_verdict", lambda _runtime: (True, []))
+
+    cap = _get().json()["capabilities"]["virtual_try_on"]
+    assert cap["status"] == "planned"
+    assert cap["lane"] == "none"
+    assert "disabled" in cap["detail"]
+
+
+def test_tryon_provider_ready_and_feature_enabled_is_beta(monkeypatch):
+    import app.routers.system as system_module
+
+    monkeypatch.setattr(system_module.settings, "tryon_enabled", True)
+    monkeypatch.setattr(system_module.settings, "tryon_provider", "fal-leffa")
+    monkeypatch.setattr(system_module.settings, "fal_api_key", "configured")
+    monkeypatch.setattr(system_module, "_configured_runtime_verdict", lambda _runtime: (True, []))
+
+    cap = _get().json()["capabilities"]["virtual_try_on"]
+    assert cap["status"] == "beta"
+    assert cap["lane"] == "licensed-api"
+
+
 def test_catalog_health_finishes_exact_read_once_then_uses_cache():
     class FakeConnection:
         def __init__(self):

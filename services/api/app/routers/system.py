@@ -315,7 +315,13 @@ def system_status(
         tryon_model = "fal-leffa"
     elif settings.tryon_provider == "fashn" and settings.fashn_api_key:
         tryon_model = "fashn"
-    if tryon_model and _configured_runtime_verdict(tryon_model)[0]:
+    if not settings.tryon_enabled:
+        tryon = Capability(
+            status="planned",
+            lane="none",
+            detail="Virtual try-on is disabled by the feature flag — nothing is rendered or implied.",
+        )
+    elif tryon_model and _configured_runtime_verdict(tryon_model)[0]:
         tryon = Capability(
             status="beta",
             lane="licensed-api",
