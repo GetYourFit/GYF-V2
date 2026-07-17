@@ -2881,3 +2881,17 @@ join-integrity trace + device/web screenshots still to file).
   one-token revertible. Direction proposal for live owner review before
   route-wide composition. 97 Expo tests pass, typecheck/lint/format clean.
   Deployed for review.
+
+### 2026-07-17 (cont.) — P3 editorial recomposition of the three core routes
+
+Owner rejected the flat look; redesigned under frontend-design-direction +
+gan-design + expo-ui skills (loaded), per the locked Atelier direction:
+- `23da2bb` Stylist: imagery-hero garment plates (232×290), eyebrow slot labels,
+  one letterspaced action row (SHOP gold · SWAP · BUILD AROUND), flat editorial
+  spreads with gold rules, evidence rail as gold-ruled caption, GYF ATELIER
+  eyebrow. All handlers/a11y/states unchanged.
+- `4f9489d` ProductCard (Explore/Saved/Canvas/Wardrobe grids): card-in-card
+  chrome flattened to gallery plates; price in gold ink.
+- (this commit) Detail sheet: price gilded — signature consistent across all
+  three P3 core routes.
+Gates each step: typecheck 0 errors, 97 Expo tests, format clean.
