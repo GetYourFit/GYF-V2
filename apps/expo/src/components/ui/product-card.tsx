@@ -70,16 +70,9 @@ export function ProductCard({
       accessibilityLabel={[item.brand, item.title].filter(Boolean).join(", ")}
       accessibilityRole={onPress ? "button" : undefined}
       onPress={onPress}
-      style={{
-        backgroundColor: palette.surface,
-        borderColor: palette.border,
-        borderCurve: "continuous",
-        borderRadius: radii.card,
-        borderWidth: 1,
-        gap: spacing.sm,
-        padding: spacing.sm,
-        width,
-      }}
+      // Editorial plate, not a boxed card: the garment image IS the card and
+      // the caption hangs beneath it — gallery composition, no double frame.
+      style={{ gap: spacing.sm, width }}
     >
       <View>
         {isRemoteImage(item.imageUrl) ? (
@@ -88,8 +81,8 @@ export function ProductCard({
             source={{ uri: item.imageUrl }}
             style={{
               backgroundColor: palette.surfaceRaised,
-              borderRadius: radii.control,
-              height: (width - spacing.sm * 2) * (4 / 3),
+              borderRadius: radii.card,
+              height: width * (4 / 3),
               width: "100%",
             }}
           />
@@ -99,8 +92,9 @@ export function ProductCard({
             style={{
               alignItems: "center",
               backgroundColor: palette.surfaceRaised,
-              borderRadius: radii.control,
-              height: (width - spacing.sm * 2) * (4 / 3),
+              borderCurve: "continuous",
+              borderRadius: radii.card,
+              height: width * (4 / 3),
               justifyContent: "center",
               padding: spacing.sm,
             }}
@@ -153,7 +147,12 @@ export function ProductCard({
           style={{ alignItems: "center", flexDirection: "row", justifyContent: "space-between" }}
         >
           {item.price ? (
-            <GyfText maxFontSizeMultiplier={1.4} theme={theme} variant="mono">
+            <GyfText
+              maxFontSizeMultiplier={1.4}
+              style={{ color: palette.accentInk }}
+              theme={theme}
+              variant="mono"
+            >
               {item.price}
             </GyfText>
           ) : (
