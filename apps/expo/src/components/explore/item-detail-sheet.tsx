@@ -221,7 +221,7 @@ export function ItemDetailSheet({
                 <GyfText accessibilityRole="header" theme={theme} variant="title">
                   {item.title}
                 </GyfText>
-                <GyfText theme={theme} variant="mono">
+                <GyfText style={{ color: palette.accentInk }} theme={theme} variant="mono">
                   {formatCatalogPrice(item.price, item.currency)}
                 </GyfText>
               </View>
