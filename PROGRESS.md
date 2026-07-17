@@ -2895,3 +2895,12 @@ gan-design + expo-ui skills (loaded), per the locked Atelier direction:
 - (this commit) Detail sheet: price gilded — signature consistent across all
   three P3 core routes.
 Gates each step: typecheck 0 errors, 97 Expo tests, format clean.
+
+### 2026-07-17 (cont.) — research-grounded taste-signal rail
+
+- `b920353` feat(expo): taste-signal rail. Web-researched niche well-reviewed
+  references (Indyx 4.6★ style-quiz "name it back"; The Yes visible taste
+  calibration; Whering cluttered UI as anti-reference). WHY-THIS-SLATE prose
+  card became a gold-ruled rail with a real taste_strength meter — honest empty
+  bar on cold start ("every save or skip sharpens the next look"). No new deps,
+  truth copy preserved. Gates: 0 type errors, 97 Expo tests, format clean.
