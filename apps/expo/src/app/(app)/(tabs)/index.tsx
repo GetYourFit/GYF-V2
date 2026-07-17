@@ -716,11 +716,36 @@ export default function StylistRoute() {
       ) : null}
 
       {data ? (
-        <AtelierCard style={{ gap: spacing.xs }}>
-          <GyfText variant="label">WHY THIS SLATE</GyfText>
+        <View
+          style={{
+            borderLeftColor: palette.accentInk,
+            borderLeftWidth: 1,
+            gap: spacing.xs,
+            paddingLeft: spacing.md,
+          }}
+        >
+          <GyfText variant="label">TASTE SIGNAL</GyfText>
+          <View
+            accessibilityLabel={`Taste signal ${Math.round(data.taste_strength * 100)} percent`}
+            style={{
+              backgroundColor: palette.surfaceRaised,
+              borderRadius: radii.capsule,
+              height: 3,
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: palette.accentInk,
+                height: 3,
+                // Real server signal, never invented: 0 renders an honest empty bar.
+                width: `${Math.round(Math.min(1, Math.max(0, data.taste_strength)) * 100)}%`,
+              }}
+            />
+          </View>
           <GyfText tone="muted" variant="bodySmall">
             {data.cold_start
-              ? "Early slate: GYF is relying on your stated profile while it waits for consented feedback."
+              ? "Calibrating: every save or skip sharpens the next look."
               : data.personalized
                 ? `Personalized from your stated profile${data.taste_strength > 0 ? " and consented feedback" : ""}.`
                 : "Built from your stated profile; GYF does not yet have enough consented feedback to claim learned taste."}
@@ -745,7 +770,7 @@ export default function StylistRoute() {
               applied.
             </GyfText>
           ) : null}
-        </AtelierCard>
+        </View>
       ) : null}
 
       {/* ponytail: closed-state only (EXPO-10 half one). The queue/poll/cancel/photo flow is
