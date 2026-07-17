@@ -2852,3 +2852,17 @@ license) pass, 95 Expo tests pass. Client loop wires recommendation_id + occasio
 Still owner/device-gated (not code): sustained India catalogue SLO observation,
 credentialed deployed taste-path verification, Google Play + Apple access, 30-day
 beta. These close EXPO-CORE-01 / hard launch — more code cannot.
+
+### 2026-07-17 (cont.) — v7 top complaint: INR display
+
+- `31a9700` feat(expo): India-first price display. Root-cause fix at the single
+  shared `formatCatalogPrice` — every surface (Stylist, Explore, Saved, Canvas,
+  detail sheet) now renders each item's TRUE currency with its native symbol +
+  locale grouping (₹1,99,999 Indian grouping; a real USD item honestly stays $…).
+  No source-currency relabel, no fake FX (that's the F4-02/P5.4 slice: needs a
+  dated rate + original-price disclosure). New users default to INR budget.
+  Engine-independent (no Hermes Intl currency dependency). 96 Expo tests pass,
+  typecheck/lint/format clean. Deployed: CI+CD green, EAS Hosting + Vercel live.
+- Verified NOT a bug: Explore filter logic (browse-vs-search split, silent-loss
+  guard) is fully tested and sound; v7's "explore/filters not working" was
+  downstream of the recsys statement-timeout + Oregon latency, both now fixed.
