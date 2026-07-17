@@ -2866,3 +2866,18 @@ beta. These close EXPO-CORE-01 / hard launch — more code cannot.
 - Verified NOT a bug: Explore filter logic (browse-vs-search split, silent-loss
   guard) is fully tested and sound; v7's "explore/filters not working" was
   downstream of the recsys statement-timeout + Oregon latency, both now fixed.
+
+### 2026-07-17 (cont.) — advance to EXPO-DESIGN-CORE (P3), owner-approved
+
+Owner approved entering P3 design and attests P2 device/deploy evidence is done.
+Pointer advanced EXPO-CORE-01 -> EXPO-DESIGN-CORE (GO is owner-attested; prod
+join-integrity trace + device/web screenshots still to file).
+
+- `841a727` feat(expo): signature gold accent on ink/porcelain. The monochrome
+  pure #000/#fff foundations read austere — introduced the locked single
+  signature (warm gold) as a token trio (accent fill / accentText / accentInk),
+  both themes, all pairs AA contrast-tested; primary CTA now carries the gold;
+  foundations soften to ink/porcelain. One signature, no second UI system,
+  one-token revertible. Direction proposal for live owner review before
+  route-wide composition. 97 Expo tests pass, typecheck/lint/format clean.
+  Deployed for review.

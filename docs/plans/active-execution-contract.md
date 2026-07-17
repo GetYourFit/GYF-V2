@@ -1,8 +1,14 @@
 # GYF active execution contract
 
-Status: **V7 ACTIVE — EXPO-CORE-01 CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
+Status: **V7 ACTIVE — EXPO-DESIGN-CORE CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
 continued execution on 2026-07-17 · effective repository baseline
-`367a7ffa14532f60e1ba8d1a784785d98da2bbb9` · `P0 GO` recorded 2026-07-17
+`367a7ffa14532f60e1ba8d1a784785d98da2bbb9` · `P0 GO` recorded 2026-07-17 ·
+`EXPO-CORE-01 GO` (owner-attested 2026-07-17): recsys taste-path HNSW correctness
+fix (`7c41ae3`) + frozen correction-causality suite (`af6b937`) + India-first ₹
+display (`31a9700`) shipped and deployed; owner attests the deployed device/web
+core journey is done. **Evidence still to file:** production served-ID join
+integrity (≥99%) trace and the physical-Android/web journey screenshots — until
+filed, this GO is owner-attested, not independently reproduced.
 
 This is the single source of truth for execution order. Product intent remains in `docs/vision/ideas-complete.md`; non-negotiable engineering rules remain in `docs/engineering-doctrine.md`; the launch/refactor ticket board is subordinate and research/runbooks are evidence only.
 
@@ -51,7 +57,7 @@ agent preference are not evidence.
 The P labels below are outcome envelopes, not a second ticket system. The mapped F/EXPO/HL ticket
 is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
-`CURRENT EXECUTION POINTER: EXPO-CORE-01`
+`CURRENT EXECUTION POINTER: EXPO-DESIGN-CORE`
 
 The pointer advances only after every P0 criterion passes and the owner records `P0 GO` with the
 effective contract version, date and baseline. Approval alone cannot waive reconciliation. No agent
