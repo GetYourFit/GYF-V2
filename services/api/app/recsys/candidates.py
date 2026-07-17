@@ -368,7 +368,10 @@ class PostgresCandidateRepository:
         # recommend DB latency). Mirrors browse_multi_slot; the shared pool bounds it.
         from concurrent.futures import ThreadPoolExecutor
 
-        with ThreadPoolExecutor(max_workers=min(4, len(work))) as pool:
+        # One recommendation uses at most two candidate connections, reducing its
+        # pressure on the three-client shared pool. The pool's checkout timeout is
+        # the cross-request contention bound.
+        with ThreadPoolExecutor(max_workers=min(2, len(work))) as pool:
             return dict(pool.map(lambda item: fetch(*item), work))
 
     def candidates_by_ids(self, item_ids: list[str]) -> list[Candidate]:

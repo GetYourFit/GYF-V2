@@ -1343,6 +1343,45 @@ def test_candidate_pool_logs_correlated_connection_query_mapping_and_fallback(ca
     assert "fallback=true rows=0" in record.getMessage()
 
 
+def test_candidate_pool_caps_each_request_at_two_connections():
+    import threading
+    import time
+    from contextlib import contextmanager
+
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    class _Pool:
+        def __init__(self):
+            self.active = 0
+            self.maximum = 0
+            self.lock = threading.Lock()
+
+        @contextmanager
+        def connection(self):
+            with self.lock:
+                self.active += 1
+                self.maximum = max(self.maximum, self.active)
+            try:
+                yield self._Connection()
+            finally:
+                with self.lock:
+                    self.active -= 1
+
+        class _Connection:
+            calls = 0
+
+            def execute(self, _sql, _params=None):
+                self.calls += 1
+                if self.calls == 2:
+                    time.sleep(0.02)
+                return iter([])
+
+    pool = _Pool()
+    repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
+    repo.candidates_by_slot(conditioning.CANDIDATE_SLOTS, None, None, 20)
+    assert pool.maximum == 2
+
+
 def test_candidate_pool_logs_failed_checkout_duration(caplog, monkeypatch):
     from app.recsys import candidates as candidate_module
     from app.recsys.candidates import PostgresCandidateRepository

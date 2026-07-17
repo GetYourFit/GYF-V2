@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 
 from app.events import InteractionEvent
-from app.sink import _INSERT_INTERACTION, _UPSERT_USER, PostgresSink
+from app.sink import _INSERT_INTERACTIONS, _SET_LOCAL_TIMEOUT, _UPSERT_USER, PostgresSink
 
 
 class FakeCursor:
@@ -15,6 +15,9 @@ class FakeCursor:
     # publish/publish_many batch every statement through executemany.
     def executemany(self, sql: str, params_seq) -> None:
         self._log.append((sql, list(params_seq)))
+
+    def execute(self, sql: str, params) -> None:
+        self._log.append((sql, params))
 
     def __enter__(self):
         return self
@@ -36,7 +39,8 @@ class FakePool:
         self.log: list[tuple[str, list]] = []
 
     @contextmanager
-    def connection(self):
+    def connection(self, timeout=None):
+        self.timeout = timeout
         yield FakeConnection(self.log)
 
 
@@ -56,33 +60,50 @@ def test_postgres_sink_upserts_user_then_inserts_interaction():
     event = _event("o1")
     sink.publish(event)
 
-    assert len(pool.log) == 2  # one executemany for users, one for interactions
-    upsert_sql, upsert_rows = pool.log[0]
-    insert_sql, insert_rows = pool.log[1]
+    assert pool.timeout == 1.0
+    assert len(pool.log) == 3  # timeout setup, user upsert, one batched interaction insert
+    assert pool.log[0] == (_SET_LOCAL_TIMEOUT, ("1000ms",))
+    upsert_sql, upsert_rows = pool.log[1]
+    insert_sql, insert_rows = pool.log[2]
 
     assert upsert_sql == _UPSERT_USER
     assert upsert_rows == [(event.user_id,)]
 
-    assert insert_sql == _INSERT_INTERACTION
+    assert insert_sql == _INSERT_INTERACTIONS
     assert insert_sql.endswith("ON CONFLICT (event_id) DO NOTHING")
-    assert insert_rows == [
-        (event.event_id, event.user_id, "outfit", "o1", "save", 1.0, "{}", event.ts)
-    ]
+    assert insert_rows == (
+        [event.event_id],
+        [event.user_id],
+        ["outfit"],
+        ["o1"],
+        ["save"],
+        [1.0],
+        ["{}"],
+        [event.ts],
+    )
 
 
-def test_publish_many_batches_one_checkout_and_dedupes_users():
+def test_publish_many_batches_one_checkout_and_dedupes_users(caplog):
     """~40 impressions/recommendation must be one connection checkout + two
     executemany calls, not 40 — and the user upsert dedupes to distinct ids."""
     pool = FakePool()
     sink = PostgresSink(dsn="unused", pool=pool)
-    sink.publish_many([_event("o1"), _event("o2"), _event("o3")])
+    with caplog.at_level("INFO", logger="gyf"):
+        sink.publish_many([_event("o1"), _event("o2"), _event("o3")])
 
-    assert len(pool.log) == 2  # NOT 2 per event
-    _, upsert_rows = pool.log[0]
-    _, insert_rows = pool.log[1]
+    assert len(pool.log) == 3  # NOT 2 per event
+    _, upsert_rows = pool.log[1]
+    insert_sql, insert_batch = pool.log[2]
     assert upsert_rows == [("11111111-1111-1111-1111-111111111111",)]  # deduped
-    assert len(insert_rows) == 3
-    assert len({row[0] for row in insert_rows}) == 3  # repeated semantics remain distinct events
+    assert insert_sql == _INSERT_INTERACTIONS
+    assert len(insert_batch[0]) == 3
+    assert len(set(insert_batch[0])) == 3  # repeated semantics remain distinct events
+    assert insert_batch[3] == ["o1", "o2", "o3"]
+    assert any(
+        record.getMessage().startswith("event_sink_batch outcome=success ")
+        and record.getMessage().endswith("rows=3")
+        for record in caplog.records
+    )
 
 
 def test_publish_many_empty_is_noop():

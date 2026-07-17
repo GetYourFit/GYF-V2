@@ -8,11 +8,18 @@ Two interchangeable backends, chosen by ``GYF_EVENT_SINK``:
 
 from __future__ import annotations
 
+import logging
+import time
 from pathlib import Path
 from typing import Protocol
 
 from .config import settings
 from .events import InteractionEvent
+
+logger = logging.getLogger("gyf")
+
+_SINK_TIMEOUT_MS = 1_000
+_SET_LOCAL_TIMEOUT = "SELECT set_config('statement_timeout', %s, true)"
 
 
 class EventSink(Protocol):
@@ -63,9 +70,13 @@ class LocalFileSink:
 
 # SQL kept as module constants so tests can assert against them without a live DB.
 _UPSERT_USER = "INSERT INTO users (id) VALUES (%s) ON CONFLICT (id) DO NOTHING"
-_INSERT_INTERACTION = (
+_INSERT_INTERACTIONS = (
     "INSERT INTO interactions (event_id, user_id, target_type, target_id, action, weight, context, ts) "
-    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (event_id) DO NOTHING"
+    "SELECT event_id, user_id, target_type, target_id, action, weight, context_text::jsonb, ts "
+    "FROM unnest(%s::uuid[], %s::uuid[], %s::text[], %s::text[], %s::text[], "
+    "%s::double precision[], %s::text[], %s::timestamptz[]) AS batch("
+    "event_id, user_id, target_type, target_id, action, weight, context_text, ts) "
+    "ON CONFLICT (event_id) DO NOTHING"
 )
 
 
@@ -89,32 +100,82 @@ class PostgresSink:
         self.publish_many([event])
 
     @staticmethod
-    def _row(event: InteractionEvent) -> tuple:
+    def _batch(events: list[InteractionEvent]) -> tuple[list, ...]:
         import json
 
         return (
-            event.event_id,
-            event.user_id,
-            event.target_type.value,
-            event.target_id,
-            event.action.value,
-            event.weight,
-            json.dumps(event.context),
-            event.ts,
+            [event.event_id for event in events],
+            [event.user_id for event in events],
+            [event.target_type.value for event in events],
+            [event.target_id for event in events],
+            [event.action.value for event in events],
+            [event.weight for event in events],
+            [json.dumps(event.context) for event in events],
+            [event.ts for event in events],
         )
 
     def publish_many(self, events: list[InteractionEvent]) -> None:
         if not events:
             return
         # One connection checkout for the whole batch, and one round trip per
-        # statement via executemany (psycopg3 pipelines it) — a recommendation's
-        # ~40 impressions were ~40 separate checkouts + 80 statements before.
+        # statement. The interactions use one UNNEST-backed INSERT, not one server
+        # statement per served item: pipelined executemany still made Postgres
+        # execute/index every INSERT separately and spiked to 11.6s in production.
         distinct_users = [(uid,) for uid in {e.user_id for e in events}]
-        rows = [self._row(e) for e in events]
-        with self._pool.connection() as conn:  # type: ignore[attr-defined]
-            with conn.cursor() as cur:  # type: ignore[attr-defined]
-                cur.executemany(_UPSERT_USER, distinct_users)
-                cur.executemany(_INSERT_INTERACTION, rows)
+        batch = self._batch(events)
+        checkout_start = time.perf_counter()
+        checkout_ms = setup_ms = user_upsert_ms = interaction_insert_ms = commit_ms = 0.0
+        outcome = "success"
+        active_phase = "checkout"
+        phase_start = checkout_start
+        try:
+            with self._pool.connection(timeout=_SINK_TIMEOUT_MS / 1000) as conn:  # type: ignore[attr-defined]
+                checkout_ms = (time.perf_counter() - checkout_start) * 1000
+                with conn.cursor() as cur:  # type: ignore[attr-defined]
+                    active_phase = "setup"
+                    phase_start = time.perf_counter()
+                    cur.execute(_SET_LOCAL_TIMEOUT, (f"{_SINK_TIMEOUT_MS}ms",))
+                    setup_ms = (time.perf_counter() - phase_start) * 1000
+                    active_phase = "user_upsert"
+                    phase_start = time.perf_counter()
+                    cur.executemany(_UPSERT_USER, distinct_users)
+                    user_upsert_ms = (time.perf_counter() - phase_start) * 1000
+                    active_phase = "interaction_insert"
+                    phase_start = time.perf_counter()
+                    cur.execute(_INSERT_INTERACTIONS, batch)
+                    interaction_insert_ms = (time.perf_counter() - phase_start) * 1000
+                active_phase = "commit"
+                phase_start = time.perf_counter()
+            commit_ms = (time.perf_counter() - phase_start) * 1000
+        except BaseException:
+            outcome = "error"
+            elapsed_ms = (time.perf_counter() - phase_start) * 1000
+            if active_phase == "checkout":
+                checkout_ms = elapsed_ms
+            elif active_phase == "setup":
+                setup_ms = elapsed_ms
+            elif active_phase == "user_upsert":
+                user_upsert_ms = elapsed_ms
+            elif active_phase == "interaction_insert":
+                interaction_insert_ms = elapsed_ms
+            else:
+                commit_ms = elapsed_ms
+            raise
+        finally:
+            total_ms = (time.perf_counter() - checkout_start) * 1000
+            logger.info(
+                "event_sink_batch outcome=%s connection_wait_ms=%.2f setup_ms=%.2f "
+                "user_upsert_ms=%.2f interaction_insert_ms=%.2f commit_ms=%.2f "
+                "total_ms=%.2f rows=%d",
+                outcome,
+                checkout_ms,
+                setup_ms,
+                user_upsert_ms,
+                interaction_insert_ms,
+                commit_ms,
+                total_ms,
+                len(events),
+            )
 
 
 def get_sink(pool: object | None = None) -> EventSink:

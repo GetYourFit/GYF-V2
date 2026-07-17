@@ -50,8 +50,14 @@ def shared_pool(dsn: str):
 
     return ConnectionPool(
         dsn,
-        min_size=0,
+        # Production is an always-on Starter and the first authenticated request
+        # is the activation path. Keep the already-budgeted three connections
+        # warm instead of making that user pay serial TLS/pooler handshakes.
+        # Render's old/new overlap doubles this configured maximum; any future
+        # worker/pool increase must re-run the connection-budget gate.
+        min_size=settings.db_pool_max_size,
         max_size=settings.db_pool_max_size,
+        timeout=3.0,
         kwargs={"prepare_threshold": None},
         open=True,
     )
