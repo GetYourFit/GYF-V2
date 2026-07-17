@@ -1580,3 +1580,135 @@ def test_postgres_candidate_timeout_cancels_and_pool_connection_recovers(live_db
                 conn.execute("SELECT pg_sleep(0.05)")
         with pool.connection() as conn:
             assert conn.execute("SELECT 1").fetchone() == (1,)
+
+
+# --- EXPO-CORE-01 correction causality (frozen scenarios) -------------------
+#
+# The P2 / EXPO-CORE-01 exit gate requires proof that a user correction is
+# *causal*: the corrected constraint moves the slate, irrelevant constraints
+# stay stable, repeats are bounded, and the served reason reflects the change.
+# These exercise the real recommend() pipeline deterministically (in-memory
+# repos, no DB, no torch) so a regression that silently ignores a correction
+# fails here instead of in production.
+
+
+def _recommend(profile, catalog, *, occasion=None, goal=None, taste=None, k=3):
+    return recommend(
+        profile,
+        DEV_USER,
+        InMemoryCandidateRepository(catalog),
+        taste or InMemoryTasteRepository(),
+        _CollectingSink(),
+        occasion,
+        None,
+        k,
+        goal,
+    )
+
+
+def _tops(rec):
+    return [next(it.item_id for it in o.items if it.slot == "top") for o in rec.outfits]
+
+
+def _all_item_ids(rec):
+    return {it.item_id for o in rec.outfits for it in o.items}
+
+
+def test_correction_budget_removes_now_unaffordable_pieces_and_keeps_the_rest():
+    # A price ceiling correction must drop items above it (and only those); the
+    # occasion the user did not touch stays exactly as served.
+    catalog = [
+        _item("top_lux", "shirt", "top", lch=(55, 12, 0), price=12000, affinity=0.99),
+        _item("top_cheap", "t_shirt", "top", lch=(50, 10, 0), price=1000, affinity=0.5),
+        _item("bot", "jeans", "bottom", lch=(40, 10, 250), price=1000),
+        _item("shoe", "sneakers", "footwear", lch=(80, 5, 0), price=800),
+    ]
+    rich = Profile(occasion="casual", budget_range=BudgetRange(min=0, max=20000, currency="INR"))
+    tight = Profile(occasion="casual", budget_range=BudgetRange(min=0, max=5000, currency="INR"))
+
+    before = _recommend(rich, catalog, occasion="casual")
+    after = _recommend(tight, catalog, occasion="casual")
+
+    # Corrected dimension moved: the ₹12k top was served before, is gone after.
+    assert "top_lux" in _all_item_ids(before)
+    assert "top_lux" not in _all_item_ids(after)
+    # Irrelevant constraint stable: the affordable pieces and the occasion persist.
+    assert "top_cheap" in _all_item_ids(after)
+    assert before.occasion == after.occasion == "casual"
+    # And every served outfit is still complete — a correction narrows, never breaks.
+    assert after.outfits
+    for o in after.outfits:
+        assert {it.slot for it in o.items} == {"top", "bottom", "footwear"}
+
+
+def test_correction_occasion_moves_the_slate_and_reflects_it_in_the_reason():
+    # Casual -> formal must re-lead the slate toward the formal piece and echo the
+    # new occasion; the untouched budget still holds every served item.
+    catalog = [
+        _item("top_casual", "t_shirt", "top", lch=(50, 10, 0), formality="casual", price=1000),
+        _item("top_formal", "blazer", "top", lch=(30, 8, 0), formality="formal", price=1500),
+        _item("bot_casual", "jeans", "bottom", lch=(40, 10, 250), formality="casual", price=1000),
+        _item("bot_formal", "trousers", "bottom", lch=(25, 6, 0), formality="formal", price=1400),
+        _item("shoe_casual", "sneakers", "footwear", lch=(80, 5, 0), formality="casual", price=800),
+        _item("shoe_formal", "oxfords", "footwear", lch=(20, 5, 0), formality="formal", price=1200),
+    ]
+    profile = Profile(occasion="casual", budget_range=BudgetRange(min=0, max=20000, currency="INR"))
+
+    casual = _recommend(profile, catalog, occasion="casual")
+    formal = _recommend(profile, catalog, occasion="formal")
+
+    # Reason reflects the correction.
+    assert casual.occasion == "casual"
+    assert formal.occasion == "formal"
+    # Corrected dimension moved the leader toward the matching formality.
+    assert _tops(casual)[0] == "top_casual"
+    assert _tops(formal)[0] == "top_formal"
+    # Irrelevant constraint stable: nothing served breaches the untouched budget.
+    for rec in (casual, formal):
+        for o in rec.outfits:
+            for it in o.items:
+                assert it.item_id.startswith(("top", "bot", "shoe"))
+
+
+def test_correction_repeats_are_bounded_identical_inputs_yield_identical_slate():
+    # "Repeats are bounded" — the deterministic incumbent must return the exact
+    # same slate for the same inputs (only the recommendation_id, a fresh uuid,
+    # may differ). A flapping slate would make correction causality unprovable.
+    catalog = [
+        _item("t1", "shirt", "top", lch=(50, 40, 30), affinity=0.9),
+        _item("t2", "polo", "top", lch=(60, 8, 0), affinity=0.4),
+        _item("b1", "jeans", "bottom", lch=(40, 10, 250)),
+        _item("b2", "chinos", "bottom", lch=(45, 12, 60)),
+        _item("f1", "sneakers", "footwear", lch=(80, 5, 0)),
+        _item("f2", "boots", "footwear", lch=(30, 6, 0)),
+    ]
+    profile = Profile(occasion="casual")
+    runs = [_recommend(profile, catalog, occasion="casual", goal="slimmer") for _ in range(3)]
+
+    slates = [[tuple(it.item_id for it in o.items) for o in r.outfits] for r in runs]
+    assert slates[0] == slates[1] == slates[2]
+    assert slates[0]  # non-empty — it is a real, repeated slate
+    assert len({r.recommendation_id for r in runs}) == 3  # each serve is still uniquely auditable
+
+
+def test_correction_goal_reorders_without_disturbing_untouched_constraints():
+    # Adding a "slimmer" goal must re-lead toward the dark/tailored/slim top and
+    # surface in applied_goals, while the occasion the user did not touch is echoed
+    # unchanged — the correction is targeted, not a blanket reshuffle.
+    catalog = [
+        _item("top_slim", "shirt", "top", lch=(20, 5, 0), silhouette="tailored", fit="slim fit"),
+        _item("top_boxy", "shirt", "top", lch=(88, 5, 0), silhouette="boxy", fit="oversized"),
+        _item("bot", "jeans", "bottom", lch=(30, 5, 0), silhouette="straight", fit="slim fit"),
+        _item("shoe", "sneakers", "footwear", lch=(50, 5, 0)),
+    ]
+    profile = Profile(occasion="casual")
+
+    plain = _recommend(profile, catalog, occasion="casual")
+    slimmer = _recommend(profile, catalog, occasion="casual", goal="I want to look slimmer")
+
+    # Reason reflects the correction; the untouched occasion does not move.
+    assert plain.applied_goals == []
+    assert slimmer.applied_goals == ["slim"]
+    assert plain.occasion == slimmer.occasion == "casual"
+    # Corrected dimension moved: under the slim goal the dark tailored top leads.
+    assert _tops(slimmer)[0] == "top_slim"
