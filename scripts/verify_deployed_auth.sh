@@ -13,8 +13,8 @@
 #
 # Optional overrides: SUPABASE_URL (default prod project), GYF_API_URL
 # (default Render API), GYF_RECOMMEND_RUNS (default 2),
-# GYF_RECOMMEND_CONNECT_TIMEOUT (default 10s), and
-# GYF_RECOMMEND_MAX_TIME (default 90s). Exits non-zero on the first failure.
+# GYF_RECOMMEND_K (default 1), GYF_RECOMMEND_CONNECT_TIMEOUT (default 10s),
+# and GYF_RECOMMEND_MAX_TIME (default 90s). Exits non-zero on the first failure.
 set -euo pipefail
 
 : "${GYF_E2E_EMAIL:?set GYF_E2E_EMAIL}"
@@ -23,10 +23,12 @@ set -euo pipefail
 SUPABASE_URL="${SUPABASE_URL:-https://tabjvaatrikogutkrjom.supabase.co}"
 GYF_API_URL="${GYF_API_URL:-https://gyf-api-va.onrender.com}"
 GYF_RECOMMEND_RUNS="${GYF_RECOMMEND_RUNS:-2}"
+GYF_RECOMMEND_K="${GYF_RECOMMEND_K:-1}"
 GYF_RECOMMEND_CONNECT_TIMEOUT="${GYF_RECOMMEND_CONNECT_TIMEOUT:-10}"
 GYF_RECOMMEND_MAX_TIME="${GYF_RECOMMEND_MAX_TIME:-90}"
 
 [[ "$GYF_RECOMMEND_RUNS" =~ ^[1-9][0-9]*$ ]] || { echo "FAIL: GYF_RECOMMEND_RUNS must be a positive integer" >&2; exit 1; }
+[[ "$GYF_RECOMMEND_K" =~ ^[1-9][0-9]*$ ]] || { echo "FAIL: GYF_RECOMMEND_K must be a positive integer" >&2; exit 1; }
 
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
@@ -100,7 +102,7 @@ for run in $(seq 1 "$GYF_RECOMMEND_RUNS"); do
   timing=$(curl -sS --connect-timeout "$GYF_RECOMMEND_CONNECT_TIMEOUT" \
     --max-time "$GYF_RECOMMEND_MAX_TIME" -D "$headers_file" -o "$body_file" \
     -w 'dns=%{time_namelookup}s connect=%{time_connect}s ttfb=%{time_starttransfer}s total=%{time_total}s code=%{http_code}' \
-    "${GYF_API_URL}/outfits/recommend?occasion=casual&k=1" \
+    "${GYF_API_URL}/outfits/recommend?occasion=casual&k=${GYF_RECOMMEND_K}" \
     --config "$session_config" -H "X-Request-ID: ${request_id}") ||
     fail "recommendation request ${run} failed (request_id=${request_id})"
   code=${timing##*code=}

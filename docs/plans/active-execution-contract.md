@@ -1,6 +1,6 @@
 # GYF active execution contract
 
-Status: **V7 ACTIVE — F2.5-04 CURRENT** · owner approved the v7 direction, Virginia topology and
+Status: **V7 ACTIVE — EXPO-CORE-01 CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
 continued execution on 2026-07-17 · effective repository baseline
 `367a7ffa14532f60e1ba8d1a784785d98da2bbb9` · `P0 GO` recorded 2026-07-17
 
@@ -51,7 +51,7 @@ agent preference are not evidence.
 The P labels below are outcome envelopes, not a second ticket system. The mapped F/EXPO/HL ticket
 is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
-`CURRENT EXECUTION POINTER: F2.5-04`
+`CURRENT EXECUTION POINTER: EXPO-CORE-01`
 
 The pointer advances only after every P0 criterion passes and the owner records `P0 GO` with the
 effective contract version, date and baseline. Approval alone cannot waive reconciliation. No agent
@@ -644,6 +644,39 @@ The current bounded correction must preserve every filter, perception/image elig
 coverage, deterministic fallback and output contract, then prove the same cold/warm deployed
 matrix. `F2.5-04` remains **HOLD** until that proof and its timeout/cancellation evidence pass.
 
+Final deployed correction at SHA `6c3d1a029123f939745a388121dc6aebd21418bc`, Virginia Render
+deploy `dep-d9d0e3ihil2s738jeui0`, closed that hold on 2026-07-17. It keeps the fair indexed query,
+limits each recommendation to two candidate connections inside the existing three-connection
+budget, keeps those already-budgeted connections warm, and changes impression persistence to one
+idempotent UNNEST insert. Candidate checkout is bounded at 3 seconds; event checkout and its
+transaction-local statement work are each bounded at 1 second. Recommendation impression logging
+remains explicitly best-effort, while direct feedback writes still fail rather than claiming
+durability.
+
+The exact authenticated Expo request shape (`occasion=casual&k=5`) passed six serial disposable-user
+runs under the real 15-second client ceiling: one cold and five warm responses were 1.379–1.881
+seconds, all 200 with recommendation ID, complete non-empty outfits, explanations and confidence.
+The correlated server stages measured candidate retrieval at 51.32–60.59 ms, composition at
+833.17–881.42 ms and the 15-row impression transaction at 17.64–59.49 ms; candidate connection wait
+was at most 0.03 ms and fallback stayed false. The client/server residual stayed below 0.8 seconds,
+covering authentication/dependency setup, serialization and network outside the coarse stages.
+
+A four-request concurrent authenticated `k=5` burst also returned four complete 200 responses in
+1.417–4.425 seconds. Under that contention, candidate retrieval was 58.52–1,563.30 ms, composition
+867.60–1,966.35 ms, event persistence 19.26–386.77 ms and candidate checkout at most 50.36 ms; the
+largest bounded residual was below 1.5 seconds. The previously recorded forced 10 ms SQL timeout
+cancelled and recovered the connection; focused regressions cover candidate checkout/SQL failure,
+fallback and the per-request connection cap, and sink checkout/statement bounds. All disposable
+accounts were deleted. Fresh gates passed with 422 API tests/20 environment skips/7 warnings, 95
+Expo tests, 72 retained-web tests, formatting, lint, typecheck, doctrine and both production builds.
+An independent review approved the five-file correction with no blocking findings.
+
+**`F2.5-04 GO`:** the production failure was the unbounded broad candidate scan, amplified by shared
+pool contention and individually executed impression inserts. The indexed candidate query plus
+bounded connection/statement work removes that failure mode without a ranking, topology, index or
+capacity change. Advance exactly once to `EXPO-CORE-01`; this does not claim the Expo trusted outfit
+loop, catalogue currency, Explore or hard launch complete.
+
 Recorded 2026-07-14 evidence: 55 frontend tests passed in 14 files; 346 API tests passed with 4 skipped; 83 ML tests had previously passed; frontend typecheck, lint and production build passed. These historical results do not replace a fresh phase verification.
 
 Every application phase runs:
@@ -661,17 +694,22 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 
 ## Current truth and next work (audited 2026-07-17)
 
-- Production `main` and Expo web are at `367a7ff`; the live Render API is healthy at
-  `gyf-api-va.onrender.com`, but its release SHA is not exposed and must not be inferred from client
-  deployment evidence.
-- Latest CI and CD runs for production pass. This proves the automated contract, not product completeness.
+- Production `main` and the live Virginia Render API are at
+  `6c3d1a029123f939745a388121dc6aebd21418bc`; Render deploy `dep-d9d0e3ihil2s738jeui0` is live at
+  `gyf-api-va.onrender.com`. The Expo host still serves a legacy Supabase anon JWT because the
+  `EXPO_PUBLIC_SUPABASE_ANON_KEY` GitHub environment secret is not a current `sb_publishable_*`
+  key; CD correctly refuses that deployment. The fail-closed client correction is on `main`, but
+  is not deployed evidence until that external secret is corrected and the public bundle passes.
+- CI at `6c3d1a0` passes. CD's retained Vercel job passes and its Expo job fails at the intentional
+  publishable-key gate. This proves the automated contract catches the production mismatch, not
+  product completeness.
 - F1, F2, F3, F4 and the closed F8 durable spine are implemented. F5 stays on the deterministic incumbent; F6 lacks sufficient behavioural data; F7 remains fairness-blocked; F9 has not promoted a try-on lane.
 - Expo is deployed. Auth, onboarding, Explore, Stylist, Saved, Collections (a Saved re-export, not a dupe), Wardrobe, Social feed, Profile, Account (consent/export/DELETE-erasure), Contact, Grievance, Status and Canvas are all wired; the last placeholder (the dev-only `design` gallery) is now a real component gallery, so no route renders a placeholder. Each screen sits behind the unchanged API contracts with pure logic unit-tested and the web export building. Social compose, avatar upload and EXPO-07 deep Explore detail parity (item detail sheet, complete-the-look, occasion/style/slot filters, gender scoping, facet-gated price controls) have shipped. The Stylist now carries every web-oracle
   control, including the fail-closed try-on section (EXPO-10's closed half); its open queue/poll
   flow stays unbuilt until F9 promotes a rendering lane. No Expo route renders a placeholder and no
   Stylist control is missing. Next.js remains the behavioural oracle until the Expo cutover gate.
-- **Observed F2.5 deployment evidence supports the owner-approved Virginia topology but is not a
-  promoted gate.** The measured cause was
+- **The owner-approved Virginia topology is deployed and provider-verified.** The earlier measured
+  catalogue cause was
   topology: the API ran in Render Oregon while Supabase holds the data in Virginia, so every query
   crossed North America. The indexed browse ring already ran 0.4 ms warm, so browse's 0.28 s of work
   was round trips and no software change could reach a 0.3 s SLO whose transit floor alone was
@@ -680,8 +718,9 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   browse work 0.28 s → 0.02 s, cached search 0.62 s → 0.03 s, uncached search 1.66 s → 0.36 s.
   **Oregon failed three of four SLO rows; Virginia passes all four.** This is not the cancelled
   Singapore migration — Virginia already held the data, nothing moved, no region was introduced.
-  Evidence: `scale-3k-inr.md` §1b. The owner selected Virginia on 2026-07-17. P0 must still verify
-  actual services, invoice, release SHA and Oregon rollback state before recording topology proof.
+  Evidence: `scale-3k-inr.md` §1b. The owner selected Virginia on 2026-07-17; P0 then verified the
+  paid Virginia Starter live and the Oregon services suspended as rollback. The current API deploy
+  and exact release SHA are provider-verified above.
 - **The SLO gate greened on errors until `e679ff1`.** `measure_slo.py` timed responses without
   checking status; a newly created service's edge intermittently 404'd and the gate printed "ALL
   SLOs MET" with every surface at the transit floor while serving no data, because an error is
@@ -691,18 +730,16 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   `SET LOCAL` commands, deep/filtered scan setup is one command, and the always-on API keeps a
   bounded 512-query hot embedding cache above durable Postgres. It bounded the software causes but
   did not close the gate on its own; the residual was the round trips the topology fix removed.
-- **F2.5 promotion remains blocked.** The four passing catalogue rows are a single India run on a
-  warm service, not the required sustained observation; the authenticated recommendation request
-  exceeds 90 seconds; and Virginia service, cost, release and Oregon rollback truth are not yet
-  dashboard-verified. P0 closes that external-state evidence gap; `F2.5-04` then closes the activation-critical timing
-  evidence. Neither item can be replaced by owner approval alone.
-- A dedicated deployed test account passed anonymous rejection, Supabase sign-in and authenticated
-  identity round-trip. Authenticated profile, export, collections, saved outfits, wardrobe, browse,
-  search and facets all returned 200. The exact Expo request
-  `GET /outfits/recommend?occasion=casual&k=1` exceeded 90 seconds twice after authentication;
-  unauthenticated rejection remains fast. This localises the current activation blocker after auth
-  and before feedback. Request-correlated stage timing is the next deployment evidence; ranking must
-  not change until that evidence identifies the stalled stage.
+- **Global F2.5 production promotion remains blocked only by sustained catalogue SLO evidence.**
+  The four passing catalogue rows are a single India run on a warm service, not the required
+  sustained observation. `F2.5-04` separately closed the activation-critical recommendation timing
+  diagnosis and correction above, so local execution advances to `EXPO-CORE-01`; no later phase may
+  claim production promotion until the sustained India catalogue observation closes global F2.5.
+- Historical baseline before `F2.5-04`: a dedicated deployed account passed authentication and the
+  surrounding surfaces, while `GET /outfits/recommend?occasion=casual&k=1` exceeded 90 seconds
+  twice. The request-correlated deployments above localized that failure to the broad candidate
+  scan plus downstream pool/event contention and prove the corrected `k=5` path serially and under
+  concurrency. This paragraph preserves the failing baseline; it is not current gate state.
 - Android reached the local SDK 57 Metro bundle. The first device failure was an incomplete SDK 57
   dependency alignment (`react-native-worklets` JavaScript 0.8.3 versus Expo Go native 0.10.0), not
   an API or route failure. The local correction aligns the Expo dependency set and must pass Doctor,

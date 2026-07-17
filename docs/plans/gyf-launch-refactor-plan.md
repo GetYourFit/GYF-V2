@@ -346,19 +346,19 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 
 | Field | Current truth |
 |---|---|
-| Current permitted application slice | `F2.5-04` recommendation timing diagnosis only; active contract write set and evidence gate apply |
+| Current permitted application slice | `EXPO-CORE-01` trusted Expo outfit loop; active contract write set and evidence gate apply |
 | F1b implementation state | Shipped with the F1 gate; retained as historical evidence |
-| Latest automated evidence | Commit `d8ca37f`; CI `29420027112` and CD `29420121072` passed; Expo deployment is live |
-| Known warnings/skips | 17 API tests skipped; existing `<img>` lint warning; framework/deprecation and React `act()` test warnings |
-| F2.5 live state | Not promoted; the active contract owns current production evidence and blockers |
+| Latest automated evidence | API base `6c3d1a0`; CI `29574359092` passed; CD `29574459384` retained-web job passed and Expo job correctly failed its stale publishable-key gate; fresh local gates passed 422 API tests, 95 Expo tests, 72 retained-web tests and both builds |
+| Known warnings/skips | 20 environment-gated API skips; 7 API framework/test-key warnings; existing retained-web `<img>`, Vite/localStorage and React `act()` warnings; Expo `NO_COLOR` build warning |
+| F2.5 live state | `F2.5-04 GO`; global catalogue promotion still awaits sustained India SLO evidence owned by the active contract |
 | Feedback v7 runtime amendment | Owner reports the main Stylist/recommendation, style list and Explore/filters do not work in the real app, and mixed USD is unacceptable for the India default. Runtime proof overrides code-level "shipped" wording; current F2.5 fixes the named recommendation boundary, EXPO-CORE-01 proves the real core loop, and F4-02/P5.4 own currency and Explore truth. |
-| Next candidate after explicit phase transition | `EXPO-CORE-01`, only after the active contract records `F2.5-04 GO` |
+| Previous gate | `F2.5-04 GO` recorded 2026-07-17 from exact deployed serial/concurrent authenticated recommendation evidence |
 | Explicitly not next | Parallel expansion, payment, unlicensed/unevaluated models, infrastructure rewrites and F13 cleanup |
 
-F2.5 is not promoted by this document. Its remaining work is external deployment and a passing
-`python3 scripts/measure_slo.py` result from an Indian vantage. Owner execution amendment
-2026-07-15 permits later local code phases to proceed, but no later production claim may be
-marked complete without its own evidence gate.
+F2.5 is not globally promoted by this document. Its recommendation correction is deployed; the
+remaining work is sustained, passing `python3 scripts/measure_slo.py` evidence from an Indian
+vantage. Owner execution amendment 2026-07-15 permits later local code phases to proceed, but no
+later production claim may be marked complete without its own evidence gate.
 
 ## 1. Decision
 
