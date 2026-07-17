@@ -5,6 +5,10 @@ Also, first of all, make a complete plan for the development and execution of GY
 
 Basically I want my execution to be one shot or maybe in phases, like complete end-to-end phases, where after a phase we can test the app and the complete product.
 
+Also, the catalogue is not Indian. It's showing items in USD. I want it in INR, in whichever currency the user wants. Make sure to think on a first-principle basis, make a plan, and implement that.
+
+Also, the style list and the main page are not working. The main functionality of the GYF recommendation part is not working, and the filters and the explore page are even working.
+
 I have already linked Expo Go with Expo Go, and I am able to see the app and the product, but the product is not really working. It has a lot of issues. The complete issues are not really beautiful. They are pretty ugly.
 
 Audit the complete product from top to bottom and make plans for execution and improvement. Also, convert GYF into a product that has a lot of research and is really, really very well researched and well planned from the arxiv.org website. Make sure to make the complete plans from A to Z of the GYF product and be really efficient and better, and have a moat.
