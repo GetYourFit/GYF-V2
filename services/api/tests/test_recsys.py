@@ -1282,8 +1282,27 @@ def test_candidate_pool_ordered_by_taste_when_signal_present():
         "SELECT set_config('statement_timeout', %s, true)",
         ("5000ms",),
     )
-    sql, _ = pool.calls[1]
-    assert "ORDER BY affinity DESC NULLS LAST" in sql
+    assert pool.calls[1] == (
+        "SELECT set_config('hnsw.ef_search', %s, true), "
+        "set_config('hnsw.iterative_scan', 'relaxed_order', true)",
+        ("80",),
+    )
+    sql, params = pool.calls[2]
+    assert "FROM item_embeddings e" in sql
+    assert "JOIN items i ON i.id = e.item_id" in sql
+    assert "ORDER BY e.embedding <=> %s::vector" in sql
+    assert params == (
+        "[0.1,0.2]",
+        list(conditioning._CATEGORIES_BY_SLOT["top"]),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "[0.1,0.2]",
+        80,
+    )
 
     pool.calls.clear()
     repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=None)

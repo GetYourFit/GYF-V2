@@ -174,6 +174,24 @@ LIMIT %s
 """
 )
 
+# Personalized retrieval must drive from the HNSW-ordered embeddings relation.
+# Ordering the item-first LEFT JOIN by the `affinity` alias forced an exact
+# catalogue scan and sort, which crossed the production statement timeout as soon
+# as a user's first save created a taste vector. The direct distance expression is
+# the pgvector index contract; iterative scan preserves the filters below.
+_CANDIDATES_TASTE = (
+    _SELECT_COLUMNS
+    + """
+FROM item_embeddings e
+JOIN items i ON i.id = e.item_id
+"""
+    + _FILTERS
+    + """
+ORDER BY e.embedding <=> %s::vector
+LIMIT %s
+"""
+)
+
 # Cold start does not rank by the vector itself. Select a small, fair slice from
 # each requested category through the existing available/category/id browse index,
 # interleave those slices, then hydrate only the final IDs. The previous
@@ -222,10 +240,8 @@ WITH per_category AS MATERIALIZED (
 )
 
 # Pool selection is the recommendation ceiling: the composer can only rank what
-# enters the pool. With a taste signal, the pool IS the user's nearest slice
-# (exact scan — the catalog is small enough that no ANN index/beam is involved,
-# so no ef_search/starvation concerns); items without an embedding sort last.
-# Cold start uses perception-complete items, then recency.
+# enters the pool. With a taste signal, the pool IS the user's nearest HNSW slice;
+# cold start uses perception-complete items, then recency.
 #
 # Cold start MUST contain perception-complete items (a stored LCh colour), not
 # raw recency: the catalog's newest slice is exactly the items the perception
@@ -241,7 +257,6 @@ WITH per_category AS MATERIALIZED (
 # brace-escaping to worry about. The taste path gets this for free: its
 # `affinity DESC NULLS LAST` already floats embedded items above the NULL tail.
 _HAS_PERCEPTION = "(e.item_id IS NOT NULL) DESC"
-_ORDER_BY_TASTE = "affinity DESC NULLS LAST, i.created_at DESC"
 _ORDER_BY_RECENCY = _HAS_PERCEPTION + ", i.created_at DESC"
 
 # Wardrobe anchors: the user owns these items, so no region/price predicates.
@@ -275,9 +290,8 @@ class PostgresCandidateRepository:
         request_id: str = "-",
     ) -> dict[str, list[Candidate]]:
         affinity_expr = _AFFINITY_EXPR if taste_vector else "NULL"
-        order = _ORDER_BY_TASTE if taste_vector else _ORDER_BY_RECENCY
         sql = (
-            _CANDIDATES.format(affinity=affinity_expr, order=order)
+            _CANDIDATES_TASTE.format(affinity=affinity_expr)
             if taste_vector
             else _CANDIDATES_COLD.format(affinity=affinity_expr)
         )
@@ -299,12 +313,12 @@ class PostgresCandidateRepository:
                 gender_list,
                 gender_list,
             )
-            fallback_params = prefix + filter_params + (limit_per_slot,)
             params = (
-                fallback_params
+                prefix + filter_params + (_pgvector(taste_vector), limit_per_slot)
                 if taste_vector
                 else filter_params + (limit_per_slot, limit_per_slot)
             )
+            fallback_params = filter_params + (limit_per_slot,)
             checkout_start = time.perf_counter()
             checkout_ms = query_ms = mapping_ms = 0.0
             used_fallback = False
@@ -322,6 +336,12 @@ class PostgresCandidateRepository:
                         "SELECT set_config('statement_timeout', %s, true)",
                         (f"{_QUERY_TIMEOUT_MS}ms",),
                     )
+                    if taste_vector:
+                        conn.execute(
+                            "SELECT set_config('hnsw.ef_search', %s, true), "
+                            "set_config('hnsw.iterative_scan', 'relaxed_order', true)",
+                            (str(max(40, limit_per_slot)),),
+                        )
                     rows = list(conn.execute(sql, params))
                     if not rows and taste_vector is None:
                         # Sparse/local catalogs may not have run perception yet. Keep
