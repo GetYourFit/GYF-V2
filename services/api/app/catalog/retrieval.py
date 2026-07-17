@@ -258,14 +258,16 @@ LIMIT %s OFFSET %s
 """
 
 _SIMILAR = """
-SELECT i.id, i.title, 1 - (e.embedding <=> q.embedding) AS score, i.image_refs,
+SELECT i.id, i.title,
+       1 - (e.embedding <=> (SELECT embedding FROM item_embeddings WHERE item_id = %s)) AS score,
+       i.image_refs,
        i.price, i.currency, i.affiliate_url,
        i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
-CROSS JOIN (SELECT embedding FROM item_embeddings WHERE item_id = %s) q
-WHERE e.item_id <> %s AND i.available AND i.category <> 'unknown' {region} {gender} {category}
-ORDER BY e.embedding <=> q.embedding
+WHERE EXISTS (SELECT 1 FROM item_embeddings WHERE item_id = %s)
+  AND e.item_id <> %s AND i.available AND i.category <> 'unknown' {region} {gender} {category}
+ORDER BY e.embedding <=> (SELECT embedding FROM item_embeddings WHERE item_id = %s)
 LIMIT %s OFFSET %s
 """
 
@@ -350,18 +352,24 @@ class PostgresVectorSearchRepository:
         categories: list[str] | None = None,
     ) -> list[SearchResult]:
         gender_list = sorted(genders) if genders else None
+        # HNSW requires the ORDER BY vector to be a query constant. Joining the
+        # source row as `q.embedding` made PostgreSQL scan and sort the filtered
+        # catalogue (~10s in production) instead of using the HNSW index. An
+        # uncorrelated scalar subquery becomes an InitPlan constant and keeps this
+        # a single database round trip while restoring the ANN index scan.
         sql = _SIMILAR.format(
             region=_REGION_FILTER if region else "",
             gender=_GENDER_FILTER if gender_list else "",
             category=_CATEGORY_FILTER if categories else "",
         )
-        params: list[object] = [item_id, item_id]
+        params: list[object] = [item_id, item_id, item_id]
         if region:
             params.append(region)
         if gender_list:
             params.append(gender_list)
         if categories:
             params.append(categories)
+        params.append(item_id)
         params.extend([k, offset])
         return self._run(
             sql,

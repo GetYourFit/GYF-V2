@@ -131,9 +131,11 @@ def test_similar_sql_excludes_self_and_orders_by_distance():
 
     sql, params = pool.calls[-1]
     assert "e.item_id <> %s" in sql
-    assert "ORDER BY e.embedding <=> q.embedding" in sql
+    assert "CROSS JOIN" not in sql
+    assert "WHERE EXISTS (SELECT 1 FROM item_embeddings WHERE item_id = %s)" in sql
+    assert "ORDER BY e.embedding <=> (SELECT embedding" in sql
     assert "LIMIT %s OFFSET %s" in sql
-    assert params == ("11111111", "11111111", 5, 0)
+    assert params == ("11111111", "11111111", "11111111", "11111111", 5, 0)
     assert results == [
         SearchResult(
             "22222222",
@@ -146,6 +148,43 @@ def test_similar_sql_excludes_self_and_orders_by_distance():
             buy_url="https://shop.example/tee",
         )
     ]
+
+
+def test_similar_preserves_empty_result_for_source_without_embedding():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+
+    assert repo.similar_to_item("missing", k=3, region=None) == []
+    sql, params = pool.calls[-1]
+    assert "WHERE EXISTS (SELECT 1 FROM item_embeddings WHERE item_id = %s)" in sql
+    assert params[:3] == ("missing", "missing", "missing")
+
+
+def test_similar_binds_optional_filters_in_sql_order():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+
+    repo.similar_to_item(
+        "source",
+        k=4,
+        region="IN",
+        offset=2,
+        genders=frozenset({"women", "unisex"}),
+        categories=["shirt", "blouse"],
+    )
+
+    _, params = pool.calls[-1]
+    assert params == (
+        "source",
+        "source",
+        "source",
+        "IN",
+        ["unisex", "women"],
+        ["shirt", "blouse"],
+        "source",
+        4,
+        2,
+    )
 
 
 def test_browse_sql_requires_an_embedding_to_exist():
@@ -433,9 +472,7 @@ def test_postgres_repo_hydrates_and_attributes_results_in_one_query():
     pool = FakePool(
         [("hit", "Linen Shirt", 0.77, ["/hit.jpg"], 49.0, "USD", "https://shop/hit", "cream")]
     )
-    repo = PostgresVectorSearchRepository(
-        "postgresql://unused", pool=pool, linker=PrefixLinker()
-    )
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, linker=PrefixLinker())
 
     out = repo.search_by_vector([0.1, 0.2], k=1, region=None)
 

@@ -145,4 +145,57 @@ describe("GyfApi", () => {
     expect(fetchSpy).toHaveBeenCalledOnce();
     expect((err as DOMException).name).toBe("AbortError");
   });
+
+  it("does not retry alternates after its client timeout", async () => {
+    const fetchSpy = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("timed out", "AbortError")),
+          );
+        }),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const err = await new GyfApi(() => null, "http://api", 1)
+      .alternates("item-1")
+      .catch((e: unknown) => e);
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    expect((err as DOMException).name).toBe("AbortError");
+  });
+
+  it("still retries a safe GET after a gateway failure", async () => {
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(((callback: () => void) => {
+      callback();
+      return 0;
+    }) as typeof setTimeout);
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ occasion: "casual" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(new GyfApi(() => null, "http://api").getProfile()).resolves.toMatchObject({
+      occasion: "casual",
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("still retries a safe GET after a network drop", async () => {
+    vi.spyOn(globalThis, "setTimeout").mockImplementation(((callback: () => void) => {
+      callback();
+      return 0;
+    }) as typeof setTimeout);
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("network unavailable"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ occasion: "casual" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(new GyfApi(() => null, "http://api").getProfile()).resolves.toMatchObject({
+      occasion: "casual",
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
 });

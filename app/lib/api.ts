@@ -466,8 +466,9 @@ export class GyfApi {
       } catch (e) {
         if (signal?.aborted) throw e;
         if ((e as { name?: string }).name === "AbortError") {
-          lastErr = e;
-          continue;
+          // A timeout is this request's total latency bound, not a retry signal.
+          // Retrying it made safe GETs stall for 3× the advertised 15 seconds.
+          throw e;
         }
         if (e instanceof ApiError) throw e;
         lastErr = e; // network drop (TypeError) — retry
