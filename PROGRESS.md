@@ -2826,3 +2826,29 @@ Expo gate: typecheck clean, 51 tests pass, web export builds. Expo parity is fun
 remaining Expo items are enhancements (social compose, avatar upload, deeper Stylist/Explore
 detail), not placeholders. The real launch blocker stays the two owner infra flips (Modal deploy +
 Render Singapore) for F2.5, plus F7/F9 owner gates.
+
+## 2026-07-17 — EXPO-CORE-01 (pointer) continuation
+
+Owner directive: continue the execution contract, don't drift. Declined the
+whole-product rewrite / fallback-removal / boil-the-ocean asks — they contradict
+the binding contract (rewrite=Reject, deterministic fallback=required) and the
+owner confirmed "Continue EXPO-CORE-01, no rewrite, fallbacks kept."
+
+Shipped:
+- `7c41ae3` fix(recsys): taste candidates now drive from the HNSW pgvector index.
+  Real prod bug — the item-first JOIN ordered by the `affinity` alias forced an
+  exact catalogue scan that crossed the production statement timeout the moment a
+  user saved their first item, silently breaking the core loop for returning
+  users (cold-start unaffected, so it hid). All filters + deterministic
+  cold-start fallback preserved. Deployed: CI+CD green, Render `gyf-api-va` health 200.
+- `af6b937` test(recsys): frozen correction-causality scenarios for the P2 exit
+  gate — budget/occasion/goal corrections each move the corrected dimension,
+  leave untouched constraints stable, repeats return an identical slate, reason
+  reflects the change. 4 tests, real recommend() pipeline.
+
+Gates: 428 API tests pass / 20 skip, ruff clean, doctrine (ports/promotion/
+license) pass, 95 Expo tests pass. Client loop wires recommendation_id + occasion.
+
+Still owner/device-gated (not code): sustained India catalogue SLO observation,
+credentialed deployed taste-path verification, Google Play + Apple access, 30-day
+beta. These close EXPO-CORE-01 / hard launch — more code cannot.
