@@ -25,14 +25,21 @@ export function ConfidenceLabel({
         style={{
           alignSelf: "flex-start",
           backgroundColor: colors[theme].surfaceRaised,
-          borderColor: colors[theme].border,
+          // The signature marks GYF's own measured confidence — and only when
+          // it is measured. An unknown value stays quiet grey, never gilded.
+          borderColor: known ? colors[theme].accentInk : colors[theme].border,
           borderRadius: radii.capsule,
           borderWidth: 1,
           paddingHorizontal: spacing.sm,
           paddingVertical: spacing.xs,
         }}
       >
-        <GyfText variant="mono" theme={theme} tone={known ? "text" : "muted"}>
+        <GyfText
+          variant="mono"
+          theme={theme}
+          tone={known ? "text" : "muted"}
+          style={known ? { color: colors[theme].accentInk } : undefined}
+        >
           {label}
         </GyfText>
       </View>
