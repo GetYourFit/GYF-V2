@@ -1,6 +1,9 @@
 # GYF launch and refactor plan
 
-Status: **ACTIVE, subordinate to** [`active-execution-contract.md`](./active-execution-contract.md).
+Status: **MAINTAINED SUBORDINATE TICKET REGISTER — NON-EXECUTABLE BY ITSELF**. The sole current
+pointer, outcome order, stack decisions and phase gates live in
+[`active-execution-contract.md`](./active-execution-contract.md). This file supplies mapped ticket
+detail and historical evidence only; an agent may execute nothing merely because it appears here.
 Product intent is [`ideas-complete.md`](../vision/ideas-complete.md); engineering law is
 [`engineering-doctrine.md`](../engineering-doctrine.md); cost and latency targets are
 [`scale-3k-inr.md`](./scale-3k-inr.md). If this document conflicts with those sources, this
@@ -179,7 +182,7 @@ framework or a custom model server before a measured ceiling.
 | Layer | Monthly hard plan | Trigger |
 | --- | ---: | --- |
 | Render Static Expo web | ₹0 while allowance holds | meter [outbound bandwidth](https://render.com/docs/new-workspace-plans); prove commercial terms, headers, custom domain and rollback |
-| Existing Render Starter API (Oregon) | ≤₹700 | retain the paid service; no Singapore migration; optimize measured causes first |
+| Existing Render Starter API (Virginia) | ≤₹700 | retain the single paid production service; keep Oregon suspended only as the gated rollback; no Singapore migration |
 | Supabase + Upstash free | ₹0 | review at 70% of any DB/MAU/storage/egress/connection limit |
 | Modal credits | ₹0 cash while verified | credits are not an availability promise; reconcile invoice and export audit evidence beyond the provider's [short Starter log retention](https://modal.com/pricing) |
 | Optional VTON cash cap | ₹1,500 | zero before F9; quota from successful-render cost |
@@ -343,12 +346,12 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 
 | Field | Current truth |
 |---|---|
-| Current permitted application slice | F2.5 catalogue/search diagnosis/SLO closure; local Expo core activation loop, followed sequentially by the hard-launch matrix |
+| Current permitted application slice | `F2.5-04` recommendation timing diagnosis only; active contract write set and evidence gate apply |
 | F1b implementation state | Shipped with the F1 gate; retained as historical evidence |
 | Latest automated evidence | Commit `d8ca37f`; CI `29420027112` and CD `29420121072` passed; Expo deployment is live |
 | Known warnings/skips | 17 API tests skipped; existing `<img>` lint warning; framework/deprecation and React `act()` test warnings |
-| F2.5 live state | **FAIL** — fresh India p50: health 0.86s, browse 17.01s, cached search 1.36s, uncached search 9.29s |
-| Next candidate after explicit phase transition | Instrument and isolate catalogue stages; fix the measured root cause; prove all SLO rows; finish the smallest Expo outfit-decision journey |
+| F2.5 live state | Not promoted; the active contract owns current production evidence and blockers |
+| Next candidate after explicit phase transition | `EXPO-CORE-01`, only after the active contract records `F2.5-04 GO` |
 | Explicitly not next | Parallel expansion, payment, unlicensed/unevaluated models, infrastructure rewrites and F13 cleanup |
 
 F2.5 is not promoted by this document. Its remaining work is external deployment and a passing
@@ -364,8 +367,8 @@ incomplete. The existing Next.js client is kept as
 a read-only rollback surface until Expo passes parity; it is deleted only after the migration
 gate and the contract's F13 deletion rules.
 
-F1b is complete in the application baseline. The current migration executes the approved Expo
-vertical slices sequentially; each slice must retain truthful capability states and regression
+F1b is complete historical evidence. Expo vertical slices may resume only when selected by the
+active contract's sole pointer; each slice must retain truthful capability states and regression
 coverage. No model promotion, payment, or broad cleanup starts before its own phase gate.
 
 The migration is a client replacement, not a backend or ML rewrite. It happens in vertical
@@ -420,7 +423,7 @@ Supabase Postgres + pgvector + RLS + Redis rate limits + private media
         │
 Consent-filtered event spine → offline export → eval report → shadow/cohort → promotion
         │
-Commercial Expo web host + always-on Oregon Render Starter + scale-to-zero GPU lanes
+Commercial Expo web host + always-on Virginia Render Starter + scale-to-zero GPU lanes
 ```
 
 The application layer imports no model package directly. New capability means: contract/port,
@@ -729,7 +732,7 @@ version-sensitive API ([Expo Router](https://docs.expo.dev/router/introduction/)
 
 ## 5. Backend and data plan
 
-### F1b — current slice
+### F1b — historical completed slice (non-executable)
 
 Scope only these three claims, one regression each:
 
@@ -959,7 +962,7 @@ use the same staged/rollback discipline as the backend ([EAS deployment](https:/
 The loop is production-grade only when any user-visible result can be traced to its data, model,
 rule, UI build, facts, consent basis and evaluation run—and later corrected, deleted or rolled back.
 
-## 10. Immediate next action
+## 10. Historical pre-v7 next action (non-executable)
 
 F1/F2 code is complete in the recorded baseline. Do not rewrite it. The next external packet is
 **F2.5 diagnosis and closeout**:
@@ -1175,7 +1178,7 @@ F0 is documentation and evidence only. It must not alter application behaviour.
 
 - **Write set:** `docs/plans/active-execution-contract.md`, `docs/plans/gyf-launch-refactor-plan.md`
   only.
-- **Work:** record the application baseline, current slice F1b, deployed URLs, enabled/disabled
+- **Work (historical):** record the application baseline, then-current slice F1b, deployed URLs, enabled/disabled
   capabilities, current model registry, current environment names, and owner-controlled secrets/
   services without copying secret values.
 - **Evidence:** fresh `git status`, baseline commit, `make doctrine`, historical test results
@@ -1215,7 +1218,7 @@ F0 is documentation and evidence only. It must not alter application behaviour.
 
 ### F0 execution evidence — 2026-07-15
 
-- **Comparison baseline:** contract baseline `eb800965beeb5835c35bd8b8a269589f407e58f9`;
+- **Historical comparison baseline:** `eb800965beeb5835c35bd8b8a269589f407e58f9`;
   current application commit `76a23fa`; working tree contains this plan plus the documented
   execution-amendment changes.
 - **Route inventory:** auth (`login`, `signup`, `forgot-password`, `reset-password`); app shell
@@ -1243,8 +1246,8 @@ reviewed.
 
 ## 13. F1 — destructive correctness and shared contracts
 
-F1 remains the current execution authority. F1a/F1c are listed for completeness; F1b is the
-only application work permitted now.
+F1 is a historical ticket register. No F1 item is current execution authority; the active
+contract's sole pointer determines all permitted work.
 
 ### F1a-01 — Preserve omitted profile fields
 

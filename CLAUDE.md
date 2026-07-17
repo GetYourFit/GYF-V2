@@ -29,7 +29,8 @@ second roadmap.
 - GYF is not public-launch-ready.
 - The current production gate is **F2.5**: catalogue browse/search must pass the fixed
   India-vantage SLOs with production `EXPLAIN (ANALYZE, BUFFERS)` evidence.
-- The existing paid Render Starter remains in **Oregon**. Do not plan or provision Singapore.
+- The single paid Render Starter in **Virginia** is production. Keep Oregon suspended only as the
+  time-bounded rollback until its rollback gate closes. Do not plan or provision Singapore.
 - Local work may continue sequentially while F2.5 external promotion is pending, but local code,
   passing tests or merged commits do not promote a production phase.
 - Expo Router is the replacement client for iOS, Android and web. Next.js is a temporary
@@ -104,7 +105,7 @@ consent-filtered events → offline evaluation → shadow/cohort → promotion
 ```
 
 - Local development: Apple `container`.
-- Linux production: Docker image on the existing Oregon Render Starter.
+- Linux production: Docker image on the existing Virginia Render Starter.
 - Cache/rate limits: existing Upstash Redis.
 - Heavy inference: measured scale-to-zero adapter only after its gate.
 - Web commercial candidate: Expo static output on a commercially permitted host after parity.

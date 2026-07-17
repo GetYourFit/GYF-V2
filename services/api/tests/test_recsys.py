@@ -409,6 +409,74 @@ def test_service_recommend_honors_k():
     assert rec.recommendation_id
 
 
+def test_service_recommend_emits_correlated_stage_timings(caplog):
+    with caplog.at_level("INFO", logger="gyf"):
+        recommend(
+            Profile(occasion="casual"),
+            DEV_USER,
+            InMemoryCandidateRepository(_three_slot_catalog()),
+            InMemoryTasteRepository(),
+            _CollectingSink(),
+            "casual",
+            None,
+            1,
+            anchor_item_id="t1",
+            request_id="req-test-123",
+        )
+
+    stage_records = {
+        record.__dict__.get("stage"): record
+        for record in caplog.records
+        if record.getMessage().startswith("recommendation_stage ")
+        and record.__dict__.get("request_id") == "req-test-123"
+    }
+    assert {
+        "profile_conditioning",
+        "taste_history",
+        "candidate_retrieval",
+        "wardrobe_grounding",
+        "composition",
+        "impression_logging",
+        "anchor_lookup",
+        "finalization",
+    } <= stage_records.keys()
+    assert all(
+        isinstance(record.__dict__.get("duration_ms"), (int, float))
+        and record.__dict__.get("duration_ms") >= 0
+        and record.__dict__.get("outcome") == "success"
+        for record in stage_records.values()
+    )
+
+
+def test_service_recommend_emits_error_stage_timing(caplog):
+    class FailingTasteRepository(InMemoryTasteRepository):
+        def engagements(self, user_id, limit):
+            raise RuntimeError("history unavailable")
+
+    with caplog.at_level("INFO", logger="gyf"), pytest.raises(RuntimeError):
+        recommend(
+            Profile(occasion="casual"),
+            DEV_USER,
+            InMemoryCandidateRepository(_three_slot_catalog()),
+            FailingTasteRepository(),
+            _CollectingSink(),
+            "casual",
+            None,
+            1,
+            request_id="req-error-123",
+        )
+
+    record = next(
+        record
+        for record in caplog.records
+        if record.getMessage().startswith("recommendation_stage ")
+        and record.__dict__.get("request_id") == "req-error-123"
+        and record.__dict__.get("stage") == "taste_history"
+    )
+    assert record.__dict__.get("outcome") == "error"
+    assert record.__dict__.get("duration_ms") >= 0
+
+
 # --- Taste model (online embedding) ----------------------------------------
 
 

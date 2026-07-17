@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import logging
+import time
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 
 from ..affiliate import linker_from_settings
@@ -28,6 +31,32 @@ from ..sink import EventSink
 from ..wardrobe import WardrobeRepository
 
 router = APIRouter(tags=["recommendations"])
+logger = logging.getLogger("gyf")
+
+
+def _profile_for_request(repo: ProfileRepository, user_id: str, request: Request):
+    start = time.perf_counter()
+    outcome = "success"
+    try:
+        return repo.get(user_id)
+    except BaseException:
+        outcome = "error"
+        raise
+    finally:
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        request_id = getattr(request.state, "request_id", "-")
+        logger.info(
+            "recommendation_stage request_id=%s stage=profile outcome=%s duration_ms=%.2f",
+            request_id,
+            outcome,
+            duration_ms,
+            extra={
+                "request_id": request_id,
+                "stage": "profile",
+                "outcome": outcome,
+                "duration_ms": duration_ms,
+            },
+        )
 
 
 @router.get(
@@ -36,6 +65,7 @@ router = APIRouter(tags=["recommendations"])
     dependencies=[Depends(rate_limit("recommend", "rate_limit_recommend"))],
 )
 def recommend_outfits(
+    request: Request,
     occasion: str | None = Query(
         None,
         max_length=64,
@@ -87,7 +117,7 @@ def recommend_outfits(
     request ("look taller / slimmer / broader") that biases the look toward that
     visual effect. 404s before onboarding.
     """
-    profile = profile_repo.get(principal.user_id)
+    profile = _profile_for_request(profile_repo, principal.user_id, request)
     if profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
     return recommend(
@@ -101,6 +131,7 @@ def recommend_outfits(
         k,
         goal,
         wardrobe_repo,
+        request_id=getattr(request.state, "request_id", "-"),
     )
 
 
@@ -110,6 +141,7 @@ def recommend_outfits(
     dependencies=[Depends(rate_limit("recommend", "rate_limit_recommend"))],
 )
 def complete_look(
+    request: Request,
     item_id: str = Query(..., description="Catalog item every returned outfit is built around."),
     occasion: str | None = Query(
         None,
@@ -138,7 +170,7 @@ def complete_look(
     NL goals, diversity, explanation and confidence all apply. 404s when the
     item is unknown or the user has no profile yet.
     """
-    profile = profile_repo.get(principal.user_id)
+    profile = _profile_for_request(profile_repo, principal.user_id, request)
     if profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
     try:
@@ -154,6 +186,7 @@ def complete_look(
             goal,
             wardrobe_repo,
             anchor_item_id=item_id,
+            request_id=getattr(request.state, "request_id", "-"),
         )
     except LookupError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown item") from None

@@ -16,7 +16,10 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import time
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 
 from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 
@@ -49,6 +52,32 @@ _TASTE_HISTORY = 200
 _WARDROBE_ANCHORS = 12
 
 
+@contextmanager
+def _stage(request_id: str, name: str) -> Iterator[None]:
+    start = time.perf_counter()
+    outcome = "success"
+    try:
+        yield
+    except BaseException:
+        outcome = "error"
+        raise
+    finally:
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        logger.info(
+            "recommendation_stage request_id=%s stage=%s outcome=%s duration_ms=%.2f",
+            request_id,
+            name,
+            outcome,
+            duration_ms,
+            extra={
+                "request_id": request_id,
+                "stage": name,
+                "outcome": outcome,
+                "duration_ms": duration_ms,
+            },
+        )
+
+
 def recommend(
     profile: Profile,
     user_id: str,
@@ -62,6 +91,7 @@ def recommend(
     wardrobe_repo: WardrobeRepository | None = None,
     linker: AffiliateLinker | None = None,
     anchor_item_id: str | None = None,
+    request_id: str = "-",
 ) -> OutfitRecommendation:
     """Produce up to ``k`` diverse, explained, taste-aware outfits and log them.
 
@@ -82,24 +112,29 @@ def recommend(
     diversity and attribution as the feed. Raises :class:`LookupError` when the
     item is unknown, so the route can answer 404 honestly.
     """
-    goals = parse_goal(goal)
-    constraints = conditioning.resolve(profile, occasion, region, goals)
-    taste = build_taste(taste_repo.engagements(user_id, _TASTE_HISTORY))
+    with _stage(request_id, "profile_conditioning"):
+        goals = parse_goal(goal)
+        constraints = conditioning.resolve(profile, occasion, region, goals)
+    with _stage(request_id, "taste_history"):
+        taste = build_taste(taste_repo.engagements(user_id, _TASTE_HISTORY))
 
     # Gendered relevance: draw only from the user's slice + unisex (unfaceted
     # items always pass). Nonbinary/unknown users see the full catalog.
     genders = catalog_genders_for(profile.gender)
-    pools = candidates.candidates_by_slot(
-        CANDIDATE_SLOTS,
-        constraints.region,
-        constraints.max_price,
-        _CANDIDATES_PER_SLOT,
-        taste.vector if taste.has_signal else None,
-        genders if genders != CATALOG_GENDERS else None,
-    )
-    wardrobe = _ground_in_wardrobe(pools, user_id, candidates, wardrobe_repo)
+    with _stage(request_id, "candidate_retrieval"):
+        pools = candidates.candidates_by_slot(
+            CANDIDATE_SLOTS,
+            constraints.region,
+            constraints.max_price,
+            _CANDIDATES_PER_SLOT,
+            taste.vector if taste.has_signal else None,
+            genders if genders != CATALOG_GENDERS else None,
+        )
+    with _stage(request_id, "wardrobe_grounding"):
+        wardrobe = _ground_in_wardrobe(pools, user_id, candidates, wardrobe_repo)
     if anchor_item_id is not None:
-        anchor = _pin_anchor(pools, anchor_item_id, candidates)
+        with _stage(request_id, "anchor_lookup"):
+            anchor = _pin_anchor(pools, anchor_item_id, candidates)
         # Only blueprints that include the anchor's slot may assemble — every
         # returned look must genuinely contain the pinned product.
         constraints = dataclasses.replace(
@@ -107,30 +142,33 @@ def recommend(
             blueprints=tuple(bp for bp in constraints.blueprints if anchor.slot in bp),
         )
     strength = taste.strength if taste.has_signal else 0.0
-    scored = compose(pools, constraints, k, strength, wardrobe)
+    with _stage(request_id, "composition"):
+        scored = compose(pools, constraints, k, strength, wardrobe)
 
     recommendation_id = str(uuid.uuid4())
     applied_goals = [g.value for g in goals]
-    _log_impressions(
-        sink,
-        user_id,
-        recommendation_id,
-        constraints.occasion,
-        applied_goals,
-        scored,
-        anchor_item_id,
-    )
+    with _stage(request_id, "impression_logging"):
+        _log_impressions(
+            sink,
+            user_id,
+            recommendation_id,
+            constraints.occasion,
+            applied_goals,
+            scored,
+            anchor_item_id,
+        )
 
     # Monetize + attribute every shop link at serve time: the Cuelinks subid IS
     # the recommendation_id, so a later conversion (transactions API) joins back
     # to the exact impression slate — revenue and the strongest training label
     # from the same click. Owned garments show no shop link, so they stay raw.
-    outfits = [Outfit.from_scored(o) for o in scored]
-    linker = linker or linker_from_settings()
-    for outfit in outfits:
-        for item in outfit.items:
-            if not item.owned:
-                item.affiliate_url = linker.wrap(item.affiliate_url, recommendation_id)
+    with _stage(request_id, "finalization"):
+        outfits = [Outfit.from_scored(o) for o in scored]
+        linker = linker or linker_from_settings()
+        for outfit in outfits:
+            for item in outfit.items:
+                if not item.owned:
+                    item.affiliate_url = linker.wrap(item.affiliate_url, recommendation_id)
 
     return OutfitRecommendation(
         recommendation_id=recommendation_id,

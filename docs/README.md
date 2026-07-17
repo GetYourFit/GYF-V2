@@ -54,6 +54,7 @@ source of execution order and gates.
   [`feedbacks/gyf-feedback-v4.md`](./feedbacks/gyf-feedback-v4.md),
   [`feedbacks/gyf-feedback-v5.md`](./feedbacks/gyf-feedback-v5.md),
   [`feedbacks/gyf-feedback-v6.md`](./feedbacks/gyf-feedback-v6.md),
+  [`feedbacks/gyf-feedback-v7.md`](./feedbacks/gyf-feedback-v7.md),
   [`feedbacks/gyf-agent-eval-2026-07-10.md`](./feedbacks/gyf-agent-eval-2026-07-10.md), and
   [`feedbacks/gyf-v6-response-audit.md`](./feedbacks/gyf-v6-response-audit.md). These preserve
   observations; their old fixes/provider advice is not current authority.

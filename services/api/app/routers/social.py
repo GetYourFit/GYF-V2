@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 
 from ..auth import Principal
 from ..catalog.directory import ItemDirectory
@@ -164,6 +164,7 @@ def list_follows(
     dependencies=[Depends(rate_limit("recommend", "rate_limit_recommend"))],
 )
 def recreate_post(
+    request: Request,
     post_id: str,
     principal: Principal = Depends(require_active_principal),
     social_repo: SocialRepository = Depends(get_social_repo),
@@ -194,4 +195,5 @@ def recreate_post(
         post.occasion,
         post.region,
         k=5,
+        request_id=getattr(request.state, "request_id", "-"),
     )

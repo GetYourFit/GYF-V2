@@ -12,14 +12,28 @@
 #     bash scripts/verify_deployed_auth.sh
 #
 # Optional overrides: SUPABASE_URL (default prod project), GYF_API_URL
-# (default Render API). Exits non-zero on the first failed claim.
+# (default Render API), GYF_RECOMMEND_RUNS (default 2),
+# GYF_RECOMMEND_CONNECT_TIMEOUT (default 10s), and
+# GYF_RECOMMEND_MAX_TIME (default 90s). Exits non-zero on the first failure.
 set -euo pipefail
 
 : "${GYF_E2E_EMAIL:?set GYF_E2E_EMAIL}"
 : "${GYF_E2E_PASSWORD:?set GYF_E2E_PASSWORD}"
 : "${SUPABASE_ANON_KEY:?set SUPABASE_ANON_KEY (the public anon key)}"
 SUPABASE_URL="${SUPABASE_URL:-https://tabjvaatrikogutkrjom.supabase.co}"
-GYF_API_URL="${GYF_API_URL:-https://gyf-api.onrender.com}"
+GYF_API_URL="${GYF_API_URL:-https://gyf-api-va.onrender.com}"
+GYF_RECOMMEND_RUNS="${GYF_RECOMMEND_RUNS:-2}"
+GYF_RECOMMEND_CONNECT_TIMEOUT="${GYF_RECOMMEND_CONNECT_TIMEOUT:-10}"
+GYF_RECOMMEND_MAX_TIME="${GYF_RECOMMEND_MAX_TIME:-90}"
+
+[[ "$GYF_RECOMMEND_RUNS" =~ ^[1-9][0-9]*$ ]] || { echo "FAIL: GYF_RECOMMEND_RUNS must be a positive integer" >&2; exit 1; }
+
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
+auth_config="$tmp_dir/auth.curl"
+session_config="$tmp_dir/session.curl"
+auth_payload="$tmp_dir/auth.json"
+chmod 700 "$tmp_dir"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -32,21 +46,28 @@ anon_code=$(curl -sS -o /dev/null -w '%{http_code}' "${GYF_API_URL}/me")
   fail "anonymous /me returned ${anon_code}, expected 401/403"
 echo "ok: anonymous /me refused (${anon_code})"
 
-# 2. Password sign-in on the deployed Supabase Auth.
-token_response=$(curl -sS -X POST \
+# 2. Password sign-in on the deployed Supabase Auth. Credentials go through
+# mode-0600 files, never process arguments visible to another local process.
+printf 'header = "apikey: %s"\nheader = "Content-Type: application/json"\n' \
+  "$SUPABASE_ANON_KEY" > "$auth_config"
+printf '%s\n%s' "$GYF_E2E_EMAIL" "$GYF_E2E_PASSWORD" | python3 -c \
+  'import json,sys; print(json.dumps({"email": sys.stdin.readline().rstrip("\n"), "password": sys.stdin.read()}))' \
+  > "$auth_payload"
+chmod 600 "$auth_config" "$auth_payload"
+token_response=$(curl -sS --config "$auth_config" -X POST \
   "${SUPABASE_URL}/auth/v1/token?grant_type=password" \
-  -H "apikey: ${SUPABASE_ANON_KEY}" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"${GYF_E2E_EMAIL}\",\"password\":\"${GYF_E2E_PASSWORD}\"}")
+  --data-binary "@${auth_payload}")
 access_token=$(printf '%s' "$token_response" | python3 -c \
   'import json,sys; print(json.load(sys.stdin).get("access_token",""))')
 [[ -n "$access_token" ]] ||
-  fail "sign-in issued no access_token: $(printf '%s' "$token_response" | head -c 300)"
+  fail "sign-in issued no access_token"
+printf 'header = "Authorization: Bearer %s"\n' "$access_token" > "$session_config"
+chmod 600 "$session_config"
 echo "ok: deployed Supabase sign-in issued a session"
 
 # 3. The session round-trips through the deployed API.
 me_response=$(curl -sS -w '\n%{http_code}' "${GYF_API_URL}/me" \
-  -H "Authorization: Bearer ${access_token}")
+  --config "$session_config")
 me_code=${me_response##*$'\n'}
 me_body=${me_response%$'\n'*}
 [[ "$me_code" == "200" ]] || fail "/me with session returned ${me_code}: ${me_body}"
@@ -55,5 +76,34 @@ me_email=$(printf '%s' "$me_body" | python3 -c \
 [[ "$me_email" == "$GYF_E2E_EMAIL" ]] ||
   fail "/me email '${me_email}' does not match signed-in user '${GYF_E2E_EMAIL}'"
 echo "ok: authenticated /me round-trip returned the signed-in identity"
+
+# 4. Authenticated recommendation smoke test (cold then warm by default).
+for run in $(seq 1 "$GYF_RECOMMEND_RUNS"); do
+  phase=cold; [[ "$run" -gt 1 ]] && phase=warm
+  request_id="gyf-auth-recommend-${run}-$(date +%s)-$$-${RANDOM}"
+  body_file="$tmp_dir/body-${run}"
+  headers_file="$tmp_dir/headers-${run}"
+  timing=$(curl -sS --connect-timeout "$GYF_RECOMMEND_CONNECT_TIMEOUT" \
+    --max-time "$GYF_RECOMMEND_MAX_TIME" -D "$headers_file" -o "$body_file" \
+    -w 'dns=%{time_namelookup}s connect=%{time_connect}s ttfb=%{time_starttransfer}s total=%{time_total}s code=%{http_code}' \
+    "${GYF_API_URL}/outfits/recommend?occasion=casual&k=1" \
+    --config "$session_config" -H "X-Request-ID: ${request_id}") ||
+    fail "recommendation request ${run} failed (request_id=${request_id})"
+  code=${timing##*code=}
+  [[ "$code" == "200" ]] || fail "recommendation request ${run} returned ${code} (request_id=${request_id})"
+  printf '%s' "$timing" | sed "s/ code=.*//" | sed "s/^/ok: recommendation ${run} ${phase} (${request_id}) /"
+  echoed_id=$(awk -F': ' 'tolower($1) == "x-request-id" {gsub("\r", "", $2); print $2}' "$headers_file" | tail -n 1)
+  [[ "$echoed_id" == "$request_id" ]] || fail "recommendation ${run} did not echo X-Request-ID (request_id=${request_id})"
+  python3 - "$body_file" <<'PY' || fail "recommendation ${run} body missing recommendation_id or outfits (request_id=${request_id})"
+import json, sys
+body = json.load(open(sys.argv[1]))
+assert body.get("recommendation_id")
+assert isinstance(body.get("outfits"), list) and body["outfits"]
+outfit = body["outfits"][0]
+assert isinstance(outfit.get("items"), list) and outfit["items"]
+assert isinstance(outfit.get("explanation"), str) and outfit["explanation"].strip()
+assert isinstance(outfit.get("confidence"), (int, float))
+PY
+done
 
 echo "PASS: deployed authenticated session verified (${GYF_API_URL})"

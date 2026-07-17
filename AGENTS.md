@@ -18,8 +18,9 @@ Older plans, progress logs and feedback responses are evidence, never execution 
   owned lane; train only after ≥2,000 authorised pairs and a stable ≥10% FASHN failure cluster.
 - The production gate is F2.5. Local work may continue in contract order, but no phase may claim
   production promotion without its evidence gate.
-- Keep the existing paid Oregon Render Starter. Do not plan or provision Singapore. A later
-  non-Singapore topology experiment requires measured failure and a separate owner decision.
+- Keep the single paid Virginia Render Starter as production. Keep the Oregon service suspended
+  only as a time-bounded rollback until its rollback gate closes; do not plan or provision
+  Singapore. Any later topology experiment requires measured failure and a separate owner decision.
 - Every non-conflicting requirement in the canonical vision and `docs/feedbacks/*.md` is hard-launch
   scope. Execute the traceability matrix sequentially; security, privacy, licensing, accessibility
   and truthful claims resolve conflicts.
