@@ -42,7 +42,7 @@ export function AtelierButton({
             ? "transparent"
             : disabled
               ? palette.surfaceRaised
-              : palette.text,
+              : palette.accent,
           borderColor: palette.border,
           borderCurve: "continuous",
           borderRadius: radii.control,
@@ -56,7 +56,7 @@ export function AtelierButton({
       ]}
     >
       <GyfText
-        style={[typography.bodySmall, !disabled && !secondary && { color: palette.textInverse }]}
+        style={[typography.bodySmall, !disabled && !secondary && { color: palette.accentText }]}
         theme={theme}
         tone={disabled || secondary ? (disabled ? "faint" : "muted") : undefined}
       >

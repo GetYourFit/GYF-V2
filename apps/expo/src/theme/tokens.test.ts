@@ -24,6 +24,18 @@ describe("Atelier tokens", () => {
     }
   });
 
+  it("keeps the signature accent readable as a fill and as ink", () => {
+    for (const theme of ["dark", "light"] as const) {
+      const c = colors[theme];
+      // Text sitting on the accent fill (the primary CTA) must be legible.
+      expect(contrastRatio(c.accentText, c.accent)).toBeGreaterThanOrEqual(4.5);
+      // Gold used AS text/detail on every ground must clear normal-text AA.
+      for (const bg of [c.bg, c.surface, c.surfaceRaised]) {
+        expect(contrastRatio(c.accentInk, bg)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
   it("keeps primary text readable in both themes", () => {
     expect(contrastRatio(colors.dark.text, colors.dark.bg)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(colors.light.text, colors.light.bg)).toBeGreaterThanOrEqual(4.5);
