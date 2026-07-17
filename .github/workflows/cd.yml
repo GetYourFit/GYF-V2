@@ -98,6 +98,9 @@ jobs:
           elif [[ "$EXPO_PUBLIC_API_URL" != https://* ]] || [[ "$EXPO_PUBLIC_SUPABASE_URL" != https://* ]]; then
             echo "Expo API and Supabase URLs must use HTTPS." >&2
             exit 1
+          elif [[ "$EXPO_PUBLIC_SUPABASE_ANON_KEY" != sb_publishable_?* ]]; then
+            echo "Expo requires a current Supabase publishable key; refusing a legacy anon JWT." >&2
+            exit 1
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
@@ -124,7 +127,11 @@ jobs:
             exit 1
           fi
           if ! grep -R -F -- "$EXPO_PUBLIC_SUPABASE_ANON_KEY" dist >/dev/null; then
-            echo "Expo bundle does not contain configured Supabase anon key; refusing deploy." >&2
+            echo "Expo bundle does not contain configured Supabase publishable key; refusing deploy." >&2
+            exit 1
+          fi
+          if grep -R -F -- 'eyJhbGciOiJIUzI1Ni' dist >/dev/null; then
+            echo "Expo bundle contains a legacy Supabase JWT; refusing deploy." >&2
             exit 1
           fi
           npm exec --yes eas-cli@latest -- deploy --prod --non-interactive --dev-domain=get-your-fit

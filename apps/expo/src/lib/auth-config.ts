@@ -15,6 +15,11 @@ export function readSupabaseEnv(
       "Supabase auth is not configured: set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY",
     );
   }
+  if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(anonKey)) {
+    throw new Error(
+      "Supabase auth requires a current publishable key; legacy API keys are rejected",
+    );
+  }
   try {
     const parsed = new URL(url);
     const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);

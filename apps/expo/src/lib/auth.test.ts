@@ -12,22 +12,37 @@ describe("readSupabaseEnv", () => {
     expect(
       readSupabaseEnv({
         EXPO_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
-        EXPO_PUBLIC_SUPABASE_ANON_KEY: "anon",
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_test",
       }),
-    ).toEqual({ url: "https://project.supabase.co", anonKey: "anon" });
+    ).toEqual({ url: "https://project.supabase.co", anonKey: "sb_publishable_test" });
+  });
+
+  it("rejects revoked legacy anon JWTs before they reach Supabase", () => {
+    expect(() =>
+      readSupabaseEnv({
+        EXPO_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiJ9.legacy.signature",
+      }),
+    ).toThrow(/publishable key/);
+    expect(() =>
+      readSupabaseEnv({
+        EXPO_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_",
+      }),
+    ).toThrow(/publishable key/);
   });
 
   it("rejects unsafe URLs", () => {
     expect(() =>
       readSupabaseEnv({
         EXPO_PUBLIC_SUPABASE_URL: "file:///secret",
-        EXPO_PUBLIC_SUPABASE_ANON_KEY: "anon",
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_test",
       }),
     ).toThrow(/http\(s\)/);
     expect(() =>
       readSupabaseEnv({
         EXPO_PUBLIC_SUPABASE_URL: "http://project.example.test",
-        EXPO_PUBLIC_SUPABASE_ANON_KEY: "anon",
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_test",
       }),
     ).toThrow(/http\(s\)/);
   });
