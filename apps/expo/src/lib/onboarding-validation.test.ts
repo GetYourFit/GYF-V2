@@ -16,7 +16,7 @@ describe("onboarding validation", () => {
     expect(mergeProfile({ gender: "women" }).budget_range).toEqual({
       min: 0,
       max: null,
-      currency: "USD",
+      currency: "INR",
     });
   });
   test("requires processing consent and starts optional flags off", () => {

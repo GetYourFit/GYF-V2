@@ -26,7 +26,7 @@ const GENDERS = [
   ["unisex", "Unisex"],
   ["nonbinary", "Show me everything"],
 ] as const;
-const CURRENCIES = ["USD", "EUR", "GBP", "INR"] as const;
+const CURRENCIES = ["INR", "USD", "EUR", "GBP"] as const;
 type ConsentState = Record<keyof typeof DEFAULT_CONSENT, boolean>;
 
 function OptionChip({
@@ -267,7 +267,7 @@ export function OnboardingForm() {
                 update("budget_range", {
                   min: profile.budget_range?.min ?? 0,
                   max: value && Number.isFinite(amount) ? Math.max(0, amount) : null,
-                  currency: profile.budget_range?.currency ?? "USD",
+                  currency: profile.budget_range?.currency ?? "INR",
                 });
               }}
               placeholder="No maximum"

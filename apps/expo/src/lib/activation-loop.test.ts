@@ -107,7 +107,7 @@ describe("synthetic R2 helper composition", () => {
           gender: "women",
           occasion: "casual",
           style_intent: [],
-          budget_range: { min: 0, max: null, currency: "USD" },
+          budget_range: { min: 0, max: null, currency: "INR" },
         },
       ],
       [

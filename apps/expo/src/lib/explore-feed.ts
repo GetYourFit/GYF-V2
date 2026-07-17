@@ -158,15 +158,39 @@ export function appendUniqueItems(current: SearchResult[], next: SearchResult[])
   return [...current, ...unique];
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  INR: "₹",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+};
+
+// Indian grouping: last 3 digits, then groups of 2 (1,99,999 — not 199,999).
+function groupIndian(n: number): string {
+  const s = String(n);
+  if (s.length <= 3) return s;
+  const last3 = s.slice(-3);
+  const rest = s.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",");
+  return `${rest},${last3}`;
+}
+
 export function formatCatalogPrice(
   value: number | null | undefined,
   currency?: string | null,
 ): string {
   if (typeof value !== "number" || !Number.isFinite(value)) return "Price unavailable";
-  const code = currency?.trim();
-  return code
-    ? `${code} ${Math.round(value).toLocaleString()}`
-    : Math.round(value).toLocaleString();
+  const rounded = Math.round(value);
+  const code = currency?.trim().toUpperCase();
+  // Render each item's TRUE currency — no relabel, no FX. INR gets the native
+  // ₹ + Indian digit grouping so the India-first catalogue reads locally; a
+  // genuinely USD-sourced item honestly stays "$…". User-selected conversion is
+  // the F4-02/P5.4 FX slice (needs a dated rate + original-price disclosure).
+  // ponytail: explicit symbol map + manual grouping — Hermes Intl.NumberFormat
+  // currency support is not guaranteed on Android; this is engine-independent.
+  const grouped = code === "INR" ? groupIndian(rounded) : rounded.toLocaleString("en-US");
+  const symbol = code ? CURRENCY_SYMBOLS[code] : undefined;
+  if (symbol) return `${symbol}${grouped}`;
+  return code ? `${code} ${grouped}` : grouped;
 }
 
 /**

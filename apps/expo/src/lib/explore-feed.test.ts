@@ -156,6 +156,18 @@ describe("catalogue honesty", () => {
   test("a missing price says so rather than rendering as free", () => {
     expect(formatCatalogPrice(null)).toBe("Price unavailable");
     expect(formatCatalogPrice(Number.NaN)).toBe("Price unavailable");
-    expect(formatCatalogPrice(1999.4, "INR")).toBe("INR 1,999");
+  });
+
+  test("renders each item's true currency with its native symbol — no relabel, no FX", () => {
+    // INR: ₹ + Indian grouping (last 3, then pairs).
+    expect(formatCatalogPrice(1999.4, "INR")).toBe("₹1,999");
+    expect(formatCatalogPrice(199999, "INR")).toBe("₹1,99,999");
+    expect(formatCatalogPrice(12345678, "INR")).toBe("₹1,23,45,678");
+    expect(formatCatalogPrice(999, "inr")).toBe("₹999");
+    // A genuinely USD-sourced item stays honestly in USD.
+    expect(formatCatalogPrice(49, "USD")).toBe("$49");
+    // Unknown code keeps the code; no code at all is a bare grouped number.
+    expect(formatCatalogPrice(1500, "AED")).toBe("AED 1,500");
+    expect(formatCatalogPrice(1500)).toBe("1,500");
   });
 });

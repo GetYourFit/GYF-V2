@@ -7,7 +7,7 @@ export const EMPTY_PROFILE: ProfileInput = {
   gender: "",
   style_intent: [],
   occasion: "",
-  budget_range: { min: 0, max: null, currency: "USD" },
+  budget_range: { min: 0, max: null, currency: "INR" },
 };
 
 export const DEFAULT_CONSENT = {
