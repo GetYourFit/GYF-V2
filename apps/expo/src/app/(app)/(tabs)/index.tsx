@@ -82,17 +82,23 @@ function ItemTile({
 }) {
   const palette = useThemeColors();
   const shopUrl = safeShopUrl(item);
+  // Editorial garment plate: the image IS the tile — tall 4:5 plate, eyebrow
+  // slot label above, one quiet letterspaced action row below. Chrome recedes.
   return (
-    <View style={{ gap: spacing.sm, width: 148 }}>
+    <View style={{ gap: spacing.sm, width: 232 }}>
+      <GyfText tone="faint" variant="label">
+        {item.slot.toUpperCase()}
+        {item.owned ? " · YOURS" : ""}
+      </GyfText>
       {isRemoteImage(item.image_url) ? (
         <Image
           accessibilityLabel={item.title}
           source={{ uri: item.image_url }}
           style={{
             backgroundColor: palette.surfaceRaised,
-            borderRadius: radii.control,
-            height: 190,
-            width: 148,
+            borderRadius: radii.card,
+            height: 290,
+            width: 232,
           }}
         />
       ) : (
@@ -102,12 +108,13 @@ function ItemTile({
             alignItems: "center",
             backgroundColor: palette.surfaceRaised,
             borderColor: palette.border,
-            borderRadius: radii.control,
+            borderCurve: "continuous",
+            borderRadius: radii.card,
             borderWidth: 1,
-            height: 190,
+            height: 290,
             justifyContent: "center",
             padding: spacing.sm,
-            width: 148,
+            width: 232,
           }}
         >
           <GyfText style={{ textAlign: "center" }} tone="muted" variant="bodySmall">
@@ -118,24 +125,20 @@ function ItemTile({
       <GyfText numberOfLines={2} variant="bodySmall">
         {item.title}
       </GyfText>
-      <GyfText tone="faint" variant="mono">
-        {item.slot}
-        {item.owned ? " · YOURS" : ""}
-      </GyfText>
-      <View style={{ gap: spacing.xs }}>
-        <Pressable
-          accessibilityLabel={`Build a complete look around ${item.title}`}
-          accessibilityRole="button"
-          accessibilityState={{ busy: completeBusy, disabled: completeBusy }}
-          disabled={completeBusy}
-          hitSlop={hitSlopFor(40)}
-          onPress={onComplete}
-          style={{ minHeight: 40, justifyContent: "center" }}
-        >
-          <GyfText variant="bodySmall">
-            {completeBusy ? "Building look…" : "Build around this"}
-          </GyfText>
-        </Pressable>
+      <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.md }}>
+        {shopUrl ? (
+          <Pressable
+            accessibilityLabel={`Shop ${item.title}`}
+            accessibilityRole="link"
+            hitSlop={hitSlopFor(40)}
+            onPress={onShop}
+            style={{ minHeight: 40, justifyContent: "center" }}
+          >
+            <GyfText style={{ color: palette.accentInk }} variant="label">
+              SHOP
+            </GyfText>
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityLabel={`Find alternatives for ${item.title}`}
           accessibilityRole="button"
@@ -148,25 +151,25 @@ function ItemTile({
           onPress={onLoadAlternates}
           style={{ minHeight: 40, justifyContent: "center" }}
         >
-          <GyfText tone="muted" variant="bodySmall">
-            {correctionBlocked
-              ? "Sync correction first"
-              : alternatesBusy
-                ? "Finding swaps…"
-                : "Swap this piece"}
+          <GyfText tone="muted" variant="label">
+            {correctionBlocked ? "SYNC FIRST" : alternatesBusy ? "FINDING…" : "SWAP"}
           </GyfText>
         </Pressable>
-        {shopUrl ? (
-          <Pressable
-            accessibilityLabel={`Shop ${item.title}`}
-            accessibilityRole="link"
-            hitSlop={hitSlopFor(40)}
-            onPress={onShop}
-            style={{ minHeight: 40, justifyContent: "center" }}
-          >
-            <GyfText variant="bodySmall">Shop item</GyfText>
-          </Pressable>
-        ) : null}
+        <Pressable
+          accessibilityLabel={`Build a complete look around ${item.title}`}
+          accessibilityRole="button"
+          accessibilityState={{ busy: completeBusy, disabled: completeBusy }}
+          disabled={completeBusy}
+          hitSlop={hitSlopFor(40)}
+          onPress={onComplete}
+          style={{ minHeight: 40, justifyContent: "center" }}
+        >
+          <GyfText tone="muted" variant="label">
+            {completeBusy ? "BUILDING…" : "BUILD AROUND"}
+          </GyfText>
+        </Pressable>
+      </View>
+      <View style={{ gap: spacing.xs }}>
         {alternates?.map((alternate) => (
           <Pressable
             accessibilityLabel={`Use ${alternate.title} instead of ${item.title}`}
@@ -232,16 +235,19 @@ function OutfitCard({
 }) {
   const palette = useThemeColors();
   const receipt = feedbackReceipt(status);
+  // Editorial spread, flat on the ground: a short gold rule + eyebrow open the
+  // look, imagery runs edge-to-edge as the hero, and the evidence rail sits
+  // beneath it as a gold-ruled caption — no card chrome around the outfit.
   return (
-    <AtelierCard style={{ gap: spacing.lg }}>
+    <View style={{ gap: spacing.lg }}>
       <View style={{ gap: spacing.sm }}>
+        <View style={{ backgroundColor: palette.accentInk, height: 1, width: 48 }} />
         <GyfText variant="label">LOOK {String(index + 1).padStart(2, "0")}</GyfText>
-        <ConfidenceLabel confidence={outfit.confidence} reason={outfit.explanation} />
       </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: spacing.md }}
+        contentContainerStyle={{ gap: spacing.lg }}
       >
         {outfit.items.map((item) => (
           <ItemTile
@@ -258,6 +264,16 @@ function OutfitCard({
           />
         ))}
       </ScrollView>
+      <View
+        style={{
+          borderLeftColor: palette.accentInk,
+          borderLeftWidth: 1,
+          gap: spacing.xs,
+          paddingLeft: spacing.md,
+        }}
+      >
+        <ConfidenceLabel confidence={outfit.confidence} reason={outfit.explanation} />
+      </View>
       {alternateError ? (
         <View style={{ gap: spacing.xs }}>
           <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
@@ -305,7 +321,7 @@ function OutfitCard({
           />
         </View>
       ) : null}
-    </AtelierCard>
+    </View>
   );
 }
 
@@ -596,6 +612,9 @@ export default function StylistRoute() {
       style={{ backgroundColor: palette.bg }}
     >
       <View style={{ gap: spacing.sm }}>
+        <GyfText style={{ color: palette.accentInk }} variant="label">
+          GYF ATELIER
+        </GyfText>
         <GyfText accessibilityRole="header" variant="display">
           Your stylist
         </GyfText>
