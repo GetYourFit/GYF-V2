@@ -1278,21 +1278,32 @@ def test_candidate_pool_ordered_by_taste_when_signal_present():
     repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
 
     repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=[0.1, 0.2])
-    sql, _ = pool.calls[0]
+    assert pool.calls[0] == (
+        "SELECT set_config('statement_timeout', %s, true)",
+        ("5000ms",),
+    )
+    sql, _ = pool.calls[1]
     assert "ORDER BY affinity DESC NULLS LAST" in sql
 
     pool.calls.clear()
     repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=None)
-    sql, _ = pool.calls[0]
-    # Cold start requires perception-complete items (has-embedding ≡ has-colour)
-    # so the composer never gets a colourless, un-personalisable pool; recency
-    # breaks ties within each group.
-    assert "JOIN item_embeddings picked_embedding" in sql
-    assert "ORDER BY i.created_at DESC" in sql
+    assert pool.calls[0] == (
+        "SELECT set_config('statement_timeout', %s, true)",
+        ("5000ms",),
+    )
+    sql, params = pool.calls[1]
+    # Cold start uses the existing visible-catalogue index shape, samples every
+    # category fairly, and hydrates embeddings only after the bounded ID slice.
+    assert "CROSS JOIN LATERAL" in sql
+    assert "jsonb_array_length(i.image_refs) > 0" in sql
+    assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in sql
+    assert "ORDER BY category_rank, category_order" in sql
     assert sql.index("LIMIT %s") < sql.rindex("e.embedding::text")
+    assert params[-2:] == (80, 80)
     assert "affinity DESC" not in sql
-    assert len(pool.calls) == 2
-    assert "ORDER BY (e.item_id IS NOT NULL) DESC" in pool.calls[1][0]
+    assert len(pool.calls) == 3
+    assert "ORDER BY (e.item_id IS NOT NULL) DESC" in pool.calls[2][0]
+    assert pool.calls[2][1] == params[:-1]
 
 
 def test_candidate_pool_logs_correlated_connection_query_mapping_and_fallback(caplog):
@@ -1364,7 +1375,12 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
     class _FailingPool:
         def connection(self):
             class _Conn:
+                calls = 0
+
                 def execute(self, _sql, _params=None):
+                    self.calls += 1
+                    if self.calls == 1:
+                        return iter([])
                     raise RuntimeError("query unavailable")
 
                 def __enter__(self):
@@ -1390,3 +1406,119 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
         )
     )
     assert "outcome=error connection_wait_ms=25.00 query_ms=125.00" in message
+
+
+def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(live_db):
+    import json
+    import uuid
+
+    import psycopg
+
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    categories = list(conditioning._CATEGORIES_BY_SLOT["top"][:3])
+    provider = f"candidate-fairness-{uuid.uuid4()}"
+    vector = "[" + ",".join(["0.1"] * 768) + "]"
+    rows: list[tuple] = []
+    expected_counts = {categories[0]: 3, categories[1]: 2, categories[2]: 1}
+    for category, count in expected_counts.items():
+        for position in range(count):
+            item_id = str(uuid.uuid4())
+            rows.append(
+                (
+                    item_id,
+                    f"fair {category} {position}",
+                    category,
+                    999,
+                    "INR",
+                    json.dumps({"taxonomy": {"gender": "women"}}),
+                    ["IN"],
+                    json.dumps([f"{item_id}.jpg"]),
+                    provider,
+                    item_id,
+                    True,
+                    vector,
+                )
+            )
+    # Each row violates exactly one server-truth predicate and must stay out.
+    for suffix, price, gender, region, images, available, embedding in (
+        ("price", 9000, "women", ["IN"], ["x.jpg"], True, vector),
+        ("gender", 999, "men", ["IN"], ["x.jpg"], True, vector),
+        ("region", 999, "women", ["US"], ["x.jpg"], True, vector),
+        ("image", 999, "women", ["IN"], [], True, vector),
+        ("availability", 999, "women", ["IN"], ["x.jpg"], False, vector),
+        ("perception", 999, "women", ["IN"], ["x.jpg"], True, None),
+    ):
+        item_id = str(uuid.uuid4())
+        rows.append(
+            (
+                item_id,
+                f"reject {suffix}",
+                categories[0],
+                price,
+                "INR",
+                json.dumps({"taxonomy": {"gender": gender}}),
+                region,
+                json.dumps(images),
+                provider,
+                item_id,
+                available,
+                embedding,
+            )
+        )
+
+    try:
+        with psycopg.connect(live_db) as conn:
+            for row in rows:
+                conn.execute(
+                    "INSERT INTO items (id, title, category, price, currency, attributes, "
+                    "region_tags, image_refs, source_provider, source_license, dedupe_key, "
+                    "available) VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s, "
+                    "'research', %s, %s)",
+                    row[:-1],
+                )
+                if row[-1] is not None:
+                    conn.execute(
+                        "INSERT INTO item_embeddings (item_id, embedding, model_version) "
+                        "VALUES (%s, %s::vector, 'test')",
+                        (row[0], row[-1]),
+                    )
+
+        repo = PostgresCandidateRepository(live_db)
+        result = repo.candidates_by_slot(
+            frozenset({"top"}),
+            "IN",
+            5000,
+            6,
+            genders=frozenset({"women"}),
+            request_id="real-postgres-fairness",
+        )["top"]
+        assert [item.category for item in result] == [
+            categories[0],
+            categories[1],
+            categories[2],
+            categories[0],
+            categories[1],
+            categories[0],
+        ]
+        assert all(item.currency == "INR" for item in result)
+        repo._pool.close()  # type: ignore[attr-defined]  # repository owns this test pool
+    finally:
+        with psycopg.connect(live_db) as conn:
+            conn.execute("DELETE FROM items WHERE source_provider = %s", (provider,))
+
+
+def test_postgres_candidate_timeout_cancels_and_pool_connection_recovers(live_db):
+    import psycopg
+    from psycopg_pool import ConnectionPool
+
+    from app.recsys.candidates import _QUERY_TIMEOUT_MS
+
+    assert _QUERY_TIMEOUT_MS == 5_000
+    with ConnectionPool(live_db, min_size=0, max_size=1, open=True) as pool:
+        with pytest.raises(psycopg.errors.QueryCanceled):
+            with pool.connection() as conn:
+                conn.execute("SELECT set_config('statement_timeout', %s, true)", ("10ms",))
+                conn.execute("SELECT pg_sleep(0.05)")
+        with pool.connection() as conn:
+            assert conn.execute("SELECT 1").fetchone() == (1,)

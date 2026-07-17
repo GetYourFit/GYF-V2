@@ -25,6 +25,11 @@ from .conditioning import CANDIDATE_SLOTS, _CATEGORIES_BY_SLOT
 
 logger = logging.getLogger("gyf")
 
+# A recommendation is interactive, so a regressed catalog plan must fail before
+# the client's 90-second transport bound. Applied transaction-locally on the
+# already-checked-out connection; no global database or pool setting changes.
+_QUERY_TIMEOUT_MS = 5_000
+
 
 @dataclass(frozen=True)
 class Candidate:
@@ -169,17 +174,48 @@ LIMIT %s
 """
 )
 
-# Cold start does not rank by the vector itself. Select perceived item IDs first,
-# then hydrate the 768-d embeddings and JSON attributes for only those rows. Raw
-# items remain browsable, but cannot enter an "AI-styled" outfit until perception
-# backfill gives the scorer real visual evidence. The old query joined/serialized
-# every matching embedding before LIMIT, turning an 80-item top pool into a 50s
-# wide sort on the production catalog.
+# Cold start does not rank by the vector itself. Select a small, fair slice from
+# each requested category through the existing available/category/id browse index,
+# interleave those slices, then hydrate only the final IDs. The previous
+# gender-bitmap/created-at plan scanned and sorted 10k+ heap rows per slot (12.25s
+# for top in production) to return 20. This bounded lateral plan retains category
+# variety and the same filters while returning at most ``limit_per_slot`` rows per
+# category; a read-only production EXPLAIN measured 0.42s cold for top.
 _CANDIDATES_COLD = (
-    "WITH picked AS MATERIALIZED (SELECT i.id FROM items i "
-    "JOIN item_embeddings picked_embedding ON picked_embedding.item_id = i.id "
-    + _FILTERS
-    + " ORDER BY i.created_at DESC LIMIT %s)\n"
+    """
+WITH per_category AS MATERIALIZED (
+  SELECT selected.id, requested.category_order,
+         row_number() OVER (
+           PARTITION BY requested.category_order
+           ORDER BY selected.priced DESC, selected.id
+         ) AS category_rank
+  FROM unnest(%s::text[]) WITH ORDINALITY AS requested(category, category_order)
+  CROSS JOIN LATERAL (
+    SELECT i.id, (i.price IS NOT NULL) AS priced
+    FROM items i
+    WHERE i.available
+      AND i.category = requested.category
+      AND i.category <> 'unknown'
+      AND jsonb_array_length(i.image_refs) > 0
+      AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
+      AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
+      AND (%s::text[] IS NULL
+           OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
+           OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
+  """
+    + f"AND i.title !~* '{_KIDS_RE}'\n"
+    + """
+      AND EXISTS (SELECT 1 FROM item_embeddings seen WHERE seen.item_id = i.id)
+    ORDER BY (i.price IS NOT NULL) DESC, i.id
+    LIMIT %s
+  ) AS selected
+), picked AS MATERIALIZED (
+  SELECT id
+  FROM per_category
+  ORDER BY category_rank, category_order
+  LIMIT %s
+)
+"""
     + _SELECT_COLUMNS
     + " FROM picked p JOIN items i ON i.id = p.id "
     "LEFT JOIN item_embeddings e ON e.item_id = i.id"
@@ -254,7 +290,7 @@ class PostgresCandidateRepository:
             return {}
 
         def fetch(slot: str, categories: list[str]) -> tuple[str, list[Candidate]]:
-            params = prefix + (
+            filter_params = (
                 categories,
                 region,
                 region,
@@ -262,7 +298,12 @@ class PostgresCandidateRepository:
                 max_price,
                 gender_list,
                 gender_list,
-                limit_per_slot,
+            )
+            fallback_params = prefix + filter_params + (limit_per_slot,)
+            params = (
+                fallback_params
+                if taste_vector
+                else filter_params + (limit_per_slot, limit_per_slot)
             )
             checkout_start = time.perf_counter()
             checkout_ms = query_ms = mapping_ms = 0.0
@@ -277,6 +318,10 @@ class PostgresCandidateRepository:
                     active_phase = "query"
                     query_start = time.perf_counter()
                     phase_start = query_start
+                    conn.execute(
+                        "SELECT set_config('statement_timeout', %s, true)",
+                        (f"{_QUERY_TIMEOUT_MS}ms",),
+                    )
                     rows = list(conn.execute(sql, params))
                     if not rows and taste_vector is None:
                         # Sparse/local catalogs may not have run perception yet. Keep
@@ -284,7 +329,7 @@ class PostgresCandidateRepository:
                         # categories with perceived inventory never pay this second read.
                         used_fallback = True
                         fallback = _CANDIDATES.format(affinity="NULL", order=_ORDER_BY_RECENCY)
-                        rows = list(conn.execute(fallback, params))
+                        rows = list(conn.execute(fallback, fallback_params))
                     query_ms = (time.perf_counter() - query_start) * 1000
                 active_phase = "mapping"
                 mapping_start = time.perf_counter()

@@ -456,7 +456,11 @@ destructively cleaned:
   only after the replacement and rollback evidence pass.
 
 Feedback v7 maps to execution-authority consolidation plus HL-DESIGN, HL-QUALITY, HL-LOOP,
-HL-LEAN, HL-SCALE, HL-CLOUD, EXPO-20/21 and P0–P7. Its apparent conflicts resolve as follows:
+HL-LEAN, HL-SCALE, HL-CLOUD, EXPO-20/21 and P0–P7. Its 2026-07-17 amendment additionally maps the
+observed broken Stylist/main recommendation to current `F2.5-04` then `EXPO-CORE-01`, observed
+Explore/style/filter failures to `P5.4-EXPLORE`, and India/user-selected display currency to F4-02
+plus `P5.4-EXPLORE`. Source currency is never relabelled: conversion requires a dated authoritative
+FX rate, an explicit display currency and original-price disclosure at the retailer boundary. Its apparent conflicts resolve as follows:
 cleanup is classified first but deleted only under protected consolidation; rewrites require
 measured superiority; research creates candidates rather than automatic upgrades; “perfect” and
 “unbreakable” become thresholds, adversarial tests and rollback; blockers never waive security,
@@ -617,6 +621,28 @@ request ID; DNS/connect were about 0.003/0.044 s. The earlier 90-second failure 
 on this deployment, but the 8.888-second cold candidate stage is still unacceptable. The next
 bounded substep splits each fixed candidate slot into connection wait, SQL/fallback and mapping;
 no pool, query, ranker or topology change is authorised until that deployed evidence names it.
+
+Second deployed run at SHA `b18a70db79ca299423894d52699fed2490227ea1`, Render deploy
+`dep-d9cv46reo5us73b6dn10`, names the boundary:
+
+| Request | Client total | Stage sum | Residual | Candidate boundary |
+| --- | ---: | ---: | ---: | --- |
+| cold `gyf-auth-recommend-1-1784279895-67639-6173` | 17.144 s | 16.656 s | 0.488 s | three SQL calls 12.316–12.538 s; fourth checkout 12.527 s then SQL 3.126 s; mapping ≤3.13 ms |
+| warm `gyf-auth-recommend-2-1784279912-67639-28626` | 3.046 s | 2.270 s | 0.776 s | three SQL calls 0.970–1.154 s; fourth checkout 0.987 s then SQL 0.321 s; mapping ≤4.36 ms |
+
+Both authenticated requests returned 200 with complete content and echoed request IDs; the
+disposable account was deleted. Fallback was false. Production `EXPLAIN (ANALYZE, BUFFERS)` of the
+exact cold top query measured 12.247 s: its gender bitmap path scanned/sorted 10,928 heap rows for
+an 80-ID pre-hydration slice. Checkout delay is downstream contention from the shared pool's
+intentional three-connection ceiling, not the initiating cause. A read-only fair per-category
+lateral candidate first measured 0.416 s cold. The exact checked-in SQL then measured 0.111 s on
+production with non-null `IN`, ₹5,000 and women/unisex filters, using
+`idx_items_available_category_browse_order`; its 20 tops were evenly interleaved across all five
+requested categories and all 20 carried INR. A forced 10 ms statement timeout cancelled and the
+same one-connection pool immediately recovered. The correction adds no index, dependency, service or pool capacity.
+The current bounded correction must preserve every filter, perception/image eligibility, category
+coverage, deterministic fallback and output contract, then prove the same cold/warm deployed
+matrix. `F2.5-04` remains **HOLD** until that proof and its timeout/cancellation evidence pass.
 
 Recorded 2026-07-14 evidence: 55 frontend tests passed in 14 files; 346 API tests passed with 4 skipped; 83 ML tests had previously passed; frontend typecheck, lint and production build passed. These historical results do not replace a fresh phase verification.
 

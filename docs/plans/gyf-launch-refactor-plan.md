@@ -351,6 +351,7 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 | Latest automated evidence | Commit `d8ca37f`; CI `29420027112` and CD `29420121072` passed; Expo deployment is live |
 | Known warnings/skips | 17 API tests skipped; existing `<img>` lint warning; framework/deprecation and React `act()` test warnings |
 | F2.5 live state | Not promoted; the active contract owns current production evidence and blockers |
+| Feedback v7 runtime amendment | Owner reports the main Stylist/recommendation, style list and Explore/filters do not work in the real app, and mixed USD is unacceptable for the India default. Runtime proof overrides code-level "shipped" wording; current F2.5 fixes the named recommendation boundary, EXPO-CORE-01 proves the real core loop, and F4-02/P5.4 own currency and Explore truth. |
 | Next candidate after explicit phase transition | `EXPO-CORE-01`, only after the active contract records `F2.5-04 GO` |
 | Explicitly not next | Parallel expansion, payment, unlicensed/unevaluated models, infrastructure rewrites and F13 cleanup |
 
@@ -1443,10 +1444,18 @@ frontend migration ticket may hide a backend latency regression.
 
 - **Write set:** `services/api/app/catalog/ingest.py`, `sources.py`, `directory.py`, migrations
   `0017` and related indexes, catalog tests.
-- **Work:** bounded price/currency validation, last-seen reconciliation, broken-feed guard,
-  unavailable filtering, reappearance, and live aggregate coverage.
+- **Work:** bounded source price/currency validation, last-seen reconciliation, broken-feed guard,
+  unavailable filtering, reappearance, and live aggregate coverage. Preserve immutable source
+  amount/currency; add a user display-currency preference (India defaults to INR), dated
+  authoritative FX snapshots with staleness/availability handling, deterministic decimal rounding,
+  and original-currency disclosure before retailer handoff. Never relabel a USD amount as INR and
+  never make checkout-price parity claims GYF cannot verify.
 - **Acceptance:** delisted products disappear from all purchasable serving paths but remain
-  renderable in saved/owned history; broken feed cannot blank the catalogue.
+  renderable in saved/owned history; broken feed cannot blank the catalogue; the same fixture
+  renders correctly in INR and another selected currency from one dated rate snapshot, stale or
+  absent FX fails truthfully, and retailer attribution retains the original price/currency. India
+  production evidence contains no unexplained USD-only default while mixed-source inventory stays
+  mathematically and semantically correct.
 
 ### F4-03 — Taxonomy and dedupe
 
