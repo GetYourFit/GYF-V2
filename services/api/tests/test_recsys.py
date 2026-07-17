@@ -1293,3 +1293,100 @@ def test_candidate_pool_ordered_by_taste_when_signal_present():
     assert "affinity DESC" not in sql
     assert len(pool.calls) == 2
     assert "ORDER BY (e.item_id IS NOT NULL) DESC" in pool.calls[1][0]
+
+
+def test_candidate_pool_logs_correlated_connection_query_mapping_and_fallback(caplog):
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    class _FakePool:
+        def connection(self):
+            class _Conn:
+                calls = 0
+
+                def execute(self, _sql, _params=None):
+                    self.calls += 1
+                    return iter([])
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    return False
+
+            return _Conn()
+
+    repo = PostgresCandidateRepository("postgresql://unused", pool=_FakePool())
+    with caplog.at_level("INFO", logger="gyf"):
+        repo.candidates_by_slot(
+            frozenset({"top"}), None, None, 80, request_id="req-candidate-timing"
+        )
+
+    record = next(
+        record
+        for record in caplog.records
+        if record.getMessage().startswith(
+            "recommendation_candidate_slot request_id=req-candidate-timing "
+        )
+    )
+    assert "slot=top outcome=success" in record.getMessage()
+    assert "fallback=true rows=0" in record.getMessage()
+
+
+def test_candidate_pool_logs_failed_checkout_duration(caplog, monkeypatch):
+    from app.recsys import candidates as candidate_module
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    class _FailingPool:
+        def connection(self):
+            raise RuntimeError("pool unavailable")
+
+    clock = iter((10.0, 10.125))
+    monkeypatch.setattr(candidate_module.time, "perf_counter", lambda: next(clock))
+    repo = PostgresCandidateRepository("postgresql://unused", pool=_FailingPool())
+
+    with caplog.at_level("INFO", logger="gyf"), pytest.raises(RuntimeError):
+        repo.candidates_by_slot(frozenset({"top"}), None, None, 80, request_id="req-checkout-error")
+
+    message = next(
+        record.getMessage()
+        for record in caplog.records
+        if record.getMessage().startswith(
+            "recommendation_candidate_slot request_id=req-checkout-error "
+        )
+    )
+    assert "outcome=error connection_wait_ms=125.00" in message
+
+
+def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
+    from app.recsys import candidates as candidate_module
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    class _FailingPool:
+        def connection(self):
+            class _Conn:
+                def execute(self, _sql, _params=None):
+                    raise RuntimeError("query unavailable")
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    return False
+
+            return _Conn()
+
+    clock = iter((10.0, 10.025, 10.025, 10.150))
+    monkeypatch.setattr(candidate_module.time, "perf_counter", lambda: next(clock))
+    repo = PostgresCandidateRepository("postgresql://unused", pool=_FailingPool())
+
+    with caplog.at_level("INFO", logger="gyf"), pytest.raises(RuntimeError):
+        repo.candidates_by_slot(frozenset({"top"}), None, None, 80, request_id="req-query-error")
+
+    message = next(
+        record.getMessage()
+        for record in caplog.records
+        if record.getMessage().startswith(
+            "recommendation_candidate_slot request_id=req-query-error "
+        )
+    )
+    assert "outcome=error connection_wait_ms=25.00 query_ms=125.00" in message

@@ -14,12 +14,16 @@ extracts the perception block with JSONB path operators and filters on the index
 
 from __future__ import annotations
 
+import logging
+import time
 from dataclasses import dataclass
 from typing import Protocol
 
 from ..catalog.retrieval import _KIDS_RE  # shared kids-title guard (DRY with search)
 from ..media import image_url_from_refs
 from .conditioning import CANDIDATE_SLOTS, _CATEGORIES_BY_SLOT
+
+logger = logging.getLogger("gyf")
 
 
 @dataclass(frozen=True)
@@ -73,6 +77,7 @@ class CandidateRepository(Protocol):
         limit_per_slot: int,
         taste_vector: list[float] | None = None,
         genders: frozenset[str] | None = None,
+        request_id: str = "-",
     ) -> dict[str, list[Candidate]]:
         """Return up to ``limit_per_slot`` candidates for each requested slot.
 
@@ -231,6 +236,7 @@ class PostgresCandidateRepository:
         limit_per_slot: int,
         taste_vector: list[float] | None = None,
         genders: frozenset[str] | None = None,
+        request_id: str = "-",
     ) -> dict[str, list[Candidate]]:
         affinity_expr = _AFFINITY_EXPR if taste_vector else "NULL"
         order = _ORDER_BY_TASTE if taste_vector else _ORDER_BY_RECENCY
@@ -258,15 +264,59 @@ class PostgresCandidateRepository:
                 gender_list,
                 limit_per_slot,
             )
-            with self._pool.connection() as conn:  # type: ignore[attr-defined]
-                rows = list(conn.execute(sql, params))
-                if not rows and taste_vector is None:
-                    # Sparse/local catalogs may not have run perception yet. Keep
-                    # the product usable with the existing raw baseline; production
-                    # categories with perceived inventory never pay this second read.
-                    fallback = _CANDIDATES.format(affinity="NULL", order=_ORDER_BY_RECENCY)
-                    rows = list(conn.execute(fallback, params))
-                return slot, [_row_to_candidate(slot, r) for r in rows]
+            checkout_start = time.perf_counter()
+            checkout_ms = query_ms = mapping_ms = 0.0
+            used_fallback = False
+            row_count = 0
+            outcome = "success"
+            active_phase = "checkout"
+            phase_start = checkout_start
+            try:
+                with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                    checkout_ms = (time.perf_counter() - checkout_start) * 1000
+                    active_phase = "query"
+                    query_start = time.perf_counter()
+                    phase_start = query_start
+                    rows = list(conn.execute(sql, params))
+                    if not rows and taste_vector is None:
+                        # Sparse/local catalogs may not have run perception yet. Keep
+                        # the product usable with the existing raw baseline; production
+                        # categories with perceived inventory never pay this second read.
+                        used_fallback = True
+                        fallback = _CANDIDATES.format(affinity="NULL", order=_ORDER_BY_RECENCY)
+                        rows = list(conn.execute(fallback, params))
+                    query_ms = (time.perf_counter() - query_start) * 1000
+                active_phase = "mapping"
+                mapping_start = time.perf_counter()
+                phase_start = mapping_start
+                mapped = [_row_to_candidate(slot, r) for r in rows]
+                mapping_ms = (time.perf_counter() - mapping_start) * 1000
+                row_count = len(mapped)
+                return slot, mapped
+            except BaseException:
+                outcome = "error"
+                elapsed_ms = (time.perf_counter() - phase_start) * 1000
+                if active_phase == "checkout":
+                    checkout_ms = elapsed_ms
+                elif active_phase == "query":
+                    query_ms = elapsed_ms
+                else:
+                    mapping_ms = elapsed_ms
+                raise
+            finally:
+                logger.info(
+                    "recommendation_candidate_slot request_id=%s slot=%s outcome=%s "
+                    "connection_wait_ms=%.2f query_ms=%.2f mapping_ms=%.2f "
+                    "fallback=%s rows=%d",
+                    request_id,
+                    slot,
+                    outcome,
+                    checkout_ms,
+                    query_ms,
+                    mapping_ms,
+                    str(used_fallback).lower(),
+                    row_count,
+                )
 
         # Run the per-slot reads concurrently, each on its own pooled connection —
         # was N sequential round trips on one held connection (the dominant per-
@@ -344,6 +394,7 @@ class InMemoryCandidateRepository:
         limit_per_slot: int,
         taste_vector: list[float] | None = None,
         genders: frozenset[str] | None = None,
+        request_id: str = "-",
     ) -> dict[str, list[Candidate]]:
         out: dict[str, list[Candidate]] = {slot: [] for slot in slots}
         for item in self.items:

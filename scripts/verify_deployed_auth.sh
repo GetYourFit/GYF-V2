@@ -77,7 +77,21 @@ me_email=$(printf '%s' "$me_body" | python3 -c \
   fail "/me email '${me_email}' does not match signed-in user '${GYF_E2E_EMAIL}'"
 echo "ok: authenticated /me round-trip returned the signed-in identity"
 
-# 4. Authenticated recommendation smoke test (cold then warm by default).
+# 4. Ensure the dedicated test account has the minimum manual profile. Existing
+# profiles are preserved; a fresh disposable account gets only deterministic fields.
+profile_response=$(curl -sS -w '\n%{http_code}' "${GYF_API_URL}/profile" \
+  --config "$session_config")
+profile_code=${profile_response##*$'\n'}
+if [[ "$profile_code" == "404" ]]; then
+  profile_code=$(curl -sS -o /dev/null -w '%{http_code}' -X PUT \
+    "${GYF_API_URL}/profile" --config "$session_config" \
+    -H 'Content-Type: application/json' \
+    --data '{"gender":"women","style_intent":["minimalist"],"budget_range":{"max":5000,"currency":"INR"},"occasion":"casual"}')
+fi
+[[ "$profile_code" == "200" ]] || fail "profile prerequisite returned ${profile_code}"
+echo "ok: recommendation profile prerequisite exists"
+
+# 5. Authenticated recommendation smoke test (cold then warm by default).
 for run in $(seq 1 "$GYF_RECOMMEND_RUNS"); do
   phase=cold; [[ "$run" -gt 1 ]] && phase=warm
   request_id="gyf-auth-recommend-${run}-$(date +%s)-$$-${RANDOM}"

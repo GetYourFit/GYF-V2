@@ -605,6 +605,19 @@ names the next deeper boundary. Connection checkout/SQL/provider, authentication
 serialization/network, cancellation, timeout and fallback requirements remain binding; this
 instrumentation commit alone closes none of them.
 
+First deployed run at SHA `24387a28152ce8b8d80513e8bb355907c66811b9`:
+
+| Request | Client total | Measured stage sum | Residual | Dominant stages |
+| --- | ---: | ---: | ---: | --- |
+| cold `gyf-auth-recommend-1-1784279013-63510-6111` | 10.434 s | 9.993 s | 0.441 s | candidate retrieval 8.888 s; composition 0.950 s |
+| warm `gyf-auth-recommend-2-1784279023-63510-5560` | 2.610 s | 1.867 s | 0.742 s | candidate retrieval 0.906 s; composition 0.838 s |
+
+Both returned 200, a non-empty complete outfit, explanation, confidence and the echoed bounded
+request ID; DNS/connect were about 0.003/0.044 s. The earlier 90-second failure is not reproducible
+on this deployment, but the 8.888-second cold candidate stage is still unacceptable. The next
+bounded substep splits each fixed candidate slot into connection wait, SQL/fallback and mapping;
+no pool, query, ranker or topology change is authorised until that deployed evidence names it.
+
 Recorded 2026-07-14 evidence: 55 frontend tests passed in 14 files; 346 API tests passed with 4 skipped; 83 ML tests had previously passed; frontend typecheck, lint and production build passed. These historical results do not replace a fresh phase verification.
 
 Every application phase runs:

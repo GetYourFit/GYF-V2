@@ -129,6 +129,7 @@ def recommend(
             _CANDIDATES_PER_SLOT,
             taste.vector if taste.has_signal else None,
             genders if genders != CATALOG_GENDERS else None,
+            request_id=request_id,
         )
     with _stage(request_id, "wardrobe_grounding"):
         wardrobe = _ground_in_wardrobe(pools, user_id, candidates, wardrobe_repo)
