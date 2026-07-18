@@ -75,12 +75,15 @@ function CollageTile({
   tile,
   imageUrl,
   index,
+  width,
+  height,
 }: {
   tile: (typeof TILES)[number];
   imageUrl: string | null;
   index: number;
+  width: number;
+  height: number;
 }) {
-  const { width, height } = useWindowDimensions();
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -124,7 +127,7 @@ function CollageTile({
 }
 
 /** The logo's slow breathing pulse — the page's idle heartbeat. */
-function BreathingLogo() {
+function BreathingLogo({ tint }: { tint: string }) {
   const breathe = useSharedValue(0);
 
   useEffect(() => {
@@ -152,7 +155,7 @@ function BreathingLogo() {
         source={require("../../assets/logo.png")}
         resizeMode="contain"
         accessibilityLabel="GYF — Get Your Fit"
-        style={{ width: 140, height: 140, tintColor: "#ffffff" }}
+        style={{ width: 180, height: 180, tintColor: tint }}
       />
     </Animated.View>
   );
@@ -161,9 +164,14 @@ function BreathingLogo() {
 export default function WelcomeScreen() {
   const palette = useThemeColors();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const window = useWindowDimensions();
   const [active, setActive] = useState(0);
   const [outfits, setOutfits] = useState<SearchResult[]>([]);
+  // Measured screen frame. Window dimensions can be stale on web static
+  // export (hydrated with the build-time size); onLayout reports the real
+  // rendered size, so slides and collage tiles always match the viewport.
+  const [frame, setFrame] = useState({ width: window.width, height: window.height });
+  const width = frame.width;
   const trackRef = useRef<ScrollView>(null);
 
   // Fill the collage with real outfits — anonymous browse, no auth needed.
@@ -185,7 +193,10 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: palette.bg }}>
+    <View
+      style={{ flex: 1, backgroundColor: palette.bg }}
+      onLayout={(e) => setFrame(e.nativeEvent.layout)}
+    >
       {/* Collage — behind everything, non-interactive */}
       <View
         pointerEvents="none"
@@ -197,6 +208,8 @@ export default function WelcomeScreen() {
             tile={tile}
             index={index}
             imageUrl={outfits[index]?.image_url ?? null}
+            width={frame.width}
+            height={frame.height}
           />
         ))}
       </View>
@@ -236,7 +249,7 @@ export default function WelcomeScreen() {
             <View
               style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm }}
             >
-              <BreathingLogo />
+              <BreathingLogo tint={palette.text} />
               <GyfText tone="muted" variant="bodySmall" style={{ textAlign: "center" }}>
                 {slide.sub}
               </GyfText>
