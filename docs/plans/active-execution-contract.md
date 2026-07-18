@@ -837,7 +837,7 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   dependency alignment (`react-native-worklets` JavaScript 0.8.3 versus Expo Go native 0.10.0), not
   an API or route failure. The correction now aligns Expo 57.0.7, Router 57.0.7, React 19.2.3,
   Reanimated 4.5.0, Worklets 0.10.0, Gesture Handler 2.32.0, and Safe Area 5.7.0. `expo install
-  --check`, TypeScript, 124 Expo tests, and fresh Android and web exports pass. The bounded dependency
+  --check`, TypeScript, 126 Expo tests, and fresh Android and web exports pass. The bounded dependency
   repair installs Router's required `expo-constants` and `expo-linking` peers, uses Bun 1.3.14's
   hoisted workspace linker, and resolves the one compatible `expo-constants` patch split to 57.0.6.
   A clean frozen-lockfile install now passes Expo Doctor 20/20; the web export contains 51 static
@@ -852,7 +852,14 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   unbranded AI-generated garment studies make the imagery-led direction reviewable, but they prove
   neither catalogue truth nor licensing; the gallery says so. Owner visual approval, compact and
   regular physical-Android screenshots, and physical Expo Go smoke remain required before route-wide
-  composition. `gyf-encoder` remains unselected because this slice has no measured encoding boundary.
+  composition. P2 remote catalogue imagery now shares one `expo-image` path with HTTPS validation,
+  disk caching, stable recycling keys and accessible failure/retry; the unused FlashList candidate
+  was removed because native `FlatList` has not missed a measured budget. Commit `273e08c` is pushed
+  to `origin/main`, and EAS deployment `notwl17vhv` is promoted at
+  `https://get-your-fit.expo.app`; a cache-busted external probe returned 200 with the exported
+  `entry-df5e1f59e05c16356f1c41f93cc2b6d3.js` fingerprint. This is web deployment evidence, not the
+  missing physical Android proof. `gyf-encoder` remains unselected because this slice has no measured
+  encoding boundary.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 
