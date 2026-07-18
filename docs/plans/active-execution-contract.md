@@ -59,6 +59,20 @@ is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
 `CURRENT EXECUTION POINTER: EXPO-DESIGN-CORE`
 
+**Owner-authorised Explore reliability re-entry — 2026-07-18.** During deployed
+`EXPO-DESIGN-CORE` verification, the exact authenticated first-load request
+`/items/browse?k=24&offset=24&seed=expo-1784376820940&slots=top,bottom,full_body,footwear&gender=men`
+failed repeatedly with PostgreSQL `QueryCanceled`. Production traces isolate the failure to the
+sparse `men` + `full_body` post-filtered HNSW scan; one timed-out slot aborts the complete
+interleaved catalogue page. The owner directed the agent to fix the first-load catalogue and then
+return to this contract. The temporary write set is limited to the Explore retrieval repository,
+focused retrieval tests and this evidence record. Keep personalized HNSW/MMR primary. After its
+connection has exited and rolled back, a `QueryCanceled` taste read may retry once through the
+existing indexed cold ring with the identical categories, region, gender, page and seed. Every
+other database failure must propagate. Exit requires red/green regressions, all mandatory gates,
+the exact Virginia deployment, and repeated 200 responses for the failed production request; then
+record corrective GO and resume `EXPO-DESIGN-CORE` without advancing its visual gate.
+
 **Owner-authorised corrective re-entry — 2026-07-18.** Production traces show that the
 taste-aware candidate query reaches its five-second statement timeout, most often for the sparse
 `full_body` slot; one slot failure aborts the first Stylist slate and later pool waits amplify the

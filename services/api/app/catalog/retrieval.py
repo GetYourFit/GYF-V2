@@ -20,6 +20,8 @@ from hashlib import sha256
 from typing import Protocol
 from uuid import UUID
 
+from psycopg.errors import QueryCanceled
+
 from ..affiliate import AffiliateLinker, NullAffiliateLinker
 from ..media import image_url_from_refs
 from ..metrics import stage_timer
@@ -493,16 +495,28 @@ class PostgresVectorSearchRepository:
             # consecutive pages stay disjoint — no cross-page duplicates from paging.
             params.extend([k * _OVERFETCH, offset * _OVERFETCH])
             # HNSW scan: size ef_search to the deepest fetched row.
-            return self._run(
-                sql,
-                tuple(params),
-                depth=(k + offset) * _OVERFETCH,
-                mmr_k=k,
-                iterative_scan=bool(region or gender_list or categories),
-                surface="browse",
-            )
+            try:
+                return self._run(
+                    sql,
+                    tuple(params),
+                    depth=(k + offset) * _OVERFETCH,
+                    mmr_k=k,
+                    iterative_scan=bool(region or gender_list or categories),
+                    surface="browse",
+                )
+            except QueryCanceled:
+                # _run has exited the failed connection (and therefore rolled its
+                # transaction back) before this bounded, non-vector retry begins.
+                # Preserve the requested filters/page/seed; only the timed-out
+                # personalization score is unavailable for this page.
+                pass
         # Cold-start / anonymous path: plain relational read, no vector scan.
-        browse_query = _BROWSE_INDEXED if self._indexed_browse else _BROWSE_LEGACY
+        # A timed-out taste read always uses the indexed ring even while its
+        # cold-start feature switch is off; retrying the legacy hash sort would
+        # replace one known timeout with another.
+        browse_query = (
+            _BROWSE_INDEXED if self._indexed_browse or taste_vector is not None else _BROWSE_LEGACY
+        )
         sql = browse_query.format(
             region=region_clause, gender=gender_clause, category=category_clause
         )

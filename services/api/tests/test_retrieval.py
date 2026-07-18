@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 from uuid import UUID
 
+import pytest
 from fastapi.testclient import TestClient
+from psycopg.errors import QueryCanceled
 from app.catalog.retrieval import (
     CatalogFacets,
     PostgresVectorSearchRepository,
@@ -219,6 +222,110 @@ def test_browse_personalizes_by_taste_vector():
     cold_sql, _ = pool.calls[-1]
     assert "embedding <=>" not in cold_sql.split("ORDER BY")[1]  # not a vector scan
     assert "ORDER BY band, id" in cold_sql
+
+
+def test_browse_taste_timeout_retries_once_after_rollback_through_indexed_ring():
+    cold_row = (
+        "22222222-2222-2222-2222-222222222222",
+        "Sherwani",
+        0.0,
+        ["/sherwani.jpg"],
+        2499.0,
+        "INR",
+        "https://shop.example/sherwani",
+        "navy",
+    )
+
+    class _SequentialPool:
+        def __init__(self):
+            self.checkouts = 0
+            self.exits = 0
+            self.first_exit_error = None
+            self.calls = []
+
+        def connection(self):
+            pool = self
+            pool.checkouts += 1
+            checkout = pool.checkouts
+            if checkout == 2:
+                assert pool.exits == 1
+
+            class _Conn:
+                def execute(self, sql, params=None):
+                    pool.calls.append((checkout, sql, params))
+                    if checkout == 1 and "ORDER BY e.embedding <=>" in sql:
+                        raise QueryCanceled("statement timeout")
+                    if checkout == 2 and "WITH candidates AS" in sql:
+                        return iter([cold_row])
+                    return iter([])
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    if checkout == 1:
+                        pool.first_exit_error = exc[1]
+                    pool.exits += 1
+                    return False
+
+            return _Conn()
+
+    pool = _SequentialPool()
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+
+    result = repo.browse(
+        categories=["sherwani"],
+        k=6,
+        region="IN",
+        offset=6,
+        genders=frozenset({"men", "unisex"}),
+        taste_vector=[0.1, 0.2],
+        seed="expo-session",
+    )
+
+    assert pool.checkouts == 2
+    assert isinstance(pool.first_exit_error, QueryCanceled)
+    assert sum("ORDER BY e.embedding <=>" in sql for _, sql, _ in pool.calls) == 1
+    assert sum("WITH candidates AS" in sql for _, sql, _ in pool.calls) == 1
+    _, fallback_sql, fallback_params = next(
+        call for call in pool.calls if "WITH candidates AS" in call[1]
+    )
+    assert "i.category = ANY(%s::text[])" in fallback_sql
+    expected_pivot = UUID(bytes=sha256(b"expo-session").digest()[:16])
+    assert fallback_params[0::5][:4] == (expected_pivot,) * 4
+    assert fallback_params[1:5] == ("IN", ["men", "unisex"], ["sherwani"], 12)
+    assert fallback_params[-2:] == (6, 6)
+    assert [item.item_id for item in result] == [cold_row[0]]
+
+
+def test_browse_taste_non_timeout_database_error_propagates_without_retry():
+    class _FailingPool(FakePool):
+        def connection(self):
+            pool = self
+
+            class _Conn:
+                def execute(self, sql, params=None):
+                    pool.calls.append((sql, params))
+                    if "ORDER BY e.embedding <=>" in sql:
+                        raise RuntimeError("database unavailable")
+                    return iter([])
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    return False
+
+            return _Conn()
+
+    pool = _FailingPool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+
+    with pytest.raises(RuntimeError, match="database unavailable"):
+        repo.browse(categories=["shirt"], k=6, region=None, taste_vector=[0.1, 0.2])
+
+    assert sum("ORDER BY e.embedding <=>" in sql for sql, _ in pool.calls) == 1
+    assert all("WITH candidates AS" not in sql for sql, _ in pool.calls)
 
 
 def test_indexed_browse_candidate_is_default_off():
