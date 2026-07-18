@@ -7,6 +7,18 @@ export function normalizedTastePercent(strength: number): number {
   return Number.isFinite(strength) ? Math.round(Math.min(1, Math.max(0, strength)) * 100) : 0;
 }
 
+export function tastePersonalizationMessage(
+  coldStart: boolean,
+  personalized: boolean,
+  tastePercent: number,
+): string {
+  if (coldStart) return "Calibrating: every save or skip sharpens the next look.";
+  if (personalized) {
+    return `Personalized from your stated profile${tastePercent > 0 ? " and consented feedback" : ""}.`;
+  }
+  return "Built from your stated profile; GYF does not yet have enough consented feedback to claim learned taste.";
+}
+
 export function feedbackReceipt(status: StylistFeedbackStatus | undefined) {
   if (!status) return null;
   return {

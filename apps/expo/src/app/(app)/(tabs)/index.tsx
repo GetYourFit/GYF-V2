@@ -34,6 +34,7 @@ import {
   savedOutfitInput,
   shopFeedbackForItem,
   STYLIST_GOAL_MAX,
+  tastePersonalizationMessage,
   type StylistFeedbackStatus,
 } from "@/lib/stylist-feed";
 import { capabilityUsable } from "@/lib/system-status";
@@ -754,11 +755,7 @@ export default function StylistRoute() {
             />
           </View>
           <GyfText tone="muted" variant="bodySmall">
-            {data.cold_start
-              ? "Calibrating: every save or skip sharpens the next look."
-              : data.personalized
-                ? `Personalized from your stated profile${data.taste_strength > 0 ? " and consented feedback" : ""}.`
-                : "Built from your stated profile; GYF does not yet have enough consented feedback to claim learned taste."}
+            {tastePersonalizationMessage(data.cold_start, data.personalized, tastePercent)}
           </GyfText>
           {data.wardrobe_grounded ? (
             <GyfText tone="muted" variant="bodySmall">

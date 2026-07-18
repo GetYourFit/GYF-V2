@@ -8,6 +8,7 @@ import {
   safeShopUrl,
   savedOutfitInput,
   shopFeedbackForItem,
+  tastePersonalizationMessage,
 } from "./stylist-feed";
 
 const outfit = {
@@ -35,6 +36,12 @@ describe("Expo stylist feed model", () => {
         normalizedTastePercent,
       ),
     ).toEqual([0, 0, 46, 100, 0, 0, 0]);
+  });
+
+  test("does not claim consented feedback for a malformed taste signal", () => {
+    expect(
+      tastePersonalizationMessage(false, true, normalizedTastePercent(Number.POSITIVE_INFINITY)),
+    ).toBe("Personalized from your stated profile.");
   });
 
   test("attributes one learning event to every garment in a look", () => {
