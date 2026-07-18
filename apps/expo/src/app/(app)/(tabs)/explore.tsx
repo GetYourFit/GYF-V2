@@ -356,6 +356,7 @@ export default function ExploreRoute() {
         renderItem={({ item }) => (
           <ProductCard
             item={{
+              id: item.item_id,
               title: item.title,
               imageUrl: item.image_url,
               price: formatCatalogPrice(item.price, item.currency),

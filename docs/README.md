@@ -21,6 +21,10 @@ source of execution order and gates.
   canonical vision and mapped to the active contract; retained as evidence until F13 review.
 - [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) — non-executable historical proposal derived
   from that input; superseded by the active contract and retained until F13 review.
+- [`superpowers/specs/2026-07-18-cosmos-editorial-expo-design.md`](./superpowers/specs/2026-07-18-cosmos-editorial-expo-design.md)
+  and [`superpowers/plans/2026-07-18-cosmos-editorial-expo-implementation.md`](./superpowers/plans/2026-07-18-cosmos-editorial-expo-implementation.md)
+  — approved design input and subordinate implementation detail for the current contract packet;
+  they do not change its pointer, write set, or promotion gates.
 
 ## Requirement traceability
 

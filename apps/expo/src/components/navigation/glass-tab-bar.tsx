@@ -1,5 +1,3 @@
-import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
 import { useEffect } from "react";
 import { View } from "react-native";
 import Animated, {
@@ -18,14 +16,11 @@ import {
   IconSpark,
   type IconProps,
 } from "@/components/icons";
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { PressableScale } from "@/components/ui/pressable-scale";
+import { select } from "@/lib/haptics";
 import { colors, motion, radii, spacing } from "@/theme/tokens";
 import { useAppColorScheme } from "@/theme/use-color-scheme";
-
-let haptics: typeof import("expo-haptics") | null = null;
-if (process.env.EXPO_OS && process.env.EXPO_OS !== "web") {
-  haptics = require("expo-haptics");
-}
 
 /**
  * Structural subset of react-navigation's BottomTabBarProps — typed
@@ -120,66 +115,46 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarPr
         right: 0,
       }}
     >
-      <BlurView
-        intensity={64}
-        style={{
-          borderColor: palette.border,
-          borderRadius: radii.capsule,
-          borderWidth: 1,
-          overflow: "hidden",
+      <GlassSurface
+        theme={theme}
+        contentStyle={{
+          flexDirection: "row",
+          gap: spacing.xs / 2,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: spacing.xs,
         }}
-        tint={theme === "dark" ? "dark" : "light"}
       >
-        <LinearGradient
-          colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"]}
-          pointerEvents="none"
-          style={{ height: 12, left: 0, position: "absolute", right: 0, top: 0, zIndex: 1 }}
-        />
-        <LinearGradient
-          colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.07)"]}
-          pointerEvents="none"
-          style={{ bottom: 0, height: 10, left: 0, position: "absolute", right: 0, zIndex: 1 }}
-        />
-        <View
-          style={{
-            backgroundColor: theme === "dark" ? "rgba(10,10,12,0.38)" : "rgba(255,255,255,0.42)",
-            flexDirection: "row",
-            gap: spacing.xs / 2,
-            paddingHorizontal: spacing.sm,
-            paddingVertical: spacing.xs,
-          }}
-        >
-          {state.routes.map((route, index) => {
-            const { options } = descriptors[route.key];
-            const label = options.title ?? route.name;
-            const focused = state.index === index;
-            const Glyph = GLYPHS[route.name] ?? IconSpark;
-            return (
-              <PressableScale
-                accessibilityLabel={label}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: focused }}
-                key={route.key}
-                onPress={() => {
-                  if (!focused) {
-                    void haptics?.selectionAsync();
-                    navigation.navigate(route.name);
-                  }
-                }}
-                style={{ borderRadius: radii.capsule }}
-              >
-                <TabGlyph
-                  Glyph={Glyph}
-                  activeColor={palette.text}
-                  discColor={palette.surfaceRaised}
-                  focused={focused}
-                  mutedColor={palette.textFaint}
-                />
-              </PressableScale>
-            );
-          })}
-        </View>
-      </BlurView>
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const label = options.title ?? route.name;
+          const focused = state.index === index;
+          const Glyph = GLYPHS[route.name] ?? IconSpark;
+          return (
+            <PressableScale
+              accessibilityLabel={label}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: focused }}
+              haptic="none"
+              key={route.key}
+              onPress={() => {
+                if (!focused) {
+                  select();
+                  navigation.navigate(route.name);
+                }
+              }}
+              style={{ borderRadius: radii.capsule }}
+            >
+              <TabGlyph
+                Glyph={Glyph}
+                activeColor={palette.text}
+                discColor={palette.surfaceRaised}
+                focused={focused}
+                mutedColor={palette.textFaint}
+              />
+            </PressableScale>
+          );
+        })}
+      </GlassSurface>
     </View>
   );
 }

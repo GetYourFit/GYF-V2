@@ -9,12 +9,37 @@ const stylistSource = await Bun.file(
 const tabBarSource = await Bun.file(
   new URL("../components/navigation/glass-tab-bar.tsx", import.meta.url),
 ).text();
+const glassSurfaceSource = await Bun.file(
+  new URL("../components/ui/glass-surface.tsx", import.meta.url),
+).text();
+const pressableSource = await Bun.file(
+  new URL("../components/ui/pressable-scale.tsx", import.meta.url),
+).text();
+const productCardSource = await Bun.file(
+  new URL("../components/ui/product-card.tsx", import.meta.url),
+).text();
+const welcomeSource = await Bun.file(new URL("../app/(auth)/welcome.tsx", import.meta.url)).text();
+const errorRouteSource = await Bun.file(new URL("../app/error.tsx", import.meta.url)).text();
 
 describe("Expo interaction boundaries", () => {
   test("decorative tab-bar gradients cannot intercept web clicks", () => {
-    const gradients = tabBarSource.match(/<LinearGradient[\s\S]*?\/>/g) ?? [];
+    expect(tabBarSource).toContain("<GlassSurface");
+    const gradients = glassSurfaceSource.match(/<LinearGradient[\s\S]*?\/>/g) ?? [];
     expect(gradients).toHaveLength(2);
     for (const gradient of gradients) expect(gradient).toContain('pointerEvents="none"');
+  });
+
+  test("generic presses stay silent until a semantic action confirms feedback", () => {
+    expect(pressableSource).toContain('haptic = "none"');
+    expect(productCardSource).not.toContain('haptic="primary"');
+    expect(welcomeSource).not.toContain('haptic="primary"');
+    expect(tabBarSource).toContain("select();");
+  });
+
+  test("the shared error boundary is also a valid Expo Router screen", () => {
+    expect(errorRouteSource).toContain("export function ErrorBoundary");
+    expect(errorRouteSource).toContain("export default function ErrorRoute");
+    expect(errorRouteSource).toContain('router.replace("/")');
   });
 
   test("the infinite Spark animation follows system motion and cancels on cleanup", () => {

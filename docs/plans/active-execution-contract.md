@@ -317,10 +317,11 @@ The design system has one token source and one component source:
   permission-denied, abstained, error, retry, end-of-catalogue and destructive-confirmation states
   are first-class art-directed fixtures, not afterthoughts.
 
-P3 begins with three owner-reviewable route compositions—first recommendation, Explore and outfit
-detail/correction—across compact Android, regular Android and responsive web, light and dark. The
-owner approves one direction before route-wide composition. Route acceptance then covers every
-state; a pretty hero screenshot cannot promote the system.
+P3 begins with four owner-reviewable route compositions—first recommendation, Explore, outfit
+detail/correction and the manual Personal Fit onboarding path—across compact Android, regular
+Android and responsive web, light and dark. The owner approves one direction before route-wide
+composition. Route acceptance then covers every state; a pretty hero screenshot cannot promote the
+system.
 
 #### UI component and library policy
 
@@ -857,28 +858,31 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   dependency alignment (`react-native-worklets` JavaScript 0.8.3 versus Expo Go native 0.10.0), not
   an API or route failure. The correction now aligns Expo 57.0.7, Router 57.0.7, React 19.2.3,
   Reanimated 4.5.0, Worklets 0.10.0, Gesture Handler 2.32.0, and Safe Area 5.7.0. `expo install
-  --check`, TypeScript, 119 Expo tests, and fresh Android and web exports pass. A clean Bun 1.3.14
-  isolated install leaves Expo Doctor at 19/20: Doctor counts peer-context copies of the same Expo
-  native versions as duplicates. A repo-wide hoisted linker removes those copies but makes Doctor
-  fail three unrelated absent-package checks through `npm explain`; that broader change was removed.
-  A public Expo tunnel then served the SDK 57 manifest and 10.35 MB Android Hermes bundle with HTTP
-  200. Metro exposed one unused `error.tsx` route without the required default export; commits
-  `3c1c723`, `253087b`, `71e51be`, and `3ba303c` preserve the red/green route-contract proof and
-  remove that dead route. Independent review approved the deletion and strengthened test. The
-  current Play Store Expo Go still targets SDK 54 because SDK 57 awaits store approval; Expo's
-  signed [57.0.2 Android client](https://github.com/expo/expo-go-releases/releases/tag/Expo-Go-57.0.2)
-  is the required physical-test client. Until the device reports that version and contacts Metro,
-  the Doctor gate and repeated physical-device smoke remain HOLD. Do not downgrade the app to make
-  an older store client connect.
-- `EXPO-DESIGN-CORE` now renders three review-only happy-path compositions—Stylist, Explore, and
-  item detail—at 320, 768, and 1280 pixels in light and dark. Tests freeze all 18 combinations,
+  --check`, TypeScript, 129 Expo tests, and fresh Android and web exports pass. The bounded dependency
+  repair installs Router's required `expo-constants` and `expo-linking` peers, uses Bun 1.3.14's
+  hoisted workspace linker, and resolves the one compatible `expo-constants` patch split to 57.0.6.
+  A clean frozen-lockfile install now passes Expo Doctor 20/20; the web export contains 51 static
+  routes with a 2.5 MB entry bundle and the Android export contains a 4.7 MB Hermes bundle. These
+  workstation bundle sizes are recorded baselines, not device startup/frame/memory proof. The
+  repeated physical-device smoke and compact/regular Android evidence therefore remain HOLD.
+- `EXPO-DESIGN-CORE` now renders four review-only compositions—Stylist, Explore, item detail and
+  manual Personal Fit—at 320, 768, and 1280 pixels in light and dark. Tests freeze all 24 combinations,
   prevent enabled no-op gallery controls, and keep Fraunces out of shared route startup; the welcome
   and design-review routes load it only where used.
-  Chromium captured all 18 web compositions without failed HTTP responses. Four compressed,
-  unbranded AI-generated garment studies make the imagery-led direction reviewable, but they prove
-  neither catalogue truth nor licensing; the gallery says so. Owner visual approval, compact and
-  regular physical-Android screenshots, and physical Expo Go smoke remain required before route-wide
-  composition. `gyf-encoder` remains unselected because this slice has no measured encoding boundary.
+  Chromium captured the original 18 web compositions without failed HTTP responses; the six added
+  Personal Fit compositions have fixture/test coverage but still need the same browser capture.
+  Four compressed, unbranded AI-generated garment studies make the imagery-led direction
+  reviewable, but they prove neither catalogue truth nor licensing; the gallery says so. Owner
+  visual approval, compact and regular physical-Android screenshots, and physical Expo Go smoke
+  remain required before route-wide composition. P2 remote catalogue imagery now shares one
+  `expo-image` path with HTTPS validation,
+  disk caching, stable recycling keys and accessible failure/retry; the unused FlashList candidate
+  was removed because native `FlatList` has not missed a measured budget. Commit `273e08c` is pushed
+  to `origin/main`, and EAS deployment `notwl17vhv` is promoted at
+  `https://get-your-fit.expo.app`; a cache-busted external probe returned 200 with the exported
+  `entry-df5e1f59e05c16356f1c41f93cc2b6d3.js` fingerprint. This is web deployment evidence, not the
+  missing physical Android proof. `gyf-encoder` remains unselected because this slice has no measured
+  encoding boundary.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 

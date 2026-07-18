@@ -1,6 +1,3 @@
-import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces/600SemiBold";
-import { BlurView } from "expo-blur";
-import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
 import { useEffect } from "react";
@@ -17,14 +14,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GlassSurface } from "@/components/ui/glass-surface";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale } from "@/components/ui/pressable-scale";
 import { colors, motion, radii, spacing } from "@/theme/tokens";
-
-let haptics: typeof import("expo-haptics") | null = null;
-if (process.env.EXPO_OS && process.env.EXPO_OS !== "web") {
-  haptics = require("expo-haptics");
-}
 
 /* Welcome, stripped to the essentials: headline, the animated brand mark
  * centre stage, tagline, and a single filled Start pill into signup.
@@ -73,8 +66,6 @@ export default function WelcomeScreen() {
   // system scheme — the white logo is designed against it.
   const palette = colors.dark;
   const insets = useSafeAreaInsets();
-  const [headlineFontLoaded, headlineFontError] = useFonts({ Fraunces_600SemiBold });
-  if (!headlineFontLoaded && !headlineFontError) return null;
 
   return (
     <View
@@ -93,7 +84,6 @@ export default function WelcomeScreen() {
         theme="dark"
         style={{
           textAlign: "center",
-          fontFamily: "Fraunces_600SemiBold",
           fontSize: 30,
           lineHeight: 38,
           letterSpacing: 0.3,
@@ -126,31 +116,25 @@ export default function WelcomeScreen() {
             accessibilityLabel="Start"
             accessibilityRole="button"
             onPress={() => {
-              void haptics?.impactAsync(haptics.ImpactFeedbackStyle.Medium);
               router.push("/signup");
             }}
             style={{ borderRadius: radii.capsule, overflow: "hidden" }}
           >
-            {/* Liquid-glass pill: blur + faint fill + hairline highlight; only the text reads solid */}
-            <BlurView
-              intensity={64}
-              tint="dark"
-              style={{
+            {/* Liquid-glass pill: only the text reads solid */}
+            <GlassSurface
+              theme="dark"
+              contentStyle={{
                 alignItems: "center",
                 justifyContent: "center",
                 minHeight: 56,
-                borderRadius: radii.capsule,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.28)",
                 backgroundColor: "rgba(255,255,255,0.10)",
-                overflow: "hidden",
               }}
             >
               <ShimmerSweep />
               <GyfText variant="button" style={{ color: palette.text, fontSize: 17 }}>
                 Start
               </GyfText>
-            </BlurView>
+            </GlassSurface>
           </PressableScale>
         </Animated.View>
 

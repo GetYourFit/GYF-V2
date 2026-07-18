@@ -25,7 +25,8 @@
         {
           "photosPermission": "Allow Get Your Fit to choose your profile picture."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "extra": {
       "eas": {

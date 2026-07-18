@@ -80,15 +80,15 @@ export const radii = {
  */
 export const fonts = {
   editorialCandidate: "Fraunces_600SemiBold",
-  display: "BricolageGrotesque_700Bold",
-  displaySemi: "BricolageGrotesque_600SemiBold",
+  display: "Fraunces_600SemiBold",
+  displaySemi: "Fraunces_600SemiBold",
   ui: "BricolageGrotesque_600SemiBold",
   uiMedium: "BricolageGrotesque_500Medium",
 } as const;
 
 /**
- * Cosmos single-face hierarchy (Ref3/Ref4): one grotesque carries display,
- * title, and UI at different weights; system sans for body — body copy is
+ * Two-face hierarchy (ScopeofIdea): Fraunces carries every heading on every
+ * page; the grotesque carries UI chrome; system sans for body — body copy is
  * read, not looked at, so it stays deliberately invisible.
  */
 export const typography = {
@@ -100,6 +100,16 @@ export const typography = {
   button: { fontFamily: fonts.uiMedium, fontSize: 15, lineHeight: 20, letterSpacing: 0.2 },
   mono: { fontSize: 12, lineHeight: 16, fontWeight: "500" as const, letterSpacing: 0.6 },
 } as const;
+
+/**
+ * Global type scale for phone hardware: 390pt is the design width; the clamp
+ * keeps small Androids (360) readable and large phones (430+) from
+ * ballooning. GyfText applies it, so screens never scale type by hand.
+ */
+// ponytail: linear clamp over the 360–430 phone band; per-breakpoint layouts only if a screen visibly breaks.
+export function fontScale(width: number): number {
+  return Math.min(1.08, Math.max(0.92, width / 390));
+}
 
 export const motion = {
   fast: 160,

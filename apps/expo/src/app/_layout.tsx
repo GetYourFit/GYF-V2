@@ -1,34 +1,75 @@
 import { BricolageGrotesque_500Medium } from "@expo-google-fonts/bricolage-grotesque/500Medium";
 import { BricolageGrotesque_600SemiBold } from "@expo-google-fonts/bricolage-grotesque/600SemiBold";
 import { BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque/700Bold";
+import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces/600SemiBold";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import {
+  loadThemePreference,
+  saveThemePreference,
+  type ThemePreference,
+} from "@/theme/theme-preference";
 import { colors } from "@/theme/tokens";
-import { useAppColorScheme } from "@/theme/use-color-scheme";
+import {
+  ThemeOverrideContext,
+  ThemePreferenceContext,
+  useAppColorScheme,
+} from "@/theme/use-color-scheme";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {
   // Already hidden (web reload) — nothing to hold.
 });
 
 export default function RootLayout() {
-  const scheme = useAppColorScheme();
   const [fontsLoaded, fontError] = useFonts({
     BricolageGrotesque_500Medium,
     BricolageGrotesque_600SemiBold,
     BricolageGrotesque_700Bold,
+    Fraunces_600SemiBold,
   });
+  // null = stored preference not read yet; hold paint so the scheme never flips on launch.
+  const [preference, setPreferenceState] = useState<ThemePreference | null>(null);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) void SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
+    void loadThemePreference().then(setPreferenceState);
+  }, []);
 
-  // Hold first paint until fonts resolve — text must never flash in a fallback face.
-  if (!fontsLoaded && !fontError) return null;
+  const ready = (fontsLoaded || Boolean(fontError)) && preference !== null;
 
+  useEffect(() => {
+    if (ready) void SplashScreen.hideAsync();
+  }, [ready]);
+
+  const setPreference = useCallback((next: ThemePreference) => {
+    setPreferenceState(next);
+    void saveThemePreference(next);
+  }, []);
+
+  const preferenceValue = useMemo(
+    () => ({ preference: preference ?? ("system" as const), setPreference }),
+    [preference, setPreference],
+  );
+
+  // Hold first paint until fonts + stored theme resolve — text must never
+  // flash in a fallback face and the scheme must never visibly switch.
+  if (!ready) return null;
+
+  return (
+    <ThemeOverrideContext.Provider value={preference === "system" ? null : preference}>
+      <ThemePreferenceContext.Provider value={preferenceValue}>
+        <ThemedApp />
+      </ThemePreferenceContext.Provider>
+    </ThemeOverrideContext.Provider>
+  );
+}
+
+/** Reads the scheme below the providers so a manual override restyles the stack. */
+function ThemedApp() {
+  const scheme = useAppColorScheme();
   return (
     <SafeAreaProvider>
       <Stack
