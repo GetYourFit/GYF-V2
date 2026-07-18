@@ -931,6 +931,19 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   physical-Android, owner-visual and global F2.5 evidence remains HOLD exactly as recorded above; it
   is neither waived nor counted as task success. After Task 11, the sole pointer becomes
   `NATIVE-ACCEPTANCE`, not release or the next product phase.
+- **Expo production recovery — 2026-07-19.** Manual deployment `emrc2qswgs` had been promoted from
+  a local export without the production public environment, so its bundle compiled Supabase
+  configuration as undefined and retained the local API default. Commit `f044473` also prevents web
+  from remaining blank while custom fonts load. Fresh CI `29659780337` and CD `29659831678` passed
+  and redeployed through the protected GitHub environment. `https://get-your-fit.expo.app` now serves
+  `entry-26ec33d1139b7522e0062decb175e4ea.js` (2,499,699 bytes; SHA-256
+  `1729f5bf1bf5cd96db90eeec0d2a8f434ffd6cd68a2a368a915ff64b8f96c8ee`) with the Virginia API,
+  HTTPS Supabase project and publishable key embedded, no undefined Supabase configuration and no
+  legacy JWT. Cache-busted `/`, `/welcome`, `/login` and Virginia `/health` returned 200; live
+  `/welcome` and `/login` hydrated usable content while font completion was deliberately stalled.
+  The last CI-built configured deployment `o50scshcz4` remains the immediate hosting rollback.
+  This recovery restores the production web surface only; it does not waive Expo Doctor,
+  physical-Android, browser-capture, owner-visual or product/release holds.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 
