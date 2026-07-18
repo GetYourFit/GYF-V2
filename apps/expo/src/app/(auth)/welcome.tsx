@@ -129,7 +129,11 @@ function BreathingLogo() {
 
   useEffect(() => {
     breathe.value = withRepeat(
-      withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.quad), reduceMotion: ReduceMotion.System }),
+      withTiming(1, {
+        duration: 2600,
+        easing: Easing.inOut(Easing.quad),
+        reduceMotion: ReduceMotion.System,
+      }),
       -1,
       true,
     );
@@ -216,7 +220,9 @@ export default function WelcomeScreen() {
               paddingHorizontal: spacing.xl,
             }}
           >
-            <Animated.View entering={FadeInDown.duration(motion.standard).reduceMotion(ReduceMotion.System)}>
+            <Animated.View
+              entering={FadeInDown.duration(motion.standard).reduceMotion(ReduceMotion.System)}
+            >
               <GyfText
                 accessibilityRole="header"
                 variant="title"
@@ -318,7 +324,11 @@ function ShimmerSweep() {
 
   useEffect(() => {
     sweep.value = withRepeat(
-      withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.quad), reduceMotion: ReduceMotion.System }),
+      withTiming(1, {
+        duration: 2400,
+        easing: Easing.inOut(Easing.quad),
+        reduceMotion: ReduceMotion.System,
+      }),
       -1,
       false,
     );
@@ -331,10 +341,7 @@ function ShimmerSweep() {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[
-        { position: "absolute", top: 0, bottom: 0, width: 120 },
-        style,
-      ]}
+      style={[{ position: "absolute", top: 0, bottom: 0, width: 120 }, style]}
     >
       <LinearGradient
         colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.25)", "rgba(255,255,255,0)"]}
