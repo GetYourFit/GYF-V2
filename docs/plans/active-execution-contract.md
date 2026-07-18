@@ -1,6 +1,6 @@
 # GYF active execution contract
 
-Status: **V7 ACTIVE — EXPO-DESIGN-CORE CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
+Status: **V7 ACTIVE — EXPO-CORE-01 CORRECTIVE CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
 continued execution on 2026-07-17 · effective repository baseline
 `367a7ffa14532f60e1ba8d1a784785d98da2bbb9` · `P0 GO` recorded 2026-07-17 ·
 `EXPO-CORE-01 GO` (owner-attested 2026-07-17): recsys taste-path HNSW correctness
@@ -57,7 +57,26 @@ agent preference are not evidence.
 The P labels below are outcome envelopes, not a second ticket system. The mapped F/EXPO/HL ticket
 is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
-`CURRENT EXECUTION POINTER: EXPO-DESIGN-CORE`
+`CURRENT EXECUTION POINTER: EXPO-CORE-01`
+
+**Owner-authorised corrective re-entry — 2026-07-18.** Production traces show that the
+taste-aware candidate query reaches its five-second statement timeout, most often for the sparse
+`full_body` slot; one slot failure aborts the first Stylist slate and later pool waits amplify the
+failure. The owner authorised a temporary return to `EXPO-CORE-01`. The write set is limited to the
+candidate repository and focused tests; the shared recommendation request contract, Stylist route
+and focused tests for a validated request-scoped style choice; and this evidence record. Keep HNSW
+primary. On `QueryCanceled` only, roll back and retry the failed slot once through the existing
+bounded indexed candidate path with taste affinity over the bounded result. Other database failures
+must propagate. The style choice must reuse `STYLE_INTENTS`, affect only the requested slate and
+never mutate the saved profile.
+
+Exit requires focused red/green regressions, all repository gates, deployed Expo web and Virginia
+API at the same release, and a real taste-bearing disposable-user proof: one cold plus five warm
+serial `occasion=casual&k=5` requests and a four-request concurrent burst, all authenticated 200s
+with complete non-empty outfits under the 15-second client ceiling. Correlate per-slot fallback,
+latency and served-ID evidence; delete the disposable account. On success, record corrective GO and
+restore the sole pointer to `EXPO-DESIGN-CORE`. Any failure holds here; do not weaken the timeout,
+increase the pool, add infrastructure or advance the design gate.
 
 The pointer advances only after every P0 criterion passes and the owner records `P0 GO` with the
 effective contract version, date and baseline. Approval alone cannot waive reconciliation. No agent
