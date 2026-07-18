@@ -18,9 +18,9 @@ This record covers only `EXPO-DESIGN-CORE`. It does not promote later phases.
 | Lists | PASS for current P2 volume | Explore uses `FlatList` with stable keys, pagination, dedupe, refresh, empty, loading, and end states. Fixed chip/pairing/outfit groups remain bounded `ScrollView` content. Unused FlashList was removed. |
 | Expo graph | PASS | `expo install --check` reports current dependencies; Expo Doctor passes 20/20 after a clean frozen-lockfile install. |
 | Repository CI | PASS | Canonical `make ci` passed formatting, JavaScript/Python lint, global types, doctrine, 438 API tests (20 environment-gated skips), 127 Expo tests (3,156 assertions), and 77 retained-web tests. |
-| Web bundle | PASS | 51-route export; 2,499,527 bytes against the executable 2,700,000-byte ceiling. |
+| Web bundle | PASS | 51-route export; 2,499,152 bytes against the executable 2,700,000-byte ceiling. |
 | Android bundle | PASS | Hermes export; 4,689,421 bytes against the executable 5,000,000-byte ceiling. |
-| Production web | PASS | EAS deployment `notwl17vhv` serves bundle `entry-df5e1f59e05c16356f1c41f93cc2b6d3.js` at `https://get-your-fit.expo.app` with HTTP 200. |
+| Production web | PASS | EAS deployment `emrc2qswgs` serves `entry-d5d5fa310a208df6c8376dc8471bf6c9.js` at both its immutable URL and `https://get-your-fit.expo.app` with HTTP 200. Both remote bundles exactly match the local SHA-256 `212870c76af4d8cf1da6999859e5a33b6d2124b622fd21b79ecb89d8411829cc`. Deployment `4z5dx9grt2`, mistakenly created from the Android export directory, returned 404 and was rejected and superseded before this evidence was accepted. |
 
 ## Required physical evidence
 
