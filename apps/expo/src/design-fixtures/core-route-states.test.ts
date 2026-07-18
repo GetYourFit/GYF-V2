@@ -43,14 +43,13 @@ describe("core route evidence matrix", () => {
     expect(source.match(/<AtelierButton disabled/g)).toHaveLength(3);
   });
 
-  test("loads the review-only editorial face outside the live root layout", async () => {
+  test("loads the approved editorial face once in the live root layout", async () => {
     const rootLayout = await Bun.file(`${import.meta.dir}/../app/_layout.tsx`).text();
-    const gallerySource = await Bun.file(`${import.meta.dir}/../app/design.tsx`).text();
     const welcomeSource = await Bun.file(`${import.meta.dir}/../app/(auth)/welcome.tsx`).text();
 
-    expect(rootLayout).not.toContain("Fraunces_600SemiBold");
-    expect(gallerySource).toContain("Fraunces_600SemiBold");
-    expect(welcomeSource).toContain("useFonts({ Fraunces_600SemiBold })");
+    expect(rootLayout).toContain('import { Fraunces_600SemiBold }');
+    expect(rootLayout).toContain("Fraunces_600SemiBold,");
+    expect(welcomeSource).not.toContain("useFonts(");
   });
 
   test("selects three owner-reviewable routes across required widths and themes", () => {

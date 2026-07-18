@@ -14,11 +14,6 @@ import { ConfidenceBadge } from "./confidence-badge";
 import { GyfText } from "./gyf-text";
 import { PressableScale, hitSlopFor } from "./pressable-scale";
 
-let haptics: typeof import("expo-haptics") | null = null;
-if (process.env.EXPO_OS && process.env.EXPO_OS !== "web") {
-  haptics = require("expo-haptics");
-}
-
 export interface ProductCardItem {
   title: string;
   brand?: string | null;
@@ -61,7 +56,6 @@ export function ProductCard({
       withTiming(1.15, { duration: 90, easing: Easing.out(Easing.cubic) }),
       withTiming(1, { duration: 130, easing: Easing.out(Easing.cubic) }),
     );
-    void haptics?.impactAsync(haptics.ImpactFeedbackStyle.Light);
     onToggleSave?.(!item.saved);
   };
 

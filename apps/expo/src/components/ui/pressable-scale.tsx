@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import * as haptics from "@/lib/haptics";
 import { motion } from "@/theme/tokens";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -19,7 +20,16 @@ export { hitSlopFor, MIN_TARGET } from "@/lib/touch-target";
  * spring. Every tappable surface routes through this so press feedback
  * is one implementation, not per-component guesswork.
  */
-export function PressableScale({ style, onPressIn, onPressOut, ...props }: PressableProps) {
+export function PressableScale({
+  style,
+  onPressIn,
+  onPressOut,
+  haptic = "none",
+  ...props
+}: PressableProps & {
+  /** Feedback is opt-in: use only when the semantic action earns it. */
+  haptic?: "tap" | "primary" | "none";
+}) {
   const pressed = useSharedValue(0);
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 - pressed.value * 0.03 }],
@@ -30,6 +40,7 @@ export function PressableScale({ style, onPressIn, onPressOut, ...props }: Press
       {...props}
       onPressIn={(event) => {
         pressed.value = withTiming(1, { duration: 80, easing: Easing.out(Easing.cubic) });
+        if (haptic !== "none") haptics[haptic]();
         onPressIn?.(event);
       }}
       onPressOut={(event) => {

@@ -73,9 +73,11 @@ describe("Atelier tokens", () => {
     }
   });
 
-  it("keeps the owner-gated editorial candidate separate from live display typography", () => {
+  it("uses the approved editorial face for every heading variant", () => {
     expect(fonts.editorialCandidate).toBe("Fraunces_600SemiBold");
-    expect(typography.display.fontFamily).toBe(fonts.display);
-    expect(typography.display.fontFamily).not.toBe(fonts.editorialCandidate);
+    expect(fonts.display).toBe(fonts.editorialCandidate);
+    expect(fonts.displaySemi).toBe(fonts.editorialCandidate);
+    expect(typography.display.fontFamily).toBe(fonts.editorialCandidate);
+    expect(typography.title.fontFamily).toBe(fonts.editorialCandidate);
   });
 });
