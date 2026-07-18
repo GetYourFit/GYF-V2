@@ -1249,7 +1249,7 @@ def test_cohesion_phrase_and_pattern_phrase_are_earned():
     assert "one visual language" in text
 
 
-def test_candidate_pool_ordered_by_taste_when_signal_present():
+def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     """Pool selection is the ceiling: with a taste vector the pool must be the
     user's nearest slice, not just the newest ingest (cold start keeps recency)."""
     from app.recsys.candidates import PostgresCandidateRepository
@@ -1277,7 +1277,9 @@ def test_candidate_pool_ordered_by_taste_when_signal_present():
     pool = _FakePool()
     repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
 
-    repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=[0.1, 0.2])
+    with caplog.at_level("INFO", logger="gyf"):
+        repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=[0.1, 0.2])
+    assert "fallback=false rows=0" in caplog.messages[-1]
     assert pool.calls[0] == (
         "SELECT set_config('statement_timeout', %s, true)",
         ("5000ms",),
@@ -1323,6 +1325,72 @@ def test_candidate_pool_ordered_by_taste_when_signal_present():
     assert len(pool.calls) == 3
     assert "ORDER BY (e.item_id IS NOT NULL) DESC" in pool.calls[2][0]
     assert pool.calls[2][1] == params[:-1]
+
+
+def test_candidate_pool_retries_taste_timeout_once_through_bounded_fallback(caplog):
+    import psycopg
+
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    row = list(
+        _attr_row(
+            pattern_certain="true",
+            silhouette_certain="true",
+            fit_certain="true",
+            aesthetic_certain="true",
+        )
+    )
+    row[14] = 0.75
+
+    class _FakePool:
+        def __init__(self):
+            self.checkouts = 0
+            self.exits = 0
+            self.calls = []
+
+        def connection(self):
+            pool = self
+            pool.checkouts += 1
+            checkout = pool.checkouts
+            if checkout == 2:
+                assert pool.exits == 1
+
+            class _Conn:
+                def execute(self, sql, params=None):
+                    pool.calls.append((checkout, sql, params))
+                    if checkout == 1 and "ORDER BY e.embedding <=>" in sql:
+                        raise psycopg.errors.QueryCanceled("statement timeout")
+                    if checkout == 2 and "CROSS JOIN LATERAL" in sql:
+                        return iter([tuple(row)])
+                    return iter([])
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    pool.exits += 1
+                    return False
+
+            return _Conn()
+
+    pool = _FakePool()
+    repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
+
+    with caplog.at_level("INFO", logger="gyf"):
+        result = repo.candidates_by_slot(
+            frozenset({"top"}), None, None, 80, taste_vector=[0.1, 0.2]
+        )
+
+    assert pool.checkouts == 2
+    assert sum("ORDER BY e.embedding <=>" in sql for _, sql, _ in pool.calls) == 1
+    assert sum("CROSS JOIN LATERAL" in sql for _, sql, _ in pool.calls) == 1
+    _, fallback_sql, fallback_params = next(
+        call for call in pool.calls if "CROSS JOIN LATERAL" in call[1]
+    )
+    assert "1 - (e.embedding <=> %s::vector)" in fallback_sql
+    assert fallback_params[-3:] == (80, 80, "[0.1,0.2]")
+    assert result["top"][0].affinity == 0.75
+    assert "fallback=true rows=1" in caplog.messages[-1]
 
 
 def test_candidate_pool_logs_correlated_connection_query_mapping_and_fallback(caplog):
@@ -1431,7 +1499,12 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
     from app.recsys.candidates import PostgresCandidateRepository
 
     class _FailingPool:
+        def __init__(self):
+            self.checkouts = 0
+
         def connection(self):
+            self.checkouts += 1
+
             class _Conn:
                 calls = 0
 
@@ -1451,7 +1524,8 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
 
     clock = iter((10.0, 10.025, 10.025, 10.150))
     monkeypatch.setattr(candidate_module.time, "perf_counter", lambda: next(clock))
-    repo = PostgresCandidateRepository("postgresql://unused", pool=_FailingPool())
+    pool = _FailingPool()
+    repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
 
     with caplog.at_level("INFO", logger="gyf"), pytest.raises(RuntimeError):
         repo.candidates_by_slot(frozenset({"top"}), None, None, 80, request_id="req-query-error")
@@ -1464,6 +1538,7 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
         )
     )
     assert "outcome=error connection_wait_ms=25.00 query_ms=125.00" in message
+    assert pool.checkouts == 1
 
 
 def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(live_db):

@@ -289,6 +289,8 @@ class PostgresCandidateRepository:
         genders: frozenset[str] | None = None,
         request_id: str = "-",
     ) -> dict[str, list[Candidate]]:
+        from psycopg.errors import QueryCanceled  # lazy: postgres extra only
+
         affinity_expr = _AFFINITY_EXPR if taste_vector else "NULL"
         sql = (
             _CANDIDATES_TASTE.format(affinity=affinity_expr)
@@ -322,33 +324,58 @@ class PostgresCandidateRepository:
             checkout_start = time.perf_counter()
             checkout_ms = query_ms = mapping_ms = 0.0
             used_fallback = False
+            taste_query_timed_out = False
             row_count = 0
             outcome = "success"
             active_phase = "checkout"
             phase_start = checkout_start
             try:
-                with self._pool.connection() as conn:  # type: ignore[attr-defined]
-                    checkout_ms = (time.perf_counter() - checkout_start) * 1000
-                    active_phase = "query"
-                    query_start = time.perf_counter()
-                    phase_start = query_start
-                    conn.execute(
-                        "SELECT set_config('statement_timeout', %s, true)",
-                        (f"{_QUERY_TIMEOUT_MS}ms",),
-                    )
-                    if taste_vector:
+                try:
+                    with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                        checkout_ms = (time.perf_counter() - checkout_start) * 1000
+                        active_phase = "query"
+                        query_start = time.perf_counter()
+                        phase_start = query_start
                         conn.execute(
-                            "SELECT set_config('hnsw.ef_search', %s, true), "
-                            "set_config('hnsw.iterative_scan', 'relaxed_order', true)",
-                            (str(max(40, limit_per_slot)),),
+                            "SELECT set_config('statement_timeout', %s, true)",
+                            (f"{_QUERY_TIMEOUT_MS}ms",),
                         )
-                    rows = list(conn.execute(sql, params))
-                    if not rows and taste_vector is None:
-                        # Sparse/local catalogs may not have run perception yet. Keep
-                        # the product usable with the existing raw baseline; production
-                        # categories with perceived inventory never pay this second read.
-                        used_fallback = True
-                        fallback = _CANDIDATES.format(affinity="NULL", order=_ORDER_BY_RECENCY)
+                        if taste_vector:
+                            conn.execute(
+                                "SELECT set_config('hnsw.ef_search', %s, true), "
+                                "set_config('hnsw.iterative_scan', 'relaxed_order', true)",
+                                (str(max(40, limit_per_slot)),),
+                            )
+                        try:
+                            rows = list(conn.execute(sql, params))
+                        except QueryCanceled:
+                            if not taste_vector:
+                                raise
+                            taste_query_timed_out = True
+                            raise
+                        if not rows and taste_vector is None:
+                            # Sparse/local catalogs may not have run perception yet. Keep
+                            # the product usable with the existing raw baseline; production
+                            # categories with perceived inventory never pay this second read.
+                            used_fallback = True
+                            fallback = _CANDIDATES.format(affinity="NULL", order=_ORDER_BY_RECENCY)
+                            rows = list(conn.execute(fallback, fallback_params))
+                        query_ms = (time.perf_counter() - query_start) * 1000
+                except QueryCanceled:
+                    if not taste_query_timed_out:
+                        raise
+                    used_fallback = True
+                    fallback = _CANDIDATES_COLD.format(affinity=_AFFINITY_EXPR)
+                    fallback_params = filter_params + (
+                        limit_per_slot,
+                        limit_per_slot,
+                        prefix[0],
+                    )
+                    with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                        conn.execute(
+                            "SELECT set_config('statement_timeout', %s, true)",
+                            (f"{_QUERY_TIMEOUT_MS}ms",),
+                        )
                         rows = list(conn.execute(fallback, fallback_params))
                     query_ms = (time.perf_counter() - query_start) * 1000
                 active_phase = "mapping"
