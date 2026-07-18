@@ -3,6 +3,7 @@ import {
   BricolageGrotesque_600SemiBold,
   BricolageGrotesque_700Bold,
 } from "@expo-google-fonts/bricolage-grotesque";
+import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -22,6 +23,7 @@ export default function RootLayout() {
     BricolageGrotesque_500Medium,
     BricolageGrotesque_600SemiBold,
     BricolageGrotesque_700Bold,
+    Fraunces_600SemiBold,
   });
 
   useEffect(() => {

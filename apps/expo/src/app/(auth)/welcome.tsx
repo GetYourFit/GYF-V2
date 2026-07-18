@@ -26,8 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale } from "@/components/ui/pressable-scale";
 import { createApi, type SearchResult } from "@/lib/api";
-import { motion, radii, spacing } from "@/theme/tokens";
-import { useThemeColors } from "@/theme/use-color-scheme";
+import { colors, motion, radii, spacing } from "@/theme/tokens";
 
 let haptics: typeof import("expo-haptics") | null = null;
 if (process.env.EXPO_OS && process.env.EXPO_OS !== "web") {
@@ -40,15 +39,17 @@ if (process.env.EXPO_OS && process.env.EXPO_OS !== "web") {
  * anonymous browse feed, each landing with a zoom-in and a light haptic;
  * the gradient stays underneath as the loading placeholder.
  */
+// Positions hug the left/right edges so the centre column (headline, logo,
+// sub) always stays clear of the collage — the logo never overlaps a tile.
 const TILES = [
-  { top: 0.1, left: 0.07, w: 92, h: 92, fill: ["#2c2a26", "#17161a"] },
-  { top: 0.14, left: 0.4, w: 112, h: 124, fill: ["#23262b", "#121317"] },
-  { top: 0.18, left: 0.72, w: 96, h: 112, fill: ["#2a2320", "#191512"] },
-  { top: 0.32, left: 0.85, w: 60, h: 68, fill: ["#26282a", "#101214"] },
-  { top: 0.6, left: 0.05, w: 84, h: 100, fill: ["#2a2320", "#191512"] },
-  { top: 0.66, left: 0.3, w: 64, h: 64, fill: ["#23262b", "#121317"] },
-  { top: 0.58, left: 0.5, w: 140, h: 152, fill: ["#2c2a26", "#17161a"] },
-  { top: 0.64, left: 0.8, w: 72, h: 70, fill: ["#26282a", "#101214"] },
+  { top: 0.08, left: 0.04, w: 92, h: 92, fill: ["#2c2a26", "#17161a"] },
+  { top: 0.3, left: 0.02, w: 112, h: 124, fill: ["#23262b", "#121317"] },
+  { top: 0.08, left: 0.78, w: 96, h: 112, fill: ["#2a2320", "#191512"] },
+  { top: 0.32, left: 0.86, w: 60, h: 68, fill: ["#26282a", "#101214"] },
+  { top: 0.56, left: 0.06, w: 84, h: 100, fill: ["#2a2320", "#191512"] },
+  { top: 0.74, left: 0.02, w: 64, h: 64, fill: ["#23262b", "#121317"] },
+  { top: 0.52, left: 0.74, w: 120, h: 140, fill: ["#2c2a26", "#17161a"] },
+  { top: 0.76, left: 0.88, w: 72, h: 70, fill: ["#26282a", "#101214"] },
 ] as const;
 
 const SLIDES = [
@@ -155,14 +156,16 @@ function BreathingLogo({ tint }: { tint: string }) {
         source={require("../../assets/logo.png")}
         resizeMode="contain"
         accessibilityLabel="GYF — Get Your Fit"
-        style={{ width: 180, height: 180, tintColor: tint }}
+        style={{ width: 240, height: 240, tintColor: tint }}
       />
     </Animated.View>
   );
 }
 
 export default function WelcomeScreen() {
-  const palette = useThemeColors();
+  // The welcome moment is always the black editorial canvas, whatever the
+  // system scheme — the collage and white logo are designed against it.
+  const palette = colors.dark;
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const [active, setActive] = useState(0);
@@ -239,7 +242,14 @@ export default function WelcomeScreen() {
               <GyfText
                 accessibilityRole="header"
                 variant="title"
-                style={{ textAlign: "center", fontSize: 28, lineHeight: 35 }}
+                theme="dark"
+                style={{
+                  textAlign: "center",
+                  fontFamily: "Fraunces_600SemiBold",
+                  fontSize: 30,
+                  lineHeight: 38,
+                  letterSpacing: 0.3,
+                }}
               >
                 {slide.headline}
               </GyfText>
@@ -250,7 +260,12 @@ export default function WelcomeScreen() {
               style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm }}
             >
               <BreathingLogo tint={palette.text} />
-              <GyfText tone="muted" variant="bodySmall" style={{ textAlign: "center" }}>
+              <GyfText
+                tone="muted"
+                variant="bodySmall"
+                theme="dark"
+                style={{ textAlign: "center" }}
+              >
                 {slide.sub}
               </GyfText>
             </View>
@@ -268,7 +283,7 @@ export default function WelcomeScreen() {
           paddingBottom: insets.bottom + spacing.lg,
         }}
       >
-        <GyfText tone="faint" variant="bodySmall" style={{ textAlign: "center" }}>
+        <GyfText tone="faint" variant="bodySmall" theme="dark" style={{ textAlign: "center" }}>
           By creating an account, you agree to our Terms of Service and Privacy Policy
         </GyfText>
 
@@ -300,7 +315,7 @@ export default function WelcomeScreen() {
 
         <Link asChild href="/login">
           <Pressable accessibilityRole="link" hitSlop={8}>
-            <GyfText tone="muted" variant="bodySmall">
+            <GyfText tone="muted" variant="bodySmall" theme="dark">
               Already have an account? Log In
             </GyfText>
           </Pressable>
