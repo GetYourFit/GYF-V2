@@ -1346,6 +1346,7 @@ def test_candidate_pool_retries_taste_timeout_once_through_bounded_fallback(capl
         def __init__(self):
             self.checkouts = 0
             self.exits = 0
+            self.first_exit_error = None
             self.calls = []
 
         def connection(self):
@@ -1368,6 +1369,10 @@ def test_candidate_pool_retries_taste_timeout_once_through_bounded_fallback(capl
                     return self
 
                 def __exit__(self, *exc):
+                    if checkout == 1:
+                        assert exc[0] is psycopg.errors.QueryCanceled
+                        assert isinstance(exc[1], psycopg.errors.QueryCanceled)
+                        pool.first_exit_error = exc[1]
                     pool.exits += 1
                     return False
 
@@ -1382,6 +1387,7 @@ def test_candidate_pool_retries_taste_timeout_once_through_bounded_fallback(capl
         )
 
     assert pool.checkouts == 2
+    assert isinstance(pool.first_exit_error, psycopg.errors.QueryCanceled)
     assert sum("ORDER BY e.embedding <=>" in sql for _, sql, _ in pool.calls) == 1
     assert sum("CROSS JOIN LATERAL" in sql for _, sql, _ in pool.calls) == 1
     _, fallback_sql, fallback_params = next(
@@ -1501,18 +1507,18 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
     class _FailingPool:
         def __init__(self):
             self.checkouts = 0
+            self.calls = []
 
         def connection(self):
+            pool = self
             self.checkouts += 1
 
             class _Conn:
-                calls = 0
-
-                def execute(self, _sql, _params=None):
-                    self.calls += 1
-                    if self.calls == 1:
-                        return iter([])
-                    raise RuntimeError("query unavailable")
+                def execute(self, sql, params=None):
+                    pool.calls.append((sql, params))
+                    if "ORDER BY e.embedding <=>" in sql:
+                        raise RuntimeError("query unavailable")
+                    return iter([])
 
                 def __enter__(self):
                     return self
@@ -1528,7 +1534,14 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
     repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
 
     with caplog.at_level("INFO", logger="gyf"), pytest.raises(RuntimeError):
-        repo.candidates_by_slot(frozenset({"top"}), None, None, 80, request_id="req-query-error")
+        repo.candidates_by_slot(
+            frozenset({"top"}),
+            None,
+            None,
+            80,
+            taste_vector=[0.1, 0.2],
+            request_id="req-query-error",
+        )
 
     message = next(
         record.getMessage()
@@ -1539,6 +1552,8 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
     )
     assert "outcome=error connection_wait_ms=25.00 query_ms=125.00" in message
     assert pool.checkouts == 1
+    assert sum("ORDER BY e.embedding <=>" in sql for sql, _ in pool.calls) == 1
+    assert not any("CROSS JOIN LATERAL" in sql for sql, _ in pool.calls)
 
 
 def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(live_db):
