@@ -1,7 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Image,
   Pressable,
   ScrollView,
   useWindowDimensions,
@@ -9,19 +10,35 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeInUp,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  ZoomIn,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale } from "@/components/ui/pressable-scale";
-import { radii, spacing } from "@/theme/tokens";
+import { createApi, type SearchResult } from "@/lib/api";
+import { motion, radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
-/* Ref7 — full-bleed welcome: scattered collage tiles around a centred
- * wordmark, one headline per snap slide, page dots, and a single filled
- * Start pill into signup.
- *
- * ponytail: tiles are tonal gradients until real editorial imagery ships —
- * swap each `fill` for an <Image> source to upgrade.
+let haptics: typeof import("expo-haptics") | null = null;
+if (process.env.EXPO_OS && process.env.EXPO_OS !== "web") {
+  haptics = require("expo-haptics");
+}
+
+/* Ref7 — full-bleed welcome: scattered collage tiles around the centred
+ * logo, one headline per snap slide, page dots, and a single filled
+ * Start pill into signup. Tiles fill with real catalogue outfits from the
+ * anonymous browse feed, each landing with a zoom-in and a light haptic;
+ * the gradient stays underneath as the loading placeholder.
  */
 const TILES = [
   { top: 0.1, left: 0.07, w: 92, h: 92, fill: ["#2c2a26", "#17161a"] },
@@ -49,12 +66,115 @@ const SLIDES = [
   },
 ] as const;
 
+function isRemoteImage(url: string | null | undefined): url is string {
+  return Boolean(url && /^https:\/\//i.test(url));
+}
+
+/** One collage tile: gradient placeholder, outfit image zooms in on load. */
+function CollageTile({
+  tile,
+  imageUrl,
+  index,
+}: {
+  tile: (typeof TILES)[number];
+  imageUrl: string | null;
+  index: number;
+}) {
+  const { width, height } = useWindowDimensions();
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <View
+      style={{
+        position: "absolute",
+        top: tile.top * height,
+        left: tile.left * width,
+        width: tile.w,
+        height: tile.h,
+        borderRadius: 4,
+        overflow: "hidden",
+      }}
+    >
+      <LinearGradient
+        colors={[tile.fill[0], tile.fill[1]]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+      />
+      {imageUrl && (
+        <Animated.View
+          entering={ZoomIn.duration(motion.standard)
+            .delay(index * 90)
+            .reduceMotion(ReduceMotion.System)}
+          style={{ flex: 1, opacity: loaded ? 1 : 0 }}
+        >
+          <Image
+            source={{ uri: imageUrl }}
+            resizeMode="cover"
+            style={{ width: "100%", height: "100%" }}
+            onLoad={() => {
+              setLoaded(true);
+              void haptics?.impactAsync(haptics.ImpactFeedbackStyle.Light);
+            }}
+          />
+        </Animated.View>
+      )}
+    </View>
+  );
+}
+
+/** The logo's slow breathing pulse — the page's idle heartbeat. */
+function BreathingLogo() {
+  const breathe = useSharedValue(0);
+
+  useEffect(() => {
+    breathe.value = withRepeat(
+      withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.quad), reduceMotion: ReduceMotion.System }),
+      -1,
+      true,
+    );
+  }, [breathe]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + breathe.value * 0.03 }],
+  }));
+
+  return (
+    <Animated.View
+      entering={ZoomIn.duration(motion.standard).reduceMotion(ReduceMotion.System)}
+      style={style}
+    >
+      <Image
+        source={require("../../assets/logo.png")}
+        resizeMode="contain"
+        accessibilityLabel="GYF — Get Your Fit"
+        style={{ width: 140, height: 140, tintColor: "#ffffff" }}
+      />
+    </Animated.View>
+  );
+}
+
 export default function WelcomeScreen() {
   const palette = useThemeColors();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const [active, setActive] = useState(0);
+  const [outfits, setOutfits] = useState<SearchResult[]>([]);
   const trackRef = useRef<ScrollView>(null);
+
+  // Fill the collage with real outfits — anonymous browse, no auth needed.
+  // Failures are silent: tiles simply stay as tonal gradients.
+  useEffect(() => {
+    const abort = new AbortController();
+    createApi(() => null)
+      .browse(
+        { k: TILES.length, slots: "top,bottom,full_body,footwear", seed: `${Date.now() % 1e6}` },
+        abort.signal,
+      )
+      .then((results) => setOutfits(results.filter((r) => isRemoteImage(r.image_url))))
+      .catch(() => {});
+    return () => abort.abort();
+  }, []);
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     setActive(Math.round(event.nativeEvent.contentOffset.x / width));
@@ -68,19 +188,11 @@ export default function WelcomeScreen() {
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
       >
         {TILES.map((tile, index) => (
-          <LinearGradient
+          <CollageTile
             key={index}
-            colors={[tile.fill[0], tile.fill[1]]}
-            start={{ x: 0.2, y: 0 }}
-            end={{ x: 0.8, y: 1 }}
-            style={{
-              position: "absolute",
-              top: tile.top * height,
-              left: tile.left * width,
-              width: tile.w,
-              height: tile.h,
-              borderRadius: 4,
-            }}
+            tile={tile}
+            index={index}
+            imageUrl={outfits[index]?.image_url ?? null}
           />
         ))}
       </View>
@@ -104,21 +216,21 @@ export default function WelcomeScreen() {
               paddingHorizontal: spacing.xl,
             }}
           >
-            <GyfText
-              accessibilityRole="header"
-              variant="title"
-              style={{ textAlign: "center", fontSize: 28, lineHeight: 35 }}
-            >
-              {slide.headline}
-            </GyfText>
+            <Animated.View entering={FadeInDown.duration(motion.standard).reduceMotion(ReduceMotion.System)}>
+              <GyfText
+                accessibilityRole="header"
+                variant="title"
+                style={{ textAlign: "center", fontSize: 28, lineHeight: 35 }}
+              >
+                {slide.headline}
+              </GyfText>
+            </Animated.View>
 
-            {/* Centre band — the wordmark moment */}
+            {/* Centre band — the logo moment */}
             <View
               style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm }}
             >
-              <GyfText variant="display" style={{ fontSize: 52, lineHeight: 56, letterSpacing: 2 }}>
-                GYF
-              </GyfText>
+              <BreathingLogo />
               <GyfText tone="muted" variant="bodySmall" style={{ textAlign: "center" }}>
                 {slide.sub}
               </GyfText>
@@ -128,7 +240,8 @@ export default function WelcomeScreen() {
       </ScrollView>
 
       {/* Footer — terms, Start pill, login, dots */}
-      <View
+      <Animated.View
+        entering={FadeInUp.duration(motion.standard).delay(200).reduceMotion(ReduceMotion.System)}
         style={{
           alignItems: "center",
           gap: spacing.md,
@@ -143,7 +256,10 @@ export default function WelcomeScreen() {
         <PressableScale
           accessibilityLabel="Start"
           accessibilityRole="button"
-          onPress={() => router.push("/signup")}
+          onPress={() => {
+            void haptics?.impactAsync(haptics.ImpactFeedbackStyle.Medium);
+            router.push("/signup");
+          }}
           style={{
             alignItems: "center",
             justifyContent: "center",
@@ -154,8 +270,10 @@ export default function WelcomeScreen() {
             minHeight: 56,
             backgroundColor: palette.accent,
             borderRadius: radii.capsule,
+            overflow: "hidden",
           }}
         >
+          <ShimmerSweep />
           <GyfText variant="button" style={{ color: palette.accentText, fontSize: 17 }}>
             Start
           </GyfText>
@@ -189,7 +307,41 @@ export default function WelcomeScreen() {
             />
           ))}
         </View>
-      </View>
+      </Animated.View>
     </View>
+  );
+}
+
+/** Highlight band sweeping across the Start pill every few seconds. */
+function ShimmerSweep() {
+  const sweep = useSharedValue(0);
+
+  useEffect(() => {
+    sweep.value = withRepeat(
+      withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.quad), reduceMotion: ReduceMotion.System }),
+      -1,
+      false,
+    );
+  }, [sweep]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: -200 + sweep.value * 600 }],
+  }));
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        { position: "absolute", top: 0, bottom: 0, width: 120 },
+        style,
+      ]}
+    >
+      <LinearGradient
+        colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.25)", "rgba(255,255,255,0)"]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={{ flex: 1 }}
+      />
+    </Animated.View>
   );
 }
