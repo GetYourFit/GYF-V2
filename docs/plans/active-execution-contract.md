@@ -919,11 +919,17 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   proof. `gyf-encoder` remains unselected because this slice has no measured encoding boundary. The
   reproducible token, component, accessibility, bundle, hosting, and remaining device evidence is recorded in
   [`expo-design-core-evidence-2026-07-18.md`](./expo-design-core-evidence-2026-07-18.md).
-- The owner-approved design-first sequencing amendment is now authoritative. Cosmos Tasks 1–2 are
-  complete and independently reviewed in the durable task ledger. `COSMOS-DESIGN-BUILD` starts at
-  Task 3 and may proceed through Task 11 only in order. The unresolved Expo Doctor, browser-capture,
-  physical-Android, owner-visual and global F2.5 evidence remains HOLD exactly as recorded above;
-  it is neither waived nor counted as task success. After Task 11, the sole pointer becomes
+- The owner-approved design-first sequencing amendment is now authoritative. Cosmos Tasks 1–3 are
+  complete and independently reviewed in the durable task ledger; Task 4 is current. Task 3 commits
+  `efcf3ba` and `9b00b90` add the pure Personal Fit confirmation, canonical-value, ordinary-decimal
+  budget and immutable photo-estimate rules. Independent review found that JavaScript numeric parsing
+  accepted alternate hexadecimal, binary and exponent syntax; the second commit reproduced and closed
+  that defect before approval. Fresh controller gates pass formatting, JS/Python lint, typecheck,
+  doctrine, 438 API tests (20 environment/optional-lane skips, seven retained warnings), 77 web tests
+  and 139 Expo tests. Next/Expo builds pass; the web bundle is 2,499,233/2,700,000 bytes and the Android
+  Hermes bundle is 4,689,519/5,000,000 bytes. The unresolved Expo Doctor, browser-capture,
+  physical-Android, owner-visual and global F2.5 evidence remains HOLD exactly as recorded above; it
+  is neither waived nor counted as task success. After Task 11, the sole pointer becomes
   `NATIVE-ACCEPTANCE`, not release or the next product phase.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
