@@ -80,6 +80,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
       </View>
     );
   }
-  if (state === "signed-out") return <Redirect href="/login" />;
+  // First touch gets the Ref7 welcome screen; login stays one tap away from it.
+  if (state === "signed-out") return <Redirect href="/welcome" />;
   return children;
 }
