@@ -4,20 +4,23 @@ import { useRouter } from "expo-router";
 
 import { signIn, signUp } from "@/lib/auth";
 import { normalizeEmail, validateEmail, validatePassword } from "@/lib/auth-validation";
-import { AtelierButton } from "@/components/ui/atelier-button";
 import { GyfText } from "@/components/ui/gyf-text";
-import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { PressableScale } from "@/components/ui/pressable-scale";
+import { radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
 type Mode = "login" | "signup";
 
-function Field({
+/* Ref5/Ref6 field — a giant, borderless, centred ghost input floating on the
+ * black canvas. No label box, no border: the placeholder is the label. */
+function GhostField({
   label,
   value,
   onChangeText,
   secureTextEntry,
   keyboardType,
   autoComplete,
+  big,
 }: {
   label: string;
   value: string;
@@ -25,42 +28,37 @@ function Field({
   secureTextEntry?: boolean;
   keyboardType?: "default" | "email-address";
   autoComplete?: "email" | "password" | "new-password";
+  big?: boolean;
 }) {
   const palette = useThemeColors();
   return (
-    <View style={{ gap: spacing.xs }}>
-      <GyfText accessibilityRole="text" tone="muted" variant="label">
-        {label}
-      </GyfText>
-      <TextInput
-        accessibilityLabel={label}
-        autoCapitalize="none"
-        autoComplete={autoComplete}
-        autoCorrect={false}
-        keyboardType={keyboardType}
-        onChangeText={onChangeText}
-        placeholder={label}
-        placeholderTextColor={palette.textFaint}
-        secureTextEntry={secureTextEntry}
-        style={{
-          borderColor: palette.border,
-          borderRadius: radii.control,
-          borderWidth: 1,
-          color: palette.text,
-          fontSize: typography.body.fontSize,
-          minHeight: 52,
-          paddingHorizontal: spacing.md,
-        }}
-        textContentType={
-          autoComplete === "new-password"
-            ? "newPassword"
-            : autoComplete === "email"
-              ? "emailAddress"
-              : autoComplete
-        }
-        value={value}
-      />
-    </View>
+    <TextInput
+      accessibilityLabel={label}
+      autoCapitalize="none"
+      autoComplete={autoComplete}
+      autoCorrect={false}
+      keyboardType={keyboardType}
+      onChangeText={onChangeText}
+      placeholder={label}
+      placeholderTextColor={palette.textFaint}
+      secureTextEntry={secureTextEntry}
+      style={{
+        color: palette.text,
+        fontSize: big ? 30 : 24,
+        fontWeight: "500",
+        letterSpacing: -0.3,
+        minHeight: 56,
+        textAlign: "center",
+      }}
+      textContentType={
+        autoComplete === "new-password"
+          ? "newPassword"
+          : autoComplete === "email"
+            ? "emailAddress"
+            : autoComplete
+      }
+      value={value}
+    />
   );
 }
 
@@ -72,6 +70,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const canSubmit = email.length > 0 && password.length >= 6 && !busy;
 
   async function submit() {
     setError(null);
@@ -100,66 +100,103 @@ export function AuthForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <View style={{ gap: spacing.lg }}>
-      <View style={{ gap: spacing.xs }}>
-        <GyfText accessibilityRole="header" variant="title">
-          {mode === "login" ? "Welcome back" : "Create your GYF account"}
+    <View style={{ flex: 1, minHeight: 460 }}>
+      {/* Mode switch — top-right, Ref6 */}
+      <Pressable
+        accessibilityRole="link"
+        hitSlop={12}
+        onPress={() => router.push(mode === "login" ? "/signup" : "/login")}
+        style={{ alignSelf: "flex-end" }}
+      >
+        <GyfText tone="muted" variant="body">
+          {mode === "login" ? "Sign Up" : "Log In"}
         </GyfText>
-        <GyfText tone="muted">
-          {mode === "login"
-            ? "Sign in to continue your style journey."
-            : "A better way to decide what to wear."}
+      </Pressable>
+
+      {/* Centred header, Ref5/Ref6 */}
+      <View style={{ alignItems: "center", gap: spacing.xs, marginTop: spacing.lg }}>
+        <GyfText accessibilityRole="header" variant="title" style={{ textAlign: "center" }}>
+          {mode === "login" ? "Welcome back" : "Enter your email address"}
+        </GyfText>
+        <GyfText tone="muted" style={{ textAlign: "center" }}>
+          {mode === "login" ? "Sign in to your stylist" : "Sign up or get started"}
         </GyfText>
       </View>
-      <Field
-        autoComplete="email"
-        keyboardType="email-address"
-        label="Email address"
-        onChangeText={setEmail}
-        value={email}
-      />
-      <Field
-        autoComplete={mode === "login" ? "password" : "new-password"}
-        label="Password"
-        onChangeText={setPassword}
-        secureTextEntry
-        value={password}
-      />
+
+      {/* Giant ghost fields floating mid-screen */}
+      <View style={{ flex: 1, justifyContent: "center", gap: spacing.lg }}>
+        <GhostField
+          autoComplete="email"
+          big
+          keyboardType="email-address"
+          label="Email address"
+          onChangeText={setEmail}
+          value={email}
+        />
+        <GhostField
+          autoComplete={mode === "login" ? "password" : "new-password"}
+          label="Password"
+          onChangeText={setPassword}
+          secureTextEntry
+          value={password}
+        />
+        {mode === "login" ? (
+          <Pressable
+            accessibilityRole="link"
+            hitSlop={8}
+            onPress={() => router.push("/forgot-password")}
+          >
+            <GyfText style={{ textAlign: "center" }} tone="faint" variant="bodySmall">
+              Forgot password?
+            </GyfText>
+          </Pressable>
+        ) : null}
+      </View>
+
       {error ? (
         <GyfText
           accessibilityLiveRegion="polite"
           accessibilityRole="alert"
-          style={{ color: palette.error }}
+          style={{ color: palette.error, textAlign: "center", marginBottom: spacing.sm }}
         >
           {error}
         </GyfText>
       ) : null}
       {notice ? (
-        <GyfText accessibilityLiveRegion="polite" style={{ color: palette.success }}>
+        <GyfText
+          accessibilityLiveRegion="polite"
+          style={{ color: palette.success, textAlign: "center", marginBottom: spacing.sm }}
+        >
           {notice}
         </GyfText>
       ) : null}
-      <AtelierButton
-        disabled={busy}
-        label={busy ? "Working…" : mode === "login" ? "Sign in" : "Create account"}
+
+      {/* Full-width pill Continue — dim until the form is fillable (Ref5) */}
+      <PressableScale
+        accessibilityLabel="Continue"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !canSubmit }}
+        disabled={!canSubmit}
         onPress={() => void submit()}
-      />
-      {busy ? <ActivityIndicator accessibilityLabel="Signing you in" color={palette.text} /> : null}
-      <Pressable
-        accessibilityRole="link"
-        onPress={() => router.push(mode === "login" ? "/signup" : "/login")}
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 56,
+          backgroundColor: canSubmit ? palette.accent : palette.surfaceRaised,
+          borderRadius: radii.capsule,
+        }}
       >
-        <GyfText style={{ textAlign: "center" }} tone="muted">
-          {mode === "login" ? "New to GYF? Create an account" : "Already have an account? Sign in"}
-        </GyfText>
-      </Pressable>
-      {mode === "login" ? (
-        <Pressable accessibilityRole="link" onPress={() => router.push("/forgot-password")}>
-          <GyfText style={{ textAlign: "center" }} tone="muted">
-            Forgot password?
+        {busy ? (
+          <ActivityIndicator accessibilityLabel="Signing you in" color={palette.text} />
+        ) : (
+          <GyfText
+            variant="button"
+            style={{ color: canSubmit ? palette.accentText : palette.textFaint, fontSize: 17 }}
+          >
+            Continue
           </GyfText>
-        </Pressable>
-      ) : null}
+        )}
+      </PressableScale>
     </View>
   );
 }
