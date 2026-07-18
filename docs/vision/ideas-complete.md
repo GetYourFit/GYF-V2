@@ -281,6 +281,20 @@ free/open sources first and proprietary data generated as a by-product of usage.
 3. **Always explainable.** Every recommendation carries a human-readable reason and an
    honest confidence — never a black box.
 4. **Trust is the product.** Impressiveness without trust is failure.
+5. **Reference-led, coherent identity.** Approved visual references guide one Expo design
+   language across Stylist, Explore, wardrobe, social and profile. Typography roles, navigation,
+   imagery, controls and state treatments stay coherent rather than becoming page-specific themes.
+6. **Responsive and inclusive by construction.** Layouts adapt through content-led width tiers,
+   not device-name checks. Light, dark and system themes, dynamic type, screen readers, keyboard
+   use, contrast, touch targets and reduced motion are first-class requirements.
+7. **Useful discovery and personal identity.** Explore provides understandable search and filter
+   controls, continuous real-catalogue browsing with an honest end state, and clear item actions.
+   Navigation and profile affordances support an optional avatar, a professional portfolio of
+   made and liked looks, wardrobe context and truthful stateful actions.
+8. **Material and motion earn their place.** Glass, animation and haptics support hierarchy and
+   confirmed actions without obscuring content or running decorative loops. Image, list and motion
+   performance is measured on representative devices; no implementation technique is mandatory
+   without evidence that it improves the user outcome.
 
 ---
 
@@ -344,6 +358,7 @@ becoming the default way the world decides what to wear.
 | `ideas.md`     | Merged     | Full founding vision, feature set, tech vision, arc, principles, LTK + inspiration-first frontend, beta-to-scale, SOTA/free tech, ECC usage; data/dataset acquisition strategy (free/open + behavioral + synthetic); free-tier-first cost-disciplined deployment. |
 | `ideas.V1`     | _Pending_  | _(add when created)_ |
 | `ideas.V2.md`  | Merged     | Zero-friction cold start; photo vs. manual onboarding (auto skin-tone/body-type deduction); always-editable preferences; detailed top+bottom+apparel photo-realistic virtual try-on flow; Socials page with interactive/shareable/downloadable/reactable posts; style sharing & following re-rendered to follower's tone; professional profile page; badges/perks (Fashion Mogger, Trendsetter); buy via redirect to parent product page; affiliate monetization; B2B distilled-data revenue line; non-copyable moat; plan-before-build, research-before-tech, cutting-edge/professional engineering principles; taste maturing "like a fine wine" across personality/body/skin/budget/occasion; natural-language styling goals (taller/slimmer/broader via color theory + body-type intelligence); occasion taxonomy (casual/formal/wedding/festive); region- & culture-aware garments (e.g. sarees in India). |
+| `ScopeofIdea.md` | Merged | Reference-led Expo design language; coherent typography; responsive width tiers; useful Explore controls and continuous catalogue browsing; profile/avatar/navigation, portfolio and wardrobe presentation; light/dark/system themes; purposeful motion, confirmed-action haptics and measured image/list performance. Conflicting library and blanket optimization prescriptions are resolved by the active contract. |
 
 > When you create a new version file with more ideas, fold its content into the relevant
 > sections above and update this table with what it added.

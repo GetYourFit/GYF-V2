@@ -550,6 +550,22 @@ destructively cleaned:
   paywall material, old IDM-VTON paths and parked client documentation. Mark superseded now; delete
   only after the replacement and rollback evidence pass.
 
+`ScopeofIdea.md` and `docs/IMPLEMENTATION_PLAN.md` are retained owner-input evidence, not execution
+authority. Their durable intent—reference-led composition, coherent typography, responsive width
+tiers, useful Explore controls, profile/navigation affordances, themes, wardrobe/portfolio states
+and measured purposeful interaction—maps to the existing `EXPO-DESIGN-CORE` packet and later
+mapped route gates. This reconciliation does not change the current pointer or prove visual
+approval. Both source files remain until protected F13 retention/deletion review.
+
+Conflicting prescriptions resolve through the existing design and library policy: keep Expo Router
+and the one GYF primitive/token system; reject Gluestack as a second UI system; start with
+`FlatList` and add FlashList only on its measured trigger; reserve Fraunces for editorial display;
+use width tiers rather than device-name checks; limit glass to legible transient navigation and
+sheets; prohibit decorative animation loops and blanket high-priority images, memoization,
+callbacks or haptics. Haptics accompany only meaningful confirmed actions and always have a visual
+or textual equivalent. Hard-launch scope remains India and 18+; worldwide reach is long-term
+product intent, not a launch-scope change.
+
 Feedback v7 maps to execution-authority consolidation plus HL-DESIGN, HL-QUALITY, HL-LOOP,
 HL-LEAN, HL-SCALE, HL-CLOUD, EXPO-20/21 and P0–P7. Its 2026-07-17 amendment additionally maps the
 observed broken Stylist/main recommendation to current `F2.5-04` then `EXPO-CORE-01`, observed

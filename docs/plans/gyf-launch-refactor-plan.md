@@ -130,6 +130,8 @@ Source-closure index:
 | Feedback v6 | HL-DIVERSE/EXPLORE/CANVAS/RELOAD/DESIGN/CLOUD/LEAN |
 | Live agent evaluation | F2.5 plus HL-DIVERSE/EXPLAIN/STYLE/AUTH |
 | v6 response audit | regression evidence to re-run under HL-DIVERSE/RELOAD/DESIGN/LOOP |
+| `ScopeofIdea.md` | EXPO-DESIGN-CORE, P5.2/P5.4/P5.5, EXPO-19–21 and HL-DESIGN/EXPLORE/PROFILE/WARDROBE; source intent only, with library/performance conflicts resolved by the parent contract |
+| `docs/IMPLEMENTATION_PLAN.md` | Historical proposal folded into the same mappings; non-executable and retained until F13 review |
 
 ### Product evidence contract
 
@@ -346,7 +348,7 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 
 | Field | Current truth |
 |---|---|
-| Current permitted application slice | `EXPO-CORE-01` trusted Expo outfit loop; active contract write set and evidence gate apply |
+| Current permitted application slice | `EXPO-DESIGN-CORE`; active-contract write set and evidence gate apply |
 | F1b implementation state | Shipped with the F1 gate; retained as historical evidence |
 | Latest automated evidence | API base `6c3d1a0`; CI `29574359092` passed; CD `29574459384` retained-web job passed and Expo job correctly failed its stale publishable-key gate; fresh local gates passed 422 API tests, 95 Expo tests, 72 retained-web tests and both builds |
 | Known warnings/skips | 20 environment-gated API skips; 7 API framework/test-key warnings; existing retained-web `<img>`, Vite/localStorage and React `act()` warnings; Expo `NO_COLOR` build warning |
@@ -503,10 +505,10 @@ Design laws:
   charcoal text, hairline rules, and restrained semantic green/amber/red. Garment and user imagery
   supplies the visual richness. No decorative gold, neon gradients, purple AI glow, or arbitrary
   brand colours.
-- **Editorial hierarchy.** Use Cormorant Garamond for rare editorial/occasion moments, Plus Jakarta
-  Sans for actions and explanations, and JetBrains Mono for evidence, model/version, status and
-  confidence metadata. The existing `app/lib/fonts.ts` and `app/app/globals.css` are the source
-  tokens to port, not a new type system.
+- **Editorial hierarchy.** Use Fraunces only for rare editorial display moments, Bricolage
+  Grotesque for navigation, labels and actions, and system sans for long body copy. Keep two
+  branded faces at most; evidence, status and confidence remain readable without creating a third
+  decorative type system.
 - **Evidence stays calm.** Confidence is a quiet ring/label with a reason and provenance, never a
   casino-style score badge. Unknown is a valid state. The UI says what GYF used and what it did not
   use.

@@ -15,6 +15,13 @@ source of execution order and gates.
    subordinate Expo design proposals; active-contract slices and gates remain authoritative.
 6. [`tech-stack.md`](./tech-stack.md) and research — options and evidence; never authority to promote.
 
+## Retained owner-input sources
+
+- [`../ScopeofIdea.md`](../ScopeofIdea.md) — non-authoritative owner design input, folded into the
+  canonical vision and mapped to the active contract; retained as evidence until F13 review.
+- [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) — non-executable historical proposal derived
+  from that input; superseded by the active contract and retained until F13 review.
+
 ## Requirement traceability
 
 | Requirement | Product/evidence source | Execution owner and gate |

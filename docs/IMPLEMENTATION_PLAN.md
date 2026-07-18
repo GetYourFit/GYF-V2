@@ -1,4 +1,11 @@
-# GYF Design-Language Overhaul — Phase Plan
+# GYF Design-Language Overhaul — Historical Proposal
+
+> **Status:** non-executable historical proposal retained as evidence. Its durable owner intent is
+> folded into [`vision/ideas-complete.md`](./vision/ideas-complete.md), reconciled by
+> [`plans/active-execution-contract.md`](./plans/active-execution-contract.md), and traced in
+> [`plans/gyf-launch-refactor-plan.md`](./plans/gyf-launch-refactor-plan.md). It cannot set phase
+> order, authorise dependencies or promote a gate, and remains until protected F13
+> retention/deletion review.
 
 Scope source: `ScopeofIdea.md`. Target: `apps/expo` (EAS, https://get-your-fit.expo.app). Push after every phase.
 
