@@ -9,7 +9,17 @@ function hasDefaultExport(sourceText: string, path = "route.tsx") {
 
   return source.statements.some((statement) => {
     if (ts.isExportAssignment(statement)) {
-      return !statement.isExportEquals && !ts.isLiteralExpression(statement.expression);
+      const expression = ts.isParenthesizedExpression(statement.expression)
+        ? statement.expression.expression
+        : statement.expression;
+      return (
+        !statement.isExportEquals &&
+        ((ts.isIdentifier(expression) && expression.text !== "undefined") ||
+          ts.isFunctionExpression(expression) ||
+          ts.isArrowFunction(expression) ||
+          ts.isClassExpression(expression) ||
+          ts.isCallExpression(expression))
+      );
     }
     if (ts.isExportDeclaration(statement) && statement.exportClause) {
       return (
@@ -29,6 +39,10 @@ test("recognizes executable default route exports", () => {
     hasDefaultExport('// export default function Fake() {}\nconst value = "export default";'),
   ).toBe(false);
   expect(hasDefaultExport("export default 42")).toBe(false);
+  expect(hasDefaultExport("export default true")).toBe(false);
+  expect(hasDefaultExport("export default false")).toBe(false);
+  expect(hasDefaultExport("export default null")).toBe(false);
+  expect(hasDefaultExport("export default undefined")).toBe(false);
   expect(hasDefaultExport("const Screen = () => null; export { Screen as default }")).toBe(true);
 });
 
