@@ -32,13 +32,8 @@ export const CORE_ROUTE_REQUIRED_STATES = deepFreeze({
 } as const);
 
 type CoreRoute = keyof typeof CORE_ROUTE_REQUIRED_STATES;
-type CoreRouteState = (typeof CORE_ROUTE_REQUIRED_STATES)[CoreRoute][number];
+type CoreRouteState<Route extends CoreRoute> = (typeof CORE_ROUTE_REQUIRED_STATES)[Route][number];
 type Support = "supported" | "gap";
-type FixtureData =
-  | DeepReadonly<OutfitRecommendation>
-  | readonly DeepReadonly<SearchResult>[]
-  | DeepReadonly<SearchResult>
-  | null;
 
 const NO_IMAGES = deepFreeze([] as const);
 const NO_RESULTS = deepFreeze([] as const);
@@ -113,32 +108,119 @@ const CATALOGUE_ITEM = deepFreeze({
   buy_url: null,
 }) satisfies DeepReadonly<SearchResult>;
 
-const CATALOGUE_RESULTS = deepFreeze([CATALOGUE_ITEM]);
+const CATALOGUE_RESULTS = deepFreeze([
+  CATALOGUE_ITEM,
+  {
+    item_id: "fixture-catalogue-02",
+    title: "Ivory cotton camp shirt",
+    score: 0.79,
+    image_url: null,
+    price: 2299,
+    currency: "INR",
+    color: "ivory",
+    buy_url: null,
+  },
+  {
+    item_id: "fixture-catalogue-03",
+    title: "Charcoal pleated trousers",
+    score: 0.76,
+    image_url: null,
+    price: 3799,
+    currency: "INR",
+    color: "charcoal",
+    buy_url: null,
+  },
+  {
+    item_id: "fixture-catalogue-04",
+    title: "Black leather loafers",
+    score: 0.73,
+    image_url: null,
+    price: 4499,
+    currency: "INR",
+    color: "black",
+    buy_url: null,
+  },
+]) satisfies readonly DeepReadonly<SearchResult>[];
 
-type BaseFixture = Readonly<{
+type ItemDetailFixtureData = DeepReadonly<{
+  item: SearchResult;
+  pairingState: "ready" | "loading" | "empty" | "unavailable";
+  pairing: OutfitRecommendation["outfits"][number] | null;
+  actionError: string | null;
+}>;
+
+const ITEM_DETAIL_READY = deepFreeze({
+  item: CATALOGUE_ITEM,
+  pairingState: "ready",
+  pairing: STYLIST_RECOMMENDATION.outfits[0],
+  actionError: null,
+}) satisfies ItemDetailFixtureData;
+
+const ITEM_DETAIL_LOADING = deepFreeze({
+  item: CATALOGUE_ITEM,
+  pairingState: "loading",
+  pairing: null,
+  actionError: null,
+}) satisfies ItemDetailFixtureData;
+
+const ITEM_DETAIL_EMPTY = deepFreeze({
+  item: CATALOGUE_ITEM,
+  pairingState: "empty",
+  pairing: null,
+  actionError: null,
+}) satisfies ItemDetailFixtureData;
+
+const ITEM_DETAIL_ERROR = deepFreeze({
+  item: CATALOGUE_ITEM,
+  pairingState: "ready",
+  pairing: STYLIST_RECOMMENDATION.outfits[0],
+  actionError: "Could not add this to your wardrobe. Nothing changed; try again.",
+}) satisfies ItemDetailFixtureData;
+
+const ITEM_DETAIL_OFFLINE = deepFreeze({
+  item: CATALOGUE_ITEM,
+  pairingState: "unavailable",
+  pairing: null,
+  actionError: "An independently detected offline state is not implemented.",
+}) satisfies ItemDetailFixtureData;
+
+type RouteFixtureData = {
+  stylist: DeepReadonly<OutfitRecommendation> | null;
+  explore: readonly DeepReadonly<SearchResult>[] | null;
+  "item-detail": ItemDetailFixtureData;
+};
+
+type BaseFixture<Route extends CoreRoute> = Readonly<{
   baseId: string;
-  route: CoreRoute;
-  state: CoreRouteState;
+  route: Route;
+  state: CoreRouteState<Route>;
   support: Support;
   supportNote: string;
   hero: string;
   primaryAction: string;
   explanationPath: string;
-  data: FixtureData;
+  data: RouteFixtureData[Route];
 }>;
 
-type CoreRouteFixture = BaseFixture &
-  Readonly<{
-    id: string;
-    width: number;
-    theme: ThemeName;
-    tier: SizeTier;
-    exploreColumns: number | null;
-    mediaScope: "public-catalogue" | "none";
-    imageUrls: readonly string[];
-  }>;
+type AnyBaseFixture = {
+  [Route in CoreRoute]: BaseFixture<Route>;
+}[CoreRoute];
 
-const BASE_FIXTURES: readonly BaseFixture[] = deepFreeze([
+type Variant = Readonly<{
+  id: string;
+  width: number;
+  theme: ThemeName;
+  tier: SizeTier;
+  exploreColumns: number | null;
+  mediaScope: "public-catalogue" | "none";
+  imageUrls: readonly string[];
+}>;
+
+type CoreRouteFixture = {
+  [Route in CoreRoute]: BaseFixture<Route> & Variant;
+}[CoreRoute];
+
+const BASE_FIXTURES: readonly AnyBaseFixture[] = deepFreeze([
   {
     baseId: "stylist-happy",
     route: "stylist",
@@ -275,7 +357,7 @@ const BASE_FIXTURES: readonly BaseFixture[] = deepFreeze([
     hero: "Indigo linen overshirt",
     primaryAction: "Add to wardrobe",
     explanationPath: "Compatibility reason and complete-look evidence",
-    data: CATALOGUE_ITEM,
+    data: ITEM_DETAIL_READY,
   },
   {
     baseId: "item-detail-loading",
@@ -287,7 +369,7 @@ const BASE_FIXTURES: readonly BaseFixture[] = deepFreeze([
     hero: "Indigo linen overshirt",
     primaryAction: "Add to wardrobe",
     explanationPath: "Pairing placeholders under the item reason",
-    data: CATALOGUE_ITEM,
+    data: ITEM_DETAIL_LOADING,
   },
   {
     baseId: "item-detail-empty",
@@ -298,7 +380,7 @@ const BASE_FIXTURES: readonly BaseFixture[] = deepFreeze([
     hero: "Indigo linen overshirt",
     primaryAction: "Add to wardrobe",
     explanationPath: "No complete look available reason",
-    data: CATALOGUE_ITEM,
+    data: ITEM_DETAIL_EMPTY,
   },
   {
     baseId: "item-detail-error",
@@ -309,7 +391,7 @@ const BASE_FIXTURES: readonly BaseFixture[] = deepFreeze([
     hero: "Indigo linen overshirt",
     primaryAction: "Retry the failed action",
     explanationPath: "Nothing-changed action error",
-    data: CATALOGUE_ITEM,
+    data: ITEM_DETAIL_ERROR,
   },
   {
     baseId: "item-detail-offline",
@@ -320,7 +402,7 @@ const BASE_FIXTURES: readonly BaseFixture[] = deepFreeze([
     hero: "Selected catalogue item",
     primaryAction: "Retry when connected",
     explanationPath: "Explicit offline status is still missing",
-    data: CATALOGUE_ITEM,
+    data: ITEM_DETAIL_OFFLINE,
   },
 ]);
 

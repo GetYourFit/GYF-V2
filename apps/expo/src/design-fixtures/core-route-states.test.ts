@@ -15,6 +15,14 @@ function expectDeepFrozen(value: unknown): void {
   for (const nested of Object.values(value)) expectDeepFrozen(nested);
 }
 
+function mediaUrlsIn(value: unknown): string[] {
+  if (!value || typeof value !== "object") return [];
+  if (Array.isArray(value)) return value.flatMap(mediaUrlsIn);
+  return Object.entries(value).flatMap(([key, nested]) =>
+    /image_?url/i.test(key) && typeof nested === "string" ? [nested] : mediaUrlsIn(nested),
+  );
+}
+
 describe("core route evidence matrix", () => {
   test("uses stable unique IDs and expands every case across every width and theme", () => {
     const ids = CORE_ROUTE_FIXTURES.map(({ id }) => id);
@@ -105,6 +113,60 @@ describe("core route evidence matrix", () => {
     }
   });
 
+  test("provides enough distinct Explore results to fill the widest fixture row", () => {
+    const fixtures = CORE_ROUTE_FIXTURES.filter(
+      ({ route, state }) => route === "explore" && state === "happy",
+    );
+    for (const fixture of fixtures) {
+      if (!Array.isArray(fixture.data)) throw new Error("missing Explore results");
+      expect(fixture.data).toHaveLength(4);
+      expect(new Set(fixture.data.map(({ item_id }) => item_id)).size).toBe(4);
+      expect(fixture.data.length).toBeGreaterThanOrEqual(fixture.exploreColumns ?? 0);
+    }
+  });
+
+  test("records honest item-detail pairing and action data for each state", () => {
+    const fixtureFor = (state: "happy" | "loading" | "empty" | "error") =>
+      CORE_ROUTE_FIXTURES.find(
+        (fixture) => fixture.route === "item-detail" && fixture.state === state,
+      );
+    const happy = fixtureFor("happy");
+    const loading = fixtureFor("loading");
+    const empty = fixtureFor("empty");
+    const error = fixtureFor("error");
+    for (const fixture of [happy, loading, empty, error]) {
+      if (!fixture?.data || !("item" in fixture.data) || !("pairingState" in fixture.data)) {
+        throw new Error("missing item-detail state data");
+      }
+    }
+    if (
+      !happy?.data ||
+      !("pairing" in happy.data) ||
+      !loading?.data ||
+      !("pairing" in loading.data) ||
+      !empty?.data ||
+      !("pairing" in empty.data) ||
+      !error?.data ||
+      !("pairing" in error.data)
+    ) {
+      throw new Error("missing item-detail pairing data");
+    }
+
+    expect(happy.data.pairingState).toBe("ready");
+    expect(new Set(happy.data.pairing?.items.map(({ slot }) => slot))).toEqual(
+      new Set(["top", "bottom", "footwear"]),
+    );
+    expect(loading.data).toMatchObject({
+      pairingState: "loading",
+      pairing: null,
+      actionError: null,
+    });
+    expect(empty.data).toMatchObject({ pairingState: "empty", pairing: null, actionError: null });
+    expect(error.data.pairingState).toBe("ready");
+    expect(error.data.pairing).not.toBeNull();
+    expect(error.data.actionError).toBeTruthy();
+  });
+
   test("makes the hero, one primary action, explanation path, and evidence status explicit", () => {
     expectDeepFrozen(CORE_ROUTE_WIDTHS);
     expectDeepFrozen(CORE_ROUTE_THEMES);
@@ -122,6 +184,7 @@ describe("core route evidence matrix", () => {
     for (const fixture of CORE_ROUTE_FIXTURES) {
       expect(fixture.mediaScope === "public-catalogue" || fixture.mediaScope === "none").toBe(true);
       if (fixture.mediaScope === "none") expect(fixture.imageUrls).toHaveLength(0);
+      expect(new Set(fixture.imageUrls)).toEqual(new Set(mediaUrlsIn(fixture.data)));
       for (const url of fixture.imageUrls) expect(new URL(url).protocol).toBe("https:");
       expect(JSON.stringify(fixture).toLowerCase()).not.toMatch(
         /avatar|body.photo|private|signed[_-]?url|user[_-]?(image|media|photo)/,
