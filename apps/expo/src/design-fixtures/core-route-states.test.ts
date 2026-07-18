@@ -156,6 +156,8 @@ describe("core route evidence matrix", () => {
     expect(new Set(happy.data.pairing?.items.map(({ slot }) => slot))).toEqual(
       new Set(["top", "bottom", "footwear"]),
     );
+    const selectedItemId = "item" in happy.data ? happy.data.item.item_id : "";
+    expect(happy.data.pairing?.items.some(({ item_id }) => item_id === selectedItemId)).toBe(true);
     expect(loading.data).toMatchObject({
       pairingState: "loading",
       pairing: null,

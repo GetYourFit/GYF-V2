@@ -149,10 +149,30 @@ type ItemDetailFixtureData = DeepReadonly<{
   actionError: string | null;
 }>;
 
+const ITEM_DETAIL_PAIRING = deepFreeze({
+  ...STYLIST_RECOMMENDATION.outfits[0],
+  items: [
+    {
+      item_id: CATALOGUE_ITEM.item_id,
+      title: CATALOGUE_ITEM.title,
+      category: "overshirt",
+      slot: "top",
+      price: CATALOGUE_ITEM.price,
+      currency: CATALOGUE_ITEM.currency,
+      color: CATALOGUE_ITEM.color,
+      affiliate_url: CATALOGUE_ITEM.buy_url,
+      image_url: CATALOGUE_ITEM.image_url,
+      owned: false,
+    },
+    STYLIST_RECOMMENDATION.outfits[0].items[1],
+    STYLIST_RECOMMENDATION.outfits[0].items[2],
+  ],
+}) satisfies DeepReadonly<OutfitRecommendation["outfits"][number]>;
+
 const ITEM_DETAIL_READY = deepFreeze({
   item: CATALOGUE_ITEM,
   pairingState: "ready",
-  pairing: STYLIST_RECOMMENDATION.outfits[0],
+  pairing: ITEM_DETAIL_PAIRING,
   actionError: null,
 }) satisfies ItemDetailFixtureData;
 
@@ -173,7 +193,7 @@ const ITEM_DETAIL_EMPTY = deepFreeze({
 const ITEM_DETAIL_ERROR = deepFreeze({
   item: CATALOGUE_ITEM,
   pairingState: "ready",
-  pairing: STYLIST_RECOMMENDATION.outfits[0],
+  pairing: ITEM_DETAIL_PAIRING,
   actionError: "Could not add this to your wardrobe. Nothing changed; try again.",
 }) satisfies ItemDetailFixtureData;
 
