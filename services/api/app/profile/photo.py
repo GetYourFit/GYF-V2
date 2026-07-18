@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Protocol
 
-from .models import Profile
+from .models import PhotoAnalysis, Profile, ProfilePhotoResponse
 
 # Photo-derived fields are stamped with this provenance so the recommender (and the
 # UI's "we estimated this — fix if wrong" affordance) can tell them from manual input.
@@ -108,7 +108,8 @@ def cached_body_adapter() -> RTMWBodyAdapter:
 
 
 def _adopt(
-    profile: Profile,
+    profile: ProfilePhotoResponse,
+    analysis: PhotoAnalysis,
     field_name: str,
     value: object,
     confidence: float,
@@ -131,7 +132,10 @@ def _adopt(
     if confidence <= 0.0:
         return False
     setattr(profile, field_name, value)
-    profile.field_confidence[field_name] = round(confidence, 4)
+    setattr(analysis, field_name, value)
+    rounded = round(confidence, 4)
+    profile.field_confidence[field_name] = rounded
+    analysis.field_confidence[field_name] = rounded
     return True
 
 
@@ -140,7 +144,7 @@ def profile_from_photo(
     skin: SkinToneResult | None,
     body: BodyResult | None,
     existing: Profile | None = None,
-) -> Profile:
+) -> ProfilePhotoResponse:
     """Fold whichever modules ran into a stored profile (explicit re-estimate).
 
     Starts from the user's ``existing`` profile (so manual fields and untouched
@@ -148,25 +152,61 @@ def profile_from_photo(
     non-abstaining estimate. The fields stay editable. Stamps ``source="photo"``
     and a combined ``model_version`` from the modules that contributed.
     """
-    profile = existing.model_copy(deep=True) if existing is not None else Profile()
+    analysis = PhotoAnalysis(reason="Continue with the manual fields.")
+    profile = ProfilePhotoResponse(
+        **(existing.model_dump() if existing is not None else {}),
+        photo_analysis=analysis,
+    )
     versions: list[str] = []
 
     if skin is not None:
         sc = skin.field_confidence
-        _adopt(profile, "skin_tone", skin.skin_tone, sc.get("skin_tone", 0.0), unknown="unknown")
-        _adopt(profile, "undertone", skin.undertone, sc.get("undertone", 0.0), unknown="unknown")
+        _adopt(
+            profile,
+            analysis,
+            "skin_tone",
+            skin.skin_tone,
+            sc.get("skin_tone", 0.0),
+            unknown="unknown",
+        )
+        _adopt(
+            profile,
+            analysis,
+            "undertone",
+            skin.undertone,
+            sc.get("undertone", 0.0),
+            unknown="unknown",
+        )
         if skin.model_version:
             versions.append(skin.model_version)
 
     if body is not None:
         bc = body.field_confidence
-        _adopt(profile, "body_type", body.body_type, bc.get("body_type", 0.0), unknown="unknown")
         _adopt(
-            profile, "measurements", body.measurements, bc.get("measurements", 0.0), unknown=None
+            profile,
+            analysis,
+            "body_type",
+            body.body_type,
+            bc.get("body_type", 0.0),
+            unknown="unknown",
+        )
+        _adopt(
+            profile,
+            analysis,
+            "measurements",
+            body.measurements,
+            bc.get("measurements", 0.0),
+            unknown=None,
         )
         if body.model_version:
             versions.append(body.model_version)
 
     profile.source = PHOTO_SOURCE
     profile.model_version = "+".join(versions) if versions else profile.model_version
+    if analysis.skin_tone and analysis.body_type:
+        analysis.state = "completed"
+        analysis.reason = "Review both estimates before continuing."
+    elif analysis.field_confidence:
+        analysis.state = "partial"
+        analysis.reason = "Review the estimate and complete the missing fields manually."
     return profile

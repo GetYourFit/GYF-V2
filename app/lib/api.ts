@@ -10,6 +10,7 @@
 
 import type {
   ConsentInput,
+  components,
   FeedbackRequest,
   OutfitItem,
   OutfitRecommendation,
@@ -30,6 +31,8 @@ import type {
   WardrobeItem,
   WardrobeItemInput,
 } from "@gyf/types";
+
+type ProfilePhotoResponse = components["schemas"]["ProfilePhotoResponse"];
 
 const DEFAULT_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -71,6 +74,13 @@ export class ApiError extends Error {
 
 /** Returns the current bearer token (Supabase JWT), or null when signed out. */
 export type TokenProvider = () => string | null | Promise<string | null>;
+
+/** React Native's native multipart file representation. Web callers keep using `File`. */
+export interface MultipartFile {
+  uri: string;
+  name: string;
+  type: string;
+}
 
 export interface RecommendParams {
   /** Overrides the profile's stored occasion (casual, business, wedding, festive, …). */
@@ -156,10 +166,10 @@ export class GyfApi {
    *  Non-abstaining estimates replace their prior fields but remain editable.
    *  A 503 means neither photo module is
    *  available — fall back to the manual form. */
-  uploadPhoto(file: File): Promise<Profile> {
+  uploadPhoto(file: File | MultipartFile): Promise<ProfilePhotoResponse> {
     const form = new FormData();
-    form.append("photo", file);
-    return this.requestMultipart<Profile>("/profile/photo", form);
+    form.append("photo", file as Blob);
+    return this.requestMultipart<ProfilePhotoResponse>("/profile/photo", form);
   }
 
   // --- Consent & erasure ---

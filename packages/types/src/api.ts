@@ -1137,6 +1137,34 @@ export interface components {
             anchor_item_id?: string | null;
         };
         /**
+         * PhotoAnalysis
+         * @description Only estimates freshly adopted from one photo upload.
+         */
+        PhotoAnalysis: {
+            /** Skin Tone */
+            skin_tone?: string | null;
+            /** Undertone */
+            undertone?: string | null;
+            /** Body Type */
+            body_type?: string | null;
+            /** Measurements */
+            measurements?: {
+                [key: string]: number;
+            };
+            /** Field Confidence */
+            field_confidence?: {
+                [key: string]: number;
+            };
+            /**
+             * State
+             * @default abstained
+             * @enum {string}
+             */
+            state: "completed" | "partial" | "abstained";
+            /** Reason */
+            reason: string;
+        };
+        /**
          * Post
          * @description A post enriched for the feed: the look rendered + engagement.
          */
@@ -1264,6 +1292,41 @@ export interface components {
             phone_number?: string | null;
             /** Avatar Url */
             avatar_url?: string | null;
+        };
+        /**
+         * ProfilePhotoResponse
+         * @description Merged profile plus fresh-only analysis metadata for this upload.
+         */
+        ProfilePhotoResponse: {
+            /** Skin Tone */
+            skin_tone?: string | null;
+            /** Undertone */
+            undertone?: string | null;
+            /** Body Type */
+            body_type?: string | null;
+            /** Gender */
+            gender?: string | null;
+            /** Measurements */
+            measurements?: {
+                [key: string]: number;
+            };
+            /** Style Intent */
+            style_intent?: string[];
+            budget_range?: components["schemas"]["BudgetRange"] | null;
+            /** Occasion */
+            occasion?: string | null;
+            /**
+             * Source
+             * @default manual
+             */
+            source: string;
+            /** Field Confidence */
+            field_confidence?: {
+                [key: string]: number;
+            };
+            /** Model Version */
+            model_version?: string | null;
+            photo_analysis: components["schemas"]["PhotoAnalysis"];
         };
         /**
          * ProfileSummary
@@ -1920,7 +1983,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Profile"];
+                    "application/json": components["schemas"]["ProfilePhotoResponse"];
                 };
             };
             /** @description Validation Error */

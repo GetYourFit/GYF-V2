@@ -22,7 +22,7 @@ from ..dependencies import (
 )
 from ..profile.account import AccountRepository
 from ..profile.avatar import is_owned_avatar_url
-from ..profile.models import ConsentInput, Profile, ProfileInput
+from ..profile.models import ConsentInput, Profile, ProfileInput, ProfilePhotoResponse
 from ..profile.photo import BodyAdapter, SkinToneAdapter
 from ..profile.repository import ProfileRepository
 from ..profile.summary import (
@@ -127,7 +127,7 @@ async def upsert_profile_from_photo(
     account_repo: AccountRepository = Depends(get_account_repo),
     skin_adapter: SkinToneAdapter | None = Depends(get_skin_adapter),
     body_adapter: BodyAdapter | None = Depends(get_body_adapter),
-) -> Profile:
+) -> ProfilePhotoResponse:
     """Estimate skin tone + undertone and body type from one photo, merge into the profile.
 
     Consent-gated (`data_processing` required). The image is processed **in memory

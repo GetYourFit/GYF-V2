@@ -97,6 +97,15 @@ def test_skin_tone_in_shadow_is_not_surfaced(monkeypatch):
     assert body["body_type"] == "hourglass"  # body-type surfaces
     assert body["skin_tone"] is None  # skin-tone held in shadow
     assert "skin_tone" not in body["field_confidence"]
+    assert body["photo_analysis"] == {
+        "skin_tone": None,
+        "undertone": None,
+        "body_type": "hourglass",
+        "measurements": {"waist": 0.24},
+        "field_confidence": {"body_type": 0.8, "measurements": 0.8},
+        "state": "partial",
+        "reason": "Review the estimate and complete the missing fields manually.",
+    }
 
 
 def test_skin_tone_surfaced_when_enabled(monkeypatch):
@@ -106,6 +115,20 @@ def test_skin_tone_surfaced_when_enabled(monkeypatch):
     assert body["skin_tone"] == "mst7"
     assert body["undertone"] == "warm"
     assert body["field_confidence"]["skin_tone"] == 0.7
+    assert body["photo_analysis"] == {
+        "skin_tone": "mst7",
+        "undertone": "warm",
+        "body_type": "hourglass",
+        "measurements": {"waist": 0.24},
+        "field_confidence": {
+            "skin_tone": 0.7,
+            "undertone": 0.7,
+            "body_type": 0.8,
+            "measurements": 0.8,
+        },
+        "state": "completed",
+        "reason": "Review both estimates before continuing.",
+    }
 
 
 def test_photo_estimate_fills_field_over_prior_value(monkeypatch):
@@ -143,6 +166,80 @@ def test_zero_confidence_undertone_guess_is_not_surfaced(monkeypatch):
     assert body["skin_tone"] is None  # abstained sentinel → not surfaced
     assert body["undertone"] is None  # zero-confidence guess → not surfaced either
     assert body["field_confidence"] == {}
+    assert body["photo_analysis"]["state"] == "abstained"
+    assert body["photo_analysis"]["field_confidence"] == {}
+    assert "manual" in body["photo_analysis"]["reason"].lower()
+
+
+def test_existing_profile_abstention_reports_no_fresh_values(monkeypatch):
+    monkeypatch.setattr(main.settings, "skin_tone_enabled", True)
+    existing = InMemoryProfileRepository()
+    existing.upsert(
+        DEV_USER,
+        Profile(
+            skin_tone="mst3",
+            body_type="oval",
+            field_confidence={"skin_tone": 1.0, "body_type": 1.0},
+        ),
+    )
+    abstained_skin = SkinToneResult(
+        skin_tone="unknown",
+        undertone="neutral",
+        field_confidence={"skin_tone": 0.0, "undertone": 0.0},
+    )
+    abstained_body = BodyResult(
+        body_type="unknown",
+        field_confidence={"body_type": 0.0},
+    )
+
+    body = _upload(
+        _client(
+            skin=_FakeSkin(abstained_skin),
+            body=_FakeBody(abstained_body),
+            profiles=existing,
+        )
+    ).json()
+
+    assert body["skin_tone"] == "mst3"
+    assert body["body_type"] == "oval"
+    assert body["photo_analysis"]["state"] == "abstained"
+    assert body["photo_analysis"]["skin_tone"] is None
+    assert body["photo_analysis"]["body_type"] is None
+    assert body["photo_analysis"]["field_confidence"] == {}
+
+
+def test_prior_skin_is_not_reported_as_fresh_in_body_only_result(monkeypatch):
+    monkeypatch.setattr(main.settings, "skin_tone_enabled", True)
+    existing = InMemoryProfileRepository()
+    existing.upsert(
+        DEV_USER,
+        Profile(skin_tone="mst3", field_confidence={"skin_tone": 1.0}),
+    )
+
+    body = _upload(_client(skin=None, body=_FakeBody(BODY), profiles=existing)).json()
+
+    assert body["skin_tone"] == "mst3"
+    assert body["photo_analysis"]["state"] == "partial"
+    assert body["photo_analysis"]["skin_tone"] is None
+    assert body["photo_analysis"]["body_type"] == "hourglass"
+    assert "skin_tone" not in body["photo_analysis"]["field_confidence"]
+
+
+def test_prior_body_is_not_reported_as_fresh_in_skin_only_result(monkeypatch):
+    monkeypatch.setattr(main.settings, "skin_tone_enabled", True)
+    existing = InMemoryProfileRepository()
+    existing.upsert(
+        DEV_USER,
+        Profile(body_type="oval", field_confidence={"body_type": 1.0}),
+    )
+
+    body = _upload(_client(skin=_FakeSkin(SKIN), body=None, profiles=existing)).json()
+
+    assert body["body_type"] == "oval"
+    assert body["photo_analysis"]["state"] == "partial"
+    assert body["photo_analysis"]["skin_tone"] == "mst7"
+    assert body["photo_analysis"]["body_type"] is None
+    assert "body_type" not in body["photo_analysis"]["field_confidence"]
 
 
 def test_consent_required():

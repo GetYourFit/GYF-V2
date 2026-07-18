@@ -17,7 +17,7 @@ values are coerced to ``unknown`` rather than rejected.
 from __future__ import annotations
 
 import re
-from typing import Annotated
+from typing import Annotated, Literal
 
 from gyf_contracts.usermodel import (
     canonical_body_type,
@@ -212,6 +212,24 @@ class Profile(BaseModel):
     source: str = "manual"
     field_confidence: dict[str, float] = Field(default_factory=dict)
     model_version: str | None = None
+
+
+class PhotoAnalysis(BaseModel):
+    """Only estimates freshly adopted from one photo upload."""
+
+    skin_tone: str | None = None
+    undertone: str | None = None
+    body_type: str | None = None
+    measurements: dict[str, float] = Field(default_factory=dict)
+    field_confidence: dict[str, float] = Field(default_factory=dict)
+    state: Literal["completed", "partial", "abstained"] = "abstained"
+    reason: str
+
+
+class ProfilePhotoResponse(Profile):
+    """Merged profile plus fresh-only analysis metadata for this upload."""
+
+    photo_analysis: PhotoAnalysis
 
 
 def profile_from_manual(payload: ProfileInput, existing: Profile | None = None) -> Profile:
