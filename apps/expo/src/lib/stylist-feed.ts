@@ -3,6 +3,10 @@ import type { FeedbackRequest, Outfit, OutfitItem } from "@gyf/types";
 export const STYLIST_GOAL_MAX = 200;
 export type StylistFeedbackStatus = "saved" | "skipped";
 
+export function normalizedTastePercent(strength: number): number {
+  return Number.isFinite(strength) ? Math.round(Math.min(1, Math.max(0, strength)) * 100) : 0;
+}
+
 export function feedbackReceipt(status: StylistFeedbackStatus | undefined) {
   if (!status) return null;
   return {

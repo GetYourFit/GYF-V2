@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   feedbackReceipt,
   feedbackForOutfit,
+  normalizedTastePercent,
   replaceOutfitItem,
   safeShopUrl,
   savedOutfitInput,
@@ -28,6 +29,14 @@ const outfit = {
 };
 
 describe("Expo stylist feed model", () => {
+  test("normalizes taste strength to a finite percentage", () => {
+    expect(
+      [-0.2, 0, 0.456, 1.2, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY].map(
+        normalizedTastePercent,
+      ),
+    ).toEqual([0, 0, 46, 100, 0, 0, 0]);
+  });
+
   test("attributes one learning event to every garment in a look", () => {
     expect(feedbackForOutfit(outfit, "rec-1", "skip", 2, ["event-top", "event-shoe"])).toEqual([
       {

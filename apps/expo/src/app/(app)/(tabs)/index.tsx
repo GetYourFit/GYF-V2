@@ -28,6 +28,7 @@ import {
 import {
   feedbackReceipt,
   feedbackForOutfit,
+  normalizedTastePercent,
   replaceOutfitItem,
   safeShopUrl,
   savedOutfitInput,
@@ -598,6 +599,8 @@ export default function StylistRoute() {
     }
   };
 
+  const tastePercent = data ? normalizedTastePercent(data.taste_strength) : 0;
+
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
@@ -726,7 +729,14 @@ export default function StylistRoute() {
         >
           <GyfText variant="label">TASTE SIGNAL</GyfText>
           <View
-            accessibilityLabel={`Taste signal ${Math.round(data.taste_strength * 100)} percent`}
+            accessibilityLabel="Taste signal"
+            accessibilityRole="progressbar"
+            accessibilityValue={{
+              max: 100,
+              min: 0,
+              now: tastePercent,
+              text: `${tastePercent} percent`,
+            }}
             style={{
               backgroundColor: palette.surfaceRaised,
               borderRadius: radii.capsule,
@@ -739,7 +749,7 @@ export default function StylistRoute() {
                 backgroundColor: palette.accentInk,
                 height: 3,
                 // Real server signal, never invented: 0 renders an honest empty bar.
-                width: `${Math.round(Math.min(1, Math.max(0, data.taste_strength)) * 100)}%`,
+                width: `${tastePercent}%`,
               }}
             />
           </View>
