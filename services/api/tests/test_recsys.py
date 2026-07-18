@@ -815,6 +815,44 @@ def test_service_grounds_in_owned_garment():
     assert "you already own" in top.explanation
 
 
+def test_service_fetches_wardrobe_before_candidate_fanout():
+    calls = []
+
+    class ObservedCandidates(InMemoryCandidateRepository):
+        def candidates_by_slot(self, *args, **kwargs):
+            calls.append("candidates")
+            return super().candidates_by_slot(*args, **kwargs)
+
+        def candidates_by_ids(self, item_ids):
+            calls.append("owned_ids")
+            return super().candidates_by_ids(item_ids)
+
+    class ObservedWardrobe(InMemoryWardrobeRepository):
+        def list(self, user_id):
+            calls.append("wardrobe")
+            return super().list(user_id)
+
+    wardrobe = ObservedWardrobe()
+    wardrobe.add(
+        DEV_USER,
+        WardrobeRecord(id="w0", item_id="b1", title="owned", category="jeans", slot="bottom"),
+    )
+
+    recommend(
+        Profile(occasion="casual"),
+        DEV_USER,
+        ObservedCandidates(_three_slot_catalog()),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        1,
+        wardrobe_repo=wardrobe,
+    )
+
+    assert calls[:3] == ["wardrobe", "owned_ids", "candidates"]
+
+
 def test_service_ignores_freeform_and_stale_wardrobe_rows():
     repo = InMemoryWardrobeRepository()
     repo.add(
@@ -1473,6 +1511,109 @@ def test_candidate_pool_caps_each_request_at_two_connections():
     repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
     repo.candidates_by_slot(conditioning.CANDIDATE_SLOTS, None, None, 20)
     assert pool.maximum == 2
+
+
+def test_candidate_pool_queues_checkouts_across_concurrent_recommendations():
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+    from contextlib import contextmanager
+
+    from psycopg_pool import PoolTimeout
+
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    class _CapacityThreePool:
+        max_size = 3
+
+        def __init__(self):
+            self.active = 0
+            self.maximum = 0
+            self.lock = threading.Lock()
+
+        @contextmanager
+        def connection(self):
+            with self.lock:
+                if self.active == self.max_size:
+                    raise PoolTimeout("pool exhausted")
+                self.active += 1
+                self.maximum = max(self.maximum, self.active)
+            try:
+                yield self._Connection()
+            finally:
+                with self.lock:
+                    self.active -= 1
+
+        class _Connection:
+            calls = 0
+
+            def execute(self, _sql, _params=None):
+                self.calls += 1
+                if self.calls > 1:
+                    time.sleep(0.01)
+                return iter([])
+
+    pool = _CapacityThreePool()
+    repos = [PostgresCandidateRepository("postgresql://unused", pool=pool) for _ in range(4)]
+    start = threading.Barrier(4)
+
+    def run_recommendation(index):
+        start.wait(timeout=1)
+        return recommend(
+            Profile(occasion="casual"),
+            f"user-{index}",
+            repos[index],
+            InMemoryTasteRepository(),
+            _CollectingSink(),
+            "casual",
+            None,
+            1,
+        )
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        recommendations = list(executor.map(run_recommendation, range(4)))
+
+    assert len(recommendations) == 4
+    assert pool.maximum == 2
+
+
+def test_candidate_admission_covers_id_reads_and_releases_after_error():
+    from contextlib import contextmanager
+
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    class _Pool:
+        max_size = 2
+
+        def __init__(self):
+            self.fail = True
+
+        @contextmanager
+        def connection(self):
+            pool = self
+
+            class _Result:
+                def fetchall(self):
+                    return []
+
+            class _Connection:
+                def execute(self, _sql, _params=None):
+                    if pool.fail:
+                        raise RuntimeError("query failed")
+                    return _Result()
+
+            yield _Connection()
+
+    pool = _Pool()
+    first = PostgresCandidateRepository("postgresql://unused", pool=pool)
+    second = PostgresCandidateRepository("postgresql://unused", pool=pool)
+    assert first._admission is second._admission
+
+    with pytest.raises(RuntimeError, match="query failed"):
+        first.candidates_by_ids(["broken"])
+
+    pool.fail = False
+    assert second.candidates_by_ids(["healthy"]) == []
 
 
 def test_candidate_pool_logs_failed_checkout_duration(caplog, monkeypatch):

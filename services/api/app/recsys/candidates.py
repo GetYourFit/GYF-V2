@@ -15,7 +15,10 @@ extracts the perception block with JSONB path operators and filters on the index
 from __future__ import annotations
 
 import logging
+import threading
 import time
+import weakref
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -29,6 +32,25 @@ logger = logging.getLogger("gyf")
 # the client's 90-second transport bound. Applied transaction-locally on the
 # already-checked-out connection; no global database or pool setting changes.
 _QUERY_TIMEOUT_MS = 5_000
+
+# FastAPI constructs a candidate repository per request, while every instance
+# shares the process pool. Coordinate by pool identity so four requests cannot
+# each attempt two checkouts from the same three-connection budget. Keeping one
+# connection free lets profile, wardrobe and event work make forward progress.
+_ADMISSIONS: weakref.WeakKeyDictionary[object, threading.BoundedSemaphore] = (
+    weakref.WeakKeyDictionary()
+)
+_ADMISSIONS_LOCK = threading.Lock()
+
+
+def _admission_for(pool: object) -> threading.BoundedSemaphore:
+    with _ADMISSIONS_LOCK:
+        admission = _ADMISSIONS.get(pool)
+        if admission is None:
+            pool_size = int(getattr(pool, "max_size", 4))
+            admission = threading.BoundedSemaphore(max(1, pool_size - 1))
+            _ADMISSIONS[pool] = admission
+        return admission
 
 
 @dataclass(frozen=True)
@@ -278,6 +300,14 @@ class PostgresCandidateRepository:
 
             pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
         self._pool = pool
+        self._admission = _admission_for(pool)
+
+    @contextmanager
+    def _connection(self):
+        """Queue candidate reads before the pool's bounded checkout begins."""
+        with self._admission:
+            with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                yield conn
 
     def candidates_by_slot(
         self,
@@ -331,7 +361,7 @@ class PostgresCandidateRepository:
             phase_start = checkout_start
             try:
                 try:
-                    with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                    with self._connection() as conn:
                         checkout_ms = (time.perf_counter() - checkout_start) * 1000
                         active_phase = "query"
                         query_start = time.perf_counter()
@@ -371,7 +401,7 @@ class PostgresCandidateRepository:
                         limit_per_slot,
                         prefix[0],
                     )
-                    with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                    with self._connection() as conn:
                         conn.execute(
                             "SELECT set_config('statement_timeout', %s, true)",
                             (f"{_QUERY_TIMEOUT_MS}ms",),
@@ -415,9 +445,8 @@ class PostgresCandidateRepository:
         # recommend DB latency). Mirrors browse_multi_slot; the shared pool bounds it.
         from concurrent.futures import ThreadPoolExecutor
 
-        # One recommendation uses at most two candidate connections, reducing its
-        # pressure on the three-client shared pool. The pool's checkout timeout is
-        # the cross-request contention bound.
+        # One recommendation uses at most two candidate connections. The shared
+        # admission boundary above also caps their aggregate across requests.
         with ThreadPoolExecutor(max_workers=min(2, len(work))) as pool:
             return dict(pool.map(lambda item: fetch(*item), work))
 
@@ -427,7 +456,7 @@ class PostgresCandidateRepository:
         from gyf_contracts.taxonomy import get as get_category  # lazy: mirrors directory
 
         sql = _BY_IDS.format(affinity="NULL")
-        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+        with self._connection() as conn:
             rows = conn.execute(sql, (item_ids,)).fetchall()
         return [_row_to_candidate(get_category(r[2]).slot, r) for r in rows]
 

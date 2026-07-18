@@ -33,7 +33,7 @@ from .taste import TasteProfile, TasteRepository, build_taste
 from ..events import InteractionAction, InteractionEvent, InteractionTarget
 from ..profile.models import Profile
 from ..sink import EventSink
-from ..wardrobe import WardrobeRepository
+from ..wardrobe import WardrobeRecord, WardrobeRepository
 
 logger = logging.getLogger("gyf")
 
@@ -118,6 +118,14 @@ def recommend(
     with _stage(request_id, "taste_history"):
         taste = build_taste(taste_repo.engagements(user_id, _TASTE_HISTORY))
 
+    # Resolve dependent closet reads before candidate fanout occupies the shared
+    # pool. A production warm request previously reached wardrobe only after a
+    # long taste query, then failed its bounded checkout under contention.
+    with _stage(request_id, "wardrobe_lookup"):
+        wardrobe_records, owned = _resolve_wardrobe(user_id, candidates, wardrobe_repo)
+    with _stage(request_id, "anchor_lookup"):
+        anchor = _resolve_anchor(anchor_item_id, candidates)
+
     # Gendered relevance: draw only from the user's slice + unisex (unfaceted
     # items always pass). Nonbinary/unknown users see the full catalog.
     genders = catalog_genders_for(profile.gender)
@@ -132,10 +140,9 @@ def recommend(
             request_id=request_id,
         )
     with _stage(request_id, "wardrobe_grounding"):
-        wardrobe = _ground_in_wardrobe(pools, user_id, candidates, wardrobe_repo)
-    if anchor_item_id is not None:
-        with _stage(request_id, "anchor_lookup"):
-            anchor = _pin_anchor(pools, anchor_item_id, candidates)
+        wardrobe = _ground_in_wardrobe(pools, wardrobe_records, owned)
+    if anchor is not None:
+        _pin_anchor(pools, anchor)
         # Only blueprints that include the anchor's slot may assemble — every
         # returned look must genuinely contain the pinned product.
         constraints = dataclasses.replace(
@@ -186,29 +193,52 @@ def recommend(
 
 def _pin_anchor(
     pools: dict[str, list[Candidate]],
-    anchor_item_id: str,
-    candidates: CandidateRepository,
+    anchor: Candidate,
 ) -> Candidate:
-    """Make ``anchor_item_id`` the sole candidate in its slot ("complete the look").
+    """Make the resolved anchor the sole candidate in its slot ("complete the look").
 
     Pinned *after* wardrobe grounding so the anchor always wins its slot; other
     slots keep their full personalized pools (and owned anchors), so composition
     styles the rest of the look around the pinned product. No region/price
     predicates — the user chose this item explicitly.
     """
-    resolved = candidates.candidates_by_ids([anchor_item_id])
-    if not resolved:
-        raise LookupError(anchor_item_id)
-    anchor = resolved[0]
     pools[anchor.slot] = [anchor]
     return anchor
 
 
-def _ground_in_wardrobe(
-    pools: dict[str, list[Candidate]],
+def _resolve_anchor(
+    anchor_item_id: str | None,
+    candidates: CandidateRepository,
+) -> Candidate | None:
+    if anchor_item_id is None:
+        return None
+    resolved = candidates.candidates_by_ids([anchor_item_id])
+    if not resolved:
+        raise LookupError(anchor_item_id)
+    return resolved[0]
+
+
+def _resolve_wardrobe(
     user_id: str,
     candidates: CandidateRepository,
     wardrobe_repo: WardrobeRepository | None,
+) -> tuple[list[WardrobeRecord], list[Candidate]]:
+    if wardrobe_repo is None:
+        return [], []
+    records = wardrobe_repo.list(user_id)
+    owned_ids = [record.item_id for record in records if record.item_id][:_WARDROBE_ANCHORS]
+    if not owned_ids:
+        return records, []
+    owned = [
+        dataclasses.replace(item, owned=True) for item in candidates.candidates_by_ids(owned_ids)
+    ]
+    return records, owned
+
+
+def _ground_in_wardrobe(
+    pools: dict[str, list[Candidate]],
+    records: list[WardrobeRecord],
+    owned: list[Candidate],
 ) -> WardrobeContext | None:
     """Inject the user's owned garments into the pools; return the closet context.
 
@@ -218,13 +248,8 @@ def _ground_in_wardrobe(
     the front of their slot pool (replacing a duplicate catalog copy if present).
     Returns ``None`` when there is no wardrobe to ground in.
     """
-    if wardrobe_repo is None:
+    if not records:
         return None
-    records = wardrobe_repo.list(user_id)
-    owned_ids = [r.item_id for r in records if r.item_id][:_WARDROBE_ANCHORS]
-    if not owned_ids:
-        return None
-    owned = [dataclasses.replace(c, owned=True) for c in candidates.candidates_by_ids(owned_ids)]
     if not owned:
         return None  # stale references only — nothing real to anchor on
     for anchor in owned:

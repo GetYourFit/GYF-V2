@@ -78,6 +78,16 @@ those two commits and the smallest test-backed corrections needed to ship them: 
 embedding-based similar-item requests, click-through tab highlights, reduced-motion animation
 cleanup, and consistent filter resets. This extension authorises no other design work.
 
+**Production-proof database correction — 2026-07-18.** The required disposable taste-bearing
+proof reached the corrected candidate fallback, then a warm serial request failed when wardrobe
+grounding could not check out one of the unchanged three shared connections within three seconds.
+The trace names cross-request candidate fanout followed by a dependent wardrobe read as the next
+boundary. This corrective write set therefore also permits the smallest test-backed change to the
+recommendation service and candidate repository: resolve wardrobe and explicit-anchor reads before
+fanout, and coordinate candidate checkout admission across repository instances while reserving one
+existing connection for other request work. Do not increase the pool, weaken its checkout or SQL
+timeouts, hide a failed wardrobe read, or advance without repeating the exact deployed proof below.
+
 Exit requires focused red/green regressions, all repository gates, deployed Expo web and Virginia
 API at the same release, and a real taste-bearing disposable-user proof: one cold plus five warm
 serial `occasion=casual&k=5` requests and a four-request concurrent burst, all authenticated 200s
