@@ -38,7 +38,7 @@ import {
   type StylistFeedbackStatus,
 } from "@/lib/stylist-feed";
 import { capabilityUsable } from "@/lib/system-status";
-import { OCCASIONS } from "@/lib/vocab";
+import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
@@ -331,6 +331,7 @@ export default function StylistRoute() {
   const [goalInput, setGoalInput] = useState("");
   const [activeGoal, setActiveGoal] = useState("");
   const [occasion, setOccasion] = useState("");
+  const [style, setStyle] = useState("");
   const [reload, setReload] = useState(0);
   const [data, setData] = useState<OutfitRecommendation | null>(null);
   const [feedback, setFeedback] = useState<Record<number, FeedbackStatus>>({});
@@ -393,6 +394,7 @@ export default function StylistRoute() {
         k: 5,
         goal: activeGoal || undefined,
         occasion: occasion || undefined,
+        style: style || undefined,
       });
       if (sequence !== loadSequence.current) return;
       setData(result);
@@ -407,7 +409,7 @@ export default function StylistRoute() {
     } finally {
       if (sequence === loadSequence.current) setLoading(false);
     }
-  }, [activeGoal, api, flushSwapRetries, occasion]);
+  }, [activeGoal, api, flushSwapRetries, occasion, style]);
 
   useEffect(() => {
     void load();
@@ -582,6 +584,7 @@ export default function StylistRoute() {
         k: 5,
         goal: activeGoal || undefined,
         occasion: occasion || undefined,
+        style: style || undefined,
       });
       if (sequence !== loadSequence.current) return;
       setData(result);
@@ -640,6 +643,26 @@ export default function StylistRoute() {
                 key={option.value}
                 label={option.label}
                 onPress={() => setOccasion(selected ? "" : option.value)}
+                selected={selected}
+              />
+            );
+          })}
+        </ScrollView>
+        <GyfText variant="label">STYLE · OPTIONAL</GyfText>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}
+        >
+          {STYLE_INTENTS.map((option) => {
+            const selected = style === option.value;
+            return (
+              <FilterChip
+                accessibilityLabel={`Use ${option.label} style for this slate`}
+                disabled={loading}
+                key={option.value}
+                label={option.label}
+                onPress={() => setStyle(selected ? "" : option.value)}
                 selected={selected}
               />
             );

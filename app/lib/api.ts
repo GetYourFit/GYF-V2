@@ -75,6 +75,8 @@ export type TokenProvider = () => string | null | Promise<string | null>;
 export interface RecommendParams {
   /** Overrides the profile's stored occasion (casual, business, wedding, festive, …). */
   occasion?: string;
+  /** Controlled style for this request only; does not update the saved profile. */
+  style?: string;
   /** How many outfits to return (1–20). */
   k?: number;
   /** Region code (e.g. "IN") for culture-aware garments. */

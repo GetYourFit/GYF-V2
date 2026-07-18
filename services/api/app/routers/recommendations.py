@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
+from gyf_contracts.usermodel import CATALOG_GENDERS, STYLE_INTENTS, catalog_genders_for
 
 from ..affiliate import linker_from_settings
 from ..auth import Principal
@@ -32,6 +33,7 @@ from ..wardrobe import WardrobeRepository
 
 router = APIRouter(tags=["recommendations"])
 logger = logging.getLogger("gyf")
+_STYLE_PATTERN = "^(?:" + "|".join(re.escape(value) for value in sorted(STYLE_INTENTS)) + ")$"
 
 
 def _profile_for_request(repo: ProfileRepository, user_id: str, request: Request):
@@ -81,6 +83,11 @@ def recommend_outfits(
     region: str | None = Query(
         None, max_length=64, description="Region code (e.g. IN) for culture-aware garments."
     ),
+    style: str | None = Query(
+        None,
+        pattern=_STYLE_PATTERN,
+        description="Controlled style for this slate only; the stored profile is unchanged.",
+    ),
     goal: str | None = Query(
         None,
         max_length=200,
@@ -120,6 +127,9 @@ def recommend_outfits(
     profile = _profile_for_request(profile_repo, principal.user_id, request)
     if profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
+    if style is not None:
+        profile = profile.model_copy(deep=True)
+        profile.style_intent = [style]
     return recommend(
         profile,
         principal.user_id,
@@ -152,6 +162,11 @@ def complete_look(
     region: str | None = Query(
         None, max_length=64, description="Region code (e.g. IN) for culture-aware garments."
     ),
+    style: str | None = Query(
+        None,
+        pattern=_STYLE_PATTERN,
+        description="Controlled style for this slate only; the stored profile is unchanged.",
+    ),
     goal: str | None = Query(
         None, max_length=200, description="Free-text styling goal (taller / slimmer / broader)."
     ),
@@ -173,6 +188,9 @@ def complete_look(
     profile = _profile_for_request(profile_repo, principal.user_id, request)
     if profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No profile yet")
+    if style is not None:
+        profile = profile.model_copy(deep=True)
+        profile.style_intent = [style]
     try:
         return recommend(
             profile,

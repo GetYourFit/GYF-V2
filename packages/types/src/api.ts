@@ -2058,6 +2058,8 @@ export interface operations {
                 k?: number;
                 /** @description Region code (e.g. IN) for culture-aware garments. */
                 region?: string | null;
+                /** @description Controlled style for this slate only; the stored profile is unchanged. */
+                style?: string | null;
                 /** @description Free-text styling goal. GYF parses it into visual effects (taller / slimmer / broader) and steers the look with color theory + body-type intelligence. Unrecognized text is a no-op. */
                 goal?: string | null;
             };
@@ -2098,6 +2100,8 @@ export interface operations {
                 k?: number;
                 /** @description Region code (e.g. IN) for culture-aware garments. */
                 region?: string | null;
+                /** @description Controlled style for this slate only; the stored profile is unchanged. */
+                style?: string | null;
                 /** @description Free-text styling goal (taller / slimmer / broader). */
                 goal?: string | null;
             };

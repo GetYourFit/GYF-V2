@@ -54,6 +54,26 @@ describe("GyfApi", () => {
     expect(url).toBe("http://api/outfits/recommend?occasion=casual&k=5");
   });
 
+  it("encodes a request-scoped style for recommend and complete-look requests", async () => {
+    const fetchSpy = mockFetch({ status: 200, body: { occasion: "casual", outfits: [] } });
+    vi.stubGlobal("fetch", fetchSpy);
+    const api = new GyfApi(() => null, "http://api");
+
+    await api.recommend({ style: "streetwear" });
+    await api.completeLook("item-1", { style: "streetwear" });
+
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      "http://api/outfits/recommend?style=streetwear",
+      expect.anything(),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      "http://api/outfits/complete?item_id=item-1&style=streetwear",
+      expect.anything(),
+    );
+  });
+
   it("maps a 404 to an onboarding-aware ApiError", async () => {
     const fetchSpy = mockFetch({ status: 404, body: { detail: "No profile yet" } });
     vi.stubGlobal("fetch", fetchSpy);
