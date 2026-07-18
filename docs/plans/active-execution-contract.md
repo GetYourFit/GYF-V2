@@ -843,7 +843,9 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 - **Global F2.5 production promotion remains blocked by sustained catalogue SLO evidence.** The
   four passing catalogue rows are a single India run on a warm service, not the required sustained
   observation. On 2026-07-18 the owner reported that Modal credits were exhausted and directed a
-  hold. The disabled encoder makes uncached semantic search fail its fixed India row, so the
+  hold. A fresh 2026-07-19 probe confirmed that the encoder health endpoint returns HTTP 404 with
+  `workspace ... is disabled`, while production `/system/status` truthfully selects degraded
+  `keyword-fallback`. The disabled encoder makes uncached semantic search fail its fixed India row, so the
   sustained window cannot start. Keep the truthful keyword fallback; do not count it as semantic
   success, weaken the SLO, or replace the provider without its licence, cost, and promotion gate.
   `F2.5-04` separately closed the activation-critical recommendation timing diagnosis and correction
