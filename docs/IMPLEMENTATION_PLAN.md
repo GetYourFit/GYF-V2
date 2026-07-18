@@ -29,10 +29,19 @@ Everything else sits on this, so it goes first.
 - Wardrobe: reorganize into the Ref1/Ref2 grid language + glass surfaces; group by category; same PortfolioCard for item detail frames.
 - Stylist page: portfolio showcase via `PortfolioCard` (built in Phase 1).
 
+## Build standards (apply in every phase, not a separate pass)
+Principal RN/Expo performance rules from the scope — enforced on every file touched:
+- **FlashList** for any dynamic-data list (replace FlatList/ScrollView); set `estimatedItemSize`; no anonymous functions in `renderItem`.
+- **UI-thread animation only**: reanimated + gesture-handler, all style updates via `useAnimatedStyle` (already the house pattern — keep it).
+- **expo-image** everywhere a network/dynamic image renders: `priority="high"`, `cachePolicy="disk"`, fade-in `transition`.
+- **Render optimization**: `React.memo` list items, `useCallback` callbacks, React Compiler-compatible structure.
+- **Haptics tiers** (native only, existing `haptics?` guard): Light = taps/toggles, Medium = primary actions/likes/submits, Success notification = async success (saved/paid), Error notification = validation/API failures.
+
 ## Phase 5 — Global polish pass
 - Apply liquid glass wherever it elevates (sheets, headers, overlays) using `GlassSurface` only.
 - Button/placement audit: every screen — each button earns its spot, thumb-reachable, consistent hit targets (`hitSlopFor` exists).
 - Animation smoothness pass: entrances on all pages via reanimated layout animations, all gated on `ReduceMotion.System`.
+- **Performance audit**: sweep screens NOT otherwise touched by Phases 1–4 for the build standards above (FlashList, expo-image, memo/useCallback, haptics tiers); verify 60/120fps feel on device.
 - Final device check: web export + iOS/Android simulators at small (360×640) and large (430×932) sizes.
 
 ## Scope-point coverage
@@ -53,3 +62,8 @@ Everything else sits on this, so it goes first.
 | Wardrobe beautify/organise | 4 |
 | Meaningful button placement | 5 |
 | iOS/Android dimension optimisation | 0 + 5 |
+| FlashList virtualization | build standards, audited in 5 |
+| UI-thread reanimated/gesture-handler animations | build standards, audited in 5 |
+| expo-image caching (priority/disk/fade) | build standards, audited in 5 |
+| React.memo/useCallback/React Compiler | build standards, audited in 5 |
+| Haptics tiers (Light/Medium/Success/Error) | build standards, audited in 5 |

@@ -27,3 +27,17 @@ Modify and make the wadrobe page also more beautifull and organised.
 The app should be organised , each button placing should have a meaning and convinience of use.
 
 Optimise this app as it will be launched for IOS and Android mobiles , hence fetch all the dimension of the phones used in these 2 OS and optimise the screen sizing , font sizing etc accordingly.
+
+Act as a Principal React Native and Expo Engineer. Optimize the following code for maximum performance (targeting a consistent 60/120 FPS) and add micro-interactions using native haptics. Apply these exact architectural rules:
+
+1. LIST VIRTUALIZATION: Replace any Standard 'FlatList' or 'ScrollView' containing dynamic data with Shopify's 'FlashList'. Provide an estimatedItemSize and ensure no anonymous functions are defined inside renderItem.
+2. UI THREAD ANIMATIONS: Convert all layouts, transitions, or gesture animations to 'react-native-reanimated' (v3+) and 'react-native-gesture-handler'. All style updates must run strictly on the UI thread using useAnimatedStyle.
+3. IMAGE CACHING: Replace standard 'Image' components with 'expo-image'. Configure them with priority="high", cachePolicy="disk", and a smooth fade-in transition effect.
+4. RENDER OPTIMIZATION: Prevent unnecessary re-renders. Use React.memo() for list items, memoize callbacks with useCallback, and ensure the code structure is fully compatible with the React Compiler.
+5. EXPO HAPTICS INTEGRATION: Integrate 'expo-haptics' to provide tactical feedback for user actions. Use:
+   - Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) for standard button taps, keyboard key presses, or subtle toggles.
+   - Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium) for primary actions like submitting a form, checking a checkbox, or liking an item.
+   - Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success) for successful asynchronous operations (e.g., payment complete, item saved).
+   - Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error) for validation failures or API errors.
+
+H
