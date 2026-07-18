@@ -1,35 +1,35 @@
 export const colors = {
   dark: {
-    bg: "#0a0a0b",
+    bg: "#000000",
     surface: "#141414",
     surfaceRaised: "#1c1c1e",
     border: "#2b2b2d",
     text: "#f5f5f4",
-    textInverse: "#0a0a0b",
+    textInverse: "#000000",
     textMuted: "#a1a1a6",
     textFaint: "#8e8e93",
-    // Signature: a single warm editorial gold — the "atelier" mark. `accent`
-    // fills the primary decision; `accentText` is ink read on that fill;
-    // `accentInk` is the gold used as text/detail on a dark ground.
-    accent: "#d9b779",
-    accentText: "#0a0a0b",
-    accentInk: "#e3c489",
+    // Cosmos monochrome (Ref1–Ref7): the theme's ink IS the action color.
+    // `accent` fills the primary decision; `accentText` is ink read on that
+    // fill; `accentInk` is the accent used as text/detail on the ground.
+    accent: "#f5f5f4",
+    accentText: "#000000",
+    accentInk: "#f5f5f4",
     success: "#34d399",
     warning: "#fbbf24",
     error: "#f87171",
   },
   light: {
-    bg: "#fbfbf9",
+    bg: "#ffffff",
     surface: "#f4f4f5",
     surfaceRaised: "#ececee",
     border: "#cfcfd2",
     text: "#111112",
-    textInverse: "#fbfbf9",
+    textInverse: "#ffffff",
     textMuted: "#55555a",
     textFaint: "#6e6e73",
-    accent: "#c9a24a",
-    accentText: "#1a1206",
-    accentInk: "#8a5a12",
+    accent: "#111112",
+    accentText: "#ffffff",
+    accentInk: "#111112",
     success: "#0d7a55",
     warning: "#9a4c08",
     error: "#c0392b",
@@ -79,15 +79,15 @@ export const radii = {
  * @expo-google-fonts export keys exactly.
  */
 export const fonts = {
-  display: "Fraunces_700Bold",
-  displaySemi: "Fraunces_600SemiBold",
+  display: "BricolageGrotesque_700Bold",
+  displaySemi: "BricolageGrotesque_600SemiBold",
   ui: "BricolageGrotesque_600SemiBold",
   uiMedium: "BricolageGrotesque_500Medium",
 } as const;
 
 /**
- * Two-face hierarchy: Fraunces (editorial serif) for display/title,
- * Bricolage Grotesque for labels/UI, system sans for body — body copy is
+ * Cosmos single-face hierarchy (Ref3/Ref4): one grotesque carries display,
+ * title, and UI at different weights; system sans for body — body copy is
  * read, not looked at, so it stays deliberately invisible.
  */
 export const typography = {
