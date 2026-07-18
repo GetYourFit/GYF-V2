@@ -31,6 +31,12 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   if (!authed) {
     const redirectUrl = request.nextUrl.clone();
+    // First touch (the root) gets the Ref7 welcome screen; deep links keep the
+    // login flow so ?next= still lands the user where they were headed.
+    if (request.nextUrl.pathname === "/") {
+      redirectUrl.pathname = "/welcome";
+      return NextResponse.redirect(redirectUrl);
+    }
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
