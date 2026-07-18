@@ -73,6 +73,18 @@ const STYLIST_RECOMMENDATION = deepFreeze({
           image_url: null,
           owned: false,
         },
+        {
+          item_id: "fixture-footwear-01",
+          title: "Black leather loafers",
+          category: "loafers",
+          slot: "footwear",
+          price: 4499,
+          currency: "INR",
+          color: "black",
+          affiliate_url: null,
+          image_url: null,
+          owned: false,
+        },
       ],
       explanation:
         "The restrained contrast fits a work setting and the selected smart-casual goal.",

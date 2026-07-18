@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 
-import { columnsForWidth } from "@/components/grid/column-count";
 import { tierForWidth } from "@/theme/tokens";
 
 import {
@@ -34,15 +33,41 @@ describe("core route evidence matrix", () => {
   });
 
   test("resolves the shared width tier and Explore column count", () => {
+    const exploreColumns: Record<number, number> = { 320: 2, 390: 2, 768: 3, 1280: 4 };
     for (const fixture of CORE_ROUTE_FIXTURES) {
       expect(fixture.tier).toBe(tierForWidth(fixture.width));
       expect(fixture.exploreColumns).toBe(
-        fixture.route === "explore" ? Math.max(2, columnsForWidth(fixture.width - 48)) : null,
+        fixture.route === "explore" ? exploreColumns[fixture.width] : null,
       );
     }
   });
 
   test("records every required state for every route as supported evidence or an explicit gap", () => {
+    const expectedSupport = {
+      stylist: {
+        happy: "supported",
+        loading: "supported",
+        empty: "supported",
+        error: "supported",
+        offline: "gap",
+        "capability-closed": "supported",
+      },
+      explore: {
+        happy: "supported",
+        loading: "supported",
+        empty: "supported",
+        error: "supported",
+        offline: "gap",
+      },
+      "item-detail": {
+        happy: "supported",
+        loading: "supported",
+        empty: "supported",
+        error: "supported",
+        offline: "gap",
+      },
+    } as const;
+
     expect(CORE_ROUTE_REQUIRED_STATES).toEqual({
       stylist: ["happy", "loading", "empty", "error", "offline", "capability-closed"],
       explore: ["happy", "loading", "empty", "error", "offline"],
@@ -51,13 +76,32 @@ describe("core route evidence matrix", () => {
 
     for (const route of ["stylist", "explore", "item-detail"] as const) {
       const routeFixtures = CORE_ROUTE_FIXTURES.filter(({ route: value }) => value === route);
-      for (const state of CORE_ROUTE_REQUIRED_STATES[route]) {
+      for (const [state, support] of Object.entries(expectedSupport[route])) {
         const matches = routeFixtures.filter(({ state: value }) => value === state);
-        expect(matches.length).toBeGreaterThan(0);
-        expect(matches.every(({ support }) => support === "supported" || support === "gap")).toBe(
-          true,
-        );
+        expect(matches).toHaveLength(CORE_ROUTE_WIDTHS.length * CORE_ROUTE_THEMES.length);
+        expect(matches.every((fixture) => fixture.support === support)).toBe(true);
       }
+    }
+
+    expect(new Set(CORE_ROUTE_FIXTURES.map(({ route, state }) => `${route}:${state}`))).toEqual(
+      new Set(
+        Object.entries(expectedSupport).flatMap(([route, states]) =>
+          Object.keys(states).map((state) => `${route}:${state}`),
+        ),
+      ),
+    );
+  });
+
+  test("keeps the Stylist happy and capability-closed evidence as complete outfits", () => {
+    const fixtures = CORE_ROUTE_FIXTURES.filter(
+      ({ route, state }) =>
+        route === "stylist" && (state === "happy" || state === "capability-closed"),
+    );
+    for (const fixture of fixtures) {
+      if (!fixture.data || !("outfits" in fixture.data)) throw new Error("missing Stylist data");
+      expect(new Set(fixture.data.outfits[0]?.items.map(({ slot }) => slot))).toEqual(
+        new Set(["top", "bottom", "footwear"]),
+      );
     }
   });
 
@@ -77,6 +121,7 @@ describe("core route evidence matrix", () => {
   test("keeps catalogue imagery HTTPS-only and excludes private or user media", () => {
     for (const fixture of CORE_ROUTE_FIXTURES) {
       expect(fixture.mediaScope === "public-catalogue" || fixture.mediaScope === "none").toBe(true);
+      if (fixture.mediaScope === "none") expect(fixture.imageUrls).toHaveLength(0);
       for (const url of fixture.imageUrls) expect(new URL(url).protocol).toBe("https:");
       expect(JSON.stringify(fixture).toLowerCase()).not.toMatch(
         /avatar|body.photo|private|signed[_-]?url|user[_-]?(image|media|photo)/,
