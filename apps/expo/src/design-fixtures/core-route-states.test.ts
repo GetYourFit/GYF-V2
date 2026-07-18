@@ -52,6 +52,12 @@ describe("core route evidence matrix", () => {
     expect(welcomeSource).not.toContain("useFonts(");
   });
 
+  test("never leaves web blank while custom fonts are loading", async () => {
+    const rootLayout = await Bun.file(`${import.meta.dir}/../app/_layout.tsx`).text();
+
+    expect(rootLayout).toContain('Platform.OS === "web"');
+  });
+
   test("selects four owner-reviewable routes across required widths and themes", () => {
     expect(new Set(CORE_ROUTE_REVIEW_FIXTURES.map(({ route }) => route))).toEqual(
       new Set(["stylist", "explore", "item-detail", "personal-fit"]),

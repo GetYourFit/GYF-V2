@@ -6,6 +6,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
@@ -38,7 +39,9 @@ export default function RootLayout() {
     void loadThemePreference().then(setPreferenceState);
   }, []);
 
-  const ready = (fontsLoaded || Boolean(fontError)) && preference !== null;
+  // Web already exports @font-face rules and can render safely with a fallback while
+  // the files load. Never turn a slow/blocked font request into a permanently blank app.
+  const ready = preference !== null && (Platform.OS === "web" || fontsLoaded || Boolean(fontError));
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
@@ -54,8 +57,8 @@ export default function RootLayout() {
     [preference, setPreference],
   );
 
-  // Hold first paint until fonts + stored theme resolve — text must never
-  // flash in a fallback face and the scheme must never visibly switch.
+  // Native holds first paint for fonts; web must remain usable while they load.
+  // Both wait for the stored theme so the scheme never visibly switches.
   if (!ready) return null;
 
   return (
