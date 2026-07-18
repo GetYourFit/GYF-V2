@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Linking,
   Pressable,
   RefreshControl,
@@ -12,6 +11,7 @@ import {
 import { useRouter } from "expo-router";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
+import { CatalogImage } from "@/components/ui/catalog-image";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { FilterChip } from "@/components/ui/filter-chip";
@@ -57,10 +57,6 @@ function readableError(error: unknown): string {
   return "GYF could not load this look. Check your connection and try again.";
 }
 
-function isRemoteImage(url: string | null | undefined): url is string {
-  return Boolean(url && /^https:\/\//i.test(url));
-}
-
 function ItemTile({
   item,
   alternates,
@@ -92,36 +88,17 @@ function ItemTile({
         {item.slot.toUpperCase()}
         {item.owned ? " · YOURS" : ""}
       </GyfText>
-      {isRemoteImage(item.image_url) ? (
-        <Image
-          accessibilityLabel={item.title}
-          source={{ uri: item.image_url }}
-          style={{
-            backgroundColor: palette.surfaceRaised,
-            borderRadius: radii.card,
-            height: 290,
-            width: 232,
-          }}
-        />
-      ) : (
-        <View
-          accessibilityLabel={`${item.title}; image unavailable`}
-          style={{
-            alignItems: "center",
-            backgroundColor: palette.surfaceRaised,
-            borderCurve: "continuous",
-            borderRadius: radii.card,
-            height: 290,
-            justifyContent: "center",
-            padding: spacing.sm,
-            width: 232,
-          }}
-        >
-          <GyfText style={{ textAlign: "center" }} tone="muted" variant="bodySmall">
-            Image unavailable
-          </GyfText>
-        </View>
-      )}
+      <CatalogImage
+        label={item.title}
+        recyclingKey={item.item_id}
+        style={{
+          backgroundColor: palette.surfaceRaised,
+          borderRadius: radii.card,
+          height: 290,
+          width: 232,
+        }}
+        uri={item.image_url}
+      />
       <GyfText numberOfLines={2} variant="bodySmall">
         {item.title}
       </GyfText>

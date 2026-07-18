@@ -1,10 +1,11 @@
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
-import { Image, Linking, Modal, Pressable, ScrollView, View } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, View } from "react-native";
 
 import { IconClose } from "@/components/icons";
 import { AtelierButton } from "@/components/ui/atelier-button";
+import { CatalogImage, isRemoteImage } from "@/components/ui/catalog-image";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
@@ -13,10 +14,6 @@ import { createApi, type Outfit, type OutfitItem, type SearchResult } from "@/li
 import { compatibilityReason, formatCatalogPrice } from "@/lib/explore-feed";
 import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
-
-function isRemoteImage(url: string | null | undefined): url is string {
-  return Boolean(url && /^https:\/\//i.test(url));
-}
 
 /** "Complete the look": the stylist engine composes a full outfit pinned to this
  *  item — the same personalization, explanation and confidence as the feed, not
@@ -101,34 +98,17 @@ function PairingTile({ item, theme }: { item: OutfitItem; theme: ThemeName }) {
       onPress={shopUrl ? () => void Linking.openURL(shopUrl) : undefined}
       style={{ gap: spacing.xs, width: 100 }}
     >
-      {isRemoteImage(item.image_url) ? (
-        <Image
-          accessibilityLabel={item.title}
-          source={{ uri: item.image_url }}
-          style={{
-            backgroundColor: palette.surfaceRaised,
-            borderRadius: radii.control,
-            height: 132,
-            width: 100,
-          }}
-        />
-      ) : (
-        <View
-          accessibilityLabel={`${item.title}; image unavailable`}
-          style={{
-            alignItems: "center",
-            backgroundColor: palette.surfaceRaised,
-            borderRadius: radii.control,
-            height: 132,
-            justifyContent: "center",
-            width: 100,
-          }}
-        >
-          <GyfText theme={theme} tone="faint" variant="mono">
-            NO IMAGE
-          </GyfText>
-        </View>
-      )}
+      <CatalogImage
+        label={item.title}
+        recyclingKey={item.item_id}
+        style={{
+          backgroundColor: palette.surfaceRaised,
+          borderRadius: radii.control,
+          height: 132,
+          width: 100,
+        }}
+        uri={item.image_url}
+      />
       <GyfText numberOfLines={2} theme={theme} tone="muted" variant="bodySmall">
         {item.title}
       </GyfText>
@@ -234,35 +214,17 @@ export function ItemDetailSheet({
               </PressableScale>
             </View>
 
-            {isRemoteImage(item.image_url) ? (
-              <Image
-                accessibilityLabel={item.title}
-                resizeMode="cover"
-                source={{ uri: item.image_url }}
-                style={{
-                  aspectRatio: 3 / 4,
-                  backgroundColor: palette.surfaceRaised,
-                  borderRadius: radii.card,
-                  width: "100%",
-                }}
-              />
-            ) : (
-              <View
-                accessibilityLabel={`${item.title}; image unavailable`}
-                style={{
-                  alignItems: "center",
-                  aspectRatio: 3 / 4,
-                  backgroundColor: palette.surfaceRaised,
-                  borderRadius: radii.card,
-                  justifyContent: "center",
-                  width: "100%",
-                }}
-              >
-                <GyfText theme={theme} tone="faint" variant="mono">
-                  IMAGE UNAVAILABLE
-                </GyfText>
-              </View>
-            )}
+            <CatalogImage
+              label={item.title}
+              recyclingKey={item.item_id}
+              style={{
+                aspectRatio: 3 / 4,
+                backgroundColor: palette.surfaceRaised,
+                borderRadius: radii.card,
+                width: "100%",
+              }}
+              uri={item.image_url}
+            />
 
             <View style={{ gap: spacing.xs }}>
               <GyfText theme={theme} variant="label">

@@ -1,4 +1,4 @@
-import { Image, View } from "react-native";
+import { View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -11,10 +11,12 @@ import { IconHeart } from "@/components/icons";
 import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
 import { ConfidenceBadge } from "./confidence-badge";
+import { CatalogImage } from "./catalog-image";
 import { GyfText } from "./gyf-text";
 import { PressableScale, hitSlopFor } from "./pressable-scale";
 
 export interface ProductCardItem {
+  id?: string;
   title: string;
   brand?: string | null;
   price?: string | null;
@@ -22,10 +24,6 @@ export interface ProductCardItem {
   /** 0–1 fraction or 0–100 percent; unusable values render no badge. */
   matchPercent?: number | null;
   saved?: boolean;
-}
-
-function isRemoteImage(url: string | null | undefined): url is string {
-  return Boolean(url && /^https:\/\//i.test(url));
 }
 
 /**
@@ -69,35 +67,17 @@ export function ProductCard({
       style={{ gap: spacing.sm, width }}
     >
       <View>
-        {isRemoteImage(item.imageUrl) ? (
-          <Image
-            accessibilityLabel={item.title}
-            source={{ uri: item.imageUrl }}
-            style={{
-              backgroundColor: palette.surfaceRaised,
-              borderRadius: radii.card,
-              height: width * (4 / 3),
-              width: "100%",
-            }}
-          />
-        ) : (
-          <View
-            accessibilityLabel={`${item.title}; no image`}
-            style={{
-              alignItems: "center",
-              backgroundColor: palette.surfaceRaised,
-              borderCurve: "continuous",
-              borderRadius: radii.card,
-              height: width * (4 / 3),
-              justifyContent: "center",
-              padding: spacing.sm,
-            }}
-          >
-            <GyfText theme={theme} tone="faint" variant="mono">
-              {(item.brand ?? "GYF").toUpperCase()}
-            </GyfText>
-          </View>
-        )}
+        <CatalogImage
+          label={item.title}
+          recyclingKey={item.id ?? item.imageUrl ?? item.title}
+          style={{
+            backgroundColor: palette.surfaceRaised,
+            borderRadius: radii.card,
+            height: width * (4 / 3),
+            width: "100%",
+          }}
+          uri={item.imageUrl}
+        />
         {onToggleSave ? (
           <Animated.View
             style={[{ position: "absolute", right: spacing.xs, top: spacing.xs }, heartStyle]}
