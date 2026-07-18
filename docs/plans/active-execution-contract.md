@@ -884,10 +884,15 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   disk caching, stable recycling keys and accessible failure/retry; the unused FlashList candidate
   was removed because native `FlatList` has not missed a measured budget. Commit `273e08c` is pushed
   to `origin/main`, and EAS deployment `notwl17vhv` is promoted at
-  `https://get-your-fit.expo.app`; a cache-busted external probe returned 200 with the exported
-  `entry-df5e1f59e05c16356f1c41f93cc2b6d3.js` fingerprint. This is web deployment evidence, not the
-  missing physical Android proof. `gyf-encoder` remains unselected because this slice has no measured
-  encoding boundary.
+  `https://get-your-fit.expo.app`. Deployment `emrc2qswgs` supersedes it with the current
+  2,499,152-byte `entry-d5d5fa310a208df6c8376dc8471bf6c9.js`; cache-busted immutable and production
+  probes returned 200 and exactly matched local SHA-256
+  `212870c76af4d8cf1da6999859e5a33b6d2124b622fd21b79ecb89d8411829cc`. An earlier deployment
+  (`4z5dx9grt2`) built from the Android export directory returned 404 and was rejected before the web
+  export was rebuilt and promoted. This is web deployment evidence, not the missing physical Android
+  proof. `gyf-encoder` remains unselected because this slice has no measured encoding boundary. The
+  reproducible token, component, accessibility, bundle, hosting, and remaining device evidence is recorded in
+  [`expo-design-core-evidence-2026-07-18.md`](./expo-design-core-evidence-2026-07-18.md).
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 

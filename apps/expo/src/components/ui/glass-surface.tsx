@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { View } from "react-native";
 
-import { radii } from "@/theme/tokens";
+import { materials, radii } from "@/theme/tokens";
 import { useAppColorScheme } from "@/theme/use-color-scheme";
 
 /**
@@ -35,7 +35,7 @@ export function GlassSurface({
       tint={dark ? "dark" : "light"}
       style={[
         {
-          borderColor: dark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.14)",
+          borderColor: materials.glass[theme].border,
           borderRadius,
           borderWidth: 1,
           overflow: "hidden",
@@ -44,21 +44,16 @@ export function GlassSurface({
       ]}
     >
       <LinearGradient
-        colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"]}
+        colors={materials.glass.highlight}
         pointerEvents="none"
         style={{ height: 12, left: 0, position: "absolute", right: 0, top: 0, zIndex: 1 }}
       />
       <LinearGradient
-        colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.07)"]}
+        colors={materials.glass.sheen}
         pointerEvents="none"
         style={{ bottom: 0, height: 10, left: 0, position: "absolute", right: 0, zIndex: 1 }}
       />
-      <View
-        style={[
-          { backgroundColor: dark ? "rgba(10,10,12,0.38)" : "rgba(255,255,255,0.42)" },
-          contentStyle,
-        ]}
-      >
+      <View style={[{ backgroundColor: materials.glass[theme].fill }, contentStyle]}>
         {children}
       </View>
     </BlurView>

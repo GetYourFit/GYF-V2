@@ -27,6 +27,7 @@ build/
 .turbo/
 .tmp/
 .bun-cache/
+.buntmp/
 coverage/
 *.tsbuildinfo
 *.log
