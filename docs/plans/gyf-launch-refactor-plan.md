@@ -1713,15 +1713,16 @@ but it never reorders the backend contract.
   bounded UUID pivot ring for session variation; the real-Postgres seeded-browse regression
   covers stable paging, variation, coverage, disjoint pages and priced-first ordering.
 - Remaining gate: visual fixtures, device accessibility smoke and route parity are not claimed;
-  EXPO-04 is the next local slice.
+  the active contract now selects `EXPO-DESIGN-CORE` as the current local slice.
 
 ### EXPO-03A — Atelier token contract
 
 - **Write set:** `apps/expo/src/theme/{colors,typography,spacing,motion}.ts`, token tests,
   `docs/plans/gyf-launch-refactor-plan.md` only for contract updates.
 - **Work:** encode the visual laws from §3.2 as typed tokens: monochrome base, semantic status
-  colours, Cormorant/Plus Jakarta/JetBrains roles, continuous corners, hairline rules, calm
-  motion and reduced-motion variants. Map every token to its light/dark value and contrast ratio.
+  colours, Fraunces editorial display, Bricolage navigation/action and system-sans body roles,
+  continuous corners, hairline rules, calm motion and reduced-motion variants. Map every token to
+  its light/dark value and contrast ratio.
 - **Acceptance:** no screen has a literal colour/font/radius outside the token layer except image
   treatment and documented semantic status; contrast tests pass for normal/large text and disabled
   states; token snapshot is stable across platforms.
