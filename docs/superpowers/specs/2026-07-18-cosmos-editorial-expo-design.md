@@ -168,12 +168,41 @@ Login, signup, password creation, recovery, and reset follow Ref5 and Ref6:
 
 ### 8.2 Onboarding
 
-Manual onboarding remains the authoritative path. Photo assistance stays optional and gated by the photo/privacy phase.
+After successful signup and verified session creation, route every new user to a dedicated Personal Fit Setup page before the Stylist experience. The page is required; photo upload remains optional because the complete manual path must always work. Photo analysis stays closed until the photo/privacy accuracy gate promotes it.
 
-- Collect only fields required for the trusted outfit loop: region/culture, style intent, occasion, budget, body context, tone context, and optional natural-language goal.
-- Explain why sensitive information is requested.
-- Permit correction and skipping where the product remains useful.
-- Preserve existing values on partial profile updates.
+The setup page uses the same Cosmos Editorial language as Ref5–Ref7: a quiet dark or light canvas, one editorial heading, concise purpose/privacy copy, a sharp full-width image frame, restrained glass only around transient controls, and one clear Continue action.
+
+#### Photo and analysis flow
+
+- Lead with an Add your photo control that uses user-initiated `expo-image-picker`; never request permission before the user taps it.
+- Explain that the photo may estimate skin tone and body type to personalize outfits, that estimates can be wrong, and that the user can continue manually without a photo.
+- Before upload, show selection guidance, supported formats and size, processing/storage purpose, and separate processing/storage consent where the active contract requires it.
+- Validate MIME type, byte size, dimensions, and decode; strip EXIF; keep media private; never log the image or derived sensitive values.
+- Represent analysis as explicit states: not requested, local selection, consent required, uploading, analysing, completed, partially completed, uncertain/abstained, failed, and removed.
+- Do not show fabricated progress or inferred values before the server confirms them.
+- If analysis succeeds, populate Skin tone and Body type result controls beneath the image. Mark each value as an estimate, show confidence/reason where the contract exposes them, and require the user to review or edit it before continuing.
+- If one result is missing, uncertain, rejected, or unavailable, open that field as a manual dropdown without blocking the other result.
+- Removing or replacing the photo must not silently preserve stale inferred values. Keep only values the user explicitly confirmed; otherwise return the affected field to unconfirmed/manual state.
+
+#### Editable personalization fields
+
+The page contains these inputs in order:
+
+1. Skin tone: an editable dropdown using the API's canonical options; no free-form values.
+2. Body type: an editable dropdown using the API's canonical options; no free-form values.
+3. Currency: a searchable/selectable currency control backed by the supported ISO 4217 currency list, defaulted from the user's explicit region only when available and always editable.
+4. Budget: minimum and maximum numeric inputs in the selected currency. Minimum may be zero; maximum must be greater than or equal to minimum; blank maximum means no stated ceiling only when the API contract permits it.
+5. Existing trusted-outfit fields: region/culture, style intent, occasion, and optional natural-language goal.
+
+The currency control changes only the currency label unless the product has an authoritative conversion quote. It must never silently reinterpret or convert entered budget numbers. Display localized separators while storing the API's normalized numeric representation.
+
+#### Completion and failure behavior
+
+- Require confirmed skin tone, confirmed body type, currency, and a valid budget range before Continue. The photo itself is never required.
+- Connect every field to its label, help text, and inline error; announce the first invalid field and move focus to it.
+- Save the profile through the existing typed API boundary. Disable duplicate submission, preserve the entered form on retry, and send success haptics only after server confirmation.
+- If analysis is unavailable, the complete manual form remains usable. If profile save fails, show a visible retry and do not enter the personalized app with unsaved values.
+- Preserve existing values on partial profile updates and never erase unrelated fields.
 - Show progress without trapping the user in an irreversible wizard.
 
 ### 8.3 Stylist
@@ -216,6 +245,9 @@ Profile has four clear regions: identity, real activity facts, portfolio, and ac
 
 - Avatar control supports add, replace, remove, upload progress, failure, and privacy copy.
 - A valid avatar becomes the Profile tab glyph through `expo-image`; failure falls back to the person SVG without breaking navigation.
+- Add an Edit personal fit action near the identity/profile facts. It opens the same Personal Fit Setup form in edit mode with the user's current confirmed skin tone, body type, currency, budget, region/culture, style intent, occasion, and goal.
+- Edit mode may add, replace, or remove the analysis photo subject to consent and retention rules. It must distinguish user-confirmed values from unreviewed estimates and must not rerun analysis merely because the screen opened.
+- Saving edits uses partial-update semantics, preserves unrelated profile fields, invalidates only affected profile/recommendation data, and explains that future outfits may change. Cancel/back leaves server data unchanged.
 - Portfolio shows created outfits, liked outfits, posts, and saved work only when the corresponding data exists.
 - Badges display only earned, server-backed facts with anti-abuse rules; no decorative fake achievements.
 - Settings lives under Profile/Account and includes system, light, and dark appearance choices, consent, export, deletion, support, grievance, status, and sign out.
@@ -312,8 +344,10 @@ Every route must pass:
 Each vertical slice uses the smallest test set that proves its risk:
 
 - unit tests for pure grid, theme, filter, profile, validation, and state-transition logic;
+- unit tests for photo-analysis state transitions, confirmed-versus-estimated values, currency selection, localized budget parsing, min/max validation, and partial profile merges;
 - component tests for semantic roles, expanded states, error announcements, and reduced motion;
-- transport/contract tests for pagination, cancellation, idempotency, avatar upload, and profile preservation;
+- component tests for no-photo completion, successful/partial/uncertain/failed analysis, manual dropdown fallback, keyboard-safe budget entry, and edit-mode cancellation;
+- transport/contract tests for pagination, cancellation, idempotency, avatar/photo upload, analysis response validation, and profile preservation;
 - route fixtures for light/dark, loading, empty, partial, stale, offline, denied, error, and destructive states;
 - screenshot review against Ref1–Ref7 for composition, not pixel copying;
 - physical or representative device checks for touch, keyboard, screen reader, image failure, low-memory paging, and haptics;
@@ -327,7 +361,7 @@ No phase closes from a route existing, a mock passing, or one attractive screens
 | --- | --- | --- | --- |
 | 0. Baseline | Route/state/width inventory, token audit, performance baseline, reference acceptance matrix | P3 preparation | reproducible fixtures and budgets |
 | 1. Foundation | Typography, semantic tokens, responsive tiers, themes, glass/icon/motion rules | `EXPO-DESIGN-CORE` | owner-approved Stylist/Explore/detail compositions in both themes |
-| 2. Auth and onboarding | Ref5–Ref7 welcome/auth/manual onboarding states | P2/P3, EXPO-05 truth | deployed manual journey, recovery, a11y, privacy |
+| 2. Auth and onboarding | Ref5–Ref7 welcome/auth plus Personal Fit Setup with optional photo analysis, editable results, currency and budget | P2/P3, EXPO-05 truth; analysis remains gated by `P5.3-PHOTO` | deployed no-photo journey, promoted analysis evidence when enabled, recovery, edit-profile round trip, a11y, privacy |
 | 3. Trusted Stylist | Complete outfit, evidence rail, correction loop, feedback actions | `EXPO-CORE-01`, P3 | real deployed correction causality and event joins |
 | 4. Explore | Search, animated mark, filters, masonry discovery, detail, complete-the-look | `P5.4-EXPLORE` | deep paging, SLO, dedupe, price/availability, low-end Android |
 | 5. Wardrobe | Owned-item organization, capture/correction, Saved/Collections reuse | `P5.2-WARDROBE` | private media and honest own-vs-buy journey |
@@ -364,6 +398,7 @@ The specification is implemented only when:
 8. Auth, profile media, consent, export, deletion, affiliate links, and failures preserve security and truth.
 9. The active contract's exact phase gate passes with recorded rollout and rollback evidence.
 10. Obsolete paths are deleted only through the protected cleanup gate.
+11. A new account completes Personal Fit Setup with or without a photo; confirmed skin tone, body type, currency, and budget persist and can be edited from Profile without erasing unrelated data.
 
 ## 18. Specification decisions
 
@@ -377,4 +412,3 @@ The specification is implemented only when:
 - **Rejected:** haptics on every interaction.
 - **Chosen:** phase-gated vertical slices.
 - **Rejected:** one global visual sweep across unfinished product surfaces.
-
