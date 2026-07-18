@@ -4,6 +4,7 @@ import {
   breakpoints,
   colors,
   contrastRatio,
+  fonts,
   radii,
   spacing,
   tierForWidth,
@@ -70,5 +71,11 @@ describe("Atelier tokens", () => {
       expect("fontFamily" in variant).toBe(true);
       expect("fontWeight" in variant).toBe(false);
     }
+  });
+
+  it("keeps the owner-gated editorial candidate separate from live display typography", () => {
+    expect(fonts.editorialCandidate).toBe("Fraunces_600SemiBold");
+    expect(typography.display.fontFamily).toBe(fonts.display);
+    expect(typography.display.fontFamily).not.toBe(fonts.editorialCandidate);
   });
 });

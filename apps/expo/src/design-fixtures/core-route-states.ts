@@ -236,7 +236,7 @@ type Variant = Readonly<{
   imageUrls: readonly string[];
 }>;
 
-type CoreRouteFixture = {
+export type CoreRouteFixture = {
   [Route in CoreRoute]: BaseFixture<Route> & Variant;
 }[CoreRoute];
 
@@ -441,5 +441,11 @@ export const CORE_ROUTE_FIXTURES: readonly CoreRouteFixture[] = deepFreeze(
         imageUrls: NO_IMAGES,
       })),
     ),
+  ),
+);
+
+export const CORE_ROUTE_REVIEW_FIXTURES: readonly CoreRouteFixture[] = deepFreeze(
+  CORE_ROUTE_FIXTURES.filter(
+    ({ state, support, width }) => state === "happy" && support === "supported" && width !== 390,
   ),
 );

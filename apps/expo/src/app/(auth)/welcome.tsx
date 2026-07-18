@@ -1,3 +1,5 @@
+import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces/600SemiBold";
+import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
 import { useEffect } from "react";
@@ -69,6 +71,8 @@ export default function WelcomeScreen() {
   // system scheme — the white logo is designed against it.
   const palette = colors.dark;
   const insets = useSafeAreaInsets();
+  const [headlineFontLoaded, headlineFontError] = useFonts({ Fraunces_600SemiBold });
+  if (!headlineFontLoaded && !headlineFontError) return null;
 
   return (
     <View

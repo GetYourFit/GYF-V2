@@ -4,6 +4,7 @@ import { tierForWidth } from "@/theme/tokens";
 
 import {
   CORE_ROUTE_FIXTURES,
+  CORE_ROUTE_REVIEW_FIXTURES,
   CORE_ROUTE_REQUIRED_STATES,
   CORE_ROUTE_THEMES,
   CORE_ROUTE_WIDTHS,
@@ -24,6 +25,62 @@ function mediaUrlsIn(value: unknown): string[] {
 }
 
 describe("core route evidence matrix", () => {
+  test("review compositions use all owned review assets without live controls", async () => {
+    const source = await Bun.file(
+      `${import.meta.dir}/../components/design/core-route-review.tsx`,
+    ).text();
+    const gallerySource = await Bun.file(`${import.meta.dir}/../app/design.tsx`).text();
+    for (const asset of [
+      "ivory-cotton-shirt.jpg",
+      "charcoal-tailored-trousers.jpg",
+      "black-leather-loafers.jpg",
+      "indigo-linen-overshirt.jpg",
+    ]) {
+      expect(source).toContain(asset);
+    }
+    expect(source).not.toContain("onPress={() => {}}");
+    expect(gallerySource).not.toContain("onPress={() => {}}");
+    expect(source.match(/<AtelierButton disabled/g)).toHaveLength(3);
+  });
+
+  test("loads the review-only editorial face outside the live root layout", async () => {
+    const rootLayout = await Bun.file(`${import.meta.dir}/../app/_layout.tsx`).text();
+    const gallerySource = await Bun.file(`${import.meta.dir}/../app/design.tsx`).text();
+    const welcomeSource = await Bun.file(`${import.meta.dir}/../app/(auth)/welcome.tsx`).text();
+
+    expect(rootLayout).not.toContain("Fraunces_600SemiBold");
+    expect(gallerySource).toContain("Fraunces_600SemiBold");
+    expect(welcomeSource).toContain("useFonts({ Fraunces_600SemiBold })");
+  });
+
+  test("selects three owner-reviewable routes across required widths and themes", () => {
+    expect(new Set(CORE_ROUTE_REVIEW_FIXTURES.map(({ route }) => route))).toEqual(
+      new Set(["stylist", "explore", "item-detail"]),
+    );
+    expect(CORE_ROUTE_REVIEW_FIXTURES).toHaveLength(18);
+    for (const fixture of CORE_ROUTE_REVIEW_FIXTURES) {
+      expect(fixture).toMatchObject({ state: "happy", support: "supported" });
+      expect([fixture.hero, fixture.primaryAction, fixture.explanationPath]).toHaveLength(3);
+    }
+    for (const route of ["stylist", "explore", "item-detail"] as const) {
+      expect(
+        new Set(
+          CORE_ROUTE_REVIEW_FIXTURES.filter((fixture) => fixture.route === route).map(
+            ({ theme }) => theme,
+          ),
+        ),
+      ).toEqual(new Set(CORE_ROUTE_THEMES));
+      expect(
+        new Set(
+          CORE_ROUTE_REVIEW_FIXTURES.filter((fixture) => fixture.route === route).map(
+            ({ width }) => width,
+          ),
+        ),
+      ).toEqual(new Set([320, 768, 1280]));
+    }
+    expectDeepFrozen(CORE_ROUTE_REVIEW_FIXTURES);
+  });
+
   test("uses stable unique IDs and expands every case across every width and theme", () => {
     const ids = CORE_ROUTE_FIXTURES.map(({ id }) => id);
     expect(new Set(ids).size).toBe(ids.length);

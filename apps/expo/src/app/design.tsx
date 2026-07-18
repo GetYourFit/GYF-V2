@@ -1,9 +1,13 @@
+import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces/600SemiBold";
+import { useFonts } from "expo-font";
 import { ScrollView, View } from "react-native";
 
+import { CoreRouteReview } from "@/components/design/core-route-review";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
+import { CORE_ROUTE_REVIEW_FIXTURES } from "@/design-fixtures/core-route-states";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
@@ -24,6 +28,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function DesignRoute() {
   const palette = useThemeColors();
+  const [reviewFontLoaded, reviewFontError] = useFonts({ Fraunces_600SemiBold });
+  if (!reviewFontLoaded && !reviewFontError) return null;
+
   return (
     <ScrollView
       accessibilityLabel="Design system gallery"
@@ -33,6 +40,19 @@ export default function DesignRoute() {
       <GyfText accessibilityRole="header" variant="display">
         Design system
       </GyfText>
+
+      <Section title="Core route direction">
+        <GyfText tone="muted" variant="bodySmall">
+          Direction review: Stylist, Explore, and item detail at compact Android (320), regular
+          Android (768), and responsive web (1280), in light and dark. Review controls are disabled;
+          each composition keeps one hero, one primary action, and one explanation path.
+        </GyfText>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.lg }}>
+          {CORE_ROUTE_REVIEW_FIXTURES.map((fixture) => (
+            <CoreRouteReview fixture={fixture} key={fixture.id} />
+          ))}
+        </View>
+      </Section>
 
       <Section title="Typography">
         {TEXT_VARIANTS.map((variant) => (
@@ -51,8 +71,8 @@ export default function DesignRoute() {
       </Section>
 
       <Section title="Buttons">
-        <AtelierButton label="Primary action" onPress={() => {}} />
-        <AtelierButton disabled label="Disabled" onPress={() => {}} />
+        <AtelierButton disabled label="Primary action · preview" />
+        <AtelierButton disabled label="Disabled" />
       </Section>
 
       <Section title="Card">

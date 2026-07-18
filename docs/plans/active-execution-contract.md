@@ -261,8 +261,8 @@ Native surface that solves the job—not every Expo package.
 
 | Layer | Approved baseline or candidate | Contract |
 | --- | --- | --- |
-| Runtime | Expo `57.0.6`, React Native `0.86.0`, React `19.2.3`, RN Web `~0.21.0`, Hermes/New Architecture | keep exact SDK-coupled versions; `npx expo install --check` and Expo Doctor must agree |
-| Routing | Expo Router `57.0.6`, nested native stacks, current JavaScript tabs | route files only in `src/app`; components/domain/data stay outside; every tab owns a stack/history |
+| Runtime | Expo `57.0.7`, React Native `0.86.0`, React `19.2.3`, RN Web `~0.21.0`, Hermes/New Architecture | keep exact SDK-coupled versions; `npx expo install --check` and Expo Doctor must agree |
+| Routing | Expo Router `57.0.7`, nested native stacks, current JavaScript tabs | route files only in `src/app`; components/domain/data stay outside; every tab owns a stack/history |
 | Language/tooling | TypeScript `~6.0.3`, Bun `1.3.14`, Turbo, Python `>=3.12`, uv lockfiles | one lock update per approved dependency slice; no floating native peer set |
 | Motion/native peers | Reanimated `4.5.0`, Worklets `0.10.0`, Gesture Handler `~2.32.0`, Screens `~4.25.2`, Safe Area `~5.7.0` | keep the proven peer set together; never upgrade one native peer alone |
 | API/data | typed `GyfApi`, generated/shared contracts, FastAPI, Pydantic, psycopg pool, PostgreSQL/pgvector/RLS | API schema and client contract change atomically; no second transport or ORM domain model |
@@ -821,8 +821,22 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   concurrency. This paragraph preserves the failing baseline; it is not current gate state.
 - Android reached the local SDK 57 Metro bundle. The first device failure was an incomplete SDK 57
   dependency alignment (`react-native-worklets` JavaScript 0.8.3 versus Expo Go native 0.10.0), not
-  an API or route failure. The local correction aligns the Expo dependency set and must pass Doctor,
-  typecheck, unit, export and a repeated physical-device smoke before promotion.
+  an API or route failure. The correction now aligns Expo 57.0.7, Router 57.0.7, React 19.2.3,
+  Reanimated 4.5.0, Worklets 0.10.0, Gesture Handler 2.32.0, and Safe Area 5.7.0. `expo install
+  --check`, TypeScript, 115 Expo tests, and fresh Android and web exports pass. A clean Bun 1.3.14
+  isolated install leaves Expo Doctor at 19/20: Doctor counts peer-context copies of the same Expo
+  native versions as duplicates. A repo-wide hoisted linker removes those copies but makes Doctor
+  fail three unrelated absent-package checks through `npm explain`; that broader change was removed.
+  The Doctor gate and repeated physical-device smoke therefore remain HOLD.
+- `EXPO-DESIGN-CORE` now renders three review-only happy-path compositions—Stylist, Explore, and
+  item detail—at 320, 768, and 1280 pixels in light and dark. Tests freeze all 18 combinations,
+  prevent enabled no-op gallery controls, and keep Fraunces out of shared route startup; the welcome
+  and design-review routes load it only where used.
+  Chromium captured all 18 web compositions without failed HTTP responses. Four compressed,
+  unbranded AI-generated garment studies make the imagery-led direction reviewable, but they prove
+  neither catalogue truth nor licensing; the gallery says so. Owner visual approval, compact and
+  regular physical-Android screenshots, and physical Expo Go smoke remain required before route-wide
+  composition. `gyf-encoder` remains unselected because this slice has no measured encoding boundary.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 

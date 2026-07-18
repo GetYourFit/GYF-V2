@@ -95,3 +95,5 @@ skills-lock.json
 
 # e2e fixture data (regenerable; exports already ignored above)
 ml/data/e2e/
+# Expo local state
+/apps/expo/.expo/

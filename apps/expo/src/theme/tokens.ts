@@ -79,6 +79,7 @@ export const radii = {
  * @expo-google-fonts export keys exactly.
  */
 export const fonts = {
+  editorialCandidate: "Fraunces_600SemiBold",
   display: "BricolageGrotesque_700Bold",
   displaySemi: "BricolageGrotesque_600SemiBold",
   ui: "BricolageGrotesque_600SemiBold",
