@@ -837,11 +837,13 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   dependency alignment (`react-native-worklets` JavaScript 0.8.3 versus Expo Go native 0.10.0), not
   an API or route failure. The correction now aligns Expo 57.0.7, Router 57.0.7, React 19.2.3,
   Reanimated 4.5.0, Worklets 0.10.0, Gesture Handler 2.32.0, and Safe Area 5.7.0. `expo install
-  --check`, TypeScript, 115 Expo tests, and fresh Android and web exports pass. A clean Bun 1.3.14
-  isolated install leaves Expo Doctor at 19/20: Doctor counts peer-context copies of the same Expo
-  native versions as duplicates. A repo-wide hoisted linker removes those copies but makes Doctor
-  fail three unrelated absent-package checks through `npm explain`; that broader change was removed.
-  The Doctor gate and repeated physical-device smoke therefore remain HOLD.
+  --check`, TypeScript, 124 Expo tests, and fresh Android and web exports pass. The bounded dependency
+  repair installs Router's required `expo-constants` and `expo-linking` peers, uses Bun 1.3.14's
+  hoisted workspace linker, and resolves the one compatible `expo-constants` patch split to 57.0.6.
+  A clean frozen-lockfile install now passes Expo Doctor 20/20; the web export contains 51 static
+  routes with a 2.5 MB entry bundle and the Android export contains a 4.7 MB Hermes bundle. These
+  workstation bundle sizes are recorded baselines, not device startup/frame/memory proof. The
+  repeated physical-device smoke and compact/regular Android evidence therefore remain HOLD.
 - `EXPO-DESIGN-CORE` now renders three review-only happy-path compositions—Stylist, Explore, and
   item detail—at 320, 768, and 1280 pixels in light and dark. Tests freeze all 18 combinations,
   prevent enabled no-op gallery controls, and keep Fraunces out of shared route startup; the welcome
