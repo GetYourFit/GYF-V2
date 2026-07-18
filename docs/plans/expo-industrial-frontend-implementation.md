@@ -1,7 +1,10 @@
 # Expo Frontend — Implementation Plan
 
-Status: **PROPOSED, subordinate to** [`active-execution-contract.md`](./active-execution-contract.md).
-Scope: `apps/expo`. Companion doc: `expo-industrial-frontend-design.md` (read first — this plan assumes its typography pairing, Liquid Glass rules, motion/SVG/density decisions, and responsive-sizing constraints).
+Status: **shipped** (2026-07-16, phases 0–6 on main). Deviations from plan:
+- Wardrobe swipe-to-remove dropped — horizontal swipe on grid cards fights vertical scroll; removal lives in the quick-preview action instead.
+- Custom pull-to-refresh indicator skipped — RN RefreshControl doesn't take custom views; the native control stays, themed.
+- Manual theme toggle UI not built — override context exists, app follows the OS scheme until a settings toggle sets it.
+- Simulator check (notch/gesture-nav, glass bar, both themes) still outstanding — all other gates (tests, typecheck, web export) green throughout. Scope: `apps/expo`. Companion doc: `expo-industrial-frontend-design.md` (read first — this plan assumes its typography pairing, Liquid Glass rules, motion/SVG/density decisions, and responsive-sizing constraints).
 
 Do not implement without confirmation on phase boundaries below — each phase ends in a working, testable app state; land and verify before moving to the next.
 
@@ -87,3 +90,5 @@ Exit criteria: this is the last phase — app should be feature-complete against
 - No Storybook/component-explorer scaffolding — component count doesn't justify it; manual `expo start --web` checks are sufficient at this scale.
 - No Lottie/After-Effects pipeline — Reanimated + custom SVG covers every motion need identified in the design doc.
 - No runtime density-switcher — the compact/standard/wide behavior is derived from actual screen width, not a user-facing setting.
+
+/plugin marketplace add expo/skills
