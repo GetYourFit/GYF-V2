@@ -1,15 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  useWindowDimensions,
-  View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from "react-native";
+import { useEffect } from "react";
+import { Image, Pressable, View } from "react-native";
 import Animated, {
   Easing,
   ReduceMotion,
@@ -30,25 +22,12 @@ if (process.env.EXPO_OS && process.env.EXPO_OS !== "web") {
   haptics = require("expo-haptics");
 }
 
-/* Ref7-derived welcome, stripped to the essentials: one headline per snap
- * slide, the animated brand mark centre stage, and a single filled Start
- * pill into signup. Motion lives on the logo (zoom-in entrance + slow
- * breathe) and the Start pill (shimmer sweep, press scale, haptic) only.
+/* Welcome, stripped to the essentials: headline, the animated brand mark
+ * centre stage, tagline, and a single filled Start pill into signup.
+ * Motion lives on the logo (zoom-in entrance + slow breathe) and the
+ * Start pill (shimmer sweep, press scale, haptic) only. Pure flex layout —
+ * no window-dimension math, so the web static export can never mis-size it.
  */
-const SLIDES = [
-  {
-    headline: "Discover, save,\nand get dressed",
-    sub: "Your AI stylist learns what looks good on you",
-  },
-  {
-    headline: "Outfits built around\nyour wardrobe",
-    sub: "Coordinated looks from clothes you already own",
-  },
-  {
-    headline: "Smarter with every\nperson it dresses",
-    sub: "Style that adapts to your body, tone, and taste",
-  },
-] as const;
 
 /** The logo's zoom-in entrance, then a slow breathing pulse. */
 function BreathingLogo({ tint }: { tint: string }) {
@@ -90,85 +69,43 @@ export default function WelcomeScreen() {
   // system scheme — the white logo is designed against it.
   const palette = colors.dark;
   const insets = useSafeAreaInsets();
-  const window = useWindowDimensions();
-  const [active, setActive] = useState(0);
-  // Measured screen frame. Window dimensions can be stale on web static
-  // export (hydrated with the build-time size); onLayout reports the real
-  // rendered size, so slides always match the viewport.
-  const [frame, setFrame] = useState({ width: window.width, height: window.height });
-  const width = frame.width;
-  const trackRef = useRef<ScrollView>(null);
-
-  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setActive(Math.round(event.nativeEvent.contentOffset.x / width));
-  };
 
   return (
     <View
-      style={{ flex: 1, backgroundColor: palette.bg }}
-      onLayout={(e) => setFrame(e.nativeEvent.layout)}
+      style={{
+        flex: 1,
+        backgroundColor: palette.bg,
+        alignItems: "center",
+        paddingTop: insets.top + spacing.xxl,
+        paddingHorizontal: spacing.xl,
+        paddingBottom: insets.bottom + spacing.lg,
+      }}
     >
-      {/* Snap slides — one headline per viewport width */}
-      <ScrollView
-        horizontal
-        pagingEnabled
-        ref={trackRef}
-        onMomentumScrollEnd={onScroll}
-        showsHorizontalScrollIndicator={false}
-        style={{ flex: 1 }}
-      >
-        {SLIDES.map((slide, index) => (
-          <View
-            key={index}
-            style={{
-              width,
-              alignItems: "center",
-              paddingTop: insets.top + spacing.xxl,
-              paddingHorizontal: spacing.xl,
-            }}
-          >
-            <GyfText
-              accessibilityRole="header"
-              variant="title"
-              theme="dark"
-              style={{
-                textAlign: "center",
-                fontFamily: "Fraunces_600SemiBold",
-                fontSize: 30,
-                lineHeight: 38,
-                letterSpacing: 0.3,
-              }}
-            >
-              {slide.headline}
-            </GyfText>
-
-            {/* Centre stage — the logo moment */}
-            <View
-              style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.md }}
-            >
-              <BreathingLogo tint={palette.text} />
-              <GyfText
-                tone="muted"
-                variant="bodySmall"
-                theme="dark"
-                style={{ textAlign: "center" }}
-              >
-                {slide.sub}
-              </GyfText>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Footer — terms, Start pill, login, dots */}
-      <View
+      <GyfText
+        accessibilityRole="header"
+        variant="title"
+        theme="dark"
         style={{
-          alignItems: "center",
-          gap: spacing.md,
-          paddingHorizontal: spacing.xl,
-          paddingBottom: insets.bottom + spacing.lg,
+          textAlign: "center",
+          fontFamily: "Fraunces_600SemiBold",
+          fontSize: 30,
+          lineHeight: 38,
+          letterSpacing: 0.3,
         }}
       >
+        {"Discover, save,\nand get dressed"}
+      </GyfText>
+
+      {/* Centre stage — the logo moment */}
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.md }}>
+        <BreathingLogo tint={palette.text} />
+        <GyfText tone="muted" variant="bodySmall" theme="dark" style={{ textAlign: "center" }}>
+          Your AI stylist learns what looks good on you
+        </GyfText>
+      </View>
+
+      {/* Footer — terms, Start pill, login */}
+      <View style={{ alignItems: "center", gap: spacing.md, alignSelf: "stretch" }}>
         <GyfText tone="faint" variant="bodySmall" theme="dark" style={{ textAlign: "center" }}>
           By creating an account, you agree to our Terms of Service and Privacy Policy
         </GyfText>
@@ -206,27 +143,6 @@ export default function WelcomeScreen() {
             </GyfText>
           </Pressable>
         </Link>
-
-        <View
-          accessibilityLabel={`Slide ${active + 1} of ${SLIDES.length}`}
-          style={{ flexDirection: "row", gap: 6 }}
-        >
-          {SLIDES.map((_, index) => (
-            <Pressable
-              key={index}
-              accessibilityRole="button"
-              accessibilityLabel={`Go to slide ${index + 1}`}
-              hitSlop={10}
-              onPress={() => trackRef.current?.scrollTo({ x: index * width, animated: true })}
-              style={{
-                width: active === index ? 22 : 6,
-                height: 3,
-                borderRadius: radii.capsule,
-                backgroundColor: active === index ? palette.text : palette.surfaceRaised,
-              }}
-            />
-          ))}
-        </View>
       </View>
     </View>
   );
