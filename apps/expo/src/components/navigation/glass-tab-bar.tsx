@@ -125,35 +125,35 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarPr
         }}
       >
         {state.routes.map((route, index) => {
-            const { options } = descriptors[route.key];
-            const label = options.title ?? route.name;
-            const focused = state.index === index;
-            const Glyph = GLYPHS[route.name] ?? IconSpark;
-            return (
-              <PressableScale
-                accessibilityLabel={label}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: focused }}
-                haptic="none"
-                key={route.key}
-                onPress={() => {
-                  if (!focused) {
-                    select();
-                    navigation.navigate(route.name);
-                  }
-                }}
-                style={{ borderRadius: radii.capsule }}
-              >
-                <TabGlyph
-                  Glyph={Glyph}
-                  activeColor={palette.text}
-                  discColor={palette.surfaceRaised}
-                  focused={focused}
-                  mutedColor={palette.textFaint}
-                />
-              </PressableScale>
-            );
-          })}
+          const { options } = descriptors[route.key];
+          const label = options.title ?? route.name;
+          const focused = state.index === index;
+          const Glyph = GLYPHS[route.name] ?? IconSpark;
+          return (
+            <PressableScale
+              accessibilityLabel={label}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: focused }}
+              haptic="none"
+              key={route.key}
+              onPress={() => {
+                if (!focused) {
+                  select();
+                  navigation.navigate(route.name);
+                }
+              }}
+              style={{ borderRadius: radii.capsule }}
+            >
+              <TabGlyph
+                Glyph={Glyph}
+                activeColor={palette.text}
+                discColor={palette.surfaceRaised}
+                focused={focused}
+                mutedColor={palette.textFaint}
+              />
+            </PressableScale>
+          );
+        })}
       </GlassSurface>
     </View>
   );

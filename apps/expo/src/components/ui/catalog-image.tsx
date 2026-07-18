@@ -38,7 +38,10 @@ export function CatalogImage({
           setFailed(false);
           setAttempt((current) => current + 1);
         }}
-        style={[fallbackStyle, { alignItems: "center", justifyContent: "center", padding: spacing.sm }]}
+        style={[
+          fallbackStyle,
+          { alignItems: "center", justifyContent: "center", padding: spacing.sm },
+        ]}
       >
         <GyfText style={{ textAlign: "center" }} tone="muted" variant="bodySmall">
           Image unavailable · Retry image
@@ -47,7 +50,10 @@ export function CatalogImage({
     ) : (
       <View
         accessibilityLabel={`${label}; image unavailable`}
-        style={[fallbackStyle, { alignItems: "center", justifyContent: "center", padding: spacing.sm }]}
+        style={[
+          fallbackStyle,
+          { alignItems: "center", justifyContent: "center", padding: spacing.sm },
+        ]}
       >
         <GyfText style={{ textAlign: "center" }} tone="muted" variant="bodySmall">
           Image unavailable

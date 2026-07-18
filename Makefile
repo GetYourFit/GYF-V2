@@ -9,7 +9,7 @@ WEB_DIR := app
 # Same macOS lock hits ~/.cache (uv) and ~/.cache/huggingface. Redirect every
 # cache the Python/ML toolchain touches at gitignored, repo-local dirs so the API
 # boots without manual env. Drop these once ~/.cache is writable again.
-CACHE_ENV := UV_CACHE_DIR=$(CURDIR)/.uv-cache XDG_CACHE_HOME=$(CURDIR)/.cache-local HF_HOME=$(CURDIR)/.hf-cache
+CACHE_ENV := UV_CACHE_DIR="$(CURDIR)/.uv-cache" UV_PYTHON_INSTALL_DIR="$(CURDIR)/.uv-python" XDG_CACHE_HOME="$(CURDIR)/.cache-local" HF_HOME="$(CURDIR)/.hf-cache"
 
 # Persist behavioral events to the interactions table so the taste loop closes on the
 # host dev path too (save → interactions → next recommend personalizes). Without this
@@ -83,14 +83,14 @@ nuke: ## Stop the stack and delete its volumes + locally-built images (reclaim e
 
 fmt: ## Auto-format everything (Prettier + Ruff)
 	bun run format
-	cd $(API_DIR) && $(CACHE_ENV) uv run ruff format . && $(CACHE_ENV) uv run ruff check --fix .
+	cd $(API_DIR) && $(CACHE_ENV) uv run --extra dev ruff format . && $(CACHE_ENV) uv run --extra dev ruff check --fix .
 
 fmt-check: ## Check formatting without writing
 	bun run format:check
 
 lint: ## Lint JS + Python
 	bun run lint
-	cd $(API_DIR) && $(CACHE_ENV) uv run ruff check .
+	cd $(API_DIR) && $(CACHE_ENV) uv run --extra dev ruff check .
 
 typecheck: ## Typecheck JS workspaces
 	bun run typecheck
@@ -107,7 +107,7 @@ test: test-api ## Run all tests
 	bun run test
 
 test-api: ## Run API tests
-	cd $(API_DIR) && $(CACHE_ENV) uv run pytest -q
+	cd $(API_DIR) && $(CACHE_ENV) uv run --extra dev --extra postgres pytest -q
 
 doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1 + doc alignment)
 	python3 scripts/check_model_licenses.py

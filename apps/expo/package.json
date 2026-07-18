@@ -9,6 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear",
+    "budget:web": "bash scripts/check-bundle-budget.sh web 2700000",
+    "budget:android": "bash scripts/check-bundle-budget.sh android 5000000",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "bun test"

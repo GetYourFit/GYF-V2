@@ -47,7 +47,7 @@ describe("core route evidence matrix", () => {
     const rootLayout = await Bun.file(`${import.meta.dir}/../app/_layout.tsx`).text();
     const welcomeSource = await Bun.file(`${import.meta.dir}/../app/(auth)/welcome.tsx`).text();
 
-    expect(rootLayout).toContain('import { Fraunces_600SemiBold }');
+    expect(rootLayout).toContain("import { Fraunces_600SemiBold }");
     expect(rootLayout).toContain("Fraunces_600SemiBold,");
     expect(welcomeSource).not.toContain("useFonts(");
   });

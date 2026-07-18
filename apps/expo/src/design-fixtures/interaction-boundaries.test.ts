@@ -12,15 +12,16 @@ const tabBarSource = await Bun.file(
 const glassSurfaceSource = await Bun.file(
   new URL("../components/ui/glass-surface.tsx", import.meta.url),
 ).text();
+const itemDetailSource = await Bun.file(
+  new URL("../components/explore/item-detail-sheet.tsx", import.meta.url),
+).text();
 const pressableSource = await Bun.file(
   new URL("../components/ui/pressable-scale.tsx", import.meta.url),
 ).text();
 const productCardSource = await Bun.file(
   new URL("../components/ui/product-card.tsx", import.meta.url),
 ).text();
-const welcomeSource = await Bun.file(
-  new URL("../app/(auth)/welcome.tsx", import.meta.url),
-).text();
+const welcomeSource = await Bun.file(new URL("../app/(auth)/welcome.tsx", import.meta.url)).text();
 const errorRouteSource = await Bun.file(new URL("../app/error.tsx", import.meta.url)).text();
 
 describe("Expo interaction boundaries", () => {
@@ -29,6 +30,11 @@ describe("Expo interaction boundaries", () => {
     const gradients = glassSurfaceSource.match(/<LinearGradient[\s\S]*?\/>/g) ?? [];
     expect(gradients).toHaveLength(2);
     for (const gradient of gradients) expect(gradient).toContain('pointerEvents="none"');
+  });
+
+  test("shared material recipes do not scatter colour literals", () => {
+    expect(glassSurfaceSource).not.toContain("rgba(");
+    expect(itemDetailSource).not.toContain("rgba(");
   });
 
   test("generic presses stay silent until a semantic action confirms feedback", () => {

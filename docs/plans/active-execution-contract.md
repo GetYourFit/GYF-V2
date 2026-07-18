@@ -859,7 +859,9 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   `https://get-your-fit.expo.app`; a cache-busted external probe returned 200 with the exported
   `entry-df5e1f59e05c16356f1c41f93cc2b6d3.js` fingerprint. This is web deployment evidence, not the
   missing physical Android proof. `gyf-encoder` remains unselected because this slice has no measured
-  encoding boundary.
+  encoding boundary. The reproducible token, component, accessibility, bundle, hosting, and remaining
+  device evidence is recorded in
+  [`expo-design-core-evidence-2026-07-18.md`](./expo-design-core-evidence-2026-07-18.md).
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 

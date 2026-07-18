@@ -12,7 +12,7 @@ import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createApi, type Outfit, type OutfitItem, type SearchResult } from "@/lib/api";
 import { compatibilityReason, formatCatalogPrice } from "@/lib/explore-feed";
-import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
+import { colors, materials, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
 
 /** "Complete the look": the stylist engine composes a full outfit pinned to this
@@ -168,7 +168,7 @@ export function ItemDetailSheet({
         accessibilityLabel="Close item details"
         accessibilityRole="button"
         onPress={onClose}
-        style={{ backgroundColor: "rgba(0,0,0,0.45)", flex: 1 }}
+        style={{ backgroundColor: materials.overlay, flex: 1 }}
       />
       {item ? (
         <BlurView
@@ -181,14 +181,11 @@ export function ItemDetailSheet({
           }}
           tint={theme === "dark" ? "dark" : "light"}
         >
-          <LinearGradient
-            colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0)"]}
-            style={{ height: 1.5 }}
-          />
+          <LinearGradient colors={materials.glass.sheetHighlight} style={{ height: 1.5 }} />
           <ScrollView
             accessibilityLabel={`Details for ${item.title}`}
             contentContainerStyle={{
-              backgroundColor: theme === "dark" ? "rgba(20,20,20,0.72)" : "rgba(255,255,255,0.72)",
+              backgroundColor: materials.sheet[theme],
               gap: spacing.lg,
               padding: spacing.lg,
               paddingBottom: spacing.xxl,

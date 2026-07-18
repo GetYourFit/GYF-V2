@@ -38,6 +38,21 @@ export const colors = {
 
 export type ThemeName = keyof typeof colors;
 
+export const materials = {
+  overlay: "rgba(0,0,0,0.45)",
+  glass: {
+    dark: { border: "rgba(255,255,255,0.28)", fill: "rgba(10,10,12,0.38)" },
+    light: { border: "rgba(0,0,0,0.14)", fill: "rgba(255,255,255,0.42)" },
+    highlight: ["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"] as const,
+    sheetHighlight: ["rgba(255,255,255,0.35)", "rgba(255,255,255,0)"] as const,
+    sheen: ["rgba(255,255,255,0)", "rgba(255,255,255,0.07)"] as const,
+  },
+  sheet: {
+    dark: "rgba(20,20,20,0.72)",
+    light: "rgba(255,255,255,0.72)",
+  },
+} as const;
+
 /**
  * Item-level gaps (xs/sm/md) run tight — "compact yet clean"; section-level
  * (lg/xl/xxl) stay generous. Two densities, not one uniform gap.

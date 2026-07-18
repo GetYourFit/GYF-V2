@@ -239,7 +239,10 @@ function PersonalFitComposition({
     ["Skin tone", data.skinTone ?? "Choose manually"],
     ["Body type", data.bodyType ?? "Choose manually"],
     ["Currency", data.currency],
-    ["Budget", `${formatPrice(data.budgetMin, data.currency)}–${formatPrice(data.budgetMax, data.currency)}`],
+    [
+      "Budget",
+      `${formatPrice(data.budgetMin, data.currency)}–${formatPrice(data.budgetMax, data.currency)}`,
+    ],
   ] as const;
   return (
     <>
