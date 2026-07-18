@@ -115,3 +115,13 @@ export function IconPerson({ size, color }: IconProps) {
     </Icon>
   );
 }
+
+export function IconSearch({ size, color }: IconProps) {
+  // Explore search pill (Ref4)
+  return (
+    <Icon size={size}>
+      <Path d="M10.75 17.5a6.75 6.75 0 1 0 0-13.5 6.75 6.75 0 0 0 0 13.5Z" stroke={color} {...stroke} />
+      <Path d="m15.7 15.7 4.55 4.55" stroke={color} {...stroke} />
+    </Icon>
+  );
+}

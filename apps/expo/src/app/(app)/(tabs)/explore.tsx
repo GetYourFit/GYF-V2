@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, RefreshControl, ScrollView, TextInput, View } from "react-native";
 
 import { columnsForWidth, cardWidthFor } from "@/components/grid/column-count";
+import { IconSearch } from "@/components/icons";
 import { ItemDetailSheet } from "@/components/explore/item-detail-sheet";
 import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
 import { AtelierButton } from "@/components/ui/atelier-button";
-import { AtelierCard } from "@/components/ui/atelier-card";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { FilterChip } from "@/components/ui/filter-chip";
 import { GyfText } from "@/components/ui/gyf-text";
@@ -28,6 +28,16 @@ import { OCCASIONS, SLOT_FILTERS, STYLE_INTENTS } from "@/lib/vocab";
 import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
+
+// Ref4: rotating search hints shown inside the pill ("Try 'archival fashion'").
+const SEARCH_HINTS = [
+  "Try 'archival fashion'",
+  "Try 'linen summer looks'",
+  "Try 'minimal monochrome'",
+  "Try 'office capsule'",
+  "Try 'quiet luxury'",
+  "Try 'streetwear staples'",
+] as const;
 
 const SORT_OPTIONS: Array<{ label: string; value: ExploreSort }> = [
   { label: "Relevance", value: "relevance" },
@@ -97,6 +107,14 @@ export default function ExploreRoute() {
   // visit instead of the same grid all day — but stable across its own pages.
   const browseSeed = useMemo(() => `expo-${Date.now()}`, []);
   const [filters, setFilters] = useState<ExploreFilters>(EMPTY_EXPLORE_FILTERS);
+  const [hintIndex, setHintIndex] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(
+      () => setHintIndex((current) => (current + 1) % SEARCH_HINTS.length),
+      4000,
+    );
+    return () => clearInterval(timer);
+  }, []);
   const [queryInput, setQueryInput] = useState("");
   const [maxPriceInput, setMaxPriceInput] = useState("");
   const [items, setItems] = useState<SearchResult[]>([]);
@@ -319,73 +337,62 @@ export default function ExploreRoute() {
         }
         ListHeaderComponent={
           <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-            <View style={{ gap: spacing.sm }}>
-              <GyfText accessibilityRole="header" variant="display">
-                Explore
-              </GyfText>
-              <GyfText tone="muted" variant="body">
-                Find real pieces that fit your style, budget and wardrobe.
-              </GyfText>
+            {/* Ref4: the search pill IS the header — large capsule, glyph
+                inside, rotating "Try '…'" hint; submit on the return key. */}
+            <View
+              style={{
+                alignItems: "center",
+                backgroundColor: palette.surface,
+                borderRadius: radii.capsule,
+                flexDirection: "row",
+                gap: spacing.sm,
+                minHeight: 56,
+                paddingHorizontal: spacing.md,
+              }}
+            >
+              <IconSearch color={palette.textFaint} size={22} />
+              <TextInput
+                accessibilityLabel="Search catalogue"
+                onChangeText={setQueryInput}
+                onSubmitEditing={submitQuery}
+                placeholder={SEARCH_HINTS[hintIndex]}
+                placeholderTextColor={palette.textFaint}
+                returnKeyType="search"
+                style={[typography.body, { color: palette.text, flex: 1, minHeight: 56 }]}
+                value={queryInput}
+              />
             </View>
-            <AtelierCard>
-              <GyfText variant="label">SEARCH THE CATALOGUE</GyfText>
+            {priceEnabled ? (
               <View style={{ flexDirection: "row", gap: spacing.sm }}>
                 <TextInput
-                  accessibilityLabel="Search catalogue"
-                  onChangeText={setQueryInput}
-                  onSubmitEditing={submitQuery}
-                  placeholder="Red linen shirt…"
+                  accessibilityLabel="Maximum catalogue price"
+                  keyboardType="decimal-pad"
+                  onChangeText={setMaxPriceInput}
+                  onSubmitEditing={submitMaxPrice}
+                  placeholder={
+                    facets?.price_max ? `Max ${Math.round(facets.price_max)}` : "Max price"
+                  }
                   placeholderTextColor={palette.textFaint}
-                  returnKeyType="search"
                   style={[
                     typography.body,
                     {
-                      borderColor: palette.border,
-                      borderRadius: radii.control,
-                      borderWidth: 1,
+                      backgroundColor: palette.surface,
+                      borderRadius: radii.capsule,
                       color: palette.text,
                       flex: 1,
                       minHeight: 48,
                       paddingHorizontal: spacing.md,
                     },
                   ]}
-                  value={queryInput}
+                  value={maxPriceInput}
                 />
-                <AtelierButton label="Search" onPress={submitQuery} style={{ minWidth: 88 }} />
+                <AtelierButton
+                  label="Apply price"
+                  onPress={submitMaxPrice}
+                  style={{ minWidth: 112 }}
+                />
               </View>
-              {priceEnabled ? (
-                <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                  <TextInput
-                    accessibilityLabel="Maximum catalogue price"
-                    keyboardType="decimal-pad"
-                    onChangeText={setMaxPriceInput}
-                    onSubmitEditing={submitMaxPrice}
-                    placeholder={
-                      facets?.price_max ? `Max ${Math.round(facets.price_max)}` : "Max price"
-                    }
-                    placeholderTextColor={palette.textFaint}
-                    style={[
-                      typography.body,
-                      {
-                        borderColor: palette.border,
-                        borderRadius: radii.control,
-                        borderWidth: 1,
-                        color: palette.text,
-                        flex: 1,
-                        minHeight: 48,
-                        paddingHorizontal: spacing.md,
-                      },
-                    ]}
-                    value={maxPriceInput}
-                  />
-                  <AtelierButton
-                    label="Apply price"
-                    onPress={submitMaxPrice}
-                    style={{ minWidth: 112 }}
-                  />
-                </View>
-              ) : null}
-            </AtelierCard>
+            ) : null}
 
             <ChipRow
               allLabel="Everything"
