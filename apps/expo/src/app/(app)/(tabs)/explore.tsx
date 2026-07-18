@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, RefreshControl, ScrollView, TextInput, View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
 import { columnsForWidth, cardWidthFor } from "@/components/grid/column-count";
-import { IconSearch } from "@/components/icons";
+import { IconClose, IconSearch, IconSpark } from "@/components/icons";
 import { ItemDetailSheet } from "@/components/explore/item-detail-sheet";
 import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { FilterChip } from "@/components/ui/filter-chip";
 import { GyfText } from "@/components/ui/gyf-text";
+import { PressableScale } from "@/components/ui/pressable-scale";
 import { ProductCard } from "@/components/ui/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type CatalogFacets, type SearchResult } from "@/lib/api";
@@ -99,6 +107,30 @@ function ChipRow({
   );
 }
 
+/** Ref3's floral mark, alive: a slow breathing rotation. Tapping it opens
+ * the expanded all-collections board. */
+function SparkButton({ color, onPress }: { color: string; onPress: () => void }) {
+  const spin = useSharedValue(0);
+  useEffect(() => {
+    spin.value = withRepeat(withTiming(1, { duration: 6000, easing: Easing.linear }), -1);
+  }, [spin]);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value * 360}deg` }],
+  }));
+  return (
+    <PressableScale
+      accessibilityLabel="Browse all collections"
+      accessibilityRole="button"
+      onPress={onPress}
+      style={{ alignItems: "center", justifyContent: "center", width: 56, height: 56 }}
+    >
+      <Animated.View style={style}>
+        <IconSpark color={color} size={26} />
+      </Animated.View>
+    </PressableScale>
+  );
+}
+
 export default function ExploreRoute() {
   const palette = useThemeColors();
   const { width, insets } = useResponsive();
@@ -108,6 +140,9 @@ export default function ExploreRoute() {
   const browseSeed = useMemo(() => `expo-${Date.now()}`, []);
   const [filters, setFilters] = useState<ExploreFilters>(EMPTY_EXPLORE_FILTERS);
   const [hintIndex, setHintIndex] = useState(0);
+  // Expanded board (Ref1/Ref2): chrome collapses to an infinite grid of every
+  // collection; tapping an image re-anchors the grid to similar color+style.
+  const [expanded, setExpanded] = useState(false);
   useEffect(() => {
     const timer = setInterval(
       () => setHintIndex((current) => (current + 1) % SEARCH_HINTS.length),
@@ -307,7 +342,15 @@ export default function ExploreRoute() {
               price: formatCatalogPrice(item.price, item.currency),
               saved: saved.has(item.item_id),
             }}
-            onPress={() => setSelected(item)}
+            onPress={() =>
+              expanded
+                ? (setQueryInput(""),
+                  setFilters({
+                    ...EMPTY_EXPLORE_FILTERS,
+                    q: [item.color, item.title].filter(Boolean).join(" "),
+                  }))
+                : setSelected(item)
+            }
             onToggleSave={pendingSave === item.item_id ? undefined : () => void toggleSave(item)}
             width={cardWidth}
           />
@@ -337,6 +380,34 @@ export default function ExploreRoute() {
         }
         ListHeaderComponent={
           <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
+            {expanded ? (
+              /* Ref1/Ref2 expanded board bar: label + close, nothing else. */
+              <View
+                style={{
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  minHeight: 44,
+                }}
+              >
+                <GyfText tone="muted" variant="label">
+                  ALL COLLECTIONS · TAP AN IMAGE FOR SIMILAR
+                </GyfText>
+                <PressableScale
+                  accessibilityLabel="Close collections board"
+                  accessibilityRole="button"
+                  hitSlop={10}
+                  onPress={() => {
+                    setExpanded(false);
+                    setQueryInput("");
+                    setFilters(EMPTY_EXPLORE_FILTERS);
+                  }}
+                >
+                  <IconClose color={palette.text} size={20} />
+                </PressableScale>
+              </View>
+            ) : (
+            <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.xs }}>
             {/* Ref4: the search pill IS the header — large capsule, glyph
                 inside, rotating "Try '…'" hint; submit on the return key. */}
             <View
@@ -344,6 +415,7 @@ export default function ExploreRoute() {
                 alignItems: "center",
                 backgroundColor: palette.surface,
                 borderRadius: radii.capsule,
+                flex: 1,
                 flexDirection: "row",
                 gap: spacing.sm,
                 minHeight: 56,
@@ -362,7 +434,17 @@ export default function ExploreRoute() {
                 value={queryInput}
               />
             </View>
-            {priceEnabled ? (
+            <SparkButton
+              color={palette.text}
+              onPress={() => {
+                setExpanded(true);
+                setQueryInput("");
+                setFilters(EMPTY_EXPLORE_FILTERS);
+              }}
+            />
+            </View>
+            )}
+            {!expanded && priceEnabled ? (
               <View style={{ flexDirection: "row", gap: spacing.sm }}>
                 <TextInput
                   accessibilityLabel="Maximum catalogue price"
@@ -394,6 +476,8 @@ export default function ExploreRoute() {
               </View>
             ) : null}
 
+            {expanded ? null : (
+            <>
             <ChipRow
               allLabel="Everything"
               label="SHOP BY SLOT"
@@ -431,7 +515,9 @@ export default function ExploreRoute() {
               />
             ) : null}
 
-            {activeCount > 0 ? (
+            </>
+            )}
+            {!expanded && activeCount > 0 ? (
               <AtelierButton
                 label={`Clear ${activeCount} ${activeCount === 1 ? "filter" : "filters"}`}
                 onPress={clearFilters}
