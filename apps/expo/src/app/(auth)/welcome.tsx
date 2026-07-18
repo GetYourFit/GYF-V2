@@ -39,17 +39,21 @@ if (process.env.EXPO_OS && process.env.EXPO_OS !== "web") {
  * anonymous browse feed, each landing with a zoom-in and a light haptic;
  * the gradient stays underneath as the loading placeholder.
  */
-// Positions hug the left/right edges so the centre column (headline, logo,
-// sub) always stays clear of the collage — the logo never overlaps a tile.
+// Traced from Ref7 (Cosmos welcome): two scattered bands of varied-size,
+// sharp-cornered tiles — one above and one below the centre brand mark,
+// staggered heights, the big hero tile low-centre. Fractions are the tile
+// origin in the Ref7 frame; sizes are Ref7 proportions at phone scale.
 const TILES = [
-  { top: 0.08, left: 0.04, w: 92, h: 92, fill: ["#2c2a26", "#17161a"] },
-  { top: 0.3, left: 0.02, w: 112, h: 124, fill: ["#23262b", "#121317"] },
-  { top: 0.08, left: 0.78, w: 96, h: 112, fill: ["#2a2320", "#191512"] },
-  { top: 0.32, left: 0.86, w: 60, h: 68, fill: ["#26282a", "#101214"] },
-  { top: 0.56, left: 0.06, w: 84, h: 100, fill: ["#2a2320", "#191512"] },
-  { top: 0.74, left: 0.02, w: 64, h: 64, fill: ["#23262b", "#121317"] },
-  { top: 0.52, left: 0.74, w: 120, h: 140, fill: ["#2c2a26", "#17161a"] },
-  { top: 0.76, left: 0.88, w: 72, h: 70, fill: ["#26282a", "#101214"] },
+  // Upper band
+  { top: 0.26, left: 0.1, w: 72, h: 84, fill: ["#2c2a26", "#17161a"] },
+  { top: 0.18, left: 0.29, w: 94, h: 118, fill: ["#23262b", "#121317"] },
+  { top: 0.23, left: 0.55, w: 88, h: 110, fill: ["#2a2320", "#191512"] },
+  { top: 0.31, left: 0.82, w: 54, h: 62, fill: ["#26282a", "#101214"] },
+  // Lower band
+  { top: 0.54, left: 0.08, w: 72, h: 90, fill: ["#2a2320", "#191512"] },
+  { top: 0.62, left: 0.26, w: 56, h: 60, fill: ["#23262b", "#121317"] },
+  { top: 0.57, left: 0.43, w: 136, h: 152, fill: ["#2c2a26", "#17161a"] },
+  { top: 0.55, left: 0.78, w: 64, h: 64, fill: ["#26282a", "#101214"] },
 ] as const;
 
 const SLIDES = [
@@ -95,7 +99,7 @@ function CollageTile({
         left: tile.left * width,
         width: tile.w,
         height: tile.h,
-        borderRadius: 4,
+        borderRadius: 2,
         overflow: "hidden",
       }}
     >
@@ -156,7 +160,7 @@ function BreathingLogo({ tint }: { tint: string }) {
         source={require("../../assets/logo.png")}
         resizeMode="contain"
         accessibilityLabel="GYF — Get Your Fit"
-        style={{ width: 240, height: 240, tintColor: tint }}
+        style={{ width: 120, height: 120, tintColor: tint }}
       />
     </Animated.View>
   );
@@ -255,9 +259,19 @@ export default function WelcomeScreen() {
               </GyfText>
             </Animated.View>
 
-            {/* Centre band — the logo moment */}
+            {/* Brand mark — pinned to the Ref7 clear gap between the two
+                tile bands (upper ends ~0.34, lower starts ~0.54). */}
             <View
-              style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm }}
+              style={{
+                position: "absolute",
+                top: frame.height * 0.35,
+                height: frame.height * 0.18,
+                left: 0,
+                right: 0,
+                alignItems: "center",
+                justifyContent: "center",
+                gap: spacing.sm,
+              }}
             >
               <BreathingLogo tint={palette.text} />
               <GyfText
