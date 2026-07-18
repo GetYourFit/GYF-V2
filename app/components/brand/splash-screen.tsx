@@ -1,23 +1,24 @@
 "use client";
 
+import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { randomQuote } from "@/lib/fashionQuotes";
-import { GYFLogo } from "./gyf-logo";
+import { createApi } from "@/lib/api";
+import { mediaUrl } from "@/lib/media";
+import type { SearchResult } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const MIN_SHOW_MS = 2400;
-const QUOTE_INTERVAL_MS = 3500;
+const TILE_COUNT = 6;
 
 interface SplashScreenProps {
   onDone?: () => void;
 }
 
-// Once per session: after the first paint the brand splash is a 2.4s wall in
-// front of every navigation. The shown-flag is read in the mount effect, NOT a
-// lazy state initializer: initializing `visible=false` on the client while SSR
-// rendered the splash is a hydration mismatch, and React recovered by orphaning
-// the server-rendered splash div — a fiber-less node stuck at z-index 9999 that
+// Once per session: the brand splash fronts the first navigation and waits for
+// the Start tap. The shown-flag is read in the mount effect, NOT a lazy state
+// initializer: initializing `visible=false` on the client while SSR rendered
+// the splash is a hydration mismatch, and React recovered by orphaning the
+// server-rendered splash div — a fiber-less node stuck at z-index 9999 that
 // covered the whole app forever ("app not loading"). Server and client now both
 // render the splash; repeat sessions dismiss it in the effect, one frame later.
 function alreadyShown(): boolean {
@@ -35,47 +36,45 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
   const reduce = useReducedMotion();
   const shown = useSyncExternalStore(subscribeSession, alreadyShown, () => false);
   const [dismissed, setDismissed] = useState(false);
-  const [quoteState, setQuoteState] = useState(() => randomQuote());
-  const [quoteVisible, setQuoteVisible] = useState(false);
+  const [tiles, setTiles] = useState<(SearchResult | null)[]>(() =>
+    Array.from({ length: TILE_COUNT }, () => null),
+  );
+  const [loadedCount, setLoadedCount] = useState(0);
 
-  // Show quote after logo animates in
+  // Repeat session: dismiss on mount — never block repeat loads.
   useEffect(() => {
-    const t = setTimeout(() => setQuoteVisible(true), reduce ? 200 : 900);
-    return () => clearTimeout(t);
-  }, [reduce]);
-
-  // Rotate quotes while splash is showing
-  useEffect(() => {
-    if (reduce) return;
-    const interval = setInterval(() => {
-      setQuoteVisible(false);
-      setTimeout(() => {
-        setQuoteState((prev) => randomQuote(prev.index));
-        setQuoteVisible(true);
-      }, 350);
-    }, QUOTE_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [reduce]);
-
-  // Hide splash after minimum show time (effect runs at mount, so the timer
-  // starts from first paint — no impure Date.now() read during render).
-  useEffect(() => {
-    // Already shown this session: dismiss on mount — never block repeat loads.
-    if (shown) {
-      onDone?.();
-      return;
-    }
-    const t = setTimeout(() => {
-      setDismissed(true);
-      onDone?.();
-      try {
-        sessionStorage.setItem("gyf_splash_shown", "1");
-      } catch {}
-    }, MIN_SHOW_MS);
-    return () => clearTimeout(t);
+    if (shown) onDone?.();
   }, [onDone, shown]);
 
-  const activeDot = quoteState.index % 3;
+  // Fill the placeholder tiles with real catalogue outfits (anonymous browse —
+  // no auth needed). Failures are silent: tiles simply stay as shimmer slots.
+  useEffect(() => {
+    if (shown) return;
+    const abort = new AbortController();
+    createApi(() => null)
+      .browse(
+        { k: TILE_COUNT, slots: "top,bottom,full_body,footwear", seed: `${Date.now() % 1e6}` },
+        abort.signal,
+      )
+      .then((results) => {
+        const withImages = results.filter((r) => r.image_url).slice(0, TILE_COUNT);
+        if (withImages.length > 0) {
+          setTiles((prev) => prev.map((_, i) => withImages[i] ?? null));
+        }
+      })
+      .catch(() => {});
+    return () => abort.abort();
+  }, [shown]);
+
+  function dismiss() {
+    navigator.vibrate?.([10, 30, 10]); // start-tap confirmation, ignored where unsupported
+    setDismissed(true);
+    onDone?.();
+    try {
+      sessionStorage.setItem("gyf_splash_shown", "1");
+    } catch {}
+  }
+
   const visible = !shown && !dismissed;
 
   return (
@@ -96,109 +95,163 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "0 2rem",
+            gap: "2rem",
+            padding:
+              "calc(1.5rem + env(safe-area-inset-top)) 2rem calc(2rem + env(safe-area-inset-bottom))",
+            overflow: "hidden",
           }}
         >
-          {/* ── GYF Logo ── */}
+          {/* ── Logo mark — breathe in, then a soft glow pulse ── */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, ease: EASE }}
+            initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.82, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE }}
+            style={{ position: "relative", display: "flex", justifyContent: "center" }}
           >
-            <GYFLogo width={160} />
+            {!reduce && (
+              <motion.div
+                aria-hidden
+                animate={{ opacity: [0.25, 0.55, 0.25], scale: [0.9, 1.08, 0.9] }}
+                transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+                style={{
+                  position: "absolute",
+                  inset: "-20%",
+                  borderRadius: "50%",
+                  background:
+                    "radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 65%)",
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+            <Image
+              src="/assets/logo-mark.png"
+              alt="GYF — Get Your Fit"
+              width={500}
+              height={500}
+              priority
+              style={{ width: 132, height: "auto", filter: "var(--logo-filter)" }}
+            />
           </motion.div>
 
-          {/* ── Progress line — ochre sweep ── */}
-          {!reduce && (
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 0.85 }}
-              transition={{ duration: 2.2, ease: "easeOut", delay: 0.3 }}
-              style={{
-                marginTop: "2.5rem",
-                width: "160px",
-                height: "1px",
-                background: "var(--secondary)",
-                transformOrigin: "left",
-              }}
-            />
-          )}
-
-          {/* ── Quote carousel ── */}
+          {/* ── Outfit tiles — shimmer placeholders that pop in as images land ── */}
           <div
             style={{
-              marginTop: "2.5rem",
-              minHeight: "96px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              maxWidth: "280px",
+              display: "grid",
+              gridTemplateColumns: `repeat(3, 1fr)`,
+              gap: "0.625rem",
+              width: "100%",
+              maxWidth: 340,
+            }}
+          >
+            {tiles.map((item, i) => {
+              const src = item ? mediaUrl(item.image_url, 400) : null;
+              return (
+                <div
+                  key={i}
+                  style={{
+                    aspectRatio: "3 / 4",
+                    borderRadius: 14,
+                    overflow: "hidden",
+                    background: "var(--surface-high)",
+                    position: "relative",
+                  }}
+                >
+                  {/* Shimmer stays underneath until (and unless) the image loads */}
+                  {!reduce && (
+                    <motion.div
+                      aria-hidden
+                      animate={{ opacity: [0.25, 0.55, 0.25] }}
+                      transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
+                      style={{ position: "absolute", inset: 0, background: "var(--rule)" }}
+                    />
+                  )}
+                  {src && (
+                    <motion.img
+                      src={src}
+                      alt={item?.title ?? "Outfit"}
+                      initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 1.12 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.55, ease: EASE, delay: reduce ? 0 : i * 0.09 }}
+                      onLoad={() => {
+                        setLoadedCount((n) => n + 1);
+                        if (!reduce) navigator.vibrate?.(6); // tick as each look lands
+                      }}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Tagline ── */}
+          <motion.p
+            initial={reduce ? { opacity: 1 } : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: EASE, delay: 0.5 }}
+            style={{
+              fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+              fontSize: "0.6875rem",
+              fontWeight: 500,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--text-mid)",
+              margin: 0,
               textAlign: "center",
             }}
           >
-            <AnimatePresence mode="wait">
-              {quoteVisible && (
-                <motion.div
-                  key={quoteState.index}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE } }}
-                  exit={{ opacity: 0, y: -8, transition: { duration: 0.25, ease: EASE } }}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
-                      fontSize: "0.875rem",
-                      fontWeight: 400,
-                      lineHeight: 1.6,
-                      color: "var(--text-mid)",
-                      margin: 0,
-                    }}
-                  >
-                    &ldquo;{quoteState.quote.quote}&rdquo;
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-                      fontSize: "0.6875rem",
-                      fontWeight: 500,
-                      letterSpacing: "0.05em",
-                      textTransform: "uppercase",
-                      color: "var(--text-faint)",
-                      opacity: 0.7,
-                      margin: 0,
-                    }}
-                  >
-                    — {quoteState.quote.author}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+            {loadedCount > 0 ? "Your stylist is ready" : "Styling your feed…"}
+          </motion.p>
 
-          {/* ── 3-dot indicator ── */}
-          <div style={{ marginTop: "2rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            {[0, 1, 2].map((i) => (
+          {/* ── Start button — springs in, shimmer sweep, tap to enter ── */}
+          <motion.button
+            type="button"
+            onClick={dismiss}
+            initial={reduce ? { opacity: 1 } : { opacity: 0, y: 24, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 320, damping: 22, delay: reduce ? 0 : 0.8 }}
+            whileTap={reduce ? undefined : { scale: 0.94 }}
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              width: "100%",
+              maxWidth: 340,
+              minHeight: 56,
+              background: "var(--accent)",
+              color: "var(--on-accent)",
+              border: "none",
+              borderRadius: 999,
+              fontFamily: "var(--font-body, 'Plus Jakarta Sans', sans-serif)",
+              fontSize: "1.0625rem",
+              fontWeight: 700,
+              letterSpacing: "0.01em",
+              cursor: "pointer",
+            }}
+          >
+            {!reduce && (
               <motion.span
-                key={i}
-                animate={{ opacity: i === activeDot ? 1 : 0.28 }}
-                transition={{ duration: 0.3 }}
+                aria-hidden
+                animate={{ x: ["-120%", "220%"] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 1.4 }}
                 style={{
-                  width: i === activeDot ? 20 : 6,
-                  height: 6,
-                  borderRadius: 3,
-                  background: i === activeDot ? "var(--secondary)" : "var(--text-faint)",
-                  display: "block",
+                  position: "absolute",
+                  top: 0,
+                  bottom: 0,
+                  width: "40%",
+                  background:
+                    "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.22) 50%, transparent 100%)",
+                  pointerEvents: "none",
                 }}
               />
-            ))}
-          </div>
+            )}
+            Start
+          </motion.button>
         </motion.div>
       )}
     </AnimatePresence>
