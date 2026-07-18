@@ -839,11 +839,15 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   `SET LOCAL` commands, deep/filtered scan setup is one command, and the always-on API keeps a
   bounded 512-query hot embedding cache above durable Postgres. It bounded the software causes but
   did not close the gate on its own; the residual was the round trips the topology fix removed.
-- **Global F2.5 production promotion remains blocked only by sustained catalogue SLO evidence.**
-  The four passing catalogue rows are a single India run on a warm service, not the required
-  sustained observation. `F2.5-04` separately closed the activation-critical recommendation timing
-  diagnosis and correction above, so local execution advances to `EXPO-DESIGN-CORE`; no later phase may
-  claim production promotion until the sustained India catalogue observation closes global F2.5.
+- **Global F2.5 production promotion remains blocked by sustained catalogue SLO evidence.** The
+  four passing catalogue rows are a single India run on a warm service, not the required sustained
+  observation. On 2026-07-18 the owner reported that Modal credits were exhausted and directed a
+  hold. The disabled encoder makes uncached semantic search fail its fixed India row, so the
+  sustained window cannot start. Keep the truthful keyword fallback; do not count it as semantic
+  success, weaken the SLO, or replace the provider without its licence, cost, and promotion gate.
+  `F2.5-04` separately closed the activation-critical recommendation timing diagnosis and correction
+  above, so local execution advances to `EXPO-DESIGN-CORE`; no later phase may claim production
+  promotion until the sustained India catalogue observation closes global F2.5.
 - Historical baseline before `F2.5-04`: a dedicated deployed account passed authentication and the
   surrounding surfaces, while `GET /outfits/recommend?occasion=casual&k=1` exceeded 90 seconds
   twice. The request-correlated deployments above localized that failure to the broad candidate
@@ -853,11 +857,19 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   dependency alignment (`react-native-worklets` JavaScript 0.8.3 versus Expo Go native 0.10.0), not
   an API or route failure. The correction now aligns Expo 57.0.7, Router 57.0.7, React 19.2.3,
   Reanimated 4.5.0, Worklets 0.10.0, Gesture Handler 2.32.0, and Safe Area 5.7.0. `expo install
-  --check`, TypeScript, 115 Expo tests, and fresh Android and web exports pass. A clean Bun 1.3.14
+  --check`, TypeScript, 119 Expo tests, and fresh Android and web exports pass. A clean Bun 1.3.14
   isolated install leaves Expo Doctor at 19/20: Doctor counts peer-context copies of the same Expo
   native versions as duplicates. A repo-wide hoisted linker removes those copies but makes Doctor
   fail three unrelated absent-package checks through `npm explain`; that broader change was removed.
-  The Doctor gate and repeated physical-device smoke therefore remain HOLD.
+  A public Expo tunnel then served the SDK 57 manifest and 10.35 MB Android Hermes bundle with HTTP
+  200. Metro exposed one unused `error.tsx` route without the required default export; commits
+  `3c1c723`, `253087b`, `71e51be`, and `3ba303c` preserve the red/green route-contract proof and
+  remove that dead route. Independent review approved the deletion and strengthened test. The
+  current Play Store Expo Go still targets SDK 54 because SDK 57 awaits store approval; Expo's
+  signed [57.0.2 Android client](https://github.com/expo/expo-go-releases/releases/tag/Expo-Go-57.0.2)
+  is the required physical-test client. Until the device reports that version and contacts Metro,
+  the Doctor gate and repeated physical-device smoke remain HOLD. Do not downgrade the app to make
+  an older store client connect.
 - `EXPO-DESIGN-CORE` now renders three review-only happy-path compositions—Stylist, Explore, and
   item detail—at 320, 768, and 1280 pixels in light and dark. Tests freeze all 18 combinations,
   prevent enabled no-op gallery controls, and keep Fraunces out of shared route startup; the welcome
