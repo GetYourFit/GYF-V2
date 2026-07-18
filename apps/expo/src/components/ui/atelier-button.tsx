@@ -39,14 +39,14 @@ export function AtelierButton({
         {
           alignItems: "center",
           backgroundColor: secondary
-            ? "transparent"
+            ? palette.surfaceRaised
             : disabled
               ? palette.surfaceRaised
               : palette.accent,
           borderColor: palette.border,
           borderCurve: "continuous",
-          borderRadius: radii.control,
-          borderWidth: secondary ? 1 : 0,
+          borderRadius: radii.capsule,
+          borderWidth: 0,
           minHeight: 48,
           justifyContent: "center",
           opacity: state.pressed ? 0.78 : disabled && secondary ? 0.6 : 1,

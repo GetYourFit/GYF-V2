@@ -32,9 +32,8 @@ function RecoveryField({
       placeholderTextColor={palette.textFaint}
       secureTextEntry={secureTextEntry}
       style={{
-        borderColor: palette.border,
+        backgroundColor: palette.surface,
         borderRadius: radii.control,
-        borderWidth: 1,
         color: palette.text,
         fontSize: typography.body.fontSize,
         minHeight: 52,

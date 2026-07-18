@@ -196,9 +196,8 @@ export default function AccountRoute() {
   const inputStyle = [
     typography.body,
     {
-      borderColor: palette.border,
+      backgroundColor: palette.surface,
       borderRadius: radii.control,
-      borderWidth: 1,
       color: palette.text,
       minHeight: 48,
       paddingHorizontal: spacing.md,

@@ -34,9 +34,7 @@ export function FilterChip({
       onPress={onPress}
       style={{
         backgroundColor: selected ? palette.text : palette.surfaceRaised,
-        borderColor: selected ? palette.text : palette.border,
         borderRadius: radii.capsule,
-        borderWidth: 1,
         minHeight: 40,
         justifyContent: "center",
         opacity: disabled ? 0.6 : 1,

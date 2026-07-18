@@ -118,9 +118,7 @@ function PairingTile({ item, theme }: { item: OutfitItem; theme: ThemeName }) {
           style={{
             alignItems: "center",
             backgroundColor: palette.surfaceRaised,
-            borderColor: palette.border,
             borderRadius: radii.control,
-            borderWidth: 1,
             height: 132,
             justifyContent: "center",
             width: 100,
@@ -255,9 +253,7 @@ export function ItemDetailSheet({
                   alignItems: "center",
                   aspectRatio: 3 / 4,
                   backgroundColor: palette.surfaceRaised,
-                  borderColor: palette.border,
                   borderRadius: radii.card,
-                  borderWidth: 1,
                   justifyContent: "center",
                   width: "100%",
                 }}

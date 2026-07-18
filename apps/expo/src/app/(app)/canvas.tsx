@@ -292,9 +292,8 @@ export default function CanvasRoute() {
                 onPress={() => void Linking.openURL(focused.buy_url!)}
                 style={({ pressed }) => ({
                   alignItems: "center",
-                  borderColor: palette.border,
-                  borderRadius: radii.control,
-                  borderWidth: 1,
+                  backgroundColor: palette.surfaceRaised,
+                  borderRadius: radii.capsule,
                   justifyContent: "center",
                   minHeight: 48,
                   opacity: pressed ? 0.72 : 1,

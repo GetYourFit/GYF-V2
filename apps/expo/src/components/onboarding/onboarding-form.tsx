@@ -273,9 +273,8 @@ export function OnboardingForm() {
               placeholder="No maximum"
               placeholderTextColor={palette.textFaint}
               style={{
-                borderColor: palette.border,
+                backgroundColor: palette.surface,
                 borderRadius: radii.control,
-                borderWidth: 1,
                 color: palette.text,
                 fontSize: typography.body.fontSize,
                 minHeight: 52,

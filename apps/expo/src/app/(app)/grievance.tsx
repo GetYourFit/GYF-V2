@@ -60,9 +60,8 @@ export default function GrievanceRoute() {
   const inputStyle = [
     typography.body,
     {
-      borderColor: palette.border,
+      backgroundColor: palette.surface,
       borderRadius: radii.control,
-      borderWidth: 1,
       color: palette.text,
       minHeight: 50,
       paddingHorizontal: spacing.md,

@@ -109,10 +109,8 @@ function ItemTile({
           style={{
             alignItems: "center",
             backgroundColor: palette.surfaceRaised,
-            borderColor: palette.border,
             borderCurve: "continuous",
             borderRadius: radii.card,
-            borderWidth: 1,
             height: 290,
             justifyContent: "center",
             padding: spacing.sm,
@@ -181,9 +179,8 @@ function ItemTile({
             key={alternate.item_id}
             onPress={() => onSwap(alternate)}
             style={{
-              borderColor: palette.border,
+              backgroundColor: palette.surface,
               borderRadius: radii.control,
-              borderWidth: 1,
               minHeight: 40,
               padding: spacing.xs,
             }}
@@ -664,9 +661,8 @@ export default function StylistRoute() {
           style={[
             typography.body,
             {
-              borderColor: palette.border,
+              backgroundColor: palette.surface,
               borderRadius: radii.control,
-              borderWidth: 1,
               color: palette.text,
               minHeight: 48,
               paddingHorizontal: spacing.md,

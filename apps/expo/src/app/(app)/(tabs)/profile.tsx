@@ -47,9 +47,7 @@ function Avatar({ url, name }: { url: string | null | undefined; name: string })
       style={{
         alignItems: "center",
         backgroundColor: palette.surfaceRaised,
-        borderColor: palette.border,
         borderRadius: radii.capsule,
-        borderWidth: 1,
         height: 96,
         justifyContent: "center",
         width: 96,
@@ -231,9 +229,7 @@ export default function ProfileRoute() {
                   key={badge}
                   style={{
                     backgroundColor: palette.surfaceRaised,
-                    borderColor: palette.border,
                     borderRadius: radii.capsule,
-                    borderWidth: 1,
                     paddingHorizontal: spacing.md,
                     paddingVertical: spacing.xs,
                   }}

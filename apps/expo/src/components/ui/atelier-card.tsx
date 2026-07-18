@@ -15,10 +15,8 @@ export function AtelierCard({
       style={[
         {
           backgroundColor: colors[theme].surface,
-          borderColor: colors[theme].border,
           borderCurve: "continuous",
           borderRadius: radii.card,
-          borderWidth: 1,
           gap: spacing.md,
           padding: spacing.lg,
         },
