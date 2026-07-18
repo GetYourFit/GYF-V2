@@ -39,6 +39,16 @@ describe("personal fit", () => {
     expect(parseBudgetInput("not a number")).toBeNull();
   });
 
+  test("accepts ordinary decimal syntax only", () => {
+    expect(parseBudgetInput("1250")).toBe(1250);
+    expect(parseBudgetInput("1250.75")).toBe(1250.75);
+    expect([parseBudgetInput("0x10"), parseBudgetInput("0b10"), parseBudgetInput("1e3")]).toEqual([
+      null,
+      null,
+      null,
+    ]);
+  });
+
   test("rejects a maximum budget below the minimum", () => {
     expect(
       validatePersonalFit({

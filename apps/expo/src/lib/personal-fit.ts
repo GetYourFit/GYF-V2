@@ -38,8 +38,9 @@ const SKIN_TONES = new Set(Array.from({ length: 10 }, (_, index) => `mst${index 
 const BODY_TYPES = new Set(["rectangle", "triangle", "inverted_triangle", "hourglass", "oval"]);
 
 export function parseBudgetInput(value: string): number | null {
-  if (!value.trim()) return null;
-  const amount = Number(value);
+  const input = value.trim();
+  if (!/^\d+(?:\.\d+)?$/.test(input)) return null;
+  const amount = Number(input);
   return Number.isFinite(amount) && amount >= 0 ? amount : null;
 }
 
