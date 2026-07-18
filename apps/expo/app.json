@@ -8,6 +8,12 @@
     "scheme": "gyf",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "updates": {
+      "url": "https://u.expo.dev/cdc5a042-8bfb-4618-a161-c0f364851cf8"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "web": {
       "bundler": "metro",
       "output": "static"
