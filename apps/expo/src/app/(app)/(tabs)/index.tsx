@@ -659,7 +659,6 @@ export default function StylistRoute() {
             return (
               <FilterChip
                 accessibilityLabel={`Use ${option.label} style for this slate`}
-                disabled={loading}
                 key={option.value}
                 label={option.label}
                 onPress={() => setStyle(selected ? "" : option.value)}

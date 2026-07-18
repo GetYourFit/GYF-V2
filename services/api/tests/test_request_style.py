@@ -108,3 +108,41 @@ def test_unknown_style_returns_422_before_candidate_work():
     )
 
     assert response.status_code == 422
+
+
+def test_complete_look_style_affects_non_anchor_pieces_without_mutating_stored_profile():
+    profiles = InMemoryProfileRepository()
+    stored = Profile(
+        occasion="casual",
+        style_intent=["classic"],
+        source="photo",
+        field_confidence={"style_intent": 0.8},
+        model_version="photo-v1",
+    )
+    profiles.upsert(DEV_USER, stored)
+    before = stored.model_dump()
+
+    response = _client(profiles, InMemoryCandidateRepository(_catalog())).get(
+        "/outfits/complete",
+        params={"item_id": "classic-top", "k": 1, "style": "streetwear"},
+    )
+
+    assert response.status_code == 200
+    items = response.json()["outfits"][0]["items"]
+    assert {item["item_id"] for item in items if item["slot"] != "top"} == {
+        "streetwear-bottom",
+        "streetwear-footwear",
+    }
+    assert profiles.get(DEV_USER) is stored
+    assert stored.model_dump() == before
+
+
+def test_complete_look_unknown_style_returns_422_before_candidate_work():
+    profiles = InMemoryProfileRepository()
+    profiles.upsert(DEV_USER, Profile(occasion="casual", style_intent=["classic"]))
+
+    response = _client(profiles, _FailOnCandidateWork([])).get(
+        "/outfits/complete", params={"item_id": "classic-top", "style": "not-a-style"}
+    )
+
+    assert response.status_code == 422
