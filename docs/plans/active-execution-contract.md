@@ -775,12 +775,13 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 
 ## Current truth and next work (audited 2026-07-18)
 
-- Production `main`, the live Virginia Render API and the successful EAS release are at
-  `ba2f6653f8b748c6b67dff47e55a7abd91e941b0`; Render deploy `dep-d9dkpqe1a83c73bqprlg` is live at
+- Production application code, the verified Virginia API behavior and the EAS artifact are from
+  `ba2f6653f8b748c6b67dff47e55a7abd91e941b0`; later evidence-only contract commits do not change
+  that runtime artifact. Render deploy `dep-d9dkpqe1a83c73bqprlg` verified it live at
   `gyf-api-va.onrender.com`. The Expo host uses the current Supabase publishable key, serves the
   production bundle at `get-your-fit.expo.app` and targets Virginia. CI `29639900890` and CD
-  `29639951006` passed from the same release; the exact authenticated recommendation proof is filed
-  in the corrective GO above.
+  `29639951006` passed from the same application release; the exact authenticated recommendation
+  proof is filed in the corrective GO above.
 - F1, F2, F3, F4 and the closed F8 durable spine are implemented. F5 stays on the deterministic incumbent; F6 lacks sufficient behavioural data; F7 remains fairness-blocked; F9 has not promoted a try-on lane.
 - Expo is deployed. Auth, onboarding, Explore, Stylist, Saved, Collections (a Saved re-export, not a dupe), Wardrobe, Social feed, Profile, Account (consent/export/DELETE-erasure), Contact, Grievance, Status and Canvas are all wired; the last placeholder (the dev-only `design` gallery) is now a real component gallery, so no route renders a placeholder. Each screen sits behind the unchanged API contracts with pure logic unit-tested and the web export building. Social compose, avatar upload and EXPO-07 deep Explore detail parity (item detail sheet, complete-the-look, occasion/style/slot filters, gender scoping, facet-gated price controls) have shipped. The Stylist now carries every web-oracle
   control, including the fail-closed try-on section (EXPO-10's closed half); its open queue/poll
