@@ -871,6 +871,9 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   and design-review routes load it only where used.
   Chromium captured the original 18 web compositions without failed HTTP responses; the six added
   Personal Fit compositions have fixture/test coverage but still need the same browser capture.
+  This workstation has no installed automation browser: a disposable Chromium install stalled
+  before downloading browser bytes, and SafariDriver refused a session because the owner-controlled
+  **Allow remote automation** setting is disabled. No replacement screenshot evidence is claimed.
   Four compressed, unbranded AI-generated garment studies make the imagery-led direction
   reviewable, but they prove neither catalogue truth nor licensing; the gallery says so. Owner
   visual approval, compact and regular physical-Android screenshots, and physical Expo Go smoke
