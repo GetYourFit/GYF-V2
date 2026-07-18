@@ -1,4 +1,5 @@
 import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces/600SemiBold";
+import { BlurView } from "expo-blur";
 import { useFonts } from "expo-font";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
@@ -6,6 +7,7 @@ import { useEffect } from "react";
 import { Image, Pressable, View } from "react-native";
 import Animated, {
   Easing,
+  FadeInDown,
   ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
@@ -114,31 +116,43 @@ export default function WelcomeScreen() {
           By creating an account, you agree to our Terms of Service and Privacy Policy
         </GyfText>
 
-        <PressableScale
-          accessibilityLabel="Start"
-          accessibilityRole="button"
-          onPress={() => {
-            void haptics?.impactAsync(haptics.ImpactFeedbackStyle.Medium);
-            router.push("/signup");
-          }}
-          style={{
-            alignItems: "center",
-            justifyContent: "center",
-            alignSelf: "stretch",
-            maxWidth: 360,
-            width: "100%",
-            marginHorizontal: "auto",
-            minHeight: 56,
-            backgroundColor: palette.accent,
-            borderRadius: radii.capsule,
-            overflow: "hidden",
-          }}
+        <Animated.View
+          entering={FadeInDown.duration(motion.standard)
+            .delay(200)
+            .reduceMotion(ReduceMotion.System)}
+          style={{ alignSelf: "stretch", maxWidth: 360, width: "100%", marginHorizontal: "auto" }}
         >
-          <ShimmerSweep />
-          <GyfText variant="button" style={{ color: palette.accentText, fontSize: 17 }}>
-            Start
-          </GyfText>
-        </PressableScale>
+          <PressableScale
+            accessibilityLabel="Start"
+            accessibilityRole="button"
+            onPress={() => {
+              void haptics?.impactAsync(haptics.ImpactFeedbackStyle.Medium);
+              router.push("/signup");
+            }}
+            style={{ borderRadius: radii.capsule, overflow: "hidden" }}
+          >
+            {/* Liquid-glass pill: blur + faint fill + hairline highlight; only the text reads solid */}
+            <BlurView
+              intensity={64}
+              tint="dark"
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 56,
+                borderRadius: radii.capsule,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.28)",
+                backgroundColor: "rgba(255,255,255,0.10)",
+                overflow: "hidden",
+              }}
+            >
+              <ShimmerSweep />
+              <GyfText variant="button" style={{ color: palette.text, fontSize: 17 }}>
+                Start
+              </GyfText>
+            </BlurView>
+          </PressableScale>
+        </Animated.View>
 
         <Link asChild href="/login">
           <Pressable accessibilityRole="link" hitSlop={8}>
