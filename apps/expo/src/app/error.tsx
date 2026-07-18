@@ -1,8 +1,9 @@
+import { router } from "expo-router";
 import { View } from "react-native";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { GyfText } from "@/components/ui/gyf-text";
-import { colors, spacing } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
 export function ErrorBoundary({ retry }: { retry: () => void }) {
@@ -22,4 +23,8 @@ export function ErrorBoundary({ retry }: { retry: () => void }) {
       <AtelierButton label="Try again" onPress={retry} />
     </View>
   );
+}
+
+export default function ErrorRoute() {
+  return <ErrorBoundary retry={() => router.replace("/")} />;
 }

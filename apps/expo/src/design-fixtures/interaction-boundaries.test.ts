@@ -21,6 +21,7 @@ const productCardSource = await Bun.file(
 const welcomeSource = await Bun.file(
   new URL("../app/(auth)/welcome.tsx", import.meta.url),
 ).text();
+const errorRouteSource = await Bun.file(new URL("../app/error.tsx", import.meta.url)).text();
 
 describe("Expo interaction boundaries", () => {
   test("decorative tab-bar gradients cannot intercept web clicks", () => {
@@ -35,6 +36,12 @@ describe("Expo interaction boundaries", () => {
     expect(productCardSource).not.toContain('haptic="primary"');
     expect(welcomeSource).not.toContain('haptic="primary"');
     expect(tabBarSource).toContain("select();");
+  });
+
+  test("the shared error boundary is also a valid Expo Router screen", () => {
+    expect(errorRouteSource).toContain("export function ErrorBoundary");
+    expect(errorRouteSource).toContain("export default function ErrorRoute");
+    expect(errorRouteSource).toContain('router.replace("/")');
   });
 
   test("the infinite Spark animation follows system motion and cancels on cleanup", () => {
