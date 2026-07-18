@@ -56,3 +56,62 @@ export function IconRetry({ size, color }: IconProps) {
     </Icon>
   );
 }
+
+/* ── Nav glyphs (Ref3 floating pill) — one mark per tab ── */
+
+export function IconSpark({ size, color }: IconProps) {
+  // Stylist — the GYF mark: a four-petal spark, Cosmos-style.
+  return (
+    <Icon size={size}>
+      <Path
+        d="M12 3c.6 3.6 1.8 4.8 5.4 5.4-3.6.6-4.8 1.8-5.4 5.4-.6-3.6-1.8-4.8-5.4-5.4C10.2 7.8 11.4 6.6 12 3Z"
+        fill={color}
+      />
+      <Path d="M17.5 14.5c.35 2.1 1.05 2.8 3.15 3.15-2.1.35-2.8 1.05-3.15 3.15-.35-2.1-1.05-2.8-3.15-3.15 2.1-.35 2.8-1.05 3.15-3.15Z" fill={color} />
+    </Icon>
+  );
+}
+
+export function IconGlobe({ size, color }: IconProps) {
+  // Explore
+  return (
+    <Icon size={size}>
+      <Path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke={color} {...stroke} />
+      <Path d="M3 12h18M12 3c2.5 2.4 3.75 5.4 3.75 9S14.5 18.6 12 21c-2.5-2.4-3.75-5.4-3.75-9S9.5 5.4 12 3Z" stroke={color} {...stroke} />
+    </Icon>
+  );
+}
+
+export function IconHanger({ size, color }: IconProps) {
+  // Wardrobe
+  return (
+    <Icon size={size}>
+      <Path
+        d="M12 9.5V8.75c1.24 0 2.25-1 2.25-2.25S13.24 4.25 12 4.25 9.75 5.26 9.75 6.5M12 9.5 3.6 15.9a1.5 1.5 0 0 0 .9 2.7h15a1.5 1.5 0 0 0 .9-2.7L12 9.5Z"
+        stroke={color}
+        {...stroke}
+      />
+    </Icon>
+  );
+}
+
+export function IconPeople({ size, color }: IconProps) {
+  // Social
+  return (
+    <Icon size={size}>
+      <Path d="M9 11a3.25 3.25 0 1 0 0-6.5A3.25 3.25 0 0 0 9 11Z" stroke={color} {...stroke} />
+      <Path d="M2.75 19.5c.5-3.1 3-5 6.25-5s5.75 1.9 6.25 5" stroke={color} {...stroke} />
+      <Path d="M15.5 10.75a2.75 2.75 0 1 0-1.9-4.75M16.6 14.8c2.4.4 4.2 2 4.65 4.7" stroke={color} {...stroke} />
+    </Icon>
+  );
+}
+
+export function IconPerson({ size, color }: IconProps) {
+  // Profile
+  return (
+    <Icon size={size}>
+      <Path d="M12 11.5a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" stroke={color} {...stroke} />
+      <Path d="M4.75 20c.75-3.6 3.6-5.75 7.25-5.75S18.5 16.4 19.25 20" stroke={color} {...stroke} />
+    </Icon>
+  );
+}
