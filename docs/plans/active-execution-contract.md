@@ -70,6 +70,14 @@ bounded indexed candidate path with taste affinity over the bounded result. Othe
 must propagate. The style choice must reuse `STYLE_INTENTS`, affect only the requested slate and
 never mutate the saved profile.
 
+**Owner-authorised Expo delivery extension — 2026-07-18.** While this correction was active,
+Expo commits `fec2f4b` and `138ed8c` reached `main`, failed the format gate, and skipped CD. The
+owner then reported that `https://get-your-fit.expo.app/` was broken and directed the agent to
+repair, deploy, and continue this contract. The write set therefore also permits integration of
+those two commits and the smallest test-backed corrections needed to ship them: format compliance,
+embedding-based similar-item requests, click-through tab highlights, reduced-motion animation
+cleanup, and consistent filter resets. This extension authorises no other design work.
+
 Exit requires focused red/green regressions, all repository gates, deployed Expo web and Virginia
 API at the same release, and a real taste-bearing disposable-user proof: one cold plus five warm
 serial `occasion=casual&k=5` requests and a four-request concurrent burst, all authenticated 200s
