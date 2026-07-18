@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, RefreshControl, ScrollView, TextInput, View } from "react-native";
 import Animated, {
+  cancelAnimation,
   Easing,
+  ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -112,7 +114,14 @@ function ChipRow({
 function SparkButton({ color, onPress }: { color: string; onPress: () => void }) {
   const spin = useSharedValue(0);
   useEffect(() => {
-    spin.value = withRepeat(withTiming(1, { duration: 6000, easing: Easing.linear }), -1);
+    spin.value = withRepeat(
+      withTiming(1, { duration: 6000, easing: Easing.linear }),
+      -1,
+      false,
+      undefined,
+      ReduceMotion.System,
+    );
+    return () => cancelAnimation(spin);
   }, [spin]);
   const style = useAnimatedStyle(() => ({
     transform: [{ rotate: `${spin.value * 360}deg` }],
@@ -143,6 +152,7 @@ export default function ExploreRoute() {
   // Expanded board (Ref1/Ref2): chrome collapses to an infinite grid of every
   // collection; tapping an image re-anchors the grid to similar color+style.
   const [expanded, setExpanded] = useState(false);
+  const [similarAnchor, setSimilarAnchor] = useState<SearchResult | null>(null);
   useEffect(() => {
     const timer = setInterval(
       () => setHintIndex((current) => (current + 1) % SEARCH_HINTS.length),
@@ -187,11 +197,19 @@ export default function ExploreRoute() {
       else setLoading(true);
       setError(null);
       try {
-        const request = buildExploreRequest(filters, nextPage, browseSeed, gender);
+        const request = buildExploreRequest(
+          filters,
+          nextPage,
+          browseSeed,
+          gender,
+          similarAnchor?.item_id,
+        );
         const results =
           request.mode === "browse"
             ? await api.browse(request.params, controller.signal)
-            : await api.search(request.query, request.params, controller.signal);
+            : request.mode === "similar"
+              ? await api.similar(request.itemId, request.params, controller.signal)
+              : await api.search(request.query, request.params, controller.signal);
         if (sequence !== loadSequence.current) return;
         setItems((current) => (replace ? results : appendUniqueItems(current, results)));
         setPage(nextPage);
@@ -207,7 +225,7 @@ export default function ExploreRoute() {
         }
       }
     },
-    [api, browseSeed, filters, gender],
+    [api, browseSeed, filters, gender, similarAnchor],
   );
 
   useEffect(() => {
@@ -275,6 +293,7 @@ export default function ExploreRoute() {
     setQueryInput("");
     setMaxPriceInput("");
     setFilters(EMPTY_EXPLORE_FILTERS);
+    setSimilarAnchor(null);
   };
 
   const toggleSave = async (item: SearchResult) => {
@@ -343,13 +362,7 @@ export default function ExploreRoute() {
               saved: saved.has(item.item_id),
             }}
             onPress={() =>
-              expanded
-                ? (setQueryInput(""),
-                  setFilters({
-                    ...EMPTY_EXPLORE_FILTERS,
-                    q: [item.color, item.title].filter(Boolean).join(" "),
-                  }))
-                : setSelected(item)
+              expanded ? (clearFilters(), setSimilarAnchor(item)) : setSelected(item)
             }
             onToggleSave={pendingSave === item.item_id ? undefined : () => void toggleSave(item)}
             width={cardWidth}
@@ -399,8 +412,7 @@ export default function ExploreRoute() {
                   hitSlop={10}
                   onPress={() => {
                     setExpanded(false);
-                    setQueryInput("");
-                    setFilters(EMPTY_EXPLORE_FILTERS);
+                    clearFilters();
                   }}
                 >
                   <IconClose color={palette.text} size={20} />
@@ -438,8 +450,7 @@ export default function ExploreRoute() {
                   color={palette.text}
                   onPress={() => {
                     setExpanded(true);
-                    setQueryInput("");
-                    setFilters(EMPTY_EXPLORE_FILTERS);
+                    clearFilters();
                   }}
                 />
               </View>

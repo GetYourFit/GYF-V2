@@ -132,10 +132,12 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarPr
       >
         <LinearGradient
           colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"]}
+          pointerEvents="none"
           style={{ height: 12, left: 0, position: "absolute", right: 0, top: 0, zIndex: 1 }}
         />
         <LinearGradient
           colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.07)"]}
+          pointerEvents="none"
           style={{ bottom: 0, height: 10, left: 0, position: "absolute", right: 0, zIndex: 1 }}
         />
         <View

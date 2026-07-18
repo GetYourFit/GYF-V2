@@ -81,6 +81,14 @@ describe("Expo Explore request model", () => {
     expect(buildExploreRequest(clean, 0, "seed").params).not.toHaveProperty("gender");
   });
 
+  test("a tapped board item pages through visual similarity, not text search", () => {
+    expect(buildExploreRequest(clean, 2, "ignored", "women", "item/42")).toEqual({
+      mode: "similar",
+      itemId: "item/42",
+      params: { k: 24, offset: 48, gender: "women" },
+    });
+  });
+
   test("an unstated gender widens the catalogue instead of scoping to a sentinel", () => {
     expect(scopeGender("women")).toBe("women");
     // `unknown` is the contract's not-stated sentinel; filtering on it matches nothing.

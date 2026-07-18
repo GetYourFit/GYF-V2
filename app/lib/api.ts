@@ -241,11 +241,17 @@ export class GyfApi {
     return this.request<CatalogFacets>("GET", `/items/facets${query}`);
   }
 
-  similar(itemId: string, params: SearchParams = {}): Promise<SearchResult[]> {
+  similar(
+    itemId: string,
+    params: SearchParams = {},
+    signal?: AbortSignal,
+  ): Promise<SearchResult[]> {
     const query = toQuery({ ...params });
     return this.request<SearchResults>(
       "GET",
       `/items/${encodeURIComponent(itemId)}/similar${query}`,
+      undefined,
+      signal,
     ).then((r) => r.results);
   }
 

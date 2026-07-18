@@ -113,6 +113,20 @@ describe("GyfApi", () => {
     expect(results).toHaveLength(2);
   });
 
+  it("forwards caller cancellation to similar-item requests", async () => {
+    const fetchSpy = mockFetch({ status: 200, body: { results: [] } });
+    vi.stubGlobal("fetch", fetchSpy);
+    const controller = new AbortController();
+    controller.abort();
+
+    const error = await new GyfApi(() => null, "http://api")
+      .similar("item-1", { k: 24 }, controller.signal)
+      .catch((caught: unknown) => caught);
+
+    expect((error as DOMException).name).toBe("AbortError");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("reuses one generated event id when feedback retries", async () => {
     vi.spyOn(globalThis, "setTimeout").mockImplementation(((callback: () => void) => {
       callback();

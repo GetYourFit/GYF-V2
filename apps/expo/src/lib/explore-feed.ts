@@ -36,6 +36,11 @@ export type ExploreRequest =
       params: Omit<SearchParams, "sort" | "max_price">;
     }
   | {
+      mode: "similar";
+      itemId: string;
+      params: SearchParams;
+    }
+  | {
       mode: "search";
       query: string;
       params: SearchParams;
@@ -116,9 +121,18 @@ export function buildExploreRequest(
   page: number,
   seed: string,
   gender?: string | null,
+  similarItemId?: string | null,
 ): ExploreRequest {
   const offset = page * EXPLORE_PAGE_SIZE;
   const scope = gender ? { gender } : {};
+
+  if (similarItemId) {
+    return {
+      mode: "similar",
+      itemId: similarItemId,
+      params: { k: EXPLORE_PAGE_SIZE, offset, ...scope },
+    };
+  }
 
   if (isPlainBrowse(filters)) {
     return {
