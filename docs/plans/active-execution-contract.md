@@ -1,6 +1,6 @@
 # GYF active execution contract
 
-Status: **V7 ACTIVE — EXPO-CORE-01 CORRECTIVE CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
+Status: **V7 ACTIVE — EXPO-DESIGN-CORE CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
 continued execution on 2026-07-17 · effective repository baseline
 `367a7ffa14532f60e1ba8d1a784785d98da2bbb9` · `P0 GO` recorded 2026-07-17 ·
 `EXPO-CORE-01 GO` (owner-attested 2026-07-17): recsys taste-path HNSW correctness
@@ -57,7 +57,7 @@ agent preference are not evidence.
 The P labels below are outcome envelopes, not a second ticket system. The mapped F/EXPO/HL ticket
 is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
-`CURRENT EXECUTION POINTER: EXPO-CORE-01`
+`CURRENT EXECUTION POINTER: EXPO-DESIGN-CORE`
 
 **Owner-authorised corrective re-entry — 2026-07-18.** Production traces show that the
 taste-aware candidate query reaches its five-second statement timeout, most often for the sparse
@@ -95,6 +95,44 @@ with complete non-empty outfits under the 15-second client ceiling. Correlate pe
 latency and served-ID evidence; delete the disposable account. On success, record corrective GO and
 restore the sole pointer to `EXPO-DESIGN-CORE`. Any failure holds here; do not weaken the timeout,
 increase the pool, add infrastructure or advance the design gate.
+
+**`EXPO-CORE-01` corrective GO — 2026-07-18.** Commit
+`ba2f6653f8b748c6b67dff47e55a7abd91e941b0` bounds candidate admission across request-scoped
+repositories sharing the unchanged three-connection pool, reserves one connection for other
+request work, and resolves wardrobe-owned items and explicit anchors before candidate fanout. The
+red regressions reproduced both the post-fanout wardrobe ordering error and a four-request shared
+pool exhaustion; the corrected recommendation file passed 85 tests with two real-Postgres skips.
+An independent review approved the admission, fallback, exception-release, wardrobe, anchor and
+scope behavior without a blocking finding.
+
+Virginia Render deploy `dep-d9dkpqe1a83c73bqprlg` is live at that exact commit. CI run
+`29639900890` and CD run `29639951006` passed; the latter deployed Expo EAS Hosting and the retained
+Vercel rollback from the same release. `https://get-your-fit.expo.app/` and its 2,320,495-byte entry
+bundle return 200 and target `gyf-api-va.onrender.com`; the static bundle hash stayed unchanged
+because this final release changed only the API and evidence. The Virginia health check returns 200.
+
+A fresh disposable Supabase user was given a real profile and three saves joined to its served
+bootstrap recommendation. The exact taste-bearing `occasion=casual&k=5` gate then returned one cold
+and five warm serial 200s in 1.677–6.756 seconds and four concurrent 200s in 3.918–6.050 seconds.
+Every response echoed its request ID and carried a recommendation ID, five explained complete
+outfits, 15 served items and 15 unique served IDs. The cold trace used the authorised bounded
+`full_body` fallback once (5,102.46 ms); subsequent serial candidate stages were 162.88–951.53 ms.
+Under the four-request burst, candidate stages were 1,165.23–2,739.47 ms, admission wait was at most
+1,158.15 ms, every slot returned 20 rows, fallback stayed false and no pool checkout failed.
+Wardrobe lookup completed in 7.71–33.08 ms and every correlated impression stage succeeded without
+a failure warning. Account deletion returned 204, the protected profile returned 403 immediately,
+and the Supabase auth identity was deleted. An initial cleanup-verifier run had incorrectly expected
+the authentication-only `/me` scaffold to enforce active-account state; it still completed both
+cleanup steps. The corrected verifier exercised `/profile`, the boundary used by product routes,
+and passed end to end.
+
+Fresh mandatory gates passed: formatting, lint, typecheck, doctrine, 436 API tests with 20
+environment-gated skips and seven warnings, 112 Expo tests, 77 retained-web tests, and both
+production builds. Retained warnings were the existing raw Next.js `<img>` advisory,
+Starlette/httpx and HTTP-422 deprecations, deliberately short JWT test-key warnings, React test
+`act(...)` notices, Vite/Rolldown advisories and Expo `NO_COLOR`/`FORCE_COLOR` notices. Restore the
+sole pointer exactly once to `EXPO-DESIGN-CORE`; this GO does not close global F2.5 sustained India
+evidence, the physical-Android screenshot gap or any later design/launch gate.
 
 The pointer advances only after every P0 criterion passes and the owner records `P0 GO` with the
 effective contract version, date and baseline. Approval alone cannot waive reconciliation. No agent
@@ -735,17 +773,14 @@ bun run build
 
 Every skip and failure must be reported. A phase cannot promote with an unexplained data/identity/object mismatch, cross-user access, missing export/deletion/restore evidence, unlicensed dependency, false user-facing claim, critical journey/accessibility/slice regression, unbounded retry/concurrency/GPU spend, cost above the owner-approved ceiling, or no tested fallback and rollback.
 
-## Current truth and next work (audited 2026-07-17)
+## Current truth and next work (audited 2026-07-18)
 
-- Production `main` and the live Virginia Render API are at
-  `6c3d1a029123f939745a388121dc6aebd21418bc`; Render deploy `dep-d9d0e3ihil2s738jeui0` is live at
-  `gyf-api-va.onrender.com`. The Expo host still serves a legacy Supabase anon JWT because the
-  `EXPO_PUBLIC_SUPABASE_ANON_KEY` GitHub environment secret is not a current `sb_publishable_*`
-  key; CD correctly refuses that deployment. The fail-closed client correction is on `main`, but
-  is not deployed evidence until that external secret is corrected and the public bundle passes.
-- CI at `6c3d1a0` passes. CD's retained Vercel job passes and its Expo job fails at the intentional
-  publishable-key gate. This proves the automated contract catches the production mismatch, not
-  product completeness.
+- Production `main`, the live Virginia Render API and the successful EAS release are at
+  `ba2f6653f8b748c6b67dff47e55a7abd91e941b0`; Render deploy `dep-d9dkpqe1a83c73bqprlg` is live at
+  `gyf-api-va.onrender.com`. The Expo host uses the current Supabase publishable key, serves the
+  production bundle at `get-your-fit.expo.app` and targets Virginia. CI `29639900890` and CD
+  `29639951006` passed from the same release; the exact authenticated recommendation proof is filed
+  in the corrective GO above.
 - F1, F2, F3, F4 and the closed F8 durable spine are implemented. F5 stays on the deterministic incumbent; F6 lacks sufficient behavioural data; F7 remains fairness-blocked; F9 has not promoted a try-on lane.
 - Expo is deployed. Auth, onboarding, Explore, Stylist, Saved, Collections (a Saved re-export, not a dupe), Wardrobe, Social feed, Profile, Account (consent/export/DELETE-erasure), Contact, Grievance, Status and Canvas are all wired; the last placeholder (the dev-only `design` gallery) is now a real component gallery, so no route renders a placeholder. Each screen sits behind the unchanged API contracts with pure logic unit-tested and the web export building. Social compose, avatar upload and EXPO-07 deep Explore detail parity (item detail sheet, complete-the-look, occasion/style/slot filters, gender scoping, facet-gated price controls) have shipped. The Stylist now carries every web-oracle
   control, including the fail-closed try-on section (EXPO-10's closed half); its open queue/poll
@@ -776,7 +811,7 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 - **Global F2.5 production promotion remains blocked only by sustained catalogue SLO evidence.**
   The four passing catalogue rows are a single India run on a warm service, not the required
   sustained observation. `F2.5-04` separately closed the activation-critical recommendation timing
-  diagnosis and correction above, so local execution advances to `EXPO-CORE-01`; no later phase may
+  diagnosis and correction above, so local execution advances to `EXPO-DESIGN-CORE`; no later phase may
   claim production promotion until the sustained India catalogue observation closes global F2.5.
 - Historical baseline before `F2.5-04`: a dedicated deployed account passed authentication and the
   surrounding surfaces, while `GET /outfits/recommend?occasion=casual&k=1` exceeded 90 seconds
