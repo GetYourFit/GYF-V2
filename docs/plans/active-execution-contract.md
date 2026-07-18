@@ -1,6 +1,6 @@
 # GYF active execution contract
 
-Status: **V7 ACTIVE — EXPO-DESIGN-CORE CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
+Status: **V7 ACTIVE — COSMOS-DESIGN-BUILD CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
 continued execution on 2026-07-17 · effective repository baseline
 `367a7ffa14532f60e1ba8d1a784785d98da2bbb9` · `P0 GO` recorded 2026-07-17 ·
 `EXPO-CORE-01 GO` (owner-attested 2026-07-17): recsys taste-path HNSW correctness
@@ -57,7 +57,27 @@ agent preference are not evidence.
 The P labels below are outcome envelopes, not a second ticket system. The mapped F/EXPO/HL ticket
 is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
-`CURRENT EXECUTION POINTER: EXPO-DESIGN-CORE`
+`CURRENT EXECUTION POINTER: COSMOS-DESIGN-BUILD`
+
+**Owner-authorised design-first evidence sequencing — 2026-07-19.** The owner has no physical
+Android device and approved completing the automated Cosmos Editorial design build before native
+acceptance. The bounded `COSMOS-DESIGN-BUILD` pointer permits Tasks 3–11 of
+[`2026-07-18-cosmos-editorial-expo-implementation.md`](../superpowers/plans/2026-07-18-cosmos-editorial-expo-implementation.md)
+sequentially: Expo UI, pure domain logic, typed client boundaries, fixtures, and only the focused
+FastAPI contract work those tasks name. Every task begins with a reproduced failing regression,
+passes its focused checks, the canonical repository gate, and fresh web and Android exports, and
+lands as one rollbackable commit before the next task begins. Unproved capabilities stay visibly
+closed; local implementation cannot claim an underlying P5, EXPO, beta, production, or hard-launch
+GO.
+
+Physical-device checks move intact to the release-blocking `NATIVE-ACCEPTANCE` pointer after the
+automated design build. That gate still requires compact and regular Android light/dark captures;
+launch, navigation, deep-link, offline, retry, image-failure, TalkBack, largest-scale, reduced-motion,
+rotation, keyboard, safe-area, release performance, memory, scrolling, haptic-equivalent, and owner
+visual evidence against the exact candidate commit. An emulator may strengthen development evidence
+but is not physical-device proof. Any failure returns to the smallest owning design task and reruns
+both automated and physical checks. This sequencing does not close `EXPO-DESIGN-CORE`, global F2.5,
+the Expo Doctor dependency hold, Tasks 12, or any product/release gate.
 
 **Owner-authorised Explore reliability re-entry — 2026-07-18.** During deployed
 `EXPO-DESIGN-CORE` verification, the exact authenticated first-load request
@@ -195,6 +215,8 @@ IDs below do not need duplicate executable definitions elsewhere.
 | `F2.5-04` | Recommendation router/service instrumentation, bounded transport/provider timing, focused tests, live verifier and evidence docs only. No ranking or topology change. | Reconciled 200/content wall time and named root cause across repeated cold/warm authenticated requests; cancellation/timeout/fallback proven. Remove instrumentation that is too costly or cardinality-unsafe; retain fixed safe spans. |
 | `EXPO-CORE-01` | Expo auth/onboarding/Stylist/feedback/saved transport and tests; backend changes only when F2.5-04 evidence names that boundary. | Real deployed Expo web plus physical Android core journey proves correction causality, stable unrelated constraints, served-ID joins/reversals, SLO/a11y/security and rollback to last verified bundle/API. |
 | `EXPO-DESIGN-CORE` | Expo tokens, core primitives, imagery/list/navigation foundations and the P2 route compositions only. Candidate dependencies enter one at a time through the library matrix. | Owner-approved core visual direction plus complete P2 route-state/platform evidence and performance budgets. Revert the candidate component/dependency as one bounded slice if any platform regresses. |
+| `COSMOS-DESIGN-BUILD` | Tasks 3–11 of the approved Cosmos plan, in order: named Expo UI, pure domain logic, typed client boundaries, fixtures and focused FastAPI contracts only. Existing dependencies and one GYF design system remain binding; unavailable capabilities stay closed. | Each task has red/green evidence, focused checks, the canonical repository gate and fresh web/Android exports at one rollbackable commit. Exit records `DESIGN BUILD COMPLETE — NATIVE ACCEPTANCE HOLD`; it does not promote the underlying P5/EXPO/HL gates. |
+| `NATIVE-ACCEPTANCE` | Evidence and the smallest regression-backed correction for the exact Cosmos candidate only; no feature expansion. | Real physical-Android platform, accessibility, failure-state and performance evidence plus owner visual acceptance. Failure returns to the smallest owning task; GO may resume each retained product/release gate only through its original acceptance criteria. |
 | `F11A-CORE-DISCOVERY` | Recruitment/consent configuration, analytics definitions, support/runbook and missing measurement tests only; no feature expansion. | Pre-registered early cohort report with qualitative failure themes and non-promotional early retention. It cannot close F11/PMF/HL; rollback closes recruitment and preserves consented evidence per retention policy. |
 | `P5.1-LEARNED-RANKER` | Existing F6 dataset/eval/ranker/shadow/cohort ports and tests only. | F6 plus HL-LEARN/QUALITY; incumbent stays active on failure. |
 | `P5.2-WARDROBE` | Wardrobe API/repository/media, Expo Wardrobe/Stylist integration and rights/privacy/tests only. | HL-WARDROBE real capture/manual/correction/own-versus-buy journey; no photo-derived body/tone claim. |
@@ -897,6 +919,12 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   proof. `gyf-encoder` remains unselected because this slice has no measured encoding boundary. The
   reproducible token, component, accessibility, bundle, hosting, and remaining device evidence is recorded in
   [`expo-design-core-evidence-2026-07-18.md`](./expo-design-core-evidence-2026-07-18.md).
+- The owner-approved design-first sequencing amendment is now authoritative. Cosmos Tasks 1–2 are
+  complete and independently reviewed in the durable task ledger. `COSMOS-DESIGN-BUILD` starts at
+  Task 3 and may proceed through Task 11 only in order. The unresolved Expo Doctor, browser-capture,
+  physical-Android, owner-visual and global F2.5 evidence remains HOLD exactly as recorded above;
+  it is neither waived nor counted as task success. After Task 11, the sole pointer becomes
+  `NATIVE-ACCEPTANCE`, not release or the next product phase.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
 
