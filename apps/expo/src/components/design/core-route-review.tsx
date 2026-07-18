@@ -228,6 +228,76 @@ function ItemDetailComposition({
   );
 }
 
+function PersonalFitComposition({
+  fixture,
+}: {
+  fixture: CoreRouteFixture & { route: "personal-fit" };
+}) {
+  const palette = colors[fixture.theme];
+  const { data } = fixture;
+  const fields = [
+    ["Skin tone", data.skinTone ?? "Choose manually"],
+    ["Body type", data.bodyType ?? "Choose manually"],
+    ["Currency", data.currency],
+    ["Budget", `${formatPrice(data.budgetMin, data.currency)}–${formatPrice(data.budgetMax, data.currency)}`],
+  ] as const;
+  return (
+    <>
+      <View style={{ gap: spacing.xs }}>
+        <GyfText accessibilityRole="header" theme={fixture.theme} variant="display">
+          {fixture.hero}
+        </GyfText>
+        <GyfText theme={fixture.theme} tone="muted" variant="bodySmall">
+          Add a photo for gated estimates, or complete every field manually.
+        </GyfText>
+      </View>
+      <View
+        accessibilityLabel="Optional photo preview"
+        style={{
+          alignItems: "center",
+          backgroundColor: palette.surfaceRaised,
+          borderColor: palette.border,
+          borderRadius: radii.control,
+          borderWidth: 1,
+          height: 132,
+          justifyContent: "center",
+        }}
+      >
+        <GyfText theme={fixture.theme} tone="faint" variant="label">
+          PHOTO OPTIONAL
+        </GyfText>
+      </View>
+      <View style={{ gap: spacing.sm }}>
+        {fields.map(([label, value]) => (
+          <View
+            key={label}
+            style={{
+              borderBottomColor: palette.border,
+              borderBottomWidth: 1,
+              flexDirection: "row",
+              justifyContent: "space-between",
+              paddingVertical: spacing.sm,
+            }}
+          >
+            <GyfText theme={fixture.theme} tone="muted" variant="bodySmall">
+              {label}
+            </GyfText>
+            <GyfText theme={fixture.theme} variant="bodySmall">
+              {value}
+            </GyfText>
+          </View>
+        ))}
+      </View>
+      {data.saveError ? (
+        <GyfText style={{ color: palette.error }} theme={fixture.theme} variant="bodySmall">
+          {data.saveError}
+        </GyfText>
+      ) : null}
+      <AtelierButton disabled label={`${fixture.primaryAction} · preview`} theme={fixture.theme} />
+    </>
+  );
+}
+
 export function CoreRouteReview({ fixture }: { fixture: CoreRouteFixture }) {
   const palette = colors[fixture.theme];
   return (
@@ -254,6 +324,8 @@ export function CoreRouteReview({ fixture }: { fixture: CoreRouteFixture }) {
         <StylistComposition fixture={fixture} />
       ) : fixture.route === "explore" ? (
         <ExploreComposition fixture={fixture} />
+      ) : fixture.route === "personal-fit" ? (
+        <PersonalFitComposition fixture={fixture} />
       ) : (
         <ItemDetailComposition fixture={fixture} />
       )}

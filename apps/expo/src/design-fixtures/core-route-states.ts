@@ -29,6 +29,7 @@ export const CORE_ROUTE_REQUIRED_STATES = deepFreeze({
   stylist: ["happy", "loading", "empty", "error", "offline", "capability-closed"],
   explore: ["happy", "loading", "empty", "error", "offline"],
   "item-detail": ["happy", "loading", "empty", "error", "offline"],
+  "personal-fit": ["manual", "analysed", "uncertain", "save-error"],
 } as const);
 
 type CoreRoute = keyof typeof CORE_ROUTE_REQUIRED_STATES;
@@ -204,10 +205,51 @@ const ITEM_DETAIL_OFFLINE = deepFreeze({
   actionError: "An independently detected offline state is not implemented.",
 }) satisfies ItemDetailFixtureData;
 
+type PersonalFitFixtureData = DeepReadonly<{
+  analysisState: "manual" | "completed" | "uncertain";
+  photoRequired: false;
+  skinTone: "mst6" | null;
+  bodyType: "rectangle" | null;
+  currency: "INR";
+  budgetMin: number;
+  budgetMax: number;
+  saveError: string | null;
+}>;
+
+const PERSONAL_FIT_MANUAL = deepFreeze({
+  analysisState: "manual",
+  photoRequired: false,
+  skinTone: null,
+  bodyType: null,
+  currency: "INR",
+  budgetMin: 0,
+  budgetMax: 5000,
+  saveError: null,
+}) satisfies PersonalFitFixtureData;
+
+const PERSONAL_FIT_ANALYSED = deepFreeze({
+  ...PERSONAL_FIT_MANUAL,
+  analysisState: "completed",
+  skinTone: "mst6",
+  bodyType: "rectangle",
+}) satisfies PersonalFitFixtureData;
+
+const PERSONAL_FIT_UNCERTAIN = deepFreeze({
+  ...PERSONAL_FIT_ANALYSED,
+  analysisState: "uncertain",
+  skinTone: null,
+}) satisfies PersonalFitFixtureData;
+
+const PERSONAL_FIT_SAVE_ERROR = deepFreeze({
+  ...PERSONAL_FIT_ANALYSED,
+  saveError: "Could not save your profile. Your entries are unchanged; try again.",
+}) satisfies PersonalFitFixtureData;
+
 type RouteFixtureData = {
   stylist: DeepReadonly<OutfitRecommendation> | null;
   explore: readonly DeepReadonly<SearchResult>[] | null;
   "item-detail": ItemDetailFixtureData;
+  "personal-fit": PersonalFitFixtureData;
 };
 
 type BaseFixture<Route extends CoreRoute> = Readonly<{
@@ -424,6 +466,50 @@ const BASE_FIXTURES: readonly AnyBaseFixture[] = deepFreeze([
     explanationPath: "Explicit offline status is still missing",
     data: ITEM_DETAIL_OFFLINE,
   },
+  {
+    baseId: "personal-fit-manual",
+    route: "personal-fit",
+    state: "manual",
+    support: "supported",
+    supportNote: "The complete manual path works without requesting or retaining a photo.",
+    hero: "Build your personal fit",
+    primaryAction: "Save personal fit",
+    explanationPath: "Optional-photo purpose and manual fallback",
+    data: PERSONAL_FIT_MANUAL,
+  },
+  {
+    baseId: "personal-fit-analysed",
+    route: "personal-fit",
+    state: "analysed",
+    support: "supported",
+    supportNote: "Surfaced estimates remain labelled and editable before profile persistence.",
+    hero: "Review your estimates",
+    primaryAction: "Confirm personal fit",
+    explanationPath: "Estimate confidence and editable-value reason",
+    data: PERSONAL_FIT_ANALYSED,
+  },
+  {
+    baseId: "personal-fit-uncertain",
+    route: "personal-fit",
+    state: "uncertain",
+    support: "supported",
+    supportNote: "An abstained skin-tone estimate opens the manual field without hiding body type.",
+    hero: "Complete the missing detail",
+    primaryAction: "Save personal fit",
+    explanationPath: "Honest abstention and manual dropdown guidance",
+    data: PERSONAL_FIT_UNCERTAIN,
+  },
+  {
+    baseId: "personal-fit-save-error",
+    route: "personal-fit",
+    state: "save-error",
+    support: "supported",
+    supportNote: "A failed save preserves every confirmed field and exposes one bounded retry.",
+    hero: "Your entries are still here",
+    primaryAction: "Try saving again",
+    explanationPath: "Nothing-changed profile save error",
+    data: PERSONAL_FIT_SAVE_ERROR,
+  },
 ]);
 
 export const CORE_ROUTE_FIXTURES: readonly CoreRouteFixture[] = deepFreeze(
@@ -446,6 +532,9 @@ export const CORE_ROUTE_FIXTURES: readonly CoreRouteFixture[] = deepFreeze(
 
 export const CORE_ROUTE_REVIEW_FIXTURES: readonly CoreRouteFixture[] = deepFreeze(
   CORE_ROUTE_FIXTURES.filter(
-    ({ state, support, width }) => state === "happy" && support === "supported" && width !== 390,
+    ({ route, state, support, width }) =>
+      (state === "happy" || (route === "personal-fit" && state === "manual")) &&
+      support === "supported" &&
+      width !== 390,
   ),
 );

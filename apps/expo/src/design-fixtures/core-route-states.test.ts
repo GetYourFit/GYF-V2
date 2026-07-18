@@ -40,7 +40,7 @@ describe("core route evidence matrix", () => {
     }
     expect(source).not.toContain("onPress={() => {}}");
     expect(gallerySource).not.toContain("onPress={() => {}}");
-    expect(source.match(/<AtelierButton disabled/g)).toHaveLength(3);
+    expect(source.match(/<AtelierButton disabled/g)).toHaveLength(4);
   });
 
   test("loads the approved editorial face once in the live root layout", async () => {
@@ -52,16 +52,17 @@ describe("core route evidence matrix", () => {
     expect(welcomeSource).not.toContain("useFonts(");
   });
 
-  test("selects three owner-reviewable routes across required widths and themes", () => {
+  test("selects four owner-reviewable routes across required widths and themes", () => {
     expect(new Set(CORE_ROUTE_REVIEW_FIXTURES.map(({ route }) => route))).toEqual(
-      new Set(["stylist", "explore", "item-detail"]),
+      new Set(["stylist", "explore", "item-detail", "personal-fit"]),
     );
-    expect(CORE_ROUTE_REVIEW_FIXTURES).toHaveLength(18);
+    expect(CORE_ROUTE_REVIEW_FIXTURES).toHaveLength(24);
     for (const fixture of CORE_ROUTE_REVIEW_FIXTURES) {
-      expect(fixture).toMatchObject({ state: "happy", support: "supported" });
+      expect(fixture.support).toBe("supported");
+      expect(fixture.state).toBe(fixture.route === "personal-fit" ? "manual" : "happy");
       expect([fixture.hero, fixture.primaryAction, fixture.explanationPath]).toHaveLength(3);
     }
-    for (const route of ["stylist", "explore", "item-detail"] as const) {
+    for (const route of ["stylist", "explore", "item-detail", "personal-fit"] as const) {
       expect(
         new Set(
           CORE_ROUTE_REVIEW_FIXTURES.filter((fixture) => fixture.route === route).map(
@@ -130,15 +131,22 @@ describe("core route evidence matrix", () => {
         error: "supported",
         offline: "gap",
       },
+      "personal-fit": {
+        manual: "supported",
+        analysed: "supported",
+        uncertain: "supported",
+        "save-error": "supported",
+      },
     } as const;
 
     expect(CORE_ROUTE_REQUIRED_STATES).toEqual({
       stylist: ["happy", "loading", "empty", "error", "offline", "capability-closed"],
       explore: ["happy", "loading", "empty", "error", "offline"],
       "item-detail": ["happy", "loading", "empty", "error", "offline"],
+      "personal-fit": ["manual", "analysed", "uncertain", "save-error"],
     });
 
-    for (const route of ["stylist", "explore", "item-detail"] as const) {
+    for (const route of ["stylist", "explore", "item-detail", "personal-fit"] as const) {
       const routeFixtures = CORE_ROUTE_FIXTURES.filter(({ route: value }) => value === route);
       for (const [state, support] of Object.entries(expectedSupport[route])) {
         const matches = routeFixtures.filter(({ state: value }) => value === state);
@@ -154,6 +162,40 @@ describe("core route evidence matrix", () => {
         ),
       ),
     );
+  });
+
+  test("records honest Personal Fit analysis and manual fallback states", () => {
+    const fixtureFor = (state: "manual" | "analysed" | "uncertain" | "save-error") =>
+      CORE_ROUTE_FIXTURES.find(
+        (fixture) => fixture.route === "personal-fit" && fixture.state === state,
+      );
+    const manual = fixtureFor("manual");
+    const analysed = fixtureFor("analysed");
+    const uncertain = fixtureFor("uncertain");
+    const saveError = fixtureFor("save-error");
+
+    for (const fixture of [manual, analysed, uncertain, saveError]) {
+      if (!fixture?.data || !("analysisState" in fixture.data)) {
+        throw new Error("missing Personal Fit fixture data");
+      }
+      expect(fixture.data.photoRequired).toBe(false);
+      expect(fixture.data.currency).toBe("INR");
+    }
+    expect(manual?.data).toMatchObject({ analysisState: "manual", skinTone: null, bodyType: null });
+    expect(analysed?.data).toMatchObject({
+      analysisState: "completed",
+      skinTone: "mst6",
+      bodyType: "rectangle",
+    });
+    expect(uncertain?.data).toMatchObject({
+      analysisState: "uncertain",
+      skinTone: null,
+      bodyType: "rectangle",
+    });
+    expect(saveError?.data).toMatchObject({
+      analysisState: "completed",
+      saveError: "Could not save your profile. Your entries are unchanged; try again.",
+    });
   });
 
   test("keeps the Stylist happy and capability-closed evidence as complete outfits", () => {

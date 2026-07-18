@@ -43,9 +43,10 @@ export default function DesignRoute() {
 
       <Section title="Core route direction">
         <GyfText tone="muted" variant="bodySmall">
-          Direction review: Stylist, Explore, and item detail at compact Android (320), regular
-          Android (768), and responsive web (1280), in light and dark. Review controls are disabled;
-          each composition keeps one hero, one primary action, and one explanation path.
+          Direction review: Stylist, Explore, item detail, and Personal Fit at compact Android
+          (320), regular Android (768), and responsive web (1280), in light and dark. Review
+          controls are disabled; each composition keeps one hero, one primary action, and one
+          explanation path.
         </GyfText>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.lg }}>
           {CORE_ROUTE_REVIEW_FIXTURES.map((fixture) => (
