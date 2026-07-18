@@ -155,7 +155,10 @@ def test_catalog_health_finishes_exact_read_once_then_uses_cache():
 
 
 def test_text_search_reports_remote_gpu_lane(monkeypatch):
+    import app.routers.system as system_module
+
     monkeypatch.setenv("GYF_ENCODER_REMOTE_URL", "https://GetYourFit-gyf-gpu.hf.space")
+    monkeypatch.setattr(system_module, "_remote_reachable", lambda _url: True)
     cap = _get().json()["capabilities"]["text_search"]
     assert cap["status"] == "beta" and cap["lane"] == "remote-gpu"
     assert "verified per request" in cap["detail"]
