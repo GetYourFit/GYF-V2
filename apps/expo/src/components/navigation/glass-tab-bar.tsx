@@ -1,6 +1,14 @@
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { useEffect } from "react";
 import { View } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 import {
   IconGlobe,
@@ -11,7 +19,7 @@ import {
   type IconProps,
 } from "@/components/icons";
 import { PressableScale } from "@/components/ui/pressable-scale";
-import { colors, radii, spacing } from "@/theme/tokens";
+import { colors, motion, radii, spacing } from "@/theme/tokens";
 import { useAppColorScheme } from "@/theme/use-color-scheme";
 
 let haptics: typeof import("expo-haptics") | null = null;
@@ -28,6 +36,57 @@ interface TabBarProps {
   descriptors: Record<string, { options: { title?: string } }>;
   navigation: { navigate: (name: string) => void };
   insets: { bottom: number };
+}
+
+/** Focus choreography: a decisive pop-and-settle on the glyph, while the
+ * glass disc behind it fades in — premium motion, one spring, no drift. */
+function TabGlyph({
+  Glyph,
+  focused,
+  activeColor,
+  mutedColor,
+  discColor,
+}: {
+  Glyph: (props: IconProps) => React.ReactNode;
+  focused: boolean;
+  activeColor: string;
+  mutedColor: string;
+  discColor: string;
+}) {
+  const pop = useSharedValue(focused ? 1 : 0);
+  useEffect(() => {
+    pop.value = focused
+      ? withSequence(
+          withSpring(1.18, { stiffness: 600, damping: 18 }),
+          withSpring(1, { stiffness: 400, damping: 22 }),
+        )
+      : withTiming(0, { duration: motion.fast });
+  }, [focused, pop]);
+  const glyphStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.9 + pop.value * 0.1 }],
+  }));
+  const discStyle = useAnimatedStyle(() => ({
+    opacity: focused ? withTiming(1, { duration: motion.fast }) : withTiming(0, { duration: motion.fast }),
+  }));
+  return (
+    <View style={{ alignItems: "center", justifyContent: "center", width: 48, height: 48 }}>
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            width: 48,
+            height: 48,
+            borderRadius: radii.capsule,
+            backgroundColor: discColor,
+          },
+          discStyle,
+        ]}
+      />
+      <Animated.View style={glyphStyle}>
+        <Glyph color={focused ? activeColor : mutedColor} size={22} />
+      </Animated.View>
+    </View>
+  );
 }
 
 /** Ref3: one glyph per tab — the pill is icon-only, the images do the talking. */
@@ -60,7 +119,7 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarPr
       }}
     >
       <BlurView
-        intensity={40}
+        intensity={64}
         style={{
           borderColor: palette.border,
           borderRadius: radii.capsule,
@@ -70,12 +129,16 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarPr
         tint={theme === "dark" ? "dark" : "light"}
       >
         <LinearGradient
-          colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0)"]}
-          style={{ height: 1, left: 0, position: "absolute", right: 0, top: 0 }}
+          colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0)"]}
+          style={{ height: 12, left: 0, position: "absolute", right: 0, top: 0, zIndex: 1 }}
+        />
+        <LinearGradient
+          colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.07)"]}
+          style={{ bottom: 0, height: 10, left: 0, position: "absolute", right: 0, zIndex: 1 }}
         />
         <View
           style={{
-            backgroundColor: theme === "dark" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)",
+            backgroundColor: theme === "dark" ? "rgba(10,10,12,0.38)" : "rgba(255,255,255,0.42)",
             flexDirection: "row",
             gap: spacing.xs / 2,
             paddingHorizontal: spacing.sm,
@@ -99,16 +162,15 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarPr
                     navigation.navigate(route.name);
                   }
                 }}
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 48,
-                  height: 48,
-                  borderRadius: radii.capsule,
-                  backgroundColor: focused ? palette.surfaceRaised : "transparent",
-                }}
+                style={{ borderRadius: radii.capsule }}
               >
-                <Glyph color={focused ? palette.text : palette.textFaint} size={22} />
+                <TabGlyph
+                  Glyph={Glyph}
+                  activeColor={palette.text}
+                  discColor={palette.surfaceRaised}
+                  focused={focused}
+                  mutedColor={palette.textFaint}
+                />
               </PressableScale>
             );
           })}
