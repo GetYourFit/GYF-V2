@@ -407,42 +407,42 @@ export default function ExploreRoute() {
                 </PressableScale>
               </View>
             ) : (
-            <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.xs }}>
-            {/* Ref4: the search pill IS the header — large capsule, glyph
+              <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.xs }}>
+                {/* Ref4: the search pill IS the header — large capsule, glyph
                 inside, rotating "Try '…'" hint; submit on the return key. */}
-            <View
-              style={{
-                alignItems: "center",
-                backgroundColor: palette.surface,
-                borderRadius: radii.capsule,
-                flex: 1,
-                flexDirection: "row",
-                gap: spacing.sm,
-                minHeight: 56,
-                paddingHorizontal: spacing.md,
-              }}
-            >
-              <IconSearch color={palette.textFaint} size={22} />
-              <TextInput
-                accessibilityLabel="Search catalogue"
-                onChangeText={setQueryInput}
-                onSubmitEditing={submitQuery}
-                placeholder={SEARCH_HINTS[hintIndex]}
-                placeholderTextColor={palette.textFaint}
-                returnKeyType="search"
-                style={[typography.body, { color: palette.text, flex: 1, minHeight: 56 }]}
-                value={queryInput}
-              />
-            </View>
-            <SparkButton
-              color={palette.text}
-              onPress={() => {
-                setExpanded(true);
-                setQueryInput("");
-                setFilters(EMPTY_EXPLORE_FILTERS);
-              }}
-            />
-            </View>
+                <View
+                  style={{
+                    alignItems: "center",
+                    backgroundColor: palette.surface,
+                    borderRadius: radii.capsule,
+                    flex: 1,
+                    flexDirection: "row",
+                    gap: spacing.sm,
+                    minHeight: 56,
+                    paddingHorizontal: spacing.md,
+                  }}
+                >
+                  <IconSearch color={palette.textFaint} size={22} />
+                  <TextInput
+                    accessibilityLabel="Search catalogue"
+                    onChangeText={setQueryInput}
+                    onSubmitEditing={submitQuery}
+                    placeholder={SEARCH_HINTS[hintIndex]}
+                    placeholderTextColor={palette.textFaint}
+                    returnKeyType="search"
+                    style={[typography.body, { color: palette.text, flex: 1, minHeight: 56 }]}
+                    value={queryInput}
+                  />
+                </View>
+                <SparkButton
+                  color={palette.text}
+                  onPress={() => {
+                    setExpanded(true);
+                    setQueryInput("");
+                    setFilters(EMPTY_EXPLORE_FILTERS);
+                  }}
+                />
+              </View>
             )}
             {!expanded && priceEnabled ? (
               <View style={{ flexDirection: "row", gap: spacing.sm }}>
@@ -477,45 +477,44 @@ export default function ExploreRoute() {
             ) : null}
 
             {expanded ? null : (
-            <>
-            <ChipRow
-              allLabel="Everything"
-              label="SHOP BY SLOT"
-              onSelect={(value) => setFilters((current) => ({ ...current, slot: value }))}
-              options={SLOT_FILTERS}
-              selected={filters.slot}
-            />
-            <ChipRow
-              allLabel="All occasions"
-              label="OCCASION"
-              onSelect={(value) => setFilters((current) => ({ ...current, occasion: value }))}
-              options={OCCASIONS}
-              selected={filters.occasion}
-            />
-            <ChipRow
-              allLabel="All styles"
-              label="STYLE"
-              onSelect={(value) => setFilters((current) => ({ ...current, style: value }))}
-              options={STYLE_INTENTS}
-              selected={filters.style}
-            />
-            {/* Sort is offered only over a priced catalogue: "price low" on
+              <>
+                <ChipRow
+                  allLabel="Everything"
+                  label="SHOP BY SLOT"
+                  onSelect={(value) => setFilters((current) => ({ ...current, slot: value }))}
+                  options={SLOT_FILTERS}
+                  selected={filters.slot}
+                />
+                <ChipRow
+                  allLabel="All occasions"
+                  label="OCCASION"
+                  onSelect={(value) => setFilters((current) => ({ ...current, occasion: value }))}
+                  options={OCCASIONS}
+                  selected={filters.occasion}
+                />
+                <ChipRow
+                  allLabel="All styles"
+                  label="STYLE"
+                  onSelect={(value) => setFilters((current) => ({ ...current, style: value }))}
+                  options={STYLE_INTENTS}
+                  selected={filters.style}
+                />
+                {/* Sort is offered only over a priced catalogue: "price low" on
                 unpriced rows would be a control that cannot do what it says. */}
-            {priceEnabled ? (
-              <ChipRow
-                label="SORT"
-                onSelect={(value) =>
-                  setFilters((current) => ({
-                    ...current,
-                    sort: (value as ExploreSort | null) ?? "relevance",
-                  }))
-                }
-                options={SORT_OPTIONS}
-                selected={filters.sort}
-              />
-            ) : null}
-
-            </>
+                {priceEnabled ? (
+                  <ChipRow
+                    label="SORT"
+                    onSelect={(value) =>
+                      setFilters((current) => ({
+                        ...current,
+                        sort: (value as ExploreSort | null) ?? "relevance",
+                      }))
+                    }
+                    options={SORT_OPTIONS}
+                    selected={filters.sort}
+                  />
+                ) : null}
+              </>
             )}
             {!expanded && activeCount > 0 ? (
               <AtelierButton

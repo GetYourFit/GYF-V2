@@ -66,7 +66,9 @@ function TabGlyph({
     transform: [{ scale: 0.9 + pop.value * 0.1 }],
   }));
   const discStyle = useAnimatedStyle(() => ({
-    opacity: focused ? withTiming(1, { duration: motion.fast }) : withTiming(0, { duration: motion.fast }),
+    opacity: focused
+      ? withTiming(1, { duration: motion.fast })
+      : withTiming(0, { duration: motion.fast }),
   }));
   return (
     <View style={{ alignItems: "center", justifyContent: "center", width: 48, height: 48 }}>
