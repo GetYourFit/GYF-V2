@@ -16,8 +16,10 @@ source of execution order and gates.
 6. [`superpowers/specs/2026-07-18-cosmos-editorial-expo-design.md`](./superpowers/specs/2026-07-18-cosmos-editorial-expo-design.md)
    and [`superpowers/plans/2026-07-18-cosmos-editorial-expo-implementation.md`](./superpowers/plans/2026-07-18-cosmos-editorial-expo-implementation.md) —
    approved Cosmos Editorial specification and subordinate phased implementation plan.
-7. [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) — evidence-only historical implementation map.
-8. [`tech-stack.md`](./tech-stack.md) and research — options and evidence; never authority to promote.
+7. [`superpowers/specs/2026-07-19-design-first-evidence-sequencing.md`](./superpowers/specs/2026-07-19-design-first-evidence-sequencing.md) —
+   approved owner amendment design for completing automated design work before deferred physical Android acceptance.
+8. [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) — evidence-only historical implementation map.
+9. [`tech-stack.md`](./tech-stack.md) and research — options and evidence; never authority to promote.
 
 ## Retained owner-input sources
 
