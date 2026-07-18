@@ -63,7 +63,10 @@ export default function WelcomeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: palette.bg }}>
       {/* Collage — behind everything, non-interactive */}
-      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+      <View
+        pointerEvents="none"
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+      >
         {TILES.map((tile, index) => (
           <LinearGradient
             key={index}
@@ -110,7 +113,9 @@ export default function WelcomeScreen() {
             </GyfText>
 
             {/* Centre band — the wordmark moment */}
-            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm }}>
+            <View
+              style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm }}
+            >
               <GyfText variant="display" style={{ fontSize: 52, lineHeight: 56, letterSpacing: 2 }}>
                 GYF
               </GyfText>
@@ -164,7 +169,10 @@ export default function WelcomeScreen() {
           </Pressable>
         </Link>
 
-        <View accessibilityLabel={`Slide ${active + 1} of ${SLIDES.length}`} style={{ flexDirection: "row", gap: 6 }}>
+        <View
+          accessibilityLabel={`Slide ${active + 1} of ${SLIDES.length}`}
+          style={{ flexDirection: "row", gap: 6 }}
+        >
           {SLIDES.map((_, index) => (
             <Pressable
               key={index}

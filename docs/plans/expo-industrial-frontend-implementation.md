@@ -1,6 +1,6 @@
 # Expo Frontend — Implementation Plan
 
-Status: **shipped** (2026-07-16, phases 0–6 on main). Deviations from plan:
+Status: **SHIPPED EVIDENCE, subordinate to** [`active-execution-contract.md`](./active-execution-contract.md) (2026-07-16, phases 0–6 on main). Deviations from plan:
 - Wardrobe swipe-to-remove dropped — horizontal swipe on grid cards fights vertical scroll; removal lives in the quick-preview action instead.
 - Custom pull-to-refresh indicator skipped — RN RefreshControl doesn't take custom views; the native control stays, themed.
 - Manual theme toggle UI not built — override context exists, app follows the OS scheme until a settings toggle sets it.

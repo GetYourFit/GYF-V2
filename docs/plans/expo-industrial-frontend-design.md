@@ -1,6 +1,6 @@
 # Expo Frontend — Design System Plan
 
-Status: **shipped** (2026-07-16) — see the implementation plan's status note for deviations. Scope: `apps/expo`. Companion doc: `expo-industrial-frontend-implementation.md`.
+Status: **SHIPPED EVIDENCE, subordinate to** [`active-execution-contract.md`](./active-execution-contract.md) (2026-07-16) — see the implementation plan's status note for deviations. Scope: `apps/expo`. Companion doc: `expo-industrial-frontend-implementation.md`.
 
 ## Why
 

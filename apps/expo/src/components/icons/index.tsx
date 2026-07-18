@@ -67,7 +67,10 @@ export function IconSpark({ size, color }: IconProps) {
         d="M12 3c.6 3.6 1.8 4.8 5.4 5.4-3.6.6-4.8 1.8-5.4 5.4-.6-3.6-1.8-4.8-5.4-5.4C10.2 7.8 11.4 6.6 12 3Z"
         fill={color}
       />
-      <Path d="M17.5 14.5c.35 2.1 1.05 2.8 3.15 3.15-2.1.35-2.8 1.05-3.15 3.15-.35-2.1-1.05-2.8-3.15-3.15 2.1-.35 2.8-1.05 3.15-3.15Z" fill={color} />
+      <Path
+        d="M17.5 14.5c.35 2.1 1.05 2.8 3.15 3.15-2.1.35-2.8 1.05-3.15 3.15-.35-2.1-1.05-2.8-3.15-3.15 2.1-.35 2.8-1.05 3.15-3.15Z"
+        fill={color}
+      />
     </Icon>
   );
 }
@@ -77,7 +80,11 @@ export function IconGlobe({ size, color }: IconProps) {
   return (
     <Icon size={size}>
       <Path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" stroke={color} {...stroke} />
-      <Path d="M3 12h18M12 3c2.5 2.4 3.75 5.4 3.75 9S14.5 18.6 12 21c-2.5-2.4-3.75-5.4-3.75-9S9.5 5.4 12 3Z" stroke={color} {...stroke} />
+      <Path
+        d="M3 12h18M12 3c2.5 2.4 3.75 5.4 3.75 9S14.5 18.6 12 21c-2.5-2.4-3.75-5.4-3.75-9S9.5 5.4 12 3Z"
+        stroke={color}
+        {...stroke}
+      />
     </Icon>
   );
 }
@@ -101,7 +108,11 @@ export function IconPeople({ size, color }: IconProps) {
     <Icon size={size}>
       <Path d="M9 11a3.25 3.25 0 1 0 0-6.5A3.25 3.25 0 0 0 9 11Z" stroke={color} {...stroke} />
       <Path d="M2.75 19.5c.5-3.1 3-5 6.25-5s5.75 1.9 6.25 5" stroke={color} {...stroke} />
-      <Path d="M15.5 10.75a2.75 2.75 0 1 0-1.9-4.75M16.6 14.8c2.4.4 4.2 2 4.65 4.7" stroke={color} {...stroke} />
+      <Path
+        d="M15.5 10.75a2.75 2.75 0 1 0-1.9-4.75M16.6 14.8c2.4.4 4.2 2 4.65 4.7"
+        stroke={color}
+        {...stroke}
+      />
     </Icon>
   );
 }
@@ -120,7 +131,11 @@ export function IconSearch({ size, color }: IconProps) {
   // Explore search pill (Ref4)
   return (
     <Icon size={size}>
-      <Path d="M10.75 17.5a6.75 6.75 0 1 0 0-13.5 6.75 6.75 0 0 0 0 13.5Z" stroke={color} {...stroke} />
+      <Path
+        d="M10.75 17.5a6.75 6.75 0 1 0 0-13.5 6.75 6.75 0 0 0 0 13.5Z"
+        stroke={color}
+        {...stroke}
+      />
       <Path d="m15.7 15.7 4.55 4.55" stroke={color} {...stroke} />
     </Icon>
   );
