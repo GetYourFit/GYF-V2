@@ -19,6 +19,11 @@ describe("onboarding validation", () => {
       currency: "INR",
     });
   });
+  test("normalizes currency without converting source amounts", () => {
+    expect(
+      mergeProfile({ budget_range: { min: 12.5, max: 99.95, currency: " usd " } }).budget_range,
+    ).toEqual({ min: 12.5, max: 99.95, currency: "USD" });
+  });
   test("requires processing consent and starts optional flags off", () => {
     expect(DEFAULT_CONSENT).toEqual({
       data_processing: true,

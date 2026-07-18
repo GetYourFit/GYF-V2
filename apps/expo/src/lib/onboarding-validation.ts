@@ -26,6 +26,8 @@ export function mergeProfile(profile: Partial<ProfileInput>): ProfileInput {
     ...EMPTY_PROFILE,
     ...profile,
     style_intent: profile.style_intent ?? [],
-    budget_range: profile.budget_range ?? EMPTY_PROFILE.budget_range,
+    budget_range: profile.budget_range
+      ? { ...profile.budget_range, currency: profile.budget_range.currency.trim().toUpperCase() }
+      : EMPTY_PROFILE.budget_range,
   };
 }
