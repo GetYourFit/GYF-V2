@@ -2904,3 +2904,27 @@ Gates each step: typecheck 0 errors, 97 Expo tests, format clean.
   card became a gold-ruled rail with a real taste_strength meter — honest empty
   bar on cold start ("every save or skip sharpens the next look"). No new deps,
   truth copy preserved. Gates: 0 type errors, 97 Expo tests, format clean.
+
+### 2026-07-19 — Cosmos design build Tasks 9–11 complete (session: ponytail full)
+
+**User asked:** start the build and don't stop until completion, using all relevant skills.
+
+**Done (each task: red→green, full gate, fresh web+Android exports, bounded commit, pushed):**
+
+- Task 9 `6e1094c` — social moderation end to end: `post_reports` + `social_blocks`
+  migration 0025, idempotent block/unblock + report endpoints (self-block/unknown-user
+  guards), feed exclusion of blocked authors, typed client methods, inline report/block
+  UI with optimistic block echo and revert-on-failure.
+- Task 10 `9d9436d` — motion/haptic grammar fixture: every `withRepeat` loop must honor
+  `ReduceMotion.System` and cancel on unmount; `lib/haptics.ts` stays the only
+  expo-haptics doorway. Fixed skeleton pulse and welcome breathing/shimmer loops.
+- Task 11 `8a811ff` — experience matrix extended to every shipped surface (social,
+  wardrobe, saved, collections, profile, onboarding) with declared states, explicit
+  offline gaps, and source-level assertions for error/empty/loading+retry, feed
+  virtualization, bounded grids, collections→saved dedupe, and image dimensions/labels.
+
+**Gates:** fmt-check, lint (tsc + ruff), typecheck, doctrine, 447 API tests, 179 expo
+tests, web/android exports within bundle budgets (2.53/2.7 MB web, 4.73/5.0 MB android).
+
+**Status:** COSMOS-DESIGN-BUILD Tasks 3–11 complete. Task 12 (release evidence) and
+NATIVE-ACCEPTANCE remain closed per the contract; no GO claimed.
