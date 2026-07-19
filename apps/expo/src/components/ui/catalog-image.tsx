@@ -66,7 +66,7 @@ export function CatalogImage({
     <Image
       accessibilityLabel={label}
       cachePolicy="disk"
-      contentFit="cover"
+      contentFit="contain"
       key={`${recyclingKey}:${attempt}`}
       onError={() => setFailed(true)}
       recyclingKey={recyclingKey}

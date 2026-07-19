@@ -72,7 +72,8 @@ export function ProductCard({
           recyclingKey={item.id ?? item.imageUrl ?? item.title}
           style={{
             backgroundColor: palette.surfaceRaised,
-            borderRadius: radii.card,
+            // Ref4 plate: sharp edges, boxy tone, whole article visible.
+            borderRadius: 0,
             height: width * (4 / 3),
             width: "100%",
           }}

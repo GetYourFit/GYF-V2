@@ -61,13 +61,19 @@ describe("Atelier tokens", () => {
     expect(tierForWidth(1366)).toBe("wide");
   });
 
-  it("keeps custom faces off body copy and weight props off custom faces", () => {
-    // Body stays system sans — deliberately invisible.
-    expect("fontFamily" in typography.body).toBe(false);
-    expect("fontFamily" in typography.bodySmall).toBe(false);
+  it("gives body copy the grotesque face and keeps weight props off custom faces", () => {
+    // ScopeofIdea two-face rule: content type is one face, distinct from headings.
+    expect(typography.body.fontFamily).toBe("BricolageGrotesque_400Regular");
+    expect(typography.bodySmall.fontFamily).toBe("BricolageGrotesque_400Regular");
     // Custom faces encode weight in the family name; a fontWeight prop
     // alongside breaks font resolution on Android.
-    for (const variant of [typography.display, typography.title, typography.label] as const) {
+    for (const variant of [
+      typography.display,
+      typography.title,
+      typography.label,
+      typography.body,
+      typography.bodySmall,
+    ] as const) {
       expect("fontFamily" in variant).toBe(true);
       expect("fontWeight" in variant).toBe(false);
     }

@@ -99,18 +99,19 @@ export const fonts = {
   displaySemi: "Fraunces_600SemiBold",
   ui: "BricolageGrotesque_600SemiBold",
   uiMedium: "BricolageGrotesque_500Medium",
+  uiRegular: "BricolageGrotesque_400Regular",
 } as const;
 
 /**
  * Two-face hierarchy (ScopeofIdea): Fraunces carries every heading on every
- * page; the grotesque carries UI chrome; system sans for body — body copy is
- * read, not looked at, so it stays deliberately invisible.
+ * page; Bricolage Grotesque carries everything else — body, UI chrome,
+ * labels — so content type is one face, distinct from the heading face.
  */
 export const typography = {
   display: { fontFamily: fonts.display, fontSize: 40, lineHeight: 44 },
   title: { fontFamily: fonts.displaySemi, fontSize: 24, lineHeight: 30 },
-  body: { fontSize: 16, lineHeight: 25, fontWeight: "400" as const },
-  bodySmall: { fontSize: 14, lineHeight: 21, fontWeight: "400" as const },
+  body: { fontFamily: fonts.uiRegular, fontSize: 16, lineHeight: 25 },
+  bodySmall: { fontFamily: fonts.uiRegular, fontSize: 14, lineHeight: 21 },
   label: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16, letterSpacing: 1.2 },
   button: { fontFamily: fonts.uiMedium, fontSize: 15, lineHeight: 20, letterSpacing: 0.2 },
   mono: { fontSize: 12, lineHeight: 16, fontWeight: "500" as const, letterSpacing: 0.6 },

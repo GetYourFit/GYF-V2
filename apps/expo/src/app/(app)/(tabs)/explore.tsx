@@ -331,7 +331,7 @@ export default function ExploreRoute() {
                 facets={facets}
                 filters={filters}
                 hint={SEARCH_HINTS[hintIndex]}
-                markActive={loading || loadingMore}
+                markActive
                 maxPriceInput={maxPriceInput}
                 onChangeFilters={setFilters}
                 onChangeMaxPrice={setMaxPriceInput}
