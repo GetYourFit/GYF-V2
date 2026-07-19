@@ -14,7 +14,12 @@ import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi, type SearchResult } from "@/lib/api";
-import { appendUniqueItems, focusConstellation, tileAspect } from "@/lib/canvas-cluster";
+import {
+  appendUniqueItems,
+  focusConstellation,
+  masonryColumns,
+  tileAspect,
+} from "@/lib/canvas-cluster";
 import { formatCatalogPrice } from "@/lib/explore-feed";
 import { colors, radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
@@ -55,11 +60,11 @@ function CanvasTile({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
+      // Ref1/Ref2 mosaic plate: image only, sharp edges, the dark field is the
+      // frame. Title/price live in the focus card, not on every tile.
       style={({ pressed }) => ({
-        borderColor: selected ? palette.text : palette.border,
-        borderCurve: "continuous",
-        borderRadius: radii.card,
-        borderWidth: selected ? 2 : 1,
+        borderColor: selected ? palette.text : "transparent",
+        borderWidth: 2,
         opacity: pressed ? 0.78 : 1,
         overflow: "hidden",
         width,
@@ -82,18 +87,10 @@ function CanvasTile({
           }}
         >
           <GyfText style={{ textAlign: "center" }} tone="faint" variant="bodySmall">
-            Image unavailable
+            {item.title}
           </GyfText>
         </View>
       )}
-      <View style={{ backgroundColor: palette.surface, gap: spacing.xs, padding: spacing.sm }}>
-        <GyfText numberOfLines={2} variant="bodySmall">
-          {item.title}
-        </GyfText>
-        <GyfText tone="faint" variant="mono">
-          {formatCatalogPrice(item.price, item.currency)}
-        </GyfText>
-      </View>
     </Pressable>
   );
 }
@@ -104,6 +101,7 @@ export default function CanvasRoute() {
   const api = useMemo(() => createApi(), []);
   const seed = useMemo(() => `expo-canvas-${Date.now()}`, []);
   const requestTicket = useRef(0);
+  const scrollRef = useRef<ScrollView>(null);
   const [items, setItems] = useState<SearchResult[]>([]);
   const [focused, setFocused] = useState<SearchResult | null>(null);
   const [saved, setSaved] = useState<Set<string>>(new Set());
@@ -155,6 +153,7 @@ export default function CanvasRoute() {
 
   const selectItem = async (item: SearchResult) => {
     const ticket = ++requestTicket.current;
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
     setFocused(item);
     setReclustering(true);
     setError(null);
@@ -214,11 +213,22 @@ export default function CanvasRoute() {
     }
   };
 
-  const horizontalPadding = spacing.md;
-  const tileWidth = Math.max(120, (Math.min(width, 760) - horizontalPadding * 2 - spacing.sm) / 2);
+  const horizontalPadding = spacing.xs;
+  const columnCount = width >= 480 ? 3 : 2;
+  const tileWidth =
+    (Math.min(width, 900) - horizontalPadding * 2 - spacing.xs * (columnCount - 1)) / columnCount;
+  const columns = masonryColumns(items, columnCount);
 
   return (
     <ScrollView
+      ref={scrollRef}
+      onScroll={({ nativeEvent }) => {
+        const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+        if (contentOffset.y + layoutMeasurement.height > contentSize.height - 1200) {
+          void loadMore();
+        }
+      }}
+      scrollEventThrottle={200}
       contentContainerStyle={{
         backgroundColor: palette.bg,
         gap: spacing.lg,
@@ -342,22 +352,19 @@ export default function CanvasRoute() {
           <GyfText tone="muted">Refresh when the catalogue is available again.</GyfText>
         </AtelierCard>
       ) : (
-        <View
-          style={{
-            alignItems: "flex-start",
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: spacing.sm,
-          }}
-        >
-          {items.map((item) => (
-            <CanvasTile
-              item={item}
-              key={item.item_id}
-              onPress={() => void selectItem(item)}
-              selected={item.item_id === focused?.item_id}
-              width={tileWidth}
-            />
+        <View style={{ flexDirection: "row", gap: spacing.xs }}>
+          {columns.map((column, columnIndex) => (
+            <View key={columnIndex} style={{ flex: 1, gap: spacing.xs }}>
+              {column.map((item) => (
+                <CanvasTile
+                  item={item}
+                  key={item.item_id}
+                  onPress={() => void selectItem(item)}
+                  selected={item.item_id === focused?.item_id}
+                  width={tileWidth}
+                />
+              ))}
+            </View>
           ))}
         </View>
       )}
@@ -381,12 +388,8 @@ export default function CanvasRoute() {
         </View>
       ) : null}
 
-      {!focused && hasMore && !loading ? (
-        <AtelierButton
-          disabled={loadingMore}
-          label={loadingMore ? "Extending field…" : "Extend the field"}
-          onPress={() => void loadMore()}
-        />
+      {loadingMore ? (
+        <ActivityIndicator accessibilityLabel="Extending the field" color={palette.textMuted} />
       ) : null}
     </ScrollView>
   );
