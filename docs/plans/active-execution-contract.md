@@ -919,18 +919,26 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   proof. `gyf-encoder` remains unselected because this slice has no measured encoding boundary. The
   reproducible token, component, accessibility, bundle, hosting, and remaining device evidence is recorded in
   [`expo-design-core-evidence-2026-07-18.md`](./expo-design-core-evidence-2026-07-18.md).
-- The owner-approved design-first sequencing amendment is now authoritative. Cosmos Tasks 1–3 are
-  complete and independently reviewed in the durable task ledger; Task 4 is current. Task 3 commits
+- The owner-approved design-first sequencing amendment is now authoritative. Cosmos Tasks 1–4 are
+  complete and independently reviewed in the durable task ledger; Task 5 is current. Task 3 commits
   `efcf3ba` and `9b00b90` add the pure Personal Fit confirmation, canonical-value, ordinary-decimal
   budget and immutable photo-estimate rules. Independent review found that JavaScript numeric parsing
   accepted alternate hexadecimal, binary and exponent syntax; the second commit reproduced and closed
-  that defect before approval. Fresh controller gates pass formatting, JS/Python lint, typecheck,
-  doctrine, 438 API tests (20 environment/optional-lane skips, seven retained warnings), 77 web tests
-  and 139 Expo tests. Next/Expo builds pass; the web bundle is 2,499,233/2,700,000 bytes and the Android
-  Hermes bundle is 4,689,519/5,000,000 bytes. The unresolved Expo Doctor, browser-capture,
-  physical-Android, owner-visual and global F2.5 evidence remains HOLD exactly as recorded above; it
-  is neither waived nor counted as task success. After Task 11, the sole pointer becomes
-  `NATIVE-ACCEPTANCE`, not release or the next product phase.
+  that defect before approval. Task 4 commits `6b61ed5` and `9b3194e` add the strict client photo-
+  analysis boundary: `validateProfilePhotoAsset`/`uploadProfilePhoto` in
+  `apps/expo/src/lib/profile-photo.ts`, a `MultipartFile` overload on the shared `GyfApi.uploadPhoto`
+  reused by both clients, and a server-side `ProfilePhotoResponse`/`PhotoAnalysis` split so
+  `field_confidence` and `state` describe only this upload's fresh estimates rather than the whole
+  merged profile. Merge review found the accompanying `InMemoryProfileRepository` defensive-copy fix
+  (store-on-write immutability, matching the coding-doctrine's no-shared-mutable-reference rule) broke
+  two pre-existing style-override tests that asserted identity (`is stored`) instead of the value
+  equality they actually needed; commit `31cbd99` corrects those assertions to `model_dump()` equality
+  without weakening what they prove. Fresh controller gates pass formatting, JS/Python lint, typecheck,
+  doctrine, 442 API tests (20 environment/optional-lane skips, seven retained warnings), 77 web tests
+  and 150 Expo tests. Next/Expo builds pass; the web bundle is 2,499,238 bytes. The unresolved Expo
+  Doctor, browser-capture, physical-Android, owner-visual and global F2.5 evidence remains HOLD exactly
+  as recorded above; it is neither waived nor counted as task success. After Task 11, the sole pointer
+  becomes `NATIVE-ACCEPTANCE`, not release or the next product phase.
 - **Expo production recovery — 2026-07-19.** Manual deployment `emrc2qswgs` had been promoted from
   a local export without the production public environment, so its bundle compiled Supabase
   configuration as undefined and retained the local API default. Commit `f044473` also prevents web
