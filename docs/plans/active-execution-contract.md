@@ -935,10 +935,36 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   equality they actually needed; commit `31cbd99` corrects those assertions to `model_dump()` equality
   without weakening what they prove. Fresh controller gates pass formatting, JS/Python lint, typecheck,
   doctrine, 442 API tests (20 environment/optional-lane skips, seven retained warnings), 77 web tests
-  and 150 Expo tests. Next/Expo builds pass; the web bundle is 2,499,238 bytes. The unresolved Expo
-  Doctor, browser-capture, physical-Android, owner-visual and global F2.5 evidence remains HOLD exactly
-  as recorded above; it is neither waived nor counted as task success. After Task 11, the sole pointer
-  becomes `NATIVE-ACCEPTANCE`, not release or the next product phase.
+  and 150 Expo tests. Next/Expo builds pass; the web bundle is 2,499,238 bytes.
+
+  Commit `858aaa8` separately closed a resilience gap found while investigating an
+  owner-reported blank-screen regression: the root `_layout.tsx` never exported
+  `ErrorBoundary`, so Expo Router could not catch a root-segment render crash and would
+  unmount to a permanent blank screen instead of the existing honest retry screen; it now
+  re-exports the shared boundary from `app/error.tsx`, with a regression test. Live
+  verification with a connected browser (fresh navigation, zero console errors, both the
+  anonymous Welcome route and an authenticated Stylist session rendering real content)
+  found the production deployment healthy at check time; the owner's report is attributed
+  to a stale local cache (`cache-control: public, max-age=3600` on the HTML shell)
+  predating that session's fixes, not a live regression.
+
+  Task 5 commit `2b8057d` adds the shared `PersonalFitForm` (create/edit): photo analysis
+  behind live `photo_body_type`/`photo_skin_tone` capability plus `photo_storage`
+  consent, manual skin-tone/body-type/currency/budget always available. Documented scope
+  decision: Task 3's already-merged domain model narrows Personal Fit to
+  `{skin_tone, body_type, budget_range}`, so `/onboarding` chains the existing
+  `OnboardingForm` (gender/occasion/style) into `PersonalFitForm mode="create"` as a
+  second step rather than replacing it outright, preserving the `profile.gender`-gated
+  onboarded check; `/personal-fit` is the new Profile edit route.
+
+  Cosmos Tasks 1–5 are complete and independently reviewed in the durable task ledger;
+  Task 6 is current. Fresh controller gates pass formatting, JS/Python lint, typecheck,
+  doctrine, 442 API tests (20 environment/optional-lane skips, seven retained warnings),
+  77 web tests and 163 Expo tests; both production builds pass. The unresolved Expo
+  Doctor, browser-capture, physical-Android, owner-visual and global F2.5 evidence remains
+  HOLD exactly as recorded above; it is neither waived nor counted as task success. After
+  Task 11, the sole pointer becomes `NATIVE-ACCEPTANCE`, not release or the next product
+  phase.
 - **Expo production recovery — 2026-07-19.** Manual deployment `emrc2qswgs` had been promoted from
   a local export without the production public environment, so its bundle compiled Supabase
   configuration as undefined and retained the local API default. Commit `f044473` also prevents web
