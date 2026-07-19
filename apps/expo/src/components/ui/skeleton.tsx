@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import type { DimensionValue } from "react-native";
 import Animated, {
+  cancelAnimation,
   Easing,
+  ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -34,7 +36,10 @@ export function Skeleton({
       withTiming(1, { duration: 900, easing: Easing.inOut(Easing.quad) }),
       -1,
       true,
+      undefined,
+      ReduceMotion.System,
     );
+    return () => cancelAnimation(pulse);
   }, [pulse]);
 
   const animatedStyle = useAnimatedStyle(() => ({

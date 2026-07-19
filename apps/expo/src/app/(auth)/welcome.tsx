@@ -8,6 +8,7 @@ import Animated, {
   ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
+  cancelAnimation,
   withRepeat,
   withTiming,
   ZoomIn,
@@ -40,6 +41,7 @@ function BreathingLogo({ tint }: { tint: string }) {
       -1,
       true,
     );
+    return () => cancelAnimation(breathe);
   }, [breathe]);
 
   const style = useAnimatedStyle(() => ({
@@ -164,6 +166,7 @@ function ShimmerSweep() {
       -1,
       false,
     );
+    return () => cancelAnimation(sweep);
   }, [sweep]);
 
   const style = useAnimatedStyle(() => ({
