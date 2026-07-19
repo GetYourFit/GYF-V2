@@ -9,14 +9,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import {
-  IconGlobe,
-  IconHanger,
-  IconPeople,
-  IconPerson,
-  IconSpark,
-  type IconProps,
-} from "@/components/icons";
+import { AnimatedGyfMark } from "@/components/explore/animated-gyf-mark";
+import { IconHanger, IconPeople, IconPerson, IconSearch, type IconProps } from "@/components/icons";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import { PressableScale } from "@/components/ui/pressable-scale";
 import { createApi } from "@/lib/api";
@@ -91,8 +85,9 @@ function TabGlyph({
 
 /** Ref3: one glyph per tab — the pill is icon-only, the images do the talking. */
 const GLYPHS: Record<string, (props: IconProps) => React.ReactNode> = {
-  index: IconSpark,
-  explore: IconGlobe,
+  // Stylist wears the brand mark; the rest are literal so each tab reads at a glance.
+  index: ({ size, color }: IconProps) => <AnimatedGyfMark color={color} size={size} />,
+  explore: IconSearch,
   wardrobe: IconHanger,
   social: IconPeople,
   profile: IconPerson,
@@ -164,7 +159,7 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarPr
                     style={{ borderRadius: radii.capsule, height: size, width: size }}
                   />
                 )
-              : (GLYPHS[route.name] ?? IconSpark);
+              : (GLYPHS[route.name] ?? IconSearch);
           return (
             <PressableScale
               accessibilityLabel={label}

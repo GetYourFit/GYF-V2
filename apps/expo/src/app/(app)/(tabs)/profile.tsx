@@ -11,6 +11,7 @@ import {
 } from "react-native";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
+import { FilterChip } from "@/components/ui/filter-chip";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi, type ProfileSummary } from "@/lib/api";
@@ -19,7 +20,7 @@ import { replaceAvatar, validateAvatarAsset } from "@/lib/avatar-upload";
 import { avatarImageUrl, formatMemberSince, initials, statCells } from "@/lib/profile-summary";
 import { capabilityUsable } from "@/lib/system-status";
 import { colors, radii, spacing } from "@/theme/tokens";
-import { useThemeColors } from "@/theme/use-color-scheme";
+import { useThemeColors, useThemePreference } from "@/theme/use-color-scheme";
 
 type Status = "loading" | "ready" | "error";
 
@@ -61,6 +62,7 @@ function Avatar({ url, name }: { url: string | null | undefined; name: string })
 
 export default function ProfileRoute() {
   const palette = useThemeColors();
+  const { preference, setPreference } = useThemePreference();
   const api = useMemo(() => createApi(), []);
   const [summary, setSummary] = useState<ProfileSummary | null>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -260,6 +262,24 @@ export default function ProfileRoute() {
                 </GyfText>
               </AtelierCard>
             ))}
+          </View>
+
+          <View style={{ gap: spacing.sm }}>
+            <GyfText accessibilityRole="header" variant="title">
+              Appearance
+            </GyfText>
+            <View style={{ flexDirection: "row", gap: spacing.sm }}>
+              {(["system", "light", "dark"] as const).map((option) => (
+                <FilterChip
+                  selected={preference === option}
+                  key={option}
+                  label={
+                    option === "system" ? "Match device" : option === "light" ? "Light" : "Dark"
+                  }
+                  onPress={() => setPreference(option)}
+                />
+              ))}
+            </View>
           </View>
 
           <AtelierButton

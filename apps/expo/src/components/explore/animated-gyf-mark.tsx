@@ -49,21 +49,20 @@ export function AnimatedGyfMark({
   const style = useAnimatedStyle(() => ({
     transform: [{ rotate: `${spin.value * 360}deg` }],
   }));
-  // Six satellites at 60° steps, radius 7.5, on a 24 grid; heavier center dot.
+  // The exact owner mark: six equal dots on one ring, no center — dot radius
+  // ≈ 0.34 × orbit radius, matching the reference image's proportions.
   const satellites = Array.from({ length: 6 }, (_, i) => {
     const angle = (Math.PI / 3) * i - Math.PI / 2;
     return {
-      cx: 12 + 7.5 * Math.cos(angle),
-      cy: 12 + 7.5 * Math.sin(angle),
-      r: i % 2 === 0 ? 2 : 1.4,
+      cx: 12 + 7.4 * Math.cos(angle),
+      cy: 12 + 7.4 * Math.sin(angle),
     };
   });
   return (
     <Animated.View accessibilityElementsHidden importantForAccessibility="no" style={style}>
       <Svg fill="none" height={size} viewBox="0 0 24 24" width={size}>
-        <Circle cx={12} cy={12} fill={color} r={2.6} />
         {satellites.map((dot, i) => (
-          <Circle cx={dot.cx} cy={dot.cy} fill={color} key={i} r={dot.r} />
+          <Circle cx={dot.cx} cy={dot.cy} fill={color} key={i} r={2.55} />
         ))}
       </Svg>
     </Animated.View>
