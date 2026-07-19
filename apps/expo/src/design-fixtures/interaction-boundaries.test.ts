@@ -23,6 +23,7 @@ const productCardSource = await Bun.file(
 ).text();
 const welcomeSource = await Bun.file(new URL("../app/(auth)/welcome.tsx", import.meta.url)).text();
 const errorRouteSource = await Bun.file(new URL("../app/error.tsx", import.meta.url)).text();
+const rootLayoutSource = await Bun.file(new URL("../app/_layout.tsx", import.meta.url)).text();
 
 describe("Expo interaction boundaries", () => {
   test("decorative tab-bar gradients cannot intercept web clicks", () => {
@@ -48,6 +49,14 @@ describe("Expo interaction boundaries", () => {
     expect(errorRouteSource).toContain("export function ErrorBoundary");
     expect(errorRouteSource).toContain("export default function ErrorRoute");
     expect(errorRouteSource).toContain('router.replace("/")');
+  });
+
+  test("the root layout re-exports the shared error boundary so a crash never renders blank", () => {
+    // Expo Router only catches a segment's render errors when that segment's own file
+    // exports `ErrorBoundary` — a boundary that lives solely in app/error.tsx (its own
+    // routed screen) never wraps the root layout. Without this, any uncaught render
+    // exception in RootLayout or its children unmounts the whole tree to nothing.
+    expect(rootLayoutSource).toMatch(/export\s*\{\s*ErrorBoundary\s*\}\s*from\s*["']\.\/error["']/);
   });
 
   test("the infinite Spark animation follows system motion and cancels on cleanup", () => {

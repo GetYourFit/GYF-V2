@@ -25,6 +25,12 @@ void SplashScreen.preventAutoHideAsync().catch(() => {
   // Already hidden (web reload) — nothing to hold.
 });
 
+// Expo Router only catches a segment's render errors when that segment's own file
+// exports `ErrorBoundary` — without this re-export, an uncaught exception anywhere in
+// RootLayout or its children unmounts the whole tree and the app renders permanently
+// blank instead of the honest "GYF hit a snag" retry screen.
+export { ErrorBoundary } from "./error";
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     BricolageGrotesque_500Medium,
