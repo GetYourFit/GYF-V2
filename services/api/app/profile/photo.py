@@ -154,7 +154,7 @@ def profile_from_photo(
     """
     analysis = PhotoAnalysis(reason="Continue with the manual fields.")
     profile = ProfilePhotoResponse(
-        **(existing.model_dump() if existing is not None else {}),
+        **(existing.model_dump(exclude={"photo_analysis"}) if existing is not None else {}),
         photo_analysis=analysis,
     )
     versions: list[str] = []

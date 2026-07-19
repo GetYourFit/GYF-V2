@@ -242,6 +242,19 @@ def test_prior_body_is_not_reported_as_fresh_in_skin_only_result(monkeypatch):
     assert "body_type" not in body["photo_analysis"]["field_confidence"]
 
 
+def test_consecutive_uploads_do_not_persist_response_metadata(monkeypatch):
+    monkeypatch.setattr(main.settings, "skin_tone_enabled", True)
+    profiles = InMemoryProfileRepository()
+    client = _client(skin=_FakeSkin(SKIN), body=_FakeBody(BODY), profiles=profiles)
+
+    first = _upload(client)
+    second = _upload(client)
+
+    assert first.status_code == second.status_code == 200
+    assert second.json()["photo_analysis"]["state"] == "completed"
+    assert type(profiles.get(DEV_USER)) is Profile
+
+
 def test_consent_required():
     client = _client(skin=_FakeSkin(SKIN), body=_FakeBody(BODY), consent=())
     assert _upload(client).status_code == 403

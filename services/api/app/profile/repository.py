@@ -203,7 +203,7 @@ class InMemoryProfileRepository:
         self._lock = Lock()
 
     def upsert(self, user_id: str, profile: Profile) -> None:
-        self.profiles[user_id] = profile
+        self.profiles[user_id] = Profile.model_validate(profile.model_dump())
 
     def get(self, user_id: str) -> Profile | None:
         return self.profiles.get(user_id)
@@ -223,7 +223,7 @@ class InMemoryProfileRepository:
     def _patch(self, user_id: str, merge: Callable[[Profile | None], Profile]) -> Profile:
         with self._lock:
             profile = merge(self.profiles.get(user_id))
-            self.profiles[user_id] = profile
+            self.profiles[user_id] = Profile.model_validate(profile.model_dump())
             return profile
 
     def delete(self, user_id: str) -> bool:
