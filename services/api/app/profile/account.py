@@ -252,9 +252,7 @@ class InMemoryAccountRepository:
 
     def list_expired(self, grace_days: int) -> list[tuple[str, str | None]]:
         # In-memory has no clock; every tombstoned user counts (grace assumed elapsed).
-        return [
-            (uid, u.get("avatar_url")) for uid, u in self.users.items() if u["deleted"]
-        ]
+        return [(uid, u.get("avatar_url")) for uid, u in self.users.items() if u["deleted"]]
 
     def purge_user(self, user_id: str) -> bool:
         user = self.users.get(user_id)

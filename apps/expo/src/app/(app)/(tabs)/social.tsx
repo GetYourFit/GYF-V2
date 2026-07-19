@@ -19,6 +19,7 @@ import {
   SOCIAL_CAPTION_MAX,
   SOCIAL_PAGE_SIZE,
   toggleId,
+  withoutAuthor,
   type FeedScope,
 } from "@/lib/social-feed";
 import { colors, radii, spacing } from "@/theme/tokens";
@@ -105,6 +106,8 @@ function PostCard({
   onFollow,
   onRecreate,
   recreatePending,
+  onReport,
+  onBlock,
 }: {
   post: Post;
   isSelf: boolean;
@@ -114,9 +117,14 @@ function PostCard({
   onFollow: () => void;
   onRecreate: () => void;
   recreatePending: boolean;
+  onReport: (reason: string) => void;
+  onBlock: () => void;
 }) {
   const palette = useThemeColors();
   const covers = postCoverImages(post.items, 3);
+  // Inline two-step report (works on web too, unlike Alert): tap Report, pick a
+  // reason chip; "sent" is per-card local state — the server keeps the record.
+  const [reportState, setReportState] = useState<"idle" | "choose" | "sent">("idle");
   return (
     <AtelierCard style={{ gap: spacing.md }}>
       <View style={{ alignItems: "center", flexDirection: "row", justifyContent: "space-between" }}>
@@ -213,6 +221,67 @@ function PostCard({
           label={recreatePending ? "Recreating…" : "Recreate for me"}
           onPress={onRecreate}
         />
+      )}
+
+      {isSelf ? null : reportState === "sent" ? (
+        <GyfText accessibilityRole="alert" tone="muted" variant="bodySmall">
+          Reported. GYF moderation will review this post.
+        </GyfText>
+      ) : reportState === "choose" ? (
+        <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.sm }}>
+          <GyfText tone="muted" variant="bodySmall">
+            Why?
+          </GyfText>
+          {["Spam", "Not appropriate"].map((reason) => (
+            <PressableScale
+              accessibilityLabel={`Report as ${reason}`}
+              accessibilityRole="button"
+              hitSlop={hitSlopFor(32)}
+              key={reason}
+              onPress={() => {
+                onReport(reason);
+                setReportState("sent");
+              }}
+            >
+              <GyfText style={{ color: palette.error }} variant="bodySmall">
+                {reason}
+              </GyfText>
+            </PressableScale>
+          ))}
+          <PressableScale
+            accessibilityLabel="Cancel report"
+            accessibilityRole="button"
+            hitSlop={hitSlopFor(32)}
+            onPress={() => setReportState("idle")}
+          >
+            <GyfText tone="muted" variant="bodySmall">
+              Cancel
+            </GyfText>
+          </PressableScale>
+        </View>
+      ) : (
+        <View style={{ flexDirection: "row", gap: spacing.lg }}>
+          <PressableScale
+            accessibilityLabel="Report this post"
+            accessibilityRole="button"
+            hitSlop={hitSlopFor(32)}
+            onPress={() => setReportState("choose")}
+          >
+            <GyfText tone="faint" variant="bodySmall">
+              Report
+            </GyfText>
+          </PressableScale>
+          <PressableScale
+            accessibilityLabel="Block this stylist — their posts disappear from your feeds"
+            accessibilityRole="button"
+            hitSlop={hitSlopFor(32)}
+            onPress={onBlock}
+          >
+            <GyfText tone="faint" variant="bodySmall">
+              Block stylist
+            </GyfText>
+          </PressableScale>
+        </View>
       )}
     </AtelierCard>
   );
@@ -400,6 +469,32 @@ export default function SocialRoute() {
     [api, follows, pending],
   );
 
+  const report = useCallback(
+    (postId: string, reason: string) => {
+      // ponytail: fire-and-forget — the card's "sent" copy is optimistic; add
+      // retry surfacing if moderation reports ever need delivery guarantees.
+      void api.reportPost(postId, reason).catch(() => undefined);
+    },
+    [api],
+  );
+
+  const block = useCallback(
+    async (userId: string) => {
+      let snapshot: Post[] = [];
+      setPosts((current) => {
+        snapshot = current;
+        return withoutAuthor(current, userId);
+      });
+      try {
+        await api.blockUser(userId);
+      } catch {
+        // revert on failure — the feed must never lie about what's hidden
+        setPosts(snapshot);
+      }
+    },
+    [api],
+  );
+
   return (
     <FlatList
       accessibilityLabel="Community feed"
@@ -431,8 +526,10 @@ export default function SocialRoute() {
           <PostCard
             following={follows.has(item.user_id)}
             isSelf={item.user_id === viewerId}
+            onBlock={() => void block(item.user_id)}
             onFollow={() => void toggleFollow(item.user_id)}
             onReact={() => void react(item)}
+            onReport={(reason) => report(item.id, reason)}
             onRecreate={() => void recreate(item.id)}
             pending={pending === item.user_id}
             post={item}

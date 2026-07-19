@@ -327,6 +327,28 @@ export class GyfApi {
     return this.request<void>("DELETE", `/wardrobe/items/${encodeURIComponent(wardrobeId)}`);
   }
 
+  /** Record a moderation report against a post. */
+  reportPost(postId: string, reason: string): Promise<void> {
+    return this.request<void>("POST", `/social/posts/${encodeURIComponent(postId)}/report`, {
+      reason,
+    });
+  }
+
+  /** Hide a user's posts from the caller's feeds. Idempotent. */
+  blockUser(userId: string): Promise<void> {
+    return this.request<void>("PUT", `/social/blocks/${encodeURIComponent(userId)}`);
+  }
+
+  /** Undo a block. Idempotent. */
+  unblockUser(userId: string): Promise<void> {
+    return this.request<void>("DELETE", `/social/blocks/${encodeURIComponent(userId)}`);
+  }
+
+  /** The caller's block list, most recent first. */
+  listBlocks(): Promise<string[]> {
+    return this.request<{ blocked: string[] }>("GET", "/social/blocks").then((r) => r.blocked);
+  }
+
   /** The caller's identity (id + email) as the API resolves it from the token. */
   me(): Promise<{ user_id: string; email: string | null }> {
     return this.request<{ user_id: string; email: string | null }>("GET", "/me");

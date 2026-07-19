@@ -50,6 +50,18 @@ ON CONFLICT (follower_id, followee_id) DO NOTHING
 """
 _UNFOLLOW = "DELETE FROM follows WHERE follower_id = %s AND followee_id = %s"
 # Bounded like the other per-user lists; revisit with cursors if anyone nears it.
+_REPORT = """
+INSERT INTO post_reports (post_id, reporter_id, reason)
+VALUES (%s, %s, %s)
+"""
+_BLOCK = """
+INSERT INTO social_blocks (blocker_id, blocked_id)
+VALUES (%s, %s) ON CONFLICT DO NOTHING
+"""
+_UNBLOCK = "DELETE FROM social_blocks WHERE blocker_id = %s AND blocked_id = %s"
+_BLOCKED = """
+SELECT blocked_id FROM social_blocks WHERE blocker_id = %s ORDER BY created_at DESC
+"""
 _FOLLOWING = """
 SELECT followee_id FROM follows WHERE follower_id = %s ORDER BY created_at DESC LIMIT 500
 """
@@ -63,6 +75,12 @@ class PostInput(BaseModel):
     occasion: str | None = Field(default=None, max_length=64)
     region: str | None = Field(default=None, max_length=64)
     recommendation_id: str | None = Field(default=None, max_length=64)
+
+
+class ReportInput(BaseModel):
+    """Why a post is being reported — free text, bounded, never empty."""
+
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class ReactionInput(BaseModel):
@@ -140,6 +158,25 @@ class SocialRepository(Protocol):
 
     def following(self, follower_id: str) -> list[str]:
         """The user ids this user follows, most recent first."""
+        ...
+
+    def report(self, post_id: str, reporter_id: str, reason: str) -> bool:
+        """Record a moderation report. False when the post does not exist."""
+        ...
+
+    def block(self, blocker_id: str, blocked_id: str) -> bool:
+        """Hide a user's posts from the caller. Idempotent; True if newly blocked.
+
+        Raises :class:`KeyError` when the blocked user does not exist.
+        """
+        ...
+
+    def unblock(self, blocker_id: str, blocked_id: str) -> None:
+        """Undo a block. Idempotent — a no-op when not blocked."""
+        ...
+
+    def blocked(self, blocker_id: str) -> list[str]:
+        """The user ids this user has blocked, most recent first."""
         ...
 
 
@@ -228,6 +265,35 @@ class PostgresSocialRepository:
             rows = conn.execute(_FOLLOWING, (follower_id,)).fetchall()
         return [str(r[0]) for r in rows]
 
+    def report(self, post_id: str, reporter_id: str, reason: str) -> bool:
+        from psycopg.errors import ForeignKeyViolation  # lazy, like the pool import
+
+        try:
+            with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                conn.execute(_REPORT, (post_id, reporter_id, reason))
+                return True
+        except ForeignKeyViolation:
+            return False  # the post FK is the existence check
+
+    def block(self, blocker_id: str, blocked_id: str) -> bool:
+        from psycopg.errors import ForeignKeyViolation  # lazy, like the pool import
+
+        try:
+            with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                cur = conn.execute(_BLOCK, (blocker_id, blocked_id))
+                return cur.rowcount > 0
+        except ForeignKeyViolation as exc:
+            raise KeyError(blocked_id) from exc
+
+    def unblock(self, blocker_id: str, blocked_id: str) -> None:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            conn.execute(_UNBLOCK, (blocker_id, blocked_id))
+
+    def blocked(self, blocker_id: str) -> list[str]:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            rows = conn.execute(_BLOCKED, (blocker_id,)).fetchall()
+        return [str(r[0]) for r in rows]
+
 
 def _record_from_row(row: tuple) -> PostRecord:
     return PostRecord(
@@ -252,6 +318,8 @@ class InMemorySocialRepository:
         self.posts: list[PostRecord] = []
         self.reactions: set[tuple[str, str]] = set()
         self.follows: list[tuple[str, str]] = []  # (follower, followee), oldest first
+        self.blocks: list[tuple[str, str]] = []  # (blocker, blocked), oldest first
+        self.reports: list[tuple[str, str, str]] = []  # (post, reporter, reason)
         self.known_users = known_users
 
     def create(self, record: PostRecord) -> None:
@@ -304,6 +372,29 @@ class InMemorySocialRepository:
 
     def following(self, follower_id: str) -> list[str]:
         return [ee for er, ee in reversed(self.follows) if er == follower_id]
+
+    def report(self, post_id: str, reporter_id: str, reason: str) -> bool:
+        if self.get(post_id) is None:
+            return False
+        self.reports.append((post_id, reporter_id, reason))
+        return True
+
+    def block(self, blocker_id: str, blocked_id: str) -> bool:
+        if self.known_users is not None and blocked_id not in self.known_users:
+            raise KeyError(blocked_id)
+        if (blocker_id, blocked_id) in self.blocks:
+            return False
+        self.blocks.append((blocker_id, blocked_id))
+        return True
+
+    def unblock(self, blocker_id: str, blocked_id: str) -> None:
+        try:
+            self.blocks.remove((blocker_id, blocked_id))
+        except ValueError:
+            pass  # idempotent
+
+    def blocked(self, blocker_id: str) -> list[str]:
+        return [ed for er, ed in reversed(self.blocks) if er == blocker_id]
 
 
 def make_record(payload: PostInput, user_id: str) -> PostRecord:

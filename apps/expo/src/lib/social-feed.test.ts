@@ -69,3 +69,14 @@ describe("Expo Social feed model", () => {
     ).toHaveLength(1_000);
   });
 });
+
+describe("blocking hides an author's posts", () => {
+  test("removes every post by the blocked author, immutably", async () => {
+    const { withoutAuthor } = await import("./social-feed");
+    const post = (id: string, user_id: string) => ({ id, user_id }) as never;
+    const posts = [post("1", "a"), post("2", "b"), post("3", "a")];
+    const next = withoutAuthor(posts as never, "a");
+    expect(next.map((p: { id: string }) => p.id)).toEqual(["2"]);
+    expect(posts).toHaveLength(3);
+  });
+});

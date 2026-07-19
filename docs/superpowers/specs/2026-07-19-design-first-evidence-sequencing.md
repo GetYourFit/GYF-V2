@@ -23,6 +23,12 @@ Each task must:
 
 The build lane may implement a surface whose product gate remains unproved. It must label unavailable capabilities honestly, keep them closed at runtime, and avoid `GO`, beta, release, or production-readiness claims.
 
+## Hosting boundary
+
+Expo is the only client and hosting target for this work. The first implementation task must remove the active Vercel deployment job and Vercel Make targets before any design-code commit can reach `main`. Later commits may build and deploy only `apps/expo` through EAS Hosting at `https://get-your-fit.expo.app`.
+
+No workflow, preview, production promotion, rollback, or manual command may deploy this design build to Vercel. Existing Vercel external state remains untouched; it is neither a deployment target nor a rollback target.
+
 ## Deferred native acceptance
 
 Physical-device evidence moves to one release-blocking `NATIVE-ACCEPTANCE` pointer after the design build. It retains every unresolved hardware check:
@@ -51,4 +57,4 @@ The design lane ends in `DESIGN BUILD COMPLETE — NATIVE ACCEPTANCE HOLD` when 
 
 ## Rollback
 
-Each task remains a bounded commit. A regression reverts the smallest failing task or component. The verified EAS web deployment stays the rollback target until a later design-build deployment passes the same hosting proof.
+Each task remains a bounded commit. A regression reverts the smallest failing task or component. The verified EAS Hosting deployment stays the rollback target until a later Expo deployment passes the same hosting proof.

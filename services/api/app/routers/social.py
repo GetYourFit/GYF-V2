@@ -28,6 +28,7 @@ from ..social import (
     Post,
     PostInput,
     ReactionInput,
+    ReportInput,
     SocialRepository,
     enrich_feed,
     make_record,
@@ -52,6 +53,11 @@ def social_feed(
     """Posts ranked by engagement then recency, each with its look rendered."""
     authors = repo.following(principal.user_id) if scope == "following" else None
     records = repo.feed(limit, offset, authors)
+    # ponytail: post-fetch block filter — a page dominated by blocked authors can
+    # under-fill; push the exclusion into the feed SQL if block lists ever grow.
+    hidden = set(repo.blocked(principal.user_id))
+    if hidden:
+        records = [r for r in records if r.user_id not in hidden]
     reacted = repo.reacted_post_ids(principal.user_id, [r.id for r in records])
     return {"posts": enrich_feed(records, directory, reacted)}
 
@@ -146,6 +152,73 @@ def unfollow_user(
     """Stop following. Idempotent: 204 whether or not currently following."""
     repo.unfollow(principal.user_id, user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/social/posts/{post_id}/report",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Report a post",
+    dependencies=[Depends(rate_limit("feedback", "rate_limit_feedback"))],
+)
+def report_post(
+    post_id: str,
+    body: ReportInput,
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+) -> Response:
+    """Record a moderation report against a post. 404 if the post is gone."""
+    if not repo.report(post_id, principal.user_id, body.reason):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown post")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put(
+    "/social/blocks/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Block a user",
+    dependencies=[Depends(rate_limit("feedback", "rate_limit_feedback"))],
+)
+def block_user(
+    user_id: str,
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+) -> Response:
+    """Hide a user's posts from the caller's feeds (idempotent PUT).
+    422 on self-block, 404 if the user does not exist."""
+    if user_id == principal.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Cannot block yourself"
+        )
+    try:
+        repo.block(principal.user_id, user_id)
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown user") from None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/social/blocks/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Unblock a user",
+)
+def unblock_user(
+    user_id: str,
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+) -> Response:
+    """Undo a block. Idempotent: 204 whether or not currently blocked."""
+    repo.unblock(principal.user_id, user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/social/blocks", summary="Who the caller has blocked")
+def list_blocks(
+    principal: Principal = Depends(require_active_principal),
+    repo: SocialRepository = Depends(get_social_repo),
+) -> dict[str, list[str]]:
+    """The caller's block list (most recent first) — lets the client hide
+    blocked authors immediately and offer unblock."""
+    return {"blocked": repo.blocked(principal.user_id)}
 
 
 @router.get("/social/follows", summary="Who the caller follows")

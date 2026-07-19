@@ -143,9 +143,7 @@ def test_catalog_health_finishes_exact_read_once_then_uses_cache():
 
     pool = FakePool()
     repo = PostgresSystemStatsRepository("unused", pool=pool)
-    expected = CatalogHealth(
-        items=64822, with_embedding=64651, with_price=64822, with_image=64822
-    )
+    expected = CatalogHealth(items=64822, with_embedding=64651, with_price=64822, with_image=64822)
 
     assert repo.catalog_health() == expected
     assert repo.catalog_health() == expected

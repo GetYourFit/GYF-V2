@@ -19,8 +19,7 @@ depends_on: str | Sequence[str] | None = None
 
 _INDEX = "idx_items_has_image"
 _CREATE = (
-    f"CREATE INDEX CONCURRENTLY {_INDEX} ON items (id) "
-    "WHERE jsonb_array_length(image_refs) > 0"
+    f"CREATE INDEX CONCURRENTLY {_INDEX} ON items (id) WHERE jsonb_array_length(image_refs) > 0"
 )
 
 

@@ -50,6 +50,11 @@ export function toggleId(ids: ReadonlySet<string>, id: string, present: boolean)
   return next;
 }
 
+/** Every post except the blocked author's — the immediate client echo of a block. */
+export function withoutAuthor(posts: Post[], userId: string): Post[] {
+  return posts.filter((post) => post.user_id !== userId);
+}
+
 /** Keep pagination stable if the API repeats a post at a page boundary. */
 export function appendUniquePosts(current: Post[], next: Post[]): Post[] {
   const seen = new Set(current.map((post) => post.id));

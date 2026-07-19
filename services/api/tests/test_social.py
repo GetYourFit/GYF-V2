@@ -176,3 +176,58 @@ def test_following_scope_filters_feed():
         assert [p["caption"] for p in following] == ["theirs"]
     finally:
         app.dependency_overrides.clear()
+
+
+OTHER_USER = "00000000-0000-0000-0000-000000000002"
+
+
+def _post_by(repo: InMemorySocialRepository, user_id: str, post_id: str = "p-1") -> None:
+    repo.create(
+        PostRecord(
+            id=post_id,
+            user_id=user_id,
+            item_ids=["item-1"],
+            recommendation_id=None,
+            occasion=None,
+            caption=None,
+            reaction_count=0,
+        )
+    )
+
+
+def test_report_post_records_and_unknown_404s():
+    repo = InMemorySocialRepository()
+    _post_by(repo, OTHER_USER)
+    try:
+        client = _client(repo)
+        r = client.post("/social/posts/p-1/report", json={"reason": "spam"})
+        assert r.status_code == 204
+        assert client.post("/social/posts/ghost/report", json={"reason": "spam"}).status_code == 404
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_block_hides_author_from_feed_and_is_idempotent():
+    repo = InMemorySocialRepository(known_users={DEV_USER, OTHER_USER})
+    _post_by(repo, OTHER_USER)
+    try:
+        client = _client(repo)
+        assert len(client.get("/social/posts").json()["posts"]) == 1
+        assert client.put(f"/social/blocks/{OTHER_USER}").status_code == 204
+        assert client.put(f"/social/blocks/{OTHER_USER}").status_code == 204  # idempotent
+        assert client.get("/social/posts").json()["posts"] == []
+        assert client.get("/social/blocks").json()["blocked"] == [OTHER_USER]
+        assert client.delete(f"/social/blocks/{OTHER_USER}").status_code == 204
+        assert len(client.get("/social/posts").json()["posts"]) == 1
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_block_rejects_self_and_unknown_user():
+    repo = InMemorySocialRepository(known_users={DEV_USER})
+    try:
+        client = _client(repo)
+        assert client.put(f"/social/blocks/{DEV_USER}").status_code == 422
+        assert client.put(f"/social/blocks/{OTHER_USER}").status_code == 404
+    finally:
+        app.dependency_overrides.clear()
