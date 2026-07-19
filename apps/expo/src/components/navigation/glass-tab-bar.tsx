@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
+import { Image } from "expo-image";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -18,7 +19,9 @@ import {
 } from "@/components/icons";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import { PressableScale } from "@/components/ui/pressable-scale";
+import { createApi } from "@/lib/api";
 import { select } from "@/lib/haptics";
+import { avatarImageUrl } from "@/lib/profile-summary";
 import { colors, motion, radii, spacing } from "@/theme/tokens";
 import { useAppColorScheme } from "@/theme/use-color-scheme";
 
@@ -103,6 +106,28 @@ const GLYPHS: Record<string, (props: IconProps) => React.ReactNode> = {
 export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarProps) {
   const theme = useAppColorScheme();
   const palette = colors[theme];
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
+  // The uploaded avatar becomes the Profile glyph; any miss keeps the person SVG.
+  // ponytail: refetches on every tab change — one cheap GET keeps the glyph fresh
+  // after an avatar edit; route through a shared profile cache if one ever lands.
+  useEffect(() => {
+    let mounted = true;
+    void createApi()
+      .getProfileSummary()
+      .then((summary) => {
+        if (!mounted) return;
+        setAvatar(avatarImageUrl(summary.avatar_url));
+        setAvatarFailed(false);
+      })
+      .catch(() => {
+        if (mounted) setAvatar(null);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [state.index]);
 
   return (
     <View
@@ -128,7 +153,18 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarPr
           const { options } = descriptors[route.key];
           const label = options.title ?? route.name;
           const focused = state.index === index;
-          const Glyph = GLYPHS[route.name] ?? IconSpark;
+          const Glyph =
+            route.name === "profile" && avatar && !avatarFailed
+              ? ({ size }: IconProps) => (
+                  <Image
+                    accessible={false}
+                    contentFit="cover"
+                    onError={() => setAvatarFailed(true)}
+                    source={{ uri: avatar }}
+                    style={{ borderRadius: radii.capsule, height: size, width: size }}
+                  />
+                )
+              : (GLYPHS[route.name] ?? IconSpark);
           return (
             <PressableScale
               accessibilityLabel={label}

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatMemberSince, initials, statCells } from "./profile-summary";
+import { avatarImageUrl, formatMemberSince, initials, statCells } from "./profile-summary";
 
 describe("Expo Profile summary model", () => {
   test("member-since formats UTC month/year, null when absent or bad", () => {
@@ -13,6 +13,17 @@ describe("Expo Profile summary model", () => {
     expect(initials("Aria Vance")).toBe("AV");
     expect(initials("cher")).toBe("C");
     expect(initials("  ")).toBe("GYF");
+  });
+
+  test("avatar image url accepts only https, null otherwise", () => {
+    expect(avatarImageUrl("https://cdn.gyf.app/u/1/avatar-a")).toBe(
+      "https://cdn.gyf.app/u/1/avatar-a",
+    );
+    expect(avatarImageUrl("http://cdn.gyf.app/a")).toBeNull();
+    expect(avatarImageUrl("javascript:alert(1)")).toBeNull();
+    expect(avatarImageUrl(null)).toBeNull();
+    expect(avatarImageUrl(undefined)).toBeNull();
+    expect(avatarImageUrl("  ")).toBeNull();
   });
 
   test("stat cells map the summary counts in grid order", () => {

@@ -8,6 +8,11 @@ export function formatMemberSince(iso: string | null | undefined): string | null
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
+/** The only avatar URLs GYF will render: absolute https. Anything else → null (SVG/initials fallback). */
+export function avatarImageUrl(url: string | null | undefined): string | null {
+  return url && /^https:\/\//i.test(url.trim()) ? url.trim() : null;
+}
+
 /** Initials for the avatar fallback, e.g. "Aria Vance" → "AV". */
 export function initials(name: string | null | undefined): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);

@@ -21,6 +21,15 @@ export function isOnboardingReady(profile: ProfileInput): boolean {
   return Boolean(profile.gender?.trim());
 }
 
+/**
+ * Sign-in routing decision: send the session to `/onboarding` only when the
+ * server profile is known and incomplete. An unknown profile (fetch failure)
+ * fails open — the Stylist's `isNotOnboarded` error path covers the miss.
+ */
+export function needsOnboarding(profile: ProfileInput | null): boolean {
+  return profile !== null && !isOnboardingReady(profile);
+}
+
 export function mergeProfile(profile: Partial<ProfileInput>): ProfileInput {
   return {
     ...EMPTY_PROFILE,

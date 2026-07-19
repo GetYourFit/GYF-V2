@@ -5,6 +5,7 @@ import {
   EMPTY_PROFILE,
   isOnboardingReady,
   mergeProfile,
+  needsOnboarding,
 } from "./onboarding-validation";
 
 describe("onboarding validation", () => {
@@ -23,6 +24,13 @@ describe("onboarding validation", () => {
     expect(
       mergeProfile({ budget_range: { min: 12.5, max: 99.95, currency: " usd " } }).budget_range,
     ).toEqual({ min: 12.5, max: 99.95, currency: "USD" });
+  });
+  test("routes unonboarded profiles to onboarding, fails open when profile is unknown", () => {
+    expect(needsOnboarding(EMPTY_PROFILE)).toBe(true);
+    expect(needsOnboarding({ ...EMPTY_PROFILE, gender: "men" })).toBe(false);
+    // Fetch failure must not trap a working session behind onboarding; the
+    // Stylist's isNotOnboarded error path already covers the miss honestly.
+    expect(needsOnboarding(null)).toBe(false);
   });
   test("requires processing consent and starts optional flags off", () => {
     expect(DEFAULT_CONSENT).toEqual({

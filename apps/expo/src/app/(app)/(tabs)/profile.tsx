@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import {
   ActivityIndicator,
@@ -16,7 +16,7 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi, type ProfileSummary } from "@/lib/api";
 import { getSession } from "@/lib/auth";
 import { replaceAvatar, validateAvatarAsset } from "@/lib/avatar-upload";
-import { formatMemberSince, initials, statCells } from "@/lib/profile-summary";
+import { avatarImageUrl, formatMemberSince, initials, statCells } from "@/lib/profile-summary";
 import { capabilityUsable } from "@/lib/system-status";
 import { colors, radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
@@ -32,11 +32,12 @@ function readableError(error: unknown): string {
 
 function Avatar({ url, name }: { url: string | null | undefined; name: string }) {
   const palette = useThemeColors();
-  if (url && /^https:\/\//i.test(url)) {
+  const safeUrl = avatarImageUrl(url);
+  if (safeUrl) {
     return (
       <Image
         accessibilityLabel="Your profile picture"
-        source={{ uri: url }}
+        source={{ uri: safeUrl }}
         style={{ borderRadius: radii.capsule, height: 96, width: 96 }}
       />
     );
@@ -87,9 +88,13 @@ export default function ProfileRoute() {
     }
   }, [api]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // Focus, not mount: returning from /personal-fit or /account must show the
+  // just-saved values, and a tab revisit picks up server-side changes.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
 
   const pickAvatar = useCallback(async () => {
     if (avatarBusy) return;
@@ -257,6 +262,11 @@ export default function ProfileRoute() {
             ))}
           </View>
 
+          <AtelierButton
+            accessibilityLabel="Edit your personal fit — skin tone, body type, currency and budget"
+            label="Edit personal fit"
+            onPress={() => router.push("/personal-fit")}
+          />
           <AtelierButton
             accessibilityLabel="Manage your account"
             label="Manage account"
