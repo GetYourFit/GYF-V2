@@ -11,6 +11,8 @@ import {
   formatCatalogPrice,
   isPlainBrowse,
   priceFiltersUsable,
+  removableFilterPills,
+  withoutFilter,
   scopeGender,
   withUsablePriceFilters,
 } from "./explore-feed";
@@ -124,6 +126,39 @@ describe("Expo Explore request model", () => {
       item("a"),
       item("b"),
     ]);
+  });
+});
+
+describe("applied filters render as removable pills", () => {
+  test("no active filters means no pills", () => {
+    expect(removableFilterPills(clean)).toEqual([]);
+  });
+
+  test("each active filter becomes one labelled pill in stable order", () => {
+    const filters = {
+      q: "red saree",
+      slot: "top",
+      occasion: "wedding",
+      style: "minimalist",
+      sort: "price_asc" as const,
+      maxPrice: 2500,
+    };
+    expect(removableFilterPills(filters)).toEqual([
+      { key: "q", label: "“red saree”" },
+      { key: "slot", label: "top" },
+      { key: "occasion", label: "wedding" },
+      { key: "style", label: "minimalist" },
+      { key: "maxPrice", label: "Max 2,500" },
+      { key: "sort", label: "Price low" },
+    ]);
+  });
+
+  test("removing one pill resets only that filter, immutably", () => {
+    const filters = { ...clean, q: "coat", sort: "price_desc" as const };
+    const next = withoutFilter(filters, "sort");
+    expect(next).toEqual({ ...clean, q: "coat" });
+    expect(filters.sort).toBe("price_desc");
+    expect(withoutFilter(next, "q")).toEqual(clean);
   });
 });
 

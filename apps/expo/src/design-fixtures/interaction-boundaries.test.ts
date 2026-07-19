@@ -23,6 +23,9 @@ const productCardSource = await Bun.file(
 ).text();
 const welcomeSource = await Bun.file(new URL("../app/(auth)/welcome.tsx", import.meta.url)).text();
 const errorRouteSource = await Bun.file(new URL("../app/error.tsx", import.meta.url)).text();
+const gyfMarkSource = await Bun.file(
+  new URL("../components/explore/animated-gyf-mark.tsx", import.meta.url),
+).text();
 const rootLayoutSource = await Bun.file(new URL("../app/_layout.tsx", import.meta.url)).text();
 
 describe("Expo interaction boundaries", () => {
@@ -59,9 +62,11 @@ describe("Expo interaction boundaries", () => {
     expect(rootLayoutSource).toMatch(/export\s*\{\s*ErrorBoundary\s*\}\s*from\s*["']\.\/error["']/);
   });
 
-  test("the infinite Spark animation follows system motion and cancels on cleanup", () => {
-    expect(exploreSource).toContain("ReduceMotion.System");
-    expect(exploreSource).toContain("cancelAnimation(spin)");
+  test("the GYF mark animates only while active, honors system motion, and cancels on cleanup", () => {
+    expect(gyfMarkSource).toContain("ReduceMotion.System");
+    expect(gyfMarkSource).toContain("cancelAnimation(spin)");
+    // Spins only while work is in flight — decorative infinite animation is prohibited.
+    expect(gyfMarkSource).toMatch(/if \(active\) \{[\s\S]{0,200}withRepeat/);
   });
 
   test("opening and closing the board use the complete filter reset", () => {
@@ -69,7 +74,7 @@ describe("Expo interaction boundaries", () => {
       /accessibilityLabel="Close collections board"[\s\S]{0,300}setExpanded\(false\);\s*clearFilters\(\);/,
     );
     expect(exploreSource).toMatch(
-      /<SparkButton[\s\S]{0,300}setExpanded\(true\);\s*clearFilters\(\);/,
+      /onPressMark=\{\(\) => \{\s*setExpanded\(true\);\s*clearFilters\(\);/,
     );
     expect(exploreSource).toMatch(
       /const clearFilters = \(\) => \{[\s\S]{0,180}setMaxPriceInput\(""\);/,

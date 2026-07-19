@@ -140,3 +140,18 @@ export function IconSearch({ size, color }: IconProps) {
     </Icon>
   );
 }
+
+export function IconFilter({ size, color }: IconProps) {
+  // Explore filter control: three sliding rails (Ref4's control density).
+  return (
+    <Icon size={size}>
+      <Path d="M4 7h16M4 12h16M4 17h16" stroke={color} {...stroke} />
+      <Path
+        d="M9 7m-1.6 0a1.6 1.6 0 1 0 3.2 0 1.6 1.6 0 1 0-3.2 0M15.5 12m-1.6 0a1.6 1.6 0 1 0 3.2 0 1.6 1.6 0 1 0-3.2 0M7 17m-1.6 0a1.6 1.6 0 1 0 3.2 0 1.6 1.6 0 1 0-3.2 0"
+        fill="none"
+        stroke={color}
+        {...stroke}
+      />
+    </Icon>
+  );
+}

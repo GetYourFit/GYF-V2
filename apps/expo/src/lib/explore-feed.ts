@@ -161,6 +161,32 @@ export function buildExploreRequest(
   };
 }
 
+const SORT_LABELS: Record<ExploreSort, string> = {
+  relevance: "Relevance",
+  price_asc: "Price low",
+  price_desc: "Price high",
+};
+
+export type FilterPill = { key: keyof ExploreFilters; label: string };
+
+/** Active filters as removable pills, in the order the controls present them. */
+export function removableFilterPills(filters: ExploreFilters): FilterPill[] {
+  const pills: FilterPill[] = [];
+  if (filters.q.trim()) pills.push({ key: "q", label: `“${filters.q.trim()}”` });
+  if (filters.slot) pills.push({ key: "slot", label: filters.slot });
+  if (filters.occasion) pills.push({ key: "occasion", label: filters.occasion });
+  if (filters.style) pills.push({ key: "style", label: filters.style });
+  if (filters.maxPrice != null)
+    pills.push({ key: "maxPrice", label: `Max ${filters.maxPrice.toLocaleString("en-US")}` });
+  if (filters.sort !== "relevance") pills.push({ key: "sort", label: SORT_LABELS[filters.sort] });
+  return pills;
+}
+
+/** A new filter set with exactly one filter returned to its empty value. */
+export function withoutFilter(filters: ExploreFilters, key: keyof ExploreFilters): ExploreFilters {
+  return { ...filters, [key]: EMPTY_EXPLORE_FILTERS[key] };
+}
+
 /** Keep pagination stable if the API repeats an item at a page boundary. */
 export function appendUniqueItems(current: SearchResult[], next: SearchResult[]): SearchResult[] {
   const seen = new Set(current.map((item) => item.item_id));
