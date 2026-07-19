@@ -95,7 +95,9 @@ def test_request_style_overrides_slate_without_mutating_stored_profile():
     assert {
         item["item_id"].split("-", 1)[0] for item in response.json()["outfits"][0]["items"]
     } == {"streetwear"}
-    assert profiles.get(DEV_USER) is stored
+    # The repository defensively copies on write (never share a mutable reference), so the
+    # stored profile is no longer literally `stored` — assert the value survived unmutated.
+    assert profiles.get(DEV_USER).model_dump() == before
     assert stored.model_dump() == before
 
 
@@ -133,7 +135,9 @@ def test_complete_look_style_affects_non_anchor_pieces_without_mutating_stored_p
         "streetwear-bottom",
         "streetwear-footwear",
     }
-    assert profiles.get(DEV_USER) is stored
+    # The repository defensively copies on write (never share a mutable reference), so the
+    # stored profile is no longer literally `stored` — assert the value survived unmutated.
+    assert profiles.get(DEV_USER).model_dump() == before
     assert stored.model_dump() == before
 
 
