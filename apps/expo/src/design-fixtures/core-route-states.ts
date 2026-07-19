@@ -538,3 +538,63 @@ export const CORE_ROUTE_REVIEW_FIXTURES: readonly CoreRouteFixture[] = deepFreez
       width !== 390,
   ),
 );
+
+/**
+ * The remaining shipped surfaces (EXPO-20/21): every route beyond the four
+ * core fixtures, with its required states and how each is evidenced at the
+ * source level. `sourcePath` is relative to `src/app`. States listed under
+ * `gaps` are known, deliberately-declared holes (matching the core matrix's
+ * explicit offline gaps) — closing one must update this declaration.
+ */
+type SurfaceState = "happy" | "loading" | "empty" | "error";
+
+export const SURFACE_ROUTE_MATRIX: readonly DeepReadonly<{
+  route: string;
+  sourcePath: string;
+  states: readonly SurfaceState[];
+  virtualized: boolean;
+  gaps: readonly string[];
+}>[] = deepFreeze([
+  {
+    route: "social",
+    sourcePath: "(app)/(tabs)/social.tsx",
+    states: ["happy", "loading", "empty", "error"],
+    virtualized: true,
+    gaps: ["offline"],
+  },
+  {
+    route: "wardrobe",
+    sourcePath: "(app)/(tabs)/wardrobe.tsx",
+    states: ["happy", "loading", "empty", "error"],
+    virtualized: false, // bounded by ExpandableCollectionGrid preview counts
+    gaps: ["offline"],
+  },
+  {
+    route: "saved",
+    sourcePath: "(app)/saved.tsx",
+    states: ["happy", "loading", "empty", "error"],
+    virtualized: false, // bounded by ExpandableCollectionGrid preview counts
+    gaps: ["offline"],
+  },
+  {
+    route: "collections",
+    sourcePath: "(app)/collections.tsx",
+    states: [], // re-exports saved — one screen to maintain, one to delete
+    virtualized: false,
+    gaps: [],
+  },
+  {
+    route: "profile",
+    sourcePath: "(app)/(tabs)/profile.tsx",
+    states: ["happy", "loading", "error"],
+    virtualized: false,
+    gaps: ["offline"],
+  },
+  {
+    route: "onboarding",
+    sourcePath: "(app)/onboarding.tsx",
+    states: [], // delegates every state to the shared PersonalFitForm fixtures
+    virtualized: false,
+    gaps: [],
+  },
+]);

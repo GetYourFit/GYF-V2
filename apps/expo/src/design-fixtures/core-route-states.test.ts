@@ -298,3 +298,83 @@ describe("core route evidence matrix", () => {
     }
   });
 });
+
+describe("full experience matrix (EXPO-20/21)", () => {
+  const routeSource = (path: string) => Bun.file(`${import.meta.dir}/../app/${path}`).text();
+
+  test("declares every shipped surface exactly once with frozen truth", async () => {
+    const { SURFACE_ROUTE_MATRIX } = await import("./core-route-states");
+    expectDeepFrozen(SURFACE_ROUTE_MATRIX);
+    expect(SURFACE_ROUTE_MATRIX.map(({ route }) => route)).toEqual([
+      "social",
+      "wardrobe",
+      "saved",
+      "collections",
+      "profile",
+      "onboarding",
+    ]);
+  });
+
+  test("every declared state has matching source evidence and every route file exists", async () => {
+    const { SURFACE_ROUTE_MATRIX } = await import("./core-route-states");
+    for (const surface of SURFACE_ROUTE_MATRIX) {
+      const source = await routeSource(surface.sourcePath);
+      if (surface.states.includes("loading")) {
+        expect(`${surface.route}: ${/Skeleton|"loading"/.test(source)}`).toBe(
+          `${surface.route}: true`,
+        );
+      }
+      if (surface.states.includes("empty")) {
+        expect(`${surface.route}: ${source.includes("EmptyState")}`).toBe(`${surface.route}: true`);
+      }
+      if (surface.states.includes("error")) {
+        // A visible error affordance plus a retry path — never a silent failure.
+        expect(`${surface.route}: ${/ErrorState|accessibilityRole="alert"/.test(source)}`).toBe(
+          `${surface.route}: true`,
+        );
+        expect(`${surface.route}: ${/RefreshControl|[Rr]etry|Try again/.test(source)}`).toBe(
+          `${surface.route}: true`,
+        );
+      }
+    }
+  });
+
+  test("unbounded feeds are virtualized with paged loading; grids stay preview-bounded", async () => {
+    const { SURFACE_ROUTE_MATRIX } = await import("./core-route-states");
+    for (const surface of SURFACE_ROUTE_MATRIX) {
+      const source = await routeSource(surface.sourcePath);
+      if (surface.virtualized) {
+        expect(source).toContain("FlatList");
+        expect(source).toContain("onEndReached");
+      } else if (surface.states.length > 0 && surface.route !== "profile") {
+        expect(source).toContain("ExpandableCollectionGrid");
+      }
+    }
+  });
+
+  test("collections stays a re-export of saved and onboarding delegates to the shared form", async () => {
+    expect(await routeSource("(app)/collections.tsx")).toContain(
+      'export { default } from "./saved"',
+    );
+    expect(await routeSource("(app)/onboarding.tsx")).toContain("PersonalFitForm");
+  });
+
+  test("every remote image outside CatalogImage carries explicit dimensions and a label", async () => {
+    const rawImageFiles = [
+      "(app)/(tabs)/social.tsx",
+      "(app)/(tabs)/profile.tsx",
+      "(app)/saved.tsx",
+    ];
+    for (const file of rawImageFiles) {
+      const source = await routeSource(file);
+      const images = source.match(/<Image[\s\S]*?\/>/g) ?? [];
+      const remote = images.filter((image) => image.includes("source={{ uri"));
+      expect(remote.length).toBeGreaterThan(0);
+      for (const image of remote) {
+        expect(image).toContain("accessibilityLabel");
+        expect(/height: \d/.test(image)).toBe(true);
+        expect(/width: ?["\d]|flex: 1/.test(image)).toBe(true);
+      }
+    }
+  });
+});
