@@ -246,7 +246,10 @@ export function ExploreControlBar({
                 <ChipRow
                   label="SORT"
                   onSelect={(value) =>
-                    onChangeFilters({ ...filters, sort: (value as ExploreSort | null) ?? "relevance" })
+                    onChangeFilters({
+                      ...filters,
+                      sort: (value as ExploreSort | null) ?? "relevance",
+                    })
                   }
                   options={SORT_OPTIONS}
                   selected={filters.sort}

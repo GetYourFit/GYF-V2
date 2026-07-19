@@ -577,7 +577,11 @@ export interface paths {
         delete: operations["remove_wardrobe_item_wardrobe_items__wardrobe_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Correct a garment's category
+         * @description Manual correction: reclassify one owned garment; slot follows the category.
+         */
+        patch: operations["correct_wardrobe_item_wardrobe_items__wardrobe_id__patch"];
         trace?: never;
     };
     "/social/posts": {
@@ -1612,6 +1616,14 @@ export interface components {
             ctx?: Record<string, never>;
         };
         /**
+         * WardrobeCategoryInput
+         * @description Manual correction: the category the user says this garment really is.
+         */
+        WardrobeCategoryInput: {
+            /** Category */
+            category: string;
+        };
+        /**
          * WardrobeItem
          * @description A stored wardrobe garment, enriched for display.
          */
@@ -2509,6 +2521,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_wardrobe_item_wardrobe_items__wardrobe_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wardrobe_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WardrobeCategoryInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WardrobeItem"];
+                };
             };
             /** @description Validation Error */
             422: {

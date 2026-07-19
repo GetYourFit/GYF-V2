@@ -26,6 +26,9 @@ SELECT id, item_id, title, category, slot
 FROM wardrobe_items WHERE user_id = %s ORDER BY created_at DESC LIMIT 500
 """
 _REMOVE = "DELETE FROM wardrobe_items WHERE user_id = %s AND id = %s"
+_UPDATE_CATEGORY = (
+    "UPDATE wardrobe_items SET category = %s, slot = %s WHERE user_id = %s AND id = %s"
+)
 
 
 class WardrobeItemInput(BaseModel):
@@ -39,6 +42,18 @@ class WardrobeItemInput(BaseModel):
     def _require_reference_or_title(self) -> WardrobeItemInput:
         if not self.item_id and not (self.title and self.title.strip()):
             raise ValueError("provide an item_id or a title")
+        return self
+
+
+class WardrobeCategoryInput(BaseModel):
+    """Manual correction: the category the user says this garment really is."""
+
+    category: str
+
+    @model_validator(mode="after")
+    def _require_known_category(self) -> WardrobeCategoryInput:
+        if classify(self.category).name == "unknown":
+            raise ValueError("unknown garment category")
         return self
 
 
@@ -75,6 +90,10 @@ class WardrobeRepository(Protocol):
 
     def remove(self, user_id: str, wardrobe_id: str) -> bool:
         """Remove a wardrobe row by id. Returns True if a row was removed."""
+        ...
+
+    def update_category(self, user_id: str, wardrobe_id: str, category: str, slot: str) -> bool:
+        """Correct a row's category/slot. Returns True if a row was updated."""
         ...
 
 
@@ -114,6 +133,11 @@ class PostgresWardrobeRepository:
             cur = conn.execute(_REMOVE, (user_id, wardrobe_id))
             return cur.rowcount > 0
 
+    def update_category(self, user_id: str, wardrobe_id: str, category: str, slot: str) -> bool:
+        with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            cur = conn.execute(_UPDATE_CATEGORY, (category, slot, user_id, wardrobe_id))
+            return cur.rowcount > 0
+
 
 class InMemoryWardrobeRepository:
     """Dict-backed repo for tests. Most-recently-added first."""
@@ -132,6 +156,14 @@ class InMemoryWardrobeRepository:
         for i, rec in enumerate(bucket):
             if rec.id == wardrobe_id:
                 del bucket[i]
+                return True
+        return False
+
+    def update_category(self, user_id: str, wardrobe_id: str, category: str, slot: str) -> bool:
+        bucket = self.items.get(user_id, [])
+        for i, rec in enumerate(bucket):
+            if rec.id == wardrobe_id:
+                bucket[i] = rec.model_copy(update={"category": category, "slot": slot})
                 return True
         return False
 

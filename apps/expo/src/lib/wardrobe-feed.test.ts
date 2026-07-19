@@ -26,3 +26,22 @@ describe("Expo Wardrobe filter model", () => {
     expect(resolveWardrobeFilter("top", ["top", "footwear"])).toBe("top");
   });
 });
+
+describe("manual category correction", () => {
+  const rows = [item("top", "a"), item("footwear", "b")];
+
+  test("a corrected garment replaces its row immutably, order preserved", async () => {
+    const { mergeCorrectedItem } = await import("./wardrobe-feed");
+    const updated = { ...rows[0]!, category: "kurta", slot: "top" };
+    const next = mergeCorrectedItem(rows as never, updated as never);
+    expect(next.map((row) => row.id)).toEqual(["a", "b"]);
+    expect(next[0]!.category).toBe("kurta");
+    expect(rows[0]!.category).toBe("top");
+  });
+
+  test("an unknown id changes nothing", async () => {
+    const { mergeCorrectedItem } = await import("./wardrobe-feed");
+    const next = mergeCorrectedItem(rows as never, { ...rows[0]!, id: "ghost" } as never);
+    expect(next).toEqual(rows as never);
+  });
+});

@@ -89,3 +89,33 @@ def test_list_and_delete():
         assert client.get("/wardrobe/items").json()["items"] == []
     finally:
         app.dependency_overrides.clear()
+
+
+def test_correct_category_reclassifies_and_persists():
+    repo = InMemoryWardrobeRepository()
+    try:
+        client = _client(repo)
+        created = client.post("/wardrobe/items", json={"title": "Mystery garment"}).json()
+        wid = created["id"]
+        r = client.patch(f"/wardrobe/items/{wid}", json={"category": "saree"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["category"] == "saree"
+        assert body["slot"] == "full_body"  # slot follows the corrected category
+        assert client.get("/wardrobe/items").json()["items"][0]["category"] == "saree"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_correct_category_rejects_unknown_and_missing():
+    repo = InMemoryWardrobeRepository()
+    try:
+        client = _client(repo)
+        created = client.post("/wardrobe/items", json={"title": "Blue jeans"}).json()
+        # A label the taxonomy cannot place is a client error, not a silent "unknown".
+        r = client.patch(f"/wardrobe/items/{created['id']}", json={"category": "xyzzy"})
+        assert r.status_code == 422
+        # Someone else's / vanished row is a 404.
+        assert client.patch("/wardrobe/items/nope", json={"category": "saree"}).status_code == 404
+    finally:
+        app.dependency_overrides.clear()

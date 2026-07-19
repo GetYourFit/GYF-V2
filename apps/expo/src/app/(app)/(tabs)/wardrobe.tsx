@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshControl, ScrollView, TextInput, View } from "react-native";
+import { Modal, Pressable, RefreshControl, ScrollView, TextInput, View } from "react-native";
 
 import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
 import {
@@ -15,11 +15,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type WardrobeItem } from "@/lib/api";
 import {
   ALL_WARDROBE,
+  mergeCorrectedItem,
   resolveWardrobeFilter,
   visibleWardrobe,
   wardrobeCategories,
 } from "@/lib/wardrobe-feed";
-import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { materials, radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
 
@@ -51,6 +52,10 @@ export default function WardrobeRoute() {
   const [adding, setAdding] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [actionError, setActionError] = useState<unknown>(null);
+  const [correcting, setCorrecting] = useState<WardrobeItem | null>(null);
+  const [categoryInput, setCategoryInput] = useState("");
+  const [correctionBusy, setCorrectionBusy] = useState(false);
+  const [correctionError, setCorrectionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setActionError(null);
@@ -103,6 +108,28 @@ export default function WardrobeRoute() {
     },
     [api, items, pending],
   );
+
+  const correctCategory = useCallback(async () => {
+    const target = correcting;
+    const category = categoryInput.trim();
+    if (!target || !category || correctionBusy) return;
+    setCorrectionBusy(true);
+    setCorrectionError(null);
+    try {
+      const updated = await api.updateWardrobeItem(target.id, category);
+      setItems((current) => mergeCorrectedItem(current, updated));
+      setCorrecting(null);
+      setCategoryInput("");
+    } catch (error) {
+      setCorrectionError(
+        error instanceof ApiError && error.status === 422
+          ? "GYF does not recognise that garment type. Try a common name like 'saree' or 'sneakers'."
+          : "Could not save the correction. Your garment is unchanged; try again.",
+      );
+    } finally {
+      setCorrectionBusy(false);
+    }
+  }, [api, categoryInput, correcting, correctionBusy]);
 
   const categories = wardrobeCategories(items);
   const activeFilter = resolveWardrobeFilter(filter, categories);
@@ -243,10 +270,91 @@ export default function WardrobeRoute() {
               label: () => "Remove from wardrobe",
               onPress: (item) => void removeGarment(item),
             }}
+            secondaryAction={{
+              label: () => "Correct category",
+              onPress: (item) => {
+                const row = items.find((candidate) => candidate.id === item.id);
+                if (!row) return;
+                setCorrectionError(null);
+                setCategoryInput(row.category === "unknown" ? "" : row.category);
+                setCorrecting(row);
+              },
+            }}
+            subtitle="Owned — GYF styles new looks around these"
             title={section.category}
           />
         ))
       )}
+
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setCorrecting(null)}
+        transparent
+        visible={correcting !== null}
+      >
+        <Pressable
+          accessibilityLabel="Cancel category correction"
+          accessibilityRole="button"
+          onPress={() => setCorrecting(null)}
+          style={{ backgroundColor: materials.overlay, flex: 1, justifyContent: "center" }}
+        >
+          <Pressable onPress={() => undefined} style={{ marginHorizontal: spacing.lg }}>
+            <AtelierCard style={{ gap: spacing.md }}>
+              <GyfText accessibilityRole="header" variant="title">
+                Correct the category
+              </GyfText>
+              <GyfText tone="muted" variant="bodySmall">
+                {correcting ? `“${correcting.title}” is filed under ${correcting.category}.` : ""}{" "}
+                Tell GYF what it really is — outfit logic follows your correction.
+              </GyfText>
+              <TextInput
+                accessibilityLabel="Corrected garment category"
+                autoFocus
+                onChangeText={setCategoryInput}
+                onSubmitEditing={() => void correctCategory()}
+                placeholder="e.g. saree, kurta, sneakers…"
+                placeholderTextColor={palette.textMuted}
+                returnKeyType="done"
+                style={[
+                  typography.body,
+                  {
+                    borderColor: palette.border,
+                    borderRadius: radii.control,
+                    borderWidth: 1,
+                    color: palette.text,
+                    minHeight: 48,
+                    paddingHorizontal: spacing.md,
+                  },
+                ]}
+                value={categoryInput}
+              />
+              {correctionError ? (
+                <GyfText
+                  accessibilityRole="alert"
+                  style={{ color: palette.error }}
+                  variant="bodySmall"
+                >
+                  {correctionError}
+                </GyfText>
+              ) : null}
+              <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                <AtelierButton
+                  label="Cancel"
+                  onPress={() => setCorrecting(null)}
+                  style={{ flex: 1 }}
+                  variant="secondary"
+                />
+                <AtelierButton
+                  disabled={correctionBusy || !categoryInput.trim()}
+                  label={correctionBusy ? "Saving…" : "Save correction"}
+                  onPress={() => void correctCategory()}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </AtelierCard>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }

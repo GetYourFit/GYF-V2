@@ -18,6 +18,13 @@ export function resolveWardrobeFilter(filter: string, categories: string[]): str
   return filter !== ALL_WARDROBE && !categories.includes(filter) ? ALL_WARDROBE : filter;
 }
 
+/** Replace one corrected garment row immutably; unknown ids change nothing. */
+export function mergeCorrectedItem(items: WardrobeItem[], updated: WardrobeItem): WardrobeItem[] {
+  return items.some((row) => row.id === updated.id)
+    ? items.map((row) => (row.id === updated.id ? updated : row))
+    : items;
+}
+
 /** Garments visible under the (already-resolved) filter. */
 export function visibleWardrobe(items: WardrobeItem[], filter: string): WardrobeItem[] {
   return filter === ALL_WARDROBE ? items : items.filter((item) => item.category === filter);

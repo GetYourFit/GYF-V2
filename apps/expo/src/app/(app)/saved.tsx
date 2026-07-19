@@ -271,6 +271,7 @@ export default function SavedRoute() {
                   if (isRemoteImage(url)) void Linking.openURL(url);
                 },
               }}
+              subtitle="To buy — saved from the catalogue, not yet in your wardrobe"
               title="Saved items"
             />
           ) : null}

@@ -313,6 +313,15 @@ export class GyfApi {
     return this.request<{ items: WardrobeItem[] }>("GET", "/wardrobe/items").then((r) => r.items);
   }
 
+  /** Manual correction: reclassify one owned garment; slot follows the category. */
+  updateWardrobeItem(wardrobeId: string, category: string): Promise<WardrobeItem> {
+    return this.request<WardrobeItem>(
+      "PATCH",
+      `/wardrobe/items/${encodeURIComponent(wardrobeId)}`,
+      { category },
+    );
+  }
+
   /** Remove a wardrobe garment by id. Idempotent. */
   removeWardrobeItem(wardrobeId: string): Promise<void> {
     return this.request<void>("DELETE", `/wardrobe/items/${encodeURIComponent(wardrobeId)}`);

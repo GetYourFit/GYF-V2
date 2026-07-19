@@ -56,6 +56,7 @@ export function ExpandableCollectionGrid({
   containerWidth,
   onToggleSave,
   primaryAction,
+  secondaryAction,
   theme: themeProp,
 }: {
   title: string;
@@ -67,6 +68,7 @@ export function ExpandableCollectionGrid({
   containerWidth: number;
   onToggleSave?: (item: CollectionItem, saved: boolean) => void;
   primaryAction?: CollectionAction;
+  secondaryAction?: CollectionAction;
   theme?: ThemeName;
 }) {
   const theme = useTheme(themeProp);
@@ -205,6 +207,7 @@ export function ExpandableCollectionGrid({
         onClose={() => setPreview(null)}
         onToggleSave={onToggleSave}
         primaryAction={primaryAction}
+        secondaryAction={secondaryAction}
         theme={theme}
       />
     </Animated.View>
@@ -221,12 +224,14 @@ function QuickPreview({
   onClose,
   onToggleSave,
   primaryAction,
+  secondaryAction,
   theme,
 }: {
   item: CollectionItem | null;
   onClose: () => void;
   onToggleSave?: (item: CollectionItem, saved: boolean) => void;
   primaryAction?: CollectionAction;
+  secondaryAction?: CollectionAction;
   theme: ThemeName;
 }) {
   const palette = colors[theme];
@@ -325,6 +330,27 @@ function QuickPreview({
               >
                 <GyfText style={{ color: palette.textInverse }} theme={theme} variant="button">
                   {primaryAction.label(item)}
+                </GyfText>
+              </PressableScale>
+            ) : null}
+            {secondaryAction?.label(item) ? (
+              <PressableScale
+                accessibilityRole="button"
+                onPress={() => {
+                  secondaryAction.onPress(item);
+                  onClose();
+                }}
+                style={{
+                  alignItems: "center",
+                  borderColor: palette.border,
+                  borderRadius: radii.control,
+                  borderWidth: 1,
+                  minHeight: 48,
+                  justifyContent: "center",
+                }}
+              >
+                <GyfText theme={theme} variant="button">
+                  {secondaryAction.label(item)}
                 </GyfText>
               </PressableScale>
             ) : null}

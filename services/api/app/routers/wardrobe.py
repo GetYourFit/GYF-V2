@@ -8,7 +8,10 @@ from ..auth import Principal
 from ..catalog.directory import ItemDirectory
 from ..dependencies import get_item_directory, get_wardrobe_repo, require_active_principal
 from ..ratelimit import rate_limit
+from gyf_contracts.taxonomy import classify
+
 from ..wardrobe import (
+    WardrobeCategoryInput,
     WardrobeItem,
     WardrobeItemInput,
     WardrobeRepository,
@@ -54,6 +57,31 @@ def list_wardrobe(
 ) -> dict[str, list[WardrobeItem]]:
     """The user's owned garments, most-recently-added first."""
     return {"items": enrich_wardrobe(repo.list(principal.user_id), directory)}
+
+
+@router.patch(
+    "/wardrobe/items/{wardrobe_id}",
+    summary="Correct a garment's category",
+    dependencies=[_MUTATION_LIMIT],
+)
+def correct_wardrobe_item(
+    wardrobe_id: str,
+    body: WardrobeCategoryInput,
+    principal: Principal = Depends(require_active_principal),
+    repo: WardrobeRepository = Depends(get_wardrobe_repo),
+    directory: ItemDirectory = Depends(get_item_directory),
+) -> WardrobeItem:
+    """Manual correction: reclassify one owned garment; slot follows the category."""
+    category = classify(body.category)
+    if not repo.update_category(principal.user_id, wardrobe_id, category.name, category.slot):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown wardrobe item")
+    record = next(
+        (r for r in repo.list(principal.user_id) if r.id == wardrobe_id),
+        None,
+    )
+    if record is None:  # removed between update and read; treat as gone
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown wardrobe item")
+    return enrich_wardrobe([record], directory)[0]
 
 
 @router.delete(
