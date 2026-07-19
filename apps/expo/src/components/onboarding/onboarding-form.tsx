@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
-import { useRouter } from "expo-router";
 
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { AtelierButton } from "@/components/ui/atelier-button";
@@ -26,10 +25,12 @@ const GENDERS = [
   ["unisex", "Unisex"],
   ["nonbinary", "Show me everything"],
 ] as const;
-const CURRENCIES = ["INR", "USD", "EUR", "GBP"] as const;
+// Shared with PersonalFitForm so the two profile-editing forms present one currency
+// vocabulary instead of two lists drifting apart.
+export const CURRENCIES = ["INR", "USD", "EUR", "GBP"] as const;
 type ConsentState = Record<keyof typeof DEFAULT_CONSENT, boolean>;
 
-function OptionChip({
+export function OptionChip({
   label,
   selected,
   onPress,
@@ -63,7 +64,7 @@ function OptionChip({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+export function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const palette = useThemeColors();
   return (
     <View style={{ gap: spacing.sm }}>
@@ -122,15 +123,19 @@ function ConsentRow({
   );
 }
 
-export function OnboardingForm() {
+/**
+ * Step one of the required post-signup flow: who the user is shopping for, occasion,
+ * style and a starting budget. Hands off to `onSaved` — which chains into
+ * `PersonalFitForm` — instead of navigating itself, so this form has no opinion on
+ * what comes next.
+ */
+export function OnboardingForm({ onSaved }: { onSaved: () => void }) {
   const palette = useThemeColors();
-  const router = useRouter();
   const [profile, setProfile] = useState<ProfileInput>(EMPTY_PROFILE);
   const [consent, setConsent] = useState<ConsentState>({ ...DEFAULT_CONSENT });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -174,7 +179,7 @@ export function OnboardingForm() {
       const api = createApi();
       await api.putProfile(profile);
       await api.putConsent({ flags: consent });
-      setSaved(true);
+      onSaved();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save your profile.");
     } finally {
@@ -184,21 +189,6 @@ export function OnboardingForm() {
 
   if (loading)
     return <ActivityIndicator accessibilityLabel="Loading your profile" color={palette.text} />;
-  if (saved) {
-    return (
-      <AuthScreen>
-        <View style={{ gap: spacing.lg }}>
-          <GyfText accessibilityRole="header" variant="title">
-            Profile saved
-          </GyfText>
-          <GyfText tone="muted">
-            Your stylist now has enough context to compose a truthful first look.
-          </GyfText>
-          <AtelierButton label="Meet your stylist" onPress={() => router.replace("/")} />
-        </View>
-      </AuthScreen>
-    );
-  }
 
   return (
     <AuthScreen>
@@ -335,7 +325,7 @@ export function OnboardingForm() {
               />
             </View>
           </AtelierCard>
-          <ConfidenceLabel reason="Photo assistance is not live in this build. Manual fields remain the source of truth." />
+          <ConfidenceLabel reason="The next step may offer a photo-based estimate when it's available. Manual fields always work." />
         </Section>
         {error ? (
           <GyfText accessibilityRole="alert" style={{ color: palette.error }}>
