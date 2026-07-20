@@ -25,23 +25,59 @@ import { cardWidthFor, columnsForWidth } from "./column-count";
 import { collectionView } from "./collection-state";
 import { PanZoomCanvas } from "./pan-zoom-canvas";
 
-/** Collapsed preview flows in the page; expanded turns into an explorable canvas. */
+/**
+ * Collapsed, the preview flows inline in the page. Expanded, the collection
+ * moves to its own full-screen surface: the page below scrolls vertically, and
+ * a pan gesture nested inside it loses every vertical drag to the ScrollView —
+ * so the canvas has to own the whole screen for "drag any direction" to work
+ * at all. Escaping the page also removes the scroll clamp on how far it pans.
+ */
 function Explorable({
   children,
   enabled,
+  onClose,
+  title,
   height,
   width,
 }: {
   children: React.ReactNode;
   enabled: boolean;
+  onClose: () => void;
+  title: string;
   height: number;
   width: number;
 }) {
+  const palette = colors[useTheme()];
   if (!enabled) return <>{children}</>;
   return (
-    <PanZoomCanvas height={height} width={width}>
-      {children}
-    </PanZoomCanvas>
+    <Modal animationType="fade" onRequestClose={onClose} visible>
+      <View style={{ backgroundColor: palette.bg, flex: 1 }}>
+        <View
+          style={{
+            alignItems: "center",
+            flexDirection: "row",
+            gap: spacing.sm,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+          }}
+        >
+          <GyfText style={{ flex: 1 }} variant="title">
+            {title}
+          </GyfText>
+          <PressableScale
+            accessibilityLabel="Close explorer"
+            accessibilityRole="button"
+            hitSlop={hitSlopFor(44)}
+            onPress={onClose}
+          >
+            <IconClose color={palette.textMuted} size={22} />
+          </PressableScale>
+        </View>
+        <PanZoomCanvas height={height} width={width}>
+          {children}
+        </PanZoomCanvas>
+      </View>
+    </Modal>
   );
 }
 
@@ -94,7 +130,7 @@ export function ExpandableCollectionGrid({
 }) {
   const theme = useTheme(themeProp);
   const palette = colors[theme];
-  const { height: screenHeight } = useResponsive();
+  const { height: screenHeight, width: screenWidth } = useResponsive();
   const [expanded, setExpanded] = useState(false);
   const [preview, setPreview] = useState<CollectionItem | null>(null);
   const chevron = useSharedValue(0);
@@ -182,8 +218,10 @@ export function ExpandableCollectionGrid({
           <View style={{ gap: spacing.md }}>
             <Explorable
               enabled={expanded}
-              height={Math.round(screenHeight * 0.62)}
-              width={containerWidth - spacing.md * 2}
+              height={screenHeight - 120}
+              onClose={toggle}
+              title={title}
+              width={screenWidth}
             >
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
               {view.visible.map((item, i) => {

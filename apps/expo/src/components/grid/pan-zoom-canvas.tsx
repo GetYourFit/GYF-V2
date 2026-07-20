@@ -50,6 +50,12 @@ export function PanZoomCanvas({
   };
 
   const pan = Gesture.Pan()
+    // The canvas lives inside a vertically scrolling page. Without this the
+    // ScrollView claims every vertical drag and the canvas only ever pans
+    // sideways — which reads as "it doesn't move". Requiring a small travel
+    // before activating keeps a plain flick scrolling the page as before.
+    .activeOffsetX([-6, 6])
+    .activeOffsetY([-6, 6])
     .onStart(() => {
       startX.value = x.value;
       startY.value = y.value;

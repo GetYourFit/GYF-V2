@@ -1,4 +1,4 @@
-import Svg, { Path } from "react-native-svg";
+import Svg, { Circle, Path } from "react-native-svg";
 
 /**
  * GYF's custom icon set — hand-drawn 24-grid line marks, 1.75 stroke,
@@ -111,16 +111,16 @@ export function IconHanger({ size, color }: IconProps) {
 }
 
 export function IconPeople({ size, color }: IconProps) {
-  // Social
+  // Social. Deliberately NOT a person silhouette: a head-and-shoulders glyph
+  // reads as Profile at tab-bar size no matter how many figures it has, which
+  // is exactly the confusion this replaces. A share graph — three nodes, two
+  // links — carries "connected to others" with a different outline entirely.
   return (
     <Icon size={size}>
-      <Path d="M9 11a3.25 3.25 0 1 0 0-6.5A3.25 3.25 0 0 0 9 11Z" stroke={color} {...stroke} />
-      <Path d="M2.75 19.5c.5-3.1 3-5 6.25-5s5.75 1.9 6.25 5" stroke={color} {...stroke} />
-      <Path
-        d="M15.5 10.75a2.75 2.75 0 1 0-1.9-4.75M16.6 14.8c2.4.4 4.2 2 4.65 4.7"
-        stroke={color}
-        {...stroke}
-      />
+      <Circle cx="17.5" cy="6" r="2.75" stroke={color} {...stroke} />
+      <Circle cx="6" cy="12" r="2.75" stroke={color} {...stroke} />
+      <Circle cx="17.5" cy="18" r="2.75" stroke={color} {...stroke} />
+      <Path d="m8.5 10.7 6.6-3.4M8.5 13.3l6.6 3.4" stroke={color} {...stroke} />
     </Icon>
   );
 }
