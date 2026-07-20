@@ -49,6 +49,14 @@ export function IconChevronLeft({ size, color }: IconProps) {
   );
 }
 
+export function IconChevronRight({ size, color }: IconProps) {
+  return (
+    <Icon size={size}>
+      <Path d="M9.25 5.5 15.75 12l-6.5 6.5" stroke={color} {...stroke} />
+    </Icon>
+  );
+}
+
 export function IconClose({ size, color }: IconProps) {
   return (
     <Icon size={size}>

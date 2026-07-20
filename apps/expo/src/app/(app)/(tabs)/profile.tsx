@@ -12,6 +12,7 @@ import {
 
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { FilterChip } from "@/components/ui/filter-chip";
+import { NavRow } from "@/components/ui/nav-row";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi, type ProfileSummary } from "@/lib/api";
@@ -230,37 +231,54 @@ export default function ProfileRoute() {
           </View>
 
           {summary.badges.length > 0 ? (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: spacing.sm,
+                justifyContent: "center",
+              }}
+            >
               {summary.badges.map((badge) => (
                 <View
                   key={badge}
                   style={{
-                    backgroundColor: palette.surfaceRaised,
+                    borderColor: palette.border,
                     borderRadius: radii.capsule,
+                    borderWidth: 1,
                     paddingHorizontal: spacing.md,
                     paddingVertical: spacing.xs,
                   }}
                 >
-                  <GyfText variant="label">{badge}</GyfText>
+                  <GyfText tone="muted" variant="label">
+                    {badge}
+                  </GyfText>
                 </View>
               ))}
             </View>
           ) : null}
 
+          {/* Three counts, not three cards. Boxing each one made the row read as
+              a dashboard; a single hairline rule under the band carries the
+              same grouping at a fraction of the weight. */}
           <View
             accessibilityLabel="Profile statistics"
-            style={{ flexDirection: "row", flexWrap: "wrap", gap: 1 }}
+            style={{
+              borderBottomColor: palette.border,
+              borderBottomWidth: 1,
+              borderTopColor: palette.border,
+              borderTopWidth: 1,
+              flexDirection: "row",
+              paddingVertical: spacing.md,
+            }}
           >
             {statCells(summary).map((cell) => (
-              <AtelierCard
-                key={cell.label}
-                style={{ alignItems: "center", flexBasis: "31%", flexGrow: 1, gap: spacing.xs }}
-              >
+              <View key={cell.label} style={{ alignItems: "center", flex: 1, gap: spacing.xs }}>
                 <GyfText variant="title">{cell.value.toLocaleString()}</GyfText>
                 <GyfText tone="muted" variant="label">
                   {cell.label}
                 </GyfText>
-              </AtelierCard>
+              </View>
             ))}
           </View>
 
@@ -282,16 +300,20 @@ export default function ProfileRoute() {
             </View>
           </View>
 
-          <AtelierButton
-            accessibilityLabel="Edit your personal fit — skin tone, body type, currency and budget"
-            label="Edit personal fit"
-            onPress={() => router.push("/personal-fit")}
-          />
-          <AtelierButton
-            accessibilityLabel="Manage your account"
-            label="Manage account"
-            onPress={() => router.push("/account")}
-          />
+          <View>
+            <NavRow
+              accessibilityLabel="Edit your personal fit — skin tone, body type, currency and budget"
+              hint="Skin tone, body type, currency and budget"
+              label="Personal fit"
+              onPress={() => router.push("/personal-fit")}
+            />
+            <NavRow
+              accessibilityLabel="Manage your account"
+              hint="Email, password and sign-out"
+              label="Account"
+              onPress={() => router.push("/account")}
+            />
+          </View>
         </>
       )}
     </ScrollView>
