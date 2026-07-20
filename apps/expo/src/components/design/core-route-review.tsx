@@ -5,7 +5,7 @@ import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
 import type { CoreRouteFixture } from "@/design-fixtures/core-route-states";
-import { colors, fonts, radii, spacing } from "@/theme/tokens";
+import { colors, radii, spacing } from "@/theme/tokens";
 
 const REVIEW_IMAGES: Readonly<Record<string, ImageSourcePropType>> = {
   "fixture-top-01": require("../../../assets/design-review/ivory-cotton-shirt.jpg"),
@@ -100,7 +100,6 @@ function StylistComposition({ fixture }: { fixture: CoreRouteFixture & { route: 
       <View style={{ gap: spacing.xs }}>
         <GyfText
           accessibilityRole="header"
-          style={{ fontFamily: fonts.editorialCandidate }}
           theme={fixture.theme}
           variant="display"
         >
@@ -139,7 +138,6 @@ function ExploreComposition({ fixture }: { fixture: CoreRouteFixture & { route: 
       <View style={{ gap: spacing.xs }}>
         <GyfText
           accessibilityRole="header"
-          style={{ fontFamily: fonts.editorialCandidate }}
           theme={fixture.theme}
           variant="display"
         >
@@ -186,7 +184,6 @@ function ItemDetailComposition({
         </GyfText>
         <GyfText
           accessibilityRole="header"
-          style={{ fontFamily: fonts.editorialCandidate }}
           theme={fixture.theme}
           variant="display"
         >

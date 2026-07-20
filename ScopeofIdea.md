@@ -11,7 +11,9 @@ using the reference images , apply the design languange globally on the app.
 
 use Expo Ui skills , gluestack and all relevant design and development skills reqiored for the design , animation and smooth functioning of the app.
 
-The font usage on all pages should be symmetric i.e The font used for headings must be same for all pages , the font used for subheadings or other content info should be different from the heading.
+The font usage on all pages should be symmetric i.e the heading treatment must be the same on every page, and subheadings or other content info must read as clearly subordinate to the heading.
+
+Per Ref4-7 (Cosmos), that separation comes from weight and colour inside ONE neutral grotesque, not from a second typeface: headings 600/700 with slightly tightened tracking, subheads and body 400 in a muted tone. The app uses the platform UI face (SF Pro on iOS, Roboto on Android), so no font is downloaded at launch.
 
 This build should be done in scope of Expo as the app is on Expo https://get-your-fit.expo.app/welcome .
 

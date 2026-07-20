@@ -1,13 +1,6 @@
-import { BricolageGrotesque_400Regular } from "@expo-google-fonts/bricolage-grotesque/400Regular";
-import { BricolageGrotesque_500Medium } from "@expo-google-fonts/bricolage-grotesque/500Medium";
-import { BricolageGrotesque_600SemiBold } from "@expo-google-fonts/bricolage-grotesque/600SemiBold";
-import { BricolageGrotesque_700Bold } from "@expo-google-fonts/bricolage-grotesque/700Bold";
-import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces/600SemiBold";
-import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -34,13 +27,6 @@ void SplashScreen.preventAutoHideAsync().catch(() => {
 export { ErrorBoundary } from "./error";
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    BricolageGrotesque_400Regular,
-    BricolageGrotesque_500Medium,
-    BricolageGrotesque_600SemiBold,
-    BricolageGrotesque_700Bold,
-    Fraunces_600SemiBold,
-  });
   // null = stored preference not read yet; hold paint so the scheme never flips on launch.
   const [preference, setPreferenceState] = useState<ThemePreference | null>(null);
 
@@ -48,9 +34,10 @@ export default function RootLayout() {
     void loadThemePreference().then(setPreferenceState);
   }, []);
 
-  // Web already exports @font-face rules and can render safely with a fallback while
-  // the files load. Never turn a slow/blocked font request into a permanently blank app.
-  const ready = preference !== null && (Platform.OS === "web" || fontsLoaded || Boolean(fontError));
+  // Type is the platform's own UI face (see theme/tokens), so nothing has to
+  // download before first paint — only the stored theme gates it, which keeps
+  // the scheme from visibly switching on launch.
+  const ready = preference !== null;
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();

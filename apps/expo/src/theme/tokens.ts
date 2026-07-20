@@ -90,30 +90,41 @@ export const radii = {
 } as const;
 
 /**
- * Loaded once in the root layout via expo-font; names must match the
- * @expo-google-fonts export keys exactly.
+ * One neutral grotesque, platform-native: SF Pro on iOS, Roboto on Android,
+ * the system UI stack on web. Ref4-7 (Cosmos) run a single grotesque across
+ * the whole app and build hierarchy from weight, not from a second typeface —
+ * the system face is that grotesque, already on the device. No downloaded
+ * font files means nothing blocks first paint and every weight renders at the
+ * hinting the OS ships.
  */
 export const fonts = {
-  editorialCandidate: "Fraunces_600SemiBold",
-  display: "Fraunces_600SemiBold",
-  displaySemi: "Fraunces_600SemiBold",
-  ui: "BricolageGrotesque_600SemiBold",
-  uiMedium: "BricolageGrotesque_500Medium",
-  uiRegular: "BricolageGrotesque_400Regular",
+  /** Omit fontFamily entirely so each platform resolves its own UI face. */
+  system: undefined,
 } as const;
 
 /**
- * Two-face hierarchy (ScopeofIdea): Fraunces carries every heading on every
- * page; Bricolage Grotesque carries everything else — body, UI chrome,
- * labels — so content type is one face, distinct from the heading face.
+ * Weight-driven hierarchy (Ref4-7). Headings are 600/700 with tightened
+ * tracking; body and subheads are 400 and lean on colour (tone="muted") to
+ * step down, exactly as the reference screens do. Negative tracking is held
+ * at -0.4pt or shallower so letters never touch.
  */
 export const typography = {
-  display: { fontFamily: fonts.display, fontSize: 40, lineHeight: 44 },
-  title: { fontFamily: fonts.displaySemi, fontSize: 24, lineHeight: 30 },
-  body: { fontFamily: fonts.uiRegular, fontSize: 16, lineHeight: 25 },
-  bodySmall: { fontFamily: fonts.uiRegular, fontSize: 14, lineHeight: 21 },
-  label: { fontFamily: fonts.ui, fontSize: 12, lineHeight: 16, letterSpacing: 1.2 },
-  button: { fontFamily: fonts.uiMedium, fontSize: 15, lineHeight: 20, letterSpacing: 0.2 },
+  display: {
+    fontSize: 40,
+    lineHeight: 44,
+    fontWeight: "700" as const,
+    letterSpacing: -0.8,
+  },
+  title: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: "600" as const,
+    letterSpacing: -0.4,
+  },
+  body: { fontSize: 16, lineHeight: 25, fontWeight: "400" as const },
+  bodySmall: { fontSize: 14, lineHeight: 21, fontWeight: "400" as const },
+  label: { fontSize: 12, lineHeight: 16, fontWeight: "600" as const, letterSpacing: 1.2 },
+  button: { fontSize: 15, lineHeight: 20, fontWeight: "600" as const, letterSpacing: -0.1 },
   mono: { fontSize: 12, lineHeight: 16, fontWeight: "500" as const, letterSpacing: 0.6 },
 } as const;
 

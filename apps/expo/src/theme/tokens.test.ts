@@ -61,29 +61,22 @@ describe("Atelier tokens", () => {
     expect(tierForWidth(1366)).toBe("wide");
   });
 
-  it("gives body copy the grotesque face and keeps weight props off custom faces", () => {
-    // ScopeofIdea two-face rule: content type is one face, distinct from headings.
-    expect(typography.body.fontFamily).toBe("BricolageGrotesque_400Regular");
-    expect(typography.bodySmall.fontFamily).toBe("BricolageGrotesque_400Regular");
-    // Custom faces encode weight in the family name; a fontWeight prop
-    // alongside breaks font resolution on Android.
-    for (const variant of [
-      typography.display,
-      typography.title,
-      typography.label,
-      typography.body,
-      typography.bodySmall,
-    ] as const) {
-      expect("fontFamily" in variant).toBe(true);
-      expect("fontWeight" in variant).toBe(false);
+  it("names no font family, so every variant renders in the platform UI face", () => {
+    // Ref4-7 run one neutral grotesque app-wide. Naming a family here would
+    // reintroduce a downloaded face and a second typeface.
+    expect(fonts.system).toBeUndefined();
+    for (const variant of Object.values(typography)) {
+      expect("fontFamily" in variant).toBe(false);
     }
   });
 
-  it("uses the approved editorial face for every heading variant", () => {
-    expect(fonts.editorialCandidate).toBe("Fraunces_600SemiBold");
-    expect(fonts.display).toBe(fonts.editorialCandidate);
-    expect(fonts.displaySemi).toBe(fonts.editorialCandidate);
-    expect(typography.display.fontFamily).toBe(fonts.editorialCandidate);
-    expect(typography.title.fontFamily).toBe(fonts.editorialCandidate);
+  it("builds heading hierarchy from weight, with tracking that never collides", () => {
+    expect(typography.display.fontWeight).toBe("700");
+    expect(typography.title.fontWeight).toBe("600");
+    expect(typography.body.fontWeight).toBe("400");
+    expect(typography.bodySmall.fontWeight).toBe("400");
+    // Negative tracking on a 40pt display is easy to overdo; -0.8pt is 0.02em.
+    expect(typography.display.letterSpacing).toBeGreaterThanOrEqual(-0.8);
+    expect(typography.title.letterSpacing).toBeGreaterThanOrEqual(-0.8);
   });
 });

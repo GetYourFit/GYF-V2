@@ -43,19 +43,13 @@ describe("core route evidence matrix", () => {
     expect(source.match(/<AtelierButton disabled/g)).toHaveLength(4);
   });
 
-  test("loads the approved editorial face once in the live root layout", async () => {
+  test("downloads no font anywhere — type is the platform UI face", async () => {
     const rootLayout = await Bun.file(`${import.meta.dir}/../app/_layout.tsx`).text();
     const welcomeSource = await Bun.file(`${import.meta.dir}/../app/(auth)/welcome.tsx`).text();
 
-    expect(rootLayout).toContain("import { Fraunces_600SemiBold }");
-    expect(rootLayout).toContain("Fraunces_600SemiBold,");
+    expect(rootLayout).not.toContain("useFonts(");
+    expect(rootLayout).not.toContain("@expo-google-fonts");
     expect(welcomeSource).not.toContain("useFonts(");
-  });
-
-  test("never leaves web blank while custom fonts are loading", async () => {
-    const rootLayout = await Bun.file(`${import.meta.dir}/../app/_layout.tsx`).text();
-
-    expect(rootLayout).toContain('Platform.OS === "web"');
   });
 
   test("selects four owner-reviewable routes across required widths and themes", () => {

@@ -1,5 +1,3 @@
-import { Fraunces_600SemiBold } from "@expo-google-fonts/fraunces/600SemiBold";
-import { useFonts } from "expo-font";
 import { ScrollView, View } from "react-native";
 
 import { CoreRouteReview } from "@/components/design/core-route-review";
@@ -28,9 +26,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function DesignRoute() {
   const palette = useThemeColors();
-  const [reviewFontLoaded, reviewFontError] = useFonts({ Fraunces_600SemiBold });
-  if (!reviewFontLoaded && !reviewFontError) return null;
-
   return (
     <ScrollView
       accessibilityLabel="Design system gallery"
