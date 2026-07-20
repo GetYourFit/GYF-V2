@@ -176,8 +176,21 @@ export default function WardrobeRoute() {
         </GyfText>
       </View>
 
-      <AtelierCard>
-        <GyfText variant="label">ADD A GARMENT</GyfText>
+      {/* Not a card: the add field is one control, not a panel. A hairline band
+          groups the label + input the same way the profile stats unboxed. */}
+      <View
+        style={{
+          borderBottomColor: palette.border,
+          borderBottomWidth: 1,
+          borderTopColor: palette.border,
+          borderTopWidth: 1,
+          gap: spacing.md,
+          paddingVertical: spacing.md,
+        }}
+      >
+        <GyfText tone="muted" variant="label">
+          ADD A GARMENT
+        </GyfText>
         <View style={{ flexDirection: "row", gap: spacing.sm }}>
           <TextInput
             accessibilityLabel="Garment name"
@@ -210,7 +223,7 @@ export default function WardrobeRoute() {
         <GyfText tone="faint" variant="bodySmall">
           GYF classifies the piece automatically.
         </GyfText>
-      </AtelierCard>
+      </View>
 
       {actionError ? (
         <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
