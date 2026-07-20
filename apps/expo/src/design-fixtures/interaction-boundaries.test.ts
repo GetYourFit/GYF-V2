@@ -82,10 +82,13 @@ describe("Expo interaction boundaries", () => {
   });
 
   test("Stylist style choices stay interactive and scope the next request", () => {
+    // Anchored on the filter rows themselves, not on visible label copy — the
+    // uppercase headings they used to bracket are gone from the design.
     const styleControls = stylistSource.slice(
-      stylistSource.indexOf("STYLE · OPTIONAL"),
-      stylistSource.indexOf("STYLE GOAL · OPTIONAL"),
+      stylistSource.indexOf('label="Style, optional"'),
+      stylistSource.indexOf('accessibilityLabel="Styling goal'),
     );
+    expect(styleControls.length).toBeGreaterThan(0);
     expect(styleControls).toContain("onPress={() => setStyle");
     expect(styleControls).not.toContain("disabled={loading}");
     expect(stylistSource).toMatch(/api\.recommend\(\{[\s\S]{0,180}style: style \|\| undefined/);

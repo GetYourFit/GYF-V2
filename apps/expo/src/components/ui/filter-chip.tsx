@@ -32,20 +32,27 @@ export function FilterChip({
       accessibilityState={{ disabled: Boolean(disabled), selected }}
       disabled={disabled}
       onPress={onPress}
+      // Sleek, not boxy: unselected chips are a hairline outline on the ground
+      // so a filter row reads as text, and only the active one carries a fill.
+      // A row of filled grey blocks was the "large boxes of filters" problem.
       style={{
-        backgroundColor: selected ? palette.text : palette.surfaceRaised,
+        backgroundColor: selected ? palette.text : "transparent",
+        borderColor: selected ? palette.text : palette.border,
         borderRadius: radii.capsule,
-        minHeight: 40,
+        borderWidth: 1,
+        minHeight: 34,
         justifyContent: "center",
-        opacity: disabled ? 0.6 : 1,
+        opacity: disabled ? 0.5 : 1,
         paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
+        paddingVertical: spacing.xs,
       }}
-      hitSlop={{ top: 4, bottom: 4 }}
+      // The visual box is short; keep the touch target at the 44pt minimum.
+      hitSlop={{ top: 6, bottom: 6 }}
     >
       <GyfText
         style={selected ? { color: palette.textInverse } : undefined}
         theme={theme}
+        tone={selected ? "text" : "muted"}
         variant="bodySmall"
       >
         {count === undefined ? label : `${label} · ${count}`}

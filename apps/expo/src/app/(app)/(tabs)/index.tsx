@@ -15,6 +15,7 @@ import { CatalogImage } from "@/components/ui/catalog-image";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { FilterChip } from "@/components/ui/filter-chip";
+import { FilterRow } from "@/components/ui/filter-row";
 import { GyfText } from "@/components/ui/gyf-text";
 import { hitSlopFor } from "@/components/ui/pressable-scale";
 import {
@@ -579,6 +580,11 @@ export default function StylistRoute() {
 
   const tastePercent = data ? normalizedTastePercent(data.taste_strength) : 0;
 
+  const applyGoal = () => {
+    setActiveGoal(goalInput.trim());
+    setReload((value) => value + 1);
+  };
+
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
@@ -592,25 +598,20 @@ export default function StylistRoute() {
       }
       style={{ backgroundColor: palette.bg }}
     >
-      <View style={{ gap: spacing.sm }}>
-        <GyfText style={{ color: palette.accentInk }} variant="label">
-          GYF ATELIER
-        </GyfText>
+      <View style={{ gap: spacing.xs }}>
         <GyfText accessibilityRole="header" variant="display">
           Your stylist
         </GyfText>
         <GyfText tone="muted" variant="body">
-          Complete looks, built around your profile and improved by your feedback.
+          Complete looks, built around your profile.
         </GyfText>
       </View>
 
-      <AtelierCard>
-        <GyfText variant="label">OCCASION · OPTIONAL</GyfText>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}
-        >
+      {/* Controls ride on the ground, Ref4-style: two chip rows and one search
+          pill. The card that used to box them in, and the three stacked
+          uppercase labels above them, were the bulk of this screen's chrome. */}
+      <View style={{ gap: spacing.sm }}>
+        <FilterRow label="Occasion, optional">
           {OCCASIONS.map((option) => {
             const selected = occasion === option.value;
             return (
@@ -624,13 +625,8 @@ export default function StylistRoute() {
               />
             );
           })}
-        </ScrollView>
-        <GyfText variant="label">STYLE · OPTIONAL</GyfText>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}
-        >
+        </FilterRow>
+        <FilterRow label="Style, optional">
           {STYLE_INTENTS.map((option) => {
             const selected = style === option.value;
             return (
@@ -643,41 +639,50 @@ export default function StylistRoute() {
               />
             );
           })}
-        </ScrollView>
-        <GyfText variant="label">STYLE GOAL · OPTIONAL</GyfText>
-        <TextInput
-          accessibilityLabel="Styling goal"
-          editable={!loading}
-          maxLength={STYLIST_GOAL_MAX}
-          onChangeText={setGoalInput}
-          onSubmitEditing={() => {
-            setActiveGoal(goalInput.trim());
-            setReload((value) => value + 1);
-          }}
-          placeholder="Look taller, slimmer, broader…"
-          placeholderTextColor={palette.textFaint}
-          returnKeyType="search"
-          style={[
-            typography.body,
-            {
-              backgroundColor: palette.surface,
-              borderRadius: radii.control,
-              color: palette.text,
-              minHeight: 48,
-              paddingHorizontal: spacing.md,
-            },
-          ]}
-          value={goalInput}
-        />
-        <AtelierButton
-          disabled={loading || goalInput.trim() === activeGoal}
-          label={goalInput.trim() ? "Apply goal" : activeGoal ? "Reset goal" : "Goal applied"}
-          onPress={() => {
-            setActiveGoal(goalInput.trim());
-            setReload((value) => value + 1);
-          }}
-        />
-      </AtelierCard>
+        </FilterRow>
+        <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.sm }}>
+          <TextInput
+            accessibilityLabel="Styling goal, optional"
+            editable={!loading}
+            maxLength={STYLIST_GOAL_MAX}
+            onChangeText={setGoalInput}
+            onSubmitEditing={applyGoal}
+            placeholder="Look taller, slimmer, broader…"
+            // textFaint fails contrast as a placeholder; muted clears 4.5:1 on
+            // both grounds and still reads as unfilled.
+            placeholderTextColor={palette.textMuted}
+            returnKeyType="search"
+            style={[
+              typography.body,
+              {
+                backgroundColor: palette.surface,
+                borderRadius: radii.capsule,
+                color: palette.text,
+                flex: 1,
+                minHeight: 44,
+                paddingHorizontal: spacing.md,
+              },
+            ]}
+            value={goalInput}
+          />
+          {/* Enter submits; this stays for anyone who can't reach a return key,
+              and only appears once there is an actual change to apply. */}
+          {goalInput.trim() !== activeGoal ? (
+            <Pressable
+              accessibilityLabel={goalInput.trim() ? "Apply styling goal" : "Clear styling goal"}
+              accessibilityRole="button"
+              disabled={loading}
+              hitSlop={hitSlopFor(44)}
+              onPress={applyGoal}
+              style={{ justifyContent: "center", minHeight: 44, paddingHorizontal: spacing.xs }}
+            >
+              <GyfText style={{ color: palette.accentInk }} variant="label">
+                {goalInput.trim() ? "APPLY" : "CLEAR"}
+              </GyfText>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
 
       {error ? (
         <AtelierCard>
