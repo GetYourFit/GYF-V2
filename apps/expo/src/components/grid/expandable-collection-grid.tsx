@@ -23,6 +23,27 @@ import { colors, motion, radii, shadows, spacing, type ThemeName } from "@/theme
 import { useTheme } from "@/theme/use-color-scheme";
 import { cardWidthFor, columnsForWidth } from "./column-count";
 import { collectionView } from "./collection-state";
+import { PanZoomCanvas } from "./pan-zoom-canvas";
+
+/** Collapsed preview flows in the page; expanded turns into an explorable canvas. */
+function Explorable({
+  children,
+  enabled,
+  height,
+  width,
+}: {
+  children: React.ReactNode;
+  enabled: boolean;
+  height: number;
+  width: number;
+}) {
+  if (!enabled) return <>{children}</>;
+  return (
+    <PanZoomCanvas height={height} width={width}>
+      {children}
+    </PanZoomCanvas>
+  );
+}
 
 export type CollectionStatus = "loaded" | "loading";
 
@@ -73,7 +94,7 @@ export function ExpandableCollectionGrid({
 }) {
   const theme = useTheme(themeProp);
   const palette = colors[theme];
-  const { tier } = useResponsive();
+  const { height: screenHeight } = useResponsive();
   const [expanded, setExpanded] = useState(false);
   const [preview, setPreview] = useState<CollectionItem | null>(null);
   const chevron = useSharedValue(0);
@@ -159,7 +180,12 @@ export function ExpandableCollectionGrid({
           </View>
         ) : (
           <View style={{ gap: spacing.md }}>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
+            <Explorable
+              enabled={expanded}
+              height={Math.round(screenHeight * 0.62)}
+              width={containerWidth - spacing.md * 2}
+            >
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
               {view.visible.map((item, i) => {
                 const staggerIndex = view.revealFrom >= 0 ? i - view.revealFrom : -1;
                 const card = (
@@ -185,7 +211,8 @@ export function ExpandableCollectionGrid({
                   <View key={item.id}>{card}</View>
                 );
               })}
-            </View>
+              </View>
+            </Explorable>
             {view.hiddenCount > 0 || expanded ? (
               <PressableScale
                 accessibilityRole="button"

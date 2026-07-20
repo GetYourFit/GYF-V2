@@ -66,7 +66,9 @@ export function CatalogImage({
     <Image
       accessibilityLabel={label}
       cachePolicy="disk"
-      contentFit="contain"
+      // The image IS the frame — fill the plate edge to edge, never letterbox.
+      contentFit="cover"
+      contentPosition="top center"
       key={`${recyclingKey}:${attempt}`}
       onError={() => setFailed(true)}
       recyclingKey={recyclingKey}
