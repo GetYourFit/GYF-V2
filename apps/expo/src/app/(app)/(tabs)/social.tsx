@@ -126,7 +126,10 @@ function PostCard({
   // reason chip; "sent" is per-card local state — the server keeps the record.
   const [reportState, setReportState] = useState<"idle" | "choose" | "sent">("idle");
   return (
-    <AtelierCard style={{ gap: spacing.md }}>
+    // Not a card: the look image IS the post. A boxed surface around every feed
+    // item made the whole screen read as a stack of cards; the feed's hairline
+    // separators divide posts instead. Matches the profile unbox (d9ceaea).
+    <View style={{ gap: spacing.md }}>
       <View style={{ alignItems: "center", flexDirection: "row", justifyContent: "space-between" }}>
         <GyfText tone="muted" variant="label">
           {post.occasion ? post.occasion.toUpperCase() : "A LOOK"}
@@ -160,7 +163,8 @@ function PostCard({
               source={{ uri }}
               style={{
                 backgroundColor: palette.surfaceRaised,
-                borderRadius: radii.control,
+                // Ref4 plate: sharp edges, boxy tone, whole look visible.
+                borderRadius: 0,
                 flex: 1,
                 height: 200,
               }}
@@ -283,7 +287,7 @@ function PostCard({
           </PressableScale>
         </View>
       )}
-    </AtelierCard>
+    </View>
   );
 }
 
@@ -498,8 +502,14 @@ export default function SocialRoute() {
   return (
     <FlatList
       accessibilityLabel="Community feed"
+      // Hairline rule between posts now that they are unboxed — the divider the
+      // card outline used to imply, at a fraction of the visual weight.
+      ItemSeparatorComponent={() => (
+        <View
+          style={{ backgroundColor: palette.border, height: 1, marginVertical: spacing.lg }}
+        />
+      )}
       contentContainerStyle={{
-        gap: spacing.md,
         padding: spacing.lg,
         paddingBottom: spacing.xxl * 2 + insets.bottom,
         paddingTop: spacing.lg + insets.top,
