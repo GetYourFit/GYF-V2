@@ -18,6 +18,8 @@ from functools import lru_cache
 from fastapi import Depends, HTTPException, status
 from gyf_contracts.eval_report import runtime_model_verdict
 
+from gyf_contracts.consent import behavioral_learning_enabled
+
 from .auth import Principal, get_current_principal, get_optional_principal
 from .catalog.directory import ItemDirectory
 from .catalog.retrieval import TextEmbedder, VectorSearchRepository
@@ -240,7 +242,7 @@ def behavioral_learning_allowed(
         return False
     # ponytail: one indexed PK read per request on the learning paths. Fold into the
     # principal if a profiler ever shows it mattering.
-    return repo.get_consent(principal.user_id).get("behavioral_learning", True) is not False
+    return behavioral_learning_enabled(repo.get_consent(principal.user_id))
 
 
 def get_taste_repo(allowed: bool = Depends(behavioral_learning_allowed)) -> TasteRepository:

@@ -15,6 +15,7 @@ import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi } from "@/lib/api";
+import type { ConsentFlags } from "@gyf/types";
 import {
   consentDirty,
   consentPayload,
@@ -57,8 +58,8 @@ export default function AccountRoute() {
   const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
   const [status, setStatus] = useState<Status>("loading");
-  const [saved, setSaved] = useState<Record<string, boolean>>({});
-  const [draft, setDraft] = useState<Record<string, boolean>>({});
+  const [saved, setSaved] = useState<ConsentFlags>({});
+  const [draft, setDraft] = useState<ConsentFlags>({});
   const [savedName, setSavedName] = useState("");
   const [nameDraft, setNameDraft] = useState("");
   const [savingName, setSavingName] = useState(false);

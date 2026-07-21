@@ -58,6 +58,16 @@ def test_absent_flag_still_learns_and_anonymous_never_does():
     assert behavioral_learning_allowed(None, _repo({})) is False
 
 
+def test_legacy_personalization_false_still_opts_out_until_canonical_change():
+    assert behavioral_learning_allowed(_Principal(), _repo({"personalization": False})) is False
+    assert (
+        behavioral_learning_allowed(
+            _Principal(), _repo({"personalization": False, "behavioral_learning": True})
+        )
+        is True
+    )
+
+
 @pytest.mark.parametrize(
     ("consent", "expected_events"),
     [({"behavioral_learning": False}, 0), ({"behavioral_learning": True}, 1)],
@@ -78,3 +88,37 @@ def test_feedback_route_honours_the_switch(monkeypatch, consent, expected_events
 
     assert response.status_code == 202  # accepted either way — the user is never told off
     assert len(collected.events) == expected_events
+
+
+def test_http_put_opt_out_blocks_feedback_writes_and_taste_reads(monkeypatch):
+    """Regression for the audited HTTP-path mismatch.
+
+    The real Account UI sends ``behavioral_learning`` to PUT /consent.  That exact
+    HTTP write must be the state the feedback sink and taste-history provider read.
+    """
+
+    accounts = InMemoryAccountRepository(existing={DEV_USER})
+    collected = _CollectingSink()
+    monkeypatch.setattr(deps, "sink", collected)
+    app.dependency_overrides[get_account_repo] = lambda: accounts
+    try:
+        client = TestClient(app)
+        opt_out = client.put("/consent", json={"flags": {"behavioral_learning": False}})
+        assert opt_out.status_code == 200
+        assert opt_out.json() == {"behavioral_learning": False}
+
+        response = client.post(
+            "/feedback",
+            json={"target_type": "item", "target_id": "item-1", "action": "save"},
+        )
+        assert response.status_code == 202
+
+        allowed = behavioral_learning_allowed(_Principal(), accounts)
+        taste_repo = deps.get_taste_repo(allowed=allowed)
+    finally:
+        app.dependency_overrides.clear()
+
+    assert collected.events == []
+    assert allowed is False
+    assert isinstance(taste_repo, NoTasteRepository)
+    assert taste_repo.engagements(DEV_USER, 100) == []

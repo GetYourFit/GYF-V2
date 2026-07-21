@@ -81,7 +81,7 @@ export const CONSENT_OPTIONS: Array<Option & { required?: boolean; description: 
     required: true,
   },
   {
-    value: "personalization",
+    value: "behavioral_learning",
     label: "Learn my taste from my behaviour",
     description: "Lets recommendations sharpen as you save, skip, and cart looks.",
   },

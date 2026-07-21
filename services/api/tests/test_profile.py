@@ -432,20 +432,40 @@ def test_export_rejected_for_tombstoned_account():
 # --- Consent ----------------------------------------------------------------
 
 
-def test_consent_merge_keeps_known_keys_and_drops_unknown():
+def test_consent_merge_keeps_canonical_keys_and_rejects_unknown():
     accounts = InMemoryAccountRepository(existing={DEV_USER})
     try:
         client = _client(InMemoryProfileRepository(), accounts)
         assert client.get("/consent").json() == {}
         r = client.put("/consent", json={"flags": {"data_processing": True, "made_up": True}})
-        assert r.status_code == 200
-        assert r.json() == {"data_processing": True}  # unknown key dropped
+        assert r.status_code == 422
+        assert client.get("/consent").json() == {}
         # a second update merges rather than replaces.
-        r = client.put("/consent", json={"flags": {"personalization": True}})
-        assert r.json() == {"data_processing": True, "personalization": True}
+        r = client.put("/consent", json={"flags": {"behavioral_learning": True}})
+        assert r.status_code == 200
+        assert r.json() == {"behavioral_learning": True}
         # revoking flips the flag, leaving others intact.
         r = client.put("/consent", json={"flags": {"data_processing": False}})
-        assert r.json() == {"data_processing": False, "personalization": True}
+        assert r.json() == {"data_processing": False, "behavioral_learning": True}
+        # The old learning key must fail loudly instead of creating a false client state.
+        legacy = client.put("/consent", json={"flags": {"personalization": False}})
+        assert legacy.status_code == 422
+        assert client.get("/consent").json() == {
+            "data_processing": False,
+            "behavioral_learning": True,
+        }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_consent_read_translates_legacy_personalization_without_overriding_canonical():
+    accounts = InMemoryAccountRepository(existing={DEV_USER})
+    accounts.users[DEV_USER]["consent"] = {"personalization": False}
+    try:
+        client = _client(InMemoryProfileRepository(), accounts)
+        assert client.get("/consent").json() == {"behavioral_learning": False}
+        accounts.users[DEV_USER]["consent"]["behavioral_learning"] = True
+        assert client.get("/consent").json() == {"behavioral_learning": True}
     finally:
         app.dependency_overrides.clear()
 

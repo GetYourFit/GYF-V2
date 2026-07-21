@@ -12,7 +12,7 @@ export const EMPTY_PROFILE: ProfileInput = {
 
 export const DEFAULT_CONSENT = {
   data_processing: true,
-  personalization: false,
+  behavioral_learning: false,
   photo_storage: false,
   marketing: false,
 } as const;

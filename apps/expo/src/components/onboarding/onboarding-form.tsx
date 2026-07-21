@@ -301,11 +301,11 @@ export function OnboardingForm({ onSaved }: { onSaved: () => void }) {
               />
               <ConsentRow
                 label="Learn my taste from saves and skips"
-                value={consent.personalization}
+                value={consent.behavioral_learning}
                 onPress={() =>
                   setConsent((current) => ({
                     ...current,
-                    personalization: !current.personalization,
+                    behavioral_learning: !current.behavioral_learning,
                   }))
                 }
               />

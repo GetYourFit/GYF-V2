@@ -38,6 +38,13 @@ type ConsentState = Record<string, boolean>;
 type EstimatedKey = "skin_tone" | "undertone" | "body_type";
 const ESTIMATED_KEYS: EstimatedKey[] = ["skin_tone", "undertone", "body_type"];
 
+const DEFAULT_CONSENT: ConsentState = {
+  data_processing: true,
+  behavioral_learning: false,
+  photo_storage: false,
+  marketing: false,
+};
+
 const EMPTY: ProfileInput = {
   skin_tone: "",
   undertone: "",
@@ -248,7 +255,7 @@ export function OnboardingWizard() {
   const [step, setStep] = useState<number>(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [form, setForm] = useState<ProfileInput>(EMPTY);
-  const [consent, setConsent] = useState<ConsentState>({ data_processing: true });
+  const [consent, setConsent] = useState<ConsentState>({ ...DEFAULT_CONSENT });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -276,7 +283,7 @@ export function OnboardingWizard() {
             budget_range: profile.budget_range ?? { min: 0, max: null, currency: "USD" },
           });
         }
-        setConsent({ data_processing: true, ...consentFlags });
+        setConsent({ ...DEFAULT_CONSENT, ...consentFlags, data_processing: true });
       })
       .catch((e: unknown) =>
         setError(e instanceof Error ? e.message : "Could not load your profile."),

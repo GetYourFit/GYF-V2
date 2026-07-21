@@ -35,7 +35,7 @@ describe("onboarding validation", () => {
   test("requires processing consent and starts optional flags off", () => {
     expect(DEFAULT_CONSENT).toEqual({
       data_processing: true,
-      personalization: false,
+      behavioral_learning: false,
       photo_storage: false,
       marketing: false,
     });
