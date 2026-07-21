@@ -1,6 +1,6 @@
 # GYF active execution contract
 
-Status: **V7 ACTIVE — AUDIT-REENTRY-0721224554 CURRENT (temporary; resumes COSMOS-DESIGN-BUILD)** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
+Status: **V7 ACTIVE — COSMOS-DESIGN-BUILD HELD (governance reconciliation; NATIVE-ACCEPTANCE not open)** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
 continued execution on 2026-07-17 · effective repository baseline
 `367a7ffa14532f60e1ba8d1a784785d98da2bbb9` · `P0 GO` recorded 2026-07-17 ·
 `EXPO-CORE-01 GO` (owner-attested 2026-07-17): recsys taste-path HNSW correctness
@@ -9,6 +9,16 @@ display (`31a9700`) shipped and deployed; owner attests the deployed device/web
 core journey is done. **Evidence still to file:** production served-ID join
 integrity (≥99%) trace and the physical-Android/web journey screenshots — until
 filed, this GO is owner-attested, not independently reproduced.
+
+**2026-07-21 reconciliation, refreshed after PR 14 and PR 12 merged:** Cosmos Tasks 6-11
+(`7ee9a16` through `8a811ff`) merged to `main` on 2026-07-19 but this contract was never
+updated past Task 6. Current `main` is green again at `fa1cdf0` (CI run `29894487903`),
+which clears the red-main merge blocker that existed at `038123b` but does not
+retroactively supply the missing per-task exit record. The pointer is restored from the
+`AUDIT-REENTRY-0721224554` interruption and stays held at `COSMOS-DESIGN-BUILD`, not
+`NATIVE-ACCEPTANCE`; see the "Reconciliation audit" entry in the pointer register and the
+"Current truth" section below for full evidence and the open owner decision on eleven
+undocumented post-Task-11 commits.
 
 This is the single source of truth for execution order. Product intent remains in `docs/vision/ideas-complete.md`; non-negotiable engineering rules remain in `docs/engineering-doctrine.md`; the launch/refactor ticket board is subordinate and research/runbooks are evidence only.
 
@@ -57,7 +67,7 @@ agent preference are not evidence.
 The P labels below are outcome envelopes, not a second ticket system. The mapped F/EXPO/HL ticket
 is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
-`CURRENT EXECUTION POINTER: AUDIT-REENTRY-0721224554` (temporary consent/privacy corrective re-entry; resume `COSMOS-DESIGN-BUILD` Task 6 only after this packet's validation is recorded)
+`CURRENT EXECUTION POINTER: COSMOS-DESIGN-BUILD` (restored after `AUDIT-REENTRY-0721224554` merged and `main` CI passed; held for the reconciliation decision below, not advanced to `NATIVE-ACCEPTANCE`)
 
 **Owner-authorised audit re-entry — 2026-07-21.** The captain accepted scout report
 `/Users/rvzaku/atharv-agent-workspace/data/gyf-product-audit-plan-scout-0721224554/report.md`
@@ -104,6 +114,12 @@ touched files passed; `make fmt-check` failed only on four untouched pre-existin
 failed in the Expo production export because this disposable lane has no `EXPO_TOKEN`/EAS login; no
 product or launch gate is promoted from that environment-gated failure.
 
+Post-merge validation: PR 14's `main` push at `8d72fee` completed CI run `29893056904` green
+across `Standards`, `Web & packages`, `Core API`, `Flutter app`, `ML platform` and
+`Doctrine gates`; PR 12's follow-up `fa1cdf0` completed CI run `29894487903` green across the
+same jobs. The temporary audit re-entry is therefore closed for pointer-selection purposes and
+this contract resumes the Cosmos/design-build governance state described below.
+
 **Owner-authorised design-first evidence sequencing — 2026-07-19.** The owner has no physical
 Android device and approved completing the automated Cosmos Editorial design build before native
 acceptance. The bounded `COSMOS-DESIGN-BUILD` pointer permits Tasks 3–11 of
@@ -123,6 +139,77 @@ visual evidence against the exact candidate commit. An emulator may strengthen d
 but is not physical-device proof. Any failure returns to the smallest owning design task and reruns
 both automated and physical checks. This sequencing does not close `EXPO-DESIGN-CORE`, global F2.5,
 the Expo Doctor dependency hold, Tasks 12, or any product/release gate.
+
+**Reconciliation audit - 2026-07-21 (pointer HELD; not advanced).** This contract was last
+updated for this pointer at commit `cdba998` ("advance Cosmos build to task 6"); no further
+Cosmos-task doc commit ever followed it. Commit `2f31608` is titled "record Cosmos design
+build tasks 9-11 complete" but its diff touches only `PROGRESS.md` - the contract itself was
+never reconciled. A direct audit of `git log` and the GitHub Actions `CI` workflow on `main`
+(`GetYourFit/GYF-V2`) as of 2026-07-21 finds:
+
+- Task 6 (`7ee9a16`, "route personal fit setup and profile edits"): CI run 29684796473 green.
+- Task 7 (`a135444`, "complete editorial Explore discovery"): CI run 29685113354 **failed**
+  on `bun run format:check`; never corrected before Task 8 began.
+- Task 8 (`b7c76fc`, "complete editorial wardrobe flow"): CI run 29685275801 green
+  (incidentally also cleared Task 7's formatting failure).
+- Task 9 (`6e1094c`, "complete social profile experience"): CI run 29694629711 failed, but
+  only the `Standards (pre-commit)` job, on pre-existing trailing-whitespace/end-of-file
+  violations in `ScopeofIdea.md`; the format/typecheck/lint/test/build job (`Web &
+  packages`) and `Core API` passed.
+- Task 10 (`9d9436d`, "finalize motion and haptic grammar"): CI run 29694702381, same
+  shape - only `Standards (pre-commit)` red, same `ScopeofIdea.md` cause.
+- Task 11 (`8a811ff`, "close final experience matrix"): CI run 29694824970 was
+  **cancelled** (superseded mid-run by the next push) and never completed on its own
+  commit. The immediately following commit `2f31608` (docs-only, no app-code diff) shows
+  `Web & packages`/`Core API`/`Flutter app`/`ML platform`/`Doctrine gates` all green with
+  only the same pre-existing `Standards` failure - indirect but reasonable evidence that
+  Task 11's own app-code changes were clean.
+
+So: Tasks 6 and 8 have clean, complete gate evidence at their own commit. Tasks 7, 9 and 10
+each failed their own gate and the failure was carried forward rather than fixed before the
+next task began (Task 7's incidentally self-resolved at Task 8; Tasks 9/10's
+`ScopeofIdea.md` whitespace failure remained unfixed through `038123b` before PR 14 corrected it). Task 11's
+own run is inconclusive by cancellation, with only indirect corroboration. Each Task 6-11
+commit does add or extend a matching test file (`profile-summary.test.ts`,
+`explore-feed.test.ts`, `wardrobe-feed.test.ts`, `social-feed.test.ts`,
+`motion-grammar.test.ts`, `core-route-states.test.ts`), consistent with the plan's required
+failing-test-first step, but no Task 7-11 commit message records test counts the way
+`cdba998`/`377da39` did for Tasks 4-5, so that evidentiary detail cannot be reconstructed
+independently.
+
+Eleven further commits landed after Task 11 closed that map to no named Cosmos task and
+were never brought under this contract: three same-day (`549d7c8`, `a3e6cd2`, `28df9df`,
+2026-07-19 22:03-22:11 IST; CI green except the pre-existing `ScopeofIdea.md` failure) and
+eight the next day (`0885470`, `c2b65d5`, `5ae96e3`, `66749cf`, `0cd2489`, `d9ceaea`,
+`697aa60`, `038123b`, 2026-07-20 20:30-21:19 IST; two of these, `0cd2489` and `d9ceaea`,
+never got a completed CI run at all, superseded by the next push before a runner started).
+Starting at `0885470`, `bun run format:check` began failing again and remained red through
+`038123b` (CI run 29756890310), naming `apps/expo/src/app/(app)/(tabs)/social.tsx`,
+`apps/expo/src/components/design/core-route-review.tsx`,
+`apps/expo/src/components/grid/expandable-collection-grid.tsx`, and
+`apps/expo/src/components/ui/filter-row.tsx`. Because `format:check` is the first step of
+the `Web & packages` job, `typecheck`/`lint`/`test`/`build` did not run at `038123b` - there
+is no CI evidence either way for those steps at that commit. PR 14 (`8d72fee`, CI run
+`29893056904`) corrected the consent/audit re-entry and the named formatting defects; PR 12
+(`fa1cdf0`, CI run `29894487903`) made the local standards gate match CI. Both are green on
+`main`, so the current red-CI blocker is cleared without changing the historical per-task gaps.
+
+**Consequence for the pointer.** This pointer's own exit gate (below) requires "each task
+has red/green evidence, focused checks, the canonical repository gate ... at one
+rollbackable commit before the next task begins," and its exit requires recording `DESIGN
+BUILD COMPLETE — NATIVE ACCEPTANCE HOLD` before the sole pointer may become
+`NATIVE-ACCEPTANCE`. That record has never been made. The canonical repository gate is now green at current
+`main` (`fa1cdf0`, CI run `29894487903`), but that fix-forward does not retroactively make
+Tasks 7, 9, 10 or 11 land with the required complete gate before the next task began. This
+reconciliation therefore does **not** advance the pointer to `NATIVE-ACCEPTANCE`; it stays
+`COSMOS-DESIGN-BUILD`, held open, pending an owner decision on the eleven undocumented
+commits: fold them into `NATIVE-ACCEPTANCE`'s "smallest regression-backed correction"
+allowance once that pointer opens, treat them as their own named exit record, or something
+else the owner specifies.
+
+This is an open question for the owner, not a decision this reconciliation makes on its
+own - advancing the pointer past what is actually gate-proven would itself be the kind of
+phase promotion this contract reserves for owner sign-off.
 
 **Owner-authorised Explore reliability re-entry — 2026-07-18.** During deployed
 `EXPO-DESIGN-CORE` verification, the exact authenticated first-load request
@@ -871,7 +958,7 @@ bun run build
 
 Every skip and failure must be reported. A phase cannot promote with an unexplained data/identity/object mismatch, cross-user access, missing export/deletion/restore evidence, unlicensed dependency, false user-facing claim, critical journey/accessibility/slice regression, unbounded retry/concurrency/GPU spend, cost above the owner-approved ceiling, or no tested fallback and rollback.
 
-## Current truth and next work (audited 2026-07-18)
+## Current truth and next work (audited 2026-07-18; Cosmos task governance reconciled 2026-07-21)
 
 - Production application code, the verified Virginia API behavior and the EAS artifact are from
   `ba2f6653f8b748c6b67dff47e55a7abd91e941b0`; later evidence-only contract commits do not change
@@ -1002,14 +1089,44 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   second step rather than replacing it outright, preserving the `profile.gender`-gated
   onboarded check; `/personal-fit` is the new Profile edit route.
 
-  Cosmos Tasks 1–5 are complete and independently reviewed in the durable task ledger;
-  Task 6 is current. Fresh controller gates pass formatting, JS/Python lint, typecheck,
-  doctrine, 442 API tests (20 environment/optional-lane skips, seven retained warnings),
-  77 web tests and 163 Expo tests; both production builds pass. The unresolved Expo
-  Doctor, browser-capture, physical-Android, owner-visual and global F2.5 evidence remains
-  HOLD exactly as recorded above; it is neither waived nor counted as task success. After
-  Task 11, the sole pointer becomes `NATIVE-ACCEPTANCE`, not release or the next product
-  phase.
+  Cosmos Tasks 1–5 were complete and independently reviewed in the durable task ledger as
+  of commit `cdba998`, which recorded Task 6 as current. Fresh controller gates at that
+  point passed formatting, JS/Python lint, typecheck, doctrine, 442 API tests (20
+  environment/optional-lane skips, seven retained warnings), 77 web tests and 163 Expo
+  tests; both production builds passed.
+
+  **This paragraph was never updated again as Tasks 7–11 landed; the 2026-07-21
+  reconciliation below is the first correction.** Commits `7ee9a16` (Task 6, "route
+  personal fit setup and profile edits"), `a135444` (Task 7, "complete editorial Explore
+  discovery"), `b7c76fc` (Task 8, "complete editorial wardrobe flow"), `6e1094c` (Task 9,
+  "complete social profile experience"), `9d9436d` (Task 10, "finalize motion and haptic
+  grammar") and `8a811ff` (Task 11, "close final experience matrix") all merged to `main`
+  between 2026-07-19 05:38 and 21:55 IST, each adding a focused test file matching the
+  plan's failing-test-first step. Direct audit of GitHub Actions `CI` on `main` finds Task
+  6 and Task 8 fully green at their own commit; Task 7 failed its own `format:check` gate
+  and was never corrected before Task 8 began (Task 8's diff incidentally cleared it);
+  Tasks 9 and 10 each failed only the `Standards (pre-commit)` job on a pre-existing
+  `ScopeofIdea.md` whitespace violation that remained red until PR 14; and Task 11's own CI
+  run was cancelled by a fast-following push rather than completed, though the immediately
+  following docs-only commit shows the app-code jobs green. No Task 7–11 commit records
+  test counts the way `cdba998`/`377da39` did, so that level of evidence cannot be
+  reconstructed from history. Full detail, exact CI run IDs, and the still-open owner
+  decision are recorded in the `COSMOS-DESIGN-BUILD` pointer entry above, under
+  "Reconciliation audit - 2026-07-21".
+
+  The unresolved Expo Doctor, browser-capture, physical-Android, owner-visual and global
+  F2.5 evidence remains HOLD exactly as recorded above; none of the above is waived or
+  counted as task success. The plan's own rule is that after Task 11 the sole pointer
+  becomes `NATIVE-ACCEPTANCE` - but only once that task's own exit is actually recorded
+  and the canonical repository gate is green at that commit. The current `main` gate is
+  green at `fa1cdf0` after PR 14 (`8d72fee`) and PR 12 (`fa1cdf0`), but the historical
+  Task 11 boundary still lacks a recorded exit and cannot be promoted by retroactive green
+  CI alone. The pointer therefore stays `COSMOS-DESIGN-BUILD` pending the owner decision
+  described above, not release or the next product phase. Eleven further commits (`549d7c8`
+  through `038123b`, 2026-07-19–2026-07-20) landed after Task 11 closed without mapping to
+  any named Cosmos task; they are unreconciled scope and are not folded into any gate by
+  this reconciliation. The later PR 14 audit re-entry and PR 12 CI-standards follow-up are
+  named corrective commits with green `main` CI, not retroactive Cosmos task-exit evidence.
 - **Expo production recovery — 2026-07-19.** Manual deployment `emrc2qswgs` had been promoted from
   a local export without the production public environment, so its bundle compiled Supabase
   configuration as undefined and retained the local API default. Commit `f044473` also prevents web
