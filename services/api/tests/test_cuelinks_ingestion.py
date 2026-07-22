@@ -134,7 +134,7 @@ def test_missing_cuelinks_feed_config_is_an_exact_credential_blocker() -> None:
     assert message == cuelinks_config_blocker()
     assert "GYF_CUELINKS_PRODUCTS_FEED_PATH" in message
     assert "GYF_CUELINKS_CAMPAIGNS_PATH" in message
-    assert "GYF_CUELINKS_CID=274785" in message
+    assert "GYF_CUELINKS_CID=<redacted channel id>" in message
     assert "JS/RN SDK is link conversion only" in message
 
 
