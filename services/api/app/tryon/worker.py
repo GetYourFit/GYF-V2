@@ -29,6 +29,8 @@ import threading
 import time
 from collections.abc import Iterable
 
+from gyf_contracts.consent import behavioral_learning_enabled
+
 from ..config import settings
 from .jobs import RETRYABLE_ERRORS, ClaimedJob, TryOnJobRepository
 
@@ -134,7 +136,7 @@ def render_one(
     # sat in the queue (F3: no route, and no worker, may forget the check).
     if sink is not None and account_repo is not None:
         flags = account_repo.get_consent(job.user_id)
-        if flags.get("behavioral_learning", True):
+        if behavioral_learning_enabled(flags):
             sink.publish_many(
                 [
                     InteractionEvent(

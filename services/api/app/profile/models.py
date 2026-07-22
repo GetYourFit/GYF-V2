@@ -21,7 +21,6 @@ from typing import Annotated, Literal
 
 from gyf_contracts.consent import (
     BEHAVIORAL_LEARNING_PURPOSE,
-    CONSENT_PURPOSES,
     DATA_PROCESSING_PURPOSE,
     LEGACY_PERSONALIZATION_PURPOSE,
     MARKETING_PURPOSE,
@@ -51,11 +50,6 @@ PROFILE_FIELDS = (
     "budget_range",
     "occasion",
 )
-
-# Controlled set of consent keys the user can grant/revoke (CLAUDE.md §2 privacy).
-# A closed vocabulary keeps the legal surface auditable; unknown keys are rejected.
-CONSENT_KEYS = CONSENT_PURPOSES
-
 
 ConsentBool = StrictBool | SkipJsonSchema[None]
 
