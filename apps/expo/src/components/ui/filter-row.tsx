@@ -8,12 +8,7 @@ import { spacing } from "@/theme/tokens";
  * deleted heading used to say and still names the group for screen readers,
  * so dropping the visual label costs nothing in the accessibility tree.
  */
-export function FilterRow({
-  children,
-  label,
-  style,
-  ...props
-}: ViewProps & { label: string }) {
+export function FilterRow({ children, label, style, ...props }: ViewProps & { label: string }) {
   return (
     <View accessibilityLabel={label} accessibilityRole="tablist" style={style} {...props}>
       <ScrollView

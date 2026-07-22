@@ -224,31 +224,31 @@ export function ExpandableCollectionGrid({
               width={screenWidth}
             >
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap }}>
-              {view.visible.map((item, i) => {
-                const staggerIndex = view.revealFrom >= 0 ? i - view.revealFrom : -1;
-                const card = (
-                  <ProductCard
-                    item={item}
-                    onPress={() => setPreview(item)}
-                    onToggleSave={onToggleSave ? (saved) => onToggleSave(item, saved) : undefined}
-                    theme={theme}
-                    width={cardWidth}
-                  />
-                );
-                return staggerIndex >= 0 ? (
-                  <Animated.View
-                    entering={FadeInDown.duration(motion.standard)
-                      .delay(staggerIndex * STAGGER_MS)
-                      .easing(Easing.out(Easing.cubic))
-                      .reduceMotion(ReduceMotion.System)}
-                    key={item.id}
-                  >
-                    {card}
-                  </Animated.View>
-                ) : (
-                  <View key={item.id}>{card}</View>
-                );
-              })}
+                {view.visible.map((item, i) => {
+                  const staggerIndex = view.revealFrom >= 0 ? i - view.revealFrom : -1;
+                  const card = (
+                    <ProductCard
+                      item={item}
+                      onPress={() => setPreview(item)}
+                      onToggleSave={onToggleSave ? (saved) => onToggleSave(item, saved) : undefined}
+                      theme={theme}
+                      width={cardWidth}
+                    />
+                  );
+                  return staggerIndex >= 0 ? (
+                    <Animated.View
+                      entering={FadeInDown.duration(motion.standard)
+                        .delay(staggerIndex * STAGGER_MS)
+                        .easing(Easing.out(Easing.cubic))
+                        .reduceMotion(ReduceMotion.System)}
+                      key={item.id}
+                    >
+                      {card}
+                    </Animated.View>
+                  ) : (
+                    <View key={item.id}>{card}</View>
+                  );
+                })}
               </View>
             </Explorable>
             {view.hiddenCount > 0 || expanded ? (
