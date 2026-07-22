@@ -17,9 +17,10 @@ Cuelinks product-feed access and does **not** promote F4, P5.4, HL-EXPLORE or HL
 - Cuelinks wrapping remains server-side through `CuelinksLinker`; recommendation links keep
   `subid=<recommendation_id>`, while catalogue/saved/explore links now use structured
   `subid=catalog_<item_id>` so statements can be reconciled by product later.
-- Expo Explore product cards pass backend `buy_url` into the card and render a compact affiliate
+- Expo Saved product cards pass backend `buy_url` into the card and render a compact affiliate
   disclosure only when `safeExternalShopUrl` accepts the URL. Unsafe/home/shortlink URLs render no
-  disclosure and no shop affordance.
+  disclosure and no shop affordance. Explore already discloses affiliate links through its own
+  item detail sheet CTA, which predates this branch.
 
 ## Blocker for real live ingestion
 

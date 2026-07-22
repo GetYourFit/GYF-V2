@@ -21,6 +21,7 @@ const pressableSource = await Bun.file(
 const productCardSource = await Bun.file(
   new URL("../components/ui/product-card.tsx", import.meta.url),
 ).text();
+const savedSource = await Bun.file(new URL("../app/(app)/saved.tsx", import.meta.url)).text();
 const welcomeSource = await Bun.file(new URL("../app/(auth)/welcome.tsx", import.meta.url)).text();
 const errorRouteSource = await Bun.file(new URL("../app/error.tsx", import.meta.url)).text();
 const gyfMarkSource = await Bun.file(
@@ -49,7 +50,10 @@ describe("Expo interaction boundaries", () => {
   });
 
   test("product cards disclose backend-approved affiliate shop URLs", () => {
-    expect(exploreSource).toContain("shopUrl: item.buy_url");
+    // Explore renders items through MasonryFeed/ItemDetailSheet, which already
+    // discloses via its own "Affiliate link" CTA — ProductCard's compact
+    // disclosure is wired at its one real production call site, Saved.
+    expect(savedSource).toContain("shopUrl: row.buy_url");
     expect(productCardSource).toContain("compactShopDisclosureForUrl(item.shopUrl)");
     expect(productCardSource).toContain("{shopDisclosure ? (");
   });

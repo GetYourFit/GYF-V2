@@ -193,6 +193,7 @@ export default function SavedRoute() {
     imageUrl: row.image_url,
     price: formatCatalogPrice(row.price, row.currency),
     saved: true,
+    shopUrl: row.buy_url,
   }));
 
   return (
