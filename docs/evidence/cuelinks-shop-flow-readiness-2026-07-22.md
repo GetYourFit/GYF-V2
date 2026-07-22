@@ -153,8 +153,9 @@ ingestion is proven end to end.
 - Safe network proof reran the two captain links and the representative generated catalogue link
   with no login, cart, checkout or purchase action; results matched the redirect chains above.
 - Focused API proof: `pytest -q tests/test_affiliate.py` via a worktree-local `uv` shim passed
-  `14 passed`, with one retained Starlette/httpx deprecation warning.
-- Full API proof: `pytest -q` passed `453 passed, 20 skipped, 8 warnings`.
+  `15 passed`, with one retained Starlette/httpx deprecation warning (includes a regression test
+  guarding the double percent-decoding fix for embedded `linksredirect.com` targets).
+- Full API proof: `pytest -q` passed `454 passed, 20 skipped, 8 warnings`.
 - Focused frontend proof: `bun test apps/expo/src/lib/stylist-feed.test.ts app/lib/shop-links.test.ts`
   via a worktree-local Bun shim passed `12 pass`.
 - Full JS proof: `bun run test` passed `185` Expo tests and `79` retained-web tests, with retained

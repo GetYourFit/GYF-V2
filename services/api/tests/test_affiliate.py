@@ -97,6 +97,22 @@ def test_linksredirect_product_targets_without_the_requested_subid_are_rewrapped
     )
 
 
+def test_linksredirect_embedded_target_is_not_double_percent_decoded():
+    # promo=100%25off (i.e. the retailer literally encodes "100%off" once) must
+    # survive an unwrap/rewrap cycle with exactly one level of decoding, not two.
+    product = "https://store.example/products/shirt?promo=100%25off&note=a%2Bb"
+    wrapped = CuelinksLinker("274785").wrap(product, "rec-1")
+    prewrapped = wrapped.replace("subid=rec-1", "subid=other").replace(
+        "source=api", "source=linkkit"
+    )
+    rewrapped = CuelinksLinker("274785").wrap(prewrapped, "rec-2")
+    assert rewrapped == (
+        "https://linksredirect.com/?cid=274785&source=api&subid=rec-2"
+        "&url=https%3A%2F%2Fstore.example%2Fproducts%2Fshirt%3Fpromo%3D100%2525off"
+        "%26note%3Da%252Bb"
+    )
+
+
 def test_null_linker_passes_only_safe_product_links_through():
     assert (
         NullAffiliateLinker().wrap("https://store.example/products/x", "s")
