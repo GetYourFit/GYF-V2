@@ -53,6 +53,11 @@ _TRACKING_HOME_QUERY_KEYS = {
     "ransiteid",
     "return_cancellation_window",
     "source",
+    "sub1",
+    "sub2",
+    "sub3",
+    "sub4",
+    "sub5",
     "sub_id",
     "subid",
     "u1",
@@ -152,10 +157,12 @@ class NullAffiliateLinker(AffiliateLinker):
 class CuelinksLinker(AffiliateLinker):
     """Cuelinks deeplink lane: ``linksredirect.com/?cid=<channel>&subid=…&url=…``.
 
-    Idempotent (already-wrapped product links pass through) and conservative:
+    Idempotent for GYF-built deeplinks and conservative everywhere else:
     invalid URLs, Cuelinks shortlink/home aggregators and naked retailer
     homepages return ``None`` so clients hide the shop CTA rather than creating a
-    broken redirect.
+    broken redirect. Product-level pre-existing Cuelinks deeplinks are unwrapped
+    to their retailer URL and rewrapped with GYF's requested ``subid`` so tracking
+    is never silently lost.
     """
 
     def __init__(self, cid: str) -> None:
@@ -165,11 +172,26 @@ class CuelinksLinker(AffiliateLinker):
         product_url = product_serving_url(url)
         if product_url is None:
             return None
+        safe_subid = _safe_subid(subid)
         if _host(product_url) in _DEEPLINK_HOSTS:
-            return product_url  # idempotent — never double-wrap
+            if self._is_gyf_deeplink(product_url, safe_subid):
+                return product_url  # idempotent — never double-wrap our own link
+            embedded = _embedded_linksredirect_target(product_url)
+            product_url = product_serving_url(embedded)
+            if product_url is None:
+                return None
         return (
             f"{_DEEPLINK_BASE}?cid={self._cid}&source=api"
-            f"&subid={_safe_subid(subid)}&url={quote(product_url, safe='')}"
+            f"&subid={safe_subid}&url={quote(product_url, safe='')}"
+        )
+
+    def _is_gyf_deeplink(self, url: str, subid: str) -> bool:
+        parsed = urlparse(url)
+        params = parse_qs(parsed.query)
+        return (
+            (params.get("cid") or [None])[0] == self._cid
+            and (params.get("source") or [None])[0] == "api"
+            and (params.get("subid") or [None])[0] == subid
         )
 
 

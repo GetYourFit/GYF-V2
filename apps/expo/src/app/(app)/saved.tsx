@@ -183,8 +183,7 @@ export default function SavedRoute() {
   const containerWidth = width - screenPad * 2;
   const empty = looks.length === 0 && items.length === 0;
   const buyUrls = new Map(items.map((row) => [row.item_id, row.buy_url]));
-  const savedItemsSubtitle =
-    `To buy — saved from the catalogue, not yet in your wardrobe. ${SHOP_AFFILIATE_DISCLOSURE}`;
+  const savedItemsSubtitle = `To buy — saved from the catalogue, not yet in your wardrobe. ${SHOP_AFFILIATE_DISCLOSURE}`;
   const gridItems: CollectionItem[] = items.map((row) => ({
     id: row.item_id,
     title: row.title,

@@ -313,9 +313,7 @@ export default function CanvasRoute() {
                   const url = safeExternalShopUrl(focused.buy_url);
                   if (url) {
                     setError(null);
-                    void Linking.openURL(url).catch(() =>
-                      setError(new Error(SHOP_OPEN_ERROR)),
-                    );
+                    void Linking.openURL(url).catch(() => setError(new Error(SHOP_OPEN_ERROR)));
                   }
                 }}
                 style={({ pressed }) => ({

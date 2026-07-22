@@ -65,6 +65,9 @@ source of execution order and gates.
   [`research/signup-first-outfit-study.md`](./research/signup-first-outfit-study.md) with
   [`research/signup-first-outfit-study.csv`](./research/signup-first-outfit-study.csv), and the
   photo study linked above.
+- Cuelinks commerce proof: [`evidence/cuelinks-shop-flow-readiness-2026-07-22.md`](./evidence/cuelinks-shop-flow-readiness-2026-07-22.md) —
+  implementation evidence and external redirect proof for product-level Cuelinks shop handoff; it
+  does not promote a launch gate.
 - Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) (superseded
   historical preview runbook retained until F13) and [`deploy/gpu-lane.md`](./deploy/gpu-lane.md).
 - Historical user evidence: [`feedbacks/gyf-feedback-v1.md`](./feedbacks/gyf-feedback-v1.md),

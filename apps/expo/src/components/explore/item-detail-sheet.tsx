@@ -29,10 +29,12 @@ function CompleteTheLook({
   theme: ThemeName;
 }) {
   const [look, setLook] = useState<Outfit | null | undefined>(undefined);
+  const [shopError, setShopError] = useState(false);
 
   useEffect(() => {
     let active = true;
     setLook(undefined);
+    setShopError(false);
     api
       .completeLook(itemId, { k: 1 })
       .then((result) => {
@@ -72,13 +74,28 @@ function CompleteTheLook({
               {SHOP_AFFILIATE_DISCLOSURE}
             </GyfText>
           ) : null}
+          {shopError ? (
+            <GyfText
+              accessibilityRole="alert"
+              style={{ color: colors[theme].error }}
+              theme={theme}
+              variant="bodySmall"
+            >
+              Could not open the retailer link. Nothing changed; try again.
+            </GyfText>
+          ) : null}
           <ScrollView
             contentContainerStyle={{ gap: spacing.sm }}
             horizontal
             showsHorizontalScrollIndicator={false}
           >
             {pairings.map((pair) => (
-              <PairingTile item={pair} key={pair.item_id} theme={theme} />
+              <PairingTile
+                item={pair}
+                key={pair.item_id}
+                onOpenError={() => setShopError(true)}
+                theme={theme}
+              />
             ))}
           </ScrollView>
           {/* The pairing's own confidence and reason, straight from the engine.
@@ -93,7 +110,15 @@ function CompleteTheLook({
   );
 }
 
-function PairingTile({ item, theme }: { item: OutfitItem; theme: ThemeName }) {
+function PairingTile({
+  item,
+  onOpenError,
+  theme,
+}: {
+  item: OutfitItem;
+  onOpenError: () => void;
+  theme: ThemeName;
+}) {
   const palette = colors[theme];
   const shopUrl = safeExternalShopUrl(item.affiliate_url);
   const price = formatCatalogPrice(item.price, item.currency);
@@ -101,7 +126,7 @@ function PairingTile({ item, theme }: { item: OutfitItem; theme: ThemeName }) {
     <PressableScale
       accessibilityLabel={shopUrl ? `Shop ${item.title}` : item.title}
       accessibilityRole={shopUrl ? "link" : undefined}
-      onPress={shopUrl ? () => void Linking.openURL(shopUrl) : undefined}
+      onPress={shopUrl ? () => void Linking.openURL(shopUrl).catch(onOpenError) : undefined}
       style={{ gap: spacing.xs, width: 100 }}
     >
       <CatalogImage

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/api-client";
 import { mediaUrl } from "@/lib/media";
+import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 
 const lux = [0.16, 1, 0.3, 1] as const;
 const GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3";
@@ -195,6 +196,7 @@ function itemPrice(item: SavedItem): string | null {
 function SavedItemCard({ item, onRemove }: { item: SavedItem; onRemove: () => void }) {
   const src = mediaUrl(item.image_url, 400);
   const price = itemPrice(item);
+  const shopUrl = safeExternalShopUrl(item.buy_url);
   return (
     <article className="group relative flex flex-col border border-border bg-surface transition-colors duration-300 hover:border-border-hi">
       <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
@@ -222,9 +224,12 @@ function SavedItemCard({ item, onRemove }: { item: SavedItem; onRemove: () => vo
       </div>
       <div className="flex items-start justify-between gap-3 p-3 sm:p-4">
         <div className="min-w-0 flex-1">
-          {item.buy_url ? (
+          {shopUrl ? (
+            <p className="t-caption text-text-faint">{SHOP_AFFILIATE_DISCLOSURE}</p>
+          ) : null}
+          {shopUrl ? (
             <a
-              href={item.buy_url}
+              href={shopUrl}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Shop ${item.title}`}
@@ -237,7 +242,7 @@ function SavedItemCard({ item, onRemove }: { item: SavedItem; onRemove: () => vo
           )}
           {price && <p className="t-mono mt-2 text-text-mid">{price}</p>}
         </div>
-        {item.buy_url && (
+        {shopUrl && (
           <ExternalLink
             size={15}
             aria-hidden

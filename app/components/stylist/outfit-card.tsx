@@ -7,6 +7,7 @@ import { useState } from "react";
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { OutfitDetail } from "@/components/stylist/outfit-detail";
 import { mediaUrl } from "@/lib/media";
+import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import type { Outfit, OutfitItem } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -43,7 +44,8 @@ export function OutfitCard({
   const [expanded, setExpanded] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [lastTap, setLastTap] = useState(0);
-  const shopItem = outfit.items.find((i) => !i.owned && i.affiliate_url);
+  const shopItem = outfit.items.find((i) => !i.owned && safeExternalShopUrl(i.affiliate_url));
+  const shopUrl = safeExternalShopUrl(shopItem?.affiliate_url);
 
   // Double-tap anywhere on the garment grid = save (Jakob's law: Instagram
   // muscle memory). Single taps still fall through to whatever was tapped.
@@ -299,6 +301,20 @@ export function OutfitCard({
           )}
         </AnimatePresence>
 
+        {shopUrl ? (
+          <p
+            style={{
+              color: "var(--text-faint)",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.72rem",
+              lineHeight: 1.45,
+              margin: "0.5rem 1.25rem 0",
+            }}
+          >
+            {SHOP_AFFILIATE_DISCLOSURE}
+          </p>
+        ) : null}
+
         {/* ── Actions ── */}
         <div
           style={{
@@ -385,12 +401,12 @@ export function OutfitCard({
           </motion.button>
 
           {/* Shop */}
-          {shopItem?.affiliate_url ? (
+          {shopUrl ? (
             <motion.a
-              href={shopItem.affiliate_url}
+              href={shopUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => onShopCart(shopItem.item_id)}
+              onClick={() => onShopCart(shopItem!.item_id)}
               whileTap={reduce ? undefined : { scale: 0.96 }}
               style={{
                 display: "flex",

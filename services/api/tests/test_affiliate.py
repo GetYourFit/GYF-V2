@@ -32,13 +32,13 @@ def test_wrap_is_idempotent_never_double_wraps():
 
 def test_wrap_hashes_hostile_or_personal_subids_without_leaking_them():
     linker = CuelinksLinker("274785")
-    wrapped = linker.wrap("https://store.example/products/x", "person@example.com<script>")
+    wrapped = linker.wrap("https://store.example/products/x", "alice@private.invalid<script>")
     assert wrapped is not None
     subid = wrapped.split("&subid=")[1].split("&")[0]
     assert subid.startswith("h_")
     assert len(subid) <= 64
-    assert "person" not in wrapped
-    assert "example" not in wrapped
+    assert "alice" not in wrapped
+    assert "private" not in wrapped
     assert "script" not in wrapped
 
 
@@ -49,7 +49,19 @@ def test_wrap_rejects_unsafe_or_non_product_destinations():
     assert linker.wrap("javascript:alert(1)", "s") is None
     assert linker.wrap("http://store.example/products/x", "s") is None
     assert linker.wrap("https://store.example/", "s") is None
-    assert linker.wrap("https://store.example/?utm_source=cuelinks&utm_medium=affiliate", "s") is None
+    assert (
+        linker.wrap("https://store.example/?utm_source=cuelinks&utm_medium=affiliate", "s") is None
+    )
+    assert (
+        linker.wrap(
+            "https://ajiogram.ajio.com/?utm_source=cuelinks&utm_medium=affiliate"
+            "&utm_campaign=cuelinks_274785&utm_term=abc&clickid=click&pid=19&offer_id=18"
+            "&sub1=cuelinks_274785&sub3=abc&attribution_window=1D"
+            "&return_cancellation_window=45D",
+            "s",
+        )
+        is None
+    )
 
 
 def test_captain_cuelinks_shortlinks_are_not_product_catalog_links():
@@ -71,6 +83,18 @@ def test_linksredirect_home_targets_are_rejected_but_product_targets_are_idempot
     assert product_serving_url(home) is None
     assert linker.wrap(home, "catalog") is None
     assert linker.wrap(product, "catalog") == product
+
+
+def test_linksredirect_product_targets_without_the_requested_subid_are_rewrapped():
+    linkkit_product = (
+        "https://linksredirect.com/?cid=274785&source=linkkit"
+        "&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige"
+    )
+    wrapped = CuelinksLinker("274785").wrap(linkkit_product, "rec-123")
+    assert wrapped == (
+        "https://linksredirect.com/?cid=274785&source=api&subid=rec-123"
+        "&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige"
+    )
 
 
 def test_null_linker_passes_only_safe_product_links_through():
