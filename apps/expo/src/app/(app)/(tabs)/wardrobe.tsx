@@ -170,7 +170,6 @@ export default function WardrobeRoute() {
       }
     >
       <ScreenHeading
-        hue="blue"
         subtitle="Add what you own — GYF styles new looks around your real closet."
         title="Wardrobe"
         trailing={<AppMenu />}

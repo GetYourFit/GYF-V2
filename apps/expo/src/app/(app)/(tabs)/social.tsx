@@ -560,7 +560,6 @@ export default function SocialRoute() {
       ListHeaderComponent={
         <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
           <ScreenHeading
-            hue="green"
             subtitle="Real looks from the GYF community — like them, follow the stylists you love."
             title="Social"
             trailing={<AppMenu />}

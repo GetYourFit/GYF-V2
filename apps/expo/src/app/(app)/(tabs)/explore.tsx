@@ -425,7 +425,7 @@ export default function ExploreRoute() {
         ListEmptyComponent={emptyFeed}
         ListHeaderComponent={
           <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-            <ScreenHeading hue="indigo" title="Explore" trailing={<AppMenu />} />
+            <ScreenHeading title="Explore" trailing={<AppMenu />} />
             <ExploreControlBar
               facets={facets}
               filters={filters}

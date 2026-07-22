@@ -181,7 +181,7 @@ export default function ProfileRoute() {
         </AtelierCard>
       ) : (
         <>
-          <ScreenHeading hue="orange" title="Profile" trailing={<AppMenu />} />
+          <ScreenHeading title="Profile" trailing={<AppMenu />} />
           {/* One row, left-aligned. A centred avatar over a centred name over
               centred badges over a centred stat band gave the screen four
               stacked centre axes and pushed everything actionable down. */}

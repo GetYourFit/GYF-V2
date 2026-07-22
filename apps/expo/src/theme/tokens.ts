@@ -90,93 +90,49 @@ export const radii = {
 } as const;
 
 /**
- * Three families, one per utility, paired on a contrast axis rather than by
- * feel: Fraunces (soft serif) carries every heading, Inter (grotesque) every
- * piece of running UI, JetBrains Mono every figure. A face never crosses
- * utilities — a label is Inter on every screen, a count is mono on every
- * screen — so the type itself tells you what kind of thing you are reading.
+ * One neutral grotesque, everywhere. Ref4 and ref9 (Cosmos) run a single
+ * sleek sans across titles, tabs, counts and captions and build hierarchy
+ * from weight and size alone — there is no serif on any screen, and no second
+ * face for figures. A serif display and a separate mono both read as heavier
+ * and busier than the reference, which is the whole look.
  *
- * These are real font files, so the root layout holds first paint until they
- * resolve. Weight lives in the family name, not fontWeight: RN maps a numeric
- * weight onto a named face inconsistently across platforms and would
- * synthesise a fake bold on Android.
+ * Weight lives in the family name, not fontWeight: RN maps a numeric weight
+ * onto a named face inconsistently across platforms and would synthesise a
+ * fake bold on Android over an already-bold file.
  */
 export const fonts = {
-  heading: "Fraunces_600SemiBold",
-  headingBold: "Fraunces_700Bold",
-  body: "Inter_400Regular",
-  bodyMedium: "Inter_500Medium",
-  bodySemi: "Inter_600SemiBold",
-  mono: "JetBrainsMono_500Medium",
+  regular: "Inter_400Regular",
+  medium: "Inter_500Medium",
+  semi: "Inter_600SemiBold",
 } as const;
 
 /**
- * Hierarchy comes from family + size, no longer from weight alone. Fraunces
- * runs looser tracking than a grotesque needs at display size, so the old
- * -0.8 would close the counters; -0.4 is the floor here.
+ * Sizes track the reference, which is far quieter than a marketing scale: the
+ * profile name in ref9 sits around 28, a collection title in Ref4 around 17.
+ * A 40pt display was the single loudest thing on any GYF screen and nothing
+ * in the reference is anywhere near it.
  */
 export const typography = {
   display: {
-    fontFamily: fonts.headingBold,
-    fontSize: 40,
-    lineHeight: 46,
-    letterSpacing: -0.4,
+    fontFamily: fonts.semi,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.5,
   },
   title: {
-    fontFamily: fonts.heading,
-    fontSize: 24,
-    lineHeight: 31,
-    letterSpacing: -0.2,
+    fontFamily: fonts.semi,
+    fontSize: 20,
+    lineHeight: 26,
+    letterSpacing: -0.3,
   },
-  body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 25 },
-  bodySmall: { fontFamily: fonts.body, fontSize: 14, lineHeight: 21 },
-  label: { fontFamily: fonts.bodySemi, fontSize: 12, lineHeight: 16, letterSpacing: 1.2 },
-  button: { fontFamily: fonts.bodySemi, fontSize: 15, lineHeight: 20, letterSpacing: -0.1 },
-  mono: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16, letterSpacing: 0.6 },
+  body: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 24, letterSpacing: -0.1 },
+  bodySmall: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, letterSpacing: -0.1 },
+  label: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 16, letterSpacing: 0.6 },
+  button: { fontFamily: fonts.semi, fontSize: 15, lineHeight: 20, letterSpacing: -0.2 },
+  /** Counts and prices. Same grotesque as everything else — Ref4 sets
+      "81 elements" in the UI face, not in a mono. */
+  mono: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 18, letterSpacing: 0 },
 } as const;
-
-/**
- * One VIBGYOR hue per screen heading — never a gradient across the letters,
- * which would make every heading look the same and cost legibility. The
- * gradient lives in the rule beneath the heading instead, where it can be
- * saturated without being read through.
- *
- * Each hue is tuned per theme to clear 4.5:1 against that theme's ground;
- * tokens.test.ts asserts it, so a "nicer" hue cannot silently fail contrast.
- */
-export const headingHues = {
-  dark: {
-    violet: "#c4a6ff",
-    indigo: "#a5b4fc",
-    blue: "#7cc8f8",
-    green: "#6ee7b7",
-    yellow: "#fcd34d",
-    orange: "#fdba74",
-    red: "#fca5a5",
-  },
-  light: {
-    violet: "#6d28d9",
-    indigo: "#4338ca",
-    blue: "#0369a1",
-    green: "#047857",
-    yellow: "#854d0e",
-    orange: "#9a3412",
-    red: "#b91c1c",
-  },
-} as const;
-
-export type HeadingHue = keyof (typeof headingHues)["dark"];
-
-/** The rule under a heading sweeps the full spectrum, in VIBGYOR order. */
-export const VIBGYOR: readonly HeadingHue[] = [
-  "violet",
-  "indigo",
-  "blue",
-  "green",
-  "yellow",
-  "orange",
-  "red",
-] as const;
 
 /**
  * Global type scale for phone hardware: 390pt is the design width; the clamp

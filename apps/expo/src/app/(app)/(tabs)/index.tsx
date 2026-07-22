@@ -618,7 +618,6 @@ export default function StylistRoute() {
       style={{ backgroundColor: palette.bg }}
     >
       <ScreenHeading
-        hue="violet"
         subtitle="Complete looks, built around your profile."
         title="Your stylist"
         trailing={<AppMenu />}
