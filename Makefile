@@ -103,6 +103,7 @@ test-api: ## Run API tests
 	cd $(API_DIR) && $(CACHE_ENV) uv run --extra dev --extra postgres pytest -q
 
 repo-hygiene: ## Block tracked local tool/cache artifacts and oversized binaries
+	python3 -m unittest discover -s scripts -p "test_check_repo_hygiene.py"
 	python3 scripts/check_repo_hygiene.py
 
 doctrine: repo-hygiene ## Run the doctrine gates (license D2 + promotion D5 + ports D1 + doc alignment)
