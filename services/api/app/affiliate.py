@@ -20,7 +20,7 @@ from __future__ import annotations
 from hashlib import sha256
 import re
 from typing import Protocol
-from urllib.parse import parse_qsl, parse_qs, quote, unquote, urlparse
+from urllib.parse import parse_qsl, parse_qs, quote, urlparse
 
 from .config import settings
 
@@ -106,7 +106,7 @@ def _embedded_linksredirect_target(url: str) -> str | None:
     if (parsed.hostname or "").lower().rstrip(".") not in _DEEPLINK_HOSTS:
         return None
     target = (parse_qs(parsed.query).get("url") or [None])[0]
-    return unquote(target).strip() if target else None
+    return target.strip() if target else None
 
 
 def product_serving_url(url: str | None) -> str | None:
