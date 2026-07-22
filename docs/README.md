@@ -60,6 +60,8 @@ source of execution order and gates.
 
 - Expo Design Core: [`plans/expo-design-core-evidence-2026-07-18.md`](./plans/expo-design-core-evidence-2026-07-18.md) —
   current automated evidence and the outstanding physical Android hold.
+- Recommendation integrated proof: [`plans/recommendation-integrated-proof-2026-07-22.md`](./plans/recommendation-integrated-proof-2026-07-22.md) —
+  local served-ID, consent, correction-join and deterministic-fallback proof; no launch promotion.
 - Research: [`research/deep-research-report.md`](./research/deep-research-report.md),
   [`research/encoder-eval-alignment-2026-07-13.md`](./research/encoder-eval-alignment-2026-07-13.md),
   [`research/signup-first-outfit-study.md`](./research/signup-first-outfit-study.md) with
