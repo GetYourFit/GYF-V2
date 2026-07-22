@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, RefreshControl, View } from "react-native";
+import { RefreshControl, ScrollView, View } from "react-native";
 
 import { columnsForWidth, cardWidthFor } from "@/components/grid/column-count";
 import { BoardDetail } from "@/components/board/board-detail";
@@ -14,7 +14,7 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { ScreenBar } from "@/components/ui/screen-bar";
 import { CatalogImage } from "@/components/ui/catalog-image";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
-import { ProductCard } from "@/components/ui/product-card";
+import { MasonryFeed } from "@/components/ui/masonry-feed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type CatalogFacets, type SearchResult } from "@/lib/api";
 import {
@@ -257,24 +257,6 @@ export default function ExploreRoute() {
     [items],
   );
 
-  // One card definition for both surfaces: the scrolling feed and the expanded
-  // board show the same piece with the same affordances, only laid out
-  // differently. Two copies would drift.
-  const card = (item: SearchResult) => (
-    <ProductCard
-      item={{
-        id: item.item_id,
-        title: item.title,
-        imageUrl: item.image_url,
-        price: formatCatalogPrice(item.price, item.currency),
-        saved: saved.has(item.item_id),
-      }}
-      onPress={() => (expanded ? (clearFilters(), setSimilarAnchor(item)) : setSelected(item))}
-      onToggleSave={pendingSave === item.item_id ? undefined : () => void toggleSave(item)}
-      width={cardWidth}
-    />
-  );
-
   const emptyFeed = loading ? (
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
       {Array.from({ length: columns * 2 }, (_, i) => (
@@ -395,21 +377,19 @@ export default function ExploreRoute() {
 
   return (
     <>
-      <FlatList
+      <ScrollView
         accessibilityLabel="Explore catalogue"
-        columnWrapperStyle={{ gap: spacing.md }}
         contentContainerStyle={{
           gap: spacing.md,
           padding: screenPad,
           paddingBottom: spacing.xxl * 2 + insets.bottom,
           paddingTop: screenPad + insets.top,
         }}
-        data={items}
-        key={`explore-${columns}`}
-        keyExtractor={(item) => item.item_id}
-        numColumns={columns}
-        onEndReached={loadNextPage}
-        onEndReachedThreshold={0.7}
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          const remaining = contentSize.height - layoutMeasurement.height - contentOffset.y;
+          if (remaining < layoutMeasurement.height) loadNextPage();
+        }}
         refreshControl={
           <RefreshControl
             onRefresh={async () => {
@@ -421,59 +401,75 @@ export default function ExploreRoute() {
             tintColor={palette.text}
           />
         }
-        renderItem={({ item }) => card(item)}
-        ListEmptyComponent={emptyFeed}
-        ListHeaderComponent={
-          <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-            <ScreenBar trailing={<AppMenu />} />
-            <ExploreControlBar
-              facets={facets}
-              filters={filters}
-              hint={SEARCH_HINTS[hintIndex]}
-              markActive={loading || loadingMore || refreshing}
-              maxPriceInput={maxPriceInput}
-              onChangeFilters={setFilters}
-              onChangeMaxPrice={setMaxPriceInput}
-              onChangeQuery={setQueryInput}
-              onClearAll={clearFilters}
-              onPressMark={() => {
-                setExpanded(true);
-                clearFilters();
-              }}
-              onSubmitMaxPrice={submitMaxPrice}
-              onSubmitQuery={submitQuery}
-              priceEnabled={priceEnabled}
-              queryInput={queryInput}
-            />
+        scrollEventThrottle={16}
+      >
+        <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
+          <ScreenBar trailing={<AppMenu />} />
+          <ExploreControlBar
+            facets={facets}
+            filters={filters}
+            hint={SEARCH_HINTS[hintIndex]}
+            markActive={loading || loadingMore || refreshing}
+            maxPriceInput={maxPriceInput}
+            onChangeFilters={setFilters}
+            onChangeMaxPrice={setMaxPriceInput}
+            onChangeQuery={setQueryInput}
+            onClearAll={clearFilters}
+            onPressMark={() => {
+              setExpanded(true);
+              clearFilters();
+            }}
+            onSubmitMaxPrice={submitMaxPrice}
+            onSubmitQuery={submitQuery}
+            priceEnabled={priceEnabled}
+            queryInput={queryInput}
+          />
 
-            {facets ? (
-              <View style={{ gap: spacing.xs }}>
-                <GyfText tone="faint" variant="mono">
-                  {facets.total.toLocaleString()} catalogue pieces
-                </GyfText>
-                {facets.priced > 0 ? (
-                  <GyfText tone="faint" variant="mono">
-                    Priced range: {formatCatalogPrice(facets.price_min)} –{" "}
-                    {formatCatalogPrice(facets.price_max)}
-                  </GyfText>
-                ) : null}
-              </View>
-            ) : null}
-            {error && items.length > 0 ? (
-              <GyfText
-                accessibilityRole="alert"
-                style={{ color: palette.error }}
-                variant="bodySmall"
-              >
-                {readableError(error)}
+          {facets ? (
+            <View style={{ gap: spacing.xs }}>
+              <GyfText tone="faint" variant="mono">
+                {facets.total.toLocaleString()} catalogue pieces
               </GyfText>
-            ) : null}
-          </View>
-        }
-        ListFooterComponent={
-          loadingMore ? <Skeleton height={cardWidth * (4 / 3) + 64} width={cardWidth} /> : null
-        }
-      />
+              {facets.priced > 0 ? (
+                <GyfText tone="faint" variant="mono">
+                  Priced range: {formatCatalogPrice(facets.price_min)} –{" "}
+                  {formatCatalogPrice(facets.price_max)}
+                </GyfText>
+              ) : null}
+            </View>
+          ) : null}
+          {error && items.length > 0 ? (
+            <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
+              {readableError(error)}
+            </GyfText>
+          ) : null}
+        </View>
+        {items.length === 0 ? (
+          emptyFeed
+        ) : (
+          /* ref8: two staggered columns of imagery, nothing written on a tile.
+             Tapping opens the detail sheet, which is where a name and a price
+             belong. */
+          <MasonryFeed
+            items={items.map((item) => ({
+              id: item.item_id,
+              imageUrl: item.image_url,
+              label: item.title,
+            }))}
+            onLongPressItem={(tile) => {
+              const match = items.find((item) => item.item_id === tile.id);
+              if (match) void toggleSave(match);
+            }}
+            onPressItem={(tile) => {
+              const match = items.find((item) => item.item_id === tile.id);
+              if (match) setSelected(match);
+            }}
+            savedIds={saved}
+            width={width - screenPad * 2}
+          />
+        )}
+        {loadingMore ? <Skeleton height={cardWidth * (4 / 3)} width={cardWidth} /> : null}
+      </ScrollView>
       {/* The sheet's wardrobe action is deliberately NOT the card's heart: the
           heart is the saved shortlist, the wardrobe is what the user owns. */}
       <ItemDetailSheet item={selected} onClose={() => setSelected(null)} />
