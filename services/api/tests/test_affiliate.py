@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from app.affiliate import CuelinksLinker, NullAffiliateLinker, product_serving_url
+from app.affiliate import CuelinksLinker, NullAffiliateLinker, catalog_subid, product_serving_url
 from app.catalog.directory import InMemoryItemDirectory, ItemDetail
 
 # --- CuelinksLinker: the deeplink contract ----------------------------------
@@ -76,13 +76,13 @@ def test_linksredirect_home_targets_are_rejected_but_product_targets_are_idempot
         "&url=https%3A%2F%2Fwww.adidas.com.hk%2F"
     )
     product = (
-        "https://linksredirect.com/?cid=274785&source=api&subid=catalog"
+        "https://linksredirect.com/?cid=274785&source=api&subid=catalog_i1"
         "&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige"
     )
     linker = CuelinksLinker("274785")
     assert product_serving_url(home) is None
     assert linker.wrap(home, "catalog") is None
-    assert linker.wrap(product, "catalog") == product
+    assert linker.wrap(product, "catalog_i1") == product
 
 
 def test_linksredirect_product_targets_without_the_requested_subid_are_rewrapped():
@@ -136,7 +136,7 @@ class _WrappingDirectory(InMemoryItemDirectory):
 
         details = super().lookup(item_ids)
         return {
-            k: replace(d, buy_url=self._linker.wrap(d.buy_url, "catalog"))
+            k: replace(d, buy_url=self._linker.wrap(d.buy_url, catalog_subid(d.item_id)))
             for k, d in details.items()
         }
 
@@ -161,7 +161,7 @@ def test_directory_lookup_wraps_buy_urls_with_catalog_subid():
     )
     detail = directory.lookup(["i1"])["i1"]
     assert detail.buy_url.startswith("https://linksredirect.com/?cid=274785")
-    assert "&subid=catalog&" in detail.buy_url
+    assert "&subid=catalog_i1&" in detail.buy_url
 
 
 def test_directory_lookup_leaves_null_buy_urls_null():
@@ -277,7 +277,7 @@ def test_sync_is_idempotent_and_skips_foreign_subids():
     txs = [
         {"id": 555, "sub_id": "rec-1"},
         {"id": 555, "sub_id": "rec-1"},  # duplicate
-        {"id": 556, "sub_id": "catalog"},  # channel-only, no user join
+        {"id": 556, "sub_id": "catalog_item-7"},  # channel-only, no user join
         {"id": 557, "sub_id": "someone-elses"},  # unknown recommendation
         {"id": "", "sub_id": "rec-1"},  # malformed
     ]

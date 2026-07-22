@@ -18,6 +18,7 @@ from typing import Protocol
 
 from gyf_contracts.taxonomy import get as get_category
 
+from ..affiliate import catalog_subid
 from ..media import image_url_from_refs
 
 
@@ -96,7 +97,7 @@ class PostgresItemDirectory:
         details = {str(r[0]): _detail_from_row(r) for r in rows}
         if self._linker is not None:
             details = {
-                k: replace(d, buy_url=self._linker.wrap(d.buy_url, "catalog"))  # type: ignore[attr-defined]
+                k: replace(d, buy_url=self._linker.wrap(d.buy_url, catalog_subid(d.item_id)))  # type: ignore[attr-defined]
                 for k, d in details.items()
             }
         return details

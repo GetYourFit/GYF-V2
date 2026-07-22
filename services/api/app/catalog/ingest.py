@@ -88,6 +88,18 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
     # When the feed carries no gender at all, text inference fills the gap so
     # gendered relevance holds without waiting for a perception backfill.
     gender = infer_gender(raw.title, raw.category) or raw.gender
+    commerce = {
+        key: value
+        for key, value in {
+            "merchant_name": raw.merchant_name,
+            "merchant_domain": raw.merchant_domain,
+            "affiliate_network": raw.affiliate_network,
+            "campaign_id": raw.campaign_id,
+            "deeplink_enabled": raw.deeplink_enabled,
+            "original_product_url": raw.original_product_url or raw.affiliate_url,
+        }.items()
+        if value is not None
+    }
     return NormalizedItem(
         title=raw.title.strip(),
         category=category.name,
@@ -97,6 +109,7 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
                 "raw_category": raw.category,
                 **({"gender": gender} if gender else {}),
             },
+            **({"commerce": commerce} if commerce else {}),
         },
         price=raw.price,
         currency=raw.currency,
@@ -325,6 +338,27 @@ def ingest_shopify_roster(repo: ItemRepository, merchants=None) -> dict[str, Ing
     return results
 
 
+def ingest_cuelinks_product_feed(
+    repo: ItemRepository,
+    *,
+    products_path: str | None,
+    campaigns_path: str | None,
+) -> IngestResult:
+    """Ingest a Cuelinks product feed after checking campaign Deeplink capability."""
+    from .cuelinks import (
+        CuelinksProductFeedSource,
+        CuelinksProductIngestionBlocked,
+        cuelinks_config_blocker,
+        load_cuelinks_campaigns,
+    )
+
+    if not products_path or not campaigns_path:
+        raise CuelinksProductIngestionBlocked(cuelinks_config_blocker())
+    campaigns = load_cuelinks_campaigns(campaigns_path)
+    source = CuelinksProductFeedSource(products_path, campaigns=campaigns)
+    return ingest(source, repo)
+
+
 def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Ingest a product catalog into items.")
     parser.add_argument(
@@ -339,7 +373,15 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--license",
-        help="Provenance: data license (required for file feeds; implied for shopify).",
+        help="Provenance: data license (required for file feeds; implied for shopify/cuelinks).",
+    )
+    parser.add_argument(
+        "--cuelinks-products-feed",
+        help="Local Cuelinks product-feed export. If omitted, GYF_CUELINKS_PRODUCTS_FEED_PATH is used.",
+    )
+    parser.add_argument(
+        "--cuelinks-campaigns",
+        help="Local Cuelinks campaign export with the Deeplink Yes/No column. If omitted, GYF_CUELINKS_CAMPAIGNS_PATH is used.",
     )
     parser.add_argument("--dry-run", action="store_true", help="Normalize without writing.")
     return parser
@@ -369,6 +411,24 @@ def main(argv: Iterable[str] | None = None) -> None:
             )
             for raw, count in unknowns.most_common(15):
                 print(f"  {count:5d}  {raw}")
+        return
+
+    if args.provider == "cuelinks":
+        from app.config import settings
+        from .cuelinks import CuelinksProductIngestionBlocked
+
+        try:
+            result = ingest_cuelinks_product_feed(
+                repo,
+                products_path=args.cuelinks_products_feed or settings.cuelinks_products_feed_path,
+                campaigns_path=args.cuelinks_campaigns or settings.cuelinks_campaigns_path,
+            )
+        except CuelinksProductIngestionBlocked as exc:
+            raise SystemExit(str(exc)) from exc
+        print(
+            f"ingest: seen={result.seen} written={result.written} "
+            f"delisted={result.delisted} provider=cuelinks-products"
+        )
         return
 
     if not args.path or not args.license:

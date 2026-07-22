@@ -593,7 +593,7 @@ def test_postgres_repo_hydrates_and_attributes_results_in_one_query():
             price=49.0,
             currency="USD",
             color="cream",
-            buy_url="tracked:catalog:https://shop/hit",
+            buy_url="tracked:catalog_hit:https://shop/hit",
         )
     ]
 

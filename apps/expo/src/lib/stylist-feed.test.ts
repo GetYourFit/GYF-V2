@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { SHOP_AFFILIATE_DISCLOSURE, safeExternalShopUrl, shopDisclosureForUrl } from "./shop-links";
+import {
+  SHOP_AFFILIATE_DISCLOSURE,
+  SHOP_AFFILIATE_DISCLOSURE_COMPACT,
+  compactShopDisclosureForUrl,
+  safeExternalShopUrl,
+  shopDisclosureForUrl,
+} from "./shop-links";
 import {
   feedbackReceipt,
   feedbackForOutfit,
@@ -104,7 +110,11 @@ describe("Expo stylist feed model", () => {
     expect(SHOP_AFFILIATE_DISCLOSURE).toContain("never changes your price");
     expect(SHOP_AFFILIATE_DISCLOSURE).toContain("how outfits are ranked");
     expect(shopDisclosureForUrl("https://shop.test/item")).toBe(SHOP_AFFILIATE_DISCLOSURE);
+    expect(compactShopDisclosureForUrl("https://shop.test/item")).toBe(
+      SHOP_AFFILIATE_DISCLOSURE_COMPACT,
+    );
     expect(shopDisclosureForUrl("javascript:alert(1)")).toBeNull();
+    expect(compactShopDisclosureForUrl("javascript:alert(1)")).toBeNull();
   });
 
   test("hides Cuelinks shortlinks and homepage deeplinks before rendering shop CTAs", () => {

@@ -102,6 +102,12 @@ class Settings(BaseSettings):
     # Cuelinks channel id (the `cid=` value in any deeplink the dashboard/API
     # generates). Unset = null linker: buy links pass through unwrapped.
     cuelinks_cid: str = ""
+    # Automatic Cuelinks product ingestion needs BOTH exports/credentials:
+    # campaign capabilities with Deeplink=Yes/No, and product rows with title,
+    # image, price, availability, merchant and original product URL. The JS/RN
+    # SDK cannot provide this data; missing paths are an explicit blocker.
+    cuelinks_campaigns_path: str = ""
+    cuelinks_products_feed_path: str = ""
 
     # --- Virtual try-on (M9, doctrine D2: licensed model at inference) ---
     # Rendering lane provider: "fal-leffa" (primary — MIT-licensed Leffa model,

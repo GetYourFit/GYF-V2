@@ -8,9 +8,9 @@ from real money, not just clicks.
 
 Idempotent: a transaction lands at most once (keyed by its Cuelinks id in the
 event context). Attribution: subid → the impression with that recommendation_id
-→ that impression's user + item. Non-recommendation subids ("catalog") land as
-user-less revenue records only in Cuelinks — they are skipped here, honestly,
-rather than guessed at.
+→ that impression's user + item. Non-recommendation subids (``catalog_<item_id>``)
+land as product-reconcilable but user-less revenue records only in Cuelinks —
+they are skipped here, honestly, rather than guessed at.
 
 Run (nightly via .github/workflows/data-export.yml, or by hand):
 
@@ -72,7 +72,7 @@ def sync(conn, transactions: list[dict[str, Any]]) -> tuple[int, int]:
     for tx in transactions:
         tx_id = str(tx.get("id") or tx.get("transaction_id") or "")
         subid = str(tx.get("sub_id") or tx.get("subid") or "")
-        if not tx_id or not subid or subid == "catalog":
+        if not tx_id or not subid or subid == "catalog" or subid.startswith("catalog_"):
             skipped += 1
             continue
         seen = conn.execute(
