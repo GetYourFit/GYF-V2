@@ -348,7 +348,7 @@ This ledger prevents roadmap drift. It is subordinate to `AGENTS.md`, `CLAUDE.md
 
 | Field | Current truth |
 |---|---|
-| Current permitted application slice | Temporary `AUDIT-REENTRY-0721224554` consent/privacy corrective packet; active-contract write set and evidence gate apply, then resume `COSMOS-DESIGN-BUILD` Task 6 |
+| Current permitted application slice | See `active-execution-contract.md`'s `CURRENT EXECUTION POINTER` for the live value; do not duplicate it here |
 | F1b implementation state | Shipped with the F1 gate; retained as historical evidence |
 | Latest automated evidence | API base `6c3d1a0`; CI `29574359092` passed; CD `29574459384` retained-web job passed and Expo job correctly failed its stale publishable-key gate; fresh local gates passed 422 API tests, 95 Expo tests, 72 retained-web tests and both builds |
 | Known warnings/skips | 20 environment-gated API skips; 7 API framework/test-key warnings; existing retained-web `<img>`, Vite/localStorage and React `act()` warnings; Expo `NO_COLOR` build warning |
