@@ -5,13 +5,14 @@ import { Linking, Modal, Pressable, ScrollView, View } from "react-native";
 
 import { IconClose } from "@/components/icons";
 import { AtelierButton } from "@/components/ui/atelier-button";
-import { CatalogImage, isRemoteImage } from "@/components/ui/catalog-image";
+import { CatalogImage } from "@/components/ui/catalog-image";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createApi, type Outfit, type OutfitItem, type SearchResult } from "@/lib/api";
 import { compatibilityReason, formatCatalogPrice } from "@/lib/explore-feed";
+import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { colors, materials, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
 
@@ -66,6 +67,11 @@ function CompleteTheLook({
         </GyfText>
       ) : (
         <>
+          {pairings.some((pair) => safeExternalShopUrl(pair.affiliate_url)) ? (
+            <GyfText theme={theme} tone="faint" variant="bodySmall">
+              {SHOP_AFFILIATE_DISCLOSURE}
+            </GyfText>
+          ) : null}
           <ScrollView
             contentContainerStyle={{ gap: spacing.sm }}
             horizontal
@@ -89,7 +95,7 @@ function CompleteTheLook({
 
 function PairingTile({ item, theme }: { item: OutfitItem; theme: ThemeName }) {
   const palette = colors[theme];
-  const shopUrl = isRemoteImage(item.affiliate_url) ? item.affiliate_url : null;
+  const shopUrl = safeExternalShopUrl(item.affiliate_url);
   const price = formatCatalogPrice(item.price, item.currency);
   return (
     <PressableScale
@@ -159,7 +165,7 @@ export function ItemDetailSheet({
     }
   };
 
-  const shopUrl = isRemoteImage(item?.buy_url) ? item.buy_url : null;
+  const shopUrl = safeExternalShopUrl(item?.buy_url);
   const compatibility = compatibilityReason(item?.score);
 
   return (
@@ -247,6 +253,12 @@ export function ItemDetailSheet({
                 variant="bodySmall"
               >
                 {actionError}
+              </GyfText>
+            ) : null}
+
+            {shopUrl ? (
+              <GyfText theme={theme} tone="faint" variant="bodySmall">
+                {SHOP_AFFILIATE_DISCLOSURE}
               </GyfText>
             ) : null}
 

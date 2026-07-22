@@ -87,6 +87,7 @@ export type CollectionStatus = "loaded" | "loading";
 export interface CollectionAction {
   label: (item: CollectionItem) => string | null;
   onPress: (item: CollectionItem) => void;
+  disclosure?: (item: CollectionItem) => string | null;
 }
 
 export interface CollectionItem extends ProductCardItem {
@@ -376,6 +377,11 @@ function QuickPreview({
             {item.aiReason ? (
               <GyfText theme={theme} tone="muted" variant="bodySmall">
                 {item.aiReason}
+              </GyfText>
+            ) : null}
+            {primaryAction?.disclosure?.(item) ? (
+              <GyfText theme={theme} tone="faint" variant="bodySmall">
+                {primaryAction.disclosure?.(item)}
               </GyfText>
             ) : null}
             {primaryAction?.label(item) ? (

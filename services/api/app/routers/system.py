@@ -383,7 +383,7 @@ def system_status(
             status="live",
             lane="cuelinks",
             detail=(
-                "Buy links wrap through Cuelinks deeplinks with per-recommendation "
+                "Product-level buy links wrap through Cuelinks deeplinks with per-recommendation "
                 f"attribution (subid = recommendation_id); {_price_coverage_detail(catalog)}"
             ),
         )
@@ -392,7 +392,7 @@ def system_status(
             status="degraded",
             lane="manual-fallback",
             detail=(
-                "Buy links redirect to retailers without affiliate attribution; "
+                "Product-level buy links redirect to retailers without affiliate attribution; "
                 f"{_price_coverage_detail(catalog)}"
             ),
         ),

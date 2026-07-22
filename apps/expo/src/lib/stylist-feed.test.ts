@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { SHOP_AFFILIATE_DISCLOSURE, shopDisclosureForUrl } from "./shop-links";
 import {
   feedbackReceipt,
   feedbackForOutfit,
@@ -96,6 +97,14 @@ describe("Expo stylist feed model", () => {
     expect(
       safeShopUrl({ owned: false, affiliate_url: "javascript:alert(1)", item_id: "1" } as never),
     ).toBeNull();
+  });
+
+  test("uses an explicit affiliate disclosure for user-facing shop actions", () => {
+    expect(SHOP_AFFILIATE_DISCLOSURE).toContain("may earn a commission");
+    expect(SHOP_AFFILIATE_DISCLOSURE).toContain("never changes your price");
+    expect(SHOP_AFFILIATE_DISCLOSURE).toContain("how outfits are ranked");
+    expect(shopDisclosureForUrl("https://shop.test/item")).toBe(SHOP_AFFILIATE_DISCLOSURE);
+    expect(shopDisclosureForUrl("javascript:alert(1)")).toBeNull();
   });
 
   test("shows the next-look receipt only after save or skip", () => {

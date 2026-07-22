@@ -38,6 +38,7 @@ import {
   tastePersonalizationMessage,
   type StylistFeedbackStatus,
 } from "@/lib/stylist-feed";
+import { SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { capabilityUsable } from "@/lib/system-status";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import { radii, spacing, typography } from "@/theme/tokens";
@@ -103,6 +104,11 @@ function ItemTile({
       <GyfText numberOfLines={2} variant="bodySmall">
         {item.title}
       </GyfText>
+      {shopUrl ? (
+        <GyfText tone="faint" variant="bodySmall">
+          {SHOP_AFFILIATE_DISCLOSURE}
+        </GyfText>
+      ) : null}
       <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.md }}>
         {shopUrl ? (
           <Pressable
@@ -545,10 +551,13 @@ export default function StylistRoute() {
     const url = safeShopUrl(item);
     if (!url) return;
     const event = shopFeedbackForItem(item, data.recommendation_id, index, crypto.randomUUID());
-    if (event) void api.feedback(event).catch(() => undefined);
-    void Linking.openURL(url).catch(() =>
-      setActionError("Could not open the retailer link. Your look is unchanged; try again."),
-    );
+    void Linking.openURL(url)
+      .then(() => {
+        if (event) void api.feedback(event).catch(() => undefined);
+      })
+      .catch(() =>
+        setActionError("Could not open the retailer link. Your look is unchanged; try again."),
+      );
   };
 
   const completeAround = async (item: OutfitItem) => {
