@@ -62,9 +62,14 @@ describe("Personal Fit Setup boundaries", () => {
     expect(formSource).toMatch(/disabled=\{saving \|\| photoBusy\}/);
   });
 
-  test("create and edit modes render distinct labels", () => {
-    expect(formSource).toContain('"Set up your personal fit"');
-    expect(formSource).toContain('"Edit your personal fit"');
+  test("create and edit modes are distinguishable, and only edit offers a way back", () => {
+    // Create is the required post-signup step and is reached with nothing behind
+    // it; edit is pushed from Profile. The headers differ accordingly — a back
+    // control on the create step would strand a half-onboarded user.
+    expect(formSource).toContain("Set up your personal fit");
+    expect(formSource).toMatch(
+      /mode === "edit" \?[\s\S]{0,120}SubScreenHeader title="Personal fit"/,
+    );
     expect(formSource).toContain('"Save personal fit"');
     expect(formSource).toContain('"Save changes"');
   });

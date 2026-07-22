@@ -6,6 +6,7 @@ import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
+import { SettingsGroup } from "@/components/ui/settings-group";
 import { hitSlopFor, MIN_TARGET } from "@/components/ui/pressable-scale";
 import { ApiError, createApi } from "@/lib/api";
 import {
@@ -64,13 +65,16 @@ export function OptionChip({
   );
 }
 
+/**
+ * ref10's grouped block: a quiet label, then the controls sharing one rounded
+ * surface. Loose chips on the bare ground read as an unstyled form; the surface
+ * is what says these belong together.
+ */
 export function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  const palette = useThemeColors();
   return (
-    <View style={{ gap: spacing.sm }}>
-      <GyfText variant="label">{title}</GyfText>
-      {children}
-    </View>
+    <SettingsGroup label={title}>
+      <View style={{ gap: spacing.md, padding: spacing.md }}>{children}</View>
+    </SettingsGroup>
   );
 }
 

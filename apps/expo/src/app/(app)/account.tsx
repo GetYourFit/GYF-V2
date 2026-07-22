@@ -12,7 +12,8 @@ import {
 } from "react-native";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
-import { AtelierCard } from "@/components/ui/atelier-card";
+import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
+import { SubScreenHeader } from "@/components/ui/sub-screen-header";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi } from "@/lib/api";
 import type { ConsentFlags } from "@gyf/types";
@@ -211,9 +212,7 @@ export default function AccountRoute() {
       style={{ backgroundColor: palette.bg }}
       contentContainerStyle={{ gap: spacing.lg, padding: spacing.lg, paddingBottom: spacing.xxl }}
     >
-      <GyfText accessibilityRole="header" variant="display">
-        Account
-      </GyfText>
+      <SubScreenHeader title="Account" />
 
       {note ? (
         <GyfText
@@ -225,98 +224,101 @@ export default function AccountRoute() {
         </GyfText>
       ) : null}
 
-      <AtelierCard>
-        <GyfText variant="label">DISPLAY NAME</GyfText>
-        <TextInput
-          accessibilityLabel="Display name"
-          onChangeText={setNameDraft}
-          placeholder="How GYF greets you"
-          placeholderTextColor={palette.textFaint}
-          style={inputStyle}
-          value={nameDraft}
-        />
-        <AtelierButton
-          disabled={!nameDirty || savingName}
-          label={savingName ? "Saving…" : "Save name"}
-          onPress={() => void saveName()}
-        />
-      </AtelierCard>
+      <SettingsGroup label="Profile">
+        <View style={{ gap: spacing.md, padding: spacing.md }}>
+          <TextInput
+            accessibilityLabel="Display name"
+            onChangeText={setNameDraft}
+            placeholder="How GYF greets you"
+            placeholderTextColor={palette.textMuted}
+            style={inputStyle}
+            value={nameDraft}
+          />
+          <AtelierButton
+            disabled={!nameDirty || savingName}
+            label={savingName ? "Saving…" : "Save name"}
+            onPress={() => void saveName()}
+          />
+        </View>
+      </SettingsGroup>
 
-      <AtelierCard>
-        <GyfText variant="label">PRIVACY</GyfText>
-        {CONSENT_FLAGS.map((flag) => (
-          <View key={flag.key} style={{ flexDirection: "row", gap: spacing.md }}>
-            <View style={{ flex: 1, gap: spacing.xs }}>
-              <GyfText variant="bodySmall">{flag.title}</GyfText>
-              <GyfText tone="faint" variant="bodySmall">
-                {flag.description}
-              </GyfText>
-            </View>
-            <Switch
-              accessibilityLabel={flag.title}
-              onValueChange={(value) => setDraft((current) => ({ ...current, [flag.key]: value }))}
-              value={Boolean(draft[flag.key])}
-            />
-          </View>
+      {/* ref10's permission rows: the switch lives on the row and acts in
+          place, so the row does not also pretend to navigate. */}
+      <SettingsGroup label="Privacy">
+        {CONSENT_FLAGS.map((flag, index) => (
+          <SettingsRow
+            description={flag.description}
+            first={index === 0}
+            key={flag.key}
+            label={flag.title}
+            right={
+              <Switch
+                accessibilityLabel={flag.title}
+                onValueChange={(value) =>
+                  setDraft((current) => ({ ...current, [flag.key]: value }))
+                }
+                value={Boolean(draft[flag.key])}
+              />
+            }
+          />
         ))}
-        <AtelierButton
-          disabled={!dirty || savingConsent}
-          label={savingConsent ? "Saving…" : "Save privacy choices"}
-          onPress={() => void saveConsent()}
-        />
-      </AtelierCard>
+        <View style={{ padding: spacing.md }}>
+          <AtelierButton
+            disabled={!dirty || savingConsent}
+            label={savingConsent ? "Saving…" : "Save privacy choices"}
+            onPress={() => void saveConsent()}
+          />
+        </View>
+      </SettingsGroup>
 
-      <AtelierCard>
-        <GyfText variant="label">YOUR DATA</GyfText>
-        <GyfText tone="muted" variant="bodySmall">
-          Export everything GYF holds about you as a JSON file.
-        </GyfText>
-        <AtelierButton
-          disabled={exporting}
+      <SettingsGroup label="Your data">
+        <SettingsRow
+          description="Everything GYF holds about you, as a JSON file."
+          first
           label={exporting ? "Preparing…" : "Export my data"}
           onPress={() => void exportData()}
         />
-      </AtelierCard>
+        <SettingsRow label="Sign out everywhere" onPress={() => void endSession()} />
+      </SettingsGroup>
 
-      <AtelierButton label="Sign out everywhere" onPress={() => void endSession()} />
-
-      <AtelierCard style={{ borderColor: palette.error }}>
-        <GyfText style={{ color: palette.error }} variant="label">
-          DELETE ACCOUNT
-        </GyfText>
-        <GyfText tone="muted" variant="bodySmall">
-          Permanently erases your account and every session. This cannot be undone. Type DELETE to
-          confirm.
-        </GyfText>
-        <TextInput
-          accessibilityLabel="Type DELETE to confirm erasure"
-          autoCapitalize="characters"
-          onChangeText={setConfirmText}
-          placeholder="DELETE"
-          placeholderTextColor={palette.textFaint}
-          style={inputStyle}
-          value={confirmText}
-        />
-        <Pressable
-          accessibilityLabel="Permanently delete my account"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !isDeleteConfirmed(confirmText) || deleting }}
-          disabled={!isDeleteConfirmed(confirmText) || deleting}
-          onPress={() => void deleteAccount()}
-          style={{
-            alignItems: "center",
-            backgroundColor: palette.error,
-            borderRadius: radii.control,
-            justifyContent: "center",
-            minHeight: 48,
-            opacity: !isDeleteConfirmed(confirmText) || deleting ? 0.4 : 1,
-          }}
-        >
-          <GyfText style={{ color: palette.textInverse }} variant="bodySmall">
-            {deleting ? "Deleting…" : "Delete my account"}
+      {/* Kept as its own group, and last. A destructive action sharing a
+          surface with routine settings is how people delete things by accident. */}
+      <SettingsGroup label="Danger zone">
+        <View style={{ gap: spacing.md, padding: spacing.md }}>
+          <GyfText tone="muted" variant="bodySmall">
+            Permanently erases your account and every session. This cannot be undone. Type DELETE to
+            confirm.
           </GyfText>
-        </Pressable>
-      </AtelierCard>
+          <TextInput
+            accessibilityLabel="Type DELETE to confirm erasure"
+            autoCapitalize="characters"
+            onChangeText={setConfirmText}
+            placeholder="DELETE"
+            placeholderTextColor={palette.textMuted}
+            style={inputStyle}
+            value={confirmText}
+          />
+          <Pressable
+            accessibilityLabel="Permanently delete my account"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !isDeleteConfirmed(confirmText) || deleting }}
+            disabled={!isDeleteConfirmed(confirmText) || deleting}
+            onPress={() => void deleteAccount()}
+            style={{
+              alignItems: "center",
+              backgroundColor: palette.error,
+              borderRadius: radii.control,
+              justifyContent: "center",
+              minHeight: 48,
+              opacity: !isDeleteConfirmed(confirmText) || deleting ? 0.4 : 1,
+            }}
+          >
+            <GyfText style={{ color: palette.textInverse }} variant="button">
+              {deleting ? "Deleting…" : "Delete my account"}
+            </GyfText>
+          </Pressable>
+        </View>
+      </SettingsGroup>
     </ScrollView>
   );
 }

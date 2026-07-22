@@ -1,11 +1,9 @@
-import { router } from "expo-router";
 import { ScrollView, View } from "react-native";
 
-import { IconChevronLeft } from "@/components/icons";
 import { GyfText } from "@/components/ui/gyf-text";
-import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
+import { SubScreenHeader } from "@/components/ui/sub-screen-header";
 import { SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
-import { radii, spacing } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
 
@@ -48,27 +46,7 @@ export default function TermsRoute() {
       }}
       style={{ backgroundColor: palette.bg }}
     >
-      <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.md }}>
-        <PressableScale
-          accessibilityLabel="Back"
-          accessibilityRole="button"
-          hitSlop={hitSlopFor(44)}
-          onPress={() => router.back()}
-          style={{
-            alignItems: "center",
-            backgroundColor: palette.surface,
-            borderRadius: radii.capsule,
-            height: 40,
-            justifyContent: "center",
-            width: 40,
-          }}
-        >
-          <IconChevronLeft color={palette.text} size={20} />
-        </PressableScale>
-        <GyfText accessibilityRole="header" style={{ flex: 1 }} variant="display">
-          Terms
-        </GyfText>
-      </View>
+      <SubScreenHeader title="Terms" />
 
       {SECTIONS.map((section) => (
         <View key={section.heading} style={{ gap: spacing.xs }}>

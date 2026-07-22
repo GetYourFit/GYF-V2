@@ -25,6 +25,7 @@ import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 import type { BudgetRange, ProfileInput } from "@gyf/types";
 
+import { SubScreenHeader } from "@/components/ui/sub-screen-header";
 import { CURRENCIES, OptionChip, Section } from "./onboarding-form";
 
 // Monk Skin Tone scale, lightest (1) to deepest (10) — mirrors the canonical labels
@@ -295,15 +296,19 @@ export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
   return (
     <AuthScreen>
       <View style={{ gap: spacing.xl }}>
-        <View style={{ gap: spacing.xs }}>
-          <GyfText accessibilityRole="header" variant="title">
-            {mode === "create" ? "Set up your personal fit" : "Edit your personal fit"}
-          </GyfText>
-          <GyfText tone="muted">
-            Confirmed skin tone, body type, currency, and budget are required. Photo analysis is
-            optional and the manual fields always work.
-          </GyfText>
-        </View>
+        {mode === "edit" ? (
+          <SubScreenHeader title="Personal fit" />
+        ) : (
+          <View style={{ gap: spacing.xs }}>
+            <GyfText accessibilityRole="header" variant="title">
+              Set up your personal fit
+            </GyfText>
+            <GyfText tone="muted">
+              Confirmed skin tone, body type, currency, and budget are required. Photo analysis is
+              optional and the manual fields always work.
+            </GyfText>
+          </View>
+        )}
 
         {photoCapable ? (
           <Section title="Add a photo (optional)">

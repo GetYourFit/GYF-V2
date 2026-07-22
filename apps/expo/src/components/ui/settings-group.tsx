@@ -33,17 +33,26 @@ export function SettingsGroup({ children, label }: { children: React.ReactNode; 
 }
 
 export function SettingsRow({
+  description,
   first = false,
   icon,
   label,
   onPress,
+  right,
   value,
 }: {
+  /** Second line under the label, for rows whose consequence is not obvious. */
+  description?: string | null;
   /** Only the first row in a group skips its top hairline. */
   first?: boolean;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   label: string;
   onPress?: () => void;
+  /**
+   * Replaces the chevron — a switch, a small button. ref10 does this with its
+   * "Setup" capsule. A row that acts in place must not also claim it navigates.
+   */
+  right?: React.ReactNode;
   /** Right-hand state, as ref10 shows "System" beside Appearance. */
   value?: string | null;
 }) {
@@ -51,7 +60,8 @@ export function SettingsRow({
   return (
     <PressableScale
       accessibilityLabel={value ? `${label}, ${value}` : label}
-      accessibilityRole="button"
+      accessibilityRole={onPress ? "button" : undefined}
+      disabled={!onPress}
       onPress={onPress}
       style={{
         alignItems: "center",
@@ -64,15 +74,20 @@ export function SettingsRow({
       }}
     >
       {icon}
-      <GyfText style={{ flex: 1 }} variant="body">
-        {label}
-      </GyfText>
+      <View style={{ flex: 1, gap: 2, paddingVertical: spacing.sm }}>
+        <GyfText variant="body">{label}</GyfText>
+        {description ? (
+          <GyfText tone="faint" variant="bodySmall">
+            {description}
+          </GyfText>
+        ) : null}
+      </View>
       {value ? (
         <GyfText tone="muted" variant="body">
           {value}
         </GyfText>
       ) : null}
-      <IconChevronRight color={palette.textFaint} size={18} />
+      {right ?? <IconChevronRight color={palette.textFaint} size={18} />}
     </PressableScale>
   );
 }
