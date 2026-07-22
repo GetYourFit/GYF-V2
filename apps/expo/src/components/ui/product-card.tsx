@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View } from "react-native";
 import Animated, {
   Easing,
@@ -11,6 +12,7 @@ import { IconHeart } from "@/components/icons";
 import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
 import { ConfidenceBadge } from "./confidence-badge";
+import { DEFAULT_RATIO } from "./catalog-frame";
 import { CatalogImage } from "./catalog-image";
 import { GyfText } from "./gyf-text";
 import { PressableScale, hitSlopFor } from "./pressable-scale";
@@ -28,7 +30,8 @@ export interface ProductCardItem {
 
 /**
  * The one product card: wardrobe (no match %), explore/saved (match % +
- * save toggle). Image runs 3:4; text sizes are capped so large Dynamic
+ * save toggle). The plate takes each catalog image's own shape, clamped so no
+ * one card dwarfs its row; text sizes are capped so large Dynamic
  * Type reflows instead of clipping.
  */
 export function ProductCard({
@@ -46,6 +49,10 @@ export function ProductCard({
 }) {
   const theme = useTheme(themeProp);
   const palette = colors[theme];
+  // Every plate used to be a hard 4:3 under contentFit="cover", so anything
+  // that was not 4:3 lost its edges — on a garment that is the hem or the
+  // shoes. The frame now takes the shape the image actually is.
+  const [ratio, setRatio] = useState(DEFAULT_RATIO);
   const pop = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
 
@@ -70,11 +77,12 @@ export function ProductCard({
         <CatalogImage
           label={item.title}
           recyclingKey={item.id ?? item.imageUrl ?? item.title}
+          onRatio={setRatio}
           style={{
             backgroundColor: palette.surfaceRaised,
             // Ref4 plate: sharp edges, boxy tone, whole article visible.
             borderRadius: 0,
-            height: width * (4 / 3),
+            height: Math.round(width * ratio),
             width: "100%",
           }}
           uri={item.imageUrl}

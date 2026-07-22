@@ -11,7 +11,6 @@ import {
 } from "react-native";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
-import { FilterChip } from "@/components/ui/filter-chip";
 import { NavRow } from "@/components/ui/nav-row";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { AppMenu } from "@/components/ui/app-menu";
@@ -22,8 +21,8 @@ import { getSession } from "@/lib/auth";
 import { replaceAvatar, validateAvatarAsset } from "@/lib/avatar-upload";
 import { avatarImageUrl, formatMemberSince, initials, statCells } from "@/lib/profile-summary";
 import { capabilityUsable } from "@/lib/system-status";
-import { colors, radii, spacing } from "@/theme/tokens";
-import { useThemeColors, useThemePreference } from "@/theme/use-color-scheme";
+import { radii, spacing } from "@/theme/tokens";
+import { useThemeColors } from "@/theme/use-color-scheme";
 
 type Status = "loading" | "ready" | "error";
 
@@ -65,7 +64,6 @@ function Avatar({ url, name }: { url: string | null | undefined; name: string })
 
 export default function ProfileRoute() {
   const palette = useThemeColors();
-  const { preference, setPreference } = useThemePreference();
   const api = useMemo(() => createApi(), []);
   const [summary, setSummary] = useState<ProfileSummary | null>(null);
   const [status, setStatus] = useState<Status>("loading");
@@ -184,9 +182,13 @@ export default function ProfileRoute() {
       ) : (
         <>
           <ScreenHeading hue="orange" title="Profile" trailing={<AppMenu />} />
-          <View style={{ alignItems: "center", gap: spacing.md }}>
+          {/* One row, left-aligned. A centred avatar over a centred name over
+              centred badges over a centred stat band gave the screen four
+              stacked centre axes and pushed everything actionable down. */}
+          <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.md }}>
             {avatarUploads ? (
               <Pressable
+                accessibilityHint="Opens your photo library"
                 accessibilityLabel={
                   summary.avatar_url ? "Change profile picture" : "Add profile picture"
                 }
@@ -200,38 +202,37 @@ export default function ProfileRoute() {
             ) : (
               <Avatar name={displayName} url={summary.avatar_url} />
             )}
-            {avatarUploads ? (
-              <AtelierButton
-                accessibilityLabel={
-                  summary.avatar_url ? "Change profile picture" : "Add profile picture"
-                }
-                disabled={avatarBusy}
-                label={
-                  avatarBusy
-                    ? "Saving picture…"
-                    : summary.avatar_url
-                      ? "Change picture"
-                      : "Add picture"
-                }
-                onPress={() => void pickAvatar()}
-              />
-            ) : null}
-            {avatarError ? (
-              <GyfText accessibilityRole="alert" style={{ color: colors.dark.error }}>
-                {avatarError}
-              </GyfText>
-            ) : null}
-            <View style={{ alignItems: "center", gap: spacing.xs }}>
-              <GyfText accessibilityRole="header" variant="title">
+            <View style={{ flex: 1, gap: 2 }}>
+              <GyfText accessibilityRole="header" numberOfLines={1} variant="title">
                 {displayName}
               </GyfText>
               {meta ? (
-                <GyfText tone="muted" variant="bodySmall">
+                <GyfText numberOfLines={1} tone="muted" variant="bodySmall">
                   {meta}
                 </GyfText>
               ) : null}
+              {/* The avatar is the target; this is the label that says so.
+                  A full-width button for it outweighed the name above it. */}
+              {avatarUploads ? (
+                <Pressable
+                  accessibilityElementsHidden
+                  disabled={avatarBusy}
+                  importantForAccessibility="no"
+                  onPress={() => void pickAvatar()}
+                >
+                  <GyfText style={{ color: palette.accentInk }} variant="label">
+                    {avatarBusy ? "SAVING…" : summary.avatar_url ? "CHANGE PICTURE" : "ADD PICTURE"}
+                  </GyfText>
+                </Pressable>
+              ) : null}
             </View>
           </View>
+
+          {avatarError ? (
+            <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
+              {avatarError}
+            </GyfText>
+          ) : null}
 
           {summary.badges.length > 0 ? (
             <View
@@ -239,7 +240,6 @@ export default function ProfileRoute() {
                 flexDirection: "row",
                 flexWrap: "wrap",
                 gap: spacing.sm,
-                justifyContent: "center",
               }}
             >
               {summary.badges.map((badge) => (
@@ -285,24 +285,10 @@ export default function ProfileRoute() {
             ))}
           </View>
 
-          <View style={{ gap: spacing.sm }}>
-            <GyfText accessibilityRole="header" variant="title">
-              Appearance
-            </GyfText>
-            <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              {(["system", "light", "dark"] as const).map((option) => (
-                <FilterChip
-                  selected={preference === option}
-                  key={option}
-                  label={
-                    option === "system" ? "Match device" : option === "light" ? "Light" : "Dark"
-                  }
-                  onPress={() => setPreference(option)}
-                />
-              ))}
-            </View>
-          </View>
-
+          {/* Appearance used to live here as a third chip row. It is in the
+              app menu now, on every screen — two places to set one preference
+              is worse than either, and this was the one you had to navigate
+              to. */}
           <View>
             <NavRow
               accessibilityLabel="Edit your personal fit — skin tone, body type, currency and budget"

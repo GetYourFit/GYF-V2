@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { spacing } from "@/theme/tokens";
+import { frameRatio } from "./catalog-frame";
 import { isRemoteImage } from "./catalog-image-url";
 import { GyfText } from "./gyf-text";
 
@@ -10,11 +11,14 @@ export { isRemoteImage } from "./catalog-image-url";
 
 export function CatalogImage({
   label,
+  onRatio,
   recyclingKey,
   style,
   uri,
 }: {
   label: string;
+  /** Reports the source's shape once known, so a caller can size its frame to it. */
+  onRatio?: (ratio: number) => void;
   recyclingKey: string;
   style: StyleProp<ImageStyle>;
   uri?: string | null;
@@ -71,6 +75,7 @@ export function CatalogImage({
       contentPosition="top center"
       key={`${recyclingKey}:${attempt}`}
       onError={() => setFailed(true)}
+      onLoad={(event) => onRatio?.(frameRatio(event.source?.width, event.source?.height))}
       recyclingKey={recyclingKey}
       source={uri}
       style={style}
