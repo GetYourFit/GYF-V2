@@ -118,7 +118,7 @@ doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1 + doc 
 standards: ## Run the repo-hygiene pre-commit hooks (mirrors the GitHub "Standards" job exactly)
 	@# Same command the CI standards job runs: prettier/ruff/ruff-format are covered by
 	@# fmt-check + lint above, so they are skipped here to avoid double work and drift.
-	SKIP=prettier,ruff,ruff-format uvx pre-commit run --all-files --show-diff-on-failure
+	SKIP=prettier,ruff,ruff-format $(CACHE_ENV) uvx pre-commit run --all-files --show-diff-on-failure
 
 ci: fmt-check lint typecheck doctrine standards test ## Run the full local CI gate
 
