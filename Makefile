@@ -106,7 +106,7 @@ repo-hygiene: ## Block tracked local tool/cache artifacts and oversized binaries
 	python3 -m unittest discover -s scripts -p "test_check_repo_hygiene.py"
 	python3 scripts/check_repo_hygiene.py
 
-doctrine: repo-hygiene ## Run the doctrine gates (license D2 + promotion D5 + ports D1 + doc alignment)
+doctrine: repo-hygiene ## Run the doctrine gates (repo hygiene + license D2 + promotion D5 + ports D1 + doc alignment)
 	python3 scripts/check_model_licenses.py
 	python3 scripts/check_promotion.py
 	python3 scripts/check_ports.py
