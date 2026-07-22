@@ -35,9 +35,15 @@ repos:
       - id: ruff-format
         files: '^(services/api|ml)/'
 
-  # JS/TS/JSON/MD — format with Prettier via the workspace toolchain.
+  # Repository hygiene + JS/TS/JSON/MD formatting.
   - repo: local
     hooks:
+      - id: repo-hygiene-guard
+        name: repo hygiene guard
+        entry: python3 scripts/check_repo_hygiene.py
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: prettier
         name: prettier
         entry: bun run format:check
