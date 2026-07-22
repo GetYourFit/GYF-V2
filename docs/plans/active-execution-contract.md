@@ -1,6 +1,6 @@
 # GYF active execution contract
 
-Status: **V7 ACTIVE — COSMOS-DESIGN-BUILD CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
+Status: **V7 ACTIVE — AUDIT-REENTRY-0721224554 CURRENT (temporary; resumes COSMOS-DESIGN-BUILD)** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
 continued execution on 2026-07-17 · effective repository baseline
 `367a7ffa14532f60e1ba8d1a784785d98da2bbb9` · `P0 GO` recorded 2026-07-17 ·
 `EXPO-CORE-01 GO` (owner-attested 2026-07-17): recsys taste-path HNSW correctness
