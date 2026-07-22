@@ -72,6 +72,8 @@ source of execution order and gates.
   does not promote a launch gate.
 - Cuelinks product ingestion seam: [`evidence/cuelinks-product-ingestion-2026-07-22.md`](./evidence/cuelinks-product-ingestion-2026-07-22.md) —
   fixture-backed Deeplink=Yes/No campaign/product-feed import evidence and the exact live-credential blocker.
+- Cuelinks Expo web JS marker: [`evidence/cuelinks-web-js-integration-2026-07-22.md`](./evidence/cuelinks-web-js-integration-2026-07-22.md) —
+  supplemental static-web `cuelinksv2.js` loader evidence; backend `buy_url` links remain authoritative.
 - Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) (superseded
   historical preview runbook retained until F13) and [`deploy/gpu-lane.md`](./deploy/gpu-lane.md).
 - Historical user evidence: [`feedbacks/gyf-feedback-v1.md`](./feedbacks/gyf-feedback-v1.md),
