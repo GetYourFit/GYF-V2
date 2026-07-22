@@ -14,6 +14,7 @@ import {
   type IconProps,
 } from "@/components/icons";
 import { GyfText } from "@/components/ui/gyf-text";
+import { SettingsGroup, SettingsRow } from "@/components/ui/settings-group";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import type { ThemePreference } from "@/theme/theme-preference";
 import { materials, motion, radii, shadows, spacing } from "@/theme/tokens";
@@ -38,34 +39,6 @@ const DESTINATIONS: Array<{
   { href: "/contact", icon: IconMail, label: "Contact us" },
 ];
 
-function MenuRow({
-  icon: Icon,
-  label,
-  onPress,
-}: {
-  icon: (props: IconProps) => React.ReactElement;
-  label: string;
-  onPress: () => void;
-}) {
-  const palette = useThemeColors();
-  return (
-    <PressableScale
-      accessibilityRole="button"
-      onPress={onPress}
-      style={{
-        alignItems: "center",
-        flexDirection: "row",
-        gap: spacing.md,
-        minHeight: 48,
-        paddingHorizontal: spacing.lg,
-      }}
-    >
-      <Icon color={palette.textMuted} size={20} />
-      <GyfText variant="body">{label}</GyfText>
-    </PressableScale>
-  );
-}
-
 /**
  * The one control that appears on every screen: grievance, contact, and the
  * theme choice. It is a sheet rather than an absolutely-positioned dropdown
@@ -77,6 +50,10 @@ export function AppMenu() {
   const router = useRouter();
   const { preference, setPreference } = useThemePreference();
   const [open, setOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
+  const activeTheme =
+    THEME_OPTIONS.find((option) => option.value === preference) ?? THEME_OPTIONS[2];
+  const ActiveThemeIcon = activeTheme.icon;
 
   const go = (href: "/grievance" | "/contact") => {
     setOpen(false);
@@ -120,64 +97,72 @@ export function AppMenu() {
             .reduceMotion(ReduceMotion.System)}
           style={[
             {
-              backgroundColor: palette.surface,
+              backgroundColor: palette.bg,
               borderTopLeftRadius: radii.sheet,
               borderTopRightRadius: radii.sheet,
-              gap: spacing.sm,
-              paddingBottom: spacing.xl,
-              paddingTop: spacing.lg,
+              gap: spacing.lg,
+              padding: spacing.lg,
+              paddingBottom: spacing.xxl,
             },
             shadows.md,
           ]}
         >
-          {DESTINATIONS.map((destination) => (
-            <MenuRow
-              icon={destination.icon}
-              key={destination.href}
-              label={destination.label}
-              onPress={() => go(destination.href)}
+          <SettingsGroup label="Support">
+            {DESTINATIONS.map((destination, index) => (
+              <SettingsRow
+                first={index === 0}
+                icon={<destination.icon color={palette.textMuted} size={20} />}
+                key={destination.href}
+                label={destination.label}
+                onPress={() => go(destination.href)}
+              />
+            ))}
+          </SettingsGroup>
+
+          <SettingsGroup label="Other">
+            {/* ref10 shows Appearance as one row carrying its current value.
+                The choices open in place rather than on a pushed screen — this
+                is already a sheet, and pushing from inside one would strand the
+                user a level deeper than they asked to go. */}
+            <SettingsRow
+              first
+              icon={<ActiveThemeIcon color={palette.textMuted} size={20} />}
+              label="Appearance"
+              onPress={() => setThemeOpen((current) => !current)}
+              value={activeTheme.label}
             />
-          ))}
-
-          <View
-            style={{
-              backgroundColor: palette.border,
-              height: 1,
-              marginHorizontal: spacing.lg,
-              marginVertical: spacing.sm,
-            }}
-          />
-
-          <GyfText style={{ paddingHorizontal: spacing.lg }} tone="faint" variant="label">
-            APPEARANCE
-          </GyfText>
-          {THEME_OPTIONS.map((option) => {
-            const selected = preference === option.value;
-            return (
-              <PressableScale
-                accessibilityLabel={option.label}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                key={option.value}
-                onPress={() => setPreference(option.value)}
-                style={{
-                  alignItems: "center",
-                  flexDirection: "row",
-                  gap: spacing.md,
-                  minHeight: 48,
-                  paddingHorizontal: spacing.lg,
-                }}
-              >
-                <option.icon color={selected ? palette.text : palette.textMuted} size={20} />
-                <GyfText style={{ flex: 1 }} tone={selected ? "text" : "muted"} variant="body">
-                  {option.label}
-                </GyfText>
-                {/* A tick, not a colour change alone — selection must survive
-                    being read without colour perception. */}
-                {selected ? <IconCheck color={palette.text} size={18} /> : null}
-              </PressableScale>
-            );
-          })}
+            {themeOpen
+              ? THEME_OPTIONS.map((option) => {
+                  const selected = preference === option.value;
+                  return (
+                    <PressableScale
+                      accessibilityLabel={option.label}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      key={option.value}
+                      onPress={() => setPreference(option.value)}
+                      style={{
+                        alignItems: "center",
+                        borderTopColor: palette.border,
+                        borderTopWidth: 1,
+                        flexDirection: "row",
+                        gap: spacing.md,
+                        minHeight: 52,
+                        paddingHorizontal: spacing.md,
+                        paddingLeft: spacing.xxl,
+                      }}
+                    >
+                      <GyfText style={{ flex: 1 }} tone={selected ? "text" : "muted"}>
+                        {option.label}
+                      </GyfText>
+                      {/* A tick, not colour alone — selection must survive
+                          being read without colour perception. */}
+                      {selected ? <IconCheck color={palette.text} size={18} /> : null}
+                    </PressableScale>
+                  );
+                })
+              : null}
+          </SettingsGroup>
         </Animated.View>
       </Modal>
     </>
