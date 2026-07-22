@@ -145,7 +145,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           could belong to any app. It spins while the request is in flight. */}
       <View style={{ alignItems: "center", flexDirection: "row", minHeight: 44 }}>
         <View style={{ flex: 1 }} />
-        <AnimatedGyfMark active={busy} color={palette.text} size={26} />
+        <AnimatedGyfMark color={palette.text} size={26} />
         <View style={{ alignItems: "flex-end", flex: 1 }}>
           <Pressable
             accessibilityRole="link"

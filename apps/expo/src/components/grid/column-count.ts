@@ -16,3 +16,24 @@ export function cardWidthFor(containerWidth: number, columns: number, gap: numbe
   const raw = (containerWidth - gap * (columns - 1)) / columns;
   return Math.min(MAX_CARD_WIDTH, Math.max(120, raw));
 }
+
+/**
+ * Imagery feeds run denser than card grids: a caption-less tile stays readable
+ * much narrower than a card with a title and a price under it. Two on any
+ * phone — including a 320pt one, where `columnsForWidth` would drop to one and
+ * lose the staggered pair the reference feeds are built on.
+ */
+export function feedColumnsForWidth(width: number): number {
+  if (width < breakpoints.regular) return 2;
+  if (width < breakpoints.wide) return 3;
+  return 4;
+}
+
+/**
+ * A tile on a horizontal rail: a fraction of the screen so the next one peeks
+ * in and says "scroll me", capped so a tablet gets more tiles rather than
+ * absurd ones.
+ */
+export function railTileWidth(screenWidth: number): number {
+  return Math.round(Math.min(MAX_CARD_WIDTH, Math.max(150, screenWidth * 0.6)));
+}

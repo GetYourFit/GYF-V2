@@ -1,7 +1,13 @@
 import { describe, expect, it } from "bun:test";
 
 import { breakpoints } from "../../theme/tokens";
-import { MAX_CARD_WIDTH, cardWidthFor, columnsForWidth } from "./column-count";
+import {
+  MAX_CARD_WIDTH,
+  cardWidthFor,
+  columnsForWidth,
+  feedColumnsForWidth,
+  railTileWidth,
+} from "./column-count";
 
 describe("columnsForWidth", () => {
   it("maps every tier boundary", () => {
@@ -27,5 +33,35 @@ describe("cardWidthFor", () => {
 
   it("never collapses below the readable floor", () => {
     expect(cardWidthFor(200, 2, 14)).toBe(120);
+  });
+});
+
+describe("feedColumnsForWidth", () => {
+  it("keeps the staggered pair on every phone, including the smallest", () => {
+    // columnsForWidth drops to 1 below 360; an imagery feed must not, or the
+    // reference's two-column stagger collapses into a single stack.
+    for (const width of [320, 360, 390, 430]) {
+      expect(feedColumnsForWidth(width)).toBe(2);
+    }
+  });
+
+  it("adds columns on bigger surfaces rather than bigger tiles", () => {
+    expect(feedColumnsForWidth(768)).toBe(3);
+    expect(feedColumnsForWidth(1280)).toBe(4);
+  });
+});
+
+describe("railTileWidth", () => {
+  it("leaves the next tile peeking on every phone width", () => {
+    for (const width of [320, 360, 390, 430]) {
+      const tile = railTileWidth(width);
+      // Comfortably under the screen, so the rail always reads as scrollable.
+      expect(tile).toBeLessThan(width - 40);
+      expect(tile).toBeGreaterThanOrEqual(150);
+    }
+  });
+
+  it("stops growing rather than producing an absurd tile on a tablet", () => {
+    expect(railTileWidth(1280)).toBe(MAX_CARD_WIDTH);
   });
 });

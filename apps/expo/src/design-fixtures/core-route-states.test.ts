@@ -377,7 +377,11 @@ describe("full experience matrix (EXPO-20/21)", () => {
       expect(remote.length).toBeGreaterThan(0);
       for (const image of remote) {
         expect(image).toContain("accessibilityLabel");
-        expect(/height: \d/.test(image)).toBe(true);
+        // Space must be reserved before the bytes arrive, or the list jumps as
+        // each image lands. A height derived from screen width reserves space
+        // just as well as a literal, so a named value counts — an image with no
+        // height at all is still the failure.
+        expect(/height: (\d|[A-Za-z_$])/.test(image)).toBe(true);
         expect(/width: ?["\d]|flex: 1/.test(image)).toBe(true);
       }
     }

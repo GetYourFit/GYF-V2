@@ -11,48 +11,33 @@ import Animated, {
 import Svg, { Circle } from "react-native-svg";
 
 /**
- * GYF's original dot-cluster mark (Ref3-inspired, drawn from scratch): six
- * dots orbiting a heavier center. It rotates only while `active` (a load in
- * flight or explicit interaction) and settles when the work is done — the
- * spec prohibits decorative infinite animation. Honors ReduceMotion.System.
- */
-/**
  * One full turn. Linear is deliberate — an eased turn visibly stalls at each
- * revolution boundary, which reads as a stutter rather than a slow spin. The
- * smoothness comes from the duration, not the curve.
+ * revolution boundary, which reads as a stutter rather than a slow spin.
  */
 const SPIN_MS = 3200;
 
-export function AnimatedGyfMark({
-  color,
-  size = 24,
-  active = false,
-}: {
-  color: string;
-  size?: number;
-  active?: boolean;
-}) {
+/**
+ * GYF's dot-cluster mark: six dots on one ring, always turning. It is the
+ * app's one piece of ambient motion — in the tab bar, on Explore, on Social
+ * and on the auth screens — so it reads as the brand being alive rather than
+ * as a spinner that means something.
+ *
+ * One turn every 3.2s. ReduceMotion.System still holds: a viewer who asks the
+ * OS for less motion gets a still mark, not a slow one.
+ */
+export function AnimatedGyfMark({ color, size = 24 }: { color: string; size?: number }) {
   const spin = useSharedValue(0);
   useEffect(() => {
-    if (active) {
-      spin.value = withRepeat(
-        withTiming(spin.value + 1, { duration: SPIN_MS, easing: Easing.linear }),
-        -1,
-        false,
-        undefined,
-        ReduceMotion.System,
-      );
-    } else {
-      cancelAnimation(spin);
-      // Settle forward to the nearest whole turn so the cluster never snaps back.
-      spin.value = withTiming(Math.ceil(spin.value), {
-        duration: 300,
-        easing: Easing.out(Easing.quad),
-        reduceMotion: ReduceMotion.System,
-      });
-    }
+    spin.value = withRepeat(
+      withTiming(1, { duration: SPIN_MS, easing: Easing.linear }),
+      -1,
+      false,
+      undefined,
+      ReduceMotion.System,
+    );
     return () => cancelAnimation(spin);
-  }, [active, spin]);
+  }, [spin]);
+
   const style = useAnimatedStyle(() => ({
     transform: [{ rotate: `${spin.value * 360}deg` }],
   }));

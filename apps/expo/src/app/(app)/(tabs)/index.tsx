@@ -42,8 +42,10 @@ import {
   type StylistFeedbackStatus,
 } from "@/lib/stylist-feed";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
+import { railTileWidth } from "@/components/grid/column-count";
 import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
+import { useResponsive } from "@/theme/use-responsive";
 
 type FeedbackStatus = StylistFeedbackStatus;
 
@@ -82,11 +84,15 @@ function ItemTile({
   onSwap: (alternate: OutfitItem) => void;
 }) {
   const palette = useThemeColors();
+  const { width: screenWidth } = useResponsive();
   const shopUrl = safeShopUrl(item);
   // Editorial garment plate: the image IS the tile — tall 4:5 plate, eyebrow
   // slot label above, one quiet letterspaced action row below. Chrome recedes.
+  // The tile was a fixed 232 on every phone, which crowded a 320 screen and
+  // wasted a 430 one; it now takes its share of whatever width it is on.
+  const tileWidth = railTileWidth(screenWidth);
   return (
-    <View style={{ gap: spacing.sm, width: 232 }}>
+    <View style={{ gap: spacing.sm, width: tileWidth }}>
       <GyfText tone="faint" variant="label">
         {item.slot.toUpperCase()}
         {item.owned ? " · YOURS" : ""}
@@ -97,8 +103,8 @@ function ItemTile({
         style={{
           backgroundColor: palette.surfaceRaised,
           borderRadius: radii.card,
-          height: 290,
-          width: 232,
+          height: Math.round(tileWidth * 1.25),
+          width: tileWidth,
         }}
         uri={item.image_url}
       />

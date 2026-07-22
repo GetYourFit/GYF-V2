@@ -6,6 +6,7 @@ import { CatalogImage } from "@/components/ui/catalog-image";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale } from "@/components/ui/pressable-scale";
 import { DEFAULT_RATIO } from "@/components/ui/catalog-frame";
+import { feedColumnsForWidth } from "@/components/grid/column-count";
 import { splitColumns } from "@/components/ui/masonry-columns";
 import { radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
@@ -90,13 +91,14 @@ function Tile({
  * readers, where it is the only way to know what a tile is.
  */
 export function MasonryFeed({
-  columns = 2,
+  columns,
   items,
   onLongPressItem,
   onPressItem,
   savedIds,
   width,
 }: {
+  /** Defaults to the width's own tier — two on a phone, more on a tablet. */
   columns?: number;
   items: readonly MasonryItem[];
   /** Ref4's "Hold elements to save" — the gesture the reference itself teaches. */
@@ -106,7 +108,7 @@ export function MasonryFeed({
   /** Width available to the whole feed, gutters included. */
   width: number;
 }) {
-  const count = Math.max(1, columns);
+  const count = Math.max(1, columns ?? feedColumnsForWidth(width));
   const columnWidth = Math.floor((width - MASONRY_GAP * (count - 1)) / count);
   return (
     <View style={{ flexDirection: "row", gap: MASONRY_GAP }}>

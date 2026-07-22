@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 
-import { columnsForWidth, cardWidthFor } from "@/components/grid/column-count";
+import { cardWidthFor, columnsForWidth, feedColumnsForWidth } from "@/components/grid/column-count";
 import { BoardDetail } from "@/components/board/board-detail";
 import { InfiniteBoard } from "@/components/board/infinite-board";
 import { IconClose } from "@/components/icons";
@@ -45,8 +45,9 @@ const SEARCH_HINTS = [
 /**
  * Ref1/Ref2 run roughly four and a half columns across a phone at rest, with a
  * gutter tight enough that the imagery, not the ground, carries the screen.
+ * The board is denser than the feed by two columns at every size.
  */
-const BOARD_COLUMNS = 4;
+const BOARD_EXTRA_COLUMNS = 2;
 const BOARD_GAP = 6;
 
 function readableError(error: unknown): string {
@@ -251,7 +252,8 @@ export default function ExploreRoute() {
   // The board tiles a finite set over an infinite plane, so it never runs out
   // and never needs to paginate on a pan. Its ids drive tile shape, which is
   // why `source` is carried through rather than re-derived.
-  const boardColumnWidth = Math.floor((width - BOARD_GAP * (BOARD_COLUMNS + 1)) / BOARD_COLUMNS);
+  const boardColumns = feedColumnsForWidth(width) + BOARD_EXTRA_COLUMNS;
+  const boardColumnWidth = Math.floor((width - BOARD_GAP * (boardColumns + 1)) / boardColumns);
   const boardItems = useMemo(
     () => items.map((item) => ({ id: item.item_id, source: item })),
     [items],
@@ -287,7 +289,7 @@ export default function ExploreRoute() {
     return (
       <View style={{ backgroundColor: palette.bg, flex: 1 }}>
         <InfiniteBoard
-          columns={BOARD_COLUMNS}
+          columns={boardColumns}
           columnWidth={boardColumnWidth}
           gap={BOARD_GAP}
           height={height}
@@ -409,7 +411,6 @@ export default function ExploreRoute() {
             facets={facets}
             filters={filters}
             hint={SEARCH_HINTS[hintIndex]}
-            markActive={loading || loadingMore || refreshing}
             maxPriceInput={maxPriceInput}
             onChangeFilters={setFilters}
             onChangeMaxPrice={setMaxPriceInput}

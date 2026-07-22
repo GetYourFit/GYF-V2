@@ -75,7 +75,6 @@ export function ExploreControlBar({
   onChangeQuery,
   onSubmitQuery,
   hint,
-  markActive,
   onPressMark,
   filters,
   onChangeFilters,
@@ -90,7 +89,6 @@ export function ExploreControlBar({
   onChangeQuery: (value: string) => void;
   onSubmitQuery: () => void;
   hint: string;
-  markActive: boolean;
   onPressMark: () => void;
   filters: ExploreFilters;
   onChangeFilters: (next: ExploreFilters) => void;
@@ -124,7 +122,7 @@ export function ExploreControlBar({
           hitSlop={8}
           onPress={onPressMark}
         >
-          <AnimatedGyfMark active={markActive} color={palette.text} size={24} />
+          <AnimatedGyfMark color={palette.text} size={24} />
         </PressableScale>
         <TextInput
           accessibilityLabel="Search catalogue"

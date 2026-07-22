@@ -123,7 +123,9 @@ function PostCard({
   onBlock: () => void;
 }) {
   const palette = useThemeColors();
+  const { width } = useResponsive();
   const covers = postCoverImages(post.items, 3);
+  const coverHeight = Math.round(((width - spacing.lg * 2 - spacing.xs * 2) / 3) * 1.25);
   // Inline two-step report (works on web too, unlike Alert): tap Report, pick a
   // reason chip; "sent" is per-card local state — the server keeps the record.
   const [reportState, setReportState] = useState<"idle" | "choose" | "sent">("idle");
@@ -168,7 +170,9 @@ function PostCard({
                 // Ref4 plate: sharp edges, boxy tone, whole look visible.
                 borderRadius: 0,
                 flex: 1,
-                height: 200,
+                // Three across: derive the height from what each cover actually
+                // gets, so the plate keeps its 5:4 whatever the phone is.
+                height: coverHeight,
               }}
             />
           ))}
@@ -564,13 +568,7 @@ export default function SocialRoute() {
               explanatory sentence — the looks start at the top. */}
           <ScreenBar
             title="Social"
-            leading={
-              <AnimatedGyfMark
-                active={status === "loading" || refreshing}
-                color={palette.text}
-                size={24}
-              />
-            }
+            leading={<AnimatedGyfMark color={palette.text} size={24} />}
             onChange={(next) => setScope(next as FeedScope)}
             tabs={[
               { label: "For you", value: "all" },

@@ -86,7 +86,7 @@ function BrandMark({ tint }: { tint: string }) {
           the mark. It gives the screen something alive without putting motion
           on the logo itself, which has to stay legible. */}
       <Animated.View style={[{ position: "absolute" }, haloStyle]}>
-        <AnimatedGyfMark active={false} color={tint} size={size * 1.5} />
+        <AnimatedGyfMark color={tint} size={size * 1.5} />
       </Animated.View>
       <Animated.View style={style}>
         <Image

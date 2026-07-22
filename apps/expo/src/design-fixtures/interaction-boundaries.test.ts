@@ -62,11 +62,15 @@ describe("Expo interaction boundaries", () => {
     expect(rootLayoutSource).toMatch(/export\s*\{\s*ErrorBoundary\s*\}\s*from\s*["']\.\/error["']/);
   });
 
-  test("the GYF mark animates only while active, honors system motion, and cancels on cleanup", () => {
+  test("the GYF mark turns continuously, honors system motion, and cancels on cleanup", () => {
+    // The mark is the app's one piece of ambient motion, by owner decision: it
+    // turns wherever it appears rather than signalling that work is in flight.
+    expect(gyfMarkSource).toContain("withRepeat");
+    expect(gyfMarkSource).not.toContain("active");
+    // Ambient does not mean unconditional — a viewer who asks the OS for less
+    // motion still gets a still mark, and the loop must not outlive the view.
     expect(gyfMarkSource).toContain("ReduceMotion.System");
     expect(gyfMarkSource).toContain("cancelAnimation(spin)");
-    // Spins only while work is in flight — decorative infinite animation is prohibited.
-    expect(gyfMarkSource).toMatch(/if \(active\) \{[\s\S]{0,200}withRepeat/);
   });
 
   test("opening and closing the board use the complete filter reset", () => {

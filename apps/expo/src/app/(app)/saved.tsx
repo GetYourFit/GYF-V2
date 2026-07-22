@@ -54,6 +54,9 @@ function SavedLookCard({
   onRemove: () => void;
 }) {
   const palette = useThemeColors();
+  const { width } = useResponsive();
+  // Was a flat 260 on every phone, so the plate went squat as screens widened.
+  const coverHeight = Math.round((width - spacing.lg * 2) * 0.78);
   const summary = summariseOutfit(look.items);
   const cover = outfitCoverImage(look.items);
   return (
@@ -65,7 +68,7 @@ function SavedLookCard({
           style={{
             backgroundColor: palette.surfaceRaised,
             borderRadius: radii.control,
-            height: 260,
+            height: coverHeight,
             width: "100%",
           }}
         />
@@ -76,7 +79,7 @@ function SavedLookCard({
             alignItems: "center",
             backgroundColor: palette.surfaceRaised,
             borderRadius: radii.control,
-            height: 260,
+            height: coverHeight,
             justifyContent: "center",
             padding: spacing.sm,
           }}
