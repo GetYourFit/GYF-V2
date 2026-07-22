@@ -2,15 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, RefreshControl, ScrollView, TextInput, View } from "react-native";
 
 import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
-import {
-  ExpandableCollectionGrid,
-  type CollectionItem,
-} from "@/components/grid/expandable-collection-grid";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
-import { FilterChip } from "@/components/ui/filter-chip";
 import { AppMenu } from "@/components/ui/app-menu";
+import { MasonryFeed } from "@/components/ui/masonry-feed";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ScreenBar } from "@/components/ui/screen-bar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,10 +32,6 @@ function readableError(error: unknown): string {
     return "Wardrobe is temporarily unavailable. Try again shortly.";
   }
   return "GYF could not load your wardrobe. Check your connection and try again.";
-}
-
-function toCollectionItem(item: WardrobeItem): CollectionItem {
-  return { id: item.id, title: item.title, brand: item.category, imageUrl: item.image_url };
 }
 
 export default function WardrobeRoute() {
@@ -93,7 +85,7 @@ export default function WardrobeRoute() {
   }, [adding, api, titleInput]);
 
   const removeGarment = useCallback(
-    async (item: CollectionItem) => {
+    async (item: { id: string }) => {
       if (pending) return;
       setPending(item.id);
       setActionError(null);
@@ -169,7 +161,19 @@ export default function WardrobeRoute() {
         />
       }
     >
-      <ScreenBar trailing={<AppMenu />} />
+      <ScreenBar
+        onChange={setFilter}
+        tabs={
+          status === "ready" && categories.length > 0
+            ? [ALL_WARDROBE, ...categories].map((category) => ({
+                label: category === ALL_WARDROBE ? "All" : category,
+                value: category,
+              }))
+            : []
+        }
+        trailing={<AppMenu />}
+        value={activeFilter}
+      />
 
       {/* Not a card: the add field is one control, not a panel. A hairline band
           groups the label + input the same way the profile stats unboxed. */}
@@ -226,28 +230,6 @@ export default function WardrobeRoute() {
         </GyfText>
       ) : null}
 
-      {status === "ready" && categories.length > 0 ? (
-        <ScrollView
-          contentContainerStyle={{ gap: spacing.sm }}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-        >
-          {[ALL_WARDROBE, ...categories].map((category) => (
-            <FilterChip
-              count={
-                category === ALL_WARDROBE
-                  ? items.length
-                  : items.filter((row) => row.category === category).length
-              }
-              key={category}
-              label={category === ALL_WARDROBE ? "All" : category}
-              onPress={() => setFilter(category)}
-              selected={activeFilter === category}
-            />
-          ))}
-        </ScrollView>
-      ) : null}
-
       {status === "loading" ? (
         <View style={{ gap: spacing.md }}>
           <Skeleton height={220} />
@@ -269,29 +251,24 @@ export default function WardrobeRoute() {
           illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
         />
       ) : (
-        sections.map((section) => (
-          <ExpandableCollectionGrid
-            containerWidth={containerWidth}
-            items={section.items.map(toCollectionItem)}
-            key={section.category}
-            primaryAction={{
-              label: () => "Remove from wardrobe",
-              onPress: (item) => void removeGarment(item),
-            }}
-            secondaryAction={{
-              label: () => "Correct category",
-              onPress: (item) => {
-                const row = items.find((candidate) => candidate.id === item.id);
-                if (!row) return;
-                setCorrectionError(null);
-                setCategoryInput(row.category === "unknown" ? "" : row.category);
-                setCorrecting(row);
-              },
-            }}
-            subtitle="Owned — GYF styles new looks around these"
-            title={section.category}
-          />
-        ))
+        /* ref8: the wardrobe is imagery too. Tapping a piece opens the one
+           sheet that can act on it, which is where its name and category
+           belong. */
+        <MasonryFeed
+          items={visible.map((item) => ({
+            id: item.id,
+            imageUrl: item.image_url,
+            label: item.title,
+          }))}
+          onPressItem={(tile) => {
+            const row = items.find((candidate) => candidate.id === tile.id);
+            if (!row) return;
+            setCorrectionError(null);
+            setCategoryInput(row.category === "unknown" ? "" : row.category);
+            setCorrecting(row);
+          }}
+          width={containerWidth}
+        />
       )}
 
       <Modal
@@ -345,6 +322,20 @@ export default function WardrobeRoute() {
                   {correctionError}
                 </GyfText>
               ) : null}
+              {/* Destructive, so it sits apart from the save pair and never
+                  under a long-press: the tiles carry no text, and a hold that
+                  silently deleted a garment would be unrecoverable. */}
+              <AtelierButton
+                disabled={pending === correcting?.id}
+                label={pending === correcting?.id ? "Removing…" : "Remove from wardrobe"}
+                onPress={() => {
+                  const target = correcting;
+                  if (!target) return;
+                  setCorrecting(null);
+                  void removeGarment(target);
+                }}
+                variant="secondary"
+              />
               <View style={{ flexDirection: "row", gap: spacing.sm }}>
                 <AtelierButton
                   label="Cancel"

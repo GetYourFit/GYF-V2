@@ -566,7 +566,7 @@ export const SURFACE_ROUTE_MATRIX: readonly DeepReadonly<{
     route: "wardrobe",
     sourcePath: "(app)/(tabs)/wardrobe.tsx",
     states: ["happy", "loading", "empty", "error"],
-    virtualized: false, // bounded by ExpandableCollectionGrid preview counts
+    virtualized: false, // bounded by the garments one person owns
     gaps: ["offline"],
   },
   {

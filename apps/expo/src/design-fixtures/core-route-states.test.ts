@@ -346,7 +346,13 @@ describe("full experience matrix (EXPO-20/21)", () => {
         expect(source).toContain("FlatList");
         expect(source).toContain("onEndReached");
       } else if (surface.states.length > 0 && surface.route !== "profile") {
-        expect(source).toContain("ExpandableCollectionGrid");
+        // A surface that is not virtualized must still be bounded by something.
+        // ExpandableCollectionGrid bounds by preview count; MasonryFeed bounds
+        // by the set it is given (a wardrobe is what one person owns). Rendering
+        // an unbounded list with neither is the regression this catches.
+        expect(`${surface.route}: ${/ExpandableCollectionGrid|MasonryFeed/.test(source)}`).toBe(
+          `${surface.route}: true`,
+        );
       }
     }
   });
