@@ -11,7 +11,6 @@ import {
 } from "react-native";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
-import { NavRow } from "@/components/ui/nav-row";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
@@ -147,6 +146,12 @@ export default function ProfileRoute() {
 
   const displayName = summary?.display_name?.trim() || "Style Explorer";
   const since = formatMemberSince(summary?.member_since);
+  const statLine = summary
+    ? statCells(summary)
+        .filter((cell) => cell.value > 0)
+        .map((cell) => `${cell.value.toLocaleString()} ${cell.label.toLowerCase()}`)
+        .join("  ·  ")
+    : "";
   const meta = [since ? `Member since ${since}` : null, summary?.email]
     .filter(Boolean)
     .join("  ·  ");
@@ -203,7 +208,7 @@ export default function ProfileRoute() {
               <Avatar name={displayName} url={summary.avatar_url} />
             )}
             <View style={{ flex: 1, gap: 2 }}>
-              <GyfText accessibilityRole="header" numberOfLines={1} variant="title">
+              <GyfText accessibilityRole="header" numberOfLines={1} variant="display">
                 {displayName}
               </GyfText>
               {meta ? (
@@ -261,46 +266,30 @@ export default function ProfileRoute() {
             </View>
           ) : null}
 
-          {/* Three counts, not three cards. Boxing each one made the row read as
-              a dashboard; a single hairline rule under the band carries the
-              same grouping at a fraction of the weight. */}
-          <View
-            accessibilityLabel="Profile statistics"
-            style={{
-              borderBottomColor: palette.border,
-              borderBottomWidth: 1,
-              borderTopColor: palette.border,
-              borderTopWidth: 1,
-              flexDirection: "row",
-              paddingVertical: spacing.md,
-            }}
-          >
-            {statCells(summary).map((cell) => (
-              <View key={cell.label} style={{ alignItems: "center", flex: 1, gap: spacing.xs }}>
-                <GyfText variant="title">{cell.value.toLocaleString()}</GyfText>
-                <GyfText tone="muted" variant="label">
-                  {cell.label}
-                </GyfText>
-              </View>
-            ))}
-          </View>
+          {/* ref9 puts counts inline under the name as one quiet line — GYF
+              drew a bordered band of big numbers, which is the dashboard
+              treatment the reference deliberately avoids for a person. */}
+          <GyfText accessibilityLabel={`Profile statistics: ${statLine}`} tone="muted">
+            {statLine}
+          </GyfText>
 
           {/* Appearance used to live here as a third chip row. It is in the
               app menu now, on every screen — two places to set one preference
               is worse than either, and this was the one you had to navigate
               to. */}
-          <View>
-            <NavRow
+          <View style={{ flexDirection: "row", gap: spacing.sm }}>
+            <AtelierButton
               accessibilityLabel="Edit your personal fit — skin tone, body type, currency and budget"
-              hint="Skin tone, body type, currency and budget"
               label="Personal fit"
               onPress={() => router.push("/personal-fit")}
+              style={{ flex: 1 }}
             />
-            <NavRow
-              accessibilityLabel="Manage your account"
-              hint="Email, password and sign-out"
+            <AtelierButton
+              accessibilityLabel="Manage your account — email, password and sign-out"
               label="Account"
               onPress={() => router.push("/account")}
+              style={{ flex: 1 }}
+              variant="secondary"
             />
           </View>
         </>

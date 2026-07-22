@@ -85,13 +85,24 @@ export function AppMenu() {
 
   return (
     <>
+      {/* ref9 puts its controls in round tinted discs, not as bare glyphs on
+          the ground — that disc is what makes them read as buttons on a screen
+          with no title bar to sit in. */}
       <PressableScale
         accessibilityLabel="Menu"
         accessibilityRole="button"
         hitSlop={hitSlopFor(44)}
         onPress={() => setOpen(true)}
+        style={{
+          alignItems: "center",
+          backgroundColor: palette.surface,
+          borderRadius: radii.capsule,
+          height: 40,
+          justifyContent: "center",
+          width: 40,
+        }}
       >
-        <IconMenu color={palette.text} size={22} />
+        <IconMenu color={palette.text} size={20} />
       </PressableScale>
 
       <Modal animationType="none" onRequestClose={() => setOpen(false)} transparent visible={open}>
