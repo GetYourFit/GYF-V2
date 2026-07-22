@@ -41,20 +41,27 @@ export function AnimatedGyfMark({ color, size = 24 }: { color: string; size?: nu
   const style = useAnimatedStyle(() => ({
     transform: [{ rotate: `${spin.value * 360}deg` }],
   }));
-  // The exact owner mark: six equal dots on one ring, no center — dot radius
-  // ≈ 0.34 × orbit radius, matching the reference image's proportions.
+  // Six dots on one ring, dot radius ≈ 0.34 × orbit radius, per the reference.
+  //
+  // The dots are NOT identical, and that is the whole point. Six equal dots at
+  // 60° spacing are six-fold rotationally symmetric: turning that figure by 60°
+  // reproduces it exactly, so a continuous spin is pixel-identical to a still
+  // image and the motion cannot be seen at all. Grading opacity around the ring
+  // breaks the symmetry and is what makes the turn legible — Ref6 shows the
+  // mark this way too, one bright dot with the rest falling off.
   const satellites = Array.from({ length: 6 }, (_, i) => {
     const angle = (Math.PI / 3) * i - Math.PI / 2;
     return {
       cx: 12 + 7.4 * Math.cos(angle),
       cy: 12 + 7.4 * Math.sin(angle),
+      opacity: 1 - (i / 6) * 0.72,
     };
   });
   return (
     <Animated.View accessibilityElementsHidden importantForAccessibility="no" style={style}>
       <Svg fill="none" height={size} viewBox="0 0 24 24" width={size}>
         {satellites.map((dot, i) => (
-          <Circle cx={dot.cx} cy={dot.cy} fill={color} key={i} r={2.55} />
+          <Circle cx={dot.cx} cy={dot.cy} fill={color} fillOpacity={dot.opacity} key={i} r={2.55} />
         ))}
       </Svg>
     </Animated.View>

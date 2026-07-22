@@ -73,6 +73,15 @@ describe("Expo interaction boundaries", () => {
     expect(gyfMarkSource).toContain("cancelAnimation(spin)");
   });
 
+  test("the mark's dots are not rotationally symmetric, or the spin is invisible", () => {
+    // Six identical dots at 60° spacing reproduce themselves exactly under a
+    // 60° turn, so a perfectly working animation renders pixel-identical to a
+    // still image. The mark looked frozen for exactly this reason. Whatever
+    // varies around the ring, something must.
+    expect(gyfMarkSource).toMatch(/opacity: 1 - \(i \/ 6\)|fillOpacity=\{dot\.opacity\}/);
+    expect(gyfMarkSource).toContain("fillOpacity");
+  });
+
   test("opening and closing the board use the complete filter reset", () => {
     expect(exploreSource).toMatch(
       /accessibilityLabel="Close collections board"[\s\S]{0,300}setExpanded\(false\);\s*clearFilters\(\);/,
