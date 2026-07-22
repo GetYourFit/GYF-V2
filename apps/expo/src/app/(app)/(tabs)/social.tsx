@@ -505,9 +505,7 @@ export default function SocialRoute() {
       // Hairline rule between posts now that they are unboxed — the divider the
       // card outline used to imply, at a fraction of the visual weight.
       ItemSeparatorComponent={() => (
-        <View
-          style={{ backgroundColor: palette.border, height: 1, marginVertical: spacing.lg }}
-        />
+        <View style={{ backgroundColor: palette.border, height: 1, marginVertical: spacing.lg }} />
       )}
       contentContainerStyle={{
         padding: spacing.lg,

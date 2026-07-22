@@ -20,6 +20,8 @@ from __future__ import annotations
 import json
 from typing import Protocol
 
+from gyf_contracts.consent import normalize_consent_flags
+
 # Tombstone only if not already deleted, so re-deletion is a no-op (idempotent).
 _SOFT_DELETE_USER = "UPDATE users SET deleted_at = now() WHERE id = %s AND deleted_at IS NULL"
 _IS_DELETED = "SELECT deleted_at IS NOT NULL FROM users WHERE id = %s"
@@ -178,7 +180,7 @@ class PostgresAccountRepository:
     def get_consent(self, user_id: str) -> dict[str, bool]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
             row = conn.execute(_GET_CONSENT, (user_id,)).fetchone()
-        return dict(row[0]) if row and row[0] else {}
+        return normalize_consent_flags(dict(row[0]) if row and row[0] else {})
 
     def update_consent(self, user_id: str, flags: dict[str, bool]) -> dict[str, bool]:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
@@ -264,12 +266,12 @@ class InMemoryAccountRepository:
 
     def get_consent(self, user_id: str) -> dict[str, bool]:
         user = self.users.get(user_id)
-        return dict(user["consent"]) if user else {}
+        return normalize_consent_flags(dict(user["consent"]) if user else {})
 
     def update_consent(self, user_id: str, flags: dict[str, bool]) -> dict[str, bool]:
         user = self.users.setdefault(user_id, {"deleted": False, "consent": {}})
         user["consent"].update(flags)
-        return dict(user["consent"])
+        return self.get_consent(user_id)
 
     def set_display_name(self, user_id: str, name: str | None) -> None:
         user = self.users.setdefault(user_id, {"deleted": False, "consent": {}})

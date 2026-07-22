@@ -72,7 +72,7 @@ export const CURRENCIES: Option[] = [
   { value: "INR", label: "INR (₹)" },
 ];
 
-// Consent keys mirror CONSENT_KEYS in services/api/app/profile/models.py.
+// Consent keys mirror CONSENT_PURPOSES in packages/contracts/gyf_contracts/consent.py.
 export const CONSENT_OPTIONS: Array<Option & { required?: boolean; description: string }> = [
   {
     value: "data_processing",
@@ -81,7 +81,7 @@ export const CONSENT_OPTIONS: Array<Option & { required?: boolean; description: 
     required: true,
   },
   {
-    value: "personalization",
+    value: "behavioral_learning",
     label: "Learn my taste from my behaviour",
     description: "Lets recommendations sharpen as you save, skip, and cart looks.",
   },

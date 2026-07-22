@@ -19,6 +19,13 @@ from __future__ import annotations
 import re
 from typing import Annotated, Literal
 
+from gyf_contracts.consent import (
+    BEHAVIORAL_LEARNING_PURPOSE,
+    DATA_PROCESSING_PURPOSE,
+    LEGACY_PERSONALIZATION_PURPOSE,
+    MARKETING_PURPOSE,
+    PHOTO_STORAGE_PURPOSE,
+)
 from gyf_contracts.usermodel import (
     canonical_body_type,
     canonical_gender,
@@ -27,7 +34,8 @@ from gyf_contracts.usermodel import (
     is_occasion,
     is_style_intent,
 )
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, StrictBool, field_validator, model_validator
+from pydantic.json_schema import SkipJsonSchema
 
 # Manual onboarding asserts ground truth about oneself: full confidence.
 MANUAL_CONFIDENCE = 1.0
@@ -43,33 +51,83 @@ PROFILE_FIELDS = (
     "occasion",
 )
 
-# Controlled set of consent keys the user can grant/revoke (CLAUDE.md §2 privacy).
-# A closed vocabulary keeps the legal surface auditable; unknown keys are dropped.
-CONSENT_KEYS: frozenset[str] = frozenset(
-    {
-        "data_processing",  # process my data to provide the service (required to use GYF)
-        "personalization",  # learn my taste from my behavior
-        "photo_storage",  # store photos I upload (body/skin-tone modules, try-on)
-        "marketing",  # send me marketing communications
+ConsentBool = StrictBool | SkipJsonSchema[None]
+
+
+def _consent_flags_schema(schema: dict[str, object]) -> None:
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        for prop in properties.values():
+            if isinstance(prop, dict):
+                prop.pop("default", None)
+    schema["examples"] = [
+        {
+            DATA_PROCESSING_PURPOSE: True,
+            BEHAVIORAL_LEARNING_PURPOSE: False,
+            PHOTO_STORAGE_PURPOSE: False,
+            MARKETING_PURPOSE: False,
+        }
+    ]
+
+
+class ConsentFlags(BaseModel):
+    """Canonical purpose-specific consent flags.
+
+    Missing keys mean "leave this purpose unchanged".  Current clients must use
+    ``behavioral_learning`` for the learning switch; the legacy ``personalization``
+    key is translated only from stored historical rows, never accepted on writes.
+    """
+
+    model_config = {
+        "extra": "forbid",
+        "json_schema_extra": _consent_flags_schema,
     }
-)
+
+    data_processing: ConsentBool = None
+    behavioral_learning: ConsentBool = None
+    photo_storage: ConsentBool = None
+    marketing: ConsentBool = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_legacy_purpose(cls, value: object) -> object:
+        if isinstance(value, dict) and LEGACY_PERSONALIZATION_PURPOSE in value:
+            raise ValueError(
+                "unsupported consent purpose 'personalization'; use 'behavioral_learning'"
+            )
+        return value
+
+    @field_validator(
+        "data_processing",
+        "behavioral_learning",
+        "photo_storage",
+        "marketing",
+        mode="before",
+    )
+    @classmethod
+    def _reject_null(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("consent purpose values must be booleans")
+        return value
+
+    def as_update(self) -> dict[str, bool]:
+        """Only the keys the client actually sent, preserving explicit ``false``."""
+
+        return {
+            k: bool(v) for k, v in self.model_dump(exclude_none=True, exclude_unset=True).items()
+        }
 
 
 class ConsentInput(BaseModel):
-    """A partial consent update: a map of known consent keys to grant/revoke.
+    """A partial consent update over canonical purpose keys.
 
-    Unknown keys are dropped (not rejected) so a client on a newer/older schema
-    can't write an unauditable flag; an empty map after filtering is a no-op.
+    Unknown or legacy purpose keys fail validation instead of being silently
+    dropped, so the API cannot report a false privacy state to the client.
     """
 
     model_config = {"extra": "forbid"}
 
-    flags: dict[str, bool] = Field(default_factory=dict)
-
-    @field_validator("flags")
-    @classmethod
-    def _only_known_keys(cls, v: dict[str, bool]) -> dict[str, bool]:
-        return {k: bool(val) for k, val in v.items() if k in CONSENT_KEYS}
+    flags: ConsentFlags = Field(default_factory=ConsentFlags)
 
 
 Money = Annotated[float, Field(ge=0)]

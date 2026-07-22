@@ -6,7 +6,7 @@ the reward contract, organic-positive handling, and the report aggregates.
 
 from __future__ import annotations
 
-from pipelines.export_events import build_examples, build_report
+from pipelines.export_events import _learning_consent_predicate, build_examples, build_report
 
 
 def _event(action: str, ts: str, *, user="u1", target="i1", ttype="item", context=None):
@@ -159,6 +159,14 @@ def test_legacy_engagement_credits_only_latest_impression():
     ]
     examples = build_examples(rows)
     assert [e["label"] for e in examples] == [0.0, 1.0]
+
+
+def test_export_filter_uses_canonical_learning_consent_with_legacy_fallback():
+    predicate = _learning_consent_predicate("u")
+    assert "u.consent_flags ->> 'behavioral_learning'" in predicate
+    assert "u.consent_flags ->> 'personalization'" in predicate
+    assert predicate.index("behavioral_learning") < predicate.index("personalization")
+    assert "<> 'false'" in predicate
 
 
 def test_report_contains_rates_and_tables():

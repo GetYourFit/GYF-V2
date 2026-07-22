@@ -261,7 +261,7 @@ export interface paths {
         get: operations["read_consent_consent_get"];
         /**
          * Update Consent
-         * @description Grant/revoke consent. Merges known flags; unknown keys are ignored.
+         * @description Grant/revoke consent. Merges canonical flags; unknown keys are rejected.
          */
         put: operations["update_consent_consent_put"];
         post?: never;
@@ -1019,17 +1019,38 @@ export interface components {
             with_image?: number | null;
         };
         /**
-         * ConsentInput
-         * @description A partial consent update: a map of known consent keys to grant/revoke.
+         * ConsentFlags
+         * @description Canonical purpose-specific consent flags.
          *
-         *     Unknown keys are dropped (not rejected) so a client on a newer/older schema
-         *     can't write an unauditable flag; an empty map after filtering is a no-op.
+         *     Missing keys mean "leave this purpose unchanged".  Current clients must use
+         *     ``behavioral_learning`` for the learning switch; the legacy ``personalization``
+         *     key is translated only from stored historical rows, never accepted on writes.
+         * @example {
+         *       "behavioral_learning": false,
+         *       "data_processing": true,
+         *       "marketing": false,
+         *       "photo_storage": false
+         *     }
+         */
+        ConsentFlags: {
+            /** Data Processing */
+            data_processing?: boolean;
+            /** Behavioral Learning */
+            behavioral_learning?: boolean;
+            /** Photo Storage */
+            photo_storage?: boolean;
+            /** Marketing */
+            marketing?: boolean;
+        };
+        /**
+         * ConsentInput
+         * @description A partial consent update over canonical purpose keys.
+         *
+         *     Unknown or legacy purpose keys fail validation instead of being silently
+         *     dropped, so the API cannot report a false privacy state to the client.
          */
         ConsentInput: {
-            /** Flags */
-            flags?: {
-                [key: string]: boolean;
-            };
+            flags?: components["schemas"]["ConsentFlags"];
         };
         /**
          * FeedbackRequest
@@ -2098,9 +2119,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
+                    "application/json": components["schemas"]["ConsentFlags"];
                 };
             };
         };
@@ -2124,9 +2143,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
+                    "application/json": components["schemas"]["ConsentFlags"];
                 };
             };
             /** @description Validation Error */

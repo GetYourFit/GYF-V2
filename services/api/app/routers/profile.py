@@ -22,7 +22,7 @@ from ..dependencies import (
 )
 from ..profile.account import AccountRepository
 from ..profile.avatar import is_owned_avatar_url
-from ..profile.models import ConsentInput, Profile, ProfileInput, ProfilePhotoResponse
+from ..profile.models import ConsentFlags, ConsentInput, Profile, ProfileInput, ProfilePhotoResponse
 from ..profile.photo import BodyAdapter, SkinToneAdapter
 from ..profile.repository import ProfileRepository
 from ..profile.summary import (
@@ -213,7 +213,7 @@ async def upsert_profile_from_photo(
     return profile
 
 
-@router.get("/consent")
+@router.get("/consent", response_model=ConsentFlags, response_model_exclude_unset=True)
 def read_consent(
     principal: Principal = Depends(require_active_principal),
     repo: AccountRepository = Depends(get_account_repo),
@@ -222,14 +222,19 @@ def read_consent(
     return repo.get_consent(principal.user_id)
 
 
-@router.put("/consent", dependencies=[Depends(rate_limit("consent", "rate_limit_mutation"))])
+@router.put(
+    "/consent",
+    response_model=ConsentFlags,
+    response_model_exclude_unset=True,
+    dependencies=[Depends(rate_limit("consent", "rate_limit_mutation"))],
+)
 def update_consent(
     payload: ConsentInput,
     principal: Principal = Depends(require_active_principal),
     repo: AccountRepository = Depends(get_account_repo),
 ) -> dict[str, bool]:
-    """Grant/revoke consent. Merges known flags; unknown keys are ignored."""
-    return repo.update_consent(principal.user_id, payload.flags)
+    """Grant/revoke consent. Merges canonical flags; unknown keys are rejected."""
+    return repo.update_consent(principal.user_id, payload.flags.as_update())
 
 
 @router.get(

@@ -1,6 +1,6 @@
 # GYF active execution contract
 
-Status: **V7 ACTIVE — COSMOS-DESIGN-BUILD CURRENT** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
+Status: **V7 ACTIVE — AUDIT-REENTRY-0721224554 CURRENT (temporary; resumes COSMOS-DESIGN-BUILD)** · `F2.5-04 GO` recorded 2026-07-17 · owner approved the v7 direction, Virginia topology and
 continued execution on 2026-07-17 · effective repository baseline
 `367a7ffa14532f60e1ba8d1a784785d98da2bbb9` · `P0 GO` recorded 2026-07-17 ·
 `EXPO-CORE-01 GO` (owner-attested 2026-07-17): recsys taste-path HNSW correctness
@@ -57,7 +57,52 @@ agent preference are not evidence.
 The P labels below are outcome envelopes, not a second ticket system. The mapped F/EXPO/HL ticket
 is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
-`CURRENT EXECUTION POINTER: COSMOS-DESIGN-BUILD`
+`CURRENT EXECUTION POINTER: AUDIT-REENTRY-0721224554` (temporary consent/privacy corrective re-entry; resume `COSMOS-DESIGN-BUILD` Task 6 only after this packet's validation is recorded)
+
+**Owner-authorised audit re-entry — 2026-07-21.** The captain accepted scout report
+`/Users/rvzaku/atharv-agent-workspace/data/gyf-product-audit-plan-scout-0721224554/report.md`
+as evidence and approved the focused `AUDIT-REENTRY-0721224554` interruption before further
+Cosmos/design-build work. This is not a second roadmap and it does not promote F2.5, beta, VTON,
+design acceptance or hard launch. Purpose: close finding F-01, where Account sent
+`behavioral_learning`, onboarding still sent legacy `personalization`, the FastAPI schema silently
+dropped unsupported keys, and learning/export gates could treat an opted-out user as opted in.
+
+Allowed write set: this active contract; the subordinate launch-plan status row if needed to avoid
+stale pointer text; canonical consent constants/contracts; FastAPI consent schema/account repo/router
+and learning dependencies; generated API types from OpenAPI; the minimum Expo Account/onboarding and
+retained Next onboarding consent UI needed to send the canonical key; event/taste/export learning
+boundaries; and focused regressions. Explicit exclusions: no new feature breadth, no ranking rewrite,
+no infrastructure/topology work, no public try-on opening, no F13 cleanup and no launch claim.
+
+Canonical decision for this packet: the behavioural-learning purpose key is
+`behavioral_learning`. Historical stored `personalization` is a read-only legacy alias only when the
+canonical key is absent, so an existing `personalization=false` opt-out remains opted out and a later
+explicit `behavioral_learning=true/false` wins. Current HTTP writes of `personalization` or any other
+unsupported key must fail validation rather than being silently dropped.
+
+Exit evidence required before restoring `COSMOS-DESIGN-BUILD`: `PUT /consent` with
+`behavioral_learning=false` round-trips through the API and then blocks new feedback learning writes,
+taste/history reads and ML training-export inclusion; Account and Onboarding client tests prove they
+send/display the same server-enforced key; `packages/types/src/api.ts` is regenerated if the OpenAPI
+contract changes; legacy `personalization` preservation/translation is tested; every unknown-purpose
+write returns a clear validation error; focused checks plus the applicable repository gate are
+recorded with every warning/skip. After this packet merges and validates, resume exactly the prior
+`COSMOS-DESIGN-BUILD` Task 6 state and retained holds; do not advance any product/release gate from
+this local fix alone.
+
+Implementation evidence captured on the corrective branch: `make types` regenerated the OpenAPI
+client types after installing only disposable local tool shims in the worktree; focused API consent
+checks passed (`8 passed`, one retained Starlette/httpx warning); the ML export predicate regression
+passed (`1 passed`); focused Expo Account/Onboarding tests passed (`10 passed`); `make typecheck`,
+`make lint`, `make doctrine` and `make test` passed with the retained Next raw-`<img>` lint warning,
+450 API tests / 20 environment-gated skips / 8 retained warnings, 183 Expo tests and 77 retained-web
+tests with the retained Vite/Rolldown and React `act(...)` notices. A targeted Prettier check on the
+touched files passed; `make fmt-check` failed only on four untouched pre-existing files
+(`apps/expo/src/app/(app)/(tabs)/social.tsx`, `apps/expo/src/components/design/core-route-review.tsx`,
+`apps/expo/src/components/grid/expandable-collection-grid.tsx`,
+`apps/expo/src/components/ui/filter-row.tsx`). `bun run build` built the retained Next client, then
+failed in the Expo production export because this disposable lane has no `EXPO_TOKEN`/EAS login; no
+product or launch gate is promoted from that environment-gated failure.
 
 **Owner-authorised design-first evidence sequencing — 2026-07-19.** The owner has no physical
 Android device and approved completing the automated Cosmos Editorial design build before native

@@ -98,11 +98,7 @@ function StylistComposition({ fixture }: { fixture: CoreRouteFixture & { route: 
   return (
     <>
       <View style={{ gap: spacing.xs }}>
-        <GyfText
-          accessibilityRole="header"
-          theme={fixture.theme}
-          variant="display"
-        >
+        <GyfText accessibilityRole="header" theme={fixture.theme} variant="display">
           {fixture.hero}
         </GyfText>
         <GyfText theme={fixture.theme} tone="muted" variant="bodySmall">
@@ -136,11 +132,7 @@ function ExploreComposition({ fixture }: { fixture: CoreRouteFixture & { route: 
   return (
     <>
       <View style={{ gap: spacing.xs }}>
-        <GyfText
-          accessibilityRole="header"
-          theme={fixture.theme}
-          variant="display"
-        >
+        <GyfText accessibilityRole="header" theme={fixture.theme} variant="display">
           {fixture.hero}
         </GyfText>
         <GyfText theme={fixture.theme} tone="muted" variant="bodySmall">
@@ -182,11 +174,7 @@ function ItemDetailComposition({
         <GyfText theme={fixture.theme} tone="faint" variant="label">
           SELECTED PIECE
         </GyfText>
-        <GyfText
-          accessibilityRole="header"
-          theme={fixture.theme}
-          variant="display"
-        >
+        <GyfText accessibilityRole="header" theme={fixture.theme} variant="display">
           {fixture.hero}
         </GyfText>
         <GyfText theme={fixture.theme} tone="muted" variant="bodySmall">

@@ -1,4 +1,6 @@
-export const CONSENT_FLAGS: Array<{ key: string; title: string; description: string }> = [
+import type { ConsentFlags, ConsentPurpose } from "@gyf/types";
+
+export const CONSENT_FLAGS: Array<{ key: ConsentPurpose; title: string; description: string }> = [
   {
     key: "data_processing",
     title: "Personalized styling",
@@ -19,16 +21,15 @@ export const CONSENT_FLAGS: Array<{ key: string; title: string; description: str
 ];
 
 /** True when any known consent flag differs between the draft and the saved state. */
-export function consentDirty(
-  draft: Record<string, boolean>,
-  saved: Record<string, boolean>,
-): boolean {
+export function consentDirty(draft: ConsentFlags, saved: ConsentFlags): boolean {
   return CONSENT_FLAGS.some((flag) => Boolean(draft[flag.key]) !== Boolean(saved[flag.key]));
 }
 
 /** Normalize a draft down to exactly the known flags as booleans — never send stray keys. */
-export function consentPayload(draft: Record<string, boolean>): Record<string, boolean> {
-  return Object.fromEntries(CONSENT_FLAGS.map((flag) => [flag.key, Boolean(draft[flag.key])]));
+export function consentPayload(draft: ConsentFlags): ConsentFlags {
+  return Object.fromEntries(
+    CONSENT_FLAGS.map((flag) => [flag.key, Boolean(draft[flag.key])]),
+  ) as ConsentFlags;
 }
 
 /** Only the literal word DELETE (trimmed) authorizes account erasure. */

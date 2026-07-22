@@ -20,6 +20,16 @@ export type OutfitItem = components["schemas"]["OutfitItem"];
 export type SearchResult = components["schemas"]["SearchResult"];
 export type FeedbackRequest = components["schemas"]["FeedbackRequest"];
 
+/** Canonical purpose-specific consent flags accepted by PUT /consent. */
+export type ConsentFlags = components["schemas"]["ConsentFlags"];
+export const CONSENT_PURPOSES = [
+  "data_processing",
+  "behavioral_learning",
+  "photo_storage",
+  "marketing",
+] as const satisfies readonly (keyof ConsentFlags)[];
+export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
+
 /** Collections (saved shortlist), wardrobe (owned garments) & social (shared looks). */
 export type SaveItemRequest = components["schemas"]["SaveItemRequest"];
 export type SavedItem = components["schemas"]["SavedItem"];

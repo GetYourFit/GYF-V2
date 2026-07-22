@@ -28,6 +28,11 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
+from gyf_contracts.consent import (
+    BEHAVIORAL_LEARNING_PURPOSE,
+    LEGACY_PERSONALIZATION_PURPOSE,
+)
+
 # Mirror of services/api/app/recsys/signals.py ACTION_REWARD (the reward
 # contract). Kept as strings so ml/ needs no dependency on the API package;
 # if the contract changes there, change it here.
@@ -45,6 +50,20 @@ ACTION_REWARD: dict[str, float] = {
 }
 
 _EXPORT_ROOT = Path(__file__).resolve().parent.parent / "data" / "exports"
+
+
+def _learning_consent_predicate(user_alias: str = "u") -> str:
+    """SQL predicate for canonical + legacy behavioural-learning consent.
+
+    Canonical ``behavioral_learning`` wins when present; legacy stored
+    ``personalization`` is read only as a fallback so existing opt-outs remain
+    excluded from training without letting stale data override a newer choice.
+    """
+
+    return (
+        f"LOWER(COALESCE({user_alias}.consent_flags ->> '{BEHAVIORAL_LEARNING_PURPOSE}', "
+        f"{user_alias}.consent_flags ->> '{LEGACY_PERSONALIZATION_PURPOSE}', 'true')) <> 'false'"
+    )
 
 
 def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -212,7 +231,7 @@ def _fetch_rows(dsn: str) -> list[dict[str, Any]]:
             "SELECT i.user_id::text, i.target_type, i.target_id, i.action, i.weight, "
             "       i.context, i.ts "
             "FROM interactions i JOIN users u ON u.id = i.user_id "
-            "WHERE u.consent_flags ->> 'behavioral_learning' IS DISTINCT FROM 'false' "
+            f"WHERE {_learning_consent_predicate('u')} "
             "  AND u.deleted_at IS NULL "
             "ORDER BY i.ts"
         ).fetchall()

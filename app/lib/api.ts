@@ -9,6 +9,7 @@
 // client instance via `createApi(getToken)`.
 
 import type {
+  ConsentFlags,
   ConsentInput,
   components,
   FeedbackRequest,
@@ -174,12 +175,12 @@ export class GyfApi {
 
   // --- Consent & erasure ---
 
-  getConsent(): Promise<Record<string, boolean>> {
-    return this.request<Record<string, boolean>>("GET", "/consent");
+  getConsent(): Promise<ConsentFlags> {
+    return this.request<ConsentFlags>("GET", "/consent");
   }
 
-  putConsent(input: ConsentInput): Promise<Record<string, boolean>> {
-    return this.request<Record<string, boolean>>("PUT", "/consent", input);
+  putConsent(input: ConsentInput): Promise<ConsentFlags> {
+    return this.request<ConsentFlags>("PUT", "/consent", input);
   }
 
   deleteAccount(): Promise<void> {

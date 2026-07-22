@@ -52,9 +52,9 @@ Act as a Principal React Native and Expo Engineer. Optimize the following code f
    - Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error) for validation failures or API errors.
 
 
-(im just telling you for telling sake about my personal machine so that less tokens will be spent 
+(im just telling you for telling sake about my personal machine so that less tokens will be spent
   "You are working on macOS.
- 
+
   Environment:
   - Shell: zsh
   - Editor: VS Code
@@ -62,7 +62,7 @@ Act as a Principal React Native and Expo Engineer. Optimize the following code f
   - Multiplexer: tmux
   - GitHub CLI: gh
   - Apple Containers (not Docker Desktop)
- 
+
   Available tools:
   - rg (ripgrep): search text instead of reading entire directories.
   - fd: locate files instead of using find.
@@ -76,7 +76,7 @@ Act as a Principal React Native and Expo Engineer. Optimize the following code f
   - tmux: use persistent sessions for long-running tasks.
   - http (HTTPie): preferred over curl for manual API exploration.
   - wget: preferred for downloading files.
- 
+
   Guidelines:
   - Never recursively read an entire repository unless explicitly requested.
   - Prefer rg to locate symbols, TODOs, imports, functions, or text.
