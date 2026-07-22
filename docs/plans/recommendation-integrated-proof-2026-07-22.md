@@ -26,6 +26,7 @@ Focused tests now cover the closest local loop available without production cred
 - The alternates endpoint drops hydrated results whose slot does not match the replaced garment, so a noisy retrieval result cannot turn a top swap into footwear.
 - The ML export no longer turns unmatched recommendation-scoped outcomes into organic training positives.
 - The online taste repository now learns from recommendation-scoped outcomes only when a prior matching impression exists for the same user, target and `recommendation_id`; organic no-context actions still remain usable.
+- Migration `0026_recommendation_join_index` adds a partial index (`user_id, target_type, target_id, context ->> 'recommendation_id'`) covering only `action = 'impression'` rows, so the served-impression `EXISTS` join the taste read now requires resolves through an index scan instead of a sequential scan of `interactions` as that table grows.
 
 No dependency, model, GPU provider, cache, vector store, affiliate/shop-link, payment or infrastructure change was made.
 
@@ -49,6 +50,6 @@ Full no-mistakes/PR/CI remains a separate validation step; this packet does not 
 
 ## Holds / blocked launch evidence
 
-- No production Supabase/Render credentials or India-vantage browser/device run were available in this lane, so no new production SLO, EXPLAIN, ≥99% join-integrity, physical Android, closed-beta or cohort quality claim is made.
+- No production Supabase/Render credentials or India-vantage browser/device run were available in this lane, so no new production SLO, EXPLAIN, ≥99% join-integrity, physical Android, closed-beta or cohort quality claim is made. No local Postgres was reachable in this sandbox either, so `test_postgres_recommendation_join_uses_covering_index` (which asserts `EXPLAIN` picks the new partial index for the served-impression join) is added but skips here; it and the migration's crash-safe `CREATE INDEX CONCURRENTLY` path still need a real run against a migrated local or production database before this is called closed.
 - F6 learned-ranker promotion remains blocked until sufficient clean, consented, joined behavioural data exists and passes the frozen offline -> shadow -> cohort gates.
 - Try-on remains closed until F9; this recommendation proof does not open or exercise a renderer lane.

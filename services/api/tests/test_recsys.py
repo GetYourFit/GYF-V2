@@ -1436,6 +1436,46 @@ def test_postgres_taste_history_requires_served_recommendation_context():
     assert "CASE WHEN i.target_id ~*" in sql
 
 
+def test_postgres_recommendation_join_uses_covering_index(live_db):
+    """The correlated EXISTS in ``_JOINABLE_RECOMMENDATION_CONTEXT`` must resolve
+    through the partial index migration 0026 adds, not a sequential scan of
+    ``interactions`` — that scan would regress the recommend hot path as the table
+    grows. ``enable_seqscan = off`` isolates whether the index's column order and
+    ``recommendation_id`` expression actually match this predicate shape, rather
+    than depending on the planner's cost estimate at whatever size this table
+    happens to be."""
+    import json
+    import uuid
+
+    import psycopg
+
+    user_id = str(uuid.uuid4())
+    target_id = str(uuid.uuid4())
+    recommendation_id = str(uuid.uuid4())
+
+    with psycopg.connect(live_db) as conn:
+        conn.execute("INSERT INTO users (id) VALUES (%s)", (user_id,))
+        conn.execute(
+            "INSERT INTO interactions (user_id, target_type, target_id, action, context) "
+            "VALUES (%s, 'item', %s, 'impression', %s::jsonb)",
+            (user_id, target_id, json.dumps({"recommendation_id": recommendation_id})),
+        )
+        with conn.cursor() as cur:
+            cur.execute("SET LOCAL enable_seqscan = off")
+            cur.execute(
+                "EXPLAIN (FORMAT TEXT) SELECT 1 FROM interactions imp "
+                "WHERE imp.user_id = %s AND imp.target_type = %s AND imp.target_id = %s "
+                "AND imp.action = 'impression' "
+                "AND imp.context ->> 'recommendation_id' = %s",
+                (user_id, "item", target_id, recommendation_id),
+            )
+            plan = "\n".join(row[0] for row in cur.fetchall())
+        assert "idx_interactions_impression_recommendation_join" in plan, plan
+
+    with psycopg.connect(live_db) as conn:
+        conn.execute("DELETE FROM users WHERE id = %s", (user_id,))
+
+
 def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     """Pool selection is the ceiling: with a taste vector the pool must be the
     user's nearest slice, not just the newest ingest (cold start keeps recency)."""
