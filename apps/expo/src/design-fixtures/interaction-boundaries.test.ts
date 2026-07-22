@@ -48,6 +48,12 @@ describe("Expo interaction boundaries", () => {
     expect(tabBarSource).toContain("select();");
   });
 
+  test("product cards disclose backend-approved affiliate shop URLs", () => {
+    expect(exploreSource).toContain("shopUrl: item.buy_url");
+    expect(productCardSource).toContain("compactShopDisclosureForUrl(item.shopUrl)");
+    expect(productCardSource).toContain("{shopDisclosure ? (");
+  });
+
   test("the shared error boundary is also a valid Expo Router screen", () => {
     expect(errorRouteSource).toContain("export function ErrorBoundary");
     expect(errorRouteSource).toContain("export default function ErrorRoute");

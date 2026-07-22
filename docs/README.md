@@ -68,6 +68,8 @@ source of execution order and gates.
 - Cuelinks commerce proof: [`evidence/cuelinks-shop-flow-readiness-2026-07-22.md`](./evidence/cuelinks-shop-flow-readiness-2026-07-22.md) —
   implementation evidence and external redirect proof for product-level Cuelinks shop handoff; it
   does not promote a launch gate.
+- Cuelinks product ingestion seam: [`evidence/cuelinks-product-ingestion-2026-07-22.md`](./evidence/cuelinks-product-ingestion-2026-07-22.md) —
+  fixture-backed Deeplink=Yes/No campaign/product-feed import evidence and the exact live-credential blocker.
 - Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) (superseded
   historical preview runbook retained until F13) and [`deploy/gpu-lane.md`](./deploy/gpu-lane.md).
 - Historical user evidence: [`feedbacks/gyf-feedback-v1.md`](./feedbacks/gyf-feedback-v1.md),

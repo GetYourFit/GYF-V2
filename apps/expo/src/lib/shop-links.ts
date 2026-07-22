@@ -37,6 +37,9 @@ const TRACKING_HOME_QUERY_KEYS = new Set([
 export const SHOP_AFFILIATE_DISCLOSURE =
   "Affiliate disclosure: GYF may earn a commission if you buy after opening this retailer link. It never changes your price or how outfits are ranked.";
 
+export const SHOP_AFFILIATE_DISCLOSURE_COMPACT =
+  "Affiliate: GYF may earn a commission; price and ranking stay unchanged.";
+
 function isCuelinksShortHost(host: string): boolean {
   return host === CUELINKS_SHORT_HOST || host.endsWith(`.${CUELINKS_SHORT_HOST}`);
 }
@@ -79,4 +82,8 @@ export function safeExternalShopUrl(url: string | null | undefined): string | nu
 
 export function shopDisclosureForUrl(url: string | null | undefined): string | null {
   return safeExternalShopUrl(url) ? SHOP_AFFILIATE_DISCLOSURE : null;
+}
+
+export function compactShopDisclosureForUrl(url: string | null | undefined): string | null {
+  return safeExternalShopUrl(url) ? SHOP_AFFILIATE_DISCLOSURE_COMPACT : null;
 }

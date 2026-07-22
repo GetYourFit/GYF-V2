@@ -7,9 +7,9 @@ promote a launch gate.
 
 - Catalogue/recommendation shop URLs are wrapped server-side through `CuelinksLinker` when
   `GYF_CUELINKS_CID=274785` is configured.
-- Recommendation shop links use `subid=<recommendation_id>`; catalogue browse/search uses
-  `subid=catalog`; pre-existing product-level Cuelinks deeplinks are rewrapped with that requested
-  GYF subid instead of silently losing attribution.
+- Recommendation shop links use `subid=<recommendation_id>`; catalogue browse/search now use
+  structured `subid=catalog_<item_id>`; pre-existing product-level Cuelinks deeplinks are
+  rewrapped with the requested GYF subid instead of silently losing attribution.
 - The linker now hides unsafe or non-product shop destinations instead of surfacing a
   broken/misleading CTA:
   - non-HTTPS URLs;
@@ -56,7 +56,8 @@ GYF must not pretend products can be derived from these links alone.
 Production browse returned real catalogue rows with product-level wrapped URLs, e.g.:
 
 - item: `Rare Rabbit Men's Fullsleen Beige Cotton Plain Regular Fit Full Sleeve Collared Shirt`
-- GYF buy URL:
+- GYF buy URL captured in that earlier proof (current catalogue links use the structured
+  `catalog_<item_id>` subid form):
   `https://linksredirect.com/?cid=274785&source=api&subid=catalog&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige`
 - redirect chain:
   1. `linksredirect.com` ->
@@ -118,10 +119,12 @@ loaded with `cId=274785`. Both were fetched and inspected.
   Deeplink=Yes product URLs, or an approved retailer feed — before automatic product-level shop
   links can be proven end to end.
 
-## Recommended automated path (not built in this slice)
+## Recommended automated path (seam implemented in follow-up)
 
 Captain asked for automatic product updates and automatic Cuelinks link generation. Given the SDK
-review above, the correct shape is a backend ingestion + wrap pipeline, not a client-side SDK:
+review above, the correct shape is a backend ingestion + wrap pipeline, not a client-side SDK. The
+internal feed/campaign seam is now implemented and documented in
+[`cuelinks-product-ingestion-2026-07-22.md`](./cuelinks-product-ingestion-2026-07-22.md):
 
 1. **Product feed/API import**: a scheduled job pulls product rows (title, image, price, currency,
    availability, retailer identity, canonical product URL) from a Cuelinks product feed/API
@@ -143,9 +146,9 @@ review above, the correct shape is a backend ingestion + wrap pipeline, not a cl
    script, since that SDK cannot supply product data and would duplicate wrapping logic that
    already lives in `CuelinksLinker`.
 
-Building steps 1-2 requires the Cuelinks product-feed/API credential (or an approved retailer feed)
-that is still outstanding; this PR does not claim that credential exists or that automatic product
-ingestion is proven end to end.
+Live execution of steps 1-2 still requires the Cuelinks product-feed/API credential (or an approved
+retailer feed) that is outstanding; GYF does not claim that credential exists or that production
+product ingestion is proven end to end.
 
 ## Focused validation attempted in this worktree
 

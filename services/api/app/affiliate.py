@@ -147,6 +147,19 @@ def _safe_subid(subid: str) -> str:
     return f"{_SUBID_HASH_PREFIX}{digest}"
 
 
+def catalog_subid(item_id: str) -> str:
+    """Structured Cuelinks subid for non-recommendation catalogue clicks.
+
+    Recommendation links use ``subid=<recommendation_id>`` so a conversion joins
+    to the exact served slate. Explore/saved/canvas clicks may not have a
+    recommendation ID, but carrying the item ID still lets Cuelinks statements be
+    reconciled by product later. The value stays within Cuelinks' safe character
+    set; ``_safe_subid`` remains the final privacy guard.
+    """
+
+    return f"catalog_{item_id}"
+
+
 class NullAffiliateLinker(AffiliateLinker):
     """Baseline: pass safe product links through untouched (no network configured)."""
 

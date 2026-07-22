@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { SHOP_AFFILIATE_DISCLOSURE, safeExternalShopUrl, shopDisclosureForUrl } from "./shop-links";
+import {
+  SHOP_AFFILIATE_DISCLOSURE,
+  SHOP_AFFILIATE_DISCLOSURE_COMPACT,
+  compactShopDisclosureForUrl,
+  safeExternalShopUrl,
+  shopDisclosureForUrl,
+} from "./shop-links";
 
 describe("shop links", () => {
   it("discloses commission before a user-facing retailer action", () => {
@@ -8,6 +14,10 @@ describe("shop links", () => {
     expect(SHOP_AFFILIATE_DISCLOSURE).toContain("never changes your price");
     expect(SHOP_AFFILIATE_DISCLOSURE).toContain("how outfits are ranked");
     expect(shopDisclosureForUrl("https://shop.test/item")).toBe(SHOP_AFFILIATE_DISCLOSURE);
+    expect(compactShopDisclosureForUrl("https://shop.test/item")).toBe(
+      SHOP_AFFILIATE_DISCLOSURE_COMPACT,
+    );
+    expect(compactShopDisclosureForUrl("javascript:alert(1)")).toBeNull();
   });
 
   it("opens only product-serving HTTPS links", () => {

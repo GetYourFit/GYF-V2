@@ -33,6 +33,16 @@ class RawFeedItem(BaseModel):
     currency: str | None = None
     image_urls: list[str] = Field(default_factory=list)
     affiliate_url: str | None = None
+    # Merchant/network capability metadata. These fields are optional so the
+    # existing open-dataset and Shopify sources keep their small contract, while
+    # affiliate-network product feeds can preserve the campaign/deeplink evidence
+    # needed for rights, reconciliation and future training exclusion.
+    merchant_name: str | None = None
+    merchant_domain: str | None = None
+    affiliate_network: str | None = None
+    campaign_id: str | None = None
+    deeplink_enabled: bool | None = None
+    original_product_url: str | None = None
     # Region hints the feed already provides (ISO country codes); merged with the
     # taxonomy's region facet during normalization.
     region_hints: list[str] = Field(default_factory=list)

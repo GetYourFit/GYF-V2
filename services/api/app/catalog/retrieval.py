@@ -22,7 +22,7 @@ from uuid import UUID
 
 from psycopg.errors import QueryCanceled
 
-from ..affiliate import AffiliateLinker, NullAffiliateLinker
+from ..affiliate import AffiliateLinker, NullAffiliateLinker, catalog_subid
 from ..media import image_url_from_refs
 from ..metrics import stage_timer
 
@@ -674,7 +674,7 @@ class PostgresVectorSearchRepository:
                 image_url=image_url_from_refs(r[3]),
                 price=float(r[4]) if r[4] is not None else None,
                 currency=r[5],
-                buy_url=self._linker.wrap(r[6], "catalog"),
+                buy_url=self._linker.wrap(r[6], catalog_subid(str(r[0]))),
                 color=r[7],
             )
             for r in rows

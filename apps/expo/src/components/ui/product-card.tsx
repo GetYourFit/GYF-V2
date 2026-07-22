@@ -9,6 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { IconHeart } from "@/components/icons";
+import { compactShopDisclosureForUrl } from "@/lib/shop-links";
 import { colors, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
 import { ConfidenceBadge } from "./confidence-badge";
@@ -23,6 +24,8 @@ export interface ProductCardItem {
   brand?: string | null;
   price?: string | null;
   imageUrl?: string | null;
+  /** Safe retailer/Cuelinks URL emitted by the backend; used only for disclosure. */
+  shopUrl?: string | null;
   /** 0–1 fraction or 0–100 percent; unusable values render no badge. */
   matchPercent?: number | null;
   saved?: boolean;
@@ -53,6 +56,7 @@ export function ProductCard({
   // that was not 4:3 lost its edges — on a garment that is the hem or the
   // shoes. The frame now takes the shape the image actually is.
   const [ratio, setRatio] = useState(DEFAULT_RATIO);
+  const shopDisclosure = compactShopDisclosureForUrl(item.shopUrl);
   const pop = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
 
@@ -143,6 +147,11 @@ export function ProductCard({
           )}
           <ConfidenceBadge theme={theme} value={item.matchPercent} />
         </View>
+        {shopDisclosure ? (
+          <GyfText maxFontSizeMultiplier={1.3} theme={theme} tone="faint" variant="bodySmall">
+            {shopDisclosure}
+          </GyfText>
+        ) : null}
       </View>
     </PressableScale>
   );
