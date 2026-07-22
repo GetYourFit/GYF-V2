@@ -21,7 +21,7 @@ DEV_ENV := $(CACHE_ENV) GYF_EVENT_SINK=postgres
 # health-wait loops and gyf.test service-name DNS. Requires `container system start`.
 STACK := bash infra/container-stack.sh
 
-.PHONY: data-export help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean
+.PHONY: data-export help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api repo-hygiene doctrine ci types m2-bakeoff m2-clean clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -102,7 +102,10 @@ test: test-api ## Run all tests
 test-api: ## Run API tests
 	cd $(API_DIR) && $(CACHE_ENV) uv run --extra dev --extra postgres pytest -q
 
-doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1 + doc alignment)
+repo-hygiene: ## Block tracked local tool/cache artifacts and oversized binaries
+	python3 scripts/check_repo_hygiene.py
+
+doctrine: repo-hygiene ## Run the doctrine gates (license D2 + promotion D5 + ports D1 + doc alignment)
 	python3 scripts/check_model_licenses.py
 	python3 scripts/check_promotion.py
 	python3 scripts/check_ports.py

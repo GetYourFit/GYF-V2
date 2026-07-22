@@ -63,6 +63,7 @@ crash.log
 .bun-tmp*/
 .bun-cache/
 .cache-local/
+.tooling/bin/
 
 # Local ML model cache (HF weights / torch hub) — never committed
 .hf-cache/

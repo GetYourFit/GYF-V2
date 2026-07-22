@@ -133,6 +133,87 @@ Source-closure index:
 | `ScopeofIdea.md` | EXPO-DESIGN-CORE, P5.2/P5.4/P5.5, EXPO-19–21 and HL-DESIGN/EXPLORE/PROFILE/WARDROBE; source intent only, with library/performance conflicts resolved by the parent contract |
 | `docs/IMPLEMENTATION_PLAN.md` | Historical proposal folded into the same mappings; non-executable and retained until F13 review |
 
+### Whole-codebase cleanup execution ledger
+
+Status: **SUBORDINATE HL-LEAN CHECKLIST — NOT A SECOND ROADMAP**. The active contract remains the
+only execution pointer and F2.5 remains the production gate. This ledger tracks the incremental
+cleanup lane authorised by the master launch audit at
+`/Users/rvzaku/atharv-agent-workspace/data/gyf-master-final-launch-plan-audit/report.md` sections
+6–7 and 9. Cleanup PRs protect behaviour first, stay reviewable, and never delete canonical
+evidence, protected branches, release state, or unique/unproven work without explicit approval.
+
+| Area | Cleanup checkpoint | Protected deletion / proof rule | Ledger status |
+| --- | --- | --- | --- |
+| Frontend — Expo | Consolidate affiliate disclosure, route states, image paths, loading/error/degraded copy, dynamic type and reduced-motion coverage. | Do not delete reference behaviour until Expo tests and device/a11y evidence protect it. | Planned after launch-critical disclosure/public-route slices. |
+| Frontend — Next.js `app/` | Freeze as behavioural oracle/rollback client; remove only stale deploy/env docs. | Do **not** delete `app/` or `vercel.json` before F13 parity, rollback replacement and approval. | Protected retain. |
+| Frontend — Flutter `gyf_app/` | Extract useful mock/golden evidence into Expo fixtures/docs; decide CI role. | Do **not** delete `gyf_app/` before coverage transfer, F13/protected deletion and approval. | Protected retain. |
+| Backend/API | Fix facets/search first; harden feedback ownership, public support, status counts, RLS/app role and error/request-id consistency. | No route or capability deletion before an acceptance oracle and rollback path exist. | Planned; out of scope for this cleanup PR. |
+| DB/Supabase | Treat Alembic as authoritative; add migration-head checks; verify RLS/storage/purge/export/training exclusions. | Never delete historical migrations; delete/regenerate `schema.sql` only after all callers are proven. | Planned. |
+| ML/recsys | Reconcile try-on candidate names; split production/research model cards; keep deterministic fallbacks and data-export quality gates. | Do not delete GPU/provider/research artifacts until F2.5/F7/F9 provider decisions and rollback evidence close. | Planned. |
+| Infra/workflows | Fix keepalive wording/ownership; update production-plan and Cuelinks workflows only when their gates open; review Flutter CI after coverage transfer. | Do not touch external deploy state or release branches from cleanup PRs. | Planned. |
+| Docs | Keep this launch plan as ticket/evidence ledger, active contract as execution order, `docs/README.md` as map. | Retain feedback, `ScopeofIdea.md`, `Reference/`, historical runbooks and source evidence until F13/protected deletion. | This ledger added. |
+| Tests/QA | Convert mock-only tests into user-journey tests; add signed-out legal/support, disclosure, search/facets and native smoke coverage. | Delete tests only in the same PR that deletes the implementation they protect. | Planned. |
+| Assets | Build manifest: owner, runtime/evidence-only, license/provenance and deletion gate; move runtime assets into owning client trees. | Do not delete `Reference/`, design-review assets, Flutter goldens or Next public assets without F13 approval. | Planned. |
+| Generated files | Guard generated-type drift; regenerate OpenAPI types with `make types`. | Never hand-edit `packages/types/src/api.ts`; do not delete generated artifacts still consumed by CI/app code. | Planned. |
+| Branch cleanup | Dissolve stale branches only after ancestry/patch-equivalence, PR dependency and worktree checks. | No remote branch deletion in code PRs; never delete protected/default/release/open-PR/unique branches. | Inventory below; deletion operation separate. |
+| Local tool/cache hygiene | Block tracked machine-local tool/cache artifacts and oversized binaries. | Remove only clearly local bootstrap/cache artifacts; document real source exceptions. | First slice: `.tooling/bin/uv` and `.tooling/bin/uvx` stopped being tracked, `.tooling/bin/` ignored, and `scripts/check_repo_hygiene.py` added to `make doctrine`, CI and pre-commit. |
+
+First cleanup execution slice evidence to record with this PR:
+
+- `scripts/check_repo_hygiene.py` fails on tracked local tool/cache paths such as `.tooling/bin/`
+  and on oversized tracked binaries; `scripts/test_check_repo_hygiene.py` covers the guard logic.
+- `.tooling/bin/uv` and `.tooling/bin/uvx` were tracked Mach-O bootstrap binaries from the audit's
+  H1 finding. Runtime gates already require a real `uv` on `PATH` (`make check-uv` prints the
+  install command), and CI installs `uv`; therefore the binaries are removed from git rather than
+  preserved as source.
+- Broad env-var reconciliation, Dockerfile comment cleanup, route/workflow ownership reporting,
+  generated-type drift checks and doc orphan reporting remain later H0/H1 tasks unless a future PR
+  protects them with tests/evidence.
+
+#### Branch cleanup inventory and required proof
+
+Inventory source: master audit section 7, confirmed locally against `origin/main` at
+`8898ff33692fbb04df126c9d6142ff1096e909f8`. This PR documents candidates only; it must not delete
+remote branches.
+
+Deletion candidates after proof:
+
+| Branch | Current classification | Required proof before deletion |
+| --- | --- | --- |
+| `origin/agent/expo06-stylist-loop` | Merged by ancestry. | `git merge-base --is-ancestor origin/agent/expo06-stylist-loop origin/main`; `gh pr list --state open --head agent/expo06-stylist-loop`; confirm no release/deploy reference. |
+| `origin/agent/f25-filtered-browse` | Merged by ancestry. | `git merge-base --is-ancestor origin/agent/f25-filtered-browse origin/main`; `gh pr list --state open --head agent/f25-filtered-browse`; confirm no release/deploy reference. |
+| `origin/fm/gyf-vercel-expo-web-deploy-cleanup` | Squash/rebase-equivalent candidate (`git cherry -v origin/main origin/fm/gyf-vercel-expo-web-deploy-cleanup` shows only `-` lines in the audit/local inventory). | `git cherry -v origin/main origin/fm/gyf-vercel-expo-web-deploy-cleanup`; `gh pr list --state all --head fm/gyf-vercel-expo-web-deploy-cleanup`; compare PR #19 merge commit if needed; confirm no open PR/release/deploy reference. |
+
+Preserve pending equivalence/approval:
+
+- `origin/fm/gyf-automatic-product-ingestion-cuelinks`,
+  `origin/fm/gyf-ml-recommendation-integrated-proof`,
+  `origin/fm/gyf-cuelinks-end-to-end-proof`, `origin/fm/gyf-audit-reentry-consent-fix`,
+  `origin/docs/reconcile-cosmos-task-governance-2026-07-21` and `origin/fm/gyf-p0-stabilise`:
+  merged/closed PR branches from the audit, but current `git cherry` still reports `+` commits;
+  preserve until patch/tree equivalence is proven against the relevant merge commit.
+- `origin/crewmate-pr13-governance-reconcile`: closed/abandoned duplicate candidate; preserve until
+  owner approval confirms no unique desired docs remain.
+- `no-mistakes/*` mirrors: coordinate with the no-mistakes/firstmate owner; do not delete from an
+  unrelated cleanup lane or while the daemon could reference them.
+- Local `main`: behind remote and attached to another worktree in the audit; fast-forward only after
+  coordinating the owning worktree, never force-reset while active.
+
+Exact safe branch-dissolution procedure for the separate approved operation:
+
+```bash
+git fetch --all --prune --tags
+BRANCH="origin/<candidate>"
+gh pr list --state open --head "<candidate>"
+gh pr list --state all --head "<candidate>"
+git merge-base --is-ancestor "$BRANCH" origin/main || git cherry -v origin/main "$BRANCH"
+git log --oneline --decorate --no-merges origin/main.."$BRANCH"
+git grep -n "<candidate>" -- . ':!ECC/'
+git worktree list
+git push origin --delete "<candidate>"   # only after the previous commands prove it is safe and approval exists
+git fetch --all --prune
+```
+
 ### Product evidence contract
 
 **North star:** weekly users saving an explained complete outfit. **Activation:** a new user saves
