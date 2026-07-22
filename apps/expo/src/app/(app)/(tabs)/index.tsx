@@ -17,6 +17,7 @@ import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { FilterChip } from "@/components/ui/filter-chip";
 import { FilterRow } from "@/components/ui/filter-row";
 import { AppMenu } from "@/components/ui/app-menu";
+import { Disclosure } from "@/components/ui/disclosure";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ScreenHeading } from "@/components/ui/screen-heading";
 import { hitSlopFor } from "@/components/ui/pressable-scale";
@@ -41,7 +42,6 @@ import {
   type StylistFeedbackStatus,
 } from "@/lib/stylist-feed";
 import { SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
-import { capabilityUsable } from "@/lib/system-status";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
@@ -332,7 +332,6 @@ export default function StylistRoute() {
   const [alternateErrors, setAlternateErrors] = useState<Record<number, string>>({});
   // Fails closed: try-on stays shut until /system/status proves a rendering lane is live,
   // so a status blip is never the reason GYF asks for a photo of the user's body.
-  const [tryOnOpen, setTryOnOpen] = useState(false);
   const [swapRetries, setSwapRetries] = useState<Record<number, FeedbackRequest>>({});
   const loadSequence = useRef(0);
   const retryEvents = useRef<Record<string, FeedbackRequest[]>>({});
@@ -400,21 +399,6 @@ export default function StylistRoute() {
   useEffect(() => {
     void load();
   }, [load, reload]);
-
-  useEffect(() => {
-    let active = true;
-    api
-      .systemStatus()
-      .then((status) => {
-        if (active) setTryOnOpen(capabilityUsable(status, "virtual_try_on"));
-      })
-      .catch(() => {
-        if (active) setTryOnOpen(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [api]);
 
   useEffect(() => {
     if (!loading || data) {
@@ -591,6 +575,30 @@ export default function StylistRoute() {
 
   const tastePercent = data ? normalizedTastePercent(data.taste_strength) : 0;
 
+  // The closed REFINE row has to say what is applied, or collapsing the
+  // controls would hide state the user set.
+  const refineSummary =
+    [
+      OCCASIONS.find((option) => option.value === occasion)?.label,
+      STYLE_INTENTS.find((option) => option.value === style)?.label,
+      activeGoal || null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || "Any occasion, any style";
+
+  /** Why this slate looks the way it does — shown on request, not on every load. */
+  const provenance = data
+    ? [
+        data.wardrobe_grounded ? "Includes pieces from your wardrobe, marked YOURS." : null,
+        data.anchor_item_id ? "Every look is built around the piece you selected." : null,
+        data.applied_goals.length > 0
+          ? `Applied goal: ${data.applied_goals.join(", ")}.`
+          : activeGoal
+            ? "GYF did not recognize a safe styling effect in that goal, so it was not claimed as applied."
+            : null,
+      ].filter((note): note is string => note !== null)
+    : [];
+
   const applyGoal = () => {
     setActiveGoal(goalInput.trim());
     setReload((value) => value + 1);
@@ -616,10 +624,11 @@ export default function StylistRoute() {
         trailing={<AppMenu />}
       />
 
-      {/* Controls ride on the ground, Ref4-style: two chip rows and one search
-          pill. The card that used to box them in, and the three stacked
-          uppercase labels above them, were the bulk of this screen's chrome. */}
-      <View style={{ gap: spacing.sm }}>
+      {/* Fourteen chips and a text field used to sit between the heading and
+          the first look, so the screen opened on its own controls rather than
+          on any styling. They stay one row until asked for; the summary says
+          what is currently applied, so nothing is hidden that you would need. */}
+      <Disclosure label="REFINE" summary={refineSummary}>
         <FilterRow label="Occasion, optional">
           {OCCASIONS.map((option) => {
             const selected = occasion === option.value;
@@ -691,7 +700,7 @@ export default function StylistRoute() {
             </Pressable>
           ) : null}
         </View>
-      </View>
+      </Disclosure>
 
       {error ? (
         <AtelierCard>
@@ -729,15 +738,7 @@ export default function StylistRoute() {
       ) : null}
 
       {data ? (
-        <View
-          style={{
-            borderLeftColor: palette.accentInk,
-            borderLeftWidth: 1,
-            gap: spacing.xs,
-            paddingLeft: spacing.md,
-          }}
-        >
-          <GyfText variant="label">TASTE SIGNAL</GyfText>
+        <View style={{ gap: spacing.xs }}>
           <View
             accessibilityLabel="Taste signal"
             accessibilityRole="progressbar"
@@ -766,41 +767,22 @@ export default function StylistRoute() {
           <GyfText tone="muted" variant="bodySmall">
             {tastePersonalizationMessage(data.cold_start, data.personalized, tastePercent)}
           </GyfText>
-          {data.wardrobe_grounded ? (
-            <GyfText tone="muted" variant="bodySmall">
-              Includes pieces from your wardrobe, marked YOURS.
-            </GyfText>
-          ) : null}
-          {data.anchor_item_id ? (
-            <GyfText tone="muted" variant="bodySmall">
-              Every look is built around the piece you selected.
-            </GyfText>
-          ) : null}
-          {data.applied_goals.length > 0 ? (
-            <GyfText tone="muted" variant="bodySmall">
-              Applied goal: {data.applied_goals.join(", ")}.
-            </GyfText>
-          ) : activeGoal ? (
-            <GyfText tone="muted" variant="bodySmall">
-              GYF did not recognize a safe styling effect in that goal, so it was not claimed as
-              applied.
-            </GyfText>
+          {/* These four lines used to stack under the bar on every load, and
+              between them they pushed the first look below the fold. They are
+              provenance — worth keeping honest, not worth reading every time. */}
+          {provenance.length > 0 ? (
+            <Disclosure
+              label="WHY THESE"
+              summary={`${provenance.length} ${provenance.length === 1 ? "note" : "notes"}`}
+            >
+              {provenance.map((note) => (
+                <GyfText key={note} tone="muted" variant="bodySmall">
+                  {note}
+                </GyfText>
+              ))}
+            </Disclosure>
           ) : null}
         </View>
-      ) : null}
-
-      {/* ponytail: closed-state only (EXPO-10 half one). The queue/poll/cancel/photo flow is
-          deliberately unbuilt — F9 has promoted no rendering lane, so it would be dead code that
-          could only be verified by pretending. When F9 opens a lane, this section becomes the
-          per-outfit "See it on you" surface the web oracle already carries. */}
-      {data && data.outfits.length > 0 && !tryOnOpen ? (
-        <AtelierCard style={{ gap: spacing.xs }}>
-          <GyfText variant="label">SEE IT ON YOU</GyfText>
-          <GyfText tone="muted" variant="bodySmall">
-            Virtual try-on isn&apos;t available here yet, so GYF doesn&apos;t ask for your photo. It
-            arrives free for everyone once a rendering lane passes its evaluation gate.
-          </GyfText>
-        </AtelierCard>
       ) : null}
 
       {!loading && data && data.outfits.length === 0 ? (
