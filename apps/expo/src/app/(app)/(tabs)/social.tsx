@@ -7,7 +7,9 @@ import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { FilterChip } from "@/components/ui/filter-chip";
+import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
+import { ScreenHeading } from "@/components/ui/screen-heading";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type OutfitRecommendation, type Post } from "@/lib/api";
@@ -557,14 +559,12 @@ export default function SocialRoute() {
       )}
       ListHeaderComponent={
         <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-          <View style={{ gap: spacing.sm }}>
-            <GyfText accessibilityRole="header" variant="display">
-              Social
-            </GyfText>
-            <GyfText tone="muted" variant="body">
-              Real looks from the GYF community — like them, follow the stylists you love.
-            </GyfText>
-          </View>
+          <ScreenHeading
+            hue="green"
+            subtitle="Real looks from the GYF community — like them, follow the stylists you love."
+            title="Social"
+            trailing={<AppMenu />}
+          />
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
             <FilterChip
               label="For you"

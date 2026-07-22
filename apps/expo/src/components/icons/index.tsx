@@ -171,3 +171,84 @@ export function IconFilter({ size, color }: IconProps) {
     </Icon>
   );
 }
+
+export function IconMenu({ size, color }: IconProps) {
+  return (
+    <Icon size={size}>
+      <Path d="M4 7h16M4 12h16M4 17h10" stroke={color} {...stroke} />
+    </Icon>
+  );
+}
+
+/** Grievance — a raised flag, not a warning triangle: this is a complaint, not an error. */
+export function IconFlag({ size, color }: IconProps) {
+  return (
+    <Icon size={size}>
+      <Path
+        d="M5.5 21V3.6m0 0 5.6 2.2a4 4 0 0 0 3.1 0l4.3-1.7v9.4l-4.3 1.7a4 4 0 0 1-3.1 0L5.5 13Z"
+        stroke={color}
+        {...stroke}
+      />
+    </Icon>
+  );
+}
+
+export function IconMail({ size, color }: IconProps) {
+  return (
+    <Icon size={size}>
+      <Path
+        d="M3.2 7.4a2 2 0 0 1 2-2h13.6a2 2 0 0 1 2 2v9.2a2 2 0 0 1-2 2H5.2a2 2 0 0 1-2-2Z"
+        stroke={color}
+        {...stroke}
+      />
+      <Path d="m3.6 7 7.2 5.1a2 2 0 0 0 2.4 0L20.4 7" stroke={color} {...stroke} />
+    </Icon>
+  );
+}
+
+export function IconSun({ size, color }: IconProps) {
+  return (
+    <Icon size={size}>
+      <Circle cx={12} cy={12} r={4.1} stroke={color} {...stroke} />
+      <Path
+        d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6m15.3-5.9-1.6 1.6M7.5 16.5l-1.6 1.6m12 0-1.6-1.6M7.5 7.5 5.9 5.9"
+        stroke={color}
+        {...stroke}
+      />
+    </Icon>
+  );
+}
+
+export function IconMoon({ size, color }: IconProps) {
+  return (
+    <Icon size={size}>
+      <Path
+        d="M20.1 14.3A8.4 8.4 0 0 1 9.7 3.9a8.4 8.4 0 1 0 10.4 10.4Z"
+        stroke={color}
+        {...stroke}
+      />
+    </Icon>
+  );
+}
+
+/** "System" theme — a device outline: the choice is "whatever this thing says". */
+export function IconDevice({ size, color }: IconProps) {
+  return (
+    <Icon size={size}>
+      <Path
+        d="M3.4 6a2 2 0 0 1 2-2h13.2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2Z"
+        stroke={color}
+        {...stroke}
+      />
+      <Path d="M8.5 20h7" stroke={color} {...stroke} />
+    </Icon>
+  );
+}
+
+export function IconCheck({ size, color }: IconProps) {
+  return (
+    <Icon size={size}>
+      <Path d="m4.8 12.6 4.6 4.6L19.2 7.4" stroke={color} {...stroke} />
+    </Icon>
+  );
+}

@@ -1,3 +1,7 @@
+import { Fraunces_600SemiBold, Fraunces_700Bold } from "@expo-google-fonts/fraunces";
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
+import { JetBrainsMono_500Medium } from "@expo-google-fonts/jetbrains-mono";
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -30,14 +34,25 @@ export default function RootLayout() {
   // null = stored preference not read yet; hold paint so the scheme never flips on launch.
   const [preference, setPreferenceState] = useState<ThemePreference | null>(null);
 
+  // Three real font files now, one per utility (see theme/tokens). Every
+  // fontFamily is named, so painting before they resolve would render the
+  // whole app in the fallback face and then reflow — hold instead.
+  const [fontsLoaded, fontError] = useFonts({
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    JetBrainsMono_500Medium,
+  });
+
   useEffect(() => {
     void loadThemePreference().then(setPreferenceState);
   }, []);
 
-  // Type is the platform's own UI face (see theme/tokens), so nothing has to
-  // download before first paint — only the stored theme gates it, which keeps
-  // the scheme from visibly switching on launch.
-  const ready = preference !== null;
+  // A font that fails to download must not leave the user staring at a splash
+  // screen forever: fall through to the platform face and paint.
+  const ready = preference !== null && (fontsLoaded || fontError !== null);
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
@@ -53,8 +68,6 @@ export default function RootLayout() {
     [preference, setPreference],
   );
 
-  // Native holds first paint for fonts; web must remain usable while they load.
-  // Both wait for the stored theme so the scheme never visibly switches.
   if (!ready) return null;
 
   return (

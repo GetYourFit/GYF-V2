@@ -48,12 +48,14 @@
       "dependencies": {
         "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
         "@expo-google-fonts/fraunces": "^0.4.1",
+        "@expo-google-fonts/inter": "^0.4.2",
+        "@expo-google-fonts/jetbrains-mono": "^0.4.1",
         "@gyf/types": "workspace:*",
         "@supabase/supabase-js": "^2.47.10",
         "expo": "~57.0.7",
         "expo-blur": "~57.0.2",
         "expo-constants": "~57.0.6",
-        "expo-font": "~57.0.1",
+        "expo-font": "^57.0.1",
         "expo-haptics": "~57.0.1",
         "expo-image": "~57.0.1",
         "expo-image-picker": "~57.0.5",
@@ -293,6 +295,10 @@
     "@expo-google-fonts/bricolage-grotesque": ["@expo-google-fonts/bricolage-grotesque@0.4.1", "", {}, "sha512-uijLLg+thOrFgw+gXtYA3dQJTBqqqleabcNFpamaYXqUUcbFe0J18C+4nfL0CyGzSJUicxUBLY4Zv7jdHmTGMA=="],
 
     "@expo-google-fonts/fraunces": ["@expo-google-fonts/fraunces@0.4.1", "", {}, "sha512-gYc9P92ObyWvz1rWPOeWSvVKyBFIuA8hgOdhvo4DSiPBaWLbFA6v8uLIEIBwW+0oWTlXbBzjeBReHQI2H7UNjQ=="],
+
+    "@expo-google-fonts/inter": ["@expo-google-fonts/inter@0.4.2", "", {}, "sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ=="],
+
+    "@expo-google-fonts/jetbrains-mono": ["@expo-google-fonts/jetbrains-mono@0.4.1", "", {}, "sha512-CslACrtMOcRwoWXCO7OMEI+9w3fukWSoBtvNz46OqPoogEuuoY0tkDY1O8sFumk8t0pC6Cx0Xr95O0TOQhpkug=="],
 
     "@expo-google-fonts/material-symbols": ["@expo-google-fonts/material-symbols@0.4.38", "", {}, "sha512-IJkBtN1o8u9BW5fvSii1MyHPQ7Q0HxbWcVBvOrOzgMLpVtZw7R2w94wBTVR7kZwv3w1JNTESMmLA5Sqn1+Z36A=="],
 
@@ -2227,8 +2233,6 @@
     "eslint-plugin-react-hooks/zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
 
     "expo-linking/expo-constants": ["expo-constants@57.0.5", "", { "dependencies": { "@expo/env": "~2.4.2" }, "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-HVxPZc1uBdqrlcmNvdyO3L107vt/gsCRNGvXrYXWjZqmz1XOvGeUCR7S3MG4wUj4cQw4/WMCp+fcoDIhynJ80A=="],
-
-    "expo-router/@expo/metro-runtime": ["@expo/metro-runtime@57.0.6", "", { "dependencies": { "@expo/log-box": "^57.0.1", "anser": "^1.4.9", "pretty-format": "^29.7.0", "stacktrace-parser": "^0.1.10", "whatwg-fetch": "^3.0.0" }, "peerDependencies": { "expo": "*", "react": "*", "react-dom": "*", "react-native": "*" }, "optionalPeers": ["react-dom"] }, "sha512-x/lAtmPBkZGI3YrGirKQ77Ybmd2N4wI6zHE5v1Top08xiYPH28aUTNAu4vf3MBrf4MYnq7327Nj20hzIgzlRmw=="],
 
     "fast-glob/glob-parent": ["glob-parent@5.1.2", "", { "dependencies": { "is-glob": "^4.0.1" } }, "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow=="],
 

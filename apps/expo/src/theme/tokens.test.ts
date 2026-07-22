@@ -5,10 +5,12 @@ import {
   colors,
   contrastRatio,
   fonts,
+  headingHues,
   radii,
   spacing,
   tierForWidth,
   typography,
+  VIBGYOR,
 } from "./tokens";
 
 describe("Atelier tokens", () => {
@@ -61,22 +63,55 @@ describe("Atelier tokens", () => {
     expect(tierForWidth(1366)).toBe("wide");
   });
 
-  it("names no font family, so every variant renders in the platform UI face", () => {
-    // Ref4-7 run one neutral grotesque app-wide. Naming a family here would
-    // reintroduce a downloaded face and a second typeface.
-    expect(fonts.system).toBeUndefined();
+  it("binds one family per utility, and never crosses them", () => {
+    // Headings are the serif; everything a user reads or presses is Inter;
+    // every figure is mono. A variant borrowing another utility's face is the
+    // failure this guards.
+    expect(typography.display.fontFamily).toBe(fonts.headingBold);
+    expect(typography.title.fontFamily).toBe(fonts.heading);
+    for (const variant of [typography.body, typography.bodySmall]) {
+      expect(variant.fontFamily).toBe(fonts.body);
+    }
+    for (const variant of [typography.label, typography.button]) {
+      expect(variant.fontFamily).toBe(fonts.bodySemi);
+    }
+    expect(typography.mono.fontFamily).toBe(fonts.mono);
+  });
+
+  it("names every family explicitly, so no platform synthesises a weight", () => {
     for (const variant of Object.values(typography)) {
-      expect("fontFamily" in variant).toBe(false);
+      expect(typeof variant.fontFamily).toBe("string");
+      // Weight must ride in the family name; a numeric fontWeight alongside a
+      // named face makes Android fake-bold an already-bold file.
+      expect("fontWeight" in variant).toBe(false);
     }
   });
 
-  it("builds heading hierarchy from weight, with tracking that never collides", () => {
-    expect(typography.display.fontWeight).toBe("700");
-    expect(typography.title.fontWeight).toBe("600");
-    expect(typography.body.fontWeight).toBe("400");
-    expect(typography.bodySmall.fontWeight).toBe("400");
-    // Negative tracking on a 40pt display is easy to overdo; -0.8pt is 0.02em.
-    expect(typography.display.letterSpacing).toBeGreaterThanOrEqual(-0.8);
-    expect(typography.title.letterSpacing).toBeGreaterThanOrEqual(-0.8);
+  it("keeps display tracking off the collision floor for a serif", () => {
+    // Fraunces sets looser than a grotesque; anything past -0.4 closes counters.
+    expect(typography.display.letterSpacing).toBeGreaterThanOrEqual(-0.4);
+    expect(typography.title.letterSpacing).toBeGreaterThanOrEqual(-0.4);
+  });
+
+  it("keeps every VIBGYOR heading hue readable on every ground it lands on", () => {
+    for (const theme of ["dark", "light"] as const) {
+      const c = colors[theme];
+      expect(VIBGYOR.every((hue) => hue in headingHues[theme])).toBe(true);
+      for (const hue of VIBGYOR) {
+        // Headings are ≥24pt, so AA-large (3:1) is the honest bar — but hold
+        // the display hues to full AA since body-size titles reuse them.
+        for (const bg of [c.bg, c.surface]) {
+          expect(contrastRatio(headingHues[theme][hue], bg)).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    }
+  });
+
+  it("gives every heading its own hue — no two screens share one", () => {
+    expect(new Set(VIBGYOR).size).toBe(VIBGYOR.length);
+    for (const theme of ["dark", "light"] as const) {
+      const used = VIBGYOR.map((hue) => headingHues[theme][hue]);
+      expect(new Set(used).size).toBe(used.length);
+    }
   });
 });

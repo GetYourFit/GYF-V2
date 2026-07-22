@@ -14,7 +14,9 @@ import { AtelierButton } from "@/components/ui/atelier-button";
 import { FilterChip } from "@/components/ui/filter-chip";
 import { NavRow } from "@/components/ui/nav-row";
 import { AtelierCard } from "@/components/ui/atelier-card";
+import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
+import { ScreenHeading } from "@/components/ui/screen-heading";
 import { ApiError, createApi, type ProfileSummary } from "@/lib/api";
 import { getSession } from "@/lib/auth";
 import { replaceAvatar, validateAvatarAsset } from "@/lib/avatar-upload";
@@ -181,6 +183,7 @@ export default function ProfileRoute() {
         </AtelierCard>
       ) : (
         <>
+          <ScreenHeading hue="orange" title="Profile" trailing={<AppMenu />} />
           <View style={{ alignItems: "center", gap: spacing.md }}>
             {avatarUploads ? (
               <Pressable

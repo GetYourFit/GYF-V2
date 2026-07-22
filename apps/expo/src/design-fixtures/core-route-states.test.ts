@@ -43,13 +43,18 @@ describe("core route evidence matrix", () => {
     expect(source.match(/<AtelierButton disabled/g)).toHaveLength(4);
   });
 
-  test("downloads no font anywhere — type is the platform UI face", async () => {
+  test("loads fonts once, at the root, and never gets stuck when one fails", async () => {
     const rootLayout = await Bun.file(`${import.meta.dir}/../app/_layout.tsx`).text();
     const welcomeSource = await Bun.file(`${import.meta.dir}/../app/(auth)/welcome.tsx`).text();
 
-    expect(rootLayout).not.toContain("useFonts(");
-    expect(rootLayout).not.toContain("@expo-google-fonts");
+    // One useFonts call, in the layout that owns the splash screen. A screen
+    // loading its own faces would paint before them and reflow.
+    expect(rootLayout).toContain("useFonts(");
+    expect(rootLayout.match(/useFonts\(/g)).toHaveLength(1);
     expect(welcomeSource).not.toContain("useFonts(");
+    // A failed download must fall through to the platform face, not hold the
+    // splash forever.
+    expect(rootLayout).toContain("fontError");
   });
 
   test("selects four owner-reviewable routes across required widths and themes", () => {

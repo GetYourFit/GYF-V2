@@ -10,7 +10,9 @@ import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { FilterChip } from "@/components/ui/filter-chip";
+import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
+import { ScreenHeading } from "@/components/ui/screen-heading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type WardrobeItem } from "@/lib/api";
 import {
@@ -167,14 +169,12 @@ export default function WardrobeRoute() {
         />
       }
     >
-      <View style={{ gap: spacing.sm }}>
-        <GyfText accessibilityRole="header" variant="display">
-          Wardrobe
-        </GyfText>
-        <GyfText tone="muted" variant="body">
-          Add what you own — GYF styles new looks around your real closet.
-        </GyfText>
-      </View>
+      <ScreenHeading
+        hue="blue"
+        subtitle="Add what you own — GYF styles new looks around your real closet."
+        title="Wardrobe"
+        trailing={<AppMenu />}
+      />
 
       {/* Not a card: the add field is one control, not a panel. A hairline band
           groups the label + input the same way the profile stats unboxed. */}

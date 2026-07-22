@@ -16,7 +16,9 @@ import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { FilterChip } from "@/components/ui/filter-chip";
 import { FilterRow } from "@/components/ui/filter-row";
+import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
+import { ScreenHeading } from "@/components/ui/screen-heading";
 import { hitSlopFor } from "@/components/ui/pressable-scale";
 import {
   ApiError,
@@ -607,14 +609,12 @@ export default function StylistRoute() {
       }
       style={{ backgroundColor: palette.bg }}
     >
-      <View style={{ gap: spacing.xs }}>
-        <GyfText accessibilityRole="header" variant="display">
-          Your stylist
-        </GyfText>
-        <GyfText tone="muted" variant="body">
-          Complete looks, built around your profile.
-        </GyfText>
-      </View>
+      <ScreenHeading
+        hue="violet"
+        subtitle="Complete looks, built around your profile."
+        title="Your stylist"
+        trailing={<AppMenu />}
+      />
 
       {/* Controls ride on the ground, Ref4-style: two chip rows and one search
           pill. The card that used to box them in, and the three stacked
