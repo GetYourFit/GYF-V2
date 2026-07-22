@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, RefreshControl, View } from "react-native";
 
 import { columnsForWidth, cardWidthFor } from "@/components/grid/column-count";
-import { PanZoomCanvas } from "@/components/grid/pan-zoom-canvas";
+import { BoardDetail } from "@/components/board/board-detail";
+import { InfiniteBoard } from "@/components/board/infinite-board";
 import { IconClose } from "@/components/icons";
 import { ExploreControlBar } from "@/components/explore/explore-control-bar";
 import { ItemDetailSheet } from "@/components/explore/item-detail-sheet";
@@ -11,7 +12,8 @@ import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ScreenHeading } from "@/components/ui/screen-heading";
-import { PressableScale } from "@/components/ui/pressable-scale";
+import { CatalogImage } from "@/components/ui/catalog-image";
+import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { ProductCard } from "@/components/ui/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type CatalogFacets, type SearchResult } from "@/lib/api";
@@ -26,7 +28,7 @@ import {
   withUsablePriceFilters,
   type ExploreFilters,
 } from "@/lib/explore-feed";
-import { spacing } from "@/theme/tokens";
+import { radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
 
@@ -40,8 +42,12 @@ const SEARCH_HINTS = [
   "Try 'streetwear staples'",
 ] as const;
 
-/** Board chrome: one 44pt row, so the canvas gets everything else. */
-const BOARD_BAR_HEIGHT = 44;
+/**
+ * Ref1/Ref2 run roughly four and a half columns across a phone at rest, with a
+ * gutter tight enough that the imagery, not the ground, carries the screen.
+ */
+const BOARD_COLUMNS = 4;
+const BOARD_GAP = 6;
 
 function readableError(error: unknown): string {
   if (error instanceof ApiError && error.isUnauthorized) {
@@ -66,6 +72,8 @@ export default function ExploreRoute() {
   // collection; tapping an image re-anchors the grid to similar color+style.
   const [expanded, setExpanded] = useState(false);
   const [similarAnchor, setSimilarAnchor] = useState<SearchResult | null>(null);
+  // The piece a two-second hold lifted out of the board.
+  const [held, setHeld] = useState<SearchResult | null>(null);
   useEffect(() => {
     const timer = setInterval(
       () => setHintIndex((current) => (current + 1) % SEARCH_HINTS.length),
@@ -240,6 +248,15 @@ export default function ExploreRoute() {
     if (hasMore && !loading && !loadingMore) void load(page + 1, false);
   };
 
+  // The board tiles a finite set over an infinite plane, so it never runs out
+  // and never needs to paginate on a pan. Its ids drive tile shape, which is
+  // why `source` is carried through rather than re-derived.
+  const boardColumnWidth = Math.floor((width - BOARD_GAP * (BOARD_COLUMNS + 1)) / BOARD_COLUMNS);
+  const boardItems = useMemo(
+    () => items.map((item) => ({ id: item.item_id, source: item })),
+    [items],
+  );
+
   // One card definition for both surfaces: the scrolling feed and the expanded
   // board show the same piece with the same affordances, only laid out
   // differently. Two copies would drift.
@@ -280,58 +297,98 @@ export default function ExploreRoute() {
     />
   );
 
-  // Ref1/Ref2: the board is not the feed with the chrome hidden. It is a canvas
-  // — drag in any direction, pinch or scroll to zoom out over the whole
-  // catalogue, double-tap to reset. A vertical scroll would just be the feed
-  // again, which is what it looked like before.
+  // Ref1/Ref2: pure imagery on a dark ground, panned without limit in every
+  // direction and zoomed by pinch. No price, no title, no chrome on a tile —
+  // the only text is what a two-second hold opens. Tap re-anchors the board to
+  // pieces like the one tapped, so browsing never leaves the board.
   if (expanded) {
     return (
-      <View style={{ backgroundColor: palette.bg, flex: 1, paddingTop: insets.top }}>
-        <View
-          style={{
-            alignItems: "center",
-            flexDirection: "row",
-            gap: spacing.sm,
-            justifyContent: "space-between",
-            minHeight: BOARD_BAR_HEIGHT,
-            paddingHorizontal: screenPad,
+      <View style={{ backgroundColor: palette.bg, flex: 1 }}>
+        <InfiniteBoard
+          columns={BOARD_COLUMNS}
+          columnWidth={boardColumnWidth}
+          gap={BOARD_GAP}
+          height={height}
+          items={boardItems}
+          onHoldTile={(tile) => setHeld(tile.source)}
+          onPressTile={(tile) => {
+            clearFilters();
+            setSimilarAnchor(tile.source);
           }}
-        >
-          <GyfText numberOfLines={1} style={{ flex: 1 }} tone="muted" variant="label">
-            ALL COLLECTIONS · DRAG TO EXPLORE · TAP AN IMAGE FOR SIMILAR
-          </GyfText>
+          renderTile={(tile) => (
+            <CatalogImage
+              label={tile.item.source.title}
+              recyclingKey={tile.item.id}
+              style={{
+                backgroundColor: palette.surfaceRaised,
+                borderRadius: radii.control,
+                height: tile.height,
+                width: tile.width,
+              }}
+              uri={tile.item.source.image_url}
+            />
+          )}
+          width={width}
+        />
+
+        {/* Floats over the board, as in Ref1/Ref2 — the board is the screen. */}
+        <View style={{ left: screenPad, position: "absolute", top: insets.top + spacing.sm }}>
           <PressableScale
             accessibilityLabel="Close collections board"
             accessibilityRole="button"
-            hitSlop={10}
+            hitSlop={hitSlopFor(44)}
             onPress={() => {
               setExpanded(false);
               clearFilters();
+            }}
+            style={{
+              alignItems: "center",
+              backgroundColor: palette.surface,
+              borderRadius: radii.capsule,
+              height: 44,
+              justifyContent: "center",
+              width: 44,
             }}
           >
             <IconClose color={palette.text} size={20} />
           </PressableScale>
         </View>
-        <PanZoomCanvas
-          height={Math.max(0, height - insets.top - BOARD_BAR_HEIGHT)}
-          onReachEnd={loadNextPage}
-          width={width}
-        >
+
+        {items.length === 0 ? (
           <View
             style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: spacing.md,
+              alignItems: "center",
+              bottom: 0,
+              justifyContent: "center",
+              left: 0,
               padding: screenPad,
-              paddingBottom: spacing.xxl + insets.bottom,
+              pointerEvents: "box-none",
+              position: "absolute",
+              right: 0,
+              top: 0,
             }}
           >
-            {items.length === 0
-              ? emptyFeed
-              : items.map((item) => <View key={item.item_id}>{card(item)}</View>)}
-            {loadingMore ? <Skeleton height={cardWidth * (4 / 3) + 64} width={cardWidth} /> : null}
+            {emptyFeed}
           </View>
-        </PanZoomCanvas>
+        ) : null}
+
+        <BoardDetail
+          item={
+            held
+              ? {
+                  brand: held.color,
+                  buyUrl: held.buy_url,
+                  id: held.item_id,
+                  imageUrl: held.image_url,
+                  price: formatCatalogPrice(held.price, held.currency),
+                  title: held.title,
+                }
+              : null
+          }
+          onClose={() => setHeld(null)}
+          onError={setError}
+          width={width}
+        />
       </View>
     );
   }

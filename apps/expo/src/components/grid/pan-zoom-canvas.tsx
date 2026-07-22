@@ -4,7 +4,6 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
   clamp,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -19,24 +18,14 @@ import { MAX_SCALE, MIN_SCALE, panLimit, zoomByWheel } from "./pan-bounds";
  * pan is bounded by however much of it overflows the viewport at the current
  * scale — you can always reach every edge, and never drag it off into nothing.
  */
-/** How close to the bottom limit counts as "reached it", in canvas px. */
-const EDGE_SLOP = 24;
-
 export function PanZoomCanvas({
   children,
   height,
-  onReachEnd,
   width,
 }: {
   children: React.ReactNode;
   /** Viewport height — how much of the canvas is visible at once. */
   height: number;
-  /**
-   * Fired once per arrival at the bottom edge. A pan canvas has no scroll
-   * event, so a paginated board has nothing else to hang "load the next page"
-   * on. Fires only while the content actually overflows.
-   */
-  onReachEnd?: () => void;
   width: number;
 }) {
   const [contentHeight, setContentHeight] = useState(height);
@@ -47,9 +36,6 @@ export function PanZoomCanvas({
   const y = useSharedValue(0);
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
-  // Latch: onUpdate runs every frame, so without this a single drag that rests
-  // on the edge would ask for the next page dozens of times.
-  const atEnd = useSharedValue(false);
 
   const limitX = () => {
     "worklet";
@@ -72,12 +58,8 @@ export function PanZoomCanvas({
       startY.value = y.value;
     })
     .onUpdate((e) => {
-      const bottom = limitY();
       x.value = clamp(startX.value + e.translationX, -limitX(), limitX());
-      y.value = clamp(startY.value + e.translationY, -bottom, bottom);
-      const reached = bottom > 0 && y.value <= -bottom + EDGE_SLOP;
-      if (reached && !atEnd.value && onReachEnd) runOnJS(onReachEnd)();
-      atEnd.value = reached;
+      y.value = clamp(startY.value + e.translationY, -limitY(), limitY());
     });
 
   const pinch = Gesture.Pinch()
