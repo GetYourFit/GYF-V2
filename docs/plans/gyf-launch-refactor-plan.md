@@ -3,10 +3,13 @@
 Status: **MAINTAINED SUBORDINATE TICKET REGISTER — NON-EXECUTABLE BY ITSELF**. The sole current
 pointer, outcome order, stack decisions and phase gates live in
 [`active-execution-contract.md`](./active-execution-contract.md). This file supplies mapped ticket
-detail and historical evidence only; an agent may execute nothing merely because it appears here.
-Product intent is [`ideas-complete.md`](../vision/ideas-complete.md); engineering law is
-[`engineering-doctrine.md`](../engineering-doctrine.md); cost and latency targets are
-[`scale-3k-inr.md`](./scale-3k-inr.md). If this document conflicts with those sources, this
+detail, checklist detail and historical evidence only; an agent may execute nothing merely because
+it appears here. The latest master launch audit evidence is
+`/Users/rvzaku/atharv-agent-workspace/data/gyf-master-final-launch-plan-audit/report.md`; its
+blockers, cleanup inventory and immediate PR stack are folded here only as subordinate evidence, not
+as a competing roadmap. Product intent is [`ideas-complete.md`](../vision/ideas-complete.md);
+engineering law is [`engineering-doctrine.md`](../engineering-doctrine.md); cost and latency targets
+are [`scale-3k-inr.md`](./scale-3k-inr.md). If this document conflicts with those sources, this
 document loses.
 
 ## Requirement and document closure
@@ -377,7 +380,12 @@ open gated FASHN quotas after F9; at 70% free-tier capacity or 80% cash cap free
 inference and review topology/unit economics; beyond the ceiling, scale only on proven economics
 or an explicit owner amendment.
 
-### Phased rescue sequence
+### Phased rescue sequence — subordinate historical envelope map
+
+This table is retained to show how the rescue amendment decomposed work into envelopes. It is not a
+live checklist and does not choose the next task. Execute only the current pointer and allowed write
+set in [`active-execution-contract.md`](./active-execution-contract.md); use the master audit report
+named at the top of this document as evidence for updating this subordinate register.
 
 | Packet | Scope | Exit evidence | Not included |
 | --- | --- | --- | --- |
@@ -2403,12 +2411,13 @@ full Expo/native/web verification set passes. It is a product capability, not a 
 Run the complete verification set after each deletion group, then run deployed synthetic journeys,
 restore, export/deletion, security, accessibility, model-policy and cost checks.
 
-## 28. Final release checklist
+## 28. Final release checklist — subordinate HL gate checklist
 
-This is the **hard public-launch gate**, after the contract's preceding phases and F13 deletion.
-The app is launch-ready only when all applicable answers are “yes” and evidence is attached.
-Capabilities outside the complete traceability matrix are not launch dependencies and cannot be
-used to delay or decorate a weak core product:
+This is a subordinate **hard public-launch gate checklist**, after the active contract's preceding
+phases and F13 deletion. It is not the current execution pointer and cannot advance launch readiness
+by itself. The app is launch-ready only when the contract reaches `HL`, all applicable answers are
+“yes” and evidence is attached. Capabilities outside the complete traceability matrix are not launch
+dependencies and cannot be used to delay or decorate a weak core product:
 
 - Does every critical route load on iOS, Android, web and a slow network?
 - Can an unauthenticated user never see private data or trigger a sensitive operation?

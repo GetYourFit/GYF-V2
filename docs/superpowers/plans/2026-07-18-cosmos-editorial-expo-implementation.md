@@ -1,6 +1,16 @@
 # GYF Cosmos Editorial Expo Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+Status: **SUBORDINATE IMPLEMENTATION DETAIL — STALE CHECKBOXES ARE NOT AUTHORITY**. Execute this
+plan only when [`docs/plans/active-execution-contract.md`](../../plans/active-execution-contract.md)
+names the matching pointer and allowed write set. The unchecked `- [ ]` steps below are the original
+work template, not current completion state; current truth, reconciliation gaps and phase promotion
+live only in the active contract, with the master audit report at
+`/Users/rvzaku/atharv-agent-workspace/data/gyf-master-final-launch-plan-audit/report.md` serving as
+read-only evidence.
+
+> **For agentic workers:** When the active contract explicitly opens this plan, use the applicable
+> superpowers executing-plan workflow task-by-task. Do not infer permission or phase state from the
+> checkboxes in this file.
 
 **Goal:** Ship the complete Cosmos Editorial Expo experience defined in `docs/superpowers/specs/2026-07-18-cosmos-editorial-expo-design.md`, including Personal Fit Setup, without bypassing GYF's active phase, privacy, accessibility, performance, or production-evidence gates.
 
