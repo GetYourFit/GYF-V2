@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, RefreshControl, View } from "react-native";
 
 import { columnsForWidth, cardWidthFor } from "@/components/grid/column-count";
+import { PanZoomCanvas } from "@/components/grid/pan-zoom-canvas";
 import { IconClose } from "@/components/icons";
 import { ExploreControlBar } from "@/components/explore/explore-control-bar";
 import { ItemDetailSheet } from "@/components/explore/item-detail-sheet";
@@ -37,6 +38,9 @@ const SEARCH_HINTS = [
   "Try 'streetwear staples'",
 ] as const;
 
+/** Board chrome: one 44pt row, so the canvas gets everything else. */
+const BOARD_BAR_HEIGHT = 44;
+
 function readableError(error: unknown): string {
   if (error instanceof ApiError && error.isUnauthorized) {
     return "Your session expired. Sign in again to keep your private saves protected.";
@@ -49,7 +53,7 @@ function readableError(error: unknown): string {
 
 export default function ExploreRoute() {
   const palette = useThemeColors();
-  const { width, insets } = useResponsive();
+  const { height, width, insets } = useResponsive();
   const api = useMemo(() => createApi(), []);
   // One shuffle seed per session, so the unqueried feed is a fresh order each
   // visit instead of the same grid all day — but stable across its own pages.
@@ -230,6 +234,106 @@ export default function ExploreRoute() {
   const priceEnabled = priceFiltersUsable(facets);
   const activeCount = activeFilterCount(filters);
 
+  const loadNextPage = () => {
+    if (hasMore && !loading && !loadingMore) void load(page + 1, false);
+  };
+
+  // One card definition for both surfaces: the scrolling feed and the expanded
+  // board show the same piece with the same affordances, only laid out
+  // differently. Two copies would drift.
+  const card = (item: SearchResult) => (
+    <ProductCard
+      item={{
+        id: item.item_id,
+        title: item.title,
+        imageUrl: item.image_url,
+        price: formatCatalogPrice(item.price, item.currency),
+        saved: saved.has(item.item_id),
+      }}
+      onPress={() => (expanded ? (clearFilters(), setSimilarAnchor(item)) : setSelected(item))}
+      onToggleSave={pendingSave === item.item_id ? undefined : () => void toggleSave(item)}
+      width={cardWidth}
+    />
+  );
+
+  const emptyFeed = loading ? (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
+      {Array.from({ length: columns * 2 }, (_, i) => (
+        <Skeleton height={cardWidth * (4 / 3) + 64} key={i} width={cardWidth} />
+      ))}
+    </View>
+  ) : error ? (
+    <ErrorState
+      illustration={<IllustrationLooseThread color={palette.textMuted} />}
+      message={readableError(error)}
+      onRetry={() => void load(0, true)}
+    />
+  ) : (
+    <EmptyState
+      actionLabel={activeCount > 0 ? "Clear filters" : undefined}
+      description="Change the search or remove a filter. GYF will not invent catalogue results."
+      headline="No pieces matched"
+      illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
+      onAction={activeCount > 0 ? clearFilters : undefined}
+    />
+  );
+
+  // Ref1/Ref2: the board is not the feed with the chrome hidden. It is a canvas
+  // — drag in any direction, pinch or scroll to zoom out over the whole
+  // catalogue, double-tap to reset. A vertical scroll would just be the feed
+  // again, which is what it looked like before.
+  if (expanded) {
+    return (
+      <View style={{ backgroundColor: palette.bg, flex: 1, paddingTop: insets.top }}>
+        <View
+          style={{
+            alignItems: "center",
+            flexDirection: "row",
+            gap: spacing.sm,
+            justifyContent: "space-between",
+            minHeight: BOARD_BAR_HEIGHT,
+            paddingHorizontal: screenPad,
+          }}
+        >
+          <GyfText numberOfLines={1} style={{ flex: 1 }} tone="muted" variant="label">
+            ALL COLLECTIONS · DRAG TO EXPLORE · TAP AN IMAGE FOR SIMILAR
+          </GyfText>
+          <PressableScale
+            accessibilityLabel="Close collections board"
+            accessibilityRole="button"
+            hitSlop={10}
+            onPress={() => {
+              setExpanded(false);
+              clearFilters();
+            }}
+          >
+            <IconClose color={palette.text} size={20} />
+          </PressableScale>
+        </View>
+        <PanZoomCanvas
+          height={Math.max(0, height - insets.top - BOARD_BAR_HEIGHT)}
+          onReachEnd={loadNextPage}
+          width={width}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: spacing.md,
+              padding: screenPad,
+              paddingBottom: spacing.xxl + insets.bottom,
+            }}
+          >
+            {items.length === 0
+              ? emptyFeed
+              : items.map((item) => <View key={item.item_id}>{card(item)}</View>)}
+            {loadingMore ? <Skeleton height={cardWidth * (4 / 3) + 64} width={cardWidth} /> : null}
+          </View>
+        </PanZoomCanvas>
+      </View>
+    );
+  }
+
   return (
     <>
       <FlatList
@@ -245,9 +349,7 @@ export default function ExploreRoute() {
         key={`explore-${columns}`}
         keyExtractor={(item) => item.item_id}
         numColumns={columns}
-        onEndReached={() => {
-          if (hasMore && !loading && !loadingMore) void load(page + 1, false);
-        }}
+        onEndReached={loadNextPage}
         onEndReachedThreshold={0.7}
         refreshControl={
           <RefreshControl
@@ -260,93 +362,29 @@ export default function ExploreRoute() {
             tintColor={palette.text}
           />
         }
-        renderItem={({ item }) => (
-          <ProductCard
-            item={{
-              id: item.item_id,
-              title: item.title,
-              imageUrl: item.image_url,
-              price: formatCatalogPrice(item.price, item.currency),
-              saved: saved.has(item.item_id),
-            }}
-            onPress={() =>
-              expanded ? (clearFilters(), setSimilarAnchor(item)) : setSelected(item)
-            }
-            onToggleSave={pendingSave === item.item_id ? undefined : () => void toggleSave(item)}
-            width={cardWidth}
-          />
-        )}
-        ListEmptyComponent={
-          loading ? (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
-              {Array.from({ length: columns * 2 }, (_, i) => (
-                <Skeleton height={cardWidth * (4 / 3) + 64} key={i} width={cardWidth} />
-              ))}
-            </View>
-          ) : error ? (
-            <ErrorState
-              illustration={<IllustrationLooseThread color={palette.textMuted} />}
-              message={readableError(error)}
-              onRetry={() => void load(0, true)}
-            />
-          ) : (
-            <EmptyState
-              actionLabel={activeCount > 0 ? "Clear filters" : undefined}
-              description="Change the search or remove a filter. GYF will not invent catalogue results."
-              headline="No pieces matched"
-              illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
-              onAction={activeCount > 0 ? clearFilters : undefined}
-            />
-          )
-        }
+        renderItem={({ item }) => card(item)}
+        ListEmptyComponent={emptyFeed}
         ListHeaderComponent={
           <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-            {expanded ? (
-              /* Ref1/Ref2 expanded board bar: label + close, nothing else. */
-              <View
-                style={{
-                  alignItems: "center",
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  minHeight: 44,
-                }}
-              >
-                <GyfText tone="muted" variant="label">
-                  ALL COLLECTIONS · TAP AN IMAGE FOR SIMILAR
-                </GyfText>
-                <PressableScale
-                  accessibilityLabel="Close collections board"
-                  accessibilityRole="button"
-                  hitSlop={10}
-                  onPress={() => {
-                    setExpanded(false);
-                    clearFilters();
-                  }}
-                >
-                  <IconClose color={palette.text} size={20} />
-                </PressableScale>
-              </View>
-            ) : (
-              <ExploreControlBar
-                facets={facets}
-                filters={filters}
-                hint={SEARCH_HINTS[hintIndex]}
-                markActive
-                maxPriceInput={maxPriceInput}
-                onChangeFilters={setFilters}
-                onChangeMaxPrice={setMaxPriceInput}
-                onChangeQuery={setQueryInput}
-                onClearAll={clearFilters}
-                onPressMark={() => {
-                  setExpanded(true);
-                  clearFilters();
-                }}
-                onSubmitMaxPrice={submitMaxPrice}
-                onSubmitQuery={submitQuery}
-                priceEnabled={priceEnabled}
-                queryInput={queryInput}
-              />
-            )}
+            <ExploreControlBar
+              facets={facets}
+              filters={filters}
+              hint={SEARCH_HINTS[hintIndex]}
+              markActive={loading || loadingMore || refreshing}
+              maxPriceInput={maxPriceInput}
+              onChangeFilters={setFilters}
+              onChangeMaxPrice={setMaxPriceInput}
+              onChangeQuery={setQueryInput}
+              onClearAll={clearFilters}
+              onPressMark={() => {
+                setExpanded(true);
+                clearFilters();
+              }}
+              onSubmitMaxPrice={submitMaxPrice}
+              onSubmitQuery={submitQuery}
+              priceEnabled={priceEnabled}
+              queryInput={queryInput}
+            />
 
             {facets ? (
               <View style={{ gap: spacing.xs }}>
