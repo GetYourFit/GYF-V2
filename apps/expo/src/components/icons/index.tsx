@@ -252,3 +252,13 @@ export function IconCheck({ size, color }: IconProps) {
     </Icon>
   );
 }
+
+/** Terms — a sheet with ruled lines, not a shield: this is a document, not a warning. */
+export function IconDoc({ size, color }: IconProps) {
+  return (
+    <Icon size={size}>
+      <Path d="M6 3.4h7.4L18.6 8v12.6H6Z" stroke={color} {...stroke} />
+      <Path d="M13.2 3.6V8.4h5M9 12.4h6M9 16h4.2" stroke={color} {...stroke} />
+    </Icon>
+  );
+}

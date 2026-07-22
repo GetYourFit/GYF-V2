@@ -6,6 +6,7 @@ import Animated, { Easing, FadeIn, FadeInUp, ReduceMotion } from "react-native-r
 import {
   IconCheck,
   IconDevice,
+  IconDoc,
   IconFlag,
   IconMail,
   IconMenu,
@@ -31,12 +32,13 @@ const THEME_OPTIONS: Array<{
 ];
 
 const DESTINATIONS: Array<{
-  href: "/grievance" | "/contact";
+  href: "/grievance" | "/contact" | "/terms";
   icon: (props: IconProps) => React.ReactElement;
   label: string;
 }> = [
   { href: "/grievance", icon: IconFlag, label: "Raise a grievance" },
   { href: "/contact", icon: IconMail, label: "Contact us" },
+  { href: "/terms", icon: IconDoc, label: "Terms and disclosures" },
 ];
 
 /**
@@ -55,7 +57,7 @@ export function AppMenu() {
     THEME_OPTIONS.find((option) => option.value === preference) ?? THEME_OPTIONS[2];
   const ActiveThemeIcon = activeTheme.icon;
 
-  const go = (href: "/grievance" | "/contact") => {
+  const go = (href: "/grievance" | "/contact" | "/terms") => {
     setOpen(false);
     router.push(href);
   };

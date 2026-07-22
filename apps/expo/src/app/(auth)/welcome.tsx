@@ -4,6 +4,7 @@ import { Image, Pressable, View, useWindowDimensions } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
+  FadeInDown,
   ReduceMotion,
   cancelAnimation,
   useAnimatedStyle,
@@ -13,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AnimatedGyfMark } from "@/components/explore/animated-gyf-mark";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale } from "@/components/ui/pressable-scale";
 import { colors, motion, radii, spacing } from "@/theme/tokens";
@@ -33,6 +35,7 @@ function BrandMark({ tint }: { tint: string }) {
   const size = Math.min(LOGO_MAX, Math.round(width * LOGO_FRACTION));
   const settle = useSharedValue(0);
   const breathe = useSharedValue(0);
+  const orbit = useSharedValue(0);
 
   useEffect(() => {
     // Two parts: it arrives once, then keeps breathing. The arrival is what
@@ -51,11 +54,18 @@ function BrandMark({ tint }: { tint: string }) {
       -1,
       true,
     );
+    // One turn a minute — present, never something you watch.
+    orbit.value = withRepeat(
+      withTiming(1, { duration: 60000, easing: Easing.linear, reduceMotion: ReduceMotion.System }),
+      -1,
+      false,
+    );
     return () => {
       cancelAnimation(settle);
       cancelAnimation(breathe);
+      cancelAnimation(orbit);
     };
-  }, [breathe, settle]);
+  }, [breathe, orbit, settle]);
 
   const style = useAnimatedStyle(() => ({
     // Never starts fully transparent or at zero scale: if a reduced-motion
@@ -65,15 +75,28 @@ function BrandMark({ tint }: { tint: string }) {
     transform: [{ scale: (0.88 + settle.value * 0.12) * (1 + breathe.value * 0.025) }],
   }));
 
+  const haloStyle = useAnimatedStyle(() => ({
+    opacity: settle.value * 0.16,
+    transform: [{ rotate: `${orbit.value * 360}deg` }],
+  }));
+
   return (
-    <Animated.View style={style}>
-      <Image
-        accessibilityLabel="GYF — Get Your Fit"
-        resizeMode="contain"
-        source={require("../../assets/logo.png")}
-        style={{ height: size, tintColor: tint, width: size }}
-      />
-    </Animated.View>
+    <View style={{ alignItems: "center", justifyContent: "center" }}>
+      {/* The brand's own six-dot ring, oversized and very faint, turning behind
+          the mark. It gives the screen something alive without putting motion
+          on the logo itself, which has to stay legible. */}
+      <Animated.View style={[{ position: "absolute" }, haloStyle]}>
+        <AnimatedGyfMark active={false} color={tint} size={size * 1.5} />
+      </Animated.View>
+      <Animated.View style={style}>
+        <Image
+          accessibilityLabel="GYF — Get Your Fit"
+          resizeMode="contain"
+          source={require("../../assets/logo.png")}
+          style={{ height: size, tintColor: tint, width: size }}
+        />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -91,23 +114,30 @@ export default function WelcomeScreen() {
         flex: 1,
         paddingBottom: insets.bottom + spacing.lg,
         paddingHorizontal: spacing.xl,
-        paddingTop: insets.top + spacing.xxl,
+        paddingTop: insets.top + spacing.lg,
       }}
     >
       <View style={{ alignItems: "center", flex: 1, gap: spacing.lg, justifyContent: "center" }}>
         <BrandMark tint={palette.text} />
-        <GyfText
-          accessibilityRole="header"
-          style={{ textAlign: "center" }}
-          theme="dark"
-          tone="muted"
+        <Animated.View
+          entering={FadeInDown.duration(motion.calm)
+            .delay(360)
+            .easing(Easing.out(Easing.cubic))
+            .reduceMotion(ReduceMotion.System)}
         >
-          Your AI stylist
-        </GyfText>
+          <GyfText
+            accessibilityRole="header"
+            style={{ textAlign: "center" }}
+            theme="dark"
+            tone="muted"
+          >
+            Your AI stylist
+          </GyfText>
+        </Animated.View>
       </View>
 
       <Animated.View
-        entering={FadeIn.duration(motion.calm).delay(240).reduceMotion(ReduceMotion.System)}
+        entering={FadeIn.duration(motion.calm).delay(520).reduceMotion(ReduceMotion.System)}
         style={{ alignItems: "center", alignSelf: "stretch", gap: spacing.md, maxWidth: 380 }}
       >
         <PressableScale

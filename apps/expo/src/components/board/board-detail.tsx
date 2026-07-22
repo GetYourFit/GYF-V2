@@ -1,4 +1,5 @@
 import { BlurView } from "expo-blur";
+import { router } from "expo-router";
 import { Linking, Modal, Pressable, View } from "react-native";
 import Animated, {
   Easing,
@@ -12,7 +13,7 @@ import { CatalogImage } from "@/components/ui/catalog-image";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { IconClose } from "@/components/icons";
-import { SHOP_AFFILIATE_DISCLOSURE, safeExternalShopUrl } from "@/lib/shop-links";
+import { safeExternalShopUrl } from "@/lib/shop-links";
 import { materials, motion, radii, shadows, spacing } from "@/theme/tokens";
 import { useAppColorScheme, useThemeColors } from "@/theme/use-color-scheme";
 
@@ -163,9 +164,21 @@ export function BoardDetail({
                       Buy
                     </GyfText>
                   </PressableScale>
-                  <GyfText tone="faint" variant="bodySmall">
-                    {SHOP_AFFILIATE_DISCLOSURE}
-                  </GyfText>
+                  {/* The full notice lives on /terms. This stays because a
+                      commission disclosure belongs where the money decision is
+                      made, but it is one tappable line, not a paragraph. */}
+                  <PressableScale
+                    accessibilityHint="Opens terms and disclosures"
+                    accessibilityRole="link"
+                    onPress={() => {
+                      onClose();
+                      router.push("/terms");
+                    }}
+                  >
+                    <GyfText tone="faint" variant="bodySmall">
+                      Affiliate link — how GYF makes money
+                    </GyfText>
+                  </PressableScale>
                 </>
               ) : (
                 <GyfText tone="muted" variant="bodySmall">

@@ -1,5 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
+import Animated, {
+  Easing,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useRouter } from "expo-router";
 
 import { signIn, signUp } from "@/lib/auth";
@@ -7,7 +14,7 @@ import { normalizeEmail, validateEmail, validatePassword } from "@/lib/auth-vali
 import { AnimatedGyfMark } from "@/components/explore/animated-gyf-mark";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale } from "@/components/ui/pressable-scale";
-import { radii, spacing } from "@/theme/tokens";
+import { fonts, motion, radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
 type Mode = "login" | "signup";
@@ -32,34 +39,65 @@ function GhostField({
   big?: boolean;
 }) {
   const palette = useThemeColors();
+  const [focused, setFocused] = useState(false);
+  const focus = useSharedValue(0);
+
+  useEffect(() => {
+    focus.value = withTiming(focused ? 1 : 0, {
+      duration: motion.standard,
+      easing: Easing.out(Easing.cubic),
+      reduceMotion: ReduceMotion.System,
+    });
+  }, [focus, focused]);
+
+  const ruleStyle = useAnimatedStyle(() => ({
+    opacity: 0.25 + focus.value * 0.75,
+    transform: [{ scaleX: 0.4 + focus.value * 0.6 }],
+  }));
+
   return (
-    <TextInput
-      accessibilityLabel={label}
-      autoCapitalize="none"
-      autoComplete={autoComplete}
-      autoCorrect={false}
-      keyboardType={keyboardType}
-      onChangeText={onChangeText}
-      placeholder={label}
-      placeholderTextColor={palette.textFaint}
-      secureTextEntry={secureTextEntry}
-      style={{
-        color: palette.text,
-        fontSize: big ? 30 : 24,
-        fontWeight: "500",
-        letterSpacing: -0.3,
-        minHeight: 56,
-        textAlign: "center",
-      }}
-      textContentType={
-        autoComplete === "new-password"
-          ? "newPassword"
-          : autoComplete === "email"
-            ? "emailAddress"
-            : autoComplete
-      }
-      value={value}
-    />
+    <View style={{ gap: spacing.sm }}>
+      <TextInput
+        accessibilityLabel={label}
+        autoCapitalize="none"
+        autoComplete={autoComplete}
+        autoCorrect={false}
+        keyboardType={keyboardType}
+        onBlur={() => setFocused(false)}
+        onChangeText={onChangeText}
+        onFocus={() => setFocused(true)}
+        placeholder={label}
+        placeholderTextColor={palette.textMuted}
+        secureTextEntry={secureTextEntry}
+        style={{
+          color: palette.text,
+          fontFamily: fonts.medium,
+          fontSize: big ? 30 : 24,
+          letterSpacing: -0.3,
+          minHeight: 56,
+          // RN Web renders this as an <input>, which the browser rings on focus.
+          // That ring is the "box" — the field itself never had one.
+          outlineWidth: 0,
+          textAlign: "center",
+        }}
+        textContentType={
+          autoComplete === "new-password"
+            ? "newPassword"
+            : autoComplete === "email"
+              ? "emailAddress"
+              : autoComplete
+        }
+        value={value}
+      />
+      {/* Killing the browser ring without replacing it would leave keyboard
+          users with no idea where they are. This is that indicator, drawn as a
+          rule that grows under the active field rather than a box around it. */}
+      <Animated.View
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+        style={[{ backgroundColor: palette.border, height: 1 }, ruleStyle]}
+      />
+    </View>
   );
 }
 

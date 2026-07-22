@@ -1,4 +1,5 @@
 import { BlurView } from "expo-blur";
+import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { Linking, Modal, Pressable, ScrollView, View } from "react-native";
@@ -12,7 +13,7 @@ import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createApi, type Outfit, type OutfitItem, type SearchResult } from "@/lib/api";
 import { compatibilityReason, formatCatalogPrice } from "@/lib/explore-feed";
-import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
+import { safeExternalShopUrl } from "@/lib/shop-links";
 import { colors, materials, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
 
@@ -277,9 +278,20 @@ export function ItemDetailSheet({
             ) : null}
 
             {shopUrl ? (
-              <GyfText theme={theme} tone="faint" variant="bodySmall">
-                {SHOP_AFFILIATE_DISCLOSURE}
-              </GyfText>
+              /* Full notice on /terms; one tappable line here, where the money
+                 decision is actually made. */
+              <PressableScale
+                accessibilityHint="Opens terms and disclosures"
+                accessibilityRole="link"
+                onPress={() => {
+                  onClose();
+                  router.push("/terms");
+                }}
+              >
+                <GyfText theme={theme} tone="faint" variant="bodySmall">
+                  Affiliate link — how GYF makes money
+                </GyfText>
+              </PressableScale>
             ) : null}
 
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
