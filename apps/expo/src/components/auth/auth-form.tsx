@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 
 import { signIn, signUp } from "@/lib/auth";
 import { normalizeEmail, validateEmail, validatePassword } from "@/lib/auth-validation";
+import { AnimatedGyfMark } from "@/components/explore/animated-gyf-mark";
 import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale } from "@/components/ui/pressable-scale";
 import { radii, spacing } from "@/theme/tokens";
@@ -101,17 +102,24 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <View style={{ flex: 1, minHeight: 460 }}>
-      {/* Mode switch — top-right, Ref6 */}
-      <Pressable
-        accessibilityRole="link"
-        hitSlop={12}
-        onPress={() => router.push(mode === "login" ? "/signup" : "/login")}
-        style={{ alignSelf: "flex-end" }}
-      >
-        <GyfText tone="muted" variant="body">
-          {mode === "login" ? "Sign Up" : "Log In"}
-        </GyfText>
-      </Pressable>
+      {/* Ref6 puts the mark centred on this row with the mode switch beside
+          it — the screen is otherwise unbranded, and a bare form with no mark
+          could belong to any app. It spins while the request is in flight. */}
+      <View style={{ alignItems: "center", flexDirection: "row", minHeight: 44 }}>
+        <View style={{ flex: 1 }} />
+        <AnimatedGyfMark active={busy} color={palette.text} size={26} />
+        <View style={{ alignItems: "flex-end", flex: 1 }}>
+          <Pressable
+            accessibilityRole="link"
+            hitSlop={12}
+            onPress={() => router.push(mode === "login" ? "/signup" : "/login")}
+          >
+            <GyfText tone="muted" variant="body">
+              {mode === "login" ? "Sign Up" : "Log In"}
+            </GyfText>
+          </Pressable>
+        </View>
+      </View>
 
       {/* Centred header, Ref5/Ref6 */}
       <View style={{ alignItems: "center", gap: spacing.xs, marginTop: spacing.lg }}>
