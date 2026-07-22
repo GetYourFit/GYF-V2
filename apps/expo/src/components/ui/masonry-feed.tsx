@@ -3,6 +3,7 @@ import { View } from "react-native";
 
 import { IconHeart } from "@/components/icons";
 import { CatalogImage } from "@/components/ui/catalog-image";
+import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale } from "@/components/ui/pressable-scale";
 import { DEFAULT_RATIO } from "@/components/ui/catalog-frame";
 import { splitColumns } from "@/components/ui/masonry-columns";
@@ -12,8 +13,10 @@ import { useThemeColors } from "@/theme/use-color-scheme";
 export interface MasonryItem {
   id: string;
   imageUrl?: string | null;
-  /** Screen-reader name. Never drawn — the reference tiles carry no text. */
+  /** Drawn under the tile when present; also the screen-reader name. */
   label: string;
+  /** Formatted for display by the caller — the feed never does currency maths. */
+  price?: string | null;
 }
 
 /** ref8 runs a tight gutter; the imagery, not the ground, carries the screen. */
@@ -36,7 +39,7 @@ function Tile({
   const [ratio, setRatio] = useState(DEFAULT_RATIO);
   return (
     <PressableScale
-      accessibilityLabel={item.label}
+      accessibilityLabel={item.price ? `${item.label}, ${item.price}` : item.label}
       accessibilityRole={onPress ? "button" : undefined}
       onLongPress={onLongPress ? () => onLongPress(item) : undefined}
       onPress={onPress ? () => onPress(item) : undefined}
@@ -56,6 +59,11 @@ function Tile({
       {/* Only ever drawn once a piece IS saved, so an untouched feed stays the
           reference's pure imagery. Ref4 teaches the gesture with a "Hold
           elements to save" toast; the badge is how you read the result back. */}
+      {item.price ? (
+        <GyfText style={{ paddingTop: spacing.xs }} variant="mono">
+          {item.price}
+        </GyfText>
+      ) : null}
       {saved ? (
         <View
           style={{

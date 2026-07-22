@@ -19,7 +19,7 @@ import {
   outfitCoverImage,
   summariseOutfit,
 } from "@/lib/saved-feed";
-import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
+import { safeExternalShopUrl } from "@/lib/shop-links";
 import { colors, radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
@@ -183,7 +183,7 @@ export default function SavedRoute() {
   const containerWidth = width - screenPad * 2;
   const empty = looks.length === 0 && items.length === 0;
   const buyUrls = new Map(items.map((row) => [row.item_id, row.buy_url]));
-  const savedItemsSubtitle = `To buy — saved from the catalogue, not yet in your wardrobe. ${SHOP_AFFILIATE_DISCLOSURE}`;
+  const savedItemsSubtitle = "To buy — saved from the catalogue, not yet in your wardrobe.";
   const gridItems: CollectionItem[] = items.map((row) => ({
     id: row.item_id,
     title: row.title,
@@ -272,8 +272,6 @@ export default function SavedRoute() {
               }}
               primaryAction={{
                 label: (item) => (safeExternalShopUrl(buyUrls.get(item.id)) ? "Buy" : null),
-                disclosure: (item) =>
-                  safeExternalShopUrl(buyUrls.get(item.id)) ? SHOP_AFFILIATE_DISCLOSURE : null,
                 onPress: (item) => {
                   const url = safeExternalShopUrl(buyUrls.get(item.id));
                   if (url) {

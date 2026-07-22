@@ -69,11 +69,6 @@ function CompleteTheLook({
         </GyfText>
       ) : (
         <>
-          {pairings.some((pair) => safeExternalShopUrl(pair.affiliate_url)) ? (
-            <GyfText theme={theme} tone="faint" variant="bodySmall">
-              {SHOP_AFFILIATE_DISCLOSURE}
-            </GyfText>
-          ) : null}
           {shopError ? (
             <GyfText
               accessibilityRole="alert"

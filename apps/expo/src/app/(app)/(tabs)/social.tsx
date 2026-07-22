@@ -563,6 +563,7 @@ export default function SocialRoute() {
               centred underlined tabs, one action on the right. No title, no
               explanatory sentence — the looks start at the top. */}
           <ScreenBar
+            title="Social"
             leading={
               <AnimatedGyfMark
                 active={status === "loading" || refreshing}

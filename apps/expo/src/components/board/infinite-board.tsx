@@ -24,8 +24,12 @@ import { layoutBoard, wrap, type BoardTile } from "./board-layout";
  */
 const LATTICE = [-1, 0, 1] as const;
 
-/** How long the user must hold before a tile pops out. */
-export const LONG_PRESS_MS = 2000;
+/**
+ * How long the user must hold before a tile pops out. Two seconds tested as a
+ * wait rather than a gesture; 800ms still reads as deliberate but returns the
+ * piece before the hold starts to feel broken.
+ */
+export const LONG_PRESS_MS = 800;
 
 export function InfiniteBoard<T extends { id: string }>({
   columns,
@@ -196,9 +200,8 @@ function BoardTileView<T extends { id: string }>({
 }) {
   const hold = useSharedValue(0);
 
-  // A silent two-second hold reads as a broken tile. The lift starts within a
-  // frame or two and runs the full duration, so the gesture is visibly
-  // building the whole time it is being held.
+  // The lift starts within a frame or two and runs the full hold, so the
+  // gesture is visibly building the whole time rather than snapping at the end.
   const press = Gesture.LongPress()
     .minDuration(LONG_PRESS_MS)
     .onBegin(() => {

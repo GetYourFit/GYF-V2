@@ -404,7 +404,7 @@ export default function ExploreRoute() {
         scrollEventThrottle={16}
       >
         <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-          <ScreenBar trailing={<AppMenu />} />
+          <ScreenBar title="Explore" trailing={<AppMenu />} />
           <ExploreControlBar
             facets={facets}
             filters={filters}
@@ -455,6 +455,7 @@ export default function ExploreRoute() {
               id: item.item_id,
               imageUrl: item.image_url,
               label: item.title,
+              price: formatCatalogPrice(item.price, item.currency),
             }))}
             onLongPressItem={(tile) => {
               const match = items.find((item) => item.item_id === tile.id);

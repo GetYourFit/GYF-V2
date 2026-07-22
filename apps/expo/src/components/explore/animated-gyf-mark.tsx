@@ -16,6 +16,13 @@ import Svg, { Circle } from "react-native-svg";
  * flight or explicit interaction) and settles when the work is done — the
  * spec prohibits decorative infinite animation. Honors ReduceMotion.System.
  */
+/**
+ * One full turn. Linear is deliberate — an eased turn visibly stalls at each
+ * revolution boundary, which reads as a stutter rather than a slow spin. The
+ * smoothness comes from the duration, not the curve.
+ */
+const SPIN_MS = 3200;
+
 export function AnimatedGyfMark({
   color,
   size = 24,
@@ -29,7 +36,7 @@ export function AnimatedGyfMark({
   useEffect(() => {
     if (active) {
       spin.value = withRepeat(
-        withTiming(spin.value + 1, { duration: 1400, easing: Easing.linear }),
+        withTiming(spin.value + 1, { duration: SPIN_MS, easing: Easing.linear }),
         -1,
         false,
         undefined,

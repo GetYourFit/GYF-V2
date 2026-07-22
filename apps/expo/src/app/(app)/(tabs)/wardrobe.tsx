@@ -162,6 +162,7 @@ export default function WardrobeRoute() {
       }
     >
       <ScreenBar
+        title="Wardrobe"
         onChange={setFilter}
         tabs={
           status === "ready" && categories.length > 0

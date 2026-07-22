@@ -21,7 +21,7 @@ import {
   tileAspect,
 } from "@/lib/canvas-cluster";
 import { formatCatalogPrice } from "@/lib/explore-feed";
-import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
+import { safeExternalShopUrl } from "@/lib/shop-links";
 import { colors, radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
@@ -288,11 +288,6 @@ export default function CanvasRoute() {
               </GyfText>
             </View>
           </View>
-          {safeExternalShopUrl(focused.buy_url) ? (
-            <GyfText tone="faint" variant="bodySmall">
-              {SHOP_AFFILIATE_DISCLOSURE}
-            </GyfText>
-          ) : null}
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
             <AtelierButton
               accessibilityLabel={

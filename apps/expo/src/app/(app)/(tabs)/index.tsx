@@ -41,7 +41,6 @@ import {
   tastePersonalizationMessage,
   type StylistFeedbackStatus,
 } from "@/lib/stylist-feed";
-import { SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import { radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
@@ -106,11 +105,6 @@ function ItemTile({
       <GyfText numberOfLines={2} variant="bodySmall">
         {item.title}
       </GyfText>
-      {shopUrl ? (
-        <GyfText tone="faint" variant="bodySmall">
-          {SHOP_AFFILIATE_DISCLOSURE}
-        </GyfText>
-      ) : null}
       <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.md }}>
         {shopUrl ? (
           <Pressable
@@ -617,7 +611,7 @@ export default function StylistRoute() {
       }
       style={{ backgroundColor: palette.bg }}
     >
-      <ScreenBar trailing={<AppMenu />} />
+      <ScreenBar title="Stylist" trailing={<AppMenu />} />
 
       {/* Fourteen chips and a text field used to sit between the heading and
           the first look, so the screen opened on its own controls rather than
