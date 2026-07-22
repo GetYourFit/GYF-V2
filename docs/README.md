@@ -2,14 +2,16 @@
 
 Status: **INDEX**. This file connects every maintained project document. It creates no execution
 authority; [`plans/active-execution-contract.md`](./plans/active-execution-contract.md) is the only
-source of execution order and gates.
+source of execution order and gates. The latest master launch audit evidence is
+`/Users/rvzaku/atharv-agent-workspace/data/gyf-master-final-launch-plan-audit/report.md`; it informs
+the subordinate launch-plan ledger but is not a separate roadmap.
 
 ## Authority chain
 
 1. [`vision/ideas-complete.md`](./vision/ideas-complete.md) — product mission, users and complete capability intent.
 2. [`engineering-doctrine.md`](./engineering-doctrine.md) — binding security, privacy, model, evaluation and cost invariants.
 3. [`plans/active-execution-contract.md`](./plans/active-execution-contract.md) — sole F0–F13 order, current truth and promotion gates.
-4. [`plans/gyf-launch-refactor-plan.md`](./plans/gyf-launch-refactor-plan.md) — subordinate implementation packets and Expo parity/cutover board.
+4. [`plans/gyf-launch-refactor-plan.md`](./plans/gyf-launch-refactor-plan.md) — subordinate implementation packets, checklist detail and Expo parity/cutover board.
 5. [`plans/expo-industrial-frontend-design.md`](./plans/expo-industrial-frontend-design.md) and
    [`plans/expo-industrial-frontend-implementation.md`](./plans/expo-industrial-frontend-implementation.md) —
    subordinate Expo design proposals; active-contract slices and gates remain authoritative.
@@ -29,8 +31,8 @@ source of execution order and gates.
   from that input; superseded by the active contract and retained until F13 review.
 - [`superpowers/specs/2026-07-18-cosmos-editorial-expo-design.md`](./superpowers/specs/2026-07-18-cosmos-editorial-expo-design.md)
   and [`superpowers/plans/2026-07-18-cosmos-editorial-expo-implementation.md`](./superpowers/plans/2026-07-18-cosmos-editorial-expo-implementation.md)
-  — approved design input and subordinate implementation detail for the current contract packet;
-  they do not change its pointer, write set, or promotion gates.
+  — approved design input and subordinate implementation detail for the contract packet;
+  their unchecked task lists are not current state and do not change the contract's pointer, write set, or promotion gates.
 
 ## Requirement traceability
 

@@ -1,6 +1,6 @@
 # GYF Cosmos Editorial Expo Design Specification
 
-**Status:** Proposed specification for owner review
+**Status:** Approved design input, subordinate to the active execution contract; not an execution checklist
 **Date:** 2026-07-18
 **Source:** `ScopeofIdea.md` and `Reference/Ref1.jpeg` through `Reference/Ref7.jpeg`
 **Target:** `apps/expo` on iOS, Android, and responsive web

@@ -1,6 +1,6 @@
 # GYF Design-First Evidence Sequencing
 
-Status: **APPROVED DESIGN — subordinate to the active execution contract until that contract records the owner amendment**
+Status: **APPROVED DESIGN EVIDENCE — subordinate to the active execution contract; amendment recorded there**
 
 Date: 2026-07-19
 
