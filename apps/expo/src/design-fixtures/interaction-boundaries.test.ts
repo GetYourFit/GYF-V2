@@ -62,15 +62,22 @@ describe("Expo interaction boundaries", () => {
     expect(rootLayoutSource).toMatch(/export\s*\{\s*ErrorBoundary\s*\}\s*from\s*["']\.\/error["']/);
   });
 
-  test("the GYF mark turns continuously, honors system motion, and cancels on cleanup", () => {
-    // The mark is the app's one piece of ambient motion, by owner decision: it
-    // turns wherever it appears rather than signalling that work is in flight.
+  test("the GYF mark turns by default, honors system motion, and cancels on cleanup", () => {
+    // Ambient wherever it appears — the default must stay true, or every
+    // placement outside the tab bar silently goes still.
     expect(gyfMarkSource).toContain("withRepeat");
-    expect(gyfMarkSource).not.toContain("active");
+    expect(gyfMarkSource).toContain("spinning = true");
     // Ambient does not mean unconditional — a viewer who asks the OS for less
     // motion still gets a still mark, and the loop must not outlive the view.
     expect(gyfMarkSource).toContain("ReduceMotion.System");
     expect(gyfMarkSource).toContain("cancelAnimation(spin)");
+  });
+
+  test("the tab bar's mark turns only while Stylist is the current tab", () => {
+    // The one gated placement: motion in the bar means "you are here". Passing
+    // focused through is what makes it stop when you navigate away.
+    expect(tabBarSource).toMatch(/spinning=\{focused\}/);
+    expect(tabBarSource).toMatch(/<Glyph[^>]*focused=\{focused\}/);
   });
 
   test("the mark's dots are not rotationally symmetric, or the spin is invisible", () => {

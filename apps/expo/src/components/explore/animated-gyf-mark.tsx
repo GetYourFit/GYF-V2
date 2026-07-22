@@ -10,6 +10,8 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 
+import { motion } from "@/theme/tokens";
+
 /**
  * One full turn. Linear is deliberate — an eased turn visibly stalls at each
  * revolution boundary, which reads as a stutter rather than a slow spin.
@@ -24,10 +26,35 @@ const SPIN_MS = 3200;
  *
  * One turn every 3.2s. ReduceMotion.System still holds: a viewer who asks the
  * OS for less motion gets a still mark, not a slow one.
+ *
+ * `spinning` defaults to true because that is what every ambient placement
+ * wants. The tab bar is the exception: its mark turns only while Stylist is the
+ * screen you are on, so the motion means "you are here" rather than being
+ * wallpaper on a tab you left.
  */
-export function AnimatedGyfMark({ color, size = 24 }: { color: string; size?: number }) {
+export function AnimatedGyfMark({
+  color,
+  size = 24,
+  spinning = true,
+}: {
+  color: string;
+  size?: number;
+  spinning?: boolean;
+}) {
   const spin = useSharedValue(0);
   useEffect(() => {
+    if (!spinning) {
+      cancelAnimation(spin);
+      // Settle forward to the next whole turn instead of freezing mid-rotation:
+      // stopping dead at an arbitrary angle reads as a glitch, and because the
+      // dots are graded the resting angle is visible.
+      spin.value = withTiming(Math.ceil(spin.value), {
+        duration: motion.calm,
+        easing: Easing.out(Easing.cubic),
+        reduceMotion: ReduceMotion.System,
+      });
+      return;
+    }
     spin.value = withRepeat(
       withTiming(1, { duration: SPIN_MS, easing: Easing.linear }),
       -1,
@@ -36,7 +63,7 @@ export function AnimatedGyfMark({ color, size = 24 }: { color: string; size?: nu
       ReduceMotion.System,
     );
     return () => cancelAnimation(spin);
-  }, [spin]);
+  }, [spin, spinning]);
 
   const style = useAnimatedStyle(() => ({
     transform: [{ rotate: `${spin.value * 360}deg` }],

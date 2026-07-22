@@ -39,7 +39,7 @@ function TabGlyph({
   mutedColor,
   discColor,
 }: {
-  Glyph: (props: IconProps) => React.ReactNode;
+  Glyph: (props: TabGlyphProps) => React.ReactNode;
   focused: boolean;
   activeColor: string;
   mutedColor: string;
@@ -77,16 +77,22 @@ function TabGlyph({
         ]}
       />
       <Animated.View style={glyphStyle}>
-        <Glyph color={focused ? activeColor : mutedColor} size={22} />
+        <Glyph color={focused ? activeColor : mutedColor} focused={focused} size={22} />
       </Animated.View>
     </View>
   );
 }
 
+/** A tab glyph may care whether its own tab is the one you are on. */
+type TabGlyphProps = IconProps & { focused?: boolean };
+
 /** Ref3: one glyph per tab — the pill is icon-only, the images do the talking. */
-const GLYPHS: Record<string, (props: IconProps) => React.ReactNode> = {
-  // Stylist wears the brand mark; the rest are literal so each tab reads at a glance.
-  index: ({ size, color }: IconProps) => <AnimatedGyfMark color={color} size={size} />,
+const GLYPHS: Record<string, (props: TabGlyphProps) => React.ReactNode> = {
+  // Stylist wears the brand mark, and it turns only while Stylist is the screen
+  // you are on — the motion is the "you are here", not decoration.
+  index: ({ size, color, focused }: TabGlyphProps) => (
+    <AnimatedGyfMark color={color} size={size} spinning={focused} />
+  ),
   explore: IconSearch,
   wardrobe: IconHanger,
   social: IconPeople,
@@ -150,7 +156,7 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: TabBarPr
           const focused = state.index === index;
           const Glyph =
             route.name === "profile" && avatar && !avatarFailed
-              ? ({ size }: IconProps) => (
+              ? ({ size }: TabGlyphProps) => (
                   <Image
                     accessible={false}
                     contentFit="cover"
