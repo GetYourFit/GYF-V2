@@ -34,8 +34,8 @@ services:
     # This is NOT the cancelled Singapore migration — Virginia already hosts the
     # data, so nothing moved and no new region was introduced. Render cannot change
     # a service's region in place, so this is a second service; the Oregon service
-    # `gyf-api` is kept suspended as the rollback (unsuspend it and point
-    # NEXT_PUBLIC_API_URL / EXPO_PUBLIC_API_URL back at gyf-api.onrender.com).
+    # `gyf-api` is kept suspended as the rollback (unsuspend it and point only
+    # the currently gated client environment back at gyf-api.onrender.com).
     plan: starter
     region: virginia
     dockerfilePath: ./services/api/Dockerfile
@@ -164,11 +164,13 @@ services:
       # not later remove. Secret: never expose to a client, never log.
       - key: GYF_SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      # The web origin is the Vercel deployment (project gyf-v2-app). Update this
-      # to the custom domain once attached so CORS lets the browser in.
-      # Comma-separate to allow several origins (e.g. preview + production).
-      - key: GYF_ALLOWED_ORIGINS # the web origin (public, not a secret) — exact, no trailing slash
+      # Web origins are exact CORS allow-list entries. Expo web/static is the current
+      # production direction (`get-your-fit.expo.app`). The Vercel origin is retained
+      # only for protected Next.js rollback/oracle compatibility until the F13/cutover
+      # gate; it is not the routine production deployment target.
+      # Comma-separate to allow several approved origins. No trailing slash.
+      - key: GYF_ALLOWED_ORIGINS # public origins, not secrets
         value: https://gyf-v2-app.vercel.app,https://get-your-fit.expo.app
 
-  # The web (Next.js) is deployed on Vercel (project gyf-v2-app), not Render —
-  # Vercel's Git integration auto-deploys app/ on push; see vercel.json.
+  # Web is not deployed by Render from this blueprint. Repository CD exports the Expo
+  # client; any later commercial static host cutover needs its own gated evidence.

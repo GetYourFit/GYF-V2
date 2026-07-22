@@ -2,9 +2,9 @@
 # Resources here provision the stateful backing services: Postgres + pgvector
 # (Supabase) and Redis (Upstash).
 #
-# Deployment is NOT managed here. The web ships to Vercel (project gyf-v2-app)
-# via the Vercel Git integration (root vercel.json, framework nextjs) and the
-# API to Render (render.yaml).
+# Deployment is NOT managed here. Expo web/static deploys through repository CD
+# to EAS Hosting until a gated commercial static-host cutover. The API runs on
+# the existing Virginia Render Starter documented by render.yaml.
 #
 # NOT YET APPLIED — requires accounts + tokens (see infra/SETUP.md).
 
@@ -34,6 +34,6 @@ resource "upstash_redis_database" "cache" {
   tls            = true
 }
 
-# Web (Vercel) and API (Render) deploys are Git/blueprint driven and carry their
-# own env/secrets (Vercel project env vars + render.yaml). They are intentionally
-# not provisioned here.
+# Web, API and any later static-host cutover carry their own env/secrets and are
+# intentionally not provisioned here. Do not add Vercel production or Singapore
+# hosting resources to this Terraform module.

@@ -1,4 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs"
+  "ignoreCommand": "echo 'GYF repository-side Vercel deploys are disabled; use the Expo web/static target per docs.' && exit 0"
 }

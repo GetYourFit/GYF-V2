@@ -4,7 +4,6 @@
 .DEFAULT_GOAL := help
 SHELL := bash
 API_DIR := services/api
-WEB_DIR := app
 
 # Same macOS lock hits ~/.cache (uv) and ~/.cache/huggingface. Redirect every
 # cache the Python/ML toolchain touches at gitignored, repo-local dirs so the API
@@ -22,7 +21,7 @@ DEV_ENV := $(CACHE_ENV) GYF_EVENT_SINK=postgres
 # health-wait loops and gyf.test service-name DNS. Requires `container system start`.
 STACK := bash infra/container-stack.sh
 
-.PHONY: data-export help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean deploy-web deploy-web-preview
+.PHONY: data-export help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api doctrine ci types m2-bakeoff m2-clean clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -50,12 +49,6 @@ dev: check-uv ## Boot web + API together (Ctrl-C stops both)
 
 dev-web: ## Run only the web app
 	bun run dev
-
-deploy-web: ## Deploy web to Vercel prod (project gyf-v2-app; NEXT_PUBLIC_* come from the Vercel project env). Normally Git auto-deploys on push.
-	cd $(WEB_DIR) && vercel --prod
-
-deploy-web-preview: ## Build + deploy a Vercel preview (no prod promote)
-	cd $(WEB_DIR) && vercel
 
 dev-api: check-uv ## Run only the API service
 	cd $(API_DIR) && $(DEV_ENV) uv run --extra postgres --extra migrate uvicorn app.main:app --reload --port 8000
