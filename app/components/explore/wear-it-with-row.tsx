@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { browserApi } from "@/lib/api-client";
 import { formatPrice } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
+import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import type { Outfit, OutfitItem } from "@gyf/types";
 
 interface Props {
@@ -38,15 +39,16 @@ function Skeleton() {
 function Tile({ item }: { item: OutfitItem }) {
   const src = mediaUrl(item.image_url, 400);
   const price = formatPrice(item.price, item.currency);
+  const shopUrl = safeExternalShopUrl(item.affiliate_url);
   const open = () => {
-    if (item.affiliate_url) window.open(item.affiliate_url, "_blank", "noopener,noreferrer");
+    if (shopUrl) window.open(shopUrl, "_blank", "noopener,noreferrer");
   };
   return (
     <button
       type="button"
       onClick={open}
-      aria-label={`Shop ${item.title}`}
-      disabled={!item.affiliate_url}
+      aria-label={shopUrl ? `Shop ${item.title}` : item.title}
+      disabled={!shopUrl}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -57,7 +59,7 @@ function Tile({ item }: { item: OutfitItem }) {
         border: "none",
         padding: 0,
         textAlign: "left",
-        cursor: item.affiliate_url ? "pointer" : "default",
+        cursor: shopUrl ? "pointer" : "default",
       }}
     >
       <div
@@ -136,6 +138,7 @@ export function WearItWithRow({ itemId }: Props) {
   }, [itemId]);
 
   const pairings = look?.items.filter((it) => it.item_id !== itemId) ?? [];
+  const hasShopUrl = pairings.some((item) => safeExternalShopUrl(item.affiliate_url));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -161,6 +164,11 @@ export function WearItWithRow({ itemId }: Props) {
         </p>
       ) : (
         <>
+          {hasShopUrl ? (
+            <p style={{ ...MONO, color: "var(--text-faint)", fontSize: "0.55rem" }}>
+              {SHOP_AFFILIATE_DISCLOSURE}
+            </p>
+          ) : null}
           <div style={{ display: "flex", gap: "0.75rem" }}>
             {pairings.map((item) => (
               <Tile key={item.item_id} item={item} />

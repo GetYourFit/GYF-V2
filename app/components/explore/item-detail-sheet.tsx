@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { browserApi } from "@/lib/api-client";
 import { formatPrice } from "@/lib/format";
 import { mediaUrl } from "@/lib/media";
+import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { useToast } from "@/components/ui/toast";
 import { CompatibilityPanel } from "./compatibility-panel";
 import { WearItWithRow } from "./wear-it-with-row";
@@ -85,6 +86,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
 
   const src = item ? mediaUrl(item.image_url, 800) : null;
   const price = item ? formatPrice(item.price, item.currency) : null;
+  const shopUrl = safeExternalShopUrl(item?.buy_url);
 
   async function handleAddToWardrobe() {
     if (!item) return;
@@ -104,8 +106,8 @@ export function ItemDetailSheet({ item, onClose }: Props) {
   }
 
   function handleShopNow() {
-    if (item?.buy_url) {
-      window.open(item.buy_url, "_blank", "noopener,noreferrer");
+    if (shopUrl) {
+      window.open(shopUrl, "_blank", "noopener,noreferrer");
     }
   }
 
@@ -305,6 +307,20 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                 {/* Wear it with */}
                 <WearItWithRow itemId={item.item_id} />
 
+                {shopUrl ? (
+                  <p
+                    style={{
+                      color: "var(--text-faint)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "0.75rem",
+                      lineHeight: 1.5,
+                      margin: 0,
+                    }}
+                  >
+                    {SHOP_AFFILIATE_DISCLOSURE}
+                  </p>
+                ) : null}
+
                 {/* CTAs */}
                 <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.25rem" }}>
                   <motion.button
@@ -333,7 +349,7 @@ export function ItemDetailSheet({ item, onClose }: Props) {
                     {addingToWardrobe ? "Adding…" : "Add to wardrobe"}
                   </motion.button>
 
-                  {item.buy_url && (
+                  {shopUrl && (
                     <motion.button
                       type="button"
                       onClick={handleShopNow}

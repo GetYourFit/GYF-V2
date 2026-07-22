@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { SHOP_AFFILIATE_DISCLOSURE, safeExternalShopUrl, shopDisclosureForUrl } from "./shop-links";
 import {
   feedbackReceipt,
   feedbackForOutfit,
@@ -96,6 +97,36 @@ describe("Expo stylist feed model", () => {
     expect(
       safeShopUrl({ owned: false, affiliate_url: "javascript:alert(1)", item_id: "1" } as never),
     ).toBeNull();
+  });
+
+  test("uses an explicit affiliate disclosure for user-facing shop actions", () => {
+    expect(SHOP_AFFILIATE_DISCLOSURE).toContain("may earn a commission");
+    expect(SHOP_AFFILIATE_DISCLOSURE).toContain("never changes your price");
+    expect(SHOP_AFFILIATE_DISCLOSURE).toContain("how outfits are ranked");
+    expect(shopDisclosureForUrl("https://shop.test/item")).toBe(SHOP_AFFILIATE_DISCLOSURE);
+    expect(shopDisclosureForUrl("javascript:alert(1)")).toBeNull();
+  });
+
+  test("hides Cuelinks shortlinks and homepage deeplinks before rendering shop CTAs", () => {
+    expect(safeExternalShopUrl("https://clnk.in/BKo4")).toBeNull();
+    expect(safeExternalShopUrl("https://ajo.clnk.in/BKo6")).toBeNull();
+    expect(
+      safeExternalShopUrl(
+        "https://linksredirect.com/?cid=274785&source=linkkit&url=https%3A%2F%2Fwww.adidas.com.hk%2F",
+      ),
+    ).toBeNull();
+    expect(
+      safeExternalShopUrl(
+        "https://ajiogram.ajio.com/?utm_source=cuelinks&utm_medium=affiliate&utm_campaign=cuelinks_274785&utm_term=abc&clickid=click&pid=19&offer_id=18&sub1=cuelinks_274785&sub3=abc&attribution_window=1D&return_cancellation_window=45D",
+      ),
+    ).toBeNull();
+    expect(
+      safeExternalShopUrl(
+        "https://linksredirect.com/?cid=274785&source=api&subid=catalog&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige",
+      ),
+    ).toBe(
+      "https://linksredirect.com/?cid=274785&source=api&subid=catalog&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige",
+    );
   });
 
   test("shows the next-look receipt only after save or skip", () => {

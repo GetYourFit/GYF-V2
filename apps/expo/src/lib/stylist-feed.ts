@@ -1,5 +1,7 @@
 import type { FeedbackRequest, Outfit, OutfitItem } from "@gyf/types";
 
+import { safeExternalShopUrl } from "./shop-links";
+
 export const STYLIST_GOAL_MAX = 200;
 export type StylistFeedbackStatus = "saved" | "skipped";
 
@@ -61,13 +63,8 @@ export function replaceOutfitItem(
 
 /** Only HTTPS retailer links are opened from the native client. */
 export function safeShopUrl(item: OutfitItem): string | null {
-  if (item.owned || !item.affiliate_url) return null;
-  try {
-    const url = new URL(item.affiliate_url);
-    return url.protocol === "https:" ? url.toString() : null;
-  } catch {
-    return null;
-  }
+  if (item.owned) return null;
+  return safeExternalShopUrl(item.affiliate_url);
 }
 
 export function shopFeedbackForItem(

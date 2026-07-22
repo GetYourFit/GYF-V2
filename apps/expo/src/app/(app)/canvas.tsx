@@ -21,16 +21,21 @@ import {
   tileAspect,
 } from "@/lib/canvas-cluster";
 import { formatCatalogPrice } from "@/lib/explore-feed";
+import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { colors, radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
 const PAGE_SIZE = 24;
+const SHOP_OPEN_ERROR = "shop-open-failed";
 
 function isHttpsUrl(value: string | null | undefined): value is string {
   return Boolean(value && /^https:\/\//i.test(value));
 }
 
 function readableError(error: unknown): string {
+  if (error instanceof Error && error.message === SHOP_OPEN_ERROR) {
+    return "Could not open the retailer link. Nothing changed; try again.";
+  }
   if (error instanceof ApiError && error.isUnauthorized) {
     return "Your session expired. Sign in again to continue your private visual field.";
   }
@@ -283,6 +288,11 @@ export default function CanvasRoute() {
               </GyfText>
             </View>
           </View>
+          {safeExternalShopUrl(focused.buy_url) ? (
+            <GyfText tone="faint" variant="bodySmall">
+              {SHOP_AFFILIATE_DISCLOSURE}
+            </GyfText>
+          ) : null}
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
             <AtelierButton
               accessibilityLabel={
@@ -295,11 +305,17 @@ export default function CanvasRoute() {
               onPress={() => void toggleSave()}
               style={{ flex: 1 }}
             />
-            {isHttpsUrl(focused.buy_url) ? (
+            {safeExternalShopUrl(focused.buy_url) ? (
               <Pressable
                 accessibilityLabel={`Open retailer for ${focused.title}`}
                 accessibilityRole="link"
-                onPress={() => void Linking.openURL(focused.buy_url!)}
+                onPress={() => {
+                  const url = safeExternalShopUrl(focused.buy_url);
+                  if (url) {
+                    setError(null);
+                    void Linking.openURL(url).catch(() => setError(new Error(SHOP_OPEN_ERROR)));
+                  }
+                }}
                 style={({ pressed }) => ({
                   alignItems: "center",
                   backgroundColor: palette.surfaceRaised,

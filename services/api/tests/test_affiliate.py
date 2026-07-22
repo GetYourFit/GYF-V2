@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from app.affiliate import CuelinksLinker, NullAffiliateLinker
+from app.affiliate import CuelinksLinker, NullAffiliateLinker, product_serving_url
 from app.catalog.directory import InMemoryItemDirectory, ItemDetail
 
 # --- CuelinksLinker: the deeplink contract ----------------------------------
@@ -30,24 +30,95 @@ def test_wrap_is_idempotent_never_double_wraps():
     assert linker.wrap(once, "s") == once
 
 
-def test_wrap_sanitizes_hostile_subids():
+def test_wrap_hashes_hostile_or_personal_subids_without_leaking_them():
     linker = CuelinksLinker("274785")
-    wrapped = linker.wrap("https://store.example/x", "a&b=c<script>" + "z" * 100)
-    assert "&subid=abcscript" in wrapped
-    # bounded length: sanitized subid never exceeds 64 chars
+    wrapped = linker.wrap("https://store.example/products/x", "alice@private.invalid<script>")
+    assert wrapped is not None
     subid = wrapped.split("&subid=")[1].split("&")[0]
+    assert subid.startswith("h_")
     assert len(subid) <= 64
+    assert "alice" not in wrapped
+    assert "private" not in wrapped
+    assert "script" not in wrapped
 
 
-def test_wrap_passes_through_none_and_non_http():
+def test_wrap_rejects_unsafe_or_non_product_destinations():
     linker = CuelinksLinker("274785")
     assert linker.wrap(None, "s") is None
-    assert linker.wrap("", "s") == ""
-    assert linker.wrap("javascript:alert(1)", "s") == "javascript:alert(1)"
+    assert linker.wrap("", "s") is None
+    assert linker.wrap("javascript:alert(1)", "s") is None
+    assert linker.wrap("http://store.example/products/x", "s") is None
+    assert linker.wrap("https://store.example/", "s") is None
+    assert (
+        linker.wrap("https://store.example/?utm_source=cuelinks&utm_medium=affiliate", "s") is None
+    )
+    assert (
+        linker.wrap(
+            "https://ajiogram.ajio.com/?utm_source=cuelinks&utm_medium=affiliate"
+            "&utm_campaign=cuelinks_274785&utm_term=abc&clickid=click&pid=19&offer_id=18"
+            "&sub1=cuelinks_274785&sub3=abc&attribution_window=1D"
+            "&return_cancellation_window=45D",
+            "s",
+        )
+        is None
+    )
 
 
-def test_null_linker_passes_everything_through():
-    assert NullAffiliateLinker().wrap("https://store.example/x", "s") == "https://store.example/x"
+def test_captain_cuelinks_shortlinks_are_not_product_catalog_links():
+    linker = CuelinksLinker("274785")
+    assert linker.wrap("https://clnk.in/BKo4", "catalog") is None
+    assert linker.wrap("https://ajo.clnk.in/BKo6", "catalog") is None
+
+
+def test_linksredirect_home_targets_are_rejected_but_product_targets_are_idempotent():
+    home = (
+        "https://linksredirect.com/?cid=274785&source=linkkit"
+        "&url=https%3A%2F%2Fwww.adidas.com.hk%2F"
+    )
+    product = (
+        "https://linksredirect.com/?cid=274785&source=api&subid=catalog"
+        "&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige"
+    )
+    linker = CuelinksLinker("274785")
+    assert product_serving_url(home) is None
+    assert linker.wrap(home, "catalog") is None
+    assert linker.wrap(product, "catalog") == product
+
+
+def test_linksredirect_product_targets_without_the_requested_subid_are_rewrapped():
+    linkkit_product = (
+        "https://linksredirect.com/?cid=274785&source=linkkit"
+        "&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige"
+    )
+    wrapped = CuelinksLinker("274785").wrap(linkkit_product, "rec-123")
+    assert wrapped == (
+        "https://linksredirect.com/?cid=274785&source=api&subid=rec-123"
+        "&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige"
+    )
+
+
+def test_linksredirect_embedded_target_is_not_double_percent_decoded():
+    # promo=100%25off (i.e. the retailer literally encodes "100%off" once) must
+    # survive an unwrap/rewrap cycle with exactly one level of decoding, not two.
+    product = "https://store.example/products/shirt?promo=100%25off&note=a%2Bb"
+    wrapped = CuelinksLinker("274785").wrap(product, "rec-1")
+    prewrapped = wrapped.replace("subid=rec-1", "subid=other").replace(
+        "source=api", "source=linkkit"
+    )
+    rewrapped = CuelinksLinker("274785").wrap(prewrapped, "rec-2")
+    assert rewrapped == (
+        "https://linksredirect.com/?cid=274785&source=api&subid=rec-2"
+        "&url=https%3A%2F%2Fstore.example%2Fproducts%2Fshirt%3Fpromo%3D100%2525off"
+        "%26note%3Da%252Bb"
+    )
+
+
+def test_null_linker_passes_only_safe_product_links_through():
+    assert (
+        NullAffiliateLinker().wrap("https://store.example/products/x", "s")
+        == "https://store.example/products/x"
+    )
+    assert NullAffiliateLinker().wrap("https://clnk.in/BKo4", "s") is None
 
 
 # --- Directory choke point (social/collections/saved/explore all read here) --

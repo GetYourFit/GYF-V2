@@ -10,6 +10,7 @@ import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { TryOnSection } from "@/components/stylist/try-on-section";
 import { browserApi } from "@/lib/api-client";
 import { mediaUrl } from "@/lib/media";
+import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import type { Outfit, OutfitItem } from "@gyf/types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -49,7 +50,9 @@ export function OutfitDetail({
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
   const titleId = `outfit-detail-${index}`;
-  const shopItem = outfit.items.find((i) => !i.owned && i.affiliate_url);
+  const shopItem = outfit.items.find((i) => !i.owned && safeExternalShopUrl(i.affiliate_url));
+  const shopUrl = safeExternalShopUrl(shopItem?.affiliate_url);
+  const anyShopUrl = outfit.items.some((i) => !i.owned && safeExternalShopUrl(i.affiliate_url));
   const colorHarmony = Math.round(outfit.color_harmony * 100);
   const formality = Math.round(outfit.formality_fit * 100);
 
@@ -381,6 +384,20 @@ export function OutfitDetail({
                 ))}
               </div>
 
+              {anyShopUrl ? (
+                <p
+                  style={{
+                    color: "var(--text-faint)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.75rem",
+                    lineHeight: 1.5,
+                    margin: 0,
+                  }}
+                >
+                  {SHOP_AFFILIATE_DISCLOSURE}
+                </p>
+              ) : null}
+
               {/* Per-garment breakdown */}
               <ul
                 style={{
@@ -397,6 +414,7 @@ export function OutfitDetail({
                 {outfit.items.map((item) => {
                   // Owned garments show a closet badge, not a price or buy link.
                   const tag = item.owned ? null : price(item);
+                  const itemShopUrl = safeExternalShopUrl(item.affiliate_url);
                   return (
                     <li
                       key={item.item_id}
@@ -467,9 +485,9 @@ export function OutfitDetail({
                           {tag}
                         </span>
                       )}
-                      {!item.owned && item.affiliate_url && (
+                      {!item.owned && itemShopUrl && (
                         <a
-                          href={item.affiliate_url}
+                          href={itemShopUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => onShopCart(item.item_id)}
@@ -552,12 +570,12 @@ export function OutfitDetail({
                 {saved ? "Saved" : "Save look"}
               </motion.button>
 
-              {shopItem?.affiliate_url && (
+              {shopUrl && (
                 <a
-                  href={shopItem.affiliate_url}
+                  href={shopUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => onShopCart(shopItem.item_id)}
+                  onClick={() => onShopCart(shopItem!.item_id)}
                   style={{
                     flex: 1,
                     display: "flex",

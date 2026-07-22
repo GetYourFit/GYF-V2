@@ -8,6 +8,7 @@ import type { SavedOutfit } from "@gyf/types";
 
 import { ConfidenceMeter } from "@/components/stylist/confidence-meter";
 import { mediaUrl } from "@/lib/media";
+import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 
 interface SavedCardProps {
   look: SavedOutfit;
@@ -17,7 +18,8 @@ interface SavedCardProps {
 const CURRENCY: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", INR: "₹" };
 
 export function SavedCard({ look, onRemove }: SavedCardProps) {
-  const shopItem = look.items.find((i) => i.buy_url);
+  const shopItem = look.items.find((i) => safeExternalShopUrl(i.buy_url));
+  const shopUrl = safeExternalShopUrl(shopItem?.buy_url);
 
   return (
     <motion.article
@@ -81,14 +83,16 @@ export function SavedCard({ look, onRemove }: SavedCardProps) {
           })}
         </ul>
 
+        {shopUrl && <p className="t-caption text-text-faint">{SHOP_AFFILIATE_DISCLOSURE}</p>}
+
         {/* Footer: occasion + actions */}
         <div className="mt-auto flex items-center justify-between gap-3 pt-1 border-t border-border">
           <span className="t-mono text-text-faint capitalize">{look.occasion ?? "saved look"}</span>
 
           <div className="flex items-center gap-2">
-            {shopItem?.buy_url && (
+            {shopUrl && (
               <a
-                href={shopItem.buy_url}
+                href={shopUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Shop this look at the retailer"
