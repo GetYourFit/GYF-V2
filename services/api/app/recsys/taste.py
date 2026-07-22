@@ -117,21 +117,44 @@ def parse_vector(raw: object) -> list[float]:
 
 # Engagements over items *and* outfits (each outfit attributed to its member items),
 # joined to embeddings, newest first. Impressions are excluded — they are negatives
-# for the future ranker, not taste signal. ``age_days`` lets the caller decay.
-_ENGAGEMENTS = """
+# for the future ranker, not taste signal. Recommendation-scoped outcomes are
+# learned from only when they can be joined to a prior served impression for the
+# same user/item/recommendation_id; otherwise a forged or stale client event would
+# steer the online taste vector before F3's data-quality gate could catch it.
+# ``age_days`` lets the caller decay.
+_UUID_RE = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+_TARGET_UUID = f"CASE WHEN i.target_id ~* '{_UUID_RE}' THEN i.target_id::uuid ELSE NULL::uuid END"
+_JOINABLE_RECOMMENDATION_CONTEXT = """
+    AND (
+        NOT (i.context ? 'recommendation_id')
+        OR EXISTS (
+            SELECT 1
+            FROM interactions imp
+            WHERE imp.user_id = i.user_id
+              AND imp.target_type = i.target_type
+              AND imp.target_id = i.target_id
+              AND imp.action = 'impression'
+              AND imp.context ->> 'recommendation_id' = i.context ->> 'recommendation_id'
+              AND imp.ts <= i.ts
+        )
+    )
+"""
+_ENGAGEMENTS = f"""
 SELECT embedding, action, age_days FROM (
     SELECT e.embedding, i.action,
            EXTRACT(EPOCH FROM (now() - i.ts)) / 86400.0 AS age_days, i.ts
     FROM interactions i
-    JOIN item_embeddings e ON e.item_id = i.target_id::uuid
+    JOIN item_embeddings e ON e.item_id = {_TARGET_UUID}
     WHERE i.user_id = %s AND i.target_type = 'item' AND i.action <> 'impression'
+{_JOINABLE_RECOMMENDATION_CONTEXT}
     UNION ALL
     SELECT e.embedding, i.action,
            EXTRACT(EPOCH FROM (now() - i.ts)) / 86400.0 AS age_days, i.ts
     FROM interactions i
-    JOIN outfits o ON o.id = i.target_id::uuid
+    JOIN outfits o ON o.id = {_TARGET_UUID}
     JOIN item_embeddings e ON e.item_id = ANY(o.item_ids)
     WHERE i.user_id = %s AND i.target_type = 'outfit' AND i.action <> 'impression'
+{_JOINABLE_RECOMMENDATION_CONTEXT}
 ) eng
 ORDER BY ts DESC
 LIMIT %s

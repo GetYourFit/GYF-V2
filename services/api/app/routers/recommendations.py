@@ -21,6 +21,7 @@ from ..dependencies import (
     get_wardrobe_repo,
     require_active_principal,
 )
+from ..events import InteractionAction, InteractionEvent, InteractionTarget
 from ..profile.repository import ProfileRepository
 from ..ratelimit import rate_limit
 from ..recsys.candidates import CandidateRepository
@@ -226,6 +227,7 @@ def outfit_alternates(
     profile_repo: ProfileRepository = Depends(get_profile_repo),
     candidates: CandidateRepository = Depends(get_candidate_repo),
     search_repo: VectorSearchRepository = Depends(get_search_repo),
+    event_sink: EventSink = Depends(get_event_sink),
 ) -> dict[str, list[OutfitItem]]:
     """Visually-coherent replacements for one piece of a recommended outfit.
 
@@ -252,11 +254,63 @@ def outfit_alternates(
     by_id = {c.item_id: c for c in candidates.candidates_by_ids([h.item_id for h in hits])}
     linker = linker_from_settings()
     items: list[OutfitItem] = []
+    scores: dict[str, float | None] = {}
     for hit in hits:  # preserve similarity order through hydration
         c = by_id.get(hit.item_id)
-        if c is None:
+        if c is None or c.slot != slot:
             continue
         item = OutfitItem.from_candidate(c)
         item.affiliate_url = linker.wrap(item.affiliate_url, recommendation_id or "swap")
         items.append(item)
+        raw_score = getattr(hit, "score", None)
+        scores[item.item_id] = float(raw_score) if raw_score is not None else None
+    _log_alternate_impressions(
+        event_sink, principal.user_id, recommendation_id, item_id, items, scores
+    )
     return {"alternates": items}
+
+
+def _log_alternate_impressions(
+    sink: EventSink,
+    user_id: str,
+    recommendation_id: str | None,
+    replaced_item_id: str,
+    alternates: list[OutfitItem],
+    scores: dict[str, float | None],
+) -> None:
+    """Record swap choices as served exposures before the user corrects a look.
+
+    Alternates are part of the recommendation loop: if a user chooses one, that
+    correction should join to something GYF actually served, not become an
+    unverified organic label. Logging remains best-effort, matching the main
+    slate impression path, so a telemetry outage never blocks the UI.
+    """
+    if not alternates:
+        return
+    try:
+        events = []
+        for rank, item in enumerate(alternates):
+            context: dict[str, object] = {
+                "surface": "alternates",
+                "replaced_item_id": replaced_item_id,
+                "rank": rank,
+            }
+            if recommendation_id:
+                context["recommendation_id"] = recommendation_id
+            score = scores.get(item.item_id)
+            if score is not None:
+                context["score"] = score
+            events.append(
+                InteractionEvent(
+                    user_id=user_id,
+                    target_type=InteractionTarget.ITEM,
+                    target_id=item.item_id,
+                    action=InteractionAction.IMPRESSION,
+                    context=context,
+                )
+            )
+        sink.publish_many(events)
+    except Exception:  # noqa: BLE001 — exposure telemetry must not block alternates
+        logger.warning(
+            "alternate impression logging failed for recommendation %s", recommendation_id
+        )

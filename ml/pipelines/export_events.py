@@ -66,6 +66,17 @@ def _learning_consent_predicate(user_alias: str = "u") -> str:
     )
 
 
+def _recommendation_id(row: dict[str, Any]) -> str | None:
+    context = row.get("context") or {}
+    value = context.get("recommendation_id") if isinstance(context, dict) else None
+    return value if isinstance(value, str) and value else None
+
+
+def _has_recommendation_context(row: dict[str, Any]) -> bool:
+    context = row.get("context") or {}
+    return isinstance(context, dict) and "recommendation_id" in context
+
+
 def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     """Join impressions with later engagements into labelled training examples.
 
@@ -75,6 +86,8 @@ def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     non-impression actions on the same item (0.0 = shown, never touched).
     Engagements that never had an impression (organic browsing, wardrobe) are
     exported too, with ``propensity: null`` — usable as extra positives.
+    Engagements that claim a ``recommendation_id`` but cannot join to that served
+    exposure are excluded: a stale/forged served-ID is not organic taste data.
     """
     impressions: list[dict[str, Any]] = []
     impressions_by_target: dict[tuple[str, str, str], list[tuple[str, int]]] = defaultdict(list)
@@ -86,8 +99,8 @@ def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
             key = (row["user_id"], row["target_type"], row["target_id"])
             entry = (row["ts"], len(impressions) - 1)
             impressions_by_target[key].append(entry)
-            recommendation_id = (row.get("context") or {}).get("recommendation_id")
-            if isinstance(recommendation_id, str) and recommendation_id:
+            recommendation_id = _recommendation_id(row)
+            if recommendation_id:
                 impressions_by_rec[(*key, recommendation_id)].append(entry)
         else:
             engagements.append(row)
@@ -99,20 +112,24 @@ def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     # context-free actions fall back to the most recent preceding impression.
     attributed: dict[int, list[dict[str, Any]]] = defaultdict(list)
     matched: set[int] = set()
+    unmatched_recommendation_context: set[int] = set()
     for event in engagements:
-        event_rec = (event.get("context") or {}).get("recommendation_id")
+        event_rec = _recommendation_id(event)
         key = (event["user_id"], event["target_type"], event["target_id"])
         if event_rec:
-            candidates = (
-                impressions_by_rec.get((*key, event_rec), []) if isinstance(event_rec, str) else []
-            )
+            candidates = impressions_by_rec.get((*key, event_rec), [])
         else:
+            if _has_recommendation_context(event):
+                unmatched_recommendation_context.add(id(event))
+                continue
             candidates = impressions_by_target.get(key, [])
         position = bisect_right(candidates, (event["ts"], len(impressions))) - 1
         if position >= 0:
             _, index = candidates[position]
             attributed[index].append(event)
             matched.add(id(event))
+        elif event_rec:
+            unmatched_recommendation_context.add(id(event))
 
     examples: list[dict[str, Any]] = []
     for index, imp in enumerate(impressions):
@@ -136,7 +153,11 @@ def build_examples(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
             }
         )
     for e in engagements:
-        if id(e) in matched or e["target_type"] not in ("item", "outfit"):
+        if (
+            id(e) in matched
+            or id(e) in unmatched_recommendation_context
+            or e["target_type"] not in ("item", "outfit")
+        ):
             continue
         examples.append(
             {

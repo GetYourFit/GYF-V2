@@ -84,6 +84,48 @@ def test_organic_engagement_without_impression_exports_as_positive():
     assert ex["engaged_action"] == "save"
 
 
+def test_unmatched_recommendation_context_is_excluded_not_treated_as_organic():
+    examples = build_examples(
+        [
+            _event(
+                "save",
+                "2026-07-01T10:00:00+00:00",
+                context={"recommendation_id": "forged-rec"},
+            )
+        ]
+    )
+    assert examples == []
+
+
+def test_alternate_impression_joins_later_correction_to_the_served_id():
+    rows = [
+        _event("impression", "2026-07-01T10:00:00+00:00", target="top-1", context=IMP_CTX),
+        _event(
+            "impression",
+            "2026-07-01T10:01:00+00:00",
+            target="top-2",
+            context={
+                "recommendation_id": "rec-1",
+                "surface": "alternates",
+                "replaced_item_id": "top-1",
+                "rank": 0,
+                "score": 0.8,
+            },
+        ),
+        _event(
+            "save",
+            "2026-07-01T10:02:00+00:00",
+            target="top-2",
+            context={"recommendation_id": "rec-1", "rank": 0, "replaced_item_id": "top-1"},
+        ),
+    ]
+    examples = build_examples(rows)
+    assert [(e["item_id"], e["label"], e["engaged_action"]) for e in examples] == [
+        ("top-1", 0.0, None),
+        ("top-2", 1.0, "save"),
+    ]
+
+
 def test_non_item_targets_are_not_organic_examples():
     examples = build_examples([_event("follow", "2026-07-01T10:00:00+00:00", ttype="user")])
     assert examples == []
@@ -102,7 +144,7 @@ def test_examples_are_scoped_per_user_and_item():
 def test_attribution_is_scoped_by_target_type():
     rows = [
         _event("impression", "2026-07-01T10:00:00+00:00", ttype="item", context=IMP_CTX),
-        _event("save", "2026-07-01T10:01:00+00:00", ttype="outfit", context=IMP_CTX),
+        _event("save", "2026-07-01T10:01:00+00:00", ttype="outfit"),
     ]
     examples = build_examples(rows)
     assert [e["label"] for e in examples] == [0.0, 1.0]

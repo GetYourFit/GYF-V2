@@ -38,6 +38,7 @@ from app.wardrobe import InMemoryWardrobeRepository, WardrobeRecord
 from app.recsys.taste import (
     EngagedItem,
     InMemoryTasteRepository,
+    PostgresTasteRepository,
     build_taste,
     parse_vector,
 )
@@ -349,7 +350,9 @@ def test_dominant_top_still_yields_distinct_looks():
 # --- Service + API end to end ----------------------------------------------
 
 
-def _client(profile: Profile | None, taste=None, sink=None, wardrobe=None) -> TestClient:
+def _client(
+    profile: Profile | None, taste=None, sink=None, wardrobe=None, candidate_repo=None
+) -> TestClient:
     profiles = InMemoryProfileRepository()
     if profile is not None:
         profiles.upsert(DEV_USER, profile)
@@ -357,9 +360,11 @@ def _client(profile: Profile | None, taste=None, sink=None, wardrobe=None) -> Te
     app.dependency_overrides[get_account_repo] = lambda: InMemoryAccountRepository(
         existing={DEV_USER}
     )
-    app.dependency_overrides[get_candidate_repo] = lambda: InMemoryCandidateRepository(
-        _three_slot_catalog()
-    )
+
+    def _candidate_repo():
+        return candidate_repo or InMemoryCandidateRepository(_three_slot_catalog())
+
+    app.dependency_overrides[get_candidate_repo] = _candidate_repo
     app.dependency_overrides[get_taste_repo] = lambda: taste or InMemoryTasteRepository()
     app.dependency_overrides[get_event_sink] = lambda: sink or _CollectingSink()
     app.dependency_overrides[get_wardrobe_repo] = lambda: wardrobe or InMemoryWardrobeRepository()
@@ -676,6 +681,106 @@ def test_endpoint_personalizes_from_taste_history():
         assert body["personalized"] is True
         assert body["cold_start"] is False
         assert body["taste_strength"] > 0.0
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_http_recommend_feedback_then_next_slate_uses_joined_taste_signal():
+    """Local integrated loop: served impression -> feedback -> next recommendation.
+
+    This stays in-memory (no production launch claim), but it drives the real FastAPI
+    routers and the real recommender/taste math: the second slate may learn only
+    from a feedback event whose recommendation_id joined a prior impression.
+    """
+    import dataclasses as _dc
+
+    catalog = [
+        _dc.replace(_item("top-a", "shirt", "top", lch=(50, 8, 0)), embedding=(-1.0, 0.0)),
+        _dc.replace(_item("top-b", "shirt", "top", lch=(50, 8, 0)), embedding=(1.0, 0.0)),
+        _dc.replace(_item("bottom", "jeans", "bottom", lch=(40, 8, 0)), embedding=(0.0, 0.0)),
+        _dc.replace(_item("shoe", "sneakers", "footwear", lch=(80, 5, 0)), embedding=(0.0, 0.0)),
+    ]
+    sink = _CollectingSink()
+
+    class TasteAwareCandidates(InMemoryCandidateRepository):
+        def candidates_by_slot(self, *args, **kwargs):
+            taste_vector = kwargs.get("taste_vector")
+            if taste_vector is None and len(args) > 4:
+                taste_vector = args[4]
+            result = super().candidates_by_slot(*args, **kwargs)
+            if not taste_vector:
+                return result
+            return {
+                slot: [
+                    _dc.replace(
+                        item,
+                        affinity=sum(
+                            a * b for a, b in zip(item.embedding or (), taste_vector, strict=False)
+                        ),
+                    )
+                    for item in items
+                ]
+                for slot, items in result.items()
+            }
+
+    class SinkTasteRepository:
+        def engagements(self, user_id, limit):
+            embeddings = {item.item_id: list(item.embedding or ()) for item in catalog}
+            served = {
+                (event.target_id, event.context.get("recommendation_id"))
+                for event in sink.events
+                if event.action == InteractionAction.IMPRESSION
+            }
+            out = []
+            for event in sink.events:
+                rec_id = event.context.get("recommendation_id")
+                if event.user_id != user_id or event.action == InteractionAction.IMPRESSION:
+                    continue
+                if rec_id and (event.target_id, rec_id) not in served:
+                    continue
+                embedding = embeddings.get(event.target_id)
+                if embedding:
+                    out.append(EngagedItem(embedding, event.action, 0.0))
+            return out[-limit:]
+
+    try:
+        client = _client(
+            Profile(occasion="casual"),
+            taste=SinkTasteRepository(),
+            sink=sink,
+            candidate_repo=TasteAwareCandidates(catalog),
+        )
+        first = client.get("/outfits/recommend?k=2", headers={"X-Request-ID": "loop-proof-1"})
+        assert first.status_code == 200
+        assert first.headers["X-Request-ID"] == "loop-proof-1"
+        first_body = first.json()
+        recommendation_id = first_body["recommendation_id"]
+        first_tops = [outfit["items"][0]["item_id"] for outfit in first_body["outfits"]]
+        assert first_tops == ["top-a", "top-b"]
+        assert any(
+            event.action == InteractionAction.IMPRESSION
+            and event.target_id == "top-b"
+            and event.context.get("recommendation_id") == recommendation_id
+            for event in sink.events
+        )
+
+        feedback = client.post(
+            "/feedback",
+            json={
+                "target_type": "item",
+                "target_id": "top-b",
+                "action": "save",
+                "context": {"recommendation_id": recommendation_id, "rank": 1},
+            },
+        )
+        assert feedback.status_code == 202
+
+        second = client.get("/outfits/recommend?k=2")
+        assert second.status_code == 200
+        second_body = second.json()
+        assert second_body["cold_start"] is False
+        assert second_body["personalized"] is True
+        assert second_body["outfits"][0]["items"][0]["item_id"] == "top-b"
     finally:
         app.dependency_overrides.clear()
 
@@ -1223,15 +1328,26 @@ def test_alternates_endpoint_same_slot_and_order():
     from app.dependencies import get_search_repo
 
     try:
-        client = _client(Profile(occasion="casual"))
+        sink = _CollectingSink()
+        client = _client(Profile(occasion="casual"), sink=sink)
         fake = _FakeSearchRepo()
         app.dependency_overrides[get_search_repo] = lambda: fake
         resp = client.get("/outfits/alternates?item_id=b1&k=2&recommendation_id=rec-1")
         assert resp.status_code == 200
         alts = resp.json()["alternates"]
-        assert [a["item_id"] for a in alts][0] == "b2"
+        assert [a["item_id"] for a in alts] == ["b2"]
+        assert all(a["slot"] == "bottom" for a in alts)
         # The retrieval was scoped to the bottom slot's categories.
         assert "jeans" in fake.calls[0]["categories"]
+        assert [event.target_id for event in sink.events] == ["b2"]
+        assert sink.events[0].action == InteractionAction.IMPRESSION
+        assert sink.events[0].context == {
+            "surface": "alternates",
+            "replaced_item_id": "b1",
+            "rank": 0,
+            "recommendation_id": "rec-1",
+            "score": 0.9,
+        }
         assert client.get("/outfits/alternates?item_id=nope").status_code == 404
     finally:
         app.dependency_overrides.clear()
@@ -1285,6 +1401,79 @@ def test_cohesion_phrase_and_pattern_phrase_are_earned():
     cohesive = tuple(_with_embedding(it, (1.0, 0.0)) for it in (top, bottom, shoes))
     text = _explain(cohesive, conditioning.resolve(Profile(), "casual", None), 0.8, 0.9, 0.0)
     assert "one visual language" in text
+
+
+def test_postgres_taste_history_requires_served_recommendation_context():
+    class _FakePool:
+        def __init__(self):
+            self.calls = []
+
+        def connection(self):
+            pool = self
+
+            class _Conn:
+                def execute(self, sql, params=None):
+                    pool.calls.append((sql, params))
+                    return iter([])
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    return False
+
+            return _Conn()
+
+    pool = _FakePool()
+    PostgresTasteRepository("postgresql://unused", pool=pool).engagements(DEV_USER, 20)
+
+    sql, params = pool.calls[0]
+    assert params == (DEV_USER, DEV_USER, 20)
+    assert "i.context ? 'recommendation_id'" in sql
+    assert "imp.action = 'impression'" in sql
+    assert "imp.context ->> 'recommendation_id' = i.context ->> 'recommendation_id'" in sql
+    assert "imp.ts <= i.ts" in sql
+    assert "CASE WHEN i.target_id ~*" in sql
+
+
+def test_postgres_recommendation_join_uses_covering_index(live_db):
+    """The correlated EXISTS in ``_JOINABLE_RECOMMENDATION_CONTEXT`` must resolve
+    through the partial index migration 0026 adds, not a sequential scan of
+    ``interactions`` — that scan would regress the recommend hot path as the table
+    grows. ``enable_seqscan = off`` isolates whether the index's column order and
+    ``recommendation_id`` expression actually match this predicate shape, rather
+    than depending on the planner's cost estimate at whatever size this table
+    happens to be."""
+    import json
+    import uuid
+
+    import psycopg
+
+    user_id = str(uuid.uuid4())
+    target_id = str(uuid.uuid4())
+    recommendation_id = str(uuid.uuid4())
+
+    with psycopg.connect(live_db) as conn:
+        conn.execute("INSERT INTO users (id) VALUES (%s)", (user_id,))
+        conn.execute(
+            "INSERT INTO interactions (user_id, target_type, target_id, action, context) "
+            "VALUES (%s, 'item', %s, 'impression', %s::jsonb)",
+            (user_id, target_id, json.dumps({"recommendation_id": recommendation_id})),
+        )
+        with conn.cursor() as cur:
+            cur.execute("SET LOCAL enable_seqscan = off")
+            cur.execute(
+                "EXPLAIN (FORMAT TEXT) SELECT 1 FROM interactions imp "
+                "WHERE imp.user_id = %s AND imp.target_type = %s AND imp.target_id = %s "
+                "AND imp.action = 'impression' "
+                "AND imp.context ->> 'recommendation_id' = %s",
+                (user_id, "item", target_id, recommendation_id),
+            )
+            plan = "\n".join(row[0] for row in cur.fetchall())
+        assert "idx_interactions_impression_recommendation_join" in plan, plan
+
+    with psycopg.connect(live_db) as conn:
+        conn.execute("DELETE FROM users WHERE id = %s", (user_id,))
 
 
 def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
