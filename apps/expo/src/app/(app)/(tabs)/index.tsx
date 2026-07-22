@@ -19,7 +19,7 @@ import { FilterRow } from "@/components/ui/filter-row";
 import { AppMenu } from "@/components/ui/app-menu";
 import { Disclosure } from "@/components/ui/disclosure";
 import { GyfText } from "@/components/ui/gyf-text";
-import { ScreenHeading } from "@/components/ui/screen-heading";
+import { ScreenBar } from "@/components/ui/screen-bar";
 import { hitSlopFor } from "@/components/ui/pressable-scale";
 import {
   ApiError,
@@ -617,11 +617,7 @@ export default function StylistRoute() {
       }
       style={{ backgroundColor: palette.bg }}
     >
-      <ScreenHeading
-        subtitle="Complete looks, built around your profile."
-        title="Your stylist"
-        trailing={<AppMenu />}
-      />
+      <ScreenBar trailing={<AppMenu />} />
 
       {/* Fourteen chips and a text field used to sit between the heading and
           the first look, so the screen opened on its own controls rather than

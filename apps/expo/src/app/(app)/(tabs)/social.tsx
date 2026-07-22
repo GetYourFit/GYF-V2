@@ -6,10 +6,10 @@ import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/i
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
-import { FilterChip } from "@/components/ui/filter-chip";
+import { AnimatedGyfMark } from "@/components/explore/animated-gyf-mark";
 import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
-import { ScreenHeading } from "@/components/ui/screen-heading";
+import { ScreenBar } from "@/components/ui/screen-bar";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type OutfitRecommendation, type Post } from "@/lib/api";
@@ -559,23 +559,25 @@ export default function SocialRoute() {
       )}
       ListHeaderComponent={
         <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-          <ScreenHeading
-            subtitle="Real looks from the GYF community — like them, follow the stylists you love."
-            title="Social"
+          {/* Ref3 is this screen: the mark on the left, the two feeds as
+              centred underlined tabs, one action on the right. No title, no
+              explanatory sentence — the looks start at the top. */}
+          <ScreenBar
+            leading={
+              <AnimatedGyfMark
+                active={status === "loading" || refreshing}
+                color={palette.text}
+                size={24}
+              />
+            }
+            onChange={(next) => setScope(next as FeedScope)}
+            tabs={[
+              { label: "For you", value: "all" },
+              { label: "Following", value: "following" },
+            ]}
             trailing={<AppMenu />}
+            value={scope}
           />
-          <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            <FilterChip
-              label="For you"
-              onPress={() => setScope("all")}
-              selected={scope === "all"}
-            />
-            <FilterChip
-              label="Following"
-              onPress={() => setScope("following")}
-              selected={scope === "following"}
-            />
-          </View>
           {composerOpen ? (
             <AtelierCard style={{ gap: spacing.md }}>
               <View

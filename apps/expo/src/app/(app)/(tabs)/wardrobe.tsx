@@ -12,7 +12,7 @@ import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { FilterChip } from "@/components/ui/filter-chip";
 import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
-import { ScreenHeading } from "@/components/ui/screen-heading";
+import { ScreenBar } from "@/components/ui/screen-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type WardrobeItem } from "@/lib/api";
 import {
@@ -169,11 +169,7 @@ export default function WardrobeRoute() {
         />
       }
     >
-      <ScreenHeading
-        subtitle="Add what you own — GYF styles new looks around your real closet."
-        title="Wardrobe"
-        trailing={<AppMenu />}
-      />
+      <ScreenBar trailing={<AppMenu />} />
 
       {/* Not a card: the add field is one control, not a panel. A hairline band
           groups the label + input the same way the profile stats unboxed. */}

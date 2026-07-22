@@ -15,7 +15,7 @@ import { NavRow } from "@/components/ui/nav-row";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
-import { ScreenHeading } from "@/components/ui/screen-heading";
+import { ScreenBar } from "@/components/ui/screen-bar";
 import { ApiError, createApi, type ProfileSummary } from "@/lib/api";
 import { getSession } from "@/lib/auth";
 import { replaceAvatar, validateAvatarAsset } from "@/lib/avatar-upload";
@@ -181,7 +181,7 @@ export default function ProfileRoute() {
         </AtelierCard>
       ) : (
         <>
-          <ScreenHeading title="Profile" trailing={<AppMenu />} />
+          <ScreenBar trailing={<AppMenu />} />
           {/* One row, left-aligned. A centred avatar over a centred name over
               centred badges over a centred stat band gave the screen four
               stacked centre axes and pushed everything actionable down. */}

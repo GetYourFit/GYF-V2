@@ -11,7 +11,7 @@ import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/i
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { AppMenu } from "@/components/ui/app-menu";
 import { GyfText } from "@/components/ui/gyf-text";
-import { ScreenHeading } from "@/components/ui/screen-heading";
+import { ScreenBar } from "@/components/ui/screen-bar";
 import { CatalogImage } from "@/components/ui/catalog-image";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { ProductCard } from "@/components/ui/product-card";
@@ -425,7 +425,7 @@ export default function ExploreRoute() {
         ListEmptyComponent={emptyFeed}
         ListHeaderComponent={
           <View style={{ gap: spacing.lg, paddingBottom: spacing.sm }}>
-            <ScreenHeading title="Explore" trailing={<AppMenu />} />
+            <ScreenBar trailing={<AppMenu />} />
             <ExploreControlBar
               facets={facets}
               filters={filters}
