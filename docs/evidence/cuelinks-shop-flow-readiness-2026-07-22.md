@@ -141,10 +141,12 @@ internal feed/campaign seam is now implemented and documented in
    merchant/product URL for that specific item; a `Deeplink=No` campaign (as shown in the Adidas
    campaign screenshot) can only wrap to that brand's home page and must not be presented as a
    product link.
-5. **Client role**: Expo (and the retained Next.js oracle) only ever call `safeExternalShopUrl` on
-   a URL the backend already produced; they do not call the Cuelinks RN SDK or any client-side
-   script, since that SDK cannot supply product data and would duplicate wrapping logic that
-   already lives in `CuelinksLinker`.
+5. **Client role**: for product cards, Expo (and the retained Next.js oracle) only ever call
+   `safeExternalShopUrl` on a URL the backend already produced; they do not call the Cuelinks RN SDK
+   or use it for product data, since that SDK cannot supply product data and would duplicate
+   wrapping logic that already lives in `CuelinksLinker`. The Expo web build target does load the
+   `cuelinksv2.js` browser snippet as a supplemental, non-product-ingestion earning-detection loader;
+   see [`cuelinks-web-js-integration-2026-07-22.md`](./cuelinks-web-js-integration-2026-07-22.md).
 
 Live execution of steps 1-2 still requires the Cuelinks product-feed/API credential (or an approved
 retailer feed) that is outstanding; GYF does not claim that credential exists or that production
