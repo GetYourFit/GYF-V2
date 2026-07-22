@@ -8,9 +8,10 @@ live only in the active contract, with the master audit report at
 `/Users/rvzaku/atharv-agent-workspace/data/gyf-master-final-launch-plan-audit/report.md` serving as
 read-only evidence.
 
-> **For agentic workers:** When the active contract explicitly opens this plan, use the applicable
-> superpowers executing-plan workflow task-by-task. Do not infer permission or phase state from the
-> checkboxes in this file.
+> **For agentic workers:** When the active contract explicitly opens this plan, REQUIRED SUB-SKILL:
+> use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to
+> implement this plan task-by-task. Do not infer permission or phase state from the checkboxes in
+> this file.
 
 **Goal:** Ship the complete Cosmos Editorial Expo experience defined in `docs/superpowers/specs/2026-07-18-cosmos-editorial-expo-design.md`, including Personal Fit Setup, without bypassing GYF's active phase, privacy, accessibility, performance, or production-evidence gates.
 
