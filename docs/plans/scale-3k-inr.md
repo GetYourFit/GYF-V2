@@ -51,8 +51,8 @@ of it is transit.
 browse ring (`GYF_BROWSE_INDEXED_RING_ENABLED=true` in `render.yaml`) runs in **0.4 ms warm /
 17 ms cold**; the dead legacy hash-sort path would take 5.7 s warm / 20.7 s cold, spilling 18.7 MB
 per worker to disk across 61,710 available items. Browse's 0.31 s of work is therefore round
-trips: **the API is in Render Oregon and the database is in Supabase `aws-1-us-east-1`
-(Virginia)**, so every round trip crosses North America.
+trips: **at the time of that failing measurement the API was in Render Oregon and the database
+was in Supabase `aws-1-us-east-1` (Virginia)**, so every round trip crossed North America.
 
 Measured TCP RTT from India: **Oregon 320.8 ms · Virginia 233.4 ms · Mumbai 26.2 ms.** Virginia is
 87 ms closer to Indian users than Oregon *and* already hosts the database. Co-locating the
@@ -83,9 +83,11 @@ the main effect. Nothing about the SQL, the ranking or the cache changed.
 completed 2026-07-16: both client bundles were verified to be rebuilt against
 `gyf-api-va.onrender.com` (the URL is inlined at build time, so an env change alone does nothing),
 CORS preflight was confirmed from both real client origins, and only then was Oregon suspended. The
-post-cutover run with Oregon down passed all four rows. Rollback: unsuspend `gyf-api` and point
-`NEXT_PUBLIC_API_URL` (Vercel) / `EXPO_PUBLIC_API_URL` (GitHub *environment* `EXPO_TOKEN`) back at
-`gyf-api.onrender.com`, then redeploy both clients.
+post-cutover run with Oregon down passed all four rows. Rollback remains a protected operations
+procedure: unsuspend `gyf-api` and point the approved client environment back at
+`gyf-api.onrender.com`, then redeploy only through the currently gated web/native path. Historical
+Next/Vercel rollback references remain evidence until F13; do not re-create routine Vercel
+production automation from them.
 
 **Renaming a service in `render.yaml` spawns a duplicate.** The linked Blueprint does not own the
 running service (it was created directly, because Render cannot move a region in place), so a name
@@ -124,7 +126,7 @@ same config they shipped with.
 | Layer | Choice | ₹/month | Why |
 | --- | --- | --- | --- |
 | Web | **Render Static after Expo-web parity** | 0 while allowance holds | Commercially permitted static CDN; meter the active workspace's outbound allowance—[Render documents](https://render.com/docs/new-workspace-plans) 5 GB included and $0.15/GB overage for migrated Hobby workspaces from 2026-08-01; Vercel Hobby cannot host the affiliate production surface |
-| API | **Existing Render Starter, Oregon** | ≤₹700 ($7 at planning rate ₹100/USD) | Already paid and always-on; owner rejected a Singapore migration |
+| API | **Existing Render Starter, Virginia** | ≤₹700 ($7 at planning rate ₹100/USD) | The single paid production service; Oregon is suspended rollback-only; no Singapore migration |
 | DB/auth/storage | **Existing Supabase Free project** | 0 | Avoid identity/data migration before a measured need; review at 70% of every limit |
 | Cache/ratelimit | Upstash Redis free (unchanged) | 0 | already wired |
 | Text-embed (search) | **Existing in-DB cache** + Modal CPU/T4 scale-to-zero miss candidate | 0 while inside verified credit | Choose CPU/GPU and region only from p95 and cost-per-success; the official $30 credit equals ~50.8 base-price T4 hours, not 187; export required audit evidence because [Starter logs](https://modal.com/pricing) are retained only briefly |
@@ -143,12 +145,11 @@ free on Kaggle; serving stays scale-to-zero (a dedicated GPU is idle-billed wast
 Vercel Hobby is rejected for commercial production by its official fair-use terms; Vercel Pro
 ($20/month) plus API and tax leaves no safe GPU/bandwidth headroom.
 
-Topology rule (owner 2026-07-16): do not create a Singapore candidate or migrate the current
-identity/database stack. First reduce query count, remove sequential fallback scans, bound
-hydration fan-out and prove the current Oregon Starter with the fixed India matrix. If that still
-fails, F10 may prepare a time-boxed, non-Singapore comparison with secret parity and rollback, but
-provisioning requires a separate owner decision. Any future auth move must update Supabase
-`site_url`/allowlists and JWKS configuration atomically.
+Topology rule (owner 2026-07-17 amendment): keep the current Virginia Starter as production,
+keep Oregon suspended rollback-only until its gate closes, and do not create or plan Singapore.
+If future measured SLO failure requires another topology experiment, F10 must prepare a time-boxed,
+non-Singapore comparison with secret parity, cost proof and rollback before any provisioning.
+Any future auth move must update Supabase `site_url`/allowlists and JWKS configuration atomically.
 
 ## 4. Close the catalogue/search incident (F2.5)
 

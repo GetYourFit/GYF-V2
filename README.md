@@ -62,8 +62,9 @@ same interaction spine used by training exports.
   (see [`.pre-commit-config.yaml`](./.pre-commit-config.yaml)).
 - **Local gate:** `make ci` runs format-check, lint, typecheck, doctrine, standards, and tests.
 - **CI:** GitHub Actions runs web, Expo and API checks; the API lane uses real Postgres.
-- **CD:** the Next rollback client can deploy to Vercel preview, Expo web to EAS Hosting, and the
-  FastAPI service through Render. Commercial promotion is controlled by the active contract.
+- **CD:** repository automation deploys Expo web to EAS Hosting after main CI. The FastAPI API runs
+  on the Virginia Render Starter. The Next.js rollback/oracle client is preserved until F13 but is
+  not deployed to Vercel by routine CI/Makefile automation.
 - **Reviews** routed via [`.github/CODEOWNERS`](./.github/CODEOWNERS); PRs use the
   [pull request template](./.github/pull_request_template.md).
 
