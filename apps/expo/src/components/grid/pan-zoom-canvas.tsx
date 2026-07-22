@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Platform, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
@@ -10,10 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { motion } from "@/theme/tokens";
-import { panLimit } from "./pan-bounds";
-
-const MIN_SCALE = 0.6;
-const MAX_SCALE = 3;
+import { MAX_SCALE, MIN_SCALE, panLimit, zoomByWheel } from "./pan-bounds";
 
 /**
  * Explorable viewport: the collection lives on a canvas the user drags in any
@@ -84,6 +81,22 @@ export function PanZoomCanvas({
       y.value = withTiming(0, spec);
     });
 
+  // Gesture.Pinch never fires on desktop web, so without a wheel path the
+  // canvas is stuck at 1x — where the content fits and nothing pans at all.
+  const viewport = useRef<View>(null);
+  useEffect(() => {
+    const node = viewport.current as unknown as HTMLElement | null;
+    if (Platform.OS !== "web" || !node) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      scale.value = zoomByWheel(scale.value, e.deltaY);
+      x.value = clamp(x.value, -limitX(), limitX());
+      y.value = clamp(y.value, -limitY(), limitY());
+    };
+    node.addEventListener("wheel", onWheel, { passive: false });
+    return () => node.removeEventListener("wheel", onWheel);
+  }, [contentHeight, height, width]);
+
   const canvasStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value }],
   }));
@@ -91,7 +104,8 @@ export function PanZoomCanvas({
   return (
     <GestureDetector gesture={Gesture.Simultaneous(Gesture.Exclusive(reset, pan), pinch)}>
       <View
-        accessibilityHint="Drag to explore the collection, pinch to zoom, double-tap to reset."
+        accessibilityHint="Drag to explore the collection, pinch or scroll to zoom, double-tap to reset."
+        ref={viewport}
         style={{ height, overflow: "hidden", width }}
       >
         <Animated.View
