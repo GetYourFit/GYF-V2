@@ -115,7 +115,12 @@ doctrine: ## Run the doctrine gates (license D2 + promotion D5 + ports D1 + doc 
 	python3 scripts/check_ports.py
 	python3 scripts/check_doc_alignment.py
 
-ci: fmt-check lint typecheck doctrine test ## Run the full local CI gate
+standards: ## Run the repo-hygiene pre-commit hooks (mirrors the GitHub "Standards" job exactly)
+	@# Same command the CI standards job runs: prettier/ruff/ruff-format are covered by
+	@# fmt-check + lint above, so they are skipped here to avoid double work and drift.
+	SKIP=prettier,ruff,ruff-format $(CACHE_ENV) uvx pre-commit run --all-files --show-diff-on-failure
+
+ci: fmt-check lint typecheck doctrine standards test ## Run the full local CI gate
 
 data-export: ## Export the interactions spine into training examples + insight report (needs GYF_DATABASE_URL)
 	cd ml && $(CACHE_ENV) uv run --extra postgres python -m pipelines.export_events

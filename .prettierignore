@@ -1,4 +1,7 @@
 node_modules/
+# Local agent/editor config is not product source; keep it out of the full-tree
+# format gate and pre-push guard when present in a developer checkout.
+.claude/
 .next/
 .turbo/
 .tmp/

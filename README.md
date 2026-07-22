@@ -57,9 +57,10 @@ same interaction spine used by training exports.
 ## Engineering standards
 
 - **Conventional commits** (`feat:`, `fix:`, `docs:`, …); trunk-based, short-lived branches.
-- **Pre-commit hooks** mirror CI — install once with `pre-commit install`
+- **Pre-commit hooks** mirror CI — install once with `pre-commit install --install-hooks`
+  to wire up both the commit and pre-push stages
   (see [`.pre-commit-config.yaml`](./.pre-commit-config.yaml)).
-- **Local gate:** `make ci` runs format-check, lint, typecheck, and tests.
+- **Local gate:** `make ci` runs format-check, lint, typecheck, doctrine, standards, and tests.
 - **CI:** GitHub Actions runs web, Expo and API checks; the API lane uses real Postgres.
 - **CD:** the Next rollback client can deploy to Vercel preview, Expo web to EAS Hosting, and the
   FastAPI service through Render. Commercial promotion is controlled by the active contract.

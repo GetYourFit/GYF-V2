@@ -1,6 +1,11 @@
-# Pre-commit hooks for GYF. Install once: `pip install pre-commit && pre-commit install`.
+# Pre-commit hooks for GYF. Install once: `pip install pre-commit && pre-commit install --install-hooks`.
+# `default_install_hook_types` below wires up both the commit and pre-push stages in that one command.
 # Run on demand: `pre-commit run --all-files`. Mirrors the CI gate locally.
 minimum_pre_commit_version: "3.5.0"
+default_install_hook_types: [pre-commit, pre-push]
+# Hooks without an explicit `stages` key fall back to every installed stage, so pin the
+# default to pre-commit; the pre-push guard below overrides it with its own `stages`.
+default_stages: [pre-commit]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -40,3 +45,17 @@ repos:
         pass_filenames: false
         files: '\.(ts|tsx|js|jsx|json|md)$'
         exclude: '^ECC/'
+
+  # Pre-push safety net: mirror the CI format gate against the WHOLE tree, not just
+  # staged files. This catches format drift that slipped in via `--no-verify`, a
+  # rebase, or files touched after their commit — the exact way the gate silently
+  # broke before. `bun run format:check` is the same command `make ci` runs first.
+  - repo: local
+    hooks:
+      - id: prettier-format-check-push
+        name: prettier format:check (full tree, pre-push)
+        entry: bun run format:check
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
