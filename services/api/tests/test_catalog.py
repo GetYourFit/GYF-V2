@@ -275,7 +275,7 @@ def test_ingest_tracks_category_conflicts(tmp_path):
 def test_candidate_repository_quarantines_category_conflicts():
     """Items with category_conflict in taxonomy are excluded from candidate pools."""
     from app.recsys.candidates import InMemoryCandidateRepository, Candidate
-    from gyf_contracts.taxonomy import get as get_category
+    # gyf_contracts.taxonomy.get imported but unused in this test module
 
     # Item with conflict
     conflict_item = Candidate(
@@ -324,7 +324,7 @@ def test_candidate_repository_quarantines_category_conflicts():
         embedding=None,
     )
 
-    repo = InMemoryCandidateRepository([conflict_item, clean_item])
+    _repo = InMemoryCandidateRepository([conflict_item, clean_item])
     # The InMemoryCandidateRepository doesn't filter by category_conflict
     # because it doesn't have the attribute. The filter is SQL-level.
     # This test documents the expected behavior for the Postgres implementation.
