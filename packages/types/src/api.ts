@@ -930,6 +930,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cuelinks/campaigns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all Cuelinks campaigns from the loaded export
+         * @description Return every campaign row from the Cuelinks export (active and inactive).
+         *
+         *     Requires authentication. Returns an empty list when no campaign export
+         *     is configured (GYF_CUELINKS_CAMPAIGNS_PATH not set).
+         */
+        get: operations["list_campaigns_cuelinks_campaigns_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cuelinks/campaigns/eligible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List campaigns eligible for product catalogue ingestion
+         * @description Return only campaigns where product-level deeplinking is allowed.
+         *
+         *     Eligibility requires: Deeplink=Yes, Active status, and Indian Fashion vertical.
+         *     These are the campaigns the ingestion pipeline will import product rows for.
+         */
+        get: operations["list_eligible_campaigns_cuelinks_campaigns_eligible_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cuelinks/campaigns/{merchant_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a single campaign by merchant key (slugified merchant name)
+         * @description Look up a campaign by its slugified merchant name.
+         *
+         *     The merchant key is the merchant name lowercased, non-alphanumerics
+         *     replaced with hyphens (e.g., "Columbia Sportswear India" → "columbia-sportswear-india").
+         */
+        get: operations["get_campaign_cuelinks_campaigns__merchant_key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cuelinks/links/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Convert a retailer product URL into a Cuelinks affiliate deeplink
+         * @description Wrap a product URL into a Cuelinks deeplink with the provided subid.
+         *
+         *     The endpoint resolves the merchant from the URL's domain, checks that the
+         *     campaign allows product-level deeplinks, and returns the wrapped URL.
+         *     Returns `affiliate_url: null` with `deeplink_allowed: false` when:
+         *     - The URL is not a valid product page (homepage, shortlink, unsafe scheme)
+         *     - No matching campaign is found
+         *     - The campaign has Deeplink=No, is inactive, or is not Indian fashion
+         *
+         *     This is the same wrapping logic used at serve time by the catalogue and
+         *     recommendation surfaces — idempotent and safe to call repeatedly.
+         */
+        post: operations["convert_link_cuelinks_links_convert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cuelinks/links/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview link conversion without authentication (for client-side preview)
+         * @description Preview a link conversion without requiring authentication.
+         *
+         *     Uses a fixed 'preview' subid by default. Useful for client-side
+         *     "copy link" previews. Rate-limited by the global API rate limiter.
+         */
+        get: operations["preview_link_conversion_cuelinks_links_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -972,6 +1094,36 @@ export interface components {
              * @default USD
              */
             currency: string;
+        };
+        /**
+         * CampaignResponse
+         * @description One Cuelinks merchant/campaign capability row.
+         */
+        CampaignResponse: {
+            /** Merchant Name */
+            merchant_name: string;
+            /** Campaign Id */
+            campaign_id?: string | null;
+            /** Domain */
+            domain?: string | null;
+            /** Country */
+            country: string;
+            /** Vertical */
+            vertical: string;
+            /** Status */
+            status: string;
+            /** Deeplink Enabled */
+            deeplink_enabled: boolean;
+            /** Home Url */
+            home_url?: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Indian Fashion */
+            is_indian_fashion: boolean;
+            /** Product Deeplink Allowed */
+            product_deeplink_allowed: boolean;
+            /** Merchant Key */
+            merchant_key: string;
         };
         /**
          * Capability
@@ -1053,6 +1205,26 @@ export interface components {
             flags?: components["schemas"]["ConsentFlags"];
         };
         /**
+         * EligibleCampaignResponse
+         * @description Campaign eligible for product catalogue ingestion.
+         */
+        EligibleCampaignResponse: {
+            /** Merchant Name */
+            merchant_name: string;
+            /** Campaign Id */
+            campaign_id?: string | null;
+            /** Domain */
+            domain?: string | null;
+            /** Country */
+            country: string;
+            /** Vertical */
+            vertical: string;
+            /** Status */
+            status: string;
+            /** Merchant Key */
+            merchant_key: string;
+        };
+        /**
          * FeedbackRequest
          * @description Client-supplied feedback. ``user_id`` is intentionally absent — it is taken
          *     from the authenticated principal so callers cannot attribute events to others.
@@ -1091,6 +1263,49 @@ export interface components {
          * @enum {string}
          */
         InteractionTarget: "item" | "outfit" | "post" | "user";
+        /**
+         * LinkConversionRequest
+         * @description Request to wrap a product URL into a Cuelinks affiliate deeplink.
+         */
+        LinkConversionRequest: {
+            /**
+             * Url
+             * @description Retailer product URL to wrap
+             */
+            url: string;
+            /**
+             * Subid
+             * @description Attribution subid (e.g. recommendation_id or catalog_<item_id>)
+             */
+            subid: string;
+        };
+        /**
+         * LinkConversionResponse
+         * @description Result of a link conversion request.
+         */
+        LinkConversionResponse: {
+            /**
+             * Affiliate Url
+             * @description Cuelinks deeplink with subid, or None if URL/campaign ineligible
+             */
+            affiliate_url?: string | null;
+            /**
+             * Campaign Id
+             * @description Campaign ID that would be used for attribution
+             */
+            campaign_id?: string | null;
+            /**
+             * Merchant Name
+             * @description Merchant name resolved from the URL
+             */
+            merchant_name?: string | null;
+            /**
+             * Deeplink Allowed
+             * @description Whether the campaign permits product-level deeplinks
+             * @default false
+             */
+            deeplink_allowed: boolean;
+        };
         /**
          * ModelRegistryStatus
          * @description Operator view of every model GYF can load and its serve-eligibility.
@@ -3230,6 +3445,144 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_campaigns_cuelinks_campaigns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignResponse"][];
+                };
+            };
+        };
+    };
+    list_eligible_campaigns_cuelinks_campaigns_eligible_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EligibleCampaignResponse"][];
+                };
+            };
+        };
+    };
+    get_campaign_cuelinks_campaigns__merchant_key__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                merchant_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    convert_link_cuelinks_links_convert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkConversionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkConversionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_link_conversion_cuelinks_links_preview_get: {
+        parameters: {
+            query: {
+                /** @description Retailer product URL to preview */
+                url: string;
+                /** @description Subid to use in the preview link */
+                subid?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkConversionResponse"];
                 };
             };
             /** @description Validation Error */
