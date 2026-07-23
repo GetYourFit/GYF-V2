@@ -150,27 +150,31 @@ def test_neutral_undertone_yields_no_hue_preference_and_no_personalization_credi
     assert c.personalization_strength == 0.0
 
 
+def test_edgy_romantic_glam_map_to_a_scored_aesthetic():
+    """The three chips the diagnostic report flagged as UI/API-valid but not
+    backend-scored (edgy, romantic, glam) must resolve to a real perception
+    aesthetic label (ml/perception/attributes.py), not a no-op."""
+    for style, expected in (("edgy", "streetwear"), ("romantic", "bohemian"), ("glam", "vintage")):
+        profile = Profile(style_intent=[style], field_confidence={"style_intent": 0.8})
+        c = conditioning.resolve(profile, "casual", None)
+        assert expected in c.preferred_aesthetics
+        assert c.personalization_strength > 0.0
+
+
+def test_unmapped_style_intent_grants_no_personalization_credit():
+    """A style intent with no aesthetic mapping must not inflate
+    personalization_strength — the diagnostic report's finding #4: the system
+    could claim a personalized slate for a style that changed nothing."""
+    profile = Profile(style_intent=["not-a-real-style"], field_confidence={"style_intent": 0.8})
+    c = conditioning.resolve(profile, "casual", None)
+    assert c.preferred_aesthetics == frozenset()
+    assert c.personalization_strength == 0.0
+
+
 def test_budget_max_becomes_price_ceiling():
     profile = Profile(budget_range=BudgetRange(min=0, max=80, currency="USD"))
     c = conditioning.resolve(profile, "casual", None)
     assert c.max_price == 80
-
-
-def test_profile_style_query_grounds_in_fashion_vocabulary():
-    profile = Profile(
-        gender="men", undertone="cool", occasion="wedding", style_intent=["minimalist"]
-    )
-    q = conditioning.profile_style_query(profile)
-    assert q is not None
-    assert "men's" in q and "minimalist" in q and "formal" in q  # wedding -> formal
-    assert "cool blue" in q  # cool undertone -> cool palette, not the word "undertone"
-    assert "undertone" not in q
-
-
-def test_profile_style_query_none_without_signal():
-    # No style intent, no occasion, neutral/unknown undertone => nothing to encode.
-    assert conditioning.profile_style_query(Profile(gender="women")) is None
-    assert conditioning.profile_style_query(Profile(undertone="neutral")) is None
 
 
 # --- Composition ------------------------------------------------------------
@@ -1403,6 +1407,39 @@ def test_cohesion_phrase_and_pattern_phrase_are_earned():
     assert "one visual language" in text
 
 
+def test_aesthetic_phrase_is_earned_by_matching_items():
+    from app.recsys import conditioning
+    from app.recsys.compose import _explain
+    from app.profile.models import Profile
+
+    profile = Profile(style_intent=["glam"], field_confidence={"style_intent": 0.8})
+    constraints = conditioning.resolve(profile, "casual", None)
+    assert "vintage" in constraints.preferred_aesthetics
+
+    matching = (
+        _item("t", "t_shirt", "top", aesthetic="vintage"),
+        _item("b", "jeans", "bottom", aesthetic="vintage"),
+        _item("s", "sneakers", "footwear", aesthetic="streetwear"),
+    )
+    text = _explain(matching, constraints, 0.5, 0.5, 0.0)
+    assert "vintage" in text
+
+    # Only one item carries the matched aesthetic -> no claim of a style running
+    # through "the look" (needs at least two pieces to say the look reads styled).
+    single_match = (
+        _item("t2", "t_shirt", "top", aesthetic="vintage"),
+        _item("b2", "jeans", "bottom", aesthetic="streetwear"),
+        _item("s2", "sneakers", "footwear", aesthetic="preppy"),
+    )
+    text_single = _explain(single_match, constraints, 0.5, 0.5, 0.0)
+    assert "vintage" not in text_single
+
+    # No style intent at all -> no aesthetic claim, even if items happen to match.
+    unstyled = conditioning.resolve(Profile(), "casual", None)
+    text_unstyled = _explain(matching, unstyled, 0.5, 0.5, 0.0)
+    assert "vintage" not in text_unstyled
+
+
 def test_postgres_taste_history_requires_served_recommendation_context():
     class _FakePool:
         def __init__(self):
@@ -1505,7 +1542,14 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     repo = PostgresCandidateRepository("postgresql://unused", pool=pool)
 
     with caplog.at_level("INFO", logger="gyf"):
-        repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=[0.1, 0.2])
+        repo.candidates_by_slot(
+            frozenset({"top"}),
+            None,
+            None,
+            80,
+            taste_vector=[0.1, 0.2],
+            preferred_aesthetics=frozenset(["streetwear"]),
+        )
     assert "fallback=false rows=0" in caplog.messages[-1]
     assert pool.calls[0] == (
         "SELECT set_config('statement_timeout', %s, true)",
@@ -1529,6 +1573,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
         None,
         None,
         None,
+        ["streetwear"],  # preferred_aesthetics
+        ["streetwear"],  # preferred_aesthetics for CASE
         "[0.1,0.2]",
         80,
     )
@@ -1550,7 +1596,7 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     assert params[-2:] == (80, 80)
     assert "affinity DESC" not in sql
     assert len(pool.calls) == 3
-    assert "ORDER BY (e.item_id IS NOT NULL) DESC" in pool.calls[2][0]
+    assert "(e.item_id IS NOT NULL) DESC, i.created_at DESC" in pool.calls[2][0]
     assert pool.calls[2][1] == params[:-1]
 
 
@@ -1621,7 +1667,7 @@ def test_candidate_pool_retries_taste_timeout_once_through_bounded_fallback(capl
         call for call in pool.calls if "CROSS JOIN LATERAL" in call[1]
     )
     assert "1 - (e.embedding <=> %s::vector)" in fallback_sql
-    assert fallback_params[-3:] == (80, 80, "[0.1,0.2]")
+    assert fallback_params[-6:] == (80, 80, "[0.1,0.2]", None, None, 80)
     assert result["top"][0].affinity == 0.75
     assert "fallback=true rows=1" in caplog.messages[-1]
 
