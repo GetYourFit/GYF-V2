@@ -409,6 +409,7 @@ def _explain(
         sentence += (
             " The pieces share one visual language, so the look reads styled, not assembled."
         )
+    sentence += _aesthetic_phrase(items, constraints)
     sentence += _undertone_phrase(items, constraints)
     sentence += _skin_tone_phrase(items, constraints)
     if constraints.goals:
@@ -543,6 +544,29 @@ def _goal_phrase(goals: frozenset[Effect]) -> str:
         return ""
     joined = phrases[0] if len(phrases) == 1 else "; ".join(phrases)
     return f"It's {joined}."
+
+
+def _aesthetic_phrase(items: tuple[Candidate, ...], constraints: Constraints) -> str:
+    """Name the matched aesthetic — only when items carry that certain perception.
+
+    Claims are earned (D6): the sentence appears only when the user's style intent
+    mapped to an aesthetic AND at least two items in the outfit have that certain
+    perceived aesthetic. This avoids crediting a style that didn't actually shape
+    the selection.
+    """
+    if not constraints.preferred_aesthetics:
+        return ""
+    matched_items = [
+        it.aesthetic
+        for it in items
+        if it.aesthetic and it.aesthetic in constraints.preferred_aesthetics
+    ]
+    if len(matched_items) < 2:  # need at least 2 items to claim the aesthetic shaped the look
+        return ""
+    labels = [a.replace("_", " ") for a in sorted(set(matched_items))]
+    if len(labels) == 1:
+        return f" The {labels[0]} aesthetic runs through the look."
+    return f" The {', '.join(labels[:-1])} and {labels[-1]} aesthetics run through the look."
 
 
 def _describe(item: Candidate) -> str:
