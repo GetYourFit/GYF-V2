@@ -31,6 +31,7 @@ from .security_headers import install_security_headers
 from .routers import (
     catalog,
     collections,
+    cuelinks,
     feedback,
     profile,
     recommendations,
@@ -239,6 +240,7 @@ app.include_router(social.router)
 app.include_router(support.router)
 app.include_router(system.router)
 app.include_router(tryon.router)
+app.include_router(cuelinks.router)
 
 
 # --- Back-compat re-exports -------------------------------------------------
