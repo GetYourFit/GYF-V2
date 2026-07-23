@@ -57,17 +57,6 @@ _UNDERTONE_HUES: dict[str, tuple[float, ...]] = {
     "olive": (55.0, 110.0, 165.0),  # warm earth, olive green, teal
 }
 
-# The same colour theory as _UNDERTONE_HUES, but as fashion-image words SigLIP
-# understands — used to write the zero-shot cold-start query (profile_style_query).
-# Marqo-FashionSigLIP has no notion of "undertone", but it retrieves garment
-# images by colour name well, so we translate the undertone into the palette that
-# flatters it. Neutral/unknown stays empty (no honest colour pull, D6).
-_UNDERTONE_COLORS: dict[str, str] = {
-    "warm": "warm red, rust, and earthy tones",
-    "cool": "cool blue, teal, and emerald tones",
-    "olive": "olive green, khaki, and earthy teal tones",
-}
-
 # Body type -> default visual-effect goals (classic body-type styling), applied
 # only when the user set NO explicit NL goal — an explicit ask always wins.
 # All six taxonomy types now carry an honest default, so stating a body type
@@ -176,17 +165,21 @@ def resolve(
         goals_from_body = True
 
     # Personalization strength reflects how much *personal* signal (beyond the
-    # occasion everyone shares) we actually have — undertone, style intent,
-    # body type, and skin tone all condition scoring, so all four count.
-    # Neutral/unset undertone is the one exception: it deliberately expresses no
-    # hue preference (colour-theory honesty, see _UNDERTONE_HUES above), so it
-    # never actually moves a score — crediting it here would overstate how
-    # personal the ranking is for exactly those users.
+    # occasion everyone shares) we actually have — undertone, style intent
+    # (only when it maps to a scoring aesthetic), body type, and skin tone all
+    # condition scoring, so they count. Neutral/unset undertone is the one
+    # exception: it deliberately expresses no hue preference (colour-theory
+    # honesty, see _UNDERTONE_HUES above), so it never actually moves a score
+    # — crediting it here would overstate how personal the ranking is for
+    # exactly those users.
+    mapped_intents = [i for i in profile.style_intent if i in _STYLE_INTENT_AESTHETIC]
+    has_mapped_style = bool(mapped_intents)
     personal_fields = ("undertone", "style_intent", "body_type", "skin_tone")
     signals = sum(
         profile.field_confidence.get(field_name, 0.0)
         for field_name in personal_fields
-        if field_name != "undertone" or hues
+        if (field_name != "undertone" or hues)
+        and (field_name != "style_intent" or has_mapped_style)
     )
     personalization = min(1.0, signals / len(personal_fields))
 
@@ -244,6 +237,9 @@ _STYLE_INTENT_AESTHETIC: dict[str, str] = {
     "sporty": "athleisure",
     "business_casual": "business formal",
     "classic": "vintage",
+    "edgy": "streetwear",
+    "romantic": "bohemian",
+    "glam": "vintage",
 }
 
 
@@ -252,34 +248,3 @@ _STYLE_INTENT_AESTHETIC: dict[str, str] = {
 # gender word (the query stays gender-neutral and the caller's gender facet, not
 # the text, does the hard filtering).
 _GENDER_WORD: dict[str, str] = {"men": "men's", "women": "women's"}
-
-
-def profile_style_query(profile: Profile) -> str | None:
-    """A fashion-vocabulary sentence describing what suits this user, for zero-shot
-    SigLIP text->image cold-start on Explore — personalising the feed *before* any
-    engagement exists (the profile-but-no-history gap left by the taste model).
-
-    Grounded only in signals SigLIP actually retrieves on: style intent (fashion
-    adjectives), occasion (formality), and undertone translated into a flattering
-    colour palette. Body type is deliberately omitted — SigLIP sees the garment,
-    not the wearer, so it can't retrieve on a body-shape word; body-type styling
-    stays in the stylist's effects engine. Returns ``None`` when the profile
-    carries no such signal (nothing to personalise on -> caller keeps the cheap
-    rotating read).
-    """
-    parts: list[str] = []
-    word = _GENDER_WORD.get((profile.gender or "").lower())
-    if word:
-        parts.append(word)
-    parts.extend(sorted(profile.style_intent))  # onboarding vocab == fashion terms
-    formality = _OCCASION_FORMALITY.get((profile.occasion or "").lower())
-    if formality:
-        parts.append(formality)
-    parts.append("outfit")
-    colors = _UNDERTONE_COLORS.get((profile.undertone or "").lower())
-    if colors:
-        parts.append("in " + colors)
-    # Only a real query if we added signal beyond the generic "men's/women's outfit".
-    if not (profile.style_intent or formality or colors):
-        return None
-    return " ".join(parts)

@@ -28,6 +28,10 @@ from .conditioning import CANDIDATE_SLOTS, _CATEGORIES_BY_SLOT
 
 logger = logging.getLogger("gyf")
 
+# Sort order constants used in query templates below.
+_HAS_PERCEPTION = "(e.item_id IS NOT NULL) DESC"
+_ORDER_BY_RECENCY = _HAS_PERCEPTION + ", i.created_at DESC"
+
 # A recommendation is interactive, so a regressed catalog plan must fail before
 # the client's 90-second transport bound. Applied transaction-locally on the
 # already-checked-out connection; no global database or pool setting changes.
@@ -104,6 +108,7 @@ class CandidateRepository(Protocol):
         limit_per_slot: int,
         taste_vector: list[float] | None = None,
         genders: frozenset[str] | None = None,
+        preferred_aesthetics: frozenset[str] | None = None,
         request_id: str = "-",
     ) -> dict[str, list[Candidate]]:
         """Return up to ``limit_per_slot`` candidates for each requested slot.
@@ -112,6 +117,8 @@ class CandidateRepository(Protocol):
         to it (computed in pgvector); otherwise ``affinity`` is ``None``.
         ``genders`` restricts to items whose catalog gender facet is in the set
         (unfaceted items always pass); ``None`` applies no gender predicate.
+        ``preferred_aesthetics`` boosts items whose perceived aesthetic matches
+        one of the preferred aesthetics; ``None`` applies no aesthetic boost.
         """
         ...
 
@@ -197,7 +204,13 @@ _CANDIDATES = (
     _SELECT
     + _FILTERS
     + """
-ORDER BY {order}
+ORDER BY CASE
+    WHEN %s::text[] IS NOT NULL
+         AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' IS NOT NULL
+         AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
+         AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = ANY(%s::text[])
+    THEN 0 ELSE 1 END,
+{order}
 LIMIT %s
 """
 )
@@ -215,7 +228,13 @@ JOIN items i ON i.id = e.item_id
 """
     + _FILTERS
     + """
-ORDER BY e.embedding <=> %s::vector
+ORDER BY e.embedding <=> %s::vector,
+    CASE
+        WHEN %s::text[] IS NOT NULL
+         AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' IS NOT NULL
+         AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
+         AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = ANY(%s::text[])
+        THEN 0 ELSE 1 END
 LIMIT %s
 """
 )
@@ -263,8 +282,19 @@ WITH per_category AS MATERIALIZED (
 )
 """
     + _SELECT_COLUMNS
-    + " FROM picked p JOIN items i ON i.id = p.id "
-    "LEFT JOIN item_embeddings e ON e.item_id = i.id"
+    + """ FROM picked p JOIN items i ON i.id = p.id 
+LEFT JOIN item_embeddings e ON e.item_id = i.id
+ORDER BY CASE
+    WHEN %s::text[] IS NOT NULL
+         AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' IS NOT NULL
+         AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
+         AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = ANY(%s::text[])
+    THEN 0 ELSE 1 END,
+    """
+    + _ORDER_BY_RECENCY
+    + """
+LIMIT %s
+"""
 )
 
 # Pool selection is the recommendation ceiling: the composer can only rank what
@@ -284,8 +314,6 @@ WITH per_category AS MATERIALIZED (
 # the colour JSONB per row — cheaper sort key, same result, and no `{order}`
 # brace-escaping to worry about. The taste path gets this for free: its
 # `affinity DESC NULLS LAST` already floats embedded items above the NULL tail.
-_HAS_PERCEPTION = "(e.item_id IS NOT NULL) DESC"
-_ORDER_BY_RECENCY = _HAS_PERCEPTION + ", i.created_at DESC"
 
 # Wardrobe anchors: the user owns these items, so no region/price predicates.
 _BY_IDS = _SELECT + "\nWHERE i.id = ANY(%s)\n"
@@ -323,6 +351,7 @@ class PostgresCandidateRepository:
         limit_per_slot: int,
         taste_vector: list[float] | None = None,
         genders: frozenset[str] | None = None,
+        preferred_aesthetics: frozenset[str] | None = None,
         request_id: str = "-",
     ) -> dict[str, list[Candidate]]:
         from psycopg.errors import QueryCanceled  # lazy: postgres extra only
@@ -351,12 +380,22 @@ class PostgresCandidateRepository:
                 gender_list,
                 gender_list,
             )
-            params = (
-                prefix + filter_params + (_pgvector(taste_vector), limit_per_slot)
-                if taste_vector
-                else filter_params + (limit_per_slot, limit_per_slot)
-            )
-            fallback_params = filter_params + (limit_per_slot,)
+            aesthetic_list = sorted(preferred_aesthetics) if preferred_aesthetics else None
+            if taste_vector:
+                params = (
+                    prefix
+                    + filter_params
+                    + (_pgvector(taste_vector), aesthetic_list, aesthetic_list, limit_per_slot)
+                )
+            else:
+                params = filter_params + (
+                    limit_per_slot,
+                    limit_per_slot,
+                    aesthetic_list,
+                    aesthetic_list,
+                    limit_per_slot,
+                )
+            fallback_params = filter_params + (aesthetic_list, aesthetic_list, limit_per_slot)
             checkout_start = time.perf_counter()
             checkout_ms = query_ms = mapping_ms = 0.0
             used_fallback = False
@@ -406,6 +445,9 @@ class PostgresCandidateRepository:
                         limit_per_slot,
                         limit_per_slot,
                         prefix[0],
+                        aesthetic_list,
+                        aesthetic_list,
+                        limit_per_slot,
                     )
                     with self._connection() as conn:
                         conn.execute(
@@ -524,6 +566,7 @@ class InMemoryCandidateRepository:
         limit_per_slot: int,
         taste_vector: list[float] | None = None,
         genders: frozenset[str] | None = None,
+        preferred_aesthetics: frozenset[str] | None = None,
         request_id: str = "-",
     ) -> dict[str, list[Candidate]]:
         out: dict[str, list[Candidate]] = {slot: [] for slot in slots}
@@ -537,6 +580,9 @@ class InMemoryCandidateRepository:
             bucket = out[item.slot]
             if len(bucket) < limit_per_slot:
                 bucket.append(item)
+        if preferred_aesthetics:
+            for slot, bucket in out.items():
+                bucket.sort(key=lambda it: 0 if it.aesthetic in preferred_aesthetics else 1)
         return out
 
     def candidates_by_ids(self, item_ids: list[str]) -> list[Candidate]:
