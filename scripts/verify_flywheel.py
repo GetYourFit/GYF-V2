@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import os
 import sys
-from collections import Counter
 
 # The app reads config at import time (sink, repos bind to settings). Pin the
 # runtime *before* importing it: local auth-open dev principal + the relational

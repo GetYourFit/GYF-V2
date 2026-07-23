@@ -31,15 +31,16 @@ else:
     try:
         from gyf_contracts.footwear_compatibility import (
             classify_footwear_style,
-            is_compatible_outfit
+            is_compatible_outfit,
         )
     except ImportError:
         # Fallback for environments where footwear compatibility isn't available
         def classify_footwear_style(title: str, category: str):
             return None
-        
+
         def is_compatible_outfit(*args, **kwargs):
             return True
+
 
 # A garment with chroma below this reads as a neutral (black/white/grey/denim-ish)
 # and coordinates with almost anything — the backbone of real-world outfits.
@@ -587,7 +588,7 @@ _MAX_POOL_PER_SLOT = 14
 
 def _is_footwear_compatible(items: tuple[Candidate, ...], occasion: str) -> bool:
     """Check if the footwear in an outfit is compatible with the other garments.
-    
+
     Validates using footwear subtype taxonomy to prevent invalid pairings
     like shirts with slippers or formal shoes with shorts.
     """
@@ -595,19 +596,16 @@ def _is_footwear_compatible(items: tuple[Candidate, ...], occasion: str) -> bool
     footwear_item = next((item for item in items if item.slot == "footwear"), None)
     if not footwear_item:
         return True  # No footwear to validate
-    
+
     # Classify the footwear style
-    footwear_style = classify_footwear_style(
-        footwear_item.title or "", 
-        footwear_item.category
-    )
+    footwear_style = classify_footwear_style(footwear_item.title or "", footwear_item.category)
     if not footwear_style:
         return True  # No specific style detected, allow
-    
+
     # Find top and bottom items
     top_category = None
     bottom_category = None
-    
+
     for item in items:
         if item.slot == "top":
             top_category = item.category
@@ -616,17 +614,12 @@ def _is_footwear_compatible(items: tuple[Candidate, ...], occasion: str) -> bool
         elif item.slot == "full_body":
             top_category = item.category
             bottom_category = None  # Full body garments don't need separate bottoms
-    
+
     if not top_category:
         return True  # No top found, can't validate properly
-    
+
     # Check compatibility
-    return is_compatible_outfit(
-        footwear_style, 
-        top_category, 
-        bottom_category, 
-        occasion
-    )
+    return is_compatible_outfit(footwear_style, top_category, bottom_category, occasion)
 
 
 def _assemble(
@@ -638,7 +631,7 @@ def _assemble(
     not all populated — graceful degradation when a category is missing from the
     catalog rather than emitting an incomplete look (CLAUDE.md §2). Each slot is
     trimmed to its top ``_MAX_POOL_PER_SLOT`` first so the product can't explode.
-    
+
     Now includes footwear compatibility validation to filter out invalid combinations.
     """
     outfits: list[tuple[Candidate, ...]] = []
@@ -646,15 +639,15 @@ def _assemble(
         slot_pools = [pools.get(slot, [])[:_MAX_POOL_PER_SLOT] for slot in blueprint]
         if any(not pool for pool in slot_pools):
             continue
-        
+
         # Generate all combinations
         raw_outfits = list(itertools.product(*slot_pools))
-        
+
         # Filter for footwear compatibility
         for outfit in raw_outfits:
             if _is_footwear_compatible(outfit, constraints.occasion):
                 outfits.append(outfit)
-    
+
     return outfits
 
 
@@ -715,7 +708,7 @@ def compose(
     # Precompute the goal's effects once; an empty goal set yields a neutral
     # GoalEffects that leaves scoring unchanged.
     goal_effects = effects_for(constraints.goals)
-    
+
     # Score all valid outfit combinations
     scored = [
         (items, *score_outfit(items, constraints, taste_strength, goal_effects, wardrobe))
@@ -778,7 +771,7 @@ def _spread_footwear(
             out.append((items, score, color, formality))
             continue
         new_items = items[:idx] + (alt,) + items[idx + 1 :]
-        
+
         # Validate footwear compatibility before swapping
         if _is_footwear_compatible(new_items, constraints.occasion):
             s, cl, fm = score_outfit(new_items, constraints, taste_strength, goal_effects, wardrobe)

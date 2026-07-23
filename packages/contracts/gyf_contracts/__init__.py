@@ -12,7 +12,7 @@ invalid outfit pairings.
 
 from .footwear_compatibility import (
     FootwearStyle,
-    FormalityLevel, 
+    FormalityLevel,
     OccasionType,
     FootwearCompatibility,
     classify_footwear_style,
@@ -24,7 +24,7 @@ from .footwear_compatibility import (
 __all__ = [
     "FootwearStyle",
     "FormalityLevel",
-    "OccasionType", 
+    "OccasionType",
     "FootwearCompatibility",
     "classify_footwear_style",
     "get_compatibility",
