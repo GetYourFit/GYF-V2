@@ -94,6 +94,8 @@ class Candidate:
     owned: bool = False
     # Catalog gender facet (men / women / unisex), or ``None`` when unfaceted.
     gender: str | None = None
+    # Merchant family (brand) from taxonomy, or ``None`` when unfaceted.
+    brand: str | None = None
     # L2-normalized perception embedding (SigLIP), or ``None`` pre-backfill.
     # Powers the composer's style-cohesion signal: how much the garments share
     # one visual language, beyond what colour/formality arithmetic can see.
@@ -171,6 +173,7 @@ SELECT
     i.attributes #>> '{{perception,attributes,silhouette,certain}}'  AS silhouette_certain,
     i.attributes #>> '{{perception,attributes,fit,certain}}'         AS fit_certain,
     i.attributes #>> '{{taxonomy,gender}}'                           AS gender,
+    i.attributes #>> '{{taxonomy,brand}}'                            AS brand,
     e.embedding::text                                                AS embedding
 """
 
@@ -635,7 +638,8 @@ def _row_to_candidate(slot: str, row: tuple) -> Candidate:
         affinity=float(row[14]) if row[14] is not None else None,
         image_url=image_url_from_refs(row[15]),
         gender=row[20],
-        embedding=_parse_vector(row[21]) if len(row) > 21 else None,
+        brand=row[21],
+        embedding=_parse_vector(row[22]) if len(row) > 22 else None,
     )
 
 

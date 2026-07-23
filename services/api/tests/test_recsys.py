@@ -867,7 +867,7 @@ def test_http_recommend_feedback_then_next_slate_uses_joined_taste_signal():
 
 
 def _attr_row(*, pattern_certain, silhouette_certain, fit_certain, aesthetic_certain):
-    """A candidates SQL row (20 cols) with scripted per-attribute certainty flags."""
+    """A candidates SQL row (22 cols) with scripted per-attribute certainty flags."""
     return (
         "id-1",
         "Tee",
@@ -890,6 +890,7 @@ def _attr_row(*, pattern_certain, silhouette_certain, fit_certain, aesthetic_cer
         silhouette_certain,
         fit_certain,  # 16-19
         None,  # 20 gender (unfaceted)
+        None,  # 21 brand (unfaceted)
     )
 
 

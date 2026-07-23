@@ -695,16 +695,23 @@ def _core_key(items: tuple[Candidate, ...]) -> tuple[str, ...]:
 
 
 def _diversity(a: tuple[Candidate, ...], b: tuple[Candidate, ...]) -> float:
-    """Dissimilarity of two outfits in [0, 1] — shared items make them alike.
+    """Dissimilarity of two outfits in [0, 1] — shared feature sets make them alike.
 
-    Jaccard distance over item ids, then the anchor cap above: outfits sharing a
-    top (or footwear) are near-duplicates, exactly the "five near-identical
-    results" failure to avoid (§2).
+    Feature set per item: (category, aesthetic or '', brand or '', item_id).
+    Jaccard distance over these feature sets, then the anchor cap above: outfits
+    sharing the same anchor item (first item) are near-duplicates, exactly the
+    "five near-identical results" failure to avoid (§2).
     """
-    ids_a = {it.item_id for it in a}
-    ids_b = {it.item_id for it in b}
-    union = ids_a | ids_b
-    jaccard = 1.0 - len(ids_a & ids_b) / len(union) if union else 0.0
+    def _feature_set(items: tuple[Candidate, ...]) -> set[tuple[str, str, str, str]]:
+        return {
+            (it.category, it.aesthetic or "", it.brand or "", it.item_id)
+            for it in items
+        }
+
+    features_a = _feature_set(a)
+    features_b = _feature_set(b)
+    union = features_a | features_b
+    jaccard = 1.0 - len(features_a & features_b) / len(union) if union else 0.0
     if a and b and a[0].item_id == b[0].item_id:
         return min(jaccard, _SHARED_ANCHOR_CEILING)
     return jaccard
