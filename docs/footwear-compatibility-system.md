@@ -19,18 +19,21 @@ The system consists of three main components:
 The system classifies footwear into specific subtypes beyond the basic categories:
 
 #### Athletic/Casual
+
 - `RUNNING_SHOES` - Athletic performance shoes
-- `BASKETBALL_SNEAKERS` - High-top athletic shoes  
+- `BASKETBALL_SNEAKERS` - High-top athletic shoes
 - `CANVAS_SNEAKERS` - Casual canvas shoes (Converse, Vans)
 - `SLIP_ON_SNEAKERS` - Easy-wear sneakers
 
 #### Formal Shoes
+
 - `OXFORD_SHOES` - Classic lace-up dress shoes
 - `DERBY_SHOES` - Open-lacing dress shoes
 - `LOAFERS` - Slip-on dress shoes
 - `MONK_STRAP` - Buckle dress shoes
 
 #### Boots
+
 - `DRESS_BOOTS` - Formal ankle boots
 - `CHELSEA_BOOTS` - Elastic-sided boots
 - `COMBAT_BOOTS` - Military-style boots
@@ -38,12 +41,14 @@ The system classifies footwear into specific subtypes beyond the basic categorie
 - `ANKLE_BOOTS` - General ankle-height boots
 
 #### Sandals & Open Footwear
+
 - `DRESS_SANDALS` - Formal occasion sandals
 - `CASUAL_SANDALS` - Everyday sandals
 - `FLIP_FLOPS` - Beach/casual flip-flops
 - `SLIDES` - Slip-on sandals
 
 #### Heels
+
 - `PUMPS` - Classic closed-toe heels
 - `STILETTOS` - High thin heels
 - `BLOCK_HEELS` - Chunky heels
@@ -51,11 +56,13 @@ The system classifies footwear into specific subtypes beyond the basic categorie
 - `KITTEN_HEELS` - Low heels
 
 #### Traditional (Indian)
+
 - `MOJARI` - Traditional pointed shoes
 - `JUTTI` - Flat traditional shoes
 - `KOLHAPURI` - Traditional sandals
 
 #### Slippers (Indoor)
+
 - `HOUSE_SLIPPERS` - Indoor comfort shoes
 - `BEDROOM_SLIPPERS` - Sleep/loungewear shoes
 
@@ -79,7 +86,7 @@ style = classify_footwear_style("Nike Running Shoes", "sneakers")
 Each footwear style defines:
 
 - **Formality Levels** - Appropriate dressiness levels
-- **Occasions** - Suitable events/contexts  
+- **Occasions** - Suitable events/contexts
 - **Compatible Garments** - Works with these tops/bottoms
 - **Incompatible Items** - Never works with these
 - **Special Rules** - Indoor-only, coverage requirements, etc.
@@ -87,6 +94,7 @@ Each footwear style defines:
 ### Example Rules
 
 #### House Slippers
+
 ```python
 FootwearCompatibility(
     style=FootwearStyle.HOUSE_SLIPPERS,
@@ -100,6 +108,7 @@ FootwearCompatibility(
 ```
 
 #### Oxford Shoes
+
 ```python
 FootwearCompatibility(
     style=FootwearStyle.OXFORD_SHOES,
@@ -122,7 +131,7 @@ The system integrates into the outfit composition pipeline by filtering invalid 
 def _is_footwear_compatible(items: tuple[Candidate, ...], occasion: str) -> bool:
     """Check if footwear is compatible with other garments."""
     # Classify footwear style
-    # Extract top/bottom categories  
+    # Extract top/bottom categories
     # Validate compatibility
     return is_compatible_outfit(footwear_style, top_category, bottom_category, occasion)
 ```
@@ -132,7 +141,7 @@ def _is_footwear_compatible(items: tuple[Candidate, ...], occasion: str) -> bool
 In `compose.py`, the assembly function now:
 
 1. Generates all possible outfit combinations
-2. Filters each combination for footwear compatibility  
+2. Filters each combination for footwear compatibility
 3. Only passes valid combinations to scoring
 4. Re-validates when swapping footwear for diversity
 
@@ -145,7 +154,7 @@ from gyf_contracts.footwear_compatibility import validate_footwear_outfit
 
 is_valid, reason = validate_footwear_outfit(
     footwear_title="House Slippers",
-    footwear_category="sandals", 
+    footwear_category="sandals",
     outfit_items=[("shirt", "Dress Shirt"), ("trousers", "Formal Trousers")],
     occasion="business"
 )
@@ -157,18 +166,18 @@ is_valid, reason = validate_footwear_outfit(
 ### Valid Combinations ✅
 
 - Canvas sneakers + t-shirt + jeans (casual)
-- Oxford shoes + dress shirt + trousers (business)  
+- Oxford shoes + dress shirt + trousers (business)
 - Dress sandals + summer dress (party)
 - Mojari + kurta + salwar (festive)
 - House slippers + t-shirt + shorts (loungewear)
 
 ### Invalid Combinations ❌
 
-- House slippers + dress shirt + trousers (business) - *Indoor-only footwear*
-- Flip-flops + formal dress (wedding) - *Too casual for occasion*
-- Oxford shoes + dress shirt + shorts (business) - *Coverage requirement*
-- Running shoes + saree (festive) - *Style mismatch*
-- Combat boots + wedding dress (wedding) - *Occasion inappropriate*
+- House slippers + dress shirt + trousers (business) - _Indoor-only footwear_
+- Flip-flops + formal dress (wedding) - _Too casual for occasion_
+- Oxford shoes + dress shirt + shorts (business) - _Coverage requirement_
+- Running shoes + saree (festive) - _Style mismatch_
+- Combat boots + wedding dress (wedding) - _Occasion inappropriate_
 
 ## Regional Considerations
 
@@ -208,7 +217,7 @@ except ImportError:
     # Fallback for environments without footwear compatibility
     def classify_footwear_style(title: str, category: str):
         return None
-    
+
     def is_compatible_outfit(*args, **kwargs):
         return True
 ```
@@ -241,8 +250,9 @@ except ImportError:
 ### Scaling
 
 The system is designed to handle:
+
 - Large footwear catalogs (thousands of styles)
-- High-frequency recommendation requests  
+- High-frequency recommendation requests
 - Real-time outfit validation
 - Extensible rule additions
 
@@ -261,7 +271,7 @@ The system is designed to handle:
 The system is designed for easy extension:
 
 - New footwear styles via enum addition
-- New occasions through OccasionType expansion  
+- New occasions through OccasionType expansion
 - Custom compatibility rules via matrix updates
 - Regional customization through rule subsets
 
@@ -281,7 +291,7 @@ Compatibility rules can be updated by:
 Key metrics to monitor:
 
 - **Validation rejection rates** - Ensure not too restrictive
-- **User feedback** - Styling appropriateness complaints  
+- **User feedback** - Styling appropriateness complaints
 - **Classification accuracy** - Correct footwear style detection
 - **Performance impact** - Composition pipeline timing
 
