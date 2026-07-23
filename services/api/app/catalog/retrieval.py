@@ -187,6 +187,9 @@ WITH candidates AS (
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND i.price IS NOT NULL AND i.id >= %s::uuid
      {region} {gender} {category}
+     AND i.attributes #>> '{{taxonomy,category_conflict}}' IS NULL
+     AND NOT (i.category <> i.attributes #>> '{{perception,attributes,category,value}}'
+              AND i.attributes #>> '{{perception,attributes,category,certain}}' = 'true')
    ORDER BY i.id
    LIMIT %s)
   UNION ALL
@@ -197,6 +200,9 @@ WITH candidates AS (
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND i.price IS NOT NULL AND i.id < %s::uuid
      {region} {gender} {category}
+     AND i.attributes #>> '{{taxonomy,category_conflict}}' IS NULL
+     AND NOT (i.category <> i.attributes #>> '{{perception,attributes,category,value}}'
+              AND i.attributes #>> '{{perception,attributes,category,certain}}' = 'true')
    ORDER BY i.id
    LIMIT %s)
   UNION ALL
@@ -207,6 +213,9 @@ WITH candidates AS (
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND i.price IS NULL AND i.id >= %s::uuid
      {region} {gender} {category}
+     AND i.attributes #>> '{{taxonomy,category_conflict}}' IS NULL
+     AND NOT (i.category <> i.attributes #>> '{{perception,attributes,category,value}}'
+              AND i.attributes #>> '{{perception,attributes,category,certain}}' = 'true')
    ORDER BY i.id
    LIMIT %s)
   UNION ALL
@@ -217,6 +226,9 @@ WITH candidates AS (
      AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
      AND i.price IS NULL AND i.id < %s::uuid
      {region} {gender} {category}
+     AND i.attributes #>> '{{taxonomy,category_conflict}}' IS NULL
+     AND NOT (i.category <> i.attributes #>> '{{perception,attributes,category,value}}'
+              AND i.attributes #>> '{{perception,attributes,category,certain}}' = 'true')
    ORDER BY i.id
    LIMIT %s)
 )
@@ -235,6 +247,9 @@ FROM items i
 WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
   AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
   {region} {gender} {category}
+  AND i.attributes #>> '{{taxonomy,category_conflict}}' IS NULL
+  AND NOT (i.category <> i.attributes #>> '{{perception,attributes,category,value}}'
+           AND i.attributes #>> '{{perception,attributes,category,certain}}' = 'true')
 ORDER BY (i.price IS NOT NULL) DESC, hashtext(i.id::text || %s), i.id
 LIMIT %s OFFSET %s
 """
@@ -255,6 +270,9 @@ FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
   {region} {gender} {category}
+  AND i.attributes #>> '{{taxonomy,category_conflict}}' IS NULL
+  AND NOT (i.category <> i.attributes #>> '{{perception,attributes,category,value}}'
+           AND i.attributes #>> '{{perception,attributes,category,certain}}' = 'true')
 ORDER BY e.embedding <=> %s::vector, i.id
 LIMIT %s OFFSET %s
 """

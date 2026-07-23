@@ -183,6 +183,11 @@ WHERE i.available
   AND (%s::text[] IS NULL
        OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
        OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
+  AND (i.attributes #>> '{{taxonomy,category_conflict}}' IS NULL)
+  AND NOT (
+      i.category <> i.attributes #>> '{{perception,attributes,category,value}}'
+      AND i.attributes #>> '{{perception,attributes,category,certain}}' = 'true'
+  )
   """
     + f"AND i.title !~* '{_KIDS_RE}'"
 )

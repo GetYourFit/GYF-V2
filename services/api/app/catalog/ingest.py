@@ -74,14 +74,33 @@ def _image_hash(image_urls: list[str]) -> str | None:
 
 def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedItem:
     """Normalize one raw feed item to the canonical ``items`` shape."""
-    category = classify(raw.category)
-    if category.name == "unknown":
-        # Feeds routinely carry junk category strings while the title names the
-        # garment plainly ("Relaxed Fit Stretch Joggers" under category "NEW").
-        # An unknown category exiles a real garment from every outfit slot, so
-        # the title is a second, often better, classification source.
-        category = classify(raw.title)
-    region_tags = sorted({*raw.region_hints, *category.region_tags})
+    # Classify both feed category and title independently to detect conflicts.
+    # A conflict exists when both classify to known (non-unknown) but different
+    # canonical categories. The title classification wins for the final category
+    # (it's more reliable per observed feed quality), but the conflict is
+    # recorded for quarantine before serving recommendations.
+    feed_category = classify(raw.category)
+    title_category = classify(raw.title)
+
+    category_conflict = None
+    if (
+        feed_category.name != "unknown"
+        and title_category.name != "unknown"
+        and feed_category.name != title_category.name
+    ):
+        category_conflict = {
+            "feed_category": feed_category.name,
+            "feed_slot": feed_category.slot,
+            "title_category": title_category.name,
+            "title_slot": title_category.slot,
+            "resolution": "title_wins",
+        }
+
+    # Title classification wins for the final assigned category (observed:
+    # feeds carry junk categories while titles name garments plainly).
+    final_category = title_category if title_category.name != "unknown" else feed_category
+
+    region_tags = sorted({*raw.region_hints, *final_category.region_tags})
     image_hash = _image_hash(raw.image_urls)
     # Merchant text is more trustworthy than the feed's facet tag: a title that
     # says "Women's" wins over a feed-supplied "unisex" (observed in the wild).
@@ -100,15 +119,19 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
         }.items()
         if value is not None
     }
+    taxonomy = {
+        "slot": final_category.slot,
+        "raw_category": raw.category,
+        **({"gender": gender} if gender else {}),
+    }
+    if category_conflict is not None:
+        taxonomy["category_conflict"] = category_conflict
+
     return NormalizedItem(
         title=raw.title.strip(),
-        category=category.name,
+        category=final_category.name,
         attributes={
-            "taxonomy": {
-                "slot": category.slot,
-                "raw_category": raw.category,
-                **({"gender": gender} if gender else {}),
-            },
+            "taxonomy": taxonomy,
             **({"commerce": commerce} if commerce else {}),
         },
         price=raw.price,
@@ -133,6 +156,9 @@ class IngestResult:
     # fallback → occurrence count. The taxonomy grows from this evidence, not
     # guesswork: every run reports exactly the vocabulary it failed to place.
     unknown_categories: Counter[str] = dataclasses.field(default_factory=Counter)
+    # Items where feed category and title classified to different known categories.
+    # These are quarantined from recommendations until resolved.
+    category_conflicts: int = 0
 
 
 class ItemRepository(Protocol):
@@ -182,6 +208,10 @@ def ingest(source: FeedSource, repo: ItemRepository) -> IngestResult:
         result.seen += 1
         if item.category == "unknown":
             result.unknown_categories[raw.category.strip() or raw.title.strip()] += 1
+        # Track category conflicts for quarantine reporting.
+        conflict = item.attributes.get("taxonomy", {}).get("category_conflict")
+        if conflict is not None:
+            result.category_conflicts += 1
         if repo.upsert(item):
             result.written += 1
     result.delisted = repo.reconcile_removals(source.provider, run_start, result.seen)
