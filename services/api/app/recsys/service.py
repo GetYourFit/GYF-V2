@@ -116,7 +116,7 @@ def recommend(
     ``seen_item_ids`` is the session's carried-forward "seen set": item ids from
     a slate the client already showed the user. Passing them on a "next look"
     refresh keeps the new slate from re-serving the same top+bottom category
-    family under different item ids (CLAUDE.md diversity fix, Slice C item #4).
+    family under different item ids (diagnostic Slice C, item #4).
     """
     with _stage(request_id, "profile_conditioning"):
         goals = parse_goal(goal)
