@@ -314,8 +314,6 @@ LIMIT %s
 # the colour JSONB per row — cheaper sort key, same result, and no `{order}`
 # brace-escaping to worry about. The taste path gets this for free: its
 # `affinity DESC NULLS LAST` already floats embedded items above the NULL tail.
-_HAS_PERCEPTION = "(e.item_id IS NOT NULL) DESC"
-_ORDER_BY_RECENCY = _HAS_PERCEPTION + ", i.created_at DESC"
 
 # Wardrobe anchors: the user owns these items, so no region/price predicates.
 _BY_IDS = _SELECT + "\nWHERE i.id = ANY(%s)\n"
@@ -387,13 +385,14 @@ class PostgresCandidateRepository:
                 params = (
                     prefix
                     + filter_params
-                    + (aesthetic_list, aesthetic_list, _pgvector(taste_vector), limit_per_slot)
+                    + (_pgvector(taste_vector), aesthetic_list, aesthetic_list, limit_per_slot)
                 )
             else:
                 params = filter_params + (
-                    aesthetic_list,
-                    aesthetic_list,
                     limit_per_slot,
+                    limit_per_slot,
+                    aesthetic_list,
+                    aesthetic_list,
                     limit_per_slot,
                 )
             fallback_params = filter_params + (aesthetic_list, aesthetic_list, limit_per_slot)

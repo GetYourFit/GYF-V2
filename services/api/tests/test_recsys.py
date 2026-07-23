@@ -1573,9 +1573,9 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
         None,
         None,
         None,
+        "[0.1,0.2]",  # ORDER BY e.embedding <=> %s::vector
         ["streetwear"],  # preferred_aesthetics
         ["streetwear"],  # preferred_aesthetics for CASE
-        "[0.1,0.2]",
         80,
     )
 
@@ -1593,11 +1593,12 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in sql
     assert "ORDER BY category_rank, category_order" in sql
     assert sql.index("LIMIT %s") < sql.rindex("e.embedding::text")
-    assert params[-2:] == (80, 80)
+    filter_params = params[:7]
+    assert params[7:] == (80, 80, None, None, 80)
     assert "affinity DESC" not in sql
     assert len(pool.calls) == 3
     assert "(e.item_id IS NOT NULL) DESC, i.created_at DESC" in pool.calls[2][0]
-    assert pool.calls[2][1] == params[:-1]
+    assert pool.calls[2][1] == filter_params + (None, None, 80)
 
 
 def test_candidate_pool_retries_taste_timeout_once_through_bounded_fallback(caplog):
