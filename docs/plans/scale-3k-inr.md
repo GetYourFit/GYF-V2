@@ -131,7 +131,7 @@ same config they shipped with.
 | Cache/ratelimit | Upstash Redis free (unchanged) | 0 | already wired |
 | Text-embed (search) | **Existing in-DB cache** + Modal CPU/T4 scale-to-zero miss candidate | 0 while inside verified credit | Choose CPU/GPU and region only from p95 and cost-per-success; the official $30 credit equals ~50.8 base-price T4 hours, not 187; export required audit evidence because [Starter logs](https://modal.com/pricing) are retained only briefly |
 | Try-on training | Kaggle free (30 h/wk T4×2) per `free-vton-moat.md` | 0 | F8 |
-| Try-on serving | **Closed pre-PMF**; later Modal/RunPod scale-to-zero benchmark | hard cap ₹1,500 | HF ZeroGPU hosting needs PRO and India-issued cards remain an operational risk; no dependency on it for production |
+| Try-on serving | **Closed until F9**; later measured scale-to-zero lane | base cap zero; separate paid-render working-capital cap set before opening | Require cost/success ≤₹5 hypothesis, contribution-margin evidence, daily/monthly kill switches and staged canaries; web-first billing hypotheses do not change the ₹3,000 base ceiling |
 | Bandwidth/tax/FX reserve | hard cash reserve | ₹650 | ₹500 bandwidth + ₹150 tax/FX buffer |
 | Total hard ceiling | API + reserves + optional GPU | **≤₹2,850** | leaves ₹150 emergency margin; GPU cap is zero until F9 opens a lane |
 
@@ -197,6 +197,9 @@ renders.
 Therefore GYF scales by gates:
 
 1. Stay below ₹3,000 while proving activation, D30 retention and unit economics with quotas.
+   Paid VTON, if opened after F9 and monetization readiness, has a separately measured working-
+   capital cap; include GST, payment fees, app-store commission where applicable, refunds and
+   successful-render cost in contribution margin. Revenue never justifies lower free-user quality.
 2. At 70% of a provider limit, freeze discretionary inference and prepare a costed next tier.
 3. Increase spend only when trailing confirmed contribution covers the next tier with 2× safety
    for three months, or the owner explicitly funds growth.
@@ -209,7 +212,7 @@ Therefore GYF scales by gates:
 | --- | --- |
 | **F2.5** | §4 trace + EXPLAIN + one measured root-cause fix; before/after India SLO evidence |
 | F4 | catalogue truth incl. image hosting/CDN decision — measure image LCP first; Supabase cached egress (5 GB free) or R2 free if it's the bottleneck |
-| F8/F9 | Frozen pre-PMF; benchmark cost per successful render, then enforce ₹1,500 cap, quotas + kill switch |
+| F8/F9 | Frozen until evidence; benchmark cost per successful render, then enforce transparent trial/quota, global kill switch and separate paid-render capital cap before any paid opening |
 | **F10** | current-topology proof; bandwidth/cost alerts, durable audit export and store release declarations; non-Singapore comparison only after measured SLO failure and owner approval |
 | F12 | reconciled real cost vs ceiling; no Supabase Pro upgrade fits the fixed ceiling alongside the API, so trigger a topology review before 70% of any free-tier limit |
 | F13 | deletion of everything replaced above (old project/provider lane, Vercel production config, keepalive bandaid once always-on) |

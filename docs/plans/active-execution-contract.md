@@ -69,6 +69,22 @@ is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
 `CURRENT EXECUTION POINTER: COSMOS-DESIGN-BUILD` (restored after `AUDIT-REENTRY-0721224554` merged and `main` CI passed; held for the reconciliation decision below, not advanced to `NATIVE-ACCEPTANCE`)
 
+**Owner-authorised audience-integrity re-entry — 2026-07-25.** The captain authorises the
+production-diagnostic Slice C audience-integrity correction from the current
+`COSMOS-DESIGN-BUILD` pointer. This companion amendment does not advance, replace or otherwise
+change the pointer or any F2.5/Cosmos/native/core/F6/F7/F9/F10/F11/F13, staged-rollout or rollback
+gate. It must land in this contract before the audience code PR is finally validated/merged.
+
+Allowed write set: Expo Explore/profile readiness and request construction; shared/API audience
+contract types only where necessary; browse/search/facets/recommendation audience propagation and
+cache-key isolation only where necessary; focused regression, accessibility and contract tests; and
+this narrow authoritative record. Preserve the existing null-gender widening policy pending its
+separate decision. Exclusions: source/provider cutover, topology or spend change, destructive
+cleanup, model promotion and production-evidence claim. Do not client-filter server product
+constraints; fail honestly to loading/needs-profile rather than silently broadening audience. Keep
+the correction independently rollbackable. The audience implementation may proceed in code now and
+must rebase onto this landed contract before final validation/merge.
+
 **Owner-authorised audit re-entry — 2026-07-21.** The captain accepted scout report
 `/Users/rvzaku/atharv-agent-workspace/data/gyf-product-audit-plan-scout-0721224554/report.md`
 as evidence and approved the focused `AUDIT-REENTRY-0721224554` interruption before further
@@ -328,7 +344,7 @@ one large phase:
 | `P5.4-EXPLORE` | F2.5/F4–F6, EXPO-07, HL-EXPLORE/DIVERSE | deep real catalogue discovery is fast, truthful, deduplicated and purchasable; final EXPO-21 remains in P6 |
 | `P5.5-SOCIAL-PROFILE` | EXPO-09, HL-SOCIAL/PROFILE | safe create/recreate/follow/react/share plus a truthful professional profile |
 | `P5.6-LOOKSPACE` | EXPO-12–18, HL-CANVAS | accessible, performant visual exploration has a feature-equivalent list path; final EXPO-19–21 remain in P6 |
-| `P5.7-VTON` | F8/F9, EXPO-10, HL-VTON | free, private, quota-bounded visualisation opens only after the frozen model gate |
+| `P5.7-VTON` | F8/F9, EXPO-10, HL-VTON | free preview/trial plus private, quota-bounded visualization; paid render quotas require the separate `MONETIZATION-READINESS` packet after F9 |
 
 `P6.1-B2B` starts only after F12 and closes HL-B2B/BUSINESS: only non-reidentifying, consent-safe
 aggregated/distilled intelligence is productised. It has no consumer UI and cannot reopen a passed
@@ -356,7 +372,8 @@ IDs below do not need duplicate executable definitions elsewhere.
 | `P5.4-EXPLORE` | Catalogue retrieval/facets/freshness/dedupe, Expo Explore/detail/list virtualization and tests only. | F2.5/F4–F6 plus HL-EXPLORE/DIVERSE with real deep paging, price/availability and low-end Android proof. |
 | `P5.5-SOCIAL-PROFILE` | Social/profile API/storage/moderation and Expo surfaces/tests only. | HL-SOCIAL/PROFILE ownership, report/block/abuse, deep-link/share, privacy and populated real-data journeys. |
 | `P5.6-LOOKSPACE` | EXPO-12–18 scene/data/gesture/accessibility/list-equivalent boundary only; EXPO-19–21 remain final gates. | HL-CANVAS performance, memory, paging/dedupe and feature-equivalent accessible list; remove graphics lane if it loses. |
-| `P5.7-VTON` | F8/F9 renderer/job/eval/provider and Expo closed-to-open try-on flow only. | F9 plus HL-VTON licence/privacy/blinded quality/cost/TTL/quota/kill gate; closed state and incumbent remain rollback. |
+| `P5.7-VTON` | F8/F9 renderer/job/eval/provider and Expo closed-to-open try-on flow only; no payment implementation. | F9 plus HL-VTON licence/privacy/blinded quality/cost/TTL/quota/kill gate; closed state and incumbent remain rollback. |
+| `MONETIZATION-READINESS` (not open; not a current pointer) | After F9 and only through an owner-approved packet: entitlement ledger/provider-port design, web billing strategy, consent/deletion/refund/support/accessibility/security/compliance, abuse controls and observability. Provider selection and native IAP timing remain evidence- and credential-dependent. | Sandbox, legal/compliance, idempotency/replay, reserve/consume/restore, cancellation/refund, cost/kill-switch and rollback evidence; payment outage degrades to the free core. It cannot promote F9, F10, F11, F13 or HL by itself. |
 | `EXPO-19-FINAL` → `EXPO-21` | Apply the approved design/motion/information architecture to every completed P5 route and state; tests/fixtures only outside required route fixes. | Final route × state × width × Android/web/iOS matrix with performance and accessibility. Any failing route holds the pointer. |
 | `F11` → `F12` | Existing integrated beta and evidence-improvement packets only. | Frozen cohort/reliability/privacy/cost/model gates; roll back the specific losing candidate, never weaken a floor. |
 | `P6.1-B2B` | Aggregated/distilled export boundary, privacy tests, lineage and documentation; no raw user-level export or consumer UI. | HL-B2B/BUSINESS privacy attack review, aggregation floor, deletion lineage, truthful contract and owner business approval. |
@@ -687,7 +704,7 @@ evidence.
 Final repository shape is one Expo client, one API modular monolith, one ML package with optional
 extras, shared contracts, migrations, operational scripts, canonical docs and tests beside the
 owned behavior. Generated caches, local artefacts, old client frameworks, duplicate UI systems,
-cancelled payment code, losing providers/models and stale workflows/docs are deleted only under
+obsolete/superseded payment code, losing providers/models and stale workflows/docs are deleted only under
 same-slice replacement or P7/F13 rules. No “helpers,” generic repositories, feature flags or config
 layers exist without two real consumers or an explicit measured boundary.
 
@@ -735,8 +752,10 @@ privacy, licensing, accessibility or truthful claims.
 ## Binding decisions
 
 - GYF delivers meaningful, explainable outfit decisions from real catalogue facts, user control and consented learning.
-- Every surface is free, **including virtual try-on** (owner amendment 2026-07-14, second same-day amendment — supersedes the morning subscription decision). Owner amendment 2026-07-16: FASHN VTON v1.5 is the first external serving candidate when commercially eligible and only after the F9 license/dependency, privacy, quality, cost and operability gates; GYF prepares a rights-clean owned checkpoint lane in parallel and starts training only after ≥2,000 authorised pairs plus a stable ≥10% FASHN failure cluster exist, so it does not become permanently checkpoint/provider-dependent. Both lanes use `TryOnRenderer`, scale-to-zero serving, transparent per-user quotas and the global kill switch; quality is never a price lever and only one quality level is exposed. Detail: [`free-vton-moat.md`](./free-vton-moat.md). The prior subscription/paywall planning is deleted; payment remains cancelled.
-- Payment work is **cancelled again** (nothing was built; the Razorpay/`BillingProvider` spine stays unbuilt). Paid ranking, paid recommendations and any paywall remain cancelled; a billing rail returns only through a future owner amendment.
+- **Monetization amendment (captain, 2026-07-25):** GYF is a free trusted core plus transparent affiliate commerce and lawful paid scarce-compute entitlements. The core remains free: account/consent/export/deletion, manual onboarding, explained complete outfits, save/skip/shop/correct/undo, Explore, basic wardrobe and deterministic fallback. The stylist must make a progressive gradient handoff from a relevant explained outfit to truthful purchasable products, with disclosed affiliate attribution, conversion/reversal, repeat-use, contribution-margin and sustainable-profit measurement. Subscriptions are a profit engine only through that sustainable, measured value—not extraction. No hidden paid ranking, dark pattern, privacy/security degradation or lower recommendation quality for free users is permitted.
+- The first possible paid capability is VTON render quotas only after F9 promotes a safe lane **and** `MONETIZATION-READINESS` passes; recommendations, explanations, correction, catalogue truth, export/deletion and a useful fallback stay free. Web billing is first; native Apple/Google IAP is added only when a native paid digital feature requires it under store rules. Do not choose a provider or implement billing from this amendment. Test GST-inclusive India hypotheses of ₹199/month Plus and ₹499/month Pro before commitment; defer credit packs until the entitlement ledger and refund path are proven.
+- Three no-card, one-time VTON trial credits unlock only after a user saves an explained outfit; they expire after 30 days, are non-transferable and consume only on a successful usable render. Failed, unsafe, abstained and system-error renders restore credits automatically; pre-claim cancellation restores them. Unused web subscriptions have a clear seven-day refund window subject to provider/legal requirements; native refunds follow store policy, and mid-render cancellation must not promise recovery of incurred provider cost.
+- Opt-out stops personal behavioural learning and training/export use. Necessary minimized security, reliability, billing and aggregate operational measurement may continue; product analytics and VTON-outcome learning require separate explicit consent, and raw photos are never learning data by default. Retain the ₹3,000 base beta infrastructure ceiling; before VTON opens, set a separate paid-render working-capital cap from measured demand/provider evidence, require cost per successful render at or below the current ₹5 hypothesis, contribution-margin evidence, global daily/monthly spend kill switches and staged canaries.
 - Preserve the deterministic recommendation path when optional ML or GPU services fail.
 - Nominate a model only after commercial permission, privacy and security checks pass. Every model
   change still requires the doctrine's frozen offline evaluation and passing report, then applicable
@@ -769,7 +788,7 @@ privacy, licensing, accessibility or truthful claims.
   requirement in `ideas-complete.md` and `docs/feedbacks/*.md` is required before HL. The rescue
   loop remains the first sequential quality gate, but its earlier post-launch deferrals are
   superseded: photo onboarding, intelligent wardrobe, deep Explore/Canvas, full social sharing,
-  professional profile/badges, free F9-promoted VTON, B2B-ready distilled data/model boundary and
+  professional profile/badges, F9-promoted VTON with its free preview/trial and separately gated paid quota policy, B2B-ready distilled data/model boundary and
   the complete premium UX must all close before public launch. This is not permission for parallel
   half-built work: each vertical slice must pass its evidence gate before the next dependent slice.
   Contradictions are resolved in the launch/refactor traceability matrix; security, privacy,
@@ -1180,14 +1199,14 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
 6. **F5 — Free recommendation incumbent.** Keep SigLIP 2/pgvector/rules/MMR; add anchored refinement and multi-interest context only when evaluation proves value.
 7. **F6 — Small learned challenger.** Minimum pairwise/logistic ranker through offline, shadow, cohort and rollback gates.
 8. **F7 — Colour and photo assistance.** Manual truth plus evaluated, correctable assistance with separate consent and deletion.
-9. **F8 — Durable free try-on.** Reuse `TryOnRenderer`; private Postgres jobs, bounded retries, cancellation, TTL deletion, per-user quotas and the global cost kill switch. Package the exact FASHN v1.5 artifact as the first external candidate after hashing and licensing every code/weight/parser/pose dependency. In parallel, build the rights-cleared GYF pairing/preprocessing pipeline and train the owned challenger only after its data trigger. Serve candidates through measured scale-to-zero adapters; no billing spine. Rights to train on catalogue on-model photos are verified in F4 before any pair enters training.
-10. **F9 — Try-on model evaluation.** One frozen consented scorecard covers FASHN and every commercially eligible GYF challenger; public research-only weights never enter it. **Try-on opens to users only here**—free and quota-bounded—when one lane passes, never before. FASHN may serve first; the owned lane retrains on rights-cleared GYF pairs and consented outcomes until it beats the incumbent with guardrails non-inferior, then replaces it. Losing adapters are deleted per replace-then-delete.
+9. **F8 — Durable try-on.** Reuse `TryOnRenderer`; private Postgres jobs, bounded retries, cancellation, TTL deletion, per-user quotas and the global cost kill switch. Package the exact FASHN v1.5 artifact as the first external candidate after hashing and licensing every code/weight/parser/pose dependency. In parallel, build the rights-cleared GYF pairing/preprocessing pipeline and train the owned challenger only after its data trigger. Serve candidates through measured scale-to-zero adapters; no billing implementation. Rights to train on catalogue on-model photos are verified in F4 before any pair enters training.
+10. **F9 — Try-on model evaluation.** One frozen consented scorecard covers FASHN and every commercially eligible GYF challenger; public research-only weights never enter it. **Try-on may open to users only here** with free preview/trial and transparent quotas when one lane passes; paid VTON quotas additionally require `MONETIZATION-READINESS`, never before. FASHN may serve first; the owned lane retrains on rights-cleared GYF pairs and consented outcomes until it beats the incumbent with guardrails non-inferior, then replaces it. Losing adapters are deleted per replace-then-delete.
 11. **F10 — Infrastructure proof/migration.** Select and promote providers only after auth, data, measured RPO/RTO restore, cold-start, bandwidth/cost alerts, durable audit evidence, incident/vendor-exit rehearsal and rollback parity; native release additionally requires accurate store privacy/data-safety, deletion, content-rating and signing evidence. Migration shims stay temporary.
-12. **F11 — Closed free beta.** Before recruitment, freeze metric definitions, minimum evaluable sample, targets/failure floors, support/grievance ownership and launch/stop actions. Prove mission-critical journeys for at least 30 days under realistic reliability, accessibility, privacy, catalogue, ML and cost conditions so D30 retention is observable rather than inferred; “non-zero” use alone cannot approve launch.
-13. **F12 — Evidence-led improvement.** Retrain/version/evaluate only when clean data is sufficient; expand free try-on quotas only from reconciled cost.
+12. **F11 — Closed beta.** Before recruitment, freeze metric definitions, minimum evaluable sample, targets/failure floors, support/grievance ownership and launch/stop actions. Prove mission-critical journeys for at least 30 days under realistic reliability, accessibility, privacy, catalogue, ML and cost conditions so D30 retention is observable rather than inferred; “non-zero” use alone cannot approve launch.
+13. **F12 — Evidence-led improvement.** Retrain/version/evaluate only when clean data is sufficient; expand VTON trial/free or paid quotas only from reconciled cost, consent and contribution-margin evidence.
 14. **F13 — Deletion last.** With behaviour protected, remove the parked Flutter and Next
     clients, duplicate or losing surfaces, stale scaffolds/assets/docs, unused Kafka/Redpanda/VTON
-    paths, migration shims and cancelled payment material. Keep one implementation per concern.
+    paths, migration shims and obsolete/superseded payment material after its replacement and rollback are protected. Keep one implementation per concern.
     Run the full gate after each deletion group.
 15. **HL — Hard public launch.** After F13 and complete vision/feedback traceability, freeze the release candidate, attach every final
     checklist artifact, obtain the explicit owner go/no-go decision, stage the public rollout with

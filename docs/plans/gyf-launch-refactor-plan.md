@@ -100,7 +100,7 @@ Conflict rules:
 | HL-EXPLORE | Fast deep search/browse/facets/similar/complete-look with live price/availability and affiliate redirect | F2.5/F4/F10, EXPO-05 | India SLO/EXPLAIN, freshness/dedupe, handoff and reversal reconciliation |
 | HL-SOCIAL | Populated feed, create/recreate, follow, react, comment, share, download and shop; re-style inspiration for the follower's tone, body, budget and preferences | EXPO-10/11, F10–F11 | scoped media, moderation/report/block, deep links/download, adapted-look provenance and no blind copying |
 | HL-PROFILE | Personalized professional profile with outfits, likes, posts, followers and honest earned badges/perks | EXPO-09/10 | uncluttered facts, anti-abuse badge rules, privacy and device review |
-| HL-VTON | Free async photorealistic top+bottom+apparel/footwear try-on on the user's photo with honest limits | F8–F9, EXPO-10 | license/privacy, multi-garment blinded scorecard, cost/success, TTL/delete, quota/kill switch |
+| HL-VTON | Honest async top+bottom+apparel/footwear visualization on the user's photo: free preview/trial, then transparent paid render quotas only after F9 and monetization readiness | F8–F9, monetization readiness, EXPO-10 | license/privacy, multi-garment blinded scorecard, cost/success ≤₹5 hypothesis, TTL/delete, reserve/consume/restore, quota/kill switch, refund/cancellation evidence |
 | HL-TRUST | User/operator status, reasons, confidence, correction and reporting are truthful | F2/F7/F10–F12 | status accuracy, support/incident paths, model/eval IDs, unsafe-output report |
 | HL-DESIGN | Visible logo on every specified surface, curved frames/controls, premium icons matching approved Stitch utility/placement, purposeful motion/haptics, light/dark themes and responsive accessible UI | EXPO-01–13, F11 | token/visual audit against approved references, iOS/Android/web, screen readers, reduced motion, contrast/touch targets |
 | HL-RELOAD | One action works once: retry/refresh/state restore/back/deep-link/offline recovery without duplicate mutation | EXPO-02–11 | state/idempotency tests and slow/offline device proof |
@@ -111,7 +111,7 @@ Conflict rules:
 | HL-LEAN | One client/implementation per concern; obsolete clients/docs/assets/providers/workflows removed | F13 | protected deletion groups, dependency/import scan, clean full gate and repo map |
 | HL-B2B | Consent-safe aggregated/distilled styling intelligence has a separate non-reidentifying contract | F12 | data/product contract, privacy attack review, aggregation floor and deletion lineage |
 | HL-QUALITY | Reproducible evaluation rejects degraded ML, UX and system candidates | F5–F12 | evaluation_run_id, frozen slices, degraded-candidate test, canary rollback |
-| HL-BUSINESS | Free product, no paid ranking/paywall, clear affiliate disclosure and sustainable spend gates | F10–F12/HL | disclosure review, statement reconciliation, invoices, contribution/budget decision |
+| HL-BUSINESS | Free trusted core; no paid ranking; disclosed affiliate commerce; transparent scarce-compute entitlements and sustainable profit gates | F10–F12/HL | disclosure/attribution review, payment-compliance and refund/support evidence, statement/invoice reconciliation, conversion/repeat/contribution-margin and budget decision |
 
 No row closes because a route, file or model exists. It closes only with final-column evidence on
 the promoted Expo client and deployed stack.
@@ -364,7 +364,7 @@ cross-border/vendor terms and breach obligations before public beta.
 
 ### Profitability and scaling
 
-The app stays free and never ranks by commission. Revenue is transparent affiliate attribution
+The trusted core stays free and never ranks by commission. Revenue starts with transparent affiliate attribution
 after the outfit decision; every commission-bearing recommendation and outbound handoff carries a
 prominent “Affiliate” or “Ad” disclosure before the user acts, never only in Terms or after the
 click ([ASCI disclosure guidance](https://www.ascionline.in/social/tools/)). B2B starts only with a
@@ -373,10 +373,22 @@ prepaid design partner. Use actual statements:
 order × 5% × 80% realization yields ₹120; ₹2,850 infrastructure contribution break-even is 24
 confirmed orders/month. This excludes labour, CAC, support, overhead and tax and is not company
 profitability. Paid acquisition stays zero until organic/partner cohorts retain and confirmed
-contribution is positive.
+contribution is positive. The fashion AI stylist's measurable business outcome is a progressive
+**gradient handoff**: relevant explained outfit → truthful purchasable products → disclosed
+affiliate handoff/attribution → confirmed conversion or reversal → repeat use and contribution
+margin → sustainable profit. This is never permission to distort ranking or free-user quality.
+
+After F9 and the separate monetization-readiness gate, web-first subscriptions may test
+GST-inclusive India hypotheses of ₹199/month Plus and ₹499/month Pro for successful VTON render
+quotas. Three no-card, one-time credits unlock after an explained-outfit save, expire after 30 days,
+are non-transferable and consume only on successful usable renders. Failed/unsafe/abstained/system
+errors and pre-claim cancellation restore credits; unused web subscriptions have a clear seven-day
+refund window subject to provider/legal requirements; native refunds follow store policy. Credit
+packs remain deferred until the entitlement ledger and refund path pass. Provider selection, native
+IAP timing, the exact paid-render working-capital cap and implementation remain future gated work.
 
 Scaling ladder: 0–100 activated users prove value/SLO/events with VTON closed; 100–1,000 MAU may
-open gated FASHN quotas after F9; at 70% free-tier capacity or 80% cash cap freeze discretionary
+open F9-promoted VTON previews/trials and, only after monetization readiness, paid quotas; at 70% free-tier capacity or 80% cash cap freeze discretionary
 inference and review topology/unit economics; beyond the ceiling, scale only on proven economics
 or an explicit owner amendment.
 
@@ -487,13 +499,15 @@ Launch surfaces:
   recommendations must say whether the closet completes the look or a purchase is needed.
 - Saved looks/collections, professional profile/badges, account and trust/status surfaces.
 - Social feed, create/recreate, follow, react/comment, share/download and shop with moderation.
-- Try-on remains closed until F9. When opened it is free, async, quota-bounded, erasable, and
-  backed by whichever F9-promoted lane passes—FASHN may serve first while the owned challenger
-  remains the independence path.
+- Try-on remains closed until F9. When opened it is async, quota-bounded, erasable and backed by
+  whichever F9-promoted lane passes—FASHN may serve first while the owned challenger remains the
+  independence path. Free previews/trials stay available; paid VTON render quotas require the
+  separate monetization-readiness gate, transparent cost/retention/refund copy and web-first billing.
 
 Non-goals:
 
-- No paywall or billing rail.
+- No paid ranking, recommendation-quality tier, hidden affiliate prioritisation, dark pattern, or
+  pay-to-avoid privacy/security limit. No payment implementation/provider choice outside its gate.
 - No confident photo-derived skin-tone claim before the fairness gate.
 - No research-only weights in production.
 - No synthetic data presented as user truth or used to bypass a fairness/evaluation gate.
@@ -937,7 +951,7 @@ reason + calibrated confidence. It is the fallback for every optional model fail
 - Train in free/rented bursts under the monthly ceiling; serve scale-to-zero with quotas,
   bounded retries, TTL deletion, cancellation honesty, and a global kill switch.
 - Evaluate complete looks honestly, including footwear weakness, with a frozen consented scorecard
-  and human review. Try-on remains closed until F9 passes; then open the one free quality lane.
+  and human review. Try-on remains closed until F9 passes; then open a single quality lane with free preview/trial; paid render quotas additionally require monetization readiness.
 
 ### Inference efficiency
 
@@ -955,9 +969,9 @@ Prove auth, data copy, restore, private media, readiness, rollback, latency, col
 secrets, and DNS parity in a staging project. Then flip production with a one-command rollback
 and a grace window. Retire the old lane only after verification.
 
-### F11 — closed free beta
+### F11 — closed beta
 
-Run a realistic two-week cohort. Required journeys: signup/recovery, manual onboarding, photo
+Run a realistic at-least-30-day cohort. Required journeys: signup/recovery, manual onboarding, photo
 capability abstention, stylist, filter/search, wardrobe add/correct, save/skip/shop, social post/
 follow/recreate, export/delete, and try-on closed/open behavior according to the gate. Add
 synthetic monitoring against the deployed web/API and review every failed journey daily.
@@ -972,7 +986,7 @@ metric is a deletion candidate.
 ### F13 — deletion last
 
 After behaviour is protected, delete parked/losing clients and surfaces, stale scaffolds, unused
-providers, migration shims, cancelled payment material, and duplicate docs/assets. Delete each
+providers, migration shims, obsolete/superseded payment material after replacement and rollback protection, and duplicate docs/assets. Delete each
 group only after tests and production checks prove the replacement.
 
 ## 8. Security and reliability floor
@@ -2408,8 +2422,8 @@ full Expo/native/web verification set passes. It is a product capability, not a 
 
 ### F13-03 — Delete losing ML/infra/payment paths
 
-- **Write set:** losing VTON adapters, unused remote lanes, migration shims, cancelled payment
-  material, obsolete workflows.
+- **Write set:** losing VTON adapters, unused remote lanes, migration shims, superseded payment
+  material after its replacement/rollback is protected, obsolete workflows.
 - **Acceptance:** model/license/port checks pass; no production config names deleted providers;
   rollback points to the promoted replacement, not dead code.
 
@@ -2435,7 +2449,7 @@ dependencies and cannot be used to delay or decorate a weak core product:
   abstention?
 - Are all user-facing ML claims backed by a passing licensed model/eval report?
 - Does the deterministic path work when every remote model/GPU is unavailable?
-- Is try-on closed until F9 and free/quota-bounded after F9?
+- Is try-on closed until F9, with free preview/trial and paid VTON quotas only after the separate monetization gate?
 - Are Expo web/native deep links, uploads, camera permissions, share links, recovery links and
   store builds proven?
 - Does every route follow the Atelier/Cosmos visual laws, use one clear primary action, preserve
@@ -2451,7 +2465,7 @@ dependencies and cannot be used to delay or decorate a weak core product:
 - Does every HL-AUTH through HL-BUSINESS traceability row have deployed evidence with no
   unexplained skip?
 - Has the owner reviewed the 30-day beta evidence, unresolved risks, provider invoices, support
-  readiness and store declarations and signed the launch decision?
+  readiness, store declarations, payment/refund evidence and signed the launch decision?
 
 If any answer is “no”, the release remains in the current phase; it is not hidden behind copy,
 retry loops, a fake loading state, a paywall, or a confident AI label.

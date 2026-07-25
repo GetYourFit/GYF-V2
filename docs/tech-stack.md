@@ -388,7 +388,7 @@ This table is strategic sequencing only; the active execution contract owns exac
 | **1 — Rescue the retained core** | Fast truthful catalog; manual onboarding; explained complete outfit; save/skip/shop/correct; instrumentation and security | photo claims, public VTON, new social/gamification, Lookspace, B2B, generative rankers |
 | **2 — Prove retention** | Expo parity/cutover and a ≥30-day India closed beta with D1/D7/D30 cohorts and unit economics | expansion until the retained-core gate passes |
 | **3 — Earned intelligence** | Measured retrieval/ranking improvements and consented learning only where simple baselines fail | large foundation/recommender infrastructure without evidence |
-| **4 — Gated free VTON** | Pinned FASHN candidate plus rights-clean GYF challenger through F8/F9, quotas and kill switch | every unlicensed/research-only checkpoint |
+| **4 — Gated cost-controlled VTON** | Pinned FASHN candidate plus rights-clean GYF challenger through F8/F9; free preview/trial and separately gated paid render quotas, kill switch | every unlicensed/research-only checkpoint; paid ranking/quality tiers |
 | **5 — Scale the bottleneck** | Only the database, compute, storage or organisation change proven necessary by SLO and economics | speculative microservices, Kubernetes, vector DBs and data platforms |
 
 ---
