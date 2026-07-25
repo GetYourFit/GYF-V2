@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import json
 from typing import Any
 from urllib.parse import urlencode, urlparse
+from urllib.request import HTTPRedirectHandler
 
 from ..affiliate import product_serving_url, safe_cuelinks_subid
 from ..config import settings
@@ -53,9 +54,22 @@ _PRODUCT_ROW_ALIASES: Mapping[str, tuple[str, ...]] = {
     "image": ("image", "image_url", "image_link", "Image URL"),
     "price": ("price", "sale_price", "selling_price", "current_price"),
     "availability": ("availability", "stock", "in_stock", "inventory_status"),
-    "product_url": ("product_url", "product_link", "url", "link", "deep_link"),
+    "product_url": (
+        "product_url",
+        "product_link",
+        "Product URL",
+        "Product Link",
+        "url",
+        "link",
+        "deep_link",
+    ),
 }
 Transport = Callable[[str, str, Mapping[str, str], bytes | None, float], tuple[int, bytes]]
+
+
+class _NoRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
 
 
 class CuelinksPublisherError(RuntimeError):
@@ -163,8 +177,12 @@ class CuelinksPublisherCampaign:
             raise CuelinksPublisherResponseError(
                 "Cuelinks campaign row lacked a merchant/campaign name"
             )
-        countries = _string_tuple(_field(row, "countries", "country", "regions", "market"))
-        categories = _string_tuple(_field(row, "categories", "category", "verticals", "vertical"))
+        countries = _string_tuple(
+            _field(row, "countries", "country", "regions", "market"), mapping_key="iso"
+        )
+        categories = _string_tuple(
+            _field(row, "categories", "category", "verticals", "vertical"), mapping_key="name"
+        )
         epc_value = _field(row, "epc_7d", "epc7d", "7_day_epc")
         return cls(
             campaign_id=_optional_str(_field(row, "id", "campaign_id", "campaignId", "offer_id")),
@@ -172,7 +190,14 @@ class CuelinksPublisherCampaign:
             domain=_optional_str(_field(row, "domain", "url", "website", "merchant_url")),
             access_status=_optional_str(_field(row, "access_status", "status", "approval_status")),
             deeplink_enabled=_boolish(
-                _field(row, "deeplink", "deep_link", "deeplink_enabled", "deep_link_enabled")
+                _field(
+                    row,
+                    "deeplink",
+                    "deep_link",
+                    "deeplink_enabled",
+                    "deep_link_enabled",
+                    "deeplink_allowed",
+                )
             ),
             countries=countries,
             categories=categories,
@@ -196,16 +221,21 @@ def _optional_float(value: Any) -> float | None:
         return None
 
 
-def _string_tuple(value: Any) -> tuple[str, ...]:
+def _string_tuple(value: Any, *, mapping_key: str | None = None) -> tuple[str, ...]:
     if value in (None, ""):
         return ()
     if isinstance(value, str):
         parts = value.replace("|", ",").replace(";", ",").split(",")
     elif isinstance(value, (list, tuple)):
-        parts = [str(part) for part in value]
+        parts = [
+            part.get(mapping_key) if mapping_key and isinstance(part, Mapping) else part
+            for part in value
+        ]
+    elif mapping_key and isinstance(value, Mapping):
+        parts = [value.get(mapping_key)]
     else:
-        parts = [str(value)]
-    return tuple(part.strip() for part in parts if part and part.strip())
+        parts = [value]
+    return tuple(str(part).strip() for part in parts if part and str(part).strip())
 
 
 @dataclass(frozen=True)
@@ -221,6 +251,7 @@ class CuelinksConvertedLink:
     requested_url: str
     subid: str
     shortened: bool
+    affiliated: bool | None
     raw: Mapping[str, Any]
 
 
@@ -231,10 +262,9 @@ def _urllib_transport(
     import urllib.request
 
     request = urllib.request.Request(url, data=body, headers=dict(headers), method=method)
+    opener = urllib.request.build_opener(_NoRedirectHandler())
     try:
-        with urllib.request.urlopen(  # noqa: S310 — validated https base
-            request, timeout=timeout_s
-        ) as response:
+        with opener.open(request, timeout=timeout_s) as response:
             return int(response.status), response.read()
     except urllib.error.HTTPError as exc:
         return int(exc.code), exc.read()
@@ -337,9 +367,9 @@ class CuelinksPublisherClient:
         payload = self._request_json("GET", "/campaigns", params=params, context="campaigns")
         rows = _extract_collection(payload, context="campaigns")
         campaigns = tuple(CuelinksPublisherCampaign.from_api(row) for row in rows)
-        pagination = (
-            payload.get("pagination") if isinstance(payload.get("pagination"), Mapping) else {}
-        )
+        pagination = payload.get("meta") if isinstance(payload.get("meta"), Mapping) else {}
+        if not pagination and isinstance(payload.get("pagination"), Mapping):
+            pagination = payload["pagination"]
         return CuelinksCampaignPage(
             campaigns=campaigns, pagination=dict(pagination), raw=payload
         )
@@ -355,12 +385,13 @@ class CuelinksPublisherClient:
             body={"url": product_url, "subid": safe_subid, "shorten": bool(shorten)},
             context="link conversion",
         )
-        converted = self._converted_url(payload)
+        converted, affiliated = self._converted_link(payload)
         return CuelinksConvertedLink(
             url=converted,
             requested_url=product_url,
             subid=safe_subid,
             shortened=bool(shorten),
+            affiliated=affiliated,
             raw=payload,
         )
 
@@ -397,13 +428,20 @@ class CuelinksPublisherClient:
             )
         return _json_object(response, context=context)
 
-    def _converted_url(self, payload: Mapping[str, Any]) -> str:
+    def _converted_link(self, payload: Mapping[str, Any]) -> tuple[str, bool | None]:
         containers: list[Mapping[str, Any]] = [payload]
         data = payload.get("data")
         if isinstance(data, Mapping):
             containers.append(data)
+        affiliated = None
+        for container in reversed(containers):
+            value = _field(container, "affiliated")
+            if value is not None:
+                affiliated = _boolish(value)
+                break
         for container in containers:
             for key in (
+                "tracking_url",
                 "url",
                 "converted_url",
                 "affiliate_url",
@@ -413,7 +451,7 @@ class CuelinksPublisherClient:
             ):
                 candidate = _https_url(_optional_str(container.get(key)))
                 if candidate:
-                    return candidate
+                    return candidate, affiliated
         raise CuelinksPublisherResponseError(
             "Cuelinks link conversion response lacked an https URL"
         )

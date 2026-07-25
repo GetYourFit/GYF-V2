@@ -1,9 +1,11 @@
 import json
 import logging
+import urllib.request
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 
+from app.catalog import cuelinks_api
 from app.catalog.cuelinks_api import (
     CuelinksPublisherAuthError,
     CuelinksPublisherClient,
@@ -132,6 +134,35 @@ def test_campaign_listing_normalizes_success_response_and_query_params() -> None
     assert publisher_payload_has_product_rows(payload) is False
 
 
+def test_campaign_listing_normalizes_documented_v3_rows_and_meta_pagination() -> None:
+    payload = {
+        "data": [
+            {
+                "id": 42,
+                "name": "Flipkart",
+                "domain": "https://www.flipkart.com",
+                "access_status": "open",
+                "deeplink_allowed": True,
+                "countries": [{"iso": "IN", "name": "India"}],
+                "categories": [{"name": "Fashion"}],
+            }
+        ],
+        "meta": {"page": 1, "next_page": 2, "total": 43},
+    }
+    transport = FakeTransport([(200, json.dumps(payload).encode("utf-8"))])
+
+    page = CuelinksPublisherClient("test-token", transport=transport).campaigns()
+
+    campaign = page.campaigns[0]
+    assert campaign.countries == ("IN",)
+    assert campaign.categories == ("Fashion",)
+    assert campaign.deeplink_enabled is True
+    assert page.pagination == {"page": 1, "next_page": 2, "total": 43}
+    registry_row = campaign_registry_from_publisher_page(page).resolve(campaign_id="42")
+    assert registry_row is not None
+    assert registry_row.product_deeplink_allowed
+
+
 def test_publisher_product_row_probe_requires_full_product_card_fields() -> None:
     campaign_only = {
         "campaigns": [
@@ -188,6 +219,48 @@ def test_convert_url_posts_safe_product_url_subid_and_shorten_flag() -> None:
         "subid": "blog_471",
         "shorten": True,
     }
+
+
+def test_convert_url_reads_documented_v3_tracking_url_and_affiliation_status() -> None:
+    payload = {
+        "data": {
+            "tracking_url": "https://linksredirect.com/?cid=123&url=https%3A%2F%2Fflipkart.com%2Fp%2F1",
+        },
+        "affiliated": False,
+    }
+    transport = FakeTransport([(200, json.dumps(payload).encode("utf-8"))])
+
+    converted = CuelinksPublisherClient("test-token", transport=transport).convert_url(
+        "https://flipkart.com/p/1", subid="safe"
+    )
+
+    assert converted.url.startswith("https://linksredirect.com/")
+    assert converted.affiliated is False
+
+
+def test_default_transport_disables_redirects(monkeypatch) -> None:
+    handlers = []
+
+    class Opener:
+        def open(self, *_args, **_kwargs):
+            raise AssertionError("network call was not expected")
+
+    def build_opener(*provided_handlers):
+        handlers.extend(provided_handlers)
+        return Opener()
+
+    monkeypatch.setattr(urllib.request, "build_opener", build_opener)
+
+    with pytest.raises(AssertionError, match="network call was not expected"):
+        cuelinks_api._urllib_transport(
+            "GET", "https://developers.cuelinks.com/ping", {}, None, 1
+        )
+
+    assert len(handlers) == 1
+    assert (
+        handlers[0].redirect_request(None, None, 302, "Found", {}, "https://other.example")
+        is None
+    )
 
 
 def test_convert_url_rejects_unsafe_or_non_product_urls_before_network() -> None:
