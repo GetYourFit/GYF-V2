@@ -600,9 +600,7 @@ def _merge_style_reserve(
     limit: int,
 ) -> list[tuple]:
     reserved = [
-        row
-        for row in reserve_rows
-        if row[10] in preferred_aesthetics and row[16] == "true"
+        row for row in reserve_rows if row[10] in preferred_aesthetics and row[16] == "true"
     ]
     picked: list[tuple] = []
     seen: set[object] = set()

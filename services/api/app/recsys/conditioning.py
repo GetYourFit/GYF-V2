@@ -227,8 +227,9 @@ def _aesthetics(profile: Profile, occasion: str) -> frozenset[str]:
 
 
 # Onboarding style-intent vocabulary (gyf_contracts.usermodel.STYLE_INTENTS) ->
-# perception ``aesthetic`` labels (ml/perception/attributes.py). Only intents with
-# a clear aesthetic counterpart are mapped; the rest express no aesthetic pull.
+# perception ``aesthetic`` labels (ml/perception/attributes.py). Every accepted
+# request-scoped style has a deterministic counterpart that certain item facts can
+# support; unsupported labels must be hidden instead of silently doing nothing.
 _STYLE_INTENT_AESTHETIC: dict[str, str] = {
     "minimalist": "minimalist",
     "streetwear": "streetwear",
@@ -241,10 +242,3 @@ _STYLE_INTENT_AESTHETIC: dict[str, str] = {
     "romantic": "bohemian",
     "glam": "vintage",
 }
-
-
-# Onboarding gender -> catalog phrasing for the cold-start query. Only the two
-# gendered values narrow the SigLIP retrieval; unisex/nonbinary/unknown add no
-# gender word (the query stays gender-neutral and the caller's gender facet, not
-# the text, does the hard filtering).
-_GENDER_WORD: dict[str, str] = {"men": "men's", "women": "women's"}

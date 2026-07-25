@@ -211,8 +211,7 @@ def test_every_supported_style_reserves_matching_candidates_before_the_cap(style
 
 def test_style_scarcity_keeps_the_available_candidate_slate_honest():
     controls = [
-        _item(f"control-{index}", "shirt", "top", aesthetic="preppy")
-        for index in range(21)
+        _item(f"control-{index}", "shirt", "top", aesthetic="preppy") for index in range(21)
     ]
     repo = InMemoryCandidateRepository(controls)
 
