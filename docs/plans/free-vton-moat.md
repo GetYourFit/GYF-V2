@@ -3,7 +3,7 @@
 > **Status: ACTIVE, subordinate to
 > [`active-execution-contract.md`](./active-execution-contract.md)**. This is the F8/F9 build
 > detail; the contract's order and gates win on any conflict. Free previews/trials and transparent
-> paid render quotas are possible only under the 2026-07-26 captain amendment; work starts only
+> paid render quotas are possible only under the 2026-07-25 captain amendment; work starts only
 > when the contract reaches F8 and payment implementation waits for monetization readiness.
 
 > **Question answered:** how does GYF get virtual try-on that is (1) **cost-controlled**,

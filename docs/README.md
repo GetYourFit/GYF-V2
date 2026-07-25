@@ -38,7 +38,7 @@ the subordinate launch-plan ledger but is not a separate roadmap.
 
 | Requirement | Product/evidence source | Execution owner and gate |
 | --- | --- | --- |
-| Free trusted core; disclosed affiliate commerce; no paid ranking | Vision; 2026-07-26 captain amendment in active contract | Existing gates plus separate monetization readiness; no payment implementation/provider choice from policy alone |
+| Free trusted core; disclosed affiliate commerce; no paid ranking | Vision; 2026-07-25 captain amendment in active contract | Existing gates plus separate monetization readiness; no payment implementation/provider choice from policy alone |
 | Secure identity, recovery and sessions | Vision; doctrine D8 | F1c, F2, F10, F11 |
 | Consent, export, erasure and isolation | Vision; doctrine D8 | F2, F3, F8, F10–F11 |
 | Manual onboarding remains truthful | Vision; feedback v2/v4/v5 | F1b, Expo onboarding parity |
