@@ -140,6 +140,26 @@ def test_schema_reader_rejects_multiple_deployed_heads() -> None:
     assert connection.rollbacks == 1
 
 
+def test_schema_reader_rejects_missing_deployed_head() -> None:
+    class NoHeadConnection(_FakeConnection):
+        def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
+            self.calls.append((sql, tuple(params or ())))
+            if sql.startswith("SELECT version_num"):
+                return _FakeResult([])
+            return _FakeResult([])
+
+    connection = NoHeadConnection()
+
+    try:
+        evidence._read_schema_version(connection)
+    except RuntimeError as exc:
+        assert str(exc) == "deployed schema has no heads"
+    else:
+        raise AssertionError("expected missing deployed head to be rejected")
+
+    assert connection.rollbacks == 1
+
+
 def test_explains_are_read_only_bounded_and_secret_free() -> None:
     connection = _FakeConnection()
     queries = evidence.capture_query_matrix()
@@ -280,6 +300,31 @@ def test_run_explains_reports_multiple_deployed_heads_clearly() -> None:
         assert exc.plans == {}
     else:
         raise AssertionError("expected deployed multi-head schema to fail capture")
+
+
+def test_run_explains_reports_missing_deployed_head_clearly() -> None:
+    class NoHeadConnection(_FakeConnection):
+        def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
+            self.calls.append((sql, tuple(params or ())))
+            if sql.startswith("SELECT version_num"):
+                return _FakeResult([])
+            return _FakeResult([])
+
+    try:
+        evidence.run_explains(
+            "postgresql://user:secret@example.invalid/gyf",
+            evidence.capture_query_matrix(),
+            connect=lambda _dsn: NoHeadConnection(),
+        )
+    except evidence.EvidenceCaptureError as exc:
+        assert str(exc) == (
+            "stage=schema type=DeployedSchemaError sqlstate=unknown "
+            "detail=deployed schema has no heads"
+        )
+        assert exc.schema_version == "unknown"
+        assert exc.plans == {}
+    else:
+        raise AssertionError("expected deployed missing-head schema to fail capture")
 
 
 def test_schema_capture_omits_arbitrary_driver_error_text() -> None:
@@ -442,5 +487,39 @@ def test_main_records_multiple_deployed_heads_in_validation_artifact(
             "capture: stage=schema type=DeployedSchemaError sqlstate=unknown "
             "detail=deployed schema has multiple heads: "
             "0022_catalog_title_search_index, 0023_catalog_search_backfill"
+        ],
+    }
+
+
+def test_main_records_missing_deployed_head_in_validation_artifact(
+    monkeypatch, tmp_path: Path
+) -> None:
+    output = tmp_path / "evidence" / "plans.json"
+    monkeypatch.setenv(
+        "GYF_PROD_DATABASE_URL", "postgresql://user:secret@example.invalid/gyf"
+    )
+
+    class NoHeadConnection(_FakeConnection):
+        def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
+            self.calls.append((sql, tuple(params or ())))
+            if sql.startswith("SELECT version_num"):
+                return _FakeResult([])
+            return _FakeResult([])
+
+    original_run_explains = evidence.run_explains
+    monkeypatch.setattr(
+        evidence, "run_explains", lambda dsn, queries: original_run_explains(
+            dsn, queries, connect=lambda _dsn: NoHeadConnection()
+        )
+    )
+
+    assert evidence.main(["--output", str(output)]) == 1
+    artifact = json.loads(output.read_text(encoding="utf-8"))
+    assert artifact["schema_version"] == "unknown"
+    assert artifact["validation"] == {
+        "passed": False,
+        "errors": [
+            "capture: stage=schema type=DeployedSchemaError sqlstate=unknown "
+            "detail=deployed schema has no heads"
         ],
     }

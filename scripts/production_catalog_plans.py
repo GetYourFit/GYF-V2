@@ -310,7 +310,10 @@ def _read_schema_version(conn: _Connection) -> str:
             sorted({str(row[0]) for row in rows if row and row[0] is not None})
         )
         if not versions:
-            return "unknown"
+            raise DeployedSchemaError(
+                "deployed schema has no heads",
+                schema_version="unknown",
+            )
         if len(versions) > 1:
             joined = ", ".join(versions)
             raise DeployedSchemaError(
