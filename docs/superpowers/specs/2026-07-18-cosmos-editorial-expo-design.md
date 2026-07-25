@@ -250,7 +250,7 @@ Profile has four clear regions: identity, real activity facts, portfolio, and ac
 - Saving edits uses partial-update semantics, preserves unrelated profile fields, invalidates only affected profile/recommendation data, and explains that future outfits may change. Cancel/back leaves server data unchanged.
 - Portfolio shows created outfits, liked outfits, posts, and saved work only when the corresponding data exists.
 - Badges display only earned, server-backed facts with anti-abuse rules; no decorative fake achievements.
-- Settings lives under Profile/Account and includes system, light, and dark appearance choices, consent, export, deletion, support, grievance, status, and sign out.
+- Settings lives under Profile/Account and includes system, light, and dark appearance choices, consent, export, deletion, support, grievance, status, and sign out. The public trust copies of Terms, Contact, and Grievance keep the same deep-link paths and stay readable while signed out; only account-bound actions such as consent, export, and deletion stay behind sign-in.
 - Destructive actions require clear confirmation and must not use optimistic success.
 
 ### 8.7 Social and portfolio

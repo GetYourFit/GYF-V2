@@ -141,8 +141,8 @@ export default function ContactRoute() {
         <AtelierCard style={{ gap: spacing.md }}>
           <GyfText variant="title">Sign in for in-app support</GyfText>
           <GyfText tone="muted" variant="bodySmall">
-            The in-app form stores a private receipt in your account, so it stays behind sign-in.
-            If you are signed out, email GYF directly instead.
+            The in-app form stores a private receipt in your account, so it stays behind sign-in. If
+            you are signed out, email GYF directly instead.
           </GyfText>
           <Link asChild href="/login">
             <AtelierButton label="Sign in to message GYF" />
