@@ -104,7 +104,6 @@ class _StageTimer:
             self.set_outcome("error")
         duration = time.perf_counter() - self.start
         observe_stage_duration(self.surface, self.stage, self.outcome, duration)
-        _record_catalog_timing(self.stage, self.outcome, duration)
 
 
 def _validate_stage_labels(surface: str, stage: str, outcome: str) -> None:

@@ -69,3 +69,19 @@ def test_observe_stage_duration_updates_request_timing_snapshot():
         assert catalog_timing_snapshot() == {"encoder_dns": {"success": 250.0}}
     finally:
         reset_catalog_request(token)
+
+
+def test_stage_timer_updates_request_timing_snapshot_once():
+    from app.metrics import begin_catalog_request, catalog_timing_snapshot, reset_catalog_request, stage_timer
+
+    token = begin_catalog_request()
+    try:
+        with stage_timer("search", "pool_acquire"):
+            pass
+        snapshot = catalog_timing_snapshot()
+        assert set(snapshot) == {"pool_acquire"}
+        assert set(snapshot["pool_acquire"]) == {"success"}
+        assert snapshot["pool_acquire"]["success"] >= 0
+        assert snapshot["pool_acquire"]["success"] < 100
+    finally:
+        reset_catalog_request(token)
