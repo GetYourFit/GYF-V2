@@ -44,12 +44,12 @@ jobs:
         run: |
           mkdir -p production-plan-evidence
           status=0
-          uv run --project services/api --extra postgres \
+          uv run --project services/api --extra postgres --extra migrate \
             python scripts/production_catalog_plans.py \
             --legacy-browse \
             --browse-only \
             --output production-plan-evidence/deployed-legacy.json || status=$?
-          uv run --project services/api --extra postgres \
+          uv run --project services/api --extra postgres --extra migrate \
             python scripts/production_catalog_plans.py \
             --output production-plan-evidence/indexed-candidate.json || status=$?
           exit "$status"

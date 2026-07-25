@@ -151,7 +151,7 @@ evidence, protected branches, release state, or unique/unproven work without exp
 | Frontend — Next.js `app/` | Freeze as behavioural oracle/rollback client; remove only stale deploy/env docs. | Do **not** delete `app/` or `vercel.json` before F13 parity, rollback replacement and approval. | Protected retain. |
 | Frontend — Flutter `gyf_app/` | Extract useful mock/golden evidence into Expo fixtures/docs; decide CI role. | Do **not** delete `gyf_app/` before coverage transfer, F13/protected deletion and approval. | Protected retain. |
 | Backend/API | Fix facets/search first; harden feedback ownership, public support, status counts, RLS/app role and error/request-id consistency. | No route or capability deletion before an acceptance oracle and rollback path exist. Non-Cuelinks catalog product-fetching paths (e.g. `services/api/app/catalog/sources.py` Shopify ingestion) may be removed or disabled only once Cuelinks is proven working with sufficient live product data so Cuelinks is the sole product source; campaign proof or link-conversion proof alone does not meet this bar. | Planned; out of scope for this cleanup PR. |
-| DB/Supabase | Treat Alembic as authoritative; add migration-head checks; verify RLS/storage/purge/export/training exclusions. | Never delete historical migrations; delete/regenerate `schema.sql` only after all callers are proven. | Planned. |
+| DB/Supabase | Treat Alembic as authoritative; F2.5 production-plan evidence derives and records its single graph head; verify RLS/storage/purge/export/training exclusions. | Never delete historical migrations; delete/regenerate `schema.sql` only after all callers are proven. | Planned. |
 | ML/recsys | Reconcile try-on candidate names; split production/research model cards; keep deterministic fallbacks and data-export quality gates. | Do not delete GPU/provider/research artifacts until F2.5/F7/F9 provider decisions and rollback evidence close. | Planned. |
 | Infra/workflows | Fix keepalive wording/ownership; update production-plan and Cuelinks workflows only when their gates open; review Flutter CI after coverage transfer. | Do not touch external deploy state or release branches from cleanup PRs. | Planned. |
 | Docs | Keep this launch plan as ticket/evidence ledger, active contract as execution order, `docs/README.md` as map. | Retain feedback, `ScopeofIdea.md`, `Reference/`, historical runbooks and source evidence until F13/protected deletion. | This ledger added. |
@@ -859,6 +859,8 @@ Run the slice gate before any next phase.
   rollback recipe.
 - Measure from an Indian vantage against: browse p50/p95 ≤300/800 ms, cached search ≤400/900 ms,
   uncached search ≤1.5/3 s, authenticated page data ≤500 ms p50, and no daytime sleep wakes.
+- Production catalogue-plan artifacts derive and record the exactly-one Alembic graph head; missing,
+  branched or deployed-mismatched revisions fail the evidence gate with diagnostics.
 
 ### F3 — learning-event truth
 

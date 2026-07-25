@@ -22,6 +22,31 @@ EXPECTED_CASES = {
 }
 
 
+def test_expected_schema_version_matches_the_single_alembic_head() -> None:
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    config = Config(str(evidence._API_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(evidence._MIGRATIONS_DIR))
+    heads = ScriptDirectory.from_config(config).get_heads()
+
+    assert len(heads) == 1
+    assert evidence.expected_schema_version() == heads[0]
+
+
+def test_missing_or_multiple_migration_heads_refuse_evidence() -> None:
+    for heads, message in (
+        ((), "migration graph has no heads"),
+        (("rev-a", "rev-b"), "migration graph has multiple heads: rev-a, rev-b"),
+    ):
+        try:
+            evidence._single_migration_head(heads)
+        except evidence.MigrationGraphError as exc:
+            assert str(exc) == message
+        else:
+            raise AssertionError("expected an unsafe migration graph to be rejected")
+
+
 def test_matrix_is_fixed_and_uses_repository_sql() -> None:
     queries = evidence.capture_query_matrix()
 
@@ -139,6 +164,7 @@ def test_explains_are_read_only_bounded_and_secret_free() -> None:
     assert "<redacted-literal>" in encoded
     assert "<redacted-number>" in encoded
     assert artifact["schema_version"] == "0022_catalog_title_search_index"
+    assert artifact["expected_schema_version"] == evidence.expected_schema_version()
     assert artifact["validation"] == {"passed": True, "errors": []}
     assert re.fullmatch(r"[0-9a-f]{64}", artifact["cases"][0]["query_sha256"])
 
@@ -216,9 +242,34 @@ def test_main_writes_diagnostic_artifact_on_capture_failure(
         "passed": False,
         "errors": ["capture: stage=schema type=RuntimeError sqlstate=unknown"],
     }
+    assert artifact["expected_schema_version"] == evidence.expected_schema_version()
     assert "secret" not in encoded
     assert "postgresql://" not in encoded
     assert {case["id"] for case in artifact["cases"]} == EXPECTED_CASES
+
+
+def test_main_refuses_an_unsafe_migration_graph_before_connecting(
+    monkeypatch, tmp_path: Path
+) -> None:
+    output = tmp_path / "evidence" / "plans.json"
+    monkeypatch.setenv(
+        "GYF_PROD_DATABASE_URL", "postgresql://user:secret@example.invalid/gyf"
+    )
+
+    def multiple_heads() -> str:
+        raise evidence.MigrationGraphError(
+            "migration graph has multiple heads: rev-a, rev-b"
+        )
+
+    monkeypatch.setattr(evidence, "expected_schema_version", multiple_heads)
+
+    assert evidence.main(["--output", str(output)]) == 1
+    artifact = json.loads(output.read_text(encoding="utf-8"))
+    assert artifact["expected_schema_version"] == "unknown"
+    assert artifact["validation"] == {
+        "passed": False,
+        "errors": ["migration: migration graph has multiple heads: rev-a, rev-b"],
+    }
 
 
 def test_validation_requires_buffers_and_hot_path_indexes() -> None:
@@ -238,10 +289,13 @@ def test_validation_requires_buffers_and_hot_path_indexes() -> None:
         )
         for query in queries
     }
-    assert evidence.validate_plans(queries, plans) == []
+    deployed_schema = evidence.expected_schema_version()
+    assert evidence.validate_plans(queries, plans, schema_version=deployed_schema) == []
 
     plans["fts_english"] = "Seq Scan on items\nBuffers: shared hit=1"
-    assert evidence.validate_plans(queries, plans) == [
+    assert evidence.validate_plans(
+        queries, plans, schema_version=deployed_schema
+    ) == [
         "fts_english: title GIN index not used",
         "fts_english: sequential items scan",
     ]
@@ -250,12 +304,13 @@ def test_validation_requires_buffers_and_hot_path_indexes() -> None:
         "Index Scan using idx_items_available_title_fts on items\nBuffers: shared hit=1"
     )
     plans["browse_deep"] = "Seq Scan on items\nBuffers: shared hit=1"
+    stale_schema = "0021_catalog_image_count_index"
     assert evidence.validate_plans(
         queries,
         plans,
-        schema_version="0021_catalog_image_count_index",
+        schema_version=stale_schema,
     ) == [
-        "schema: expected 0023_category_browse_order, found 0021_catalog_image_count_index",
+        f"schema: expected {evidence.expected_schema_version()}, found {stale_schema}",
         "browse_deep: category browse-order index not used",
         "browse_deep: sequential items scan",
     ]

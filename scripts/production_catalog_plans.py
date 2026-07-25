@@ -38,7 +38,7 @@ EMBEDDING_DIM = 768
 STATEMENT_TIMEOUT_MS = 15_000
 LOCK_TIMEOUT_MS = 2_000
 ARTIFACT_VERSION = "f25-catalog-explain-v1"
-EXPECTED_SCHEMA_VERSION = "0023_category_browse_order"
+_MIGRATIONS_DIR = _API_ROOT / "db" / "migrations"
 _WIDEST_SLOT_CATEGORIES = [
     "jeans",
     "trousers",
@@ -85,6 +85,42 @@ class CapturedQuery:
 class _Case:
     case_id: str
     invoke: Callable[[PostgresVectorSearchRepository], None]
+
+
+class MigrationGraphError(RuntimeError):
+    """The checked-out Alembic graph cannot identify one safe schema head."""
+
+
+def _single_migration_head(heads: Iterable[str]) -> str:
+    """Return the one Alembic head or explain why evidence cannot be trusted."""
+    discovered = tuple(sorted(set(heads)))
+    if not discovered:
+        raise MigrationGraphError("migration graph has no heads")
+    if len(discovered) > 1:
+        raise MigrationGraphError(
+            f"migration graph has multiple heads: {', '.join(discovered)}"
+        )
+    return discovered[0]
+
+
+def expected_schema_version() -> str:
+    """Derive the required production revision from this checkout's Alembic graph."""
+    try:
+        from alembic.config import Config
+        from alembic.script import ScriptDirectory
+    except ImportError as exc:
+        raise MigrationGraphError("Alembic is required to load the migration graph") from exc
+
+    try:
+        config = Config(str(_API_ROOT / "alembic.ini"))
+        # Keep graph discovery anchored to the checked-out API, not the caller's cwd.
+        config.set_main_option("script_location", str(_MIGRATIONS_DIR))
+        heads = ScriptDirectory.from_config(config).get_heads()
+    except Exception as exc:  # noqa: BLE001 - report only local graph loading metadata
+        raise MigrationGraphError(
+            f"could not load Alembic migration graph ({type(exc).__name__})"
+        ) from exc
+    return _single_migration_head(heads)
 
 
 class EvidenceCaptureError(RuntimeError):
@@ -356,16 +392,16 @@ def validate_plans(
     queries: Iterable[CapturedQuery],
     plans: dict[str, str],
     *,
-    schema_version: str = EXPECTED_SCHEMA_VERSION,
+    schema_version: str = "unknown",
+    required_schema_version: str | None = None,
     indexed_browse: bool = True,
 ) -> list[str]:
     """Return gate failures that make captured evidence unsafe to accept."""
     errors: list[str] = []
     query_ids = {query.case_id for query in queries}
-    if schema_version != EXPECTED_SCHEMA_VERSION:
-        errors.append(
-            f"schema: expected {EXPECTED_SCHEMA_VERSION}, found {schema_version or 'unknown'}"
-        )
+    expected = required_schema_version or expected_schema_version()
+    if schema_version != expected:
+        errors.append(f"schema: expected {expected}, found {schema_version or 'unknown'}")
     for case_id in sorted(query_ids):
         plan = plans.get(case_id, "")
         if not plan.strip():
@@ -416,6 +452,7 @@ def build_artifact(
     plans: dict[str, str],
     *,
     schema_version: str,
+    required_schema_version: str | None = None,
     dsn: str = "",
     browse_mode: str = "indexed",
     validation_errors: Iterable[str] = (),
@@ -424,12 +461,15 @@ def build_artifact(
 ) -> dict[str, object]:
     """Build a secret-safe, deterministic evidence document."""
     safe_schema = re.sub(r"[^A-Za-z0-9_.-]", "_", str(schema_version))[:80] or "unknown"
+    expected = required_schema_version or expected_schema_version()
+    safe_expected = re.sub(r"[^A-Za-z0-9_.-]", "_", str(expected))[:80] or "unknown"
     return {
         "artifact_version": ARTIFACT_VERSION,
         "captured_at": captured_at
         or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "commit": commit or _commit_id(),
         "schema_version": safe_schema,
+        "expected_schema_version": safe_expected,
         "browse_mode": browse_mode,
         "statement_timeout_ms": STATEMENT_TIMEOUT_MS,
         "lock_timeout_ms": LOCK_TIMEOUT_MS,
@@ -478,6 +518,22 @@ def main(argv: list[str] | None = None) -> int:
         browse_only=args.browse_only,
     )
     try:
+        required_schema_version = expected_schema_version()
+    except MigrationGraphError as exc:
+        error = f"migration: {exc}"
+        artifact = build_artifact(
+            queries,
+            {},
+            schema_version="unknown",
+            required_schema_version="unknown",
+            dsn=dsn,
+            browse_mode="legacy" if args.legacy_browse else "indexed",
+            validation_errors=(error,),
+        )
+        _write_artifact(args.output, artifact)
+        print(f"production EXPLAIN refused ({error})", file=sys.stderr)
+        return 1
+    try:
         plans, capture_errors = run_explains(dsn, queries)
     except EvidenceCaptureError as exc:
         error = f"capture: {exc}"
@@ -485,6 +541,7 @@ def main(argv: list[str] | None = None) -> int:
             queries,
             exc.plans,
             schema_version=exc.schema_version,
+            required_schema_version=required_schema_version,
             dsn=dsn,
             browse_mode="legacy" if args.legacy_browse else "indexed",
             validation_errors=(error,),
@@ -502,6 +559,7 @@ def main(argv: list[str] | None = None) -> int:
             queries,
             {},
             schema_version="unknown",
+            required_schema_version=required_schema_version,
             dsn=dsn,
             browse_mode="legacy" if args.legacy_browse else "indexed",
             validation_errors=(error,),
@@ -517,6 +575,7 @@ def main(argv: list[str] | None = None) -> int:
         queries,
         plans,
         schema_version=schema_version,
+        required_schema_version=required_schema_version,
         indexed_browse=not args.legacy_browse,
     )
     validation_errors.extend(capture_errors)
@@ -524,6 +583,7 @@ def main(argv: list[str] | None = None) -> int:
         queries,
         plans,
         schema_version=schema_version,
+        required_schema_version=required_schema_version,
         dsn=dsn,
         browse_mode="legacy" if args.legacy_browse else "indexed",
         validation_errors=validation_errors,

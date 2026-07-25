@@ -121,3 +121,5 @@ jobs:
         run: GYF_DATABASE_URL="$GYF_TEST_DATABASE_URL" uv run alembic upgrade head
       - run: uv run ruff check .
       - run: uv run pytest -q
+      - name: Verify production catalogue evidence against the Alembic graph
+        run: uv run pytest -q ../../scripts/test_production_catalog_plans.py
