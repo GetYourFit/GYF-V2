@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from alembic import op
 from sqlalchemy import text
 
-revision: str = "0027_certain_aesthetic_browse_index"
+revision: str = "0027_certain_aesthetic_browse"
 down_revision: str | None = "0026_recommendation_join_index"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
