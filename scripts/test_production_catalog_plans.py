@@ -268,7 +268,11 @@ def test_run_explains_reports_multiple_deployed_heads_clearly() -> None:
             connect=lambda _dsn: MultiHeadConnection(),
         )
     except evidence.EvidenceCaptureError as exc:
-        assert str(exc) == "stage=schema type=DeployedSchemaError sqlstate=unknown"
+        assert str(exc) == (
+            "stage=schema type=DeployedSchemaError sqlstate=unknown "
+            "detail=deployed schema has multiple heads: "
+            "0022_catalog_title_search_index, 0023_catalog_search_backfill"
+        )
         assert (
             exc.schema_version
             == "0022_catalog_title_search_index+0023_catalog_search_backfill"
@@ -409,5 +413,9 @@ def test_main_records_multiple_deployed_heads_in_validation_artifact(
     )
     assert artifact["validation"] == {
         "passed": False,
-        "errors": ["capture: stage=schema type=DeployedSchemaError sqlstate=unknown"],
+        "errors": [
+            "capture: stage=schema type=DeployedSchemaError sqlstate=unknown "
+            "detail=deployed schema has multiple heads: "
+            "0022_catalog_title_search_index, 0023_catalog_search_backfill"
+        ],
     }

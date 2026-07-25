@@ -141,6 +141,7 @@ class EvidenceCaptureError(RuntimeError):
         cause: Exception,
         plans: dict[str, str] | None = None,
         schema_version: str = "unknown",
+        detail: str | None = None,
     ) -> None:
         self.stage = re.sub(r"[^A-Za-z0-9_.-]", "_", stage)[:80] or "unknown"
         self.error_type = (
@@ -154,8 +155,12 @@ class EvidenceCaptureError(RuntimeError):
         )
         self.plans = dict(plans or {})
         self.schema_version = schema_version
+        self.detail = (
+            re.sub(r"[^A-Za-z0-9_, .:+-]", "_", detail)[:200] if detail else ""
+        )
+        detail_suffix = f" detail={self.detail}" if self.detail else ""
         super().__init__(
-            f"stage={self.stage} type={self.error_type} sqlstate={self.sqlstate}"
+            f"stage={self.stage} type={self.error_type} sqlstate={self.sqlstate}{detail_suffix}"
         )
 
 
@@ -337,6 +342,7 @@ def run_explains(
                 stage="schema",
                 cause=exc,
                 schema_version=getattr(exc, "schema_version", "unknown"),
+                detail=str(exc),
             ) from None
         plans: dict[str, str] = {}
         capture_errors: list[str] = []
