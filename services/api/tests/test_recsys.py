@@ -509,6 +509,31 @@ def test_k5_keeps_category_family_coverage_when_one_family_has_higher_relevance(
     assert len(families) == 5
 
 
+def test_k5_reserves_low_affinity_category_family_before_mmr_cap():
+    pools = {
+        "top": [
+            *[
+                _item(f"shirt{i}", "shirt", "top", lch=(60, 8, 0), affinity=0.99)
+                for i in range(13)
+            ],
+            _item("blouse1", "blouse", "top", lch=(45, 20, 90), affinity=-0.99),
+        ],
+        "bottom": [
+            _item(f"jeans{i}", "jeans", "bottom", lch=(40, 10, 250), affinity=0.99)
+            for i in range(14)
+        ],
+        "footwear": [_item("sneaker1", "sneakers", "footwear", lch=(80, 5, 0), affinity=0.99)],
+    }
+    outfits = compose(
+        pools,
+        conditioning.resolve(Profile(occasion="casual"), "casual", None),
+        k=5,
+        taste_strength=1.0,
+    )
+    assert len(outfits) == 5
+    assert any(item.category == "blouse" for outfit in outfits for item in outfit.items)
+
+
 def test_scarce_catalog_returns_honest_limited_variety_not_fake_diversity():
     """When the catalog genuinely has only one top category, five looks sharing
     it is honest scarcity, not the diversity bug — the composer must not error
@@ -668,6 +693,17 @@ def test_recommend_endpoint_returns_explained_outfits():
 def test_recommend_404_before_onboarding():
     try:
         assert _client(None).get("/outfits/recommend").status_code == 404
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_recommend_rejects_malformed_seen_item_ids():
+    try:
+        response = _client(Profile(occasion="casual")).get(
+            "/outfits/recommend?seen_item_ids=not-a-uuid"
+        )
+        assert response.status_code == 422
+        assert response.json()["detail"] == "seen_item_ids must contain comma-separated UUIDs"
     finally:
         app.dependency_overrides.clear()
 

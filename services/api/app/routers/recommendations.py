@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 import time
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from gyf_contracts.usermodel import CATALOG_GENDERS, STYLE_INTENTS, catalog_genders_for
@@ -35,6 +36,20 @@ from ..wardrobe import WardrobeRepository
 router = APIRouter(tags=["recommendations"])
 logger = logging.getLogger("gyf")
 _STYLE_PATTERN = "^(?:" + "|".join(re.escape(value) for value in sorted(STYLE_INTENTS)) + ")$"
+
+
+def _parse_seen_item_ids(value: str | None) -> frozenset[str]:
+    try:
+        return frozenset(
+            str(UUID(item_id.strip()))
+            for item_id in (value or "").split(",")
+            if item_id.strip()
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="seen_item_ids must contain comma-separated UUIDs",
+        ) from exc
 
 
 def _profile_for_request(repo: ProfileRepository, user_id: str, request: Request):
@@ -142,9 +157,7 @@ def recommend_outfits(
     if style is not None:
         profile = profile.model_copy(deep=True)
         profile.style_intent = [style]
-    seen = frozenset(
-        item_id.strip() for item_id in (seen_item_ids or "").split(",") if item_id.strip()
-    )
+    seen = _parse_seen_item_ids(seen_item_ids)
     return recommend(
         profile,
         principal.user_id,
