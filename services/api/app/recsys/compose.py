@@ -812,17 +812,20 @@ def compose(
     # Cap the working set so MMR stays cheap; the best distinct looks are at the
     # front. Fall back to the raw top-N if dedup left fewer than k (honest scarcity).
     diverse = list(best_per_core.values())
-    ranked = diverse if len(diverse) >= k else scored
+    use_distinct_cores = len(diverse) >= k
+    ranked = diverse if use_distinct_cores else scored
     working_limit = max(k * 8, 24)
     if k >= 5:
         representatives: dict[tuple[tuple[str, str], ...], tuple] = {}
         for entry in ranked:
             representatives.setdefault(_category_family(entry[0]), entry)
         reserved = list(representatives.values())
-        reserved_cores = {_core_key(entry[0]) for entry in reserved}
-        pool = (reserved + [entry for entry in ranked if _core_key(entry[0]) not in reserved_cores])[
-            :working_limit
-        ]
+        if use_distinct_cores:
+            reserved_cores = {_core_key(entry[0]) for entry in reserved}
+            remainder = [entry for entry in ranked if _core_key(entry[0]) not in reserved_cores]
+        else:
+            remainder = [entry for entry in ranked if entry not in reserved]
+        pool = (reserved + remainder)[:working_limit]
     else:
         pool = ranked[:working_limit]
 

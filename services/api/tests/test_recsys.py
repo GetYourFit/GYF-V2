@@ -534,6 +534,27 @@ def test_k5_reserves_low_affinity_category_family_before_mmr_cap():
     assert any(item.category == "blouse" for outfit in outfits for item in outfit.items)
 
 
+def test_k5_scarce_core_keeps_footwear_variants():
+    pools = {
+        "top": [_item("shirt1", "shirt", "top", lch=(60, 8, 0))],
+        "bottom": [_item("jeans1", "jeans", "bottom", lch=(40, 10, 250))],
+        "footwear": [
+            _item(f"shoe{i}", "sneakers", "footwear", lch=(80 - i, 5, 0))
+            for i in range(5)
+        ],
+    }
+    outfits = compose(
+        pools,
+        conditioning.resolve(Profile(occasion="casual"), "casual", None),
+        k=5,
+    )
+    assert len(outfits) == 5
+    assert {
+        next(item.item_id for item in outfit.items if item.slot == "footwear")
+        for outfit in outfits
+    } == {f"shoe{i}" for i in range(5)}
+
+
 def test_scarce_catalog_returns_honest_limited_variety_not_fake_diversity():
     """When the catalog genuinely has only one top category, five looks sharing
     it is honest scarcity, not the diversity bug — the composer must not error
