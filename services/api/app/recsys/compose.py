@@ -783,7 +783,10 @@ def compose(
         items_for_seen_families = seen_items
         if items_for_seen_families is None:
             items_for_seen_families = tuple(
-                it for slot_pool in pools.values() for it in slot_pool if it.item_id in seen_item_ids
+                it
+                for slot_pool in pools.values()
+                for it in slot_pool
+                if it.item_id in seen_item_ids
             )
         for it in items_for_seen_families:
             if it.slot != "footwear":

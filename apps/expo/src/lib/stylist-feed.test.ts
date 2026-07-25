@@ -82,9 +82,7 @@ describe("Expo stylist feed model", () => {
   });
 
   test("carries every displayed garment into a next-slate request", () => {
-    expect(slateItemIds([outfit, { ...outfit, items: [outfit.items[1]] }])).toBe(
-      "top-1,shoe-1",
-    );
+    expect(slateItemIds([outfit, { ...outfit, items: [outfit.items[1]] }])).toBe("top-1,shoe-1");
   });
 
   test("swaps exactly the corrected garment without mutating the source look", () => {

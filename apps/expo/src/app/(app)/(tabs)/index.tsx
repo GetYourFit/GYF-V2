@@ -797,10 +797,7 @@ export default function StylistRoute() {
             Try another goal or refresh. GYF will not invent a look when the catalogue cannot
             support one.
           </GyfText>
-          <AtelierButton
-            label="Get another slate"
-            onPress={loadNextSlate}
-          />
+          <AtelierButton label="Get another slate" onPress={loadNextSlate} />
         </AtelierCard>
       ) : null}
 

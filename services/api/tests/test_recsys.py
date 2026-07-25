@@ -487,10 +487,7 @@ def test_k5_surfaces_distinct_top_and_footwear_categories_when_catalog_has_varie
 
 def test_k5_keeps_category_family_coverage_when_one_family_has_higher_relevance():
     catalog = [
-        *[
-            _item(f"shirt{i}", "shirt", "top", lch=(60, 8, 0), affinity=0.99)
-            for i in range(5)
-        ],
+        *[_item(f"shirt{i}", "shirt", "top", lch=(60, 8, 0), affinity=0.99) for i in range(5)],
         _item("tee1", "t_shirt", "top", lch=(50, 40, 30), affinity=0.1),
         _item("blouse1", "blouse", "top", lch=(45, 20, 90), affinity=0.1),
         _item("jeans1", "jeans", "bottom", lch=(40, 10, 250)),
@@ -512,10 +509,7 @@ def test_k5_keeps_category_family_coverage_when_one_family_has_higher_relevance(
 def test_k5_reserves_low_affinity_category_family_before_mmr_cap():
     pools = {
         "top": [
-            *[
-                _item(f"shirt{i}", "shirt", "top", lch=(60, 8, 0), affinity=0.99)
-                for i in range(13)
-            ],
+            *[_item(f"shirt{i}", "shirt", "top", lch=(60, 8, 0), affinity=0.99) for i in range(13)],
             _item("blouse1", "blouse", "top", lch=(45, 20, 90), affinity=-0.99),
         ],
         "bottom": [
@@ -539,8 +533,7 @@ def test_k5_scarce_core_keeps_footwear_variants():
         "top": [_item("shirt1", "shirt", "top", lch=(60, 8, 0))],
         "bottom": [_item("jeans1", "jeans", "bottom", lch=(40, 10, 250))],
         "footwear": [
-            _item(f"shoe{i}", "sneakers", "footwear", lch=(80 - i, 5, 0))
-            for i in range(5)
+            _item(f"shoe{i}", "sneakers", "footwear", lch=(80 - i, 5, 0)) for i in range(5)
         ],
     }
     outfits = compose(
@@ -550,8 +543,7 @@ def test_k5_scarce_core_keeps_footwear_variants():
     )
     assert len(outfits) == 5
     assert {
-        next(item.item_id for item in outfit.items if item.slot == "footwear")
-        for outfit in outfits
+        next(item.item_id for item in outfit.items if item.slot == "footwear") for outfit in outfits
     } == {f"shoe{i}" for i in range(5)}
 
 
@@ -664,7 +656,9 @@ def test_seen_set_uses_prior_slate_items_missing_from_the_current_pool():
         1,
         seen_item_ids=frozenset({"old-shirt", "old-jeans"}),
     )
-    family = {(item.slot, item.category) for item in rec.outfits[0].items if item.slot != "footwear"}
+    family = {
+        (item.slot, item.category) for item in rec.outfits[0].items if item.slot != "footwear"
+    }
     assert family != {("top", "shirt"), ("bottom", "jeans")}
 
 

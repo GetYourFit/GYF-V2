@@ -41,9 +41,7 @@ _STYLE_PATTERN = "^(?:" + "|".join(re.escape(value) for value in sorted(STYLE_IN
 def _parse_seen_item_ids(value: str | None) -> frozenset[str]:
     try:
         return frozenset(
-            str(UUID(item_id.strip()))
-            for item_id in (value or "").split(",")
-            if item_id.strip()
+            str(UUID(item_id.strip())) for item_id in (value or "").split(",") if item_id.strip()
         )
     except ValueError as exc:
         raise HTTPException(
