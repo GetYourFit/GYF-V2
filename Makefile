@@ -21,7 +21,7 @@ DEV_ENV := $(CACHE_ENV) GYF_EVENT_SINK=postgres
 # health-wait loops and gyf.test service-name DNS. Requires `container system start`.
 STACK := bash infra/container-stack.sh
 
-.PHONY: data-export help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api repo-hygiene doctrine ci types m2-bakeoff m2-clean clean
+.PHONY: data-export help install check-uv migrate dev dev-web dev-api up down logs stack stack-down stack-logs nuke fmt fmt-check lint typecheck test test-api repo-hygiene ownership-inventory doctrine ci types m2-bakeoff m2-clean clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -106,7 +106,11 @@ repo-hygiene: ## Block tracked local tool/cache artifacts and oversized binaries
 	python3 -m unittest discover -s scripts -p "test_check_repo_hygiene.py"
 	python3 scripts/check_repo_hygiene.py
 
-doctrine: repo-hygiene ## Run the doctrine gates (repo hygiene + license D2 + promotion D5 + ports D1 + doc alignment)
+ownership-inventory: ## Verify protected rollback/reference ownership has not drifted
+	python3 -m unittest discover -s scripts -p "test_ownership_inventory.py"
+	python3 scripts/ownership_inventory.py --check
+
+doctrine: repo-hygiene ownership-inventory ## Run repo ownership, hygiene and doctrine gates
 	python3 scripts/check_model_licenses.py
 	python3 scripts/check_promotion.py
 	python3 scripts/check_ports.py

@@ -44,6 +44,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: ownership-inventory-guard
+        name: ownership inventory guard
+        entry: python3 scripts/ownership_inventory.py --check
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: prettier
         name: prettier
         entry: bun run format:check
