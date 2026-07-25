@@ -1,8 +1,10 @@
 name: Production catalogue plans
 
 # Manual, read-only evidence gate for F2.5. The checked-in runner obtains SQL
-# from PostgresVectorSearchRepository itself, so this cannot silently drift from
-# the queries serving production. Artifacts contain sanitized plans only.
+# from PostgresVectorSearchRepository itself and records the checked-out
+# Alembic graph's exactly-one head, so this cannot silently drift from the
+# queries or schema revision serving production. Artifacts contain sanitized
+# plans only.
 on:
   workflow_dispatch:
 
@@ -44,12 +46,12 @@ jobs:
         run: |
           mkdir -p production-plan-evidence
           status=0
-          uv run --project services/api --extra postgres \
+          uv run --project services/api --extra postgres --extra migrate \
             python scripts/production_catalog_plans.py \
             --legacy-browse \
             --browse-only \
             --output production-plan-evidence/deployed-legacy.json || status=$?
-          uv run --project services/api --extra postgres \
+          uv run --project services/api --extra postgres --extra migrate \
             python scripts/production_catalog_plans.py \
             --output production-plan-evidence/indexed-candidate.json || status=$?
           exit "$status"

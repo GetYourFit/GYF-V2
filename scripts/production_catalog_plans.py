@@ -4,7 +4,10 @@
 The SQL is produced by ``PostgresVectorSearchRepository`` itself.  A recording
 pool asks the repository to render each fixed case, then the resulting
 parameterised statement is run through ``EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)``
-against production.  No bind values or result rows are written to the artifact.
+against production.  The artifact also records the checked-out Alembic graph's
+exactly-one head and refuses evidence when the local graph or deployed schema
+cannot prove a single matching revision.  No bind values or result rows are
+written to the artifact.
 
 The command intentionally reads ``GYF_PROD_DATABASE_URL`` from the environment;
 the DSN is never printed or serialised.
@@ -38,7 +41,7 @@ EMBEDDING_DIM = 768
 STATEMENT_TIMEOUT_MS = 15_000
 LOCK_TIMEOUT_MS = 2_000
 ARTIFACT_VERSION = "f25-catalog-explain-v1"
-EXPECTED_SCHEMA_VERSION = "0023_category_browse_order"
+_MIGRATIONS_DIR = _API_ROOT / "db" / "migrations"
 _WIDEST_SLOT_CATEGORIES = [
     "jeans",
     "trousers",
@@ -87,6 +90,48 @@ class _Case:
     invoke: Callable[[PostgresVectorSearchRepository], None]
 
 
+class MigrationGraphError(RuntimeError):
+    """The checked-out Alembic graph cannot identify one safe schema head."""
+
+
+class DeployedSchemaError(RuntimeError):
+    """The deployed database does not expose one safe Alembic revision."""
+
+    def __init__(self, message: str, *, schema_version: str) -> None:
+        self.schema_version = schema_version
+        super().__init__(message)
+
+
+def _single_migration_head(heads: Iterable[str]) -> str:
+    """Return the one Alembic head or explain why evidence cannot be trusted."""
+    discovered = tuple(sorted(set(heads)))
+    if not discovered:
+        raise MigrationGraphError("migration graph has no heads")
+    if len(discovered) > 1:
+        raise MigrationGraphError(f"migration graph has multiple heads: {', '.join(discovered)}")
+    return discovered[0]
+
+
+def expected_schema_version() -> str:
+    """Derive the required production revision from this checkout's Alembic graph."""
+    try:
+        from alembic.config import Config
+        from alembic.script import ScriptDirectory
+    except ImportError as exc:
+        raise MigrationGraphError("Alembic is required to load the migration graph") from exc
+
+    try:
+        config = Config(str(_API_ROOT / "alembic.ini"))
+        # Keep graph discovery anchored to the checked-out API, not the caller's cwd.
+        config.set_main_option("script_location", str(_MIGRATIONS_DIR))
+        heads = ScriptDirectory.from_config(config).get_heads()
+    except Exception as exc:  # noqa: BLE001 - report only local graph loading metadata
+        raise MigrationGraphError(
+            f"could not load Alembic migration graph ({type(exc).__name__})"
+        ) from exc
+    return _single_migration_head(heads)
+
+
 class EvidenceCaptureError(RuntimeError):
     """Secret-safe failure metadata plus any plans captured before the failure."""
 
@@ -97,21 +142,20 @@ class EvidenceCaptureError(RuntimeError):
         cause: Exception,
         plans: dict[str, str] | None = None,
         schema_version: str = "unknown",
+        detail: str | None = None,
     ) -> None:
         self.stage = re.sub(r"[^A-Za-z0-9_.-]", "_", stage)[:80] or "unknown"
-        self.error_type = (
-            re.sub(r"[^A-Za-z0-9_.-]", "_", type(cause).__name__)[:80] or "Exception"
-        )
+        self.error_type = re.sub(r"[^A-Za-z0-9_.-]", "_", type(cause).__name__)[:80] or "Exception"
         sqlstate = getattr(cause, "sqlstate", None)
         self.sqlstate = (
-            str(sqlstate)
-            if sqlstate and re.fullmatch(r"[A-Z0-9]{5}", str(sqlstate))
-            else "unknown"
+            str(sqlstate) if sqlstate and re.fullmatch(r"[A-Z0-9]{5}", str(sqlstate)) else "unknown"
         )
         self.plans = dict(plans or {})
         self.schema_version = schema_version
+        self.detail = re.sub(r"[^A-Za-z0-9_, .:+-]", "_", detail)[:200] if detail else ""
+        detail_suffix = f" detail={self.detail}" if self.detail else ""
         super().__init__(
-            f"stage={self.stage} type={self.error_type} sqlstate={self.sqlstate}"
+            f"stage={self.stage} type={self.error_type} sqlstate={self.sqlstate}{detail_suffix}"
         )
 
 
@@ -133,9 +177,7 @@ def _cases() -> tuple[_Case, ...]:
     return (
         _Case(
             "browse_anonymous",
-            lambda repo: repo.browse(
-                categories=None, k=24, region="IN", seed="f25-anonymous"
-            ),
+            lambda repo: repo.browse(categories=None, k=24, region="IN", seed="f25-anonymous"),
         ),
         _Case(
             "browse_filtered",
@@ -232,9 +274,7 @@ def capture_query_matrix(
         case.invoke(repo)
         if not pool.sql:
             raise RuntimeError(f"repository did not render SQL for {case.case_id}")
-        captured.append(
-            CapturedQuery(case.case_id, pool.sql, pool.params, tuple(pool.setup))
-        )
+        captured.append(CapturedQuery(case.case_id, pool.sql, pool.params, tuple(pool.setup)))
     return tuple(captured)
 
 
@@ -242,9 +282,7 @@ def _connect(dsn: str) -> _Connection:
     try:
         import psycopg
     except ImportError as exc:  # pragma: no cover - CI installs the postgres extra
-        raise RuntimeError(
-            "psycopg is required; run with the API postgres extra"
-        ) from exc
+        raise RuntimeError("psycopg is required; run with the API postgres extra") from exc
     return psycopg.connect(dsn)
 
 
@@ -254,8 +292,22 @@ def _read_schema_version(conn: _Connection) -> str:
     try:
         conn.execute(f"SET LOCAL statement_timeout = '{STATEMENT_TIMEOUT_MS}ms'")
         conn.execute(f"SET LOCAL lock_timeout = '{LOCK_TIMEOUT_MS}ms'")
-        row = conn.execute("SELECT version_num FROM alembic_version").fetchone()
-        return str(row[0]) if row else "unknown"
+        rows = conn.execute(
+            "SELECT version_num FROM alembic_version ORDER BY version_num"
+        ).fetchall()
+        versions = tuple(sorted({str(row[0]) for row in rows if row and row[0] is not None}))
+        if not versions:
+            raise DeployedSchemaError(
+                "deployed schema has no heads",
+                schema_version="unknown",
+            )
+        if len(versions) > 1:
+            joined = ", ".join(versions)
+            raise DeployedSchemaError(
+                f"deployed schema has multiple heads: {joined}",
+                schema_version="+".join(versions),
+            )
+        return versions[0]
     finally:
         conn.rollback()
 
@@ -276,15 +328,18 @@ def run_explains(
         try:
             schema_version = _read_schema_version(conn)
         except Exception as exc:
-            raise EvidenceCaptureError(stage="schema", cause=exc) from None
+            raise EvidenceCaptureError(
+                stage="schema",
+                cause=exc,
+                schema_version=getattr(exc, "schema_version", "unknown"),
+                detail=str(exc) if isinstance(exc, DeployedSchemaError) else None,
+            ) from None
         plans: dict[str, str] = {}
         capture_errors: list[str] = []
         for query in queries:
             try:
                 conn.execute("BEGIN TRANSACTION READ ONLY")
-                conn.execute(
-                    f"SET LOCAL statement_timeout = '{STATEMENT_TIMEOUT_MS}ms'"
-                )
+                conn.execute(f"SET LOCAL statement_timeout = '{STATEMENT_TIMEOUT_MS}ms'")
                 conn.execute(f"SET LOCAL lock_timeout = '{LOCK_TIMEOUT_MS}ms'")
                 for setup_sql, setup_params in query.setup:
                     conn.execute(setup_sql, setup_params)
@@ -356,16 +411,16 @@ def validate_plans(
     queries: Iterable[CapturedQuery],
     plans: dict[str, str],
     *,
-    schema_version: str = EXPECTED_SCHEMA_VERSION,
+    schema_version: str = "unknown",
+    required_schema_version: str | None = None,
     indexed_browse: bool = True,
 ) -> list[str]:
     """Return gate failures that make captured evidence unsafe to accept."""
     errors: list[str] = []
     query_ids = {query.case_id for query in queries}
-    if schema_version != EXPECTED_SCHEMA_VERSION:
-        errors.append(
-            f"schema: expected {EXPECTED_SCHEMA_VERSION}, found {schema_version or 'unknown'}"
-        )
+    expected = required_schema_version or expected_schema_version()
+    if schema_version != expected:
+        errors.append(f"schema: expected {expected}, found {schema_version or 'unknown'}")
     for case_id in sorted(query_ids):
         plan = plans.get(case_id, "")
         if not plan.strip():
@@ -416,6 +471,7 @@ def build_artifact(
     plans: dict[str, str],
     *,
     schema_version: str,
+    required_schema_version: str | None = None,
     dsn: str = "",
     browse_mode: str = "indexed",
     validation_errors: Iterable[str] = (),
@@ -423,13 +479,15 @@ def build_artifact(
     captured_at: str | None = None,
 ) -> dict[str, object]:
     """Build a secret-safe, deterministic evidence document."""
-    safe_schema = re.sub(r"[^A-Za-z0-9_.-]", "_", str(schema_version))[:80] or "unknown"
+    safe_schema = re.sub(r"[^A-Za-z0-9_.+-]", "_", str(schema_version))[:80] or "unknown"
+    expected = required_schema_version or expected_schema_version()
+    safe_expected = re.sub(r"[^A-Za-z0-9_.+-]", "_", str(expected))[:80] or "unknown"
     return {
         "artifact_version": ARTIFACT_VERSION,
-        "captured_at": captured_at
-        or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "captured_at": captured_at or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "commit": commit or _commit_id(),
         "schema_version": safe_schema,
+        "expected_schema_version": safe_expected,
         "browse_mode": browse_mode,
         "statement_timeout_ms": STATEMENT_TIMEOUT_MS,
         "lock_timeout_ms": LOCK_TIMEOUT_MS,
@@ -450,9 +508,7 @@ def build_artifact(
 
 def _write_artifact(path: Path, artifact: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(artifact, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    path.write_text(json.dumps(artifact, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -478,6 +534,22 @@ def main(argv: list[str] | None = None) -> int:
         browse_only=args.browse_only,
     )
     try:
+        required_schema_version = expected_schema_version()
+    except MigrationGraphError as exc:
+        error = f"migration: {exc}"
+        artifact = build_artifact(
+            queries,
+            {},
+            schema_version="unknown",
+            required_schema_version="unknown",
+            dsn=dsn,
+            browse_mode="legacy" if args.legacy_browse else "indexed",
+            validation_errors=(error,),
+        )
+        _write_artifact(args.output, artifact)
+        print(f"production EXPLAIN refused ({error})", file=sys.stderr)
+        return 1
+    try:
         plans, capture_errors = run_explains(dsn, queries)
     except EvidenceCaptureError as exc:
         error = f"capture: {exc}"
@@ -485,6 +557,7 @@ def main(argv: list[str] | None = None) -> int:
             queries,
             exc.plans,
             schema_version=exc.schema_version,
+            required_schema_version=required_schema_version,
             dsn=dsn,
             browse_mode="legacy" if args.legacy_browse else "indexed",
             validation_errors=(error,),
@@ -502,6 +575,7 @@ def main(argv: list[str] | None = None) -> int:
             queries,
             {},
             schema_version="unknown",
+            required_schema_version=required_schema_version,
             dsn=dsn,
             browse_mode="legacy" if args.legacy_browse else "indexed",
             validation_errors=(error,),
@@ -517,6 +591,7 @@ def main(argv: list[str] | None = None) -> int:
         queries,
         plans,
         schema_version=schema_version,
+        required_schema_version=required_schema_version,
         indexed_browse=not args.legacy_browse,
     )
     validation_errors.extend(capture_errors)
@@ -524,6 +599,7 @@ def main(argv: list[str] | None = None) -> int:
         queries,
         plans,
         schema_version=schema_version,
+        required_schema_version=required_schema_version,
         dsn=dsn,
         browse_mode="legacy" if args.legacy_browse else "indexed",
         validation_errors=validation_errors,
