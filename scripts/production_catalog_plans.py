@@ -91,6 +91,14 @@ class MigrationGraphError(RuntimeError):
     """The checked-out Alembic graph cannot identify one safe schema head."""
 
 
+class DeployedSchemaError(RuntimeError):
+    """The deployed database does not expose one safe Alembic revision."""
+
+    def __init__(self, message: str, *, schema_version: str) -> None:
+        self.schema_version = schema_version
+        super().__init__(message)
+
+
 def _single_migration_head(heads: Iterable[str]) -> str:
     """Return the one Alembic head or explain why evidence cannot be trusted."""
     discovered = tuple(sorted(set(heads)))
@@ -290,8 +298,21 @@ def _read_schema_version(conn: _Connection) -> str:
     try:
         conn.execute(f"SET LOCAL statement_timeout = '{STATEMENT_TIMEOUT_MS}ms'")
         conn.execute(f"SET LOCAL lock_timeout = '{LOCK_TIMEOUT_MS}ms'")
-        row = conn.execute("SELECT version_num FROM alembic_version").fetchone()
-        return str(row[0]) if row else "unknown"
+        rows = conn.execute(
+            "SELECT version_num FROM alembic_version ORDER BY version_num"
+        ).fetchall()
+        versions = tuple(
+            sorted({str(row[0]) for row in rows if row and row[0] is not None})
+        )
+        if not versions:
+            return "unknown"
+        if len(versions) > 1:
+            joined = ", ".join(versions)
+            raise DeployedSchemaError(
+                f"deployed schema has multiple heads: {joined}",
+                schema_version="+".join(versions),
+            )
+        return versions[0]
     finally:
         conn.rollback()
 
@@ -312,7 +333,11 @@ def run_explains(
         try:
             schema_version = _read_schema_version(conn)
         except Exception as exc:
-            raise EvidenceCaptureError(stage="schema", cause=exc) from None
+            raise EvidenceCaptureError(
+                stage="schema",
+                cause=exc,
+                schema_version=getattr(exc, "schema_version", "unknown"),
+            ) from None
         plans: dict[str, str] = {}
         capture_errors: list[str] = []
         for query in queries:
@@ -460,9 +485,9 @@ def build_artifact(
     captured_at: str | None = None,
 ) -> dict[str, object]:
     """Build a secret-safe, deterministic evidence document."""
-    safe_schema = re.sub(r"[^A-Za-z0-9_.-]", "_", str(schema_version))[:80] or "unknown"
+    safe_schema = re.sub(r"[^A-Za-z0-9_.+-]", "_", str(schema_version))[:80] or "unknown"
     expected = required_schema_version or expected_schema_version()
-    safe_expected = re.sub(r"[^A-Za-z0-9_.-]", "_", str(expected))[:80] or "unknown"
+    safe_expected = re.sub(r"[^A-Za-z0-9_.+-]", "_", str(expected))[:80] or "unknown"
     return {
         "artifact_version": ARTIFACT_VERSION,
         "captured_at": captured_at

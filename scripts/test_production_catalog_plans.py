@@ -112,6 +112,34 @@ class _FakeConnection:
         self.closed = True
 
 
+def test_schema_reader_rejects_multiple_deployed_heads() -> None:
+    class MultiHeadConnection(_FakeConnection):
+        def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
+            self.calls.append((sql, tuple(params or ())))
+            if sql.startswith("SELECT version_num"):
+                return _FakeResult(
+                    [
+                        ("0022_catalog_title_search_index",),
+                        ("0023_catalog_search_backfill",),
+                    ]
+                )
+            return _FakeResult([])
+
+    connection = MultiHeadConnection()
+
+    try:
+        evidence._read_schema_version(connection)
+    except RuntimeError as exc:
+        assert str(exc) == (
+            "deployed schema has multiple heads: "
+            "0022_catalog_title_search_index, 0023_catalog_search_backfill"
+        )
+    else:
+        raise AssertionError("expected multiple deployed heads to be rejected")
+
+    assert connection.rollbacks == 1
+
+
 def test_explains_are_read_only_bounded_and_secret_free() -> None:
     connection = _FakeConnection()
     queries = evidence.capture_query_matrix()
@@ -220,6 +248,36 @@ def test_query_failure_preserves_completed_plans_and_continues() -> None:
     assert connection.closed
 
 
+def test_run_explains_reports_multiple_deployed_heads_clearly() -> None:
+    class MultiHeadConnection(_FakeConnection):
+        def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
+            self.calls.append((sql, tuple(params or ())))
+            if sql.startswith("SELECT version_num"):
+                return _FakeResult(
+                    [
+                        ("0022_catalog_title_search_index",),
+                        ("0023_catalog_search_backfill",),
+                    ]
+                )
+            return _FakeResult([])
+
+    try:
+        evidence.run_explains(
+            "postgresql://user:secret@example.invalid/gyf",
+            evidence.capture_query_matrix(),
+            connect=lambda _dsn: MultiHeadConnection(),
+        )
+    except evidence.EvidenceCaptureError as exc:
+        assert str(exc) == "stage=schema type=DeployedSchemaError sqlstate=unknown"
+        assert (
+            exc.schema_version
+            == "0022_catalog_title_search_index+0023_catalog_search_backfill"
+        )
+        assert exc.plans == {}
+    else:
+        raise AssertionError("expected deployed multi-head schema to fail capture")
+
+
 def test_main_writes_diagnostic_artifact_on_capture_failure(
     monkeypatch, tmp_path: Path
 ) -> None:
@@ -314,3 +372,42 @@ def test_validation_requires_buffers_and_hot_path_indexes() -> None:
         "browse_deep: category browse-order index not used",
         "browse_deep: sequential items scan",
     ]
+
+
+def test_main_records_multiple_deployed_heads_in_validation_artifact(
+    monkeypatch, tmp_path: Path
+) -> None:
+    output = tmp_path / "evidence" / "plans.json"
+    monkeypatch.setenv(
+        "GYF_PROD_DATABASE_URL", "postgresql://user:secret@example.invalid/gyf"
+    )
+
+    class MultiHeadConnection(_FakeConnection):
+        def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
+            self.calls.append((sql, tuple(params or ())))
+            if sql.startswith("SELECT version_num"):
+                return _FakeResult(
+                    [
+                        ("0022_catalog_title_search_index",),
+                        ("0023_catalog_search_backfill",),
+                    ]
+                )
+            return _FakeResult([])
+
+    original_run_explains = evidence.run_explains
+    monkeypatch.setattr(
+        evidence, "run_explains", lambda dsn, queries: original_run_explains(
+            dsn, queries, connect=lambda _dsn: MultiHeadConnection()
+        )
+    )
+
+    assert evidence.main(["--output", str(output)]) == 1
+    artifact = json.loads(output.read_text(encoding="utf-8"))
+    assert (
+        artifact["schema_version"]
+        == "0022_catalog_title_search_index+0023_catalog_search_backfill"
+    )
+    assert artifact["validation"] == {
+        "passed": False,
+        "errors": ["capture: stage=schema type=DeployedSchemaError sqlstate=unknown"],
+    }
