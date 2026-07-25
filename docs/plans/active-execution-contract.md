@@ -1440,6 +1440,17 @@ if every §2 row and security/cost check passes. If software-level fixes cannot 
 present a costed non-Singapore topology experiment for owner approval. F2.5 is **not promoted** by
 this local result.
 
+**2026-07-25 bounded-latency search/facets slice (local evidence only).** Search/facets now add
+rollback-safe instrumentation and bounded SQL budgets without changing the JSON API, catalogue
+sources, audience policy, or topology. Search and facets set transaction-local
+`statement_timeout` budgets, propagate PostgreSQL cancellation/database errors instead of fabricating
+empty success, preserve the normalized-query-plus-model-ID embedding cache key, echo the sanitized
+request ID, expose `X-GYF-Search-Mode: semantic|lexical`, and log only privacy-safe fixed-label
+catalogue stage totals plus total wall time for `/items/*`. Focused local evidence and the rollback
+notes live in [`docs/evidence/f2.5-search-facets-bounded-latency-2026-07-25.md`](../evidence/f2.5-search-facets-bounded-latency-2026-07-25.md).
+This is not promotion evidence: Virginia deployment, India-vantage sustained samples, and production
+`EXPLAIN (ANALYZE, BUFFERS)` remain required before any F2.5 closeout claim.
+
 **2026-07-16 measurement correction and root cause (supersedes the stage diagnosis above).**
 
 *The gate itself was wrong.* `measure_slo.py` opened a fresh connection per sample via

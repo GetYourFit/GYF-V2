@@ -855,6 +855,9 @@ Run the slice gate before any next phase.
 
 - Add read-through query-embedding cache keyed by normalized query and model version.
 - Warm top queries from existing interaction data; use the remote encoder port for cache misses.
+- Keep `/items/*` request IDs, fixed-label stage timings, semantic-vs-lexical mode visibility, and
+  transaction-local search/facets SQL budgets rollback-safe; see
+  `docs/evidence/f2.5-search-facets-bounded-latency-2026-07-25.md` for the current local slice.
 - Move API/DB to the India-effective always-on topology only through the existing migration and
   rollback recipe.
 - Measure from an Indian vantage against: browse p50/p95 ≤300/800 ms, cached search ≤400/900 ms,

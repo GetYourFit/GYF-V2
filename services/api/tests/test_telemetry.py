@@ -61,7 +61,12 @@ def test_observe_stage_duration_validates_fixed_labels_and_duration():
 
 
 def test_observe_stage_duration_updates_request_timing_snapshot():
-    from app.metrics import begin_catalog_request, catalog_timing_snapshot, observe_stage_duration, reset_catalog_request
+    from app.metrics import (
+        begin_catalog_request,
+        catalog_timing_snapshot,
+        observe_stage_duration,
+        reset_catalog_request,
+    )
 
     token = begin_catalog_request()
     try:
@@ -72,7 +77,12 @@ def test_observe_stage_duration_updates_request_timing_snapshot():
 
 
 def test_stage_timer_updates_request_timing_snapshot_once():
-    from app.metrics import begin_catalog_request, catalog_timing_snapshot, reset_catalog_request, stage_timer
+    from app.metrics import (
+        begin_catalog_request,
+        catalog_timing_snapshot,
+        reset_catalog_request,
+        stage_timer,
+    )
 
     token = begin_catalog_request()
     try:
