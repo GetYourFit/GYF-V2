@@ -2135,6 +2135,8 @@ export interface operations {
         parameters: {
             query?: {
                 region?: string | null;
+                /** @description Styling gender: facets narrow to that slice + unisex. */
+                gender?: string | null;
             };
             header?: never;
             path?: never;

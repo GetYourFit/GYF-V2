@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from ..config import settings
-from .retrieval import SEARCHABLE_ITEM_PREDICATE
+from .retrieval import _GENDER_BUCKETS, _GENDER_FILTER, SEARCHABLE_ITEM_PREDICATE
 
 _SNAPSHOT_ID = 1
 
@@ -101,20 +101,32 @@ class PostgresCatalogueSnapshotRepository:
             )
             return {str(key): int(count) for key, count in rows}
 
-        row = conn.execute(  # type: ignore[attr-defined]
-            f"""SELECT COUNT(*), COUNT(i.price), MIN(i.price), MAX(i.price)
-                FROM item_embeddings e JOIN items i ON i.id = e.item_id WHERE {where}""",
-            tuple(params),
-        ).fetchone()
+        def totals(extra_where: str, extra_params: list[object]) -> dict[str, Any]:
+            row = conn.execute(  # type: ignore[attr-defined]
+                f"""SELECT COUNT(*), COUNT(i.price), MIN(i.price), MAX(i.price)
+                    FROM item_embeddings e JOIN items i ON i.id = e.item_id
+                    WHERE {where} {extra_where}""",
+                tuple(params) + tuple(extra_params),
+            ).fetchone()
+            return {
+                "total": int(row[0]),
+                "priced": int(row[1]),
+                "price_min": float(row[2]) if row[2] is not None else None,
+                "price_max": float(row[3]) if row[3] is not None else None,
+            }
+
+        by_gender = {
+            bucket_name: totals(_GENDER_FILTER, [sorted(genders)])
+            for genders, bucket_name in _GENDER_BUCKETS.items()
+        }
+
         return {
-            "total": int(row[0]),
-            "priced": int(row[1]),
-            "price_min": float(row[2]) if row[2] is not None else None,
-            "price_max": float(row[3]) if row[3] is not None else None,
+            **totals("", []),
             "by_category": aggregate("i.category"),
             "by_audience": aggregate("COALESCE(i.attributes #>> '{taxonomy,audience}', 'adult')"),
             "by_source": aggregate("i.source_provider"),
             "by_image_status": aggregate("COALESCE(i.attributes #>> '{image,status}', 'usable')"),
+            "by_gender": by_gender,
         }
 
 

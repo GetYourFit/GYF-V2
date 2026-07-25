@@ -4,6 +4,8 @@ import type { CatalogFacets } from "./api";
 import {
   activeFilterCount,
   appendUniqueItems,
+  audienceCanBrowse,
+  audienceGender,
   buildExploreRequest,
   compatibilityReason,
   EMPTY_EXPLORE_FILTERS,
@@ -69,6 +71,21 @@ describe("Expo Explore request model", () => {
     );
   });
 
+  test("does not construct a catalogue request while an authenticated audience is unresolved", () => {
+    expect(audienceCanBrowse({ state: "loading" })).toBe(false);
+    expect(audienceCanBrowse({ state: "needs-profile" })).toBe(false);
+    expect(audienceCanBrowse({ state: "error", error: new Error("offline") })).toBe(false);
+    expect(audienceGender({ state: "loading" })).toBeUndefined();
+    expect(audienceGender({ state: "needs-profile" })).toBeUndefined();
+  });
+
+  test("makes anonymous and explicitly unknown audience widening intentional", () => {
+    expect(audienceCanBrowse({ state: "anonymous" })).toBe(true);
+    expect(audienceCanBrowse({ state: "unknown" })).toBe(true);
+    expect(audienceGender({ state: "anonymous" })).toBeNull();
+    expect(audienceGender({ state: "unknown" })).toBeNull();
+  });
+
   test("the styling gender scopes both the browse feed and search", () => {
     expect(buildExploreRequest(clean, 0, "seed", "women")).toMatchObject({
       mode: "browse",
@@ -81,6 +98,20 @@ describe("Expo Explore request model", () => {
     // No stated gender must never narrow the catalogue to a guess.
     expect(buildExploreRequest(clean, 0, "seed", null).params).not.toHaveProperty("gender");
     expect(buildExploreRequest(clean, 0, "seed").params).not.toHaveProperty("gender");
+  });
+
+  test("keeps the canonical audience on similar pages and profile correction refreshes", () => {
+    const men = { state: "known", gender: "men" } as const;
+    const women = { state: "known", gender: "women" } as const;
+    expect(buildExploreRequest(clean, 0, "seed", audienceGender(men)).params).toMatchObject({
+      gender: "men",
+    });
+    expect(buildExploreRequest(clean, 0, "seed", audienceGender(women)).params).toMatchObject({
+      gender: "women",
+    });
+    expect(buildExploreRequest(clean, 0, "seed", audienceGender(men)).params).not.toEqual(
+      buildExploreRequest(clean, 0, "seed", audienceGender(women)).params,
+    );
   });
 
   test("a tapped board item pages through visual similarity, not text search", () => {

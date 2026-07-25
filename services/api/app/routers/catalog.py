@@ -111,6 +111,9 @@ def _slot_categories(slot: str | None) -> list[str] | None:
 def catalog_facets(
     response: Response,
     region: str | None = Query(None, max_length=64),
+    gender: str | None = Query(
+        None, description="Styling gender: facets narrow to that slice + unisex."
+    ),
     repo: VectorSearchRepository = Depends(get_search_repo),
 ) -> CatalogFacets:
     """Real filter ranges for the (region-scoped) catalog so the client only
@@ -121,7 +124,7 @@ def catalog_facets(
     # passes this through DYNAMIC, i.e. uncached at the edge — verified 2026-07-05).
     response.headers["Cache-Control"] = "public, max-age=3600"
     try:
-        facets = repo.catalog_facets(region)
+        facets = repo.catalog_facets(region, genders=_genders(gender))
         response.headers["ETag"] = f'"catalogue-{facets.catalogue_version}"'
         return facets
     except RuntimeError as exc:
