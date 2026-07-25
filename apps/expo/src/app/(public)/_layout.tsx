@@ -22,7 +22,7 @@ function PublicBackHeader() {
         accessibilityLabel="Go back"
         accessibilityRole="button"
         hitSlop={hitSlopFor(40)}
-        onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+        onPress={() => (router.canGoBack() ? router.back() : router.replace("/welcome"))}
         style={{ alignSelf: "flex-start", paddingVertical: spacing.xs }}
       >
         <IconChevronLeft color={palette.text} size={24} />

@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { Link } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi } from "@/lib/api";
+import { getSession, onAuthStateChange } from "@/lib/auth";
 import {
   CONTACT_EMAIL,
   CONTACT_MAILTO,
@@ -27,11 +29,30 @@ function readableError(error: unknown): string {
 export default function ContactRoute() {
   const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
+  const [authState, setAuthState] = useState<"loading" | "signed-in" | "signed-out">("loading");
   const [draft, setDraft] = useState<ContactDraft>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof ContactDraft, string>>>({});
   const [sending, setSending] = useState(false);
   const [receipt, setReceipt] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    void getSession()
+      .then((session) => {
+        if (mounted) setAuthState(session ? "signed-in" : "signed-out");
+      })
+      .catch(() => {
+        if (mounted) setAuthState("signed-out");
+      });
+    const unsubscribe = onAuthStateChange((_event, session) => {
+      if (mounted) setAuthState(session ? "signed-in" : "signed-out");
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   const update = (field: keyof ContactDraft, value: string) => {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -116,7 +137,18 @@ export default function ContactRoute() {
         </AtelierCard>
       </Pressable>
 
-      {receipt ? (
+      {authState !== "signed-in" ? (
+        <AtelierCard style={{ gap: spacing.md }}>
+          <GyfText variant="title">Sign in for in-app support</GyfText>
+          <GyfText tone="muted" variant="bodySmall">
+            The in-app form stores a private receipt in your account, so it stays behind sign-in.
+            If you are signed out, email GYF directly instead.
+          </GyfText>
+          <Link asChild href="/login">
+            <AtelierButton label="Sign in to message GYF" />
+          </Link>
+        </AtelierCard>
+      ) : receipt ? (
         <AtelierCard style={{ gap: spacing.md }}>
           <View
             style={{

@@ -13,6 +13,7 @@ describe("public trust routes", () => {
     const layout = await source("_layout.tsx");
     expect(layout).not.toContain("SessionGate");
     expect(layout).not.toContain("Redirect");
+    expect(layout).toContain('router.replace("/welcome")');
 
     for (const route of ["terms.tsx", "contact.tsx", "grievance.tsx"]) {
       const routeSource = await source(route);
@@ -20,6 +21,18 @@ describe("public trust routes", () => {
       expect(routeSource).not.toContain("SessionGate");
       expect(routeSource).not.toContain("Redirect");
     }
+  });
+
+  test("keeps signed-out support routes on email plus sign-in, not the authenticated submit path", async () => {
+    const contact = await source("contact.tsx");
+    expect(contact).toContain('Link asChild href="/login"');
+    expect(contact).toContain("Sign in to message GYF");
+    expect(contact).toContain('authState !== "signed-in"');
+
+    const grievance = await source("grievance.tsx");
+    expect(grievance).toContain('Link asChild href="/login"');
+    expect(grievance).toContain("Sign in to submit here");
+    expect(grievance).toContain('authState !== "signed-in"');
   });
 
   test("keeps disclosure and deletion instructions public without exposing account controls", async () => {
