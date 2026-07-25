@@ -111,6 +111,19 @@ describe("Expo interaction boundaries", () => {
     );
   });
 
+  test("profile refresh invalidates older catalogue responses before loading resumes", () => {
+    expect(exploreSource).toContain("const profileGeneration = useRef(0);");
+    expect(exploreSource).toMatch(
+      /const invalidateCatalogue = useCallback\(\(\) => \{[\s\S]{0,200}loadSequence\.current \+= 1;[\s\S]{0,200}abortRef\.current\?\.abort\(\);/,
+    );
+    expect(exploreSource).toMatch(
+      /if \(sequence !== loadSequence\.current \|\| generation !== profileGeneration\.current\) return;/,
+    );
+    expect(exploreSource).toMatch(
+      /const retryProfile = \(\) => \{[\s\S]{0,160}invalidateCatalogue\(\);[\s\S]{0,160}setAudience\(\{ state: "loading" \}\);[\s\S]{0,160}setProfileAttempt/,
+    );
+  });
+
   test("Stylist style choices stay interactive and scope the next request", () => {
     // Anchored on the filter rows themselves, not on visible label copy — the
     // uppercase headings they used to bracket are gone from the design.

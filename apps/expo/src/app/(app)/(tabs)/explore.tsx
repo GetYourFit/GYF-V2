@@ -105,7 +105,17 @@ export default function ExploreRoute() {
   const [audience, setAudience] = useState<AudienceReadiness>({ state: "loading" });
   const [profileAttempt, setProfileAttempt] = useState(0);
   const loadSequence = useRef(0);
+  const profileGeneration = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
+
+  const invalidateCatalogue = useCallback(() => {
+    loadSequence.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setLoading(false);
+    setLoadingMore(false);
+    setError(null);
+  }, []);
 
   const load = useCallback(
     async (nextPage: number, replace: boolean) => {
@@ -121,6 +131,7 @@ export default function ExploreRoute() {
       const controller = new AbortController();
       abortRef.current = controller;
       const sequence = ++loadSequence.current;
+      const generation = profileGeneration.current;
       if (nextPage > 0) setLoadingMore(true);
       else setLoading(true);
       setError(null);
@@ -138,16 +149,22 @@ export default function ExploreRoute() {
             : request.mode === "similar"
               ? await api.similar(request.itemId, request.params, controller.signal)
               : await api.search(request.query, request.params, controller.signal);
-        if (sequence !== loadSequence.current) return;
+        if (sequence !== loadSequence.current || generation !== profileGeneration.current) return;
         setItems((current) => (replace ? results : appendUniqueItems(current, results)));
         setPage(nextPage);
         setHasMore(results.length > 0);
       } catch (nextError) {
         // A request this screen deliberately cancelled is not an error to report.
-        if (sequence !== loadSequence.current || controller.signal.aborted) return;
+        if (
+          sequence !== loadSequence.current ||
+          generation !== profileGeneration.current ||
+          controller.signal.aborted
+        ) {
+          return;
+        }
         setError(nextError);
       } finally {
-        if (sequence === loadSequence.current) {
+        if (sequence === loadSequence.current && generation === profileGeneration.current) {
           setLoading(false);
           setLoadingMore(false);
         }
@@ -163,6 +180,8 @@ export default function ExploreRoute() {
 
   useEffect(() => {
     let active = true;
+    profileGeneration.current += 1;
+    invalidateCatalogue();
     setAudience({ state: "loading" });
     setItems([]);
     setFacets(null);
@@ -189,7 +208,7 @@ export default function ExploreRoute() {
     return () => {
       active = false;
     };
-  }, [api, profileAttempt]);
+  }, [api, invalidateCatalogue, profileAttempt]);
 
   useEffect(() => {
     if (!audienceCanBrowse(audience)) return;
@@ -285,7 +304,17 @@ export default function ExploreRoute() {
     [items],
   );
 
-  const retryProfile = () => setProfileAttempt((attempt) => attempt + 1);
+  useEffect(() => {
+    if (refreshing && audience.state !== "loading") setRefreshing(false);
+  }, [audience.state, refreshing]);
+
+  const retryProfile = () => {
+    invalidateCatalogue();
+    setAudience({ state: "loading" });
+    setItems([]);
+    setFacets(null);
+    setProfileAttempt((attempt) => attempt + 1);
+  };
   const emptyFeed =
     audience.state === "loading" ? (
       <View
