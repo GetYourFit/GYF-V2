@@ -69,7 +69,9 @@ the subordinate launch-plan ledger but is not a separate roadmap.
   [`research/signup-first-outfit-study.md`](./research/signup-first-outfit-study.md) with
   [`research/signup-first-outfit-study.csv`](./research/signup-first-outfit-study.csv), and the
   photo study linked above.
-- Cuelinks commerce proof: [`evidence/cuelinks-shop-flow-readiness-2026-07-22.md`](./evidence/cuelinks-shop-flow-readiness-2026-07-22.md) —
+- Reference design logic: [`footwear-compatibility-system.md`](./footwear-compatibility-system.md) -
+  footwear taxonomy and outfit-compatibility rules that informed the current contracts and tests.
+- Cuelinks commerce proof: [`evidence/cuelinks-shop-flow-readiness-2026-07-22.md`](./evidence/cuelinks-shop-flow-readiness-2026-07-22.md) -
   implementation evidence and external redirect proof for product-level Cuelinks shop handoff; it
   does not promote a launch gate.
 - Cuelinks product ingestion/API seam: [`evidence/cuelinks-product-ingestion-2026-07-22.md`](./evidence/cuelinks-product-ingestion-2026-07-22.md) —

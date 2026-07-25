@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { Link } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi } from "@/lib/api";
+import { getSession, onAuthStateChange } from "@/lib/auth";
+import { CONTACT_EMAIL, CONTACT_MAILTO } from "@/lib/contact";
 import {
   GRIEVANCE_CATEGORIES,
   grievanceErrors,
@@ -26,11 +29,30 @@ function readableError(error: unknown): string {
 export default function GrievanceRoute() {
   const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
+  const [authState, setAuthState] = useState<"loading" | "signed-in" | "signed-out">("loading");
   const [draft, setDraft] = useState<GrievanceDraft>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof GrievanceDraft, string>>>({});
   const [sending, setSending] = useState(false);
   const [receipt, setReceipt] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    void getSession()
+      .then((session) => {
+        if (mounted) setAuthState(session ? "signed-in" : "signed-out");
+      })
+      .catch(() => {
+        if (mounted) setAuthState("signed-out");
+      });
+    const unsubscribe = onAuthStateChange((_event, session) => {
+      if (mounted) setAuthState(session ? "signed-in" : "signed-out");
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   const update = <Field extends keyof GrievanceDraft>(
     field: Field,
@@ -86,10 +108,33 @@ export default function GrievanceRoute() {
         </GyfText>
         <GyfText tone="muted">
           Report a concern about GYF. Your words go into the operator review queue—not a demo inbox.
+          You can email a grievance without an account; sign in to submit it here and receive an
+          in-app receipt.
         </GyfText>
       </View>
 
-      {receipt ? (
+      <Pressable
+        accessibilityLabel={`Email a grievance to GYF at ${CONTACT_EMAIL}`}
+        accessibilityRole="link"
+        onPress={() => void Linking.openURL(CONTACT_MAILTO)}
+      >
+        <GyfText style={{ textDecorationLine: "underline" }} variant="bodySmall">
+          Email {CONTACT_EMAIL}
+        </GyfText>
+      </Pressable>
+
+      {authState !== "signed-in" ? (
+        <AtelierCard style={{ gap: spacing.md }}>
+          <GyfText variant="title">Sign in for an in-app grievance receipt</GyfText>
+          <GyfText tone="muted" variant="bodySmall">
+            Signed-in reports are stored against your account so GYF can return a private receipt.
+            If you are signed out, use the public email path above instead.
+          </GyfText>
+          <Link asChild href="/login">
+            <AtelierButton label="Sign in to submit here" />
+          </Link>
+        </AtelierCard>
+      ) : receipt ? (
         <AtelierCard style={{ gap: spacing.md }}>
           <View
             style={{

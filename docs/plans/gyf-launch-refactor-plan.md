@@ -1313,11 +1313,11 @@ F0 is documentation and evidence only. It must not alter application behaviour.
 - **Historical comparison baseline:** `eb800965beeb5835c35bd8b8a269589f407e58f9`;
   current application commit `76a23fa`; working tree contains this plan plus the documented
   execution-amendment changes.
-- **Route inventory:** auth (`login`, `signup`, `forgot-password`, `reset-password`); app shell
-  (`/`, `onboarding`, `explore`, `wardrobe`, `saved`, `collections`, `social`, `profile`,
-  `account`, `contact`, `grievance`, `status`); canvas/design; health, loading, not-found and
-  error boundaries. Target classification is port/merge/replace/delete in §3.2 and the Expo
-  ticket map; no route is left as an unowned “later” item.
+- **Route inventory:** auth (`login`, `signup`, `forgot-password`, `reset-password`); public trust
+  (`terms`, `contact`, `grievance`); app shell (`/`, `onboarding`, `explore`, `wardrobe`, `saved`,
+  `collections`, `social`, `profile`, `account`, `status`); canvas/design; health, loading,
+  not-found and error boundaries. Target classification is port/merge/replace/delete in §3.2 and
+  the Expo ticket map; no route is left as an unowned “later” item.
 - **API inventory:** 42 router declarations were found under `services/api/app/routers`; exact
   endpoint/event parity remains a per-route acceptance check before Expo wiring.
 - **Security/quality baseline:** fresh local verification recorded 378 API tests, 72 web tests,
@@ -1858,8 +1858,10 @@ but it never reorders the backend contract.
 - Added honest route placeholders for surfaces whose API wiring belongs to later vertical slices;
   they explicitly say the data contract is not connected, so no unavailable capability is shown.
 - Added a root `SessionGate` with synchronous-failure handling, retry, loading accessibility state,
-  and signed-out redirects. Safe-area insets are applied at the root and tab bar, and every legacy
-  app path plus `/design` has an explicit Expo target.
+  and signed-out redirects for authenticated surfaces. Public trust routes stay outside that gate so
+  `/terms`, `/contact`, and `/grievance` remain readable while signed out. Safe-area insets are
+  applied at the root and tab bar, and every legacy app path plus `/design` has an explicit Expo
+  target.
 - Ported functional native sign-in, sign-up, password recovery and reset forms with shared
   validation and truthful email-confirmation/session states. Expo typecheck, 13 Expo tests and
   static web export pass; export enumerates auth, root, legacy, design and five tab URLs.
