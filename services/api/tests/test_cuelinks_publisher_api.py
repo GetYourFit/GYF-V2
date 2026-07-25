@@ -55,7 +55,9 @@ def test_captain_granted_permissions_are_scoped_to_this_pr_and_follow_up() -> No
 
 
 def test_official_docs_endpoint_shapes_are_cross_checked() -> None:
+    assert DEVELOPER_V3_ENDPOINTS["ping"] == ("GET", "/ping", "any")
     assert DEVELOPER_V3_ENDPOINTS["campaigns"] == ("GET", "/campaigns", "read:campaigns")
+    assert DEVELOPER_V3_ENDPOINTS["offers"] == ("GET", "/offers", "read:offers")
     assert DEVELOPER_V3_ENDPOINTS["links_convert"] == (
         "POST",
         "/links/convert",
@@ -161,6 +163,19 @@ def test_campaign_listing_normalizes_documented_v3_rows_and_meta_pagination() ->
     registry_row = campaign_registry_from_publisher_page(page).resolve(campaign_id="42")
     assert registry_row is not None
     assert registry_row.product_deeplink_allowed
+
+
+def test_campaign_listing_defaults_to_all_accessible_campaigns_at_v3_page_limit() -> None:
+    transport = FakeTransport([(200, b'{"campaigns":[]}')])
+    client = CuelinksPublisherClient("test-token", transport=transport)
+
+    client.campaigns(per_page=500)
+
+    query = parse_qs(urlparse(transport.calls[0][1]).query)
+    assert "access_status" not in query
+    assert query["per_page"] == ["500"]
+    with pytest.raises(ValueError, match="between 1 and 500"):
+        client.campaigns(per_page=501)
 
 
 def test_publisher_product_row_probe_requires_full_product_card_fields() -> None:

@@ -24,15 +24,16 @@ from ..config import settings
 
 _DEFAULT_BASE_URL = "https://developers.cuelinks.com/pub_api/v3"
 _USER_AGENT = "GYF-CuelinksPublisherClient/1.0 (+https://www.getyourfit.tech; gyf1ltd@gmail.com)"
-_MAX_PER_PAGE = 100
+_MAX_PER_PAGE = 500
 # Official docs cross-check:
 # - developers.cuelinks.com/#api (current V3): Authorization: Token <key>,
-#   /pub_api/v3/ping, /campaigns, /links/convert, /transactions, /reports/*.
+#   /pub_api/v3/ping, /campaigns, /offers, /links/convert, /transactions, /reports/*.
 # - cuelinks.docs.apiary.io (legacy V2): Authorization: Token token=<key>,
 #   /api/v2/campaigns.json, /links.json, /offers.json, /transactions.json.
 DEVELOPER_V3_ENDPOINTS = {
-    "ping": ("GET", "/ping", "read:campaigns"),
+    "ping": ("GET", "/ping", "any"),
     "campaigns": ("GET", "/campaigns", "read:campaigns"),
+    "offers": ("GET", "/offers", "read:offers"),
     "links_convert": ("POST", "/links/convert", "write:links"),
     "transactions": ("GET", "/transactions", "read:transactions"),
     "reports_performance": ("GET", "/reports/performance", "read:reports"),
@@ -346,7 +347,7 @@ class CuelinksPublisherClient:
     def campaigns(
         self,
         *,
-        access_status: str = "open",
+        access_status: str | None = None,
         sort: str = "epc_7d",
         order: str = "desc",
         per_page: int = 20,
@@ -354,12 +355,9 @@ class CuelinksPublisherClient:
     ) -> CuelinksCampaignPage:
         if per_page < 1 or per_page > _MAX_PER_PAGE:
             raise ValueError(f"per_page must be between 1 and {_MAX_PER_PAGE}")
-        params: dict[str, str] = {
-            "access_status": access_status,
-            "sort": sort,
-            "order": order,
-            "per_page": str(per_page),
-        }
+        params: dict[str, str] = {"sort": sort, "order": order, "per_page": str(per_page)}
+        if access_status is not None:
+            params["access_status"] = access_status
         if page is not None:
             if page < 1:
                 raise ValueError("page must be >= 1")

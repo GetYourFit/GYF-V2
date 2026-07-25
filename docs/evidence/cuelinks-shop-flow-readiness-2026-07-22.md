@@ -87,8 +87,9 @@ from that Cuelinks flow, GYF needs one of:
 A Cuelinks Publisher API token with captain-confirmed `read:campaigns` and `write:links` enables
 server-side developer-doc V3 `/pub_api/v3/campaigns` discovery and `/pub_api/v3/links/convert`
 wrapping for URLs GYF already knows, but those two endpoints still do not create product catalogue
-data. The legacy Apiary docs also show `/v2/offers.json`, `/v2/transactions.json` and
-`/v2/links.json`; the offers example is an offer/coupon row, while transactions/reports are
+data. V3 also documents `GET /pub_api/v3/offers` under `read:offers`; the legacy Apiary docs show
+`/v2/offers.json`, `/v2/transactions.json` and `/v2/links.json`. The offers example is an
+offer/coupon row, while transactions/reports are
 reconciliation data. The confirmed `read:offers` permission is the planned follow-up to verify
 whether the live developer API exposes enough product-card fields; `read:reports` and
 `read:transactions` belong to affiliate reconciliation. Product cards remain blocked until a product

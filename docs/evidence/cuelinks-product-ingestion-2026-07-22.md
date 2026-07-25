@@ -16,6 +16,9 @@ Cuelinks product-feed access and does **not** promote F4, P5.4, HL-EXPLORE or HL
   `/v2/links.json`, `/v2/offers.json` and `/v2/transactions.json`. The implemented client targets
   V3, validates the HTTPS API base URL, rejects unsafe or homepage-only product URLs before
   conversion, sanitizes `subid`, and never logs or returns the token.
+- Campaign discovery accepts V3's documented `per_page` range through 500 and omits
+  `access_status` unless the caller explicitly filters it, so both open and already-approved
+  publisher campaigns remain discoverable.
 - `CuelinksProductFeedSource` imports product-feed rows only for active Indian fashion campaigns
   where `Deeplink=Yes`. Required row facts are title, category, image URL, price/currency,
   availability, merchant/campaign and original product URL.
@@ -52,9 +55,9 @@ uses `Authorization: Token ...`, but must not print the value.
 
 Captain-confirmed Publisher API permissions are `read:campaigns`, `read:reports`,
 `read:transactions`, `read:offers` and `write:links`. Cross-checking the developer and Apiary docs:
-V3 documents `GET /pub_api/v3/campaigns`, `POST /pub_api/v3/links/convert`,
-`GET /pub_api/v3/transactions`, `GET /pub_api/v3/reports/performance` and
-`GET /pub_api/v3/reports/campaigns`; Apiary v2 documents `GET /v2/offers.json`,
+V3 `GET /pub_api/v3/ping` accepts any scope; V3 also documents `GET /pub_api/v3/campaigns`,
+`GET /pub_api/v3/offers`, `POST /pub_api/v3/links/convert`, `GET /pub_api/v3/transactions`,
+`GET /pub_api/v3/reports/performance` and `GET /pub_api/v3/reports/campaigns`; Apiary v2 documents `GET /v2/offers.json`,
 `GET /v2/transactions.json`, `GET /v2/campaigns.json` and `GET /v2/links.json`. This PR implements
 only the planned API-support surface: `read:campaigns` for campaign discovery and `write:links` for
 conversion. `read:reports` and `read:transactions` belong to future affiliate reconciliation;
