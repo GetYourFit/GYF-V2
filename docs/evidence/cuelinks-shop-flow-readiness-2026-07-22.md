@@ -84,17 +84,12 @@ from that Cuelinks flow, GYF needs one of:
 3. permission to ingest an approved retailer/product feed for those merchants and then wrap each
    product URL through Cuelinks.
 
-A Cuelinks Publisher API token with captain-confirmed `read:campaigns` and `write:links` enables
-server-side developer-doc V3 `/pub_api/v3/campaigns` discovery and `/pub_api/v3/links/convert`
-wrapping for URLs GYF already knows, but those two endpoints still do not create product catalogue
-data. V3 also documents `GET /pub_api/v3/offers` under `read:offers`; the legacy Apiary docs show
-`/v2/offers.json`, `/v2/transactions.json` and `/v2/links.json`. The offers example is an
-offer/coupon row, while transactions/reports are
-reconciliation data. The confirmed `read:offers` permission is the planned follow-up to verify
-whether the live developer API exposes enough product-card fields; `read:reports` and
-`read:transactions` belong to affiliate reconciliation. Product cards remain blocked until a product
-feed/API or approved retailer source supplies product title, image URL, price/currency,
-availability, retailer identity and canonical product URL.
+The backend-only Publisher API client can discover campaigns and wrap URLs GYF already knows, but
+does not create product catalogue data. The authoritative Publisher API permissions, endpoint
+contracts, product-row boundary and sole-source follow-up are in the
+[`cuelinks-product-ingestion-2026-07-22.md`](./cuelinks-product-ingestion-2026-07-22.md) evidence.
+Product cards remain blocked until a product feed/API or approved retailer source supplies the row
+facts listed above.
 
 ## Cuelinks SDK/snippet review (captain-provided, 2026-07-22)
 
@@ -143,10 +138,10 @@ internal feed/campaign seam is now implemented and documented in
 2. **Scheduled refresh**: the same job re-runs on a schedule (for example the existing catalogue
    refresh cadence) so price/availability/deletions stay current, instead of a one-time import.
 3. **Affiliate wrapping**: each imported product's canonical retailer URL is wrapped server-side by
-   `CuelinksLinker` (`services/api/app/affiliate.py`) or, when operators choose official Publisher
-   API conversion, `CuelinksPublisherClient.convert_url()` (`services/api/app/catalog/cuelinks_api.py`),
-   using redacted `GYF_CUELINKS_CID`/`GYF_CUELINKS_API_KEY` server config only. This keeps affiliate
-   wrapping centralized and testable rather than duplicated per client.
+   `CuelinksLinker` (`services/api/app/affiliate.py`). The optional official Publisher API conversion
+   uses the backend-only `CuelinksPublisherClient.convert_url()` described in the
+   [ingestion/API evidence](./cuelinks-product-ingestion-2026-07-22.md), keeping wrapping
+   centralized and testable rather than duplicated per client.
 4. **Fallback for a merchant without feed/API access**: only accept a product-level, `Deeplink=Yes`
    merchant/product URL for that specific item; a `Deeplink=No` campaign (as shown in the Adidas
    campaign screenshot) can only wrap to that brand's home page and must not be presented as a

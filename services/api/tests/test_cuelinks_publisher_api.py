@@ -267,14 +267,11 @@ def test_default_transport_disables_redirects(monkeypatch) -> None:
     monkeypatch.setattr(urllib.request, "build_opener", build_opener)
 
     with pytest.raises(AssertionError, match="network call was not expected"):
-        cuelinks_api._urllib_transport(
-            "GET", "https://developers.cuelinks.com/ping", {}, None, 1
-        )
+        cuelinks_api._urllib_transport("GET", "https://developers.cuelinks.com/ping", {}, None, 1)
 
     assert len(handlers) == 1
     assert (
-        handlers[0].redirect_request(None, None, 302, "Found", {}, "https://other.example")
-        is None
+        handlers[0].redirect_request(None, None, 302, "Found", {}, "https://other.example") is None
     )
 
 

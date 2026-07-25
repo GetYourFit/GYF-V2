@@ -368,9 +368,7 @@ class CuelinksPublisherClient:
         pagination = payload.get("meta") if isinstance(payload.get("meta"), Mapping) else {}
         if not pagination and isinstance(payload.get("pagination"), Mapping):
             pagination = payload["pagination"]
-        return CuelinksCampaignPage(
-            campaigns=campaigns, pagination=dict(pagination), raw=payload
-        )
+        return CuelinksCampaignPage(campaigns=campaigns, pagination=dict(pagination), raw=payload)
 
     def convert_url(self, url: str, *, subid: str, shorten: bool = True) -> CuelinksConvertedLink:
         product_url = product_serving_url(url)
