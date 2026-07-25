@@ -72,8 +72,8 @@ the subordinate launch-plan ledger but is not a separate roadmap.
 - Cuelinks commerce proof: [`evidence/cuelinks-shop-flow-readiness-2026-07-22.md`](./evidence/cuelinks-shop-flow-readiness-2026-07-22.md) —
   implementation evidence and external redirect proof for product-level Cuelinks shop handoff; it
   does not promote a launch gate.
-- Cuelinks product ingestion seam: [`evidence/cuelinks-product-ingestion-2026-07-22.md`](./evidence/cuelinks-product-ingestion-2026-07-22.md) —
-  fixture-backed Deeplink=Yes/No campaign/product-feed import evidence and the exact live-credential blocker.
+- Cuelinks product ingestion/API seam: [`evidence/cuelinks-product-ingestion-2026-07-22.md`](./evidence/cuelinks-product-ingestion-2026-07-22.md) —
+  fixture-backed Deeplink=Yes/No import evidence, backend-only Publisher API client evidence and the exact product-feed blocker.
 - Cuelinks Expo web JS marker: [`evidence/cuelinks-web-js-integration-2026-07-22.md`](./evidence/cuelinks-web-js-integration-2026-07-22.md) —
   supplemental static-web `cuelinksv2.js` loader evidence; backend `buy_url` links remain authoritative.
 - Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) (superseded

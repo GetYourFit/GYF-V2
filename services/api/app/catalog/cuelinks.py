@@ -37,7 +37,7 @@ _PRICE_RE = re.compile(r"-?\d+(?:[,.]\d+)*")
 
 _YES = {"1", "true", "yes", "y", "enabled", "deeplink yes", "deep link yes"}
 _NO = {"0", "false", "no", "n", "disabled", "deeplink no", "deep link no"}
-_ACTIVE = {"", "active", "live", "approved", "enabled"}
+_ACTIVE = {"", "active", "live", "approved", "enabled", "open"}
 _FASHION_MARKERS = {
     "fashion",
     "apparel",
@@ -121,8 +121,8 @@ def cuelinks_config_blocker() -> str:
         "configured: set GYF_CUELINKS_PRODUCTS_FEED_PATH to a feed with product rows "
         "(title, image URL, price/currency, availability, merchant/campaign and original "
         "product URL), set GYF_CUELINKS_CAMPAIGNS_PATH to the Cuelinks campaign export "
-        "that records Deeplink=Yes/No, and set GYF_CUELINKS_CID=274785 (or the configured "
-        "Cuelinks channel id) for server-side wrapping. The Cuelinks JS/RN SDK is link "
+        "that records Deeplink=Yes/No, and set GYF_CUELINKS_CID=<redacted channel id> "
+        "for server-side wrapping. The Cuelinks JS/RN SDK is link "
         "conversion only and is not a product-data source."
     )
 

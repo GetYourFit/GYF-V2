@@ -102,6 +102,12 @@ class Settings(BaseSettings):
     # Cuelinks channel id (the `cid=` value in any deeplink the dashboard/API
     # generates). Unset = null linker: buy links pass through unwrapped.
     cuelinks_cid: str = ""
+    # Cuelinks Publisher API (server-side only): current developer-doc V3 campaign
+    # discovery and link conversion. The token must never enter EXPO_PUBLIC_*/
+    # NEXT_PUBLIC_*, client bundles, logs or evidence; use redacted placeholders.
+    cuelinks_api_key: str = ""
+    cuelinks_api_base_url: str = "https://developers.cuelinks.com/pub_api/v3"
+    cuelinks_api_timeout_s: float = Field(10.0, gt=0.0, le=30.0)
     # Automatic Cuelinks product ingestion needs BOTH exports/credentials:
     # campaign capabilities with Deeplink=Yes/No, and product rows with title,
     # image, price, availability, merchant and original product URL. The JS/RN

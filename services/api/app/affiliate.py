@@ -140,11 +140,17 @@ def product_serving_url(url: str | None) -> str | None:
     return candidate
 
 
-def _safe_subid(subid: str) -> str:
+def safe_cuelinks_subid(subid: str) -> str:
+    """Return a Cuelinks-safe subid without leaking arbitrary caller text."""
+
     if _SUBID_SAFE.fullmatch(subid):
         return subid
     digest = sha256(subid.encode("utf-8")).hexdigest()[:_SUBID_HASH_HEX]
     return f"{_SUBID_HASH_PREFIX}{digest}"
+
+
+def _safe_subid(subid: str) -> str:
+    return safe_cuelinks_subid(subid)
 
 
 def catalog_subid(item_id: str) -> str:

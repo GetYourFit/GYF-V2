@@ -84,8 +84,12 @@ from that Cuelinks flow, GYF needs one of:
 3. permission to ingest an approved retailer/product feed for those merchants and then wrap each
    product URL through Cuelinks.
 
-A Cuelinks conversion/reporting token alone is insufficient; it can reconcile transactions after
-clicks, but it does not create product catalogue data.
+The backend-only Publisher API client can discover campaigns and wrap URLs GYF already knows, but
+does not create product catalogue data. The authoritative Publisher API permissions, endpoint
+contracts, product-row boundary and sole-source follow-up are in the
+[`cuelinks-product-ingestion-2026-07-22.md`](./cuelinks-product-ingestion-2026-07-22.md) evidence.
+Product cards remain blocked until a product feed/API or approved retailer source supplies the row
+facts listed above.
 
 ## Cuelinks SDK/snippet review (captain-provided, 2026-07-22)
 
@@ -99,9 +103,9 @@ loaded with `cId=274785`. Both were fetched and inspected.
   `CuelinksUtil.getAffiliatedUrl(url, sub1, sub2, ...)`: given a URL the app already has, it
   returns that same URL wrapped for Cuelinks attribution (up to 5 sub-ids). There is no iOS
   module, no web module and no method that lists, searches or returns product data — it is a
-  link-in/link-out call, functionally identical to the server-side
-  `https://linksredirect.com/?cid=...&url=...` wrap `CuelinksLinker` already performs in
-  `services/api/app/affiliate.py`.
+  link-in/link-out call, functionally identical to the server-side direct deeplink wrap
+  `CuelinksLinker` already performs in `services/api/app/affiliate.py` and the backend-only
+  Publisher API conversion client now supports in `services/api/app/catalog/cuelinks_api.py`.
 - **`cuelinksv2.js`**: a browser-only script for traditional websites. It walks
   `document.getElementsByTagName('a')`/`area` on the rendered page and attaches
   `mousedown`/`click` handlers that rewrite each anchor's `href` to
@@ -134,9 +138,10 @@ internal feed/campaign seam is now implemented and documented in
 2. **Scheduled refresh**: the same job re-runs on a schedule (for example the existing catalogue
    refresh cadence) so price/availability/deletions stay current, instead of a one-time import.
 3. **Affiliate wrapping**: each imported product's canonical retailer URL is wrapped server-side by
-   `CuelinksLinker` (`services/api/app/affiliate.py`), the same code path this slice hardened, using
-   `GYF_CUELINKS_CID=274785`. This keeps affiliate wrapping centralized and testable rather than
-   duplicated per client.
+   `CuelinksLinker` (`services/api/app/affiliate.py`). The optional official Publisher API conversion
+   uses the backend-only `CuelinksPublisherClient.convert_url()` described in the
+   [ingestion/API evidence](./cuelinks-product-ingestion-2026-07-22.md), keeping wrapping
+   centralized and testable rather than duplicated per client.
 4. **Fallback for a merchant without feed/API access**: only accept a product-level, `Deeplink=Yes`
    merchant/product URL for that specific item; a `Deeplink=No` campaign (as shown in the Adidas
    campaign screenshot) can only wrap to that brand's home page and must not be presented as a
@@ -148,9 +153,10 @@ internal feed/campaign seam is now implemented and documented in
    `cuelinksv2.js` browser snippet as a supplemental, non-product-ingestion earning-detection loader;
    see [`cuelinks-web-js-integration-2026-07-22.md`](./cuelinks-web-js-integration-2026-07-22.md).
 
-Live execution of steps 1-2 still requires the Cuelinks product-feed/API credential (or an approved
-retailer feed) that is outstanding; GYF does not claim that credential exists or that production
-product ingestion is proven end to end.
+Live execution of steps 1-2 still requires a Cuelinks product-feed/product API endpoint (if this
+publisher account has one) or an approved retailer feed/API. The provided Publisher campaigns +
+convert endpoints discover campaigns and wrap known URLs only; GYF does not claim production product
+ingestion or live product cards from those endpoints alone.
 
 ## Focused validation attempted in this worktree
 
