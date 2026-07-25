@@ -229,6 +229,23 @@ def test_style_scarcity_keeps_the_available_candidate_slate_honest():
     assert all(item.aesthetic != "vintage" for item in styled)
 
 
+def test_certain_aesthetic_reserve_has_its_required_browse_index():
+    from pathlib import Path
+
+    migration = (
+        Path(__file__).parents[1]
+        / "db"
+        / "migrations"
+        / "versions"
+        / "0027_certain_aesthetic_browse_index.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert "idx_items_certain_aesthetic_browse" in source
+    assert "category, (attributes #>> '{perception,attributes,aesthetic,value}')" in source
+    assert "aesthetic,certain}' = 'true'" in source
+
+
 def test_budget_max_becomes_price_ceiling():
     profile = Profile(budget_range=BudgetRange(min=0, max=80, currency="USD"))
     c = conditioning.resolve(profile, "casual", None)
@@ -1641,20 +1658,16 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     assert "CROSS JOIN LATERAL" in reserve_sql
     assert reserve_params == (
         list(conditioning._CATEGORIES_BY_SLOT["top"]),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
         ["streetwear"],
-        ["streetwear"],
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         4,
         4,
         "[0.1,0.2]",
-        ["streetwear"],
-        ["streetwear"],
-        4,
     )
 
     pool.calls.clear()
@@ -1668,15 +1681,53 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     # category fairly, and hydrates embeddings only after the bounded ID slice.
     assert "CROSS JOIN LATERAL" in sql
     assert "jsonb_array_length(i.image_refs) > 0" in sql
-    assert "ORDER BY aesthetic_rank, (i.price IS NOT NULL) DESC, i.id" in sql
-    assert "ORDER BY aesthetic_rank, category_rank, category_order" in sql
+    assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in sql
+    assert "ORDER BY category_rank, category_order" in sql
     assert sql.index("LIMIT %s") < sql.rindex("e.embedding::text")
     filter_params = params[:7]
-    assert params[7:] == (None, None, 80, 80, None, None, 80)
+    assert params[7:] == (80, 80, None, None, 80)
     assert "affinity DESC" not in sql
     assert len(pool.calls) == 3
     assert "(e.item_id IS NOT NULL) DESC, i.created_at DESC" in pool.calls[2][0]
     assert pool.calls[2][1] == filter_params + (None, None, 80)
+
+    pool.calls.clear()
+    repo.candidates_by_slot(
+        frozenset({"top"}),
+        "IN",
+        500,
+        20,
+        genders=frozenset({"women"}),
+        preferred_aesthetics=frozenset({"streetwear"}),
+    )
+    assert pool.calls[1][1] == (
+        list(conditioning._CATEGORIES_BY_SLOT["top"]),
+        "IN",
+        "IN",
+        500,
+        500,
+        ["women"],
+        ["women"],
+        20,
+        20,
+        ["streetwear"],
+        ["streetwear"],
+        20,
+    )
+    reserve_sql, reserve_params = pool.calls[3]
+    assert "CROSS JOIN unnest" in reserve_sql
+    assert reserve_params == (
+        list(conditioning._CATEGORIES_BY_SLOT["top"]),
+        ["streetwear"],
+        "IN",
+        "IN",
+        500,
+        500,
+        ["women"],
+        ["women"],
+        4,
+        4,
+    )
 
 
 def test_candidate_pool_retries_taste_timeout_once_through_bounded_fallback(caplog):
@@ -1746,7 +1797,7 @@ def test_candidate_pool_retries_taste_timeout_once_through_bounded_fallback(capl
         call for call in pool.calls if "CROSS JOIN LATERAL" in call[1]
     )
     assert "1 - (e.embedding <=> %s::vector)" in fallback_sql
-    assert fallback_params[-8:] == (None, None, 80, 80, "[0.1,0.2]", None, None, 80)
+    assert fallback_params[-6:] == (80, 80, "[0.1,0.2]", None, None, 80)
     assert result["top"][0].affinity == 0.75
     assert "fallback=true rows=1" in caplog.messages[-1]
 

@@ -250,22 +250,14 @@ LIMIT %s
 _CANDIDATES_COLD = (
     """
 WITH per_category AS MATERIALIZED (
-  SELECT selected.id, requested.category_order, selected.aesthetic_rank,
+  SELECT selected.id, requested.category_order,
          row_number() OVER (
            PARTITION BY requested.category_order
-           ORDER BY selected.aesthetic_rank, selected.priced DESC, selected.id
+           ORDER BY selected.priced DESC, selected.id
          ) AS category_rank
   FROM unnest(%s::text[]) WITH ORDINALITY AS requested(category, category_order)
   CROSS JOIN LATERAL (
-    SELECT i.id,
-           (i.price IS NOT NULL) AS priced,
-           CASE
-             WHEN %s::text[] IS NOT NULL
-                  AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' IS NOT NULL
-                  AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
-                  AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = ANY(%s::text[])
-             THEN 0 ELSE 1
-           END AS aesthetic_rank
+    SELECT i.id, (i.price IS NOT NULL) AS priced
     FROM items i
     WHERE i.available
       AND i.category = requested.category
@@ -280,18 +272,18 @@ WITH per_category AS MATERIALIZED (
     + f"AND i.title !~* '{_KIDS_RE}'\n"
     + """
       AND EXISTS (SELECT 1 FROM item_embeddings seen WHERE seen.item_id = i.id)
-    ORDER BY aesthetic_rank, (i.price IS NOT NULL) DESC, i.id
+    ORDER BY (i.price IS NOT NULL) DESC, i.id
     LIMIT %s
   ) AS selected
 ), picked AS MATERIALIZED (
   SELECT id
   FROM per_category
-  ORDER BY aesthetic_rank, category_rank, category_order
+  ORDER BY category_rank, category_order
   LIMIT %s
 )
 """
     + _SELECT_COLUMNS
-    + """ FROM picked p JOIN items i ON i.id = p.id 
+    + """ FROM picked p JOIN items i ON i.id = p.id
 LEFT JOIN item_embeddings e ON e.item_id = i.id
 ORDER BY CASE
     WHEN %s::text[] IS NOT NULL
@@ -303,6 +295,57 @@ ORDER BY CASE
     + _ORDER_BY_RECENCY
     + """
 LIMIT %s
+"""
+)
+
+_STYLE_RESERVE = (
+    """
+WITH per_category AS MATERIALIZED (
+  SELECT selected.id, requested.category_order, preferred.aesthetic_order,
+         row_number() OVER (
+           PARTITION BY requested.category_order
+           ORDER BY preferred.aesthetic_order, selected.priced DESC, selected.id
+         ) AS category_rank
+  FROM unnest(%s::text[]) WITH ORDINALITY AS requested(category, category_order)
+  CROSS JOIN unnest(%s::text[]) WITH ORDINALITY AS preferred(aesthetic, aesthetic_order)
+  CROSS JOIN LATERAL (
+    SELECT i.id, (i.price IS NOT NULL) AS priced
+    FROM items i
+    WHERE i.available
+      AND i.category = requested.category
+      AND i.category <> 'unknown'
+      AND jsonb_array_length(i.image_refs) > 0
+      AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
+      AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = preferred.aesthetic
+      AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
+      AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
+      AND (%s::text[] IS NULL
+           OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
+           OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
+      AND (i.attributes #>> '{{taxonomy,category_conflict}}' IS NULL)
+      AND (
+          i.attributes #>> '{{perception,attributes,category,certain}}' IS NULL
+          OR i.attributes #>> '{{perception,attributes,category,certain}}' <> 'true'
+          OR i.category = i.attributes #>> '{{perception,attributes,category,value}}'
+      )
+  """
+    + f"AND i.title !~* '{_KIDS_RE}'\n"
+    + """
+      AND EXISTS (SELECT 1 FROM item_embeddings seen WHERE seen.item_id = i.id)
+    ORDER BY (i.price IS NOT NULL) DESC, i.id
+    LIMIT %s
+  ) AS selected
+), picked AS MATERIALIZED (
+  SELECT id, category_order, aesthetic_order, category_rank
+  FROM per_category
+  ORDER BY category_rank, category_order, aesthetic_order
+  LIMIT %s
+)
+"""
+    + _SELECT_COLUMNS
+    + """ FROM picked p JOIN items i ON i.id = p.id
+LEFT JOIN item_embeddings e ON e.item_id = i.id
+ORDER BY p.category_rank, p.category_order, p.aesthetic_order
 """
 )
 
@@ -371,6 +414,7 @@ class PostgresCandidateRepository:
             if taste_vector
             else _CANDIDATES_COLD.format(affinity=affinity_expr)
         )
+        style_reserve_sql = _STYLE_RESERVE.format(affinity=affinity_expr)
         # The affinity param (if any) is bound first — it appears before WHERE.
         prefix: tuple = (_pgvector(taste_vector),) if taste_vector else ()
         gender_list = sorted(genders) if genders else None
@@ -398,8 +442,6 @@ class PostgresCandidateRepository:
                 )
             else:
                 params = filter_params + (
-                    aesthetic_list,
-                    aesthetic_list,
                     limit_per_slot,
                     limit_per_slot,
                     aesthetic_list,
@@ -407,6 +449,25 @@ class PostgresCandidateRepository:
                     limit_per_slot,
                 )
             fallback_params = filter_params + (aesthetic_list, aesthetic_list, limit_per_slot)
+            style_reserve_params = (
+                categories,
+                aesthetic_list,
+                *filter_params[1:],
+                _STYLE_RESERVE_PER_SLOT,
+                _STYLE_RESERVE_PER_SLOT,
+                *prefix,
+            )
+
+            def reserve_style_rows(conn, source_rows: list[tuple]) -> list[tuple]:
+                if not preferred_aesthetics:
+                    return source_rows
+                return _merge_style_reserve(
+                    source_rows,
+                    list(conn.execute(style_reserve_sql, style_reserve_params)),
+                    preferred_aesthetics,
+                    limit_per_slot,
+                )
+
             checkout_start = time.perf_counter()
             checkout_ms = query_ms = mapping_ms = 0.0
             used_fallback = False
@@ -446,25 +507,7 @@ class PostgresCandidateRepository:
                             used_fallback = True
                             fallback = _CANDIDATES.format(affinity="NULL", order=_ORDER_BY_RECENCY)
                             rows = list(conn.execute(fallback, fallback_params))
-                        elif taste_vector and preferred_aesthetics:
-                            style_reserve = _CANDIDATES_COLD.format(affinity=_AFFINITY_EXPR)
-                            style_reserve_params = filter_params + (
-                                aesthetic_list,
-                                aesthetic_list,
-                                _STYLE_RESERVE_PER_SLOT,
-                                _STYLE_RESERVE_PER_SLOT,
-                                prefix[0],
-                                aesthetic_list,
-                                aesthetic_list,
-                                _STYLE_RESERVE_PER_SLOT,
-                            )
-                            style_rows = list(conn.execute(style_reserve, style_reserve_params))
-                            rows = _merge_style_reserve(
-                                rows,
-                                style_rows,
-                                preferred_aesthetics,
-                                limit_per_slot,
-                            )
+                        rows = reserve_style_rows(conn, rows)
                         query_ms = (time.perf_counter() - query_start) * 1000
                 except QueryCanceled:
                     if not taste_query_timed_out:
@@ -472,8 +515,6 @@ class PostgresCandidateRepository:
                     used_fallback = True
                     fallback = _CANDIDATES_COLD.format(affinity=_AFFINITY_EXPR)
                     fallback_params = filter_params + (
-                        aesthetic_list,
-                        aesthetic_list,
                         limit_per_slot,
                         limit_per_slot,
                         prefix[0],
@@ -487,6 +528,7 @@ class PostgresCandidateRepository:
                             (f"{_QUERY_TIMEOUT_MS}ms",),
                         )
                         rows = list(conn.execute(fallback, fallback_params))
+                        rows = reserve_style_rows(conn, rows)
                     query_ms = (time.perf_counter() - query_start) * 1000
                 active_phase = "mapping"
                 mapping_start = time.perf_counter()
