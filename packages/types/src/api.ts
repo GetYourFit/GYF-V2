@@ -352,7 +352,8 @@ export interface paths {
          *     logs impressions so the recommendation is auditable and trainable. ``occasion``
          *     overrides the profile's stored one. ``goal`` is a free-text controllable-styling
          *     request ("look taller / slimmer / broader") that biases the look toward that
-         *     visual effect. 404s before onboarding.
+         *     visual effect. ``seen_item_ids`` lets a "next look" refresh avoid echoing the
+         *     same outfit family the user already saw. 404s before onboarding.
          */
         get: operations["recommend_outfits_outfits_recommend_get"];
         put?: never;
@@ -2443,6 +2444,8 @@ export interface operations {
                 style?: string | null;
                 /** @description Free-text styling goal. GYF parses it into visual effects (taller / slimmer / broader) and steers the look with color theory + body-type intelligence. Unrecognized text is a no-op. */
                 goal?: string | null;
+                /** @description Comma-separated item ids from a slate you already showed the user (a 'next look' refresh). The new slate avoids repeating the same top+bottom category family from those items, unless the catalog has no alternative left. */
+                seen_item_ids?: string | null;
             };
             header?: never;
             path?: never;

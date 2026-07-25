@@ -38,6 +38,16 @@ _ORDER_BY_RECENCY = _HAS_PERCEPTION + ", i.created_at DESC"
 _QUERY_TIMEOUT_MS = 5_000
 _STYLE_RESERVE_PER_SLOT = 4
 
+# The taste/HNSW path orders purely by vector distance (diagnostic Slice C,
+# candidates.py:204-212 finding): a strong taste vector can return a pool where
+# every top item is the same near-neighbour category cluster, leaving the
+# composer nothing but "five shirts" to build looks from. Overfetch a wider
+# slice from the index, then interleave it by category in Python before
+# truncating to the slot's requested size, so category variety survives into
+# the pool whenever the catalog actually has it.
+_TASTE_OVERFETCH_FACTOR = 3
+_TASTE_OVERFETCH_CAP = 200
+
 # FastAPI constructs a candidate repository per request, while every instance
 # shares the process pool. Coordinate by pool identity so four requests cannot
 # each attempt two checkouts from the same three-connection budget. Keeping one
@@ -94,6 +104,8 @@ class Candidate:
     owned: bool = False
     # Catalog gender facet (men / women / unisex), or ``None`` when unfaceted.
     gender: str | None = None
+    # Merchant family (brand), or ``None`` when unfaceted.
+    brand: str | None = None
     # L2-normalized perception embedding (SigLIP), or ``None`` pre-backfill.
     # Powers the composer's style-cohesion signal: how much the garments share
     # one visual language, beyond what colour/formality arithmetic can see.
@@ -171,6 +183,7 @@ SELECT
     i.attributes #>> '{{perception,attributes,silhouette,certain}}'  AS silhouette_certain,
     i.attributes #>> '{{perception,attributes,fit,certain}}'         AS fit_certain,
     i.attributes #>> '{{taxonomy,gender}}'                           AS gender,
+    i.attributes #>> '{{commerce,merchant_name}}'                    AS brand,
     e.embedding::text                                                AS embedding
 """
 
@@ -417,6 +430,14 @@ class PostgresCandidateRepository:
         style_reserve_sql = _STYLE_RESERVE.format(affinity=affinity_expr)
         # The affinity param (if any) is bound first — it appears before WHERE.
         prefix: tuple = (_pgvector(taste_vector),) if taste_vector else ()
+        # Taste path: pull a wider slice than the pool actually needs so the
+        # post-fetch category interleave (_stratify_by_category) has more than
+        # one category's worth of near-neighbours to choose from.
+        fetch_limit = (
+            min(_TASTE_OVERFETCH_CAP, limit_per_slot * _TASTE_OVERFETCH_FACTOR)
+            if taste_vector
+            else limit_per_slot
+        )
         gender_list = sorted(genders) if genders else None
         work = [(slot, list(_CATEGORIES_BY_SLOT.get(slot, ()))) for slot in slots]
         work = [(slot, cats) for slot, cats in work if cats]
@@ -438,7 +459,7 @@ class PostgresCandidateRepository:
                 params = (
                     prefix
                     + filter_params
-                    + (_pgvector(taste_vector), aesthetic_list, aesthetic_list, limit_per_slot)
+                    + (_pgvector(taste_vector), aesthetic_list, aesthetic_list, fetch_limit)
                 )
             else:
                 params = filter_params + (
@@ -491,7 +512,7 @@ class PostgresCandidateRepository:
                             conn.execute(
                                 "SELECT set_config('hnsw.ef_search', %s, true), "
                                 "set_config('hnsw.iterative_scan', 'relaxed_order', true)",
-                                (str(max(40, limit_per_slot)),),
+                                (str(max(40, fetch_limit)),),
                             )
                         try:
                             rows = list(conn.execute(sql, params))
@@ -534,6 +555,8 @@ class PostgresCandidateRepository:
                 mapping_start = time.perf_counter()
                 phase_start = mapping_start
                 mapped = [_row_to_candidate(slot, r) for r in rows]
+                if taste_vector is not None:
+                    mapped = _stratify_by_category(mapped, limit_per_slot)
                 mapping_ms = (time.perf_counter() - mapping_start) * 1000
                 row_count = len(mapped)
                 return slot, mapped
@@ -635,7 +658,8 @@ def _row_to_candidate(slot: str, row: tuple) -> Candidate:
         affinity=float(row[14]) if row[14] is not None else None,
         image_url=image_url_from_refs(row[15]),
         gender=row[20],
-        embedding=_parse_vector(row[21]) if len(row) > 21 else None,
+        brand=row[21],
+        embedding=_parse_vector(row[22]) if len(row) > 22 else None,
     )
 
 
@@ -644,6 +668,44 @@ def _parse_vector(text: str | None) -> tuple[float, ...] | None:
     if not text:
         return None
     return tuple(float(x) for x in text.strip("[]").split(","))
+
+
+def _stratify_by_category(items: list[Candidate], limit: int) -> list[Candidate]:
+    """Round-robin ``items`` by category, then truncate to ``limit``.
+
+    Preserves each category's internal order (affinity/recency), so a single
+    dominant category cannot fill the whole slot pool just because its items
+    individually score highest — the composer needs several categories on offer
+    to build genuinely varied outfits, not just distinct item ids of the same
+    category (diagnostic Slice C, finding #3). A no-op when there is nothing to
+    trim.
+    """
+    if len(items) <= limit:
+        return items
+    buckets: dict[str, list[Candidate]] = {}
+    order: list[str] = []
+    for item in items:
+        bucket = buckets.get(item.category)
+        if bucket is None:
+            bucket = []
+            buckets[item.category] = bucket
+            order.append(item.category)
+        bucket.append(item)
+    out: list[Candidate] = []
+    depth = 0
+    while len(out) < limit:
+        progressed = False
+        for category in order:
+            bucket = buckets[category]
+            if depth < len(bucket):
+                out.append(bucket[depth])
+                progressed = True
+                if len(out) == limit:
+                    break
+        if not progressed:
+            break
+        depth += 1
+    return out
 
 
 class InMemoryCandidateRepository:
@@ -663,7 +725,7 @@ class InMemoryCandidateRepository:
         preferred_aesthetics: frozenset[str] | None = None,
         request_id: str = "-",
     ) -> dict[str, list[Candidate]]:
-        out: dict[str, list[Candidate]] = {slot: [] for slot in slots}
+        buckets: dict[str, list[Candidate]] = {slot: [] for slot in slots}
         for item in self.items:
             if item.slot not in slots:
                 continue
@@ -671,13 +733,15 @@ class InMemoryCandidateRepository:
                 continue
             if genders is not None and item.gender is not None and item.gender not in genders:
                 continue
-            out[item.slot].append(item)
-        for slot, bucket in out.items():
+            buckets[item.slot].append(item)
+        for slot, bucket in buckets.items():
             if preferred_aesthetics:
                 matching = [item for item in bucket if item.aesthetic in preferred_aesthetics]
                 bucket[:] = matching + [item for item in bucket if item not in matching]
-            del bucket[limit_per_slot:]
-        return out
+        return {
+            slot: _stratify_by_category(matched, limit_per_slot)
+            for slot, matched in buckets.items()
+        }
 
     def candidates_by_ids(self, item_ids: list[str]) -> list[Candidate]:
         wanted = set(item_ids)

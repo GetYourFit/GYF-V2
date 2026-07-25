@@ -92,6 +92,7 @@ def recommend(
     linker: AffiliateLinker | None = None,
     anchor_item_id: str | None = None,
     request_id: str = "-",
+    seen_item_ids: frozenset[str] = frozenset(),
 ) -> OutfitRecommendation:
     """Produce up to ``k`` diverse, explained, taste-aware outfits and log them.
 
@@ -111,6 +112,11 @@ def recommend(
     complete look built around that product — same personalization, scoring,
     diversity and attribution as the feed. Raises :class:`LookupError` when the
     item is unknown, so the route can answer 404 honestly.
+
+    ``seen_item_ids`` is the session's carried-forward "seen set": item ids from
+    a slate the client already showed the user. Passing them on a "next look"
+    refresh keeps the new slate from re-serving the same top+bottom category
+    family under different item ids (diagnostic Slice C, item #4).
     """
     with _stage(request_id, "profile_conditioning"):
         goals = parse_goal(goal)
@@ -125,6 +131,10 @@ def recommend(
         wardrobe_records, owned = _resolve_wardrobe(user_id, candidates, wardrobe_repo)
     with _stage(request_id, "anchor_lookup"):
         anchor = _resolve_anchor(anchor_item_id, candidates)
+    with _stage(request_id, "seen_items_lookup"):
+        seen_items = (
+            tuple(candidates.candidates_by_ids(sorted(seen_item_ids))) if seen_item_ids else ()
+        )
 
     # Gendered relevance: draw only from the user's slice + unisex (unfaceted
     # items always pass). Nonbinary/unknown users see the full catalog.
@@ -152,7 +162,7 @@ def recommend(
         )
     strength = taste.strength if taste.has_signal else 0.0
     with _stage(request_id, "composition"):
-        scored = compose(pools, constraints, k, strength, wardrobe)
+        scored = compose(pools, constraints, k, strength, wardrobe, seen_item_ids, seen_items)
 
     recommendation_id = str(uuid.uuid4())
     applied_goals = [g.value for g in goals]

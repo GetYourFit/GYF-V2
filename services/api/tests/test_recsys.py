@@ -315,7 +315,8 @@ def test_results_are_diverse_not_duplicates():
 def test_shared_anchor_craters_diversity():
     """Prod bug: all 5 outfits reused one shirt because plain Jaccard rated a
     shared-top pair 0.8 diverse (4/5 items differ). The anchor cap must read two
-    looks built on the same top as near-identical, and distinct tops as diverse."""
+    looks built on the same top as near-identical, and a genuinely different
+    anchor category as diverse."""
     from app.recsys.compose import _SHARED_ANCHOR_CEILING, _diversity
 
     a = (
@@ -329,12 +330,39 @@ def test_shared_anchor_craters_diversity():
         _item("f2", "shoe", "footwear"),
     )
     diff_top = (
-        _item("top2", "shirt", "top"),
+        _item("top2", "polo", "top"),
         _item("b1", "jeans", "bottom"),
         _item("f1", "shoe", "footwear"),
     )
     assert _diversity(a, same_top) <= _SHARED_ANCHOR_CEILING
     assert _diversity(a, diff_top) > _SHARED_ANCHOR_CEILING
+
+
+def test_diversity_penalizes_same_category_family_not_just_item_id():
+    """Diagnostic Slice C finding #3: two outfits built from different item ids
+    but the exact same top/bottom/footwear categories (and aesthetic/brand/hue)
+    are NOT diverse — five different item ids that are all "shirt+jeans+shoe"
+    still feel like the same look, and diversity must not be fooled by identity
+    alone."""
+    from app.recsys.compose import _diversity
+
+    same_family_a = (
+        _item("t1", "shirt", "top", aesthetic="minimalist"),
+        _item("b1", "jeans", "bottom"),
+        _item("f1", "sneakers", "footwear"),
+    )
+    same_family_b = (
+        _item("t2", "shirt", "top", aesthetic="minimalist"),
+        _item("b2", "jeans", "bottom"),
+        _item("f2", "sneakers", "footwear"),
+    )
+    genuinely_different = (
+        _item("t3", "kurta", "top", aesthetic="ethnic"),
+        _item("b3", "trousers", "bottom"),
+        _item("f3", "loafers", "footwear"),
+    )
+    assert _diversity(same_family_a, same_family_b) == 0.0
+    assert _diversity(same_family_a, genuinely_different) > 0.5
 
 
 def test_full_body_blueprint_when_no_separates():
@@ -425,6 +453,215 @@ def test_dominant_top_still_yields_distinct_looks():
     assert len(shoes) == len(outfits)
 
 
+# --- Diversity by category/style family, not just item id (diagnostic Slice C) --
+
+
+def test_k5_surfaces_distinct_top_and_footwear_categories_when_catalog_has_variety():
+    """Diagnostic Slice C regression: with real category variety in the catalog,
+    five outfits must span more than one top category and more than one
+    footwear category — not just five different item ids that are all
+    "shirt+jeans+sneakers" (finding #3)."""
+    catalog = [
+        _item("shirt1", "shirt", "top", lch=(60, 8, 0)),
+        _item("shirt2", "shirt", "top", lch=(58, 9, 5)),
+        _item("tee1", "t_shirt", "top", lch=(50, 40, 30)),
+        _item("kurta1", "kurta", "top", lch=(45, 20, 90)),
+        _item("jeans1", "jeans", "bottom", lch=(40, 10, 250)),
+        _item("trouser1", "trousers", "bottom", lch=(45, 38, 50)),
+        _item("sneaker1", "sneakers", "footwear", lch=(80, 5, 0)),
+        _item("loafer1", "loafers", "footwear", lch=(35, 8, 40)),
+        _item("boot1", "boots", "footwear", lch=(30, 6, 0)),
+    ]
+    pools = InMemoryCandidateRepository(catalog).candidates_by_slot(
+        conditioning.CANDIDATE_SLOTS, None, None, 40
+    )
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    outfits = compose(pools, c, k=5)
+    top_categories = {next(it.category for it in o.items if it.slot == "top") for o in outfits}
+    footwear_categories = {
+        next(it.category for it in o.items if it.slot == "footwear") for o in outfits
+    }
+    assert len(top_categories) >= 3
+    assert len(footwear_categories) >= 2
+
+
+def test_k5_keeps_category_family_coverage_when_one_family_has_higher_relevance():
+    catalog = [
+        *[_item(f"shirt{i}", "shirt", "top", lch=(60, 8, 0), affinity=0.99) for i in range(5)],
+        _item("tee1", "t_shirt", "top", lch=(50, 40, 30), affinity=0.1),
+        _item("blouse1", "blouse", "top", lch=(45, 20, 90), affinity=0.1),
+        _item("jeans1", "jeans", "bottom", lch=(40, 10, 250)),
+        _item("trousers1", "trousers", "bottom", lch=(45, 38, 50)),
+        _item("sneaker1", "sneakers", "footwear", lch=(80, 5, 0)),
+    ]
+    pools = InMemoryCandidateRepository(catalog).candidates_by_slot(
+        conditioning.CANDIDATE_SLOTS, None, None, 40
+    )
+    outfits = compose(pools, conditioning.resolve(Profile(occasion="casual"), "casual", None), k=5)
+    families = {
+        tuple((item.slot, item.category) for item in outfit.items if item.slot != "footwear")
+        for outfit in outfits
+    }
+    assert len(outfits) == 5
+    assert len(families) == 5
+
+
+def test_k5_reserves_low_affinity_category_family_before_mmr_cap():
+    pools = {
+        "top": [
+            *[_item(f"shirt{i}", "shirt", "top", lch=(60, 8, 0), affinity=0.99) for i in range(13)],
+            _item("blouse1", "blouse", "top", lch=(45, 20, 90), affinity=-0.99),
+        ],
+        "bottom": [
+            _item(f"jeans{i}", "jeans", "bottom", lch=(40, 10, 250), affinity=0.99)
+            for i in range(14)
+        ],
+        "footwear": [_item("sneaker1", "sneakers", "footwear", lch=(80, 5, 0), affinity=0.99)],
+    }
+    outfits = compose(
+        pools,
+        conditioning.resolve(Profile(occasion="casual"), "casual", None),
+        k=5,
+        taste_strength=1.0,
+    )
+    assert len(outfits) == 5
+    assert any(item.category == "blouse" for outfit in outfits for item in outfit.items)
+
+
+def test_k5_scarce_core_keeps_footwear_variants():
+    pools = {
+        "top": [_item("shirt1", "shirt", "top", lch=(60, 8, 0))],
+        "bottom": [_item("jeans1", "jeans", "bottom", lch=(40, 10, 250))],
+        "footwear": [
+            _item(f"shoe{i}", "sneakers", "footwear", lch=(80 - i, 5, 0)) for i in range(5)
+        ],
+    }
+    outfits = compose(
+        pools,
+        conditioning.resolve(Profile(occasion="casual"), "casual", None),
+        k=5,
+    )
+    assert len(outfits) == 5
+    assert {
+        next(item.item_id for item in outfit.items if item.slot == "footwear") for outfit in outfits
+    } == {f"shoe{i}" for i in range(5)}
+
+
+def test_scarce_catalog_returns_honest_limited_variety_not_fake_diversity():
+    """When the catalog genuinely has only one top category, five looks sharing
+    it is honest scarcity, not the diversity bug — the composer must not error
+    or fabricate a category that doesn't exist (Slice C item #5)."""
+    catalog = [
+        _item("shirt1", "shirt", "top", lch=(60, 8, 0)),
+        _item("shirt2", "shirt", "top", lch=(55, 10, 10)),
+        _item("shirt3", "shirt", "top", lch=(50, 12, 20)),
+        _item("jeans1", "jeans", "bottom", lch=(40, 10, 250)),
+        _item("trouser1", "trousers", "bottom", lch=(45, 38, 50)),
+        _item("sneaker1", "sneakers", "footwear", lch=(80, 5, 0)),
+        _item("boot1", "boots", "footwear", lch=(30, 6, 0)),
+    ]
+    pools = InMemoryCandidateRepository(catalog).candidates_by_slot(
+        conditioning.CANDIDATE_SLOTS, None, None, 40
+    )
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    outfits = compose(pools, c, k=5)
+    assert outfits  # still real, complete looks — no fabricated variety
+    assert {it.category for o in outfits for it in o.items if it.slot == "top"} == {"shirt"}
+
+
+def test_stratify_by_category_prevents_one_cluster_from_filling_the_pool():
+    """Diagnostic Slice C item #2: the taste/HNSW path orders purely by vector
+    distance (candidates.py:204-212), so a taste vector dominated by one shirt
+    cluster can return a pool that is entirely shirts. Interleaving by category
+    before truncating must still surface the catalog's other categories."""
+    from app.recsys.candidates import _stratify_by_category
+
+    # Simulate an affinity-ordered fetch: near-neighbour shirts dominate the raw
+    # rank, with a couple of genuinely different alternates further down.
+    shirts = [_item(f"shirt{i}", "shirt", "top", affinity=0.9 - i * 0.01) for i in range(8)]
+    alternates = [
+        _item("kurta1", "kurta", "top", affinity=0.4),
+        _item("tee1", "t_shirt", "top", affinity=0.35),
+    ]
+    ranked = shirts + alternates
+    pool = _stratify_by_category(ranked, limit=4)
+    assert len(pool) == 4
+    assert len({c.category for c in pool}) >= 2  # not all-shirt despite raw rank order
+
+
+def test_seen_set_avoids_repeating_same_family_across_refreshes():
+    """Diagnostic Slice C item #4: a 'next look' refresh must not just re-serve
+    the same top+bottom category family under new item ids, unless the catalog
+    is exhausted of alternatives."""
+    catalog = [
+        _item("shirt1", "shirt", "top", lch=(60, 8, 0)),
+        _item("shirt2", "shirt", "top", lch=(58, 9, 5)),
+        _item("kurta1", "kurta", "top", lch=(45, 20, 90)),
+        _item("jeans1", "jeans", "bottom", lch=(40, 10, 250)),
+        _item("trouser1", "trousers", "bottom", lch=(45, 38, 50)),
+        _item("sneaker1", "sneakers", "footwear", lch=(80, 5, 0)),
+        _item("loafer1", "loafers", "footwear", lch=(35, 8, 40)),
+    ]
+    pools = InMemoryCandidateRepository(catalog).candidates_by_slot(
+        conditioning.CANDIDATE_SLOTS, None, None, 40
+    )
+    c = conditioning.resolve(Profile(occasion="casual"), "casual", None)
+    first = compose(pools, c, k=1)
+    assert first
+    seen = frozenset(it.item_id for o in first for it in o.items)
+    refreshed = compose(pools, c, k=1, seen_item_ids=seen)
+    assert refreshed
+    first_family = {(it.slot, it.category) for it in first[0].items if it.slot != "footwear"}
+    refreshed_family = {
+        (it.slot, it.category) for it in refreshed[0].items if it.slot != "footwear"
+    }
+    assert refreshed_family != first_family
+
+    # Inventory-exhausted honesty: once every family has been seen, a further
+    # refresh may repeat rather than silently return nothing.
+    exhausted_seen = seen | frozenset(it.item_id for o in refreshed for it in o.items)
+    still_returns = compose(pools, c, k=1, seen_item_ids=exhausted_seen)
+    assert still_returns
+
+
+def test_seen_set_uses_prior_slate_items_missing_from_the_current_pool():
+    previous = [
+        _item("old-shirt", "shirt", "top", lch=(60, 8, 0)),
+        _item("old-jeans", "jeans", "bottom", lch=(40, 10, 250)),
+    ]
+    current = [
+        _item("shirt2", "shirt", "top", lch=(58, 9, 5)),
+        _item("kurta1", "kurta", "top", lch=(45, 20, 90)),
+        _item("jeans2", "jeans", "bottom", lch=(38, 12, 250)),
+        _item("trousers1", "trousers", "bottom", lch=(45, 38, 50)),
+        _item("sneaker1", "sneakers", "footwear", lch=(80, 5, 0)),
+    ]
+
+    class RefreshRepository(InMemoryCandidateRepository):
+        def candidates_by_slot(self, *args, **kwargs):
+            return InMemoryCandidateRepository(current).candidates_by_slot(*args, **kwargs)
+
+        def candidates_by_ids(self, item_ids):
+            wanted = set(item_ids)
+            return [item for item in previous if item.item_id in wanted]
+
+    rec = recommend(
+        Profile(occasion="casual"),
+        DEV_USER,
+        RefreshRepository(current),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        1,
+        seen_item_ids=frozenset({"old-shirt", "old-jeans"}),
+    )
+    family = {
+        (item.slot, item.category) for item in rec.outfits[0].items if item.slot != "footwear"
+    }
+    assert family != {("top", "shirt"), ("bottom", "jeans")}
+
+
 # --- Service + API end to end ----------------------------------------------
 
 
@@ -471,6 +708,17 @@ def test_recommend_endpoint_returns_explained_outfits():
 def test_recommend_404_before_onboarding():
     try:
         assert _client(None).get("/outfits/recommend").status_code == 404
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_recommend_rejects_malformed_seen_item_ids():
+    try:
+        response = _client(Profile(occasion="casual")).get(
+            "/outfits/recommend?seen_item_ids=not-a-uuid"
+        )
+        assert response.status_code == 422
+        assert response.json()["detail"] == "seen_item_ids must contain comma-separated UUIDs"
     finally:
         app.dependency_overrides.clear()
 
@@ -867,7 +1115,7 @@ def test_http_recommend_feedback_then_next_slate_uses_joined_taste_signal():
 
 
 def _attr_row(*, pattern_certain, silhouette_certain, fit_certain, aesthetic_certain):
-    """A candidates SQL row (20 cols) with scripted per-attribute certainty flags."""
+    """A candidates SQL row (22 cols) with scripted per-attribute certainty flags."""
     return (
         "id-1",
         "Tee",
@@ -890,6 +1138,7 @@ def _attr_row(*, pattern_certain, silhouette_certain, fit_certain, aesthetic_cer
         silhouette_certain,
         fit_certain,  # 16-19
         None,  # 20 gender (unfaceted)
+        None,  # 21 brand (unfaceted)
     )
 
 
@@ -1632,12 +1881,13 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     assert pool.calls[1] == (
         "SELECT set_config('hnsw.ef_search', %s, true), "
         "set_config('hnsw.iterative_scan', 'relaxed_order', true)",
-        ("80",),
+        ("200",),  # overfetch (80 * _TASTE_OVERFETCH_FACTOR, capped at 200)
     )
     sql, params = pool.calls[2]
     assert "FROM item_embeddings e" in sql
     assert "JOIN items i ON i.id = e.item_id" in sql
     assert "ORDER BY e.embedding <=> %s::vector" in sql
+    assert "i.attributes #>> '{commerce,merchant_name}'" in sql
     assert params == (
         "[0.1,0.2]",
         list(conditioning._CATEGORIES_BY_SLOT["top"]),
@@ -1650,7 +1900,7 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
         "[0.1,0.2]",  # ORDER BY e.embedding <=> %s::vector
         ["streetwear"],  # preferred_aesthetics
         ["streetwear"],  # preferred_aesthetics for CASE
-        80,
+        200,  # overfetch limit, not the final pool size
     )
     assert len(pool.calls) == 4
     reserve_sql, reserve_params = pool.calls[3]

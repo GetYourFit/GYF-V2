@@ -54,6 +54,19 @@ describe("GyfApi", () => {
     expect(url).toBe("http://api/outfits/recommend?occasion=casual&k=5");
   });
 
+  it("sends displayed slate ids on a next-look request", async () => {
+    const fetchSpy = mockFetch({ status: 200, body: { occasion: "casual", outfits: [] } });
+    vi.stubGlobal("fetch", fetchSpy);
+    const api = new GyfApi(() => null, "http://api");
+
+    await api.recommend({ seen_item_ids: "top-1,shoe-1" });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://api/outfits/recommend?seen_item_ids=top-1%2Cshoe-1",
+      expect.anything(),
+    );
+  });
+
   it("encodes a request-scoped style for recommend and complete-look requests", async () => {
     const fetchSpy = mockFetch({ status: 200, body: { occasion: "casual", outfits: [] } });
     vi.stubGlobal("fetch", fetchSpy);

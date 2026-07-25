@@ -337,6 +337,8 @@ class ShopifySource:
                 f"https://{self._merchant.storefront_domain or self._merchant.domain}"
                 f"/products/{handle}"
             ),
+            merchant_name=self._merchant.brand,
+            merchant_domain=self._merchant.storefront_domain or self._merchant.domain,
             region_hints=list(self._merchant.region_hints),
             gender=self._infer_gender(product, title),
         )

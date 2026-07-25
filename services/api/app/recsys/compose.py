@@ -694,17 +694,40 @@ def _core_key(items: tuple[Candidate, ...]) -> tuple[str, ...]:
     return core or tuple(it.item_id for it in items)
 
 
-def _diversity(a: tuple[Candidate, ...], b: tuple[Candidate, ...]) -> float:
-    """Dissimilarity of two outfits in [0, 1] — shared items make them alike.
+def _category_family(items: tuple[Candidate, ...]) -> tuple[tuple[str, str], ...]:
+    family = tuple((it.slot, it.category) for it in items if it.slot != "footwear")
+    return family or tuple((it.slot, it.category) for it in items)
 
-    Jaccard distance over item ids, then the anchor cap above: outfits sharing a
-    top (or footwear) are near-duplicates, exactly the "five near-identical
-    results" failure to avoid (§2).
+
+def _feature_set(items: tuple[Candidate, ...]) -> set[tuple[str, str, str, str, str]]:
+    """An outfit's semantic-family signature: one tuple per item, item id excluded.
+
+    ``(slot, category, aesthetic, brand, dominant hue)`` — deliberately NOT
+    including ``item_id``. Two outfits built from different item ids but the same
+    top category + bottom category + footwear category + merchant + colour family
+    are the "different IDs, same shirt+jeans+shoes" failure (diagnostic Slice C,
+    finding #3): item id must not be part of the family key, or every element
+    trivially differs and the Jaccard distance always reads 1.0 (maximally
+    diverse) even for family-identical looks.
     """
-    ids_a = {it.item_id for it in a}
-    ids_b = {it.item_id for it in b}
-    union = ids_a | ids_b
-    jaccard = 1.0 - len(ids_a & ids_b) / len(union) if union else 0.0
+    return {
+        (it.slot, it.category, it.aesthetic or "", it.brand or "", it.hue_name or "")
+        for it in items
+    }
+
+
+def _diversity(a: tuple[Candidate, ...], b: tuple[Candidate, ...]) -> float:
+    """Dissimilarity of two outfits in [0, 1] — shared semantic families make them alike.
+
+    Jaccard distance over :func:`_feature_set` (slot/category/aesthetic/brand/hue,
+    not item identity), then the anchor cap above: outfits sharing the same
+    anchor item (first item) are near-duplicates, exactly the "five
+    near-identical results" failure to avoid (§2).
+    """
+    features_a = _feature_set(a)
+    features_b = _feature_set(b)
+    union = features_a | features_b
+    jaccard = 1.0 - len(features_a & features_b) / len(union) if union else 0.0
     if a and b and a[0].item_id == b[0].item_id:
         return min(jaccard, _SHARED_ANCHOR_CEILING)
     return jaccard
@@ -716,12 +739,20 @@ def compose(
     k: int,
     taste_strength: float = 0.0,
     wardrobe: WardrobeContext | None = None,
+    seen_item_ids: frozenset[str] = frozenset(),
+    seen_items: tuple[Candidate, ...] | None = None,
 ) -> list[ScoredOutfit]:
     """Assemble, score, and MMR-rank the top ``k`` diverse complete outfits.
 
     ``taste_strength`` (α, 0 at cold start) blends the user's learned taste into
     the score. ``wardrobe`` grounds the ranking in the user's real closet (owned
     anchors + palette versatility); ``None``/empty leaves scoring byte-identical.
+    ``seen_item_ids`` carries the item ids from a previous slate (a "next look"
+    refresh): any candidate outfit's top+bottom category family that a
+    previously-seen item belonged to is deprioritized, so a refresh does not
+    just re-serve "same shirt+jeans, different id" under a new look — unless the
+    catalog has nothing else to offer, in which case the repeat is kept (honest
+    scarcity over a fake refresh).
     Returns fewer than ``k`` (possibly zero) when the catalog cannot fill a
     blueprint — honest scarcity over padding with bad looks.
     """
@@ -739,6 +770,38 @@ def compose(
         for items in candidates
     ]
     scored.sort(key=lambda t: t[1], reverse=True)
+    if seen_item_ids:
+        # Per-slot categories the seen items belong to (not the exact previous
+        # pairings — a flat item-id set can't reconstruct which top was paired
+        # with which bottom). An outfit only counts as a family repeat when
+        # EVERY one of its non-footwear slots' categories was already seen in
+        # that slot, e.g. a new top paired with a previously-seen bottom is
+        # still fresh. Deliberately excludes footwear: a seen shoe would
+        # otherwise taint every top+bottom combination it could theoretically
+        # pair with.
+        seen_categories_by_slot: dict[str, set[str]] = {}
+        items_for_seen_families = seen_items
+        if items_for_seen_families is None:
+            items_for_seen_families = tuple(
+                it
+                for slot_pool in pools.values()
+                for it in slot_pool
+                if it.item_id in seen_item_ids
+            )
+        for it in items_for_seen_families:
+            if it.slot != "footwear":
+                seen_categories_by_slot.setdefault(it.slot, set()).add(it.category)
+        fresh = [
+            entry
+            for entry in scored
+            if not all(
+                it.category in seen_categories_by_slot.get(it.slot, set())
+                for it in entry[0]
+                if it.slot != "footwear"
+            )
+        ]
+        if fresh:  # only exclude repeats when the catalog actually has an alternative
+            scored = fresh
     # Anchor diversity: keep only the best-scoring outfit per distinct core
     # (top+bottom, footwear ignored). A single dominant top otherwise fills the
     # whole working set, so every look reuses it and MMR — which can only pick
@@ -752,9 +815,24 @@ def compose(
     # Cap the working set so MMR stays cheap; the best distinct looks are at the
     # front. Fall back to the raw top-N if dedup left fewer than k (honest scarcity).
     diverse = list(best_per_core.values())
-    pool = (diverse if len(diverse) >= k else scored)[: max(k * 8, 24)]
+    use_distinct_cores = len(diverse) >= k
+    ranked = diverse if use_distinct_cores else scored
+    working_limit = max(k * 8, 24)
+    if k >= 5:
+        representatives: dict[tuple[tuple[str, str], ...], tuple] = {}
+        for entry in ranked:
+            representatives.setdefault(_category_family(entry[0]), entry)
+        reserved = list(representatives.values())
+        if use_distinct_cores:
+            reserved_cores = {_core_key(entry[0]) for entry in reserved}
+            remainder = [entry for entry in ranked if _core_key(entry[0]) not in reserved_cores]
+        else:
+            remainder = [entry for entry in ranked if entry not in reserved]
+        pool = (reserved + remainder)[:working_limit]
+    else:
+        pool = ranked[:working_limit]
 
-    selected = _mmr_select(pool, k)
+    selected = _mmr_select(pool, k, enforce_family_coverage=k >= 5)
     selected = _spread_footwear(
         selected, pools.get("footwear", []), constraints, taste_strength, goal_effects, wardrobe
     )
@@ -808,20 +886,36 @@ def _spread_footwear(
 
 
 def _mmr_select(
-    pool: list[tuple[tuple[Candidate, ...], float, float, float]], k: int
+    pool: list[tuple[tuple[Candidate, ...], float, float, float]],
+    k: int,
+    *,
+    enforce_family_coverage: bool = False,
 ) -> list[tuple[tuple[Candidate, ...], float, float, float]]:
     """Maximal Marginal Relevance: greedily pick relevant-yet-diverse outfits."""
     selected: list[tuple[tuple[Candidate, ...], float, float, float]] = []
     remaining = list(pool)
+    selected_families: set[tuple[tuple[str, str], ...]] = set()
     while remaining and len(selected) < k:
+        eligible = range(len(remaining))
+        if enforce_family_coverage:
+            unseen = [
+                index
+                for index, candidate in enumerate(remaining)
+                if _category_family(candidate[0]) not in selected_families
+            ]
+            if unseen:
+                eligible = unseen
         best_idx, best_val = 0, -math.inf
-        for i, cand in enumerate(remaining):
+        for i in eligible:
+            cand = remaining[i]
             relevance = cand[1]
             novelty = min((_diversity(cand[0], s[0]) for s in selected), default=1.0)
             mmr = (1.0 - _MMR_LAMBDA) * relevance + _MMR_LAMBDA * novelty
             if mmr > best_val:
                 best_idx, best_val = i, mmr
-        selected.append(remaining.pop(best_idx))
+        chosen = remaining.pop(best_idx)
+        selected.append(chosen)
+        selected_families.add(_category_family(chosen[0]))
     return selected
 
 

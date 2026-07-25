@@ -37,6 +37,7 @@ import {
   safeShopUrl,
   savedOutfitInput,
   shopFeedbackForItem,
+  slateItemIds,
   STYLIST_GOAL_MAX,
   tastePersonalizationMessage,
   type StylistFeedbackStatus,
@@ -336,6 +337,7 @@ export default function StylistRoute() {
   const loadSequence = useRef(0);
   const retryEvents = useRef<Record<string, FeedbackRequest[]>>({});
   const swapRetryEvents = useRef<Record<number, FeedbackRequest>>({});
+  const seenItemIds = useRef("");
 
   const flushSwapRetries = useCallback(async () => {
     const queued = Object.entries(swapRetryEvents.current);
@@ -380,9 +382,11 @@ export default function StylistRoute() {
         goal: activeGoal || undefined,
         occasion: occasion || undefined,
         style: style || undefined,
+        seen_item_ids: seenItemIds.current || undefined,
       });
       if (sequence !== loadSequence.current) return;
       setData(result);
+      seenItemIds.current = "";
       setFeedback({});
       setAlternates({});
       setAlternateErrors({});
@@ -600,7 +604,13 @@ export default function StylistRoute() {
     : [];
 
   const applyGoal = () => {
+    seenItemIds.current = "";
     setActiveGoal(goalInput.trim());
+    setReload((value) => value + 1);
+  };
+
+  const loadNextSlate = () => {
+    seenItemIds.current = data ? slateItemIds(data.outfits) : "";
     setReload((value) => value + 1);
   };
 
@@ -787,10 +797,7 @@ export default function StylistRoute() {
             Try another goal or refresh. GYF will not invent a look when the catalogue cannot
             support one.
           </GyfText>
-          <AtelierButton
-            label="Get another slate"
-            onPress={() => setReload((value) => value + 1)}
-          />
+          <AtelierButton label="Get another slate" onPress={loadNextSlate} />
         </AtelierCard>
       ) : null}
 
@@ -807,7 +814,7 @@ export default function StylistRoute() {
           onComplete={completeAround}
           onLoadAlternates={loadAlternates}
           onFeedback={handleFeedback}
-          onNextLook={() => setReload((value) => value + 1)}
+          onNextLook={loadNextSlate}
           onRetryCorrection={(outfitIndex) => {
             const event = swapRetries[outfitIndex];
             if (event) void syncSwap(outfitIndex, event);

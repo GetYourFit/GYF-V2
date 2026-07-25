@@ -33,6 +33,12 @@ export function feedbackReceipt(status: StylistFeedbackStatus | undefined) {
   } as const;
 }
 
+export function slateItemIds(outfits: readonly Outfit[]): string {
+  return [...new Set(outfits.flatMap((outfit) => outfit.items.map((item) => item.item_id)))].join(
+    ",",
+  );
+}
+
 export function feedbackForOutfit(
   outfit: Outfit,
   recommendationId: string,

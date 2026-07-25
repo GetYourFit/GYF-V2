@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 import time
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from gyf_contracts.usermodel import CATALOG_GENDERS, STYLE_INTENTS, catalog_genders_for
@@ -35,6 +36,18 @@ from ..wardrobe import WardrobeRepository
 router = APIRouter(tags=["recommendations"])
 logger = logging.getLogger("gyf")
 _STYLE_PATTERN = "^(?:" + "|".join(re.escape(value) for value in sorted(STYLE_INTENTS)) + ")$"
+
+
+def _parse_seen_item_ids(value: str | None) -> frozenset[str]:
+    try:
+        return frozenset(
+            str(UUID(item_id.strip())) for item_id in (value or "").split(",") if item_id.strip()
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="seen_item_ids must contain comma-separated UUIDs",
+        ) from exc
 
 
 def _profile_for_request(repo: ProfileRepository, user_id: str, request: Request):
@@ -108,6 +121,16 @@ def recommend_outfits(
             "combined": {"summary": "Taller + slimmer", "value": "taller and slimmer"},
         },
     ),
+    seen_item_ids: str | None = Query(
+        None,
+        max_length=4000,
+        description=(
+            "Comma-separated item ids from a slate you already showed the user "
+            "(a 'next look' refresh). The new slate avoids repeating the same "
+            "top+bottom category family from those items, unless the catalog has "
+            "no alternative left."
+        ),
+    ),
     principal: Principal = Depends(require_active_principal),
     profile_repo: ProfileRepository = Depends(get_profile_repo),
     candidates: CandidateRepository = Depends(get_candidate_repo),
@@ -123,7 +146,8 @@ def recommend_outfits(
     logs impressions so the recommendation is auditable and trainable. ``occasion``
     overrides the profile's stored one. ``goal`` is a free-text controllable-styling
     request ("look taller / slimmer / broader") that biases the look toward that
-    visual effect. 404s before onboarding.
+    visual effect. ``seen_item_ids`` lets a "next look" refresh avoid echoing the
+    same outfit family the user already saw. 404s before onboarding.
     """
     profile = _profile_for_request(profile_repo, principal.user_id, request)
     if profile is None:
@@ -131,6 +155,7 @@ def recommend_outfits(
     if style is not None:
         profile = profile.model_copy(deep=True)
         profile.style_intent = [style]
+    seen = _parse_seen_item_ids(seen_item_ids)
     return recommend(
         profile,
         principal.user_id,
@@ -143,6 +168,7 @@ def recommend_outfits(
         goal,
         wardrobe_repo,
         request_id=getattr(request.state, "request_id", "-"),
+        seen_item_ids=seen,
     )
 
 
