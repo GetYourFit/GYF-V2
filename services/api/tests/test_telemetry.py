@@ -58,3 +58,14 @@ def test_observe_stage_duration_validates_fixed_labels_and_duration():
         observe_stage_duration("search", "encoder_dns", "unknown", 0.25)
     with pytest.raises(TypeError):
         observe_stage_duration("search", "encoder_dns", "success", None)
+
+
+def test_observe_stage_duration_updates_request_timing_snapshot():
+    from app.metrics import begin_catalog_request, catalog_timing_snapshot, observe_stage_duration, reset_catalog_request
+
+    token = begin_catalog_request()
+    try:
+        observe_stage_duration("search", "encoder_dns", "success", 0.25)
+        assert catalog_timing_snapshot() == {"encoder_dns": {"success": 250.0}}
+    finally:
+        reset_catalog_request(token)

@@ -74,6 +74,14 @@ def reset_catalog_request(token: object) -> None:
     _CATALOG_CONTEXT.reset(token)  # type: ignore[arg-type]
 
 
+def _record_catalog_timing(stage: str, outcome: str, duration: float) -> None:
+    context = _CATALOG_CONTEXT.get()
+    if context is None:
+        return
+    stage_timings = context.setdefault(stage, {})
+    stage_timings[outcome] = stage_timings.get(outcome, 0.0) + duration * 1000
+
+
 class _StageTimer:
     def __init__(self, surface: str, stage: str, outcome: str | None) -> None:
         _validate_stage_labels(surface, stage, outcome or "success")
@@ -96,10 +104,7 @@ class _StageTimer:
             self.set_outcome("error")
         duration = time.perf_counter() - self.start
         observe_stage_duration(self.surface, self.stage, self.outcome, duration)
-        context = _CATALOG_CONTEXT.get()
-        if context is not None:
-            stage = context.setdefault(self.stage, {})
-            stage[self.outcome] = stage.get(self.outcome, 0.0) + duration * 1000
+        _record_catalog_timing(self.stage, self.outcome, duration)
 
 
 def _validate_stage_labels(surface: str, stage: str, outcome: str) -> None:
@@ -119,6 +124,7 @@ def observe_stage_duration(surface: str, stage: str, outcome: str, duration: flo
     duration = float(duration)
     if not math.isfinite(duration) or duration < 0:
         raise ValueError("stage duration must be finite and non-negative")
+    _record_catalog_timing(stage, outcome, duration)
     if _ENABLED:
         _STAGE_TIMING.labels(surface, stage, outcome).observe(duration)
 

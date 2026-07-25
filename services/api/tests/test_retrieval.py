@@ -799,6 +799,30 @@ def test_facets_endpoint_returns_coverage():
         app.dependency_overrides.clear()
 
 
+def test_facets_request_log_contains_fixed_stage_timings(caplog):
+    class FacetsRepo:
+        def catalog_facets(self, region):
+            from app.metrics import observe_stage_duration, stage_timer
+
+            with stage_timer("search", "pool_acquire"):
+                pass
+            observe_stage_duration("search", "retrieval_sql", "success", 0.125)
+            return CatalogFacets(total=900, priced=0, price_min=None, price_max=None)
+
+    app.dependency_overrides[get_search_repo] = lambda: FacetsRepo()
+    try:
+        with caplog.at_level("INFO", logger="gyf.access"):
+            resp = TestClient(app).get("/items/facets", headers={"X-Request-ID": "facet-timing-1"})
+        assert resp.status_code == 200
+        record = next(r for r in caplog.records if r.name == "gyf.access")
+        assert record.request_id == "facet-timing-1"
+        assert record.catalog_total_ms >= 0
+        assert "pool_acquire" in record.catalog_stages
+        assert record.catalog_stages["retrieval_sql"]["success"] == 125.0
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_search_endpoint_validates_and_forwards_price_and_sort():
     captured: dict[str, object] = {}
 

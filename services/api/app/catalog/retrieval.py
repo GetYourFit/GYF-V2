@@ -456,14 +456,16 @@ class PostgresVectorSearchRepository:
         JOIN items i ON i.id = e.item_id
         {where}
         """
-        with self._pool.connection() as conn:  # type: ignore[attr-defined]
-            # SET LOCAL rolls back with the connection transaction when PostgreSQL
-            # cancels the aggregate; the exception remains visible to the route.
-            conn.execute(
-                "SELECT set_config('statement_timeout', %s, true)",
-                (f"{settings.catalog_facets_statement_timeout_ms}ms",),
-            )
-            row = conn.execute(sql, tuple(params)).fetchone()
+        with stage_timer("search", "pool_acquire"):
+            with self._pool.connection() as conn:  # type: ignore[attr-defined]
+                with stage_timer("search", "retrieval_sql"):
+                    # SET LOCAL rolls back with the connection transaction when PostgreSQL
+                    # cancels the aggregate; the exception remains visible to the route.
+                    conn.execute(
+                        "SELECT set_config('statement_timeout', %s, true)",
+                        (f"{settings.catalog_facets_statement_timeout_ms}ms",),
+                    )
+                    row = conn.execute(sql, tuple(params)).fetchone()
         return CatalogFacets(
             total=int(row[0]),
             priced=int(row[1]),
