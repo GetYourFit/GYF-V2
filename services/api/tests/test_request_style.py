@@ -150,3 +150,34 @@ def test_complete_look_unknown_style_returns_422_before_candidate_work():
     )
 
     assert response.status_code == 422
+
+
+def _matching_catalog(target_aesthetic: str) -> list[Candidate]:
+    """Two item groups: one carrying the style's mapped aesthetic ("target"),
+    one carrying an unrelated aesthetic ("control", never edgy/romantic/glam's
+    target so it can't tie). Diagnostic report finding #4."""
+    return [
+        _candidate(f"{group}-{slot}", category, slot, aesthetic)
+        for group, aesthetic in (("target", target_aesthetic), ("control", "preppy"))
+        for slot, category in (("top", "shirt"), ("bottom", "jeans"), ("footwear", "sneakers"))
+    ]
+
+
+@pytest.mark.parametrize(
+    "style,aesthetic",
+    [("edgy", "streetwear"), ("romantic", "bohemian"), ("glam", "vintage")],
+)
+def test_edgy_romantic_glam_style_alters_the_top_slate(style, aesthetic):
+    """The diagnostic report's Slice D chips: each must move the slate on a
+    fixture with matching candidates, not silently no-op."""
+    profiles = InMemoryProfileRepository()
+    profiles.upsert(DEV_USER, Profile(occasion="casual", style_intent=["classic"]))
+
+    response = _client(profiles, InMemoryCandidateRepository(_matching_catalog(aesthetic))).get(
+        "/outfits/recommend", params={"k": 1, "style": style}
+    )
+
+    assert response.status_code == 200
+    assert {
+        item["item_id"].split("-", 1)[0] for item in response.json()["outfits"][0]["items"]
+    } == {"target"}
