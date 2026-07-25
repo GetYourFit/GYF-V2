@@ -342,7 +342,7 @@ def run_explains(
                 stage="schema",
                 cause=exc,
                 schema_version=getattr(exc, "schema_version", "unknown"),
-                detail=str(exc),
+                detail=str(exc) if isinstance(exc, DeployedSchemaError) else None,
             ) from None
         plans: dict[str, str] = {}
         capture_errors: list[str] = []

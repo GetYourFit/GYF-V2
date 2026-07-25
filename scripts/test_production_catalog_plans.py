@@ -282,6 +282,31 @@ def test_run_explains_reports_multiple_deployed_heads_clearly() -> None:
         raise AssertionError("expected deployed multi-head schema to fail capture")
 
 
+def test_schema_capture_omits_arbitrary_driver_error_text() -> None:
+    class SchemaFailureConnection(_FakeConnection):
+        def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
+            self.calls.append((sql, tuple(params or ())))
+            if sql.startswith("SELECT version_num"):
+                raise RuntimeError(
+                    "postgresql://user:secret@example.invalid/gyf password=secret"
+                )
+            return _FakeResult([])
+
+    try:
+        evidence.run_explains(
+            "postgresql://user:secret@example.invalid/gyf",
+            evidence.capture_query_matrix(),
+            connect=lambda _dsn: SchemaFailureConnection(),
+        )
+    except evidence.EvidenceCaptureError as exc:
+        assert str(exc) == "stage=schema type=RuntimeError sqlstate=unknown"
+        assert "secret" not in str(exc)
+        assert "postgresql://" not in str(exc)
+        assert exc.schema_version == "unknown"
+    else:
+        raise AssertionError("expected schema capture failure")
+
+
 def test_main_writes_diagnostic_artifact_on_capture_failure(
     monkeypatch, tmp_path: Path
 ) -> None:
