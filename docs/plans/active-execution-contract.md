@@ -344,7 +344,7 @@ one large phase:
 | `P5.4-EXPLORE` | F2.5/F4–F6, EXPO-07, HL-EXPLORE/DIVERSE | deep real catalogue discovery is fast, truthful, deduplicated and purchasable; final EXPO-21 remains in P6 |
 | `P5.5-SOCIAL-PROFILE` | EXPO-09, HL-SOCIAL/PROFILE | safe create/recreate/follow/react/share plus a truthful professional profile |
 | `P5.6-LOOKSPACE` | EXPO-12–18, HL-CANVAS | accessible, performant visual exploration has a feature-equivalent list path; final EXPO-19–21 remain in P6 |
-| `P5.7-VTON` | F8/F9, MONETIZATION-READINESS, EXPO-10, HL-VTON | free preview/trial plus private, quota-bounded visualization; paid render quotas open only after F9 and the separate monetization gate |
+| `P5.7-VTON` | F8/F9, EXPO-10, HL-VTON | free preview/trial plus private, quota-bounded visualization; paid render quotas require the separate `MONETIZATION-READINESS` packet after F9 |
 
 `P6.1-B2B` starts only after F12 and closes HL-B2B/BUSINESS: only non-reidentifying, consent-safe
 aggregated/distilled intelligence is productised. It has no consumer UI and cannot reopen a passed

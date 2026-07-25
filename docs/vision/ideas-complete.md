@@ -171,7 +171,8 @@ around.
 - The user provides a photo as input; the output renders the selected articles on their
   own body, only after separate photo/VTON-processing consent
 - It is an honest visualization, never fit or size truth; it stays closed until F9 evidence
-  promotes a lane, with free previews/trial credits and transparent paid render quotas thereafter
+  promotes a lane, then may offer only a bounded free preview/trial. Transparent paid render
+  quotas require that same F9 lane and a separate monetization-readiness gate.
 - Maturing toward high-fidelity on-body preview within privacy, quality, cost and refund gates
 
 ### Trust & Transparency
