@@ -51,9 +51,7 @@ def test_matrix_is_fixed_and_uses_repository_sql() -> None:
     queries = evidence.capture_query_matrix()
 
     assert {query.case_id for query in queries} == EXPECTED_CASES
-    assert all(
-        query.sql.lstrip().lower().startswith(("select", "with")) for query in queries
-    )
+    assert all(query.sql.lstrip().lower().startswith(("select", "with")) for query in queries)
     by_id = {query.case_id: query for query in queries}
     assert "ORDER BY e.embedding <=>" in by_id["search_semantic"].sql
     assert "price_asc" not in by_id["search_price"].sql
@@ -62,12 +60,8 @@ def test_matrix_is_fixed_and_uses_repository_sql() -> None:
     assert "to_tsvector('simple'::regconfig, i.title)" in by_id["fts_english"].sql
     assert "linen:* | shirt:*" in by_id["fts_english"].params
     assert "लाल:* | कुर्ता:*" in by_id["fts_hindi"].params
-    assert any(
-        "hnsw.ef_search" in setup_sql for setup_sql, _ in by_id["browse_taste"].setup
-    )
-    assert {
-        query.case_id for query in evidence.capture_query_matrix(browse_only=True)
-    } == {
+    assert any("hnsw.ef_search" in setup_sql for setup_sql, _ in by_id["browse_taste"].setup)
+    assert {query.case_id for query in evidence.capture_query_matrix(browse_only=True)} == {
         "browse_anonymous",
         "browse_filtered",
         "browse_deep",
@@ -164,9 +158,7 @@ def test_explains_are_read_only_bounded_and_secret_free() -> None:
     connection = _FakeConnection()
     queries = evidence.capture_query_matrix()
     dsn = "postgresql://postgres:super-secret@example.invalid/gyf"
-    plans, capture_errors = evidence.run_explains(
-        dsn, queries, connect=lambda _dsn: connection
-    )
+    plans, capture_errors = evidence.run_explains(dsn, queries, connect=lambda _dsn: connection)
 
     assert plans["__schema_version__"] == "0022_catalog_title_search_index"
     assert capture_errors == []
@@ -180,13 +172,9 @@ def test_explains_are_read_only_bounded_and_secret_free() -> None:
         or sql.startswith(("BEGIN", "SELECT", "EXPLAIN"))
         for sql in statements
     )
-    explain_calls = [
-        (sql, params) for sql, params in connection.calls if sql.startswith("EXPLAIN")
-    ]
+    explain_calls = [(sql, params) for sql, params in connection.calls if sql.startswith("EXPLAIN")]
     assert len(explain_calls) == len(queries)
-    assert all(
-        "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)" in sql for sql, _ in explain_calls
-    )
+    assert all("EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)" in sql for sql, _ in explain_calls)
 
     artifact = evidence.build_artifact(
         queries,
@@ -261,9 +249,7 @@ def test_query_failure_preserves_completed_plans_and_continues() -> None:
     )
 
     assert set(plans) == EXPECTED_CASES - {"browse_filtered"} | {"__schema_version__"}
-    assert capture_errors == [
-        "capture: stage=browse_filtered type=RuntimeError sqlstate=unknown"
-    ]
+    assert capture_errors == ["capture: stage=browse_filtered type=RuntimeError sqlstate=unknown"]
     assert "secret" not in str(capture_errors)
     assert connection.closed
 
@@ -293,10 +279,7 @@ def test_run_explains_reports_multiple_deployed_heads_clearly() -> None:
             "detail=deployed schema has multiple heads: "
             "0022_catalog_title_search_index, 0023_catalog_search_backfill"
         )
-        assert (
-            exc.schema_version
-            == "0022_catalog_title_search_index+0023_catalog_search_backfill"
-        )
+        assert exc.schema_version == "0022_catalog_title_search_index+0023_catalog_search_backfill"
         assert exc.plans == {}
     else:
         raise AssertionError("expected deployed multi-head schema to fail capture")
@@ -332,9 +315,7 @@ def test_schema_capture_omits_arbitrary_driver_error_text() -> None:
         def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
             self.calls.append((sql, tuple(params or ())))
             if sql.startswith("SELECT version_num"):
-                raise RuntimeError(
-                    "postgresql://user:secret@example.invalid/gyf password=secret"
-                )
+                raise RuntimeError("postgresql://user:secret@example.invalid/gyf password=secret")
             return _FakeResult([])
 
     try:
@@ -352,9 +333,7 @@ def test_schema_capture_omits_arbitrary_driver_error_text() -> None:
         raise AssertionError("expected schema capture failure")
 
 
-def test_main_writes_diagnostic_artifact_on_capture_failure(
-    monkeypatch, tmp_path: Path
-) -> None:
+def test_main_writes_diagnostic_artifact_on_capture_failure(monkeypatch, tmp_path: Path) -> None:
     output = tmp_path / "evidence" / "plans.json"
     dsn = "postgresql://user:secret@example.invalid/gyf"
     monkeypatch.setenv("GYF_PROD_DATABASE_URL", dsn)
@@ -384,14 +363,10 @@ def test_main_refuses_an_unsafe_migration_graph_before_connecting(
     monkeypatch, tmp_path: Path
 ) -> None:
     output = tmp_path / "evidence" / "plans.json"
-    monkeypatch.setenv(
-        "GYF_PROD_DATABASE_URL", "postgresql://user:secret@example.invalid/gyf"
-    )
+    monkeypatch.setenv("GYF_PROD_DATABASE_URL", "postgresql://user:secret@example.invalid/gyf")
 
     def multiple_heads() -> str:
-        raise evidence.MigrationGraphError(
-            "migration graph has multiple heads: rev-a, rev-b"
-        )
+        raise evidence.MigrationGraphError("migration graph has multiple heads: rev-a, rev-b")
 
     monkeypatch.setattr(evidence, "expected_schema_version", multiple_heads)
 
@@ -413,8 +388,7 @@ def test_validation_requires_buffers_and_hot_path_indexes() -> None:
             else "Index Scan using idx_item_embeddings_hnsw on item_embeddings\n"
             "Buffers: shared hit=1"
             if query.case_id in {"browse_taste", "search_semantic"}
-            else "Index Scan using idx_items_available_browse_order on items\n"
-            "Buffers: shared hit=1"
+            else "Index Scan using idx_items_available_browse_order on items\nBuffers: shared hit=1"
             if query.case_id == "browse_anonymous"
             else "Index Scan using idx_items_available_category_browse_order on items\n"
             "Buffers: shared hit=1"
@@ -425,9 +399,7 @@ def test_validation_requires_buffers_and_hot_path_indexes() -> None:
     assert evidence.validate_plans(queries, plans, schema_version=deployed_schema) == []
 
     plans["fts_english"] = "Seq Scan on items\nBuffers: shared hit=1"
-    assert evidence.validate_plans(
-        queries, plans, schema_version=deployed_schema
-    ) == [
+    assert evidence.validate_plans(queries, plans, schema_version=deployed_schema) == [
         "fts_english: title GIN index not used",
         "fts_english: sequential items scan",
     ]
@@ -452,9 +424,7 @@ def test_main_records_multiple_deployed_heads_in_validation_artifact(
     monkeypatch, tmp_path: Path
 ) -> None:
     output = tmp_path / "evidence" / "plans.json"
-    monkeypatch.setenv(
-        "GYF_PROD_DATABASE_URL", "postgresql://user:secret@example.invalid/gyf"
-    )
+    monkeypatch.setenv("GYF_PROD_DATABASE_URL", "postgresql://user:secret@example.invalid/gyf")
 
     class MultiHeadConnection(_FakeConnection):
         def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
@@ -470,16 +440,17 @@ def test_main_records_multiple_deployed_heads_in_validation_artifact(
 
     original_run_explains = evidence.run_explains
     monkeypatch.setattr(
-        evidence, "run_explains", lambda dsn, queries: original_run_explains(
+        evidence,
+        "run_explains",
+        lambda dsn, queries: original_run_explains(
             dsn, queries, connect=lambda _dsn: MultiHeadConnection()
-        )
+        ),
     )
 
     assert evidence.main(["--output", str(output)]) == 1
     artifact = json.loads(output.read_text(encoding="utf-8"))
     assert (
-        artifact["schema_version"]
-        == "0022_catalog_title_search_index+0023_catalog_search_backfill"
+        artifact["schema_version"] == "0022_catalog_title_search_index+0023_catalog_search_backfill"
     )
     assert artifact["validation"] == {
         "passed": False,
@@ -495,9 +466,7 @@ def test_main_records_missing_deployed_head_in_validation_artifact(
     monkeypatch, tmp_path: Path
 ) -> None:
     output = tmp_path / "evidence" / "plans.json"
-    monkeypatch.setenv(
-        "GYF_PROD_DATABASE_URL", "postgresql://user:secret@example.invalid/gyf"
-    )
+    monkeypatch.setenv("GYF_PROD_DATABASE_URL", "postgresql://user:secret@example.invalid/gyf")
 
     class NoHeadConnection(_FakeConnection):
         def execute(self, sql: str, params: tuple | None = None) -> _FakeResult:
@@ -508,9 +477,11 @@ def test_main_records_missing_deployed_head_in_validation_artifact(
 
     original_run_explains = evidence.run_explains
     monkeypatch.setattr(
-        evidence, "run_explains", lambda dsn, queries: original_run_explains(
+        evidence,
+        "run_explains",
+        lambda dsn, queries: original_run_explains(
             dsn, queries, connect=lambda _dsn: NoHeadConnection()
-        )
+        ),
     )
 
     assert evidence.main(["--output", str(output)]) == 1

@@ -4,7 +4,10 @@
 The SQL is produced by ``PostgresVectorSearchRepository`` itself.  A recording
 pool asks the repository to render each fixed case, then the resulting
 parameterised statement is run through ``EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)``
-against production.  No bind values or result rows are written to the artifact.
+against production.  The artifact also records the checked-out Alembic graph's
+exactly-one head and refuses evidence when the local graph or deployed schema
+cannot prove a single matching revision.  No bind values or result rows are
+written to the artifact.
 
 The command intentionally reads ``GYF_PROD_DATABASE_URL`` from the environment;
 the DSN is never printed or serialised.
@@ -105,9 +108,7 @@ def _single_migration_head(heads: Iterable[str]) -> str:
     if not discovered:
         raise MigrationGraphError("migration graph has no heads")
     if len(discovered) > 1:
-        raise MigrationGraphError(
-            f"migration graph has multiple heads: {', '.join(discovered)}"
-        )
+        raise MigrationGraphError(f"migration graph has multiple heads: {', '.join(discovered)}")
     return discovered[0]
 
 
@@ -144,20 +145,14 @@ class EvidenceCaptureError(RuntimeError):
         detail: str | None = None,
     ) -> None:
         self.stage = re.sub(r"[^A-Za-z0-9_.-]", "_", stage)[:80] or "unknown"
-        self.error_type = (
-            re.sub(r"[^A-Za-z0-9_.-]", "_", type(cause).__name__)[:80] or "Exception"
-        )
+        self.error_type = re.sub(r"[^A-Za-z0-9_.-]", "_", type(cause).__name__)[:80] or "Exception"
         sqlstate = getattr(cause, "sqlstate", None)
         self.sqlstate = (
-            str(sqlstate)
-            if sqlstate and re.fullmatch(r"[A-Z0-9]{5}", str(sqlstate))
-            else "unknown"
+            str(sqlstate) if sqlstate and re.fullmatch(r"[A-Z0-9]{5}", str(sqlstate)) else "unknown"
         )
         self.plans = dict(plans or {})
         self.schema_version = schema_version
-        self.detail = (
-            re.sub(r"[^A-Za-z0-9_, .:+-]", "_", detail)[:200] if detail else ""
-        )
+        self.detail = re.sub(r"[^A-Za-z0-9_, .:+-]", "_", detail)[:200] if detail else ""
         detail_suffix = f" detail={self.detail}" if self.detail else ""
         super().__init__(
             f"stage={self.stage} type={self.error_type} sqlstate={self.sqlstate}{detail_suffix}"
@@ -182,9 +177,7 @@ def _cases() -> tuple[_Case, ...]:
     return (
         _Case(
             "browse_anonymous",
-            lambda repo: repo.browse(
-                categories=None, k=24, region="IN", seed="f25-anonymous"
-            ),
+            lambda repo: repo.browse(categories=None, k=24, region="IN", seed="f25-anonymous"),
         ),
         _Case(
             "browse_filtered",
@@ -281,9 +274,7 @@ def capture_query_matrix(
         case.invoke(repo)
         if not pool.sql:
             raise RuntimeError(f"repository did not render SQL for {case.case_id}")
-        captured.append(
-            CapturedQuery(case.case_id, pool.sql, pool.params, tuple(pool.setup))
-        )
+        captured.append(CapturedQuery(case.case_id, pool.sql, pool.params, tuple(pool.setup)))
     return tuple(captured)
 
 
@@ -291,9 +282,7 @@ def _connect(dsn: str) -> _Connection:
     try:
         import psycopg
     except ImportError as exc:  # pragma: no cover - CI installs the postgres extra
-        raise RuntimeError(
-            "psycopg is required; run with the API postgres extra"
-        ) from exc
+        raise RuntimeError("psycopg is required; run with the API postgres extra") from exc
     return psycopg.connect(dsn)
 
 
@@ -306,9 +295,7 @@ def _read_schema_version(conn: _Connection) -> str:
         rows = conn.execute(
             "SELECT version_num FROM alembic_version ORDER BY version_num"
         ).fetchall()
-        versions = tuple(
-            sorted({str(row[0]) for row in rows if row and row[0] is not None})
-        )
+        versions = tuple(sorted({str(row[0]) for row in rows if row and row[0] is not None}))
         if not versions:
             raise DeployedSchemaError(
                 "deployed schema has no heads",
@@ -352,9 +339,7 @@ def run_explains(
         for query in queries:
             try:
                 conn.execute("BEGIN TRANSACTION READ ONLY")
-                conn.execute(
-                    f"SET LOCAL statement_timeout = '{STATEMENT_TIMEOUT_MS}ms'"
-                )
+                conn.execute(f"SET LOCAL statement_timeout = '{STATEMENT_TIMEOUT_MS}ms'")
                 conn.execute(f"SET LOCAL lock_timeout = '{LOCK_TIMEOUT_MS}ms'")
                 for setup_sql, setup_params in query.setup:
                     conn.execute(setup_sql, setup_params)
@@ -499,8 +484,7 @@ def build_artifact(
     safe_expected = re.sub(r"[^A-Za-z0-9_.+-]", "_", str(expected))[:80] or "unknown"
     return {
         "artifact_version": ARTIFACT_VERSION,
-        "captured_at": captured_at
-        or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "captured_at": captured_at or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "commit": commit or _commit_id(),
         "schema_version": safe_schema,
         "expected_schema_version": safe_expected,
@@ -524,9 +508,7 @@ def build_artifact(
 
 def _write_artifact(path: Path, artifact: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(artifact, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    path.write_text(json.dumps(artifact, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
