@@ -94,6 +94,7 @@ export interface RecommendParams {
   region?: string;
   /** Free-text styling goal ("look taller / slimmer / broader"). */
   goal?: string;
+  seen_item_ids?: string;
 }
 
 export interface SearchParams {

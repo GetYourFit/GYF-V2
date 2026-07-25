@@ -56,6 +56,8 @@ def test_maps_product_to_raw_feed_item():
     assert item.image_urls == ["https://cdn.shopify.com/a.jpg", "https://cdn.shopify.com/b.jpg"]
     assert item.region_hints == ["IN"]
     assert item.retailer_id == "101"
+    assert item.merchant_name == "Snitch"
+    assert item.merchant_domain == "www.snitch.co.in"
 
 
 def test_blank_product_type_falls_back_to_title_for_classification():

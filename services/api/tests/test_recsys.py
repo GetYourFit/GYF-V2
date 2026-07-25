@@ -485,6 +485,30 @@ def test_k5_surfaces_distinct_top_and_footwear_categories_when_catalog_has_varie
     assert len(footwear_categories) >= 2
 
 
+def test_k5_keeps_category_family_coverage_when_one_family_has_higher_relevance():
+    catalog = [
+        *[
+            _item(f"shirt{i}", "shirt", "top", lch=(60, 8, 0), affinity=0.99)
+            for i in range(5)
+        ],
+        _item("tee1", "t_shirt", "top", lch=(50, 40, 30), affinity=0.1),
+        _item("blouse1", "blouse", "top", lch=(45, 20, 90), affinity=0.1),
+        _item("jeans1", "jeans", "bottom", lch=(40, 10, 250)),
+        _item("trousers1", "trousers", "bottom", lch=(45, 38, 50)),
+        _item("sneaker1", "sneakers", "footwear", lch=(80, 5, 0)),
+    ]
+    pools = InMemoryCandidateRepository(catalog).candidates_by_slot(
+        conditioning.CANDIDATE_SLOTS, None, None, 40
+    )
+    outfits = compose(pools, conditioning.resolve(Profile(occasion="casual"), "casual", None), k=5)
+    families = {
+        tuple((item.slot, item.category) for item in outfit.items if item.slot != "footwear")
+        for outfit in outfits
+    }
+    assert len(outfits) == 5
+    assert len(families) == 5
+
+
 def test_scarce_catalog_returns_honest_limited_variety_not_fake_diversity():
     """When the catalog genuinely has only one top category, five looks sharing
     it is honest scarcity, not the diversity bug — the composer must not error
@@ -560,6 +584,42 @@ def test_seen_set_avoids_repeating_same_family_across_refreshes():
     exhausted_seen = seen | frozenset(it.item_id for o in refreshed for it in o.items)
     still_returns = compose(pools, c, k=1, seen_item_ids=exhausted_seen)
     assert still_returns
+
+
+def test_seen_set_uses_prior_slate_items_missing_from_the_current_pool():
+    previous = [
+        _item("old-shirt", "shirt", "top", lch=(60, 8, 0)),
+        _item("old-jeans", "jeans", "bottom", lch=(40, 10, 250)),
+    ]
+    current = [
+        _item("shirt2", "shirt", "top", lch=(58, 9, 5)),
+        _item("kurta1", "kurta", "top", lch=(45, 20, 90)),
+        _item("jeans2", "jeans", "bottom", lch=(38, 12, 250)),
+        _item("trousers1", "trousers", "bottom", lch=(45, 38, 50)),
+        _item("sneaker1", "sneakers", "footwear", lch=(80, 5, 0)),
+    ]
+
+    class RefreshRepository(InMemoryCandidateRepository):
+        def candidates_by_slot(self, *args, **kwargs):
+            return InMemoryCandidateRepository(current).candidates_by_slot(*args, **kwargs)
+
+        def candidates_by_ids(self, item_ids):
+            wanted = set(item_ids)
+            return [item for item in previous if item.item_id in wanted]
+
+    rec = recommend(
+        Profile(occasion="casual"),
+        DEV_USER,
+        RefreshRepository(current),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        1,
+        seen_item_ids=frozenset({"old-shirt", "old-jeans"}),
+    )
+    family = {(item.slot, item.category) for item in rec.outfits[0].items if item.slot != "footwear"}
+    assert family != {("top", "shirt"), ("bottom", "jeans")}
 
 
 # --- Service + API end to end ----------------------------------------------
@@ -1776,6 +1836,7 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     assert "FROM item_embeddings e" in sql
     assert "JOIN items i ON i.id = e.item_id" in sql
     assert "ORDER BY e.embedding <=> %s::vector" in sql
+    assert "i.attributes #>> '{commerce,merchant_name}'" in sql
     assert params == (
         "[0.1,0.2]",
         list(conditioning._CATEGORIES_BY_SLOT["top"]),

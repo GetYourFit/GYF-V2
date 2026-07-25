@@ -694,6 +694,11 @@ def _core_key(items: tuple[Candidate, ...]) -> tuple[str, ...]:
     return core or tuple(it.item_id for it in items)
 
 
+def _category_family(items: tuple[Candidate, ...]) -> tuple[tuple[str, str], ...]:
+    family = tuple((it.slot, it.category) for it in items if it.slot != "footwear")
+    return family or tuple((it.slot, it.category) for it in items)
+
+
 def _feature_set(items: tuple[Candidate, ...]) -> set[tuple[str, str, str, str, str]]:
     """An outfit's semantic-family signature: one tuple per item, item id excluded.
 
@@ -735,6 +740,7 @@ def compose(
     taste_strength: float = 0.0,
     wardrobe: WardrobeContext | None = None,
     seen_item_ids: frozenset[str] = frozenset(),
+    seen_items: tuple[Candidate, ...] | None = None,
 ) -> list[ScoredOutfit]:
     """Assemble, score, and MMR-rank the top ``k`` diverse complete outfits.
 
@@ -774,10 +780,14 @@ def compose(
         # otherwise taint every top+bottom combination it could theoretically
         # pair with.
         seen_categories_by_slot: dict[str, set[str]] = {}
-        for slot_pool in pools.values():
-            for it in slot_pool:
-                if it.item_id in seen_item_ids and it.slot != "footwear":
-                    seen_categories_by_slot.setdefault(it.slot, set()).add(it.category)
+        items_for_seen_families = seen_items
+        if items_for_seen_families is None:
+            items_for_seen_families = tuple(
+                it for slot_pool in pools.values() for it in slot_pool if it.item_id in seen_item_ids
+            )
+        for it in items_for_seen_families:
+            if it.slot != "footwear":
+                seen_categories_by_slot.setdefault(it.slot, set()).add(it.category)
         fresh = [
             entry
             for entry in scored
@@ -804,7 +814,7 @@ def compose(
     diverse = list(best_per_core.values())
     pool = (diverse if len(diverse) >= k else scored)[: max(k * 8, 24)]
 
-    selected = _mmr_select(pool, k)
+    selected = _mmr_select(pool, k, enforce_family_coverage=k >= 5)
     selected = _spread_footwear(
         selected, pools.get("footwear", []), constraints, taste_strength, goal_effects, wardrobe
     )
@@ -858,20 +868,36 @@ def _spread_footwear(
 
 
 def _mmr_select(
-    pool: list[tuple[tuple[Candidate, ...], float, float, float]], k: int
+    pool: list[tuple[tuple[Candidate, ...], float, float, float]],
+    k: int,
+    *,
+    enforce_family_coverage: bool = False,
 ) -> list[tuple[tuple[Candidate, ...], float, float, float]]:
     """Maximal Marginal Relevance: greedily pick relevant-yet-diverse outfits."""
     selected: list[tuple[tuple[Candidate, ...], float, float, float]] = []
     remaining = list(pool)
+    selected_families: set[tuple[tuple[str, str], ...]] = set()
     while remaining and len(selected) < k:
+        eligible = range(len(remaining))
+        if enforce_family_coverage:
+            unseen = [
+                index
+                for index, candidate in enumerate(remaining)
+                if _category_family(candidate[0]) not in selected_families
+            ]
+            if unseen:
+                eligible = unseen
         best_idx, best_val = 0, -math.inf
-        for i, cand in enumerate(remaining):
+        for i in eligible:
+            cand = remaining[i]
             relevance = cand[1]
             novelty = min((_diversity(cand[0], s[0]) for s in selected), default=1.0)
             mmr = (1.0 - _MMR_LAMBDA) * relevance + _MMR_LAMBDA * novelty
             if mmr > best_val:
                 best_idx, best_val = i, mmr
-        selected.append(remaining.pop(best_idx))
+        chosen = remaining.pop(best_idx)
+        selected.append(chosen)
+        selected_families.add(_category_family(chosen[0]))
     return selected
 
 
