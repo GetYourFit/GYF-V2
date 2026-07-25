@@ -150,9 +150,21 @@ export default function WelcomeScreen() {
 
         {/* Legal, so it stays — but as a footnote, not a paragraph the reader
             has to clear before reaching the button. */}
-        <GyfText style={{ textAlign: "center" }} theme="dark" tone="faint" variant="bodySmall">
-          By continuing you agree to our Terms and Privacy Policy.
-        </GyfText>
+        <View style={{ alignItems: "center", gap: spacing.xs }}>
+          <GyfText style={{ textAlign: "center" }} theme="dark" tone="faint" variant="bodySmall">
+            By continuing you agree to our Terms and Privacy Policy.
+          </GyfText>
+          <Link accessibilityRole="link" href="/terms">
+            <GyfText
+              theme="dark"
+              style={{ textDecorationLine: "underline" }}
+              tone="faint"
+              variant="bodySmall"
+            >
+              Read terms, privacy, and affiliate disclosures
+            </GyfText>
+          </Link>
+        </View>
       </Animated.View>
     </View>
   );

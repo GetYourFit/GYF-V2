@@ -1,54 +1,52 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { GyfText } from "@/components/ui/gyf-text";
 import { ApiError, createApi } from "@/lib/api";
 import {
-  GRIEVANCE_CATEGORIES,
-  grievanceErrors,
-  grievancePayload,
-  type GrievanceDraft,
-} from "@/lib/grievance";
+  CONTACT_EMAIL,
+  CONTACT_MAILTO,
+  contactErrors,
+  contactPayload,
+  type ContactDraft,
+} from "@/lib/contact";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
-const EMPTY: GrievanceDraft = { category: "", email: "", message: "" };
+const EMPTY: ContactDraft = { name: "", email: "", message: "" };
 
 function readableError(error: unknown): string {
   if (error instanceof ApiError && error.isUnauthorized) {
-    return "Your session expired. Sign in again before submitting your grievance.";
+    return "Your session expired. Sign in again before sending your message.";
   }
-  return "Your grievance was not received. Check your connection and try again.";
+  return "Your message was not received. Check your connection and try again.";
 }
 
-export default function GrievanceRoute() {
+export default function ContactRoute() {
   const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
-  const [draft, setDraft] = useState<GrievanceDraft>(EMPTY);
-  const [errors, setErrors] = useState<Partial<Record<keyof GrievanceDraft, string>>>({});
+  const [draft, setDraft] = useState<ContactDraft>(EMPTY);
+  const [errors, setErrors] = useState<Partial<Record<keyof ContactDraft, string>>>({});
   const [sending, setSending] = useState(false);
   const [receipt, setReceipt] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const update = <Field extends keyof GrievanceDraft>(
-    field: Field,
-    value: GrievanceDraft[Field],
-  ) => {
+  const update = (field: keyof ContactDraft, value: string) => {
     setDraft((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
     setSubmitError(null);
   };
 
   const submit = async () => {
-    const nextErrors = grievanceErrors(draft);
+    const nextErrors = contactErrors(draft);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0 || sending) return;
     setSending(true);
     setSubmitError(null);
     try {
-      const response = await api.submitSupportMessage(grievancePayload(draft));
+      const response = await api.submitSupportMessage(contactPayload(draft));
       setReceipt(response.id);
     } catch (error) {
       setSubmitError(readableError(error));
@@ -79,15 +77,44 @@ export default function GrievanceRoute() {
     >
       <View style={{ gap: spacing.sm }}>
         <GyfText tone="faint" variant="label">
-          ACCOUNTABLE BY DESIGN
+          HUMAN SUPPORT
         </GyfText>
         <GyfText accessibilityRole="header" variant="display">
-          Grievance
+          Contact
         </GyfText>
         <GyfText tone="muted">
-          Report a concern about GYF. Your words go into the operator review queue—not a demo inbox.
+          Questions, ideas or something that feels off—send it directly to the GYF team. You can
+          email support without creating an account; signing in lets you submit the same request in
+          the app.
         </GyfText>
       </View>
+
+      <Pressable
+        accessibilityLabel={`Email GYF at ${CONTACT_EMAIL}`}
+        accessibilityRole="link"
+        onPress={() => void Linking.openURL(CONTACT_MAILTO)}
+      >
+        <AtelierCard style={{ flexDirection: "row", gap: spacing.md, padding: spacing.md }}>
+          <View
+            style={{
+              alignItems: "center",
+              backgroundColor: palette.surfaceRaised,
+              borderRadius: radii.control,
+              height: 44,
+              justifyContent: "center",
+              width: 44,
+            }}
+          >
+            <GyfText variant="title">@</GyfText>
+          </View>
+          <View style={{ flex: 1, gap: spacing.xs, justifyContent: "center" }}>
+            <GyfText tone="faint" variant="label">
+              DIRECT EMAIL
+            </GyfText>
+            <GyfText variant="bodySmall">{CONTACT_EMAIL}</GyfText>
+          </View>
+        </AtelierCard>
+      </Pressable>
 
       {receipt ? (
         <AtelierCard style={{ gap: spacing.md }}>
@@ -108,16 +135,17 @@ export default function GrievanceRoute() {
             </GyfText>
           </View>
           <GyfText style={{ textAlign: "center" }} variant="title">
-            Grievance recorded
+            Message received
           </GyfText>
           <GyfText style={{ textAlign: "center" }} tone="muted" variant="bodySmall">
-            GYF stored your report for review. Keep this receipt when following up.
+            This state is shown only after GYF stored your message. Keep the receipt if you need to
+            follow up.
           </GyfText>
           <GyfText style={{ textAlign: "center" }} tone="faint" variant="mono">
             RECEIPT {receipt}
           </GyfText>
           <AtelierButton
-            label="Submit another grievance"
+            label="Send another message"
             onPress={() => {
               setDraft(EMPTY);
               setReceipt(null);
@@ -125,45 +153,27 @@ export default function GrievanceRoute() {
           />
         </AtelierCard>
       ) : (
-        <AtelierCard style={{ gap: spacing.lg }}>
-          <View style={{ gap: spacing.sm }}>
-            <GyfText variant="label">AREA OF CONCERN</GyfText>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
-              {GRIEVANCE_CATEGORIES.map((category) => {
-                const selected = draft.category === category;
-                return (
-                  <Pressable
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: selected }}
-                    key={category}
-                    onPress={() => update("category", category)}
-                    style={({ pressed }) => ({
-                      backgroundColor: selected ? palette.text : palette.surfaceRaised,
-                      borderColor: selected ? palette.text : palette.border,
-                      borderRadius: radii.capsule,
-                      borderWidth: 1,
-                      opacity: pressed ? 0.78 : 1,
-                      paddingHorizontal: spacing.md,
-                      paddingVertical: spacing.sm,
-                    })}
-                  >
-                    <GyfText
-                      style={selected ? { color: palette.textInverse } : undefined}
-                      variant="bodySmall"
-                    >
-                      {category}
-                    </GyfText>
-                  </Pressable>
-                );
-              })}
-            </View>
-            {errors.category ? (
+        <AtelierCard style={{ gap: spacing.md }}>
+          <View style={{ gap: spacing.xs }}>
+            <GyfText variant="label">YOUR NAME</GyfText>
+            <TextInput
+              accessibilityLabel="Your name"
+              autoCapitalize="words"
+              autoComplete="name"
+              maxLength={120}
+              onChangeText={(value) => update("name", value)}
+              placeholder="How should we address you?"
+              placeholderTextColor={palette.textFaint}
+              style={inputStyle}
+              value={draft.name}
+            />
+            {errors.name ? (
               <GyfText
                 accessibilityRole="alert"
                 style={{ color: palette.error }}
                 variant="bodySmall"
               >
-                {errors.category}
+                {errors.name}
               </GyfText>
             ) : null}
           </View>
@@ -171,7 +181,7 @@ export default function GrievanceRoute() {
           <View style={{ gap: spacing.xs }}>
             <GyfText variant="label">REPLY EMAIL</GyfText>
             <TextInput
-              accessibilityLabel="Grievance reply email"
+              accessibilityLabel="Reply email"
               autoCapitalize="none"
               autoComplete="email"
               inputMode="email"
@@ -195,16 +205,16 @@ export default function GrievanceRoute() {
           </View>
 
           <View style={{ gap: spacing.xs }}>
-            <GyfText variant="label">WHAT HAPPENED?</GyfText>
+            <GyfText variant="label">MESSAGE</GyfText>
             <TextInput
-              accessibilityLabel="Grievance description"
-              maxLength={4000}
+              accessibilityLabel="Message"
+              maxLength={3800}
               multiline
-              numberOfLines={7}
+              numberOfLines={6}
               onChangeText={(value) => update("message", value)}
-              placeholder="Describe the concern, when it happened, and what outcome would put it right."
+              placeholder="Tell us what happened or what you would love GYF to become."
               placeholderTextColor={palette.textFaint}
-              style={[inputStyle, { minHeight: 175, textAlignVertical: "top" }]}
+              style={[inputStyle, { minHeight: 150, textAlignVertical: "top" }]}
               value={draft.message}
             />
             <GyfText
@@ -212,7 +222,7 @@ export default function GrievanceRoute() {
               tone="faint"
               variant="mono"
             >
-              {draft.message.length} / 4000
+              {draft.message.length} / 3800
             </GyfText>
             {errors.message ? (
               <GyfText
@@ -225,32 +235,15 @@ export default function GrievanceRoute() {
             ) : null}
           </View>
 
-          <View
-            style={{
-              backgroundColor: palette.surfaceRaised,
-              borderRadius: radii.control,
-              gap: spacing.xs,
-              padding: spacing.md,
-            }}
-          >
-            <GyfText tone="faint" variant="label">
-              PRIVACY NOTE
-            </GyfText>
-            <GyfText tone="muted" variant="bodySmall">
-              Never include passwords, payment details, identity documents or private photos. GYF
-              does not need them to investigate a grievance.
-            </GyfText>
-          </View>
-
           {submitError ? (
             <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
               {submitError}
             </GyfText>
           ) : null}
           <AtelierButton
-            accessibilityLabel="Submit grievance to GYF"
+            accessibilityLabel="Send message to GYF support"
             disabled={sending}
-            label={sending ? "Submitting…" : "Submit grievance"}
+            label={sending ? "Sending…" : "Send message"}
             onPress={() => void submit()}
           />
         </AtelierCard>
