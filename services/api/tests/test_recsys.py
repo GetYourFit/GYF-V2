@@ -171,6 +171,64 @@ def test_unmapped_style_intent_grants_no_personalization_credit():
     assert c.personalization_strength == 0.0
 
 
+@pytest.mark.parametrize(
+    "style,aesthetic",
+    [
+        ("minimalist", "minimalist"),
+        ("streetwear", "streetwear"),
+        ("bohemian", "bohemian"),
+        ("preppy", "preppy"),
+        ("sporty", "athleisure"),
+        ("business_casual", "business formal"),
+        ("classic", "vintage"),
+        ("edgy", "streetwear"),
+        ("romantic", "bohemian"),
+        ("glam", "vintage"),
+    ],
+)
+def test_every_supported_style_reserves_matching_candidates_before_the_cap(style, aesthetic):
+    control_aesthetic = "streetwear" if aesthetic != "streetwear" else "preppy"
+    controls = [
+        _item(f"control-{index}", "shirt", "top", aesthetic=control_aesthetic)
+        for index in range(20)
+    ]
+    target = _item("target", "shirt", "top", aesthetic=aesthetic)
+    repo = InMemoryCandidateRepository([*controls, target])
+
+    baseline = repo.candidates_by_slot(frozenset({"top"}), None, None, 20)["top"]
+    styled = repo.candidates_by_slot(
+        frozenset({"top"}),
+        None,
+        None,
+        20,
+        preferred_aesthetics=conditioning._aesthetics(Profile(style_intent=[style]), "casual"),
+    )["top"]
+
+    assert target not in baseline
+    assert target in styled
+    assert len(styled) == 20
+
+
+def test_style_scarcity_keeps_the_available_candidate_slate_honest():
+    controls = [
+        _item(f"control-{index}", "shirt", "top", aesthetic="preppy")
+        for index in range(21)
+    ]
+    repo = InMemoryCandidateRepository(controls)
+
+    baseline = repo.candidates_by_slot(frozenset({"top"}), None, None, 20)["top"]
+    styled = repo.candidates_by_slot(
+        frozenset({"top"}),
+        None,
+        None,
+        20,
+        preferred_aesthetics=frozenset({"vintage"}),
+    )["top"]
+
+    assert styled == baseline
+    assert all(item.aesthetic != "vintage" for item in styled)
+
+
 def test_budget_max_becomes_price_ceiling():
     profile = Profile(budget_range=BudgetRange(min=0, max=80, currency="USD"))
     c = conditioning.resolve(profile, "casual", None)
@@ -1578,6 +1636,26 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
         ["streetwear"],  # preferred_aesthetics for CASE
         80,
     )
+    assert len(pool.calls) == 4
+    reserve_sql, reserve_params = pool.calls[3]
+    assert "CROSS JOIN LATERAL" in reserve_sql
+    assert reserve_params == (
+        list(conditioning._CATEGORIES_BY_SLOT["top"]),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        ["streetwear"],
+        ["streetwear"],
+        4,
+        4,
+        "[0.1,0.2]",
+        ["streetwear"],
+        ["streetwear"],
+        4,
+    )
 
     pool.calls.clear()
     repo.candidates_by_slot(frozenset({"top"}), None, None, 80, taste_vector=None)
@@ -1590,11 +1668,11 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     # category fairly, and hydrates embeddings only after the bounded ID slice.
     assert "CROSS JOIN LATERAL" in sql
     assert "jsonb_array_length(i.image_refs) > 0" in sql
-    assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in sql
-    assert "ORDER BY category_rank, category_order" in sql
+    assert "ORDER BY aesthetic_rank, (i.price IS NOT NULL) DESC, i.id" in sql
+    assert "ORDER BY aesthetic_rank, category_rank, category_order" in sql
     assert sql.index("LIMIT %s") < sql.rindex("e.embedding::text")
     filter_params = params[:7]
-    assert params[7:] == (80, 80, None, None, 80)
+    assert params[7:] == (None, None, 80, 80, None, None, 80)
     assert "affinity DESC" not in sql
     assert len(pool.calls) == 3
     assert "(e.item_id IS NOT NULL) DESC, i.created_at DESC" in pool.calls[2][0]
@@ -1668,7 +1746,7 @@ def test_candidate_pool_retries_taste_timeout_once_through_bounded_fallback(capl
         call for call in pool.calls if "CROSS JOIN LATERAL" in call[1]
     )
     assert "1 - (e.embedding <=> %s::vector)" in fallback_sql
-    assert fallback_params[-6:] == (80, 80, "[0.1,0.2]", None, None, 80)
+    assert fallback_params[-8:] == (None, None, 80, 80, "[0.1,0.2]", None, None, 80)
     assert result["top"][0].affinity == 0.75
     assert "fallback=true rows=1" in caplog.messages[-1]
 

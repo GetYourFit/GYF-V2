@@ -36,6 +36,7 @@ _ORDER_BY_RECENCY = _HAS_PERCEPTION + ", i.created_at DESC"
 # the client's 90-second transport bound. Applied transaction-locally on the
 # already-checked-out connection; no global database or pool setting changes.
 _QUERY_TIMEOUT_MS = 5_000
+_STYLE_RESERVE_PER_SLOT = 4
 
 # FastAPI constructs a candidate repository per request, while every instance
 # shares the process pool. Coordinate by pool identity so four requests cannot
@@ -249,14 +250,22 @@ LIMIT %s
 _CANDIDATES_COLD = (
     """
 WITH per_category AS MATERIALIZED (
-  SELECT selected.id, requested.category_order,
+  SELECT selected.id, requested.category_order, selected.aesthetic_rank,
          row_number() OVER (
            PARTITION BY requested.category_order
-           ORDER BY selected.priced DESC, selected.id
+           ORDER BY selected.aesthetic_rank, selected.priced DESC, selected.id
          ) AS category_rank
   FROM unnest(%s::text[]) WITH ORDINALITY AS requested(category, category_order)
   CROSS JOIN LATERAL (
-    SELECT i.id, (i.price IS NOT NULL) AS priced
+    SELECT i.id,
+           (i.price IS NOT NULL) AS priced,
+           CASE
+             WHEN %s::text[] IS NOT NULL
+                  AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' IS NOT NULL
+                  AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
+                  AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = ANY(%s::text[])
+             THEN 0 ELSE 1
+           END AS aesthetic_rank
     FROM items i
     WHERE i.available
       AND i.category = requested.category
@@ -271,13 +280,13 @@ WITH per_category AS MATERIALIZED (
     + f"AND i.title !~* '{_KIDS_RE}'\n"
     + """
       AND EXISTS (SELECT 1 FROM item_embeddings seen WHERE seen.item_id = i.id)
-    ORDER BY (i.price IS NOT NULL) DESC, i.id
+    ORDER BY aesthetic_rank, (i.price IS NOT NULL) DESC, i.id
     LIMIT %s
   ) AS selected
 ), picked AS MATERIALIZED (
   SELECT id
   FROM per_category
-  ORDER BY category_rank, category_order
+  ORDER BY aesthetic_rank, category_rank, category_order
   LIMIT %s
 )
 """
@@ -389,6 +398,8 @@ class PostgresCandidateRepository:
                 )
             else:
                 params = filter_params + (
+                    aesthetic_list,
+                    aesthetic_list,
                     limit_per_slot,
                     limit_per_slot,
                     aesthetic_list,
@@ -435,6 +446,25 @@ class PostgresCandidateRepository:
                             used_fallback = True
                             fallback = _CANDIDATES.format(affinity="NULL", order=_ORDER_BY_RECENCY)
                             rows = list(conn.execute(fallback, fallback_params))
+                        elif taste_vector and preferred_aesthetics:
+                            style_reserve = _CANDIDATES_COLD.format(affinity=_AFFINITY_EXPR)
+                            style_reserve_params = filter_params + (
+                                aesthetic_list,
+                                aesthetic_list,
+                                _STYLE_RESERVE_PER_SLOT,
+                                _STYLE_RESERVE_PER_SLOT,
+                                prefix[0],
+                                aesthetic_list,
+                                aesthetic_list,
+                                _STYLE_RESERVE_PER_SLOT,
+                            )
+                            style_rows = list(conn.execute(style_reserve, style_reserve_params))
+                            rows = _merge_style_reserve(
+                                rows,
+                                style_rows,
+                                preferred_aesthetics,
+                                limit_per_slot,
+                            )
                         query_ms = (time.perf_counter() - query_start) * 1000
                 except QueryCanceled:
                     if not taste_query_timed_out:
@@ -442,6 +472,8 @@ class PostgresCandidateRepository:
                     used_fallback = True
                     fallback = _CANDIDATES_COLD.format(affinity=_AFFINITY_EXPR)
                     fallback_params = filter_params + (
+                        aesthetic_list,
+                        aesthetic_list,
                         limit_per_slot,
                         limit_per_slot,
                         prefix[0],
@@ -519,6 +551,28 @@ def _certain(value: str | None, certain_flag: str | None) -> str | None:
     return value if certain_flag == "true" else None
 
 
+def _merge_style_reserve(
+    primary_rows: list[tuple],
+    reserve_rows: list[tuple],
+    preferred_aesthetics: frozenset[str],
+    limit: int,
+) -> list[tuple]:
+    reserved = [
+        row
+        for row in reserve_rows
+        if row[10] in preferred_aesthetics and row[16] == "true"
+    ]
+    picked: list[tuple] = []
+    seen: set[object] = set()
+    for row in (*reserved, *primary_rows):
+        if row[0] not in seen:
+            picked.append(row)
+            seen.add(row[0])
+        if len(picked) == limit:
+            break
+    return picked
+
+
 def _row_to_candidate(slot: str, row: tuple) -> Candidate:
     lch = tuple(float(x) for x in row[6]) if row[6] is not None else None
     return Candidate(
@@ -577,12 +631,12 @@ class InMemoryCandidateRepository:
                 continue
             if genders is not None and item.gender is not None and item.gender not in genders:
                 continue
-            bucket = out[item.slot]
-            if len(bucket) < limit_per_slot:
-                bucket.append(item)
-        if preferred_aesthetics:
-            for slot, bucket in out.items():
-                bucket.sort(key=lambda it: 0 if it.aesthetic in preferred_aesthetics else 1)
+            out[item.slot].append(item)
+        for slot, bucket in out.items():
+            if preferred_aesthetics:
+                matching = [item for item in bucket if item.aesthetic in preferred_aesthetics]
+                bucket[:] = matching + [item for item in bucket if item not in matching]
+            del bucket[limit_per_slot:]
         return out
 
     def candidates_by_ids(self, item_ids: list[str]) -> list[Candidate]:
