@@ -46,8 +46,18 @@ contract; do not copy volatile snapshots here.
 
 ## Binding owner decisions
 
-- Every user surface is free, including virtual try-on. Payment, paywalls and paid ranking are
-  cancelled.
+- The trusted outfit-decision core stays free: auth/profile/consent; manual onboarding; explained
+  complete outfits; save/skip/shop/correct/undo; Explore; basic wardrobe; account/trust/export/
+  deletion; and deterministic fallbacks. Transparent affiliate commerce is allowed throughout that
+  core, with disclosure and truthful attribution.
+- Paid entitlements may cover only named scarce-compute capabilities after their existing evidence
+  gates and a separate monetization-readiness gate. The first possible paid capability is VTON
+  render quotas after F9 promotes a safe lane; web billing is first, while provider choice and any
+  store-compliant native IAP remain evidence- and credential-dependent. No payment implementation
+  is authorised by this policy amendment.
+- Paid ranking, degraded recommendation quality for free users, pay-to-avoid privacy/security,
+  hidden affiliate prioritisation and dark patterns are forbidden. VTON quota/trial/refund/cost
+  terms must be transparent; quality is never a price lever.
 - Every non-conflicting requirement in the canonical vision and every `docs/feedbacks/*.md` file
   is required before hard public launch.
 - Complete those requirements sequentially through the launch plan's `HL-*` traceability matrix.
@@ -184,3 +194,10 @@ verification with mocks and call the gate complete.
 - Keep research claims cited and separate from production decisions.
 - Keep historical evidence until its protected F13 deletion group.
 - Update this guide only when repository-wide operating rules change.
+
+## Maintaining this file
+
+Keep this file for knowledge useful to almost every future agent session in this project.
+Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+Prefer rewriting or pruning existing entries over appending new ones.
+When updating this file, preserve this bar for all agents and keep entries concise.

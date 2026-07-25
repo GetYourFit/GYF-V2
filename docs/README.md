@@ -38,7 +38,7 @@ the subordinate launch-plan ledger but is not a separate roadmap.
 
 | Requirement | Product/evidence source | Execution owner and gate |
 | --- | --- | --- |
-| Free product; no paywall | Vision; owner amendment in active contract | F0 contract, all phases; billing remains absent |
+| Free trusted core; disclosed affiliate commerce; no paid ranking | Vision; 2026-07-26 captain amendment in active contract | Existing gates plus separate monetization readiness; no payment implementation/provider choice from policy alone |
 | Secure identity, recovery and sessions | Vision; doctrine D8 | F1c, F2, F10, F11 |
 | Consent, export, erasure and isolation | Vision; doctrine D8 | F2, F3, F8, F10–F11 |
 | Manual onboarding remains truthful | Vision; feedback v2/v4/v5 | F1b, Expo onboarding parity |
@@ -50,7 +50,7 @@ the subordinate launch-plan ledger but is not a separate roadmap.
 | Saved looks and collections | Vision | Expo parity; merge/delete duplicate surface only at F13 |
 | Social creation, following, recreation, sharing/download and reactions | Vision; feedback v2/v4–v6 | Sequential hard-launch slice after the retained-core gate |
 | UGC/generative safety and responsive moderation | Store policies; launch/refactor security floor | EXPO-09/10, F10–F11 report/block/triage/disable evidence |
-| Free virtual try-on with owned-model independence | [`plans/free-vton-moat.md`](./plans/free-vton-moat.md) | F8 FASHN + owned challenger, F9 promotion, cost/privacy kill switches |
+| VTON preview/trial plus separately gated paid render quotas with owned-model independence | [`plans/free-vton-moat.md`](./plans/free-vton-moat.md) | F8 FASHN + owned challenger, F9 promotion, monetization readiness, cost/privacy/refund kill switches |
 | Consented learning moat | [`plans/ml-data-flywheel.md`](./plans/ml-data-flywheel.md) | F3, F5–F7, F12 |
 | Premium, curved, responsive, light/dark, animated Expo UI | Feedback v2–v6; launch/refactor plan | Expo vertical slices, visual/a11y/device proof, F11 |
 | Production CI/CD, preview and rollback | Deploy runbooks; doctrine | Every slice, F10, F11 |
@@ -64,6 +64,8 @@ the subordinate launch-plan ledger but is not a separate roadmap.
   current automated evidence and the outstanding physical Android hold.
 - Recommendation integrated proof: [`plans/recommendation-integrated-proof-2026-07-22.md`](./plans/recommendation-integrated-proof-2026-07-22.md) —
   local served-ID, consent, correction-join and deterministic-fallback proof; no launch promotion.
+- Footwear compatibility taxonomy: [`footwear-compatibility-system.md`](./footwear-compatibility-system.md) —
+  supporting outfit-composition reference; it does not change the active contract or evaluation gate.
 - Research: [`research/deep-research-report.md`](./research/deep-research-report.md),
   [`research/encoder-eval-alignment-2026-07-13.md`](./research/encoder-eval-alignment-2026-07-13.md),
   [`research/signup-first-outfit-study.md`](./research/signup-first-outfit-study.md) with

@@ -45,7 +45,8 @@ Almost everyone lives the same quiet daily friction:
 
 A personal stylist — someone who knows what flatters you, what coordinates, and what's
 worth buying — has always been a luxury for the few. **GYF makes that intelligence
-universal: free, instant, and personal to everyone.**
+universal through a free, instant, personal trusted core; scarce visualization/compute add-ons may
+be paid only transparently, without weakening that core.**
 
 The market sells *items*. GYF delivers *outfits*, *confidence*, and *taste*.
 
@@ -168,10 +169,10 @@ around.
 - The user selects a top, a bottom, and apparel/footwear and sees **all three together**
   on themselves
 - The user provides a photo as input; the output renders the selected articles on their
-  own body
-- Must be **photo-realistic** — giving a genuinely accurate idea of what fit and which
-  garments actually look good on the user
-- Maturing toward true, high-fidelity on-body preview
+  own body, only after separate photo/VTON-processing consent
+- It is an honest visualization, never fit or size truth; it stays closed until F9 evidence
+  promotes a lane, with free previews/trial credits and transparent paid render quotas thereafter
+- Maturing toward high-fidelity on-body preview within privacy, quality, cost and refund gates
 
 ### Trust & Transparency
 - Honest, user- and operator-facing reporting of what's live, what's experimental, and
@@ -234,8 +235,18 @@ trust. Sophistication and transparency advance *together*.
   all the data it collects is distilled, compiled, and concentrated into a separate model
   that GYF can sell as a **B2B service** — a second, defensible revenue line on top of the
   consumer app.
-- **Affiliate revenue.** GYF earns through affiliate links on the articles it surfaces and
-  the purchases it drives (see *Discovery & Commerce*).
+- **Affiliate revenue.** GYF earns through clearly disclosed affiliate links on the articles it
+  surfaces and the purchases it drives (see *Discovery & Commerce*); the stylist progressively
+  hands a relevant explained outfit to truthful purchasable products, then measures attributed
+  conversion and reversals rather than optimising hidden commission rank.
+- **Subscriptions for scarce compute.** The trusted outfit-decision core remains free. After F9
+  safely promotes a VTON lane and a separate payment/entitlement gate passes, subscriptions may
+  sell transparent render quotas: India hypotheses are GST-inclusive ₹199/month Plus and
+  ₹499/month Pro, tested before commitment. Three no-card, one-time VTON trial credits unlock
+  after saving an explained outfit, expire in 30 days, are non-transferable and consume only on a
+  successful usable render. Web billing comes first; native IAP follows only where store rules
+  require it. Subscriptions are a sustainable-profit engine only when they earn contribution margin,
+  not through dark patterns, paid ranking or lower free-user quality.
 - **A real moat.** GYF must have unique, differentiating points and must **not be
   copyable** by anyone — the compounding learning system, proprietary taste data, and
   distilled B2B model are central to that defensibility.
@@ -254,9 +265,11 @@ free/open sources first and proprietary data generated as a by-product of usage.
 - **Catalog via retailer/affiliate feeds.** Pull product imagery + metadata from affiliate
   networks and retailer product feeds (the same partners that monetize purchases) — free,
   current, and continuously refreshed.
-- **The real moat is first-party behavioral data.** Every save, skip, cart, react, share,
-  follow, and try-on is captured cleanly and becomes proprietary training signal no
-  competitor has. This is the compounding asset and the source of the B2B model.
+- **The real moat is consented first-party behavioral data.** With purpose-specific consent,
+  saves, skips, carts, shop actions, corrections, reactions, shares, follows and try-on outcomes
+  become proprietary training signal. Opting out stops personal behavioural learning and
+  training/export use; only minimized necessary security, reliability, billing and aggregate
+  operational measurement may continue, and raw photos are never learning data by default.
 - **Real data only — no synthetic (product direction, 2026-06-20).** GYF trains on *real*
   data we are given/earn: **consented user-uploaded photos** (body type & skin tone — real,
   diverse bodies/tones give fairness from reality, not simulation), the **brand/aggregator

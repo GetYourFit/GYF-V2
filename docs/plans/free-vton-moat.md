@@ -1,11 +1,12 @@
-# Free-Forever, GYF-Trained Virtual Try-On — the Moat Plan
+# Cost-Controlled, GYF-Trained Virtual Try-On — the Moat Plan
 
 > **Status: ACTIVE, subordinate to
-> [`active-execution-contract.md`](./active-execution-contract.md)** (owner amendment
-> 2026-07-14: try-on is free). This is the F8/F9 build detail; the contract's order and gates
-> win on any conflict. Work here starts only when the contract reaches F8.
+> [`active-execution-contract.md`](./active-execution-contract.md)**. This is the F8/F9 build
+> detail; the contract's order and gates win on any conflict. Free previews/trials and transparent
+> paid render quotas are possible only under the 2026-07-26 captain amendment; work starts only
+> when the contract reaches F8 and payment implementation waits for monetization readiness.
 
-> **Question answered:** how does GYF get virtual try-on that is (1) **$0 forever**,
+> **Question answered:** how does GYF get virtual try-on that is (1) **cost-controlled**,
 > (2) **commercially clean**, and (3) **a real moat** because it trains on GYF's own
 > data? This doc is the researched answer + the phased build. Written 2026-07-10.
 > Sources cited inline; verified against primary repos, not marketing badges.
@@ -164,8 +165,20 @@ monthly projection within the contract ceiling. Roll out 1%→5%→25%; stop on 
 >2% system errors or budget breach.
 
 **Phase 6 — Behavioural flywheel (the moat compounds).**
-Log try-on keep/share/convert → periodic preference fine-tune → the model improves on
-GYF's data forever, free.
+With separate explicit VTON-outcome-learning consent, log non-photo try-on keep/share/convert →
+periodic preference fine-tune → the model improves on GYF's consented data. Opt-out excludes
+personal learning/training/export use; raw photos are never learning data by default.
+
+### Entitlement boundary (after F9, separate gate)
+
+The first paid item may be a successful usable VTON render, never better styling or rendering
+quality. Web-first ₹199/month Plus and ₹499/month Pro are GST-inclusive India hypotheses, not a
+commitment. Three no-card trial credits follow an explained-outfit save; credits are non-transferable,
+expire in 30 days and are reserved then consumed only on usable success. Failed, unsafe, abstained
+and system-error renders, plus pre-claim cancellation, restore a credit. Before paid opening, prove
+an entitlement ledger, refund/support path, provider/legal strategy, abuse controls, daily/monthly
+spend kill switches, a separate working-capital cap and cost/success ≤₹5 hypothesis. Mid-render
+cancellation never promises recovery of already-incurred provider cost.
 
 ---
 
@@ -194,6 +207,6 @@ GYF's data forever, free.
 4. Extend the CI license/provenance gate to every preprocessing artifact, then promote only a
    statistically superior, rights-clean owned candidate.
 
-The moat isn't the model — it's GYF's paired catalog + conversion data. Leffa's MIT
-code is just the legal key that lets GYF turn that data into an owned, free, compounding
+The moat isn't the model — it's GYF's paired catalog + consented conversion data. Leffa's MIT
+code is just the legal key that lets GYF turn that data into an owned, cost-controlled, compounding
 asset.
