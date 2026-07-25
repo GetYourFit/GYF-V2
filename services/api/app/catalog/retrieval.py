@@ -23,6 +23,7 @@ from uuid import UUID
 from psycopg.errors import QueryCanceled
 
 from ..affiliate import AffiliateLinker, NullAffiliateLinker, catalog_subid
+from ..config import settings
 from ..media import image_url_from_refs
 from ..metrics import stage_timer
 
@@ -379,6 +380,7 @@ class PostgresVectorSearchRepository:
             depth=k + offset,
             iterative_scan=bool(region or gender_list or categories),
             surface="search",
+            statement_timeout_ms=settings.catalog_search_statement_timeout_ms,
         )
 
     def search_by_vector(
@@ -434,6 +436,7 @@ class PostgresVectorSearchRepository:
             depth=depth,
             iterative_scan=bool(region or max_price is not None or genders or categories),
             surface="search",
+            statement_timeout_ms=settings.catalog_search_statement_timeout_ms,
         )
 
     def catalog_facets(self, region: str | None) -> CatalogFacets:
@@ -454,6 +457,12 @@ class PostgresVectorSearchRepository:
         {where}
         """
         with self._pool.connection() as conn:  # type: ignore[attr-defined]
+            # SET LOCAL rolls back with the connection transaction when PostgreSQL
+            # cancels the aggregate; the exception remains visible to the route.
+            conn.execute(
+                "SELECT set_config('statement_timeout', %s, true)",
+                (f"{settings.catalog_facets_statement_timeout_ms}ms",),
+            )
             row = conn.execute(sql, tuple(params)).fetchone()
         return CatalogFacets(
             total=int(row[0]),
@@ -625,7 +634,12 @@ class PostgresVectorSearchRepository:
         {order}
         LIMIT %s OFFSET %s
         """
-        return self._run(sql, tuple(params), surface="search")
+        return self._run(
+            sql,
+            tuple(params),
+            surface="search",
+            statement_timeout_ms=settings.catalog_search_statement_timeout_ms,
+        )
 
     def _run(
         self,
@@ -636,11 +650,19 @@ class PostgresVectorSearchRepository:
         mmr_k: int | None = None,
         iterative_scan: bool = False,
         surface: str,
+        statement_timeout_ms: int | None = None,
     ) -> list[SearchResult]:
         with ExitStack() as stack:
             with stage_timer(surface, "pool_acquire"):
                 conn = stack.enter_context(self._pool.connection())  # type: ignore[attr-defined]
             with stage_timer(surface, "retrieval_sql") as timer:
+                if statement_timeout_ms is not None:
+                    # SET LOCAL is transaction-scoped and therefore cannot leak
+                    # into another request using the shared pool connection.
+                    conn.execute(
+                        "SELECT set_config('statement_timeout', %s, true)",
+                        (f"{statement_timeout_ms}ms",),
+                    )
                 if depth > 40 or iterative_scan:
                     # HNSW only surfaces ef_search candidates per scan (default 40), so a
                     # LIMIT/OFFSET page deeper than that silently truncates — infinite

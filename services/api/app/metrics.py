@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import time
+from contextvars import ContextVar
 
 from fastapi import FastAPI, Request, Response
 
@@ -51,6 +52,26 @@ _STAGE_OUTCOMES = {
     "directory_lookup": frozenset({"success", "empty", "bypass", "error"}),
 }
 _SURFACES = frozenset({"browse", "search"})
+_CATALOG_CONTEXT: ContextVar[dict[str, dict[str, float]] | None] = ContextVar(
+    "gyf_catalog_context", default=None
+)
+
+
+def begin_catalog_request() -> object:
+    """Start request-local catalog timing without retaining request data."""
+    return _CATALOG_CONTEXT.set({})
+
+
+def catalog_timing_snapshot() -> dict[str, dict[str, float]]:
+    """Return fixed-label stage totals/outcomes for the current request."""
+    value = _CATALOG_CONTEXT.get()
+    if not value:
+        return {}
+    return {stage: dict(values) for stage, values in value.items()}
+
+
+def reset_catalog_request(token: object) -> None:
+    _CATALOG_CONTEXT.reset(token)  # type: ignore[arg-type]
 
 
 class _StageTimer:
@@ -73,12 +94,12 @@ class _StageTimer:
             self.set_outcome("error")
         elif self.outcome not in _STAGE_OUTCOMES[self.stage]:
             self.set_outcome("error")
-        observe_stage_duration(
-            self.surface,
-            self.stage,
-            self.outcome,
-            time.perf_counter() - self.start,
-        )
+        duration = time.perf_counter() - self.start
+        observe_stage_duration(self.surface, self.stage, self.outcome, duration)
+        context = _CATALOG_CONTEXT.get()
+        if context is not None:
+            stage = context.setdefault(self.stage, {})
+            stage[self.outcome] = stage.get(self.outcome, 0.0) + duration * 1000
 
 
 def _validate_stage_labels(surface: str, stage: str, outcome: str) -> None:

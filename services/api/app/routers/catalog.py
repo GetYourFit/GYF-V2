@@ -249,6 +249,9 @@ def search_items(
     """
     response.headers["Cache-Control"] = "public, max-age=30"
     vec = _embed_or_none(embedder, q)
+    # A response header makes encoder degradation visible to clients and traces
+    # without changing the JSON contract or logging the raw query.
+    response.headers["X-GYF-Search-Mode"] = "lexical" if vec is None else "semantic"
     if vec is None:
         hits = repo.keyword_search(
             q,
