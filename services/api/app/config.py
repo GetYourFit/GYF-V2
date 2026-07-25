@@ -75,6 +75,10 @@ class Settings(BaseSettings):
     # query-plan, and variety gates pass; flipping this env var is also the
     # immediate rollback switch if production measurements regress.
     browse_indexed_ring_enabled: bool = False
+    # Bounded catalogue SQL budgets. A cancelled statement is allowed to surface as
+    # an error; callers must not receive a fabricated empty page.
+    catalog_search_statement_timeout_ms: int = Field(2_500, ge=250, le=10_000)
+    catalog_facets_statement_timeout_ms: int = Field(1_500, ge=250, le=10_000)
 
     # --- Photo onboarding (P1-B Cycles 2 & 3) ---
     # Max accepted upload size for POST /profile/photo (bytes); larger is rejected

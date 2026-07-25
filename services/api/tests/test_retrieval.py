@@ -457,7 +457,7 @@ def test_price_sort_orders_by_price_not_distance():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     repo.search_by_vector([0.1, 0.2], k=24, region=None, sort="price_asc")
-    sql, params = pool.calls[0]
+    sql, params = pool.calls[-1]
     assert "ORDER BY i.price ASC NULLS LAST, i.id ASC" in sql  # deterministic tiebreaker
     assert "embedding" not in sql.split("ORDER BY")[1]  # ordered by price, not distance
     # score expression keeps the query vector; no second vector bind for ordering.
@@ -547,17 +547,76 @@ class _FacetsPool:
         return _Conn()
 
 
+def test_search_statement_timeout_is_scoped_and_database_cancellation_propagates():
+    class _TimeoutPool:
+        def __init__(self):
+            self.calls = []
+
+        def connection(self):
+            pool = self
+
+            class _Conn:
+                def execute(self, sql, params=None):
+                    pool.calls.append((sql, params))
+                    if "statement_timeout" in sql:
+                        return iter([])
+                    raise QueryCanceled("statement timeout")
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    return False
+
+            return _Conn()
+
+    pool = _TimeoutPool()
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    with pytest.raises(QueryCanceled):
+        repo.search_by_vector([0.1, 0.2], k=1, region=None)
+    assert pool.calls[0][1] == ("2500ms",)
+    assert len(pool.calls) == 2
+
+
 def test_catalog_facets_reports_price_coverage_and_range():
     pool = _FacetsPool((1200, 340, 9.99, 499.0))
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     facets = repo.catalog_facets(region=None)
     assert facets == CatalogFacets(total=1200, priced=340, price_min=9.99, price_max=499.0)
-    sql, params = pool.calls[0]
+    sql, params = pool.calls[-1]
     assert "COUNT(*)" in sql and "COUNT(i.price)" in sql
     # Must join embeddings so facets describe only the searchable set (an item
     # with a price but no embedding can never appear in results).
     assert "JOIN items i ON i.id = e.item_id" in sql
     assert params == ()  # no region bind
+
+
+def test_catalog_facets_statement_timeout_is_scoped_and_database_cancellation_propagates():
+    class _TimeoutPool(_FacetsPool):
+        def connection(self):
+            pool = self
+
+            class _Conn:
+                def execute(self, sql, params=None):
+                    pool.calls.append((sql, params))
+                    if "statement_timeout" in sql:
+                        return iter([])
+                    raise QueryCanceled("statement timeout")
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *exc):
+                    return False
+
+            return _Conn()
+
+    pool = _TimeoutPool(None)
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    with pytest.raises(QueryCanceled):
+        repo.catalog_facets(region="IN")
+    assert pool.calls[0][1] == ("1500ms",)
+    assert len(pool.calls) == 2
 
 
 def test_catalog_facets_priced_zero_yields_null_range_and_region_bind():
@@ -566,7 +625,7 @@ def test_catalog_facets_priced_zero_yields_null_range_and_region_bind():
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     facets = repo.catalog_facets(region="IN")
     assert facets == CatalogFacets(total=900, priced=0, price_min=None, price_max=None)
-    sql, params = pool.calls[0]
+    sql, params = pool.calls[-1]
     assert "i.region_tags @> ARRAY[%s]::text[]" in sql  # region filter applied
     assert params == ("IN",)
 
@@ -583,7 +642,8 @@ def test_postgres_repo_hydrates_and_attributes_results_in_one_query():
 
     out = repo.search_by_vector([0.1, 0.2], k=1, region=None)
 
-    assert len(pool.calls) == 1  # commerce fields arrive with the single result query
+    assert len(pool.calls) == 2  # timeout setup + one commerce-bearing result query
+    assert "statement_timeout" in pool.calls[0][0]
     assert out == [
         SearchResult(
             "hit",
@@ -684,12 +744,36 @@ def test_similar_endpoint():
         app.dependency_overrides.clear()
 
 
+def test_catalog_request_log_contains_safe_timing_and_no_query(caplog):
+    app.dependency_overrides[get_search_repo] = lambda: StubRepo()
+    app.dependency_overrides[get_text_embedder] = lambda: StubEmbedder()
+    try:
+        with caplog.at_level("INFO", logger="gyf.access"):
+            resp = TestClient(app).get(
+                "/items/search?q=secret+personal+query",
+                headers={"X-Request-ID": "timing-safe-1"},
+            )
+        assert resp.status_code == 200
+        record = next(r for r in caplog.records if r.name == "gyf.access")
+        assert record.request_id == "timing-safe-1"
+        assert record.catalog_total_ms >= 0
+        assert "remote_encode" in record.catalog_stages
+        assert "secret" not in record.getMessage()
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_search_endpoint_requires_query_and_returns_results():
     client = _client()
     try:
         assert client.get("/items/search").status_code == 422  # q required
-        resp = client.get("/items/search?q=red+floral+dress&region=IN")
+        resp = client.get(
+            "/items/search?q=red+floral+dress&region=IN",
+            headers={"X-Request-ID": "catalog-trace-1"},
+        )
         assert resp.status_code == 200
+        assert resp.headers["X-Request-ID"] == "catalog-trace-1"
+        assert resp.headers["X-GYF-Search-Mode"] == "semantic"
         assert resp.json()["results"][0]["item_id"] == "hit"
     finally:
         app.dependency_overrides.clear()
@@ -702,14 +786,39 @@ def test_facets_endpoint_returns_coverage():
 
     app.dependency_overrides[get_search_repo] = lambda: FacetsRepo()
     try:
-        resp = TestClient(app).get("/items/facets")
+        resp = TestClient(app).get("/items/facets", headers={"X-Request-ID": "facet-trace-1"})
         assert resp.status_code == 200
+        assert resp.headers["X-Request-ID"] == "facet-trace-1"
         assert resp.json() == {
             "total": 900,
             "priced": 0,
             "price_min": None,
             "price_max": None,
         }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_facets_request_log_contains_fixed_stage_timings(caplog):
+    class FacetsRepo:
+        def catalog_facets(self, region):
+            from app.metrics import observe_stage_duration, stage_timer
+
+            with stage_timer("search", "pool_acquire"):
+                pass
+            observe_stage_duration("search", "retrieval_sql", "success", 0.125)
+            return CatalogFacets(total=900, priced=0, price_min=None, price_max=None)
+
+    app.dependency_overrides[get_search_repo] = lambda: FacetsRepo()
+    try:
+        with caplog.at_level("INFO", logger="gyf.access"):
+            resp = TestClient(app).get("/items/facets", headers={"X-Request-ID": "facet-timing-1"})
+        assert resp.status_code == 200
+        record = next(r for r in caplog.records if r.name == "gyf.access")
+        assert record.request_id == "facet-timing-1"
+        assert record.catalog_total_ms >= 0
+        assert "pool_acquire" in record.catalog_stages
+        assert record.catalog_stages["retrieval_sql"]["success"] == 125.0
     finally:
         app.dependency_overrides.clear()
 
@@ -766,6 +875,7 @@ def test_search_endpoint_keyword_fallback_when_embedder_unavailable():
     try:
         resp = TestClient(app).get("/items/search?q=x")
         assert resp.status_code == 200
+        assert resp.headers["X-GYF-Search-Mode"] == "lexical"
         assert resp.json()["results"][0]["item_id"] == "kw"
     finally:
         app.dependency_overrides.clear()
@@ -776,7 +886,10 @@ def test_ann_beam_scales_with_page_depth():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
     repo.search_by_vector([0.1, 0.2], k=24, region=None, offset=96)
-    beam_sql, beam_params = pool.calls[0]
+    beam_sql, beam_params = pool.calls[-1]
+    # timeout setup, HNSW session settings, then the result query
+    if "hnsw.ef_search" not in beam_sql:
+        beam_sql, beam_params = pool.calls[-2]
     assert "hnsw.ef_search" in beam_sql
     assert beam_params == ("120",)
     # selective WHERE filters starve a bounded beam — iterative scan must be on

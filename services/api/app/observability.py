@@ -23,7 +23,8 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.middleware.base import BaseHTTPMiddleware
+
+from .metrics import begin_catalog_request, catalog_timing_snapshot, reset_catalog_request
 
 logger = logging.getLogger("gyf.access")
 _error_logger = logging.getLogger("gyf.error")
@@ -47,32 +48,61 @@ def _request_id(request: Request) -> str:
     return getattr(request.state, "request_id", "-")
 
 
-class RequestContextMiddleware(BaseHTTPMiddleware):
-    """Assign a request id, time the request, and emit one structured access line."""
+class RequestContextMiddleware:
+    """Assign a request id, time the request, and emit one structured access line.
 
-    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
-        request_id = _sanitize_request_id(request.headers.get(REQUEST_ID_HEADER))
-        request.state.request_id = request_id
+    This is pure ASGI rather than ``BaseHTTPMiddleware`` so request-local catalog
+    stage timings survive into the access log; BaseHTTPMiddleware runs the app in a
+    child task whose ContextVar writes do not propagate back to the middleware.
+    """
 
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", ()))
+        inbound = headers.get(REQUEST_ID_HEADER.lower().encode("ascii"))
+        request_id = _sanitize_request_id(inbound.decode("latin-1") if inbound else None)
+        scope.setdefault("state", {})["request_id"] = request_id
+        path = scope.get("path", "-")
+        timing_token = begin_catalog_request() if path.startswith("/items/") else None
         start = time.perf_counter()
         status_code = 500
+
+        async def send_with_context(message):
+            nonlocal status_code
+            if message.get("type") == "http.response.start":
+                status_code = int(message.get("status", 500))
+                response_headers = list(message.get("headers", []))
+                response_headers.append(
+                    (REQUEST_ID_HEADER.lower().encode("ascii"), request_id.encode("ascii"))
+                )
+                message = {**message, "headers": response_headers}
+            await send(message)
+
         try:
-            response = await call_next(request)
-            status_code = response.status_code
-            response.headers[REQUEST_ID_HEADER] = request_id
-            return response
+            await self.app(scope, receive, send_with_context)
         finally:
             duration_ms = round((time.perf_counter() - start) * 1000, 2)
-            logger.info(
-                "request",
-                extra={
-                    "request_id": request_id,
-                    "method": request.method,
-                    "path": request.url.path,
-                    "status": status_code,
-                    "duration_ms": duration_ms,
-                },
-            )
+            extra = {
+                "request_id": request_id,
+                "method": scope.get("method", "-"),
+                "path": path,
+                "status": status_code,
+                "duration_ms": duration_ms,
+            }
+            if timing_token is not None:
+                # Stage labels and outcomes are fixed; no query text, tokens, or item IDs
+                # enter the access log. Total includes framework/serialization work.
+                extra["catalog_stages"] = catalog_timing_snapshot()
+                extra["catalog_total_ms"] = duration_ms
+            logger.info("request", extra=extra)
+            if timing_token is not None:
+                reset_catalog_request(timing_token)
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
