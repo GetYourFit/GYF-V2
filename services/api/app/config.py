@@ -79,6 +79,9 @@ class Settings(BaseSettings):
     # an error; callers must not receive a fabricated empty page.
     catalog_search_statement_timeout_ms: int = Field(2_500, ge=250, le=10_000)
     catalog_facets_statement_timeout_ms: int = Field(1_500, ge=250, le=10_000)
+    # Snapshot age is a truth signal, not a serving permission: a refresh failure
+    # keeps the last known-good snapshot and marks it stale rather than inventing zeroes.
+    catalogue_snapshot_fresh_seconds: int = Field(86_400, ge=60, le=604_800)
 
     # --- Photo onboarding (P1-B Cycles 2 & 3) ---
     # Max accepted upload size for POST /profile/photo (bytes); larger is rejected

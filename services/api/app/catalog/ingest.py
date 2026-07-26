@@ -19,7 +19,9 @@ import dataclasses
 import hashlib
 import json
 import logging
+import re
 from collections import Counter
+from urllib.parse import urlparse
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Protocol
@@ -59,6 +61,58 @@ def _dedupe_key(provider: str, raw: RawFeedItem, image_hash: str | None) -> str:
     else:
         basis = f"{provider}:ti:{raw.title.strip().lower()}:{image_hash or ''}"
     return hashlib.sha1(basis.encode("utf-8")).hexdigest()
+
+
+_KIDS_AUDIENCE_RE = re.compile(
+    r"\b(boys?|girls?|kids?|toddlers?|infants?|bab(?:y|ies)|child(?:ren)?)\b", re.I
+)
+_MAX_IMAGE_BYTES = 20 * 1024 * 1024
+
+
+def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
+    """Validate feed-provided image facts without doing a remote request.
+
+    A worker/feed verifier may attach status, content type and byte size. Missing
+    verifier facts do not trigger network work here; a syntactically safe HTTPS
+    URL is usable until that asynchronous boundary reports otherwise.
+    """
+    url = raw.image_urls[0].strip() if raw.image_urls else ""
+    parsed = urlparse(url)
+    reason: str | None = None
+    if parsed.scheme != "https" or not parsed.netloc:
+        reason = "invalid_url"
+    elif raw.image_http_status is not None and not 200 <= raw.image_http_status < 300:
+        reason = "http_status"
+    elif raw.image_content_type is not None and (
+        not raw.image_content_type.lower().split(";", 1)[0].strip().startswith("image/")
+        or raw.image_content_type.lower().startswith("image/svg")
+    ):
+        reason = "content_type"
+    elif raw.image_size_bytes is not None and not 0 < raw.image_size_bytes <= _MAX_IMAGE_BYTES:
+        reason = "size"
+    if reason:
+        return [], {"status": "image_unavailable", "quarantine_reason": reason}
+    if not url:
+        return [], {"status": "image_unavailable", "quarantine_reason": "missing"}
+    return [image.strip() for image in raw.image_urls if image.strip()], {"status": "usable"}
+
+
+def _audience_truth(raw: RawFeedItem) -> tuple[str, dict[str, object] | None]:
+    detected_kids = bool(_KIDS_AUDIENCE_RE.search(f"{raw.title} {raw.category}"))
+    supplied = (raw.audience or "").strip().lower() or None
+    if supplied not in {None, "adult", "kids"}:
+        return "adult", {"reason": "invalid_audience", "supplied": supplied}
+    detected = "kids" if detected_kids else "adult"
+    # A feed's adult gender facet on a kids title is the historical leakage mode.
+    if (supplied and supplied != detected) or (
+        detected_kids and raw.gender in {"men", "women", "unisex"}
+    ):
+        return detected, {
+            "reason": "adult_kids_conflict",
+            "supplied": supplied or raw.gender,
+            "detected": detected,
+        }
+    return supplied or detected, None
 
 
 def _image_hash(image_urls: list[str]) -> str | None:
@@ -101,6 +155,10 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
     final_category = title_category if title_category.name != "unknown" else feed_category
 
     region_tags = sorted({*raw.region_hints, *final_category.region_tags})
+    image_refs, image = _image_truth(raw)
+    audience, audience_quarantine = _audience_truth(raw)
+    # Keep the source identity stable even when an invalid image is quarantined;
+    # otherwise a repaired URL could collide with a distinct no-image feed row.
     image_hash = _image_hash(raw.image_urls)
     # Merchant text is more trustworthy than the feed's facet tag: a title that
     # says "Women's" wins over a feed-supplied "unisex" (observed in the wild).
@@ -122,8 +180,11 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
     taxonomy = {
         "slot": final_category.slot,
         "raw_category": raw.category,
+        "audience": audience,
         **({"gender": gender} if gender else {}),
     }
+    if audience_quarantine is not None:
+        taxonomy["quarantine"] = audience_quarantine
     if category_conflict is not None:
         taxonomy["category_conflict"] = category_conflict
 
@@ -132,13 +193,14 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
         category=final_category.name,
         attributes={
             "taxonomy": taxonomy,
+            "image": image,
             **({"commerce": commerce} if commerce else {}),
         },
         price=raw.price,
         currency=raw.currency,
         region_tags=region_tags,
         affiliate_url=raw.affiliate_url,
-        image_refs=raw.image_urls,
+        image_refs=image_refs,
         source_provider=provider,
         source_license=license,
         image_hash=image_hash,
@@ -159,6 +221,8 @@ class IngestResult:
     # Items where feed category and title classified to different known categories.
     # These are quarantined from recommendations until resolved.
     category_conflicts: int = 0
+    audience_conflicts: int = 0
+    image_quarantines: int = 0
 
 
 class ItemRepository(Protocol):
@@ -212,9 +276,19 @@ def ingest(source: FeedSource, repo: ItemRepository) -> IngestResult:
         conflict = item.attributes.get("taxonomy", {}).get("category_conflict")
         if conflict is not None:
             result.category_conflicts += 1
+        quarantine = item.attributes.get("taxonomy", {}).get("quarantine")
+        if quarantine is not None:
+            result.audience_conflicts += 1
+        if item.attributes.get("image", {}).get("status") != "usable":
+            result.image_quarantines += 1
         if repo.upsert(item):
             result.written += 1
     result.delisted = repo.reconcile_removals(source.provider, run_start, result.seen)
+    # Snapshot refresh is deliberately after a complete feed/reconciliation. If
+    # it fails, its transaction rolls back and the previous durable snapshot stays.
+    refresh = getattr(repo, "refresh_catalogue_snapshot", None)
+    if callable(refresh):
+        refresh()
     return result
 
 
@@ -291,6 +365,11 @@ class PostgresItemRepository:
                 return 0
             cur = conn.execute(_DELIST_STALE, (provider, run_start))
             return cur.rowcount or 0
+
+    def refresh_catalogue_snapshot(self) -> None:
+        from .snapshot import PostgresCatalogueSnapshotRepository
+
+        PostgresCatalogueSnapshotRepository(self._pool).refresh()
 
     def _upsert_once(self, item: NormalizedItem) -> bool:
         with self._pool.connection() as conn:  # type: ignore[attr-defined]

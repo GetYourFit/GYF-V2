@@ -49,6 +49,12 @@ class RawFeedItem(BaseModel):
     # Catalog gender facet (men / women / unisex) when the feed knows it;
     # ``None`` means unfaceted — surfaced to everyone.
     gender: str | None = None
+    # Optional feed-side verification facts. Ingestion validates supplied facts;
+    # it never synchronously fetches every remote image on a catalogue request.
+    audience: str | None = None
+    image_http_status: int | None = None
+    image_content_type: str | None = None
+    image_size_bytes: int | None = None
 
 
 class FeedSource(Protocol):

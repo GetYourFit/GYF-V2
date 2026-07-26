@@ -32,7 +32,9 @@ def image_url_from_refs(refs: Sequence[str] | None) -> str | None:
     # Remote catalogs (Shopify/affiliate feeds) store absolute CDN URLs — those
     # are already fetchable and must pass through untouched; only local file
     # refs get rebased onto the media store.
-    if first.startswith(("http://", "https://")):
+    if first.startswith("https://"):
         return first
+    if first.startswith("http://"):
+        return None
     base = settings.media_base_url.rstrip("/") or _MEDIA_MOUNT
     return f"{base}/{os.path.basename(first)}"

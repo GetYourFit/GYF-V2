@@ -1554,7 +1554,10 @@ frontend migration ticket may hide a backend latency regression.
 - **Write set:** `services/api/app/catalog/ingest.py`, `sources.py`, `directory.py`, migrations
   `0017` and related indexes, catalog tests.
 - **Work:** bounded source price/currency validation, last-seen reconciliation, broken-feed guard,
-  unavailable filtering, reappearance, and live aggregate coverage. Preserve immutable source
+  unavailable filtering, reappearance, and a versioned completed-ingest eligibility snapshot. The
+  snapshot uses the same availability/category/HTTPS-image/audience/region/price/embedding predicate
+  as browse/search, exposes bounded category/audience/source/image-status coverage plus age and
+  freshness, and retains the prior good snapshot if refresh fails. Preserve immutable source
   amount/currency; add a user display-currency preference (India defaults to INR), dated
   authoritative FX snapshots with staleness/availability handling, deterministic decimal rounding,
   and original-currency disclosure before retailer handoff. Never relabel a USD amount as INR and
@@ -1571,7 +1574,8 @@ frontend migration ticket may hide a backend latency regression.
 - **Write set:** `packages/contracts/gyf_contracts/taxonomy.py`, gender backfill pipeline,
   catalog retrieval/candidate paths, tests.
 - **Work:** remove kids/adult leakage, preserve unisex semantics, normalize slot/category/region,
-  dedupe product variants and prevent repeated items across pages.
+  quarantine adult/kids conflicts and invalid image URL/status/content-type/size feed facts at
+  ingestion, dedupe product variants and prevent repeated items across pages.
 - **Acceptance:** adult profiles never receive known kids-only items; same item cannot appear twice
   in one slate/page; unknown data abstains rather than guessing.
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 
 from ..catalog.retrieval import (
@@ -120,7 +120,14 @@ def catalog_facets(
     # Assumes caches key on the full URL incl. ?region= (browsers do; Cloudflare
     # passes this through DYNAMIC, i.e. uncached at the edge — verified 2026-07-05).
     response.headers["Cache-Control"] = "public, max-age=3600"
-    return repo.catalog_facets(region)
+    try:
+        facets = repo.catalog_facets(region)
+        response.headers["ETag"] = f'"catalogue-{facets.catalogue_version}"'
+        return facets
+    except RuntimeError as exc:
+        # No completed ingest snapshot is not an empty catalogue. Keep the prior
+        # good snapshot when present; before the first one, say truth is unavailable.
+        raise HTTPException(status_code=503, detail="catalogue truth is refreshing") from exc
 
 
 @router.get("/items/browse", dependencies=[Depends(rate_limit("browse", "rate_limit_search"))])

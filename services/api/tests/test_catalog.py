@@ -64,6 +64,7 @@ def test_normalize_merges_region_hints_with_facet():
     assert item.attributes["taxonomy"] == {
         "slot": "full_body",
         "raw_category": "saree",
+        "audience": "adult",
         "gender": "women",
     }
 
@@ -98,6 +99,47 @@ def test_dedupe_key_falls_back_to_title_and_image():
     )
     assert no_img.dedupe_key != with_img.dedupe_key
     assert with_img.image_hash is not None
+
+
+def test_normalize_quarantines_adult_kids_audience_conflicts_and_bad_images():
+    item = normalize(
+        RawFeedItem(
+            title="Boys Cotton T-Shirt",
+            category="t shirt",
+            gender="men",
+            image_urls=["http://cdn.example.com/boys.jpg"],
+            image_http_status=404,
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["taxonomy"]["audience"] == "kids"
+    assert item.attributes["taxonomy"]["quarantine"]["reason"] == "adult_kids_conflict"
+    assert item.attributes["image"] == {
+        "status": "image_unavailable",
+        "quarantine_reason": "invalid_url",
+    }
+    assert item.image_refs == []
+
+
+def test_normalize_quarantines_non_image_and_oversize_verified_images():
+    for content_type, size, reason in [
+        ("text/html", 100, "content_type"),
+        ("image/jpeg", 21 * 1024 * 1024, "size"),
+    ]:
+        item = normalize(
+            RawFeedItem(
+                title="Adult Shirt",
+                category="shirt",
+                image_urls=["https://cdn.example.com/a.jpg"],
+                image_http_status=200,
+                image_content_type=content_type,
+                image_size_bytes=size,
+            ),
+            provider="feed",
+            license="licensed",
+        )
+        assert item.attributes["image"]["quarantine_reason"] == reason
 
 
 # --- ingest orchestration + idempotency ---

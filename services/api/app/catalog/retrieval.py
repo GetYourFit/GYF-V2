@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import unicodedata
 from contextlib import ExitStack
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hashlib import sha256
 from typing import Protocol
 from uuid import UUID
@@ -63,7 +63,10 @@ class SearchResult:
     item_id: str
     title: str
     score: float  # cosine similarity in [-1, 1] (1 = identical)
-    image_url: str | None = None  # served ``/media/<file>`` URL, or None
+    # Searchable rows have a validated HTTPS image. Keep the state in the
+    # contract so any future detail-only row can be honestly unavailable.
+    image_url: str | None = None
+    image_status: str | None = None
     # Commerce fields travel in the retrieval query. Catalog endpoints must stay a
     # single database round trip; saved/wardrobe/social still use ItemDirectory.
     price: float | None = None
@@ -74,14 +77,20 @@ class SearchResult:
 
 @dataclass(frozen=True)
 class CatalogFacets:
-    """Real, server-computed filter ranges for the in-scope (region-filtered)
-    catalog so the client offers only filters the data can actually satisfy —
-    never a price control that empties the grid because no item is priced."""
+    """A versioned snapshot of exactly the rows Explore can search or browse."""
 
-    total: int  # items in scope
-    priced: int  # items with a non-null price (0 => hide the price filter)
-    price_min: float | None  # cheapest priced item, or None when priced == 0
-    price_max: float | None  # dearest priced item, or None when priced == 0
+    total: int
+    priced: int
+    price_min: float | None
+    price_max: float | None
+    catalogue_version: int = 0
+    facet_age_seconds: int = 0
+    last_successful_ingest_at: str | None = None
+    freshness: str = "unknown"
+    by_category: dict[str, int] = field(default_factory=dict)
+    by_audience: dict[str, int] = field(default_factory=dict)
+    by_source: dict[str, int] = field(default_factory=dict)
+    by_image_status: dict[str, int] = field(default_factory=dict)
 
 
 def _pgvector(embedding: list[float]) -> str:
@@ -175,9 +184,25 @@ _GENDER_FILTER = (
 
 _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
 
+# One predicate defines catalogue truth for every Explore retrieval and the
+# persisted facet snapshot. Ingest records image/audience conflicts here rather
+# than making a request fetch remote images or relying on title heuristics.
+SEARCHABLE_ITEM_PREDICATE = """
+i.available
+AND i.category <> 'unknown'
+AND i.price IS NOT NULL AND i.price > 0
+AND jsonb_array_length(i.image_refs) > 0
+AND i.image_refs ->> 0 ~ '^https://'
+AND COALESCE(i.attributes #>> '{image,status}', 'usable') = 'usable'
+AND COALESCE(i.attributes #>> '{taxonomy,audience}', 'adult') <> 'kids'
+AND i.attributes #>> '{taxonomy,quarantine}' IS NULL
+AND i.attributes #>> '{taxonomy,category_conflict}' IS NULL
+"""
+
 # Default browse: no embedding or vector scan. A seed selects a pivot in a stable
-# UUID ring, and four bounded index-range reads preserve priced-first ordering across
-# the ring wrap. This keeps per-session variety without the retired hash-sort query
+# UUID ring, and two bounded index-range reads preserve the ring wrap. All
+# searchable rows now have a truthful positive price, so a separate unpriced band
+# would duplicate rows. This keeps per-session variety without the retired hash-sort query
 # that timed out on the live Supabase catalogue.
 _BROWSE_INDEXED = """
 WITH candidates AS (
@@ -185,8 +210,7 @@ WITH candidates AS (
           i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
    FROM items i
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
-     AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND i.price IS NOT NULL AND i.id >= %s::uuid
+     AND {searchable} AND i.id >= %s::uuid
      {region} {gender} {category}
    ORDER BY i.id
    LIMIT %s)
@@ -195,28 +219,7 @@ WITH candidates AS (
           i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
    FROM items i
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
-     AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND i.price IS NOT NULL AND i.id < %s::uuid
-     {region} {gender} {category}
-   ORDER BY i.id
-   LIMIT %s)
-  UNION ALL
-  (SELECT 2 AS band, i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
-          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
-   FROM items i
-   WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
-     AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND i.price IS NULL AND i.id >= %s::uuid
-     {region} {gender} {category}
-   ORDER BY i.id
-   LIMIT %s)
-  UNION ALL
-  (SELECT 3 AS band, i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
-          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
-   FROM items i
-   WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
-     AND i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
-     AND i.price IS NULL AND i.id < %s::uuid
+     AND {searchable} AND i.id < %s::uuid
      {region} {gender} {category}
    ORDER BY i.id
    LIMIT %s)
@@ -233,7 +236,7 @@ _BROWSE_LEGACY = """
 SELECT i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
        i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
 FROM items i
-WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+WHERE {searchable}
   AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
   {region} {gender} {category}
 ORDER BY (i.price IS NOT NULL) DESC, hashtext(i.id::text || %s), i.id
@@ -254,7 +257,7 @@ SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs,
        i.attributes #>> '{{perception,color,hue_name}}' AS hue_name, e.embedding
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
-WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0
+WHERE {searchable}
   {region} {gender} {category}
 ORDER BY e.embedding <=> %s::vector, i.id
 LIMIT %s OFFSET %s
@@ -269,7 +272,7 @@ SELECT i.id, i.title,
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 WHERE EXISTS (SELECT 1 FROM item_embeddings WHERE item_id = %s)
-  AND e.item_id <> %s AND i.available AND i.category <> 'unknown' {region} {gender} {category}
+  AND e.item_id <> %s AND {searchable} {region} {gender} {category}
 ORDER BY e.embedding <=> (SELECT embedding FROM item_embeddings WHERE item_id = %s)
 LIMIT %s OFFSET %s
 """
@@ -361,6 +364,7 @@ class PostgresVectorSearchRepository:
         # uncorrelated scalar subquery becomes an InitPlan constant and keeps this
         # a single database round trip while restoring the ANN index scan.
         sql = _SIMILAR.format(
+            searchable=SEARCHABLE_ITEM_PREDICATE,
             region=_REGION_FILTER if region else "",
             gender=_GENDER_FILTER if gender_list else "",
             category=_CATEGORY_FILTER if categories else "",
@@ -401,7 +405,7 @@ class PostgresVectorSearchRepository:
         params: list[object] = [vec]  # score expression
         # Unknown-category rows are unstylable (no outfit slot) and are where
         # feed junk (hardware, jewelry) concentrates — never surface them.
-        where = "WHERE i.available AND i.category <> 'unknown'"
+        where = f"WHERE {SEARCHABLE_ITEM_PREDICATE}"
         if region:
             where += " " + _REGION_FILTER
             params.append(region)
@@ -440,37 +444,44 @@ class PostgresVectorSearchRepository:
         )
 
     def catalog_facets(self, region: str | None) -> CatalogFacets:
-        # Facets MUST describe the *searchable* set, so this joins item_embeddings
-        # exactly like search does: an item with a price but no embedding can never
-        # appear in results, so counting it as `priced` would make the UI offer a
-        # price filter that still empties the grid. COUNT(i.price) counts only
-        # non-null prices, so `priced == 0` is the honest "no usable price" signal.
-        where = "WHERE i.available"
-        params: list[object] = []
-        if region:
-            where += " " + _REGION_FILTER
-            params.append(region)
-        sql = f"""
-        SELECT COUNT(*), COUNT(i.price), MIN(i.price), MAX(i.price)
-        FROM item_embeddings e
-        JOIN items i ON i.id = e.item_id
-        {where}
-        """
+        # Facets are a completed-ingest snapshot, never a request-time aggregate.
+        # Absence is an honest unavailable state until the first successful refresh.
+        from .snapshot import PostgresCatalogueSnapshotRepository, snapshot_freshness
+
         with stage_timer("search", "pool_acquire"):
-            with self._pool.connection() as conn:  # type: ignore[attr-defined]
-                with stage_timer("search", "retrieval_sql"):
-                    # SET LOCAL rolls back with the connection transaction when PostgreSQL
-                    # cancels the aggregate; the exception remains visible to the route.
-                    conn.execute(
-                        "SELECT set_config('statement_timeout', %s, true)",
-                        (f"{settings.catalog_facets_statement_timeout_ms}ms",),
-                    )
-                    row = conn.execute(sql, tuple(params)).fetchone()
+            snapshot = PostgresCatalogueSnapshotRepository(self._pool).current()
+        if snapshot is None:
+            raise RuntimeError("catalogue truth snapshot is not available yet")
+        scope = snapshot.facets(region)
+        if scope is None:
+            scope = {
+                "total": 0,
+                "priced": 0,
+                "price_min": None,
+                "price_max": None,
+                "by_category": {},
+                "by_audience": {},
+                "by_source": {},
+                "by_image_status": {},
+            }
+        age, freshness = snapshot_freshness(snapshot)
         return CatalogFacets(
-            total=int(row[0]),
-            priced=int(row[1]),
-            price_min=float(row[2]) if row[2] is not None else None,
-            price_max=float(row[3]) if row[3] is not None else None,
+            total=int(scope["total"]),
+            priced=int(scope["priced"]),
+            price_min=scope["price_min"],
+            price_max=scope["price_max"],
+            catalogue_version=snapshot.catalogue_version,
+            facet_age_seconds=age,
+            last_successful_ingest_at=(
+                snapshot.last_successful_ingest_at.isoformat()
+                if snapshot.last_successful_ingest_at
+                else None
+            ),
+            freshness=freshness,
+            by_category=scope["by_category"],
+            by_audience=scope["by_audience"],
+            by_source=scope["by_source"],
+            by_image_status=scope["by_image_status"],
         )
 
     def browse(
@@ -491,7 +502,10 @@ class PostgresVectorSearchRepository:
         if taste_vector is not None:
             vec = _pgvector(taste_vector)
             sql = _BROWSE_TASTE.format(
-                region=region_clause, gender=gender_clause, category=category_clause
+                searchable=SEARCHABLE_ITEM_PREDICATE,
+                region=region_clause,
+                gender=gender_clause,
+                category=category_clause,
             )
             params: list[object] = [vec]  # score expression
             if region:
@@ -529,7 +543,10 @@ class PostgresVectorSearchRepository:
             _BROWSE_INDEXED if self._indexed_browse or taste_vector is not None else _BROWSE_LEGACY
         )
         sql = browse_query.format(
-            region=region_clause, gender=gender_clause, category=category_clause
+            searchable=SEARCHABLE_ITEM_PREDICATE,
+            region=region_clause,
+            gender=gender_clause,
+            category=category_clause,
         )
         # No client seed → daily rotation, preserving a stable order while a user
         # pages through the feed. The indexed path uses the same ring contract as
@@ -557,7 +574,7 @@ class PostgresVectorSearchRepository:
         # The same optional predicates occur in each ring branch. Keep bindings
         # in SQL order so region/gender/category filters stay identical at every
         # wrap boundary.
-        for _ in range(4):
+        for _ in range(2):
             # Bind the pivot inside each branch rather than through a one-row CTE.
             # PostgreSQL can then use it as an `id` index bound instead of scanning
             # the ring and applying the pivot as a join filter.
@@ -603,7 +620,7 @@ class PostgresVectorSearchRepository:
         # Require a stored embedding (same as browse()): a keyword hit with none
         # would dead-end on click, since recluster/similar joins item_embeddings.
         where = (
-            "WHERE i.available AND i.category <> 'unknown' AND jsonb_array_length(i.image_refs) > 0"
+            f"WHERE {SEARCHABLE_ITEM_PREDICATE}"
             " AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)"
             f" AND {vector_expr} @@ {query_expr}"
         )
@@ -696,6 +713,7 @@ class PostgresVectorSearchRepository:
                 title=r[1],
                 score=float(r[2]),
                 image_url=image_url_from_refs(r[3]),
+                image_status="usable",
                 price=float(r[4]) if r[4] is not None else None,
                 currency=r[5],
                 buy_url=self._linker.wrap(r[6], catalog_subid(str(r[0]))),

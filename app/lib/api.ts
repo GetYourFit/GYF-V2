@@ -130,6 +130,14 @@ export interface CatalogFacets {
   priced: number;
   price_min: number | null;
   price_max: number | null;
+  catalogue_version: number;
+  facet_age_seconds: number;
+  last_successful_ingest_at: string | null;
+  freshness: string;
+  by_category: Record<string, number>;
+  by_audience: Record<string, number>;
+  by_source: Record<string, number>;
+  by_image_status: Record<string, number>;
 }
 
 interface FeedbackAck {
