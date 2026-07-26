@@ -106,7 +106,6 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
         assert median(overlaps) <= 0.6
 
         whole = repo.browse(k=16, seed="price-order", **filters)
-        embedding_ids = {str(item_id) for item_id in ids}
         whole_ids = [item.item_id for item in whole]
         priced_ids = {str(item_id) for item_id in ids[:8]}
         assert len(whole) == 8

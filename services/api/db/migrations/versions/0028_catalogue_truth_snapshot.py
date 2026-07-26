@@ -28,7 +28,12 @@ def upgrade() -> None:
           'status', CASE
             WHEN EXISTS (
               SELECT 1
-              FROM jsonb_array_elements_text(image_refs) AS image_ref(value)
+              FROM jsonb_array_elements_text(
+                CASE
+                  WHEN jsonb_typeof(image_refs) = 'array' THEN image_refs
+                  ELSE '[]'::jsonb
+                END
+              ) AS image_ref(value)
               WHERE value ~ '^https://'
             ) THEN 'usable'
             ELSE 'image_unavailable'
