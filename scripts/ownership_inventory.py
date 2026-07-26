@@ -98,7 +98,7 @@ def is_expression_working_directory(value: str) -> bool:
 
 
 def is_multiline_working_directory(value: str) -> bool:
-    return value.strip() in {">", ">-", ">+", "|", "|-", "|+"}
+    return re.fullmatch(r"[>|][1-9]?[+-]?", value.strip()) is not None
 
 
 def extract_import_targets(text: str) -> list[str]:

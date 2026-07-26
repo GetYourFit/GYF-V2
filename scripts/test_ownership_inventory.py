@@ -250,6 +250,30 @@ class OwnershipInventoryTests(unittest.TestCase):
 
             shutil.rmtree(root)
 
+    def test_deploy_configuration_rejects_indented_block_scalar_variants(self) -> None:
+        root = Path(self._testMethodName)
+        root.mkdir()
+        try:
+            workflow = root / ".github/workflows/cd.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text(
+                "working-directory: |2\n  app\n",
+                encoding="utf-8",
+            )
+            render = root / "render.yaml"
+            render.write_text("services: []\n", encoding="utf-8")
+            violations = inventory.deployment_violations(root)
+            self.assertEqual(
+                violations,
+                [
+                    "deploy ownership violation: .github/workflows/cd.yml uses multiline working-directory"
+                ],
+            )
+        finally:
+            import shutil
+
+            shutil.rmtree(root)
+
 
 if __name__ == "__main__":
     unittest.main()
