@@ -302,7 +302,7 @@ WITH per_category AS MATERIALIZED (
     LIMIT %s
   ) AS selected
 ), picked AS MATERIALIZED (
-  SELECT id
+  SELECT id, row_number() OVER (ORDER BY category_rank, category_order) AS picked_order
   FROM per_category
   ORDER BY category_rank, category_order
   LIMIT %s
@@ -317,6 +317,7 @@ ORDER BY CASE
          AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
          AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = ANY(%s::text[])
     THEN 0 ELSE 1 END,
+    p.picked_order,
     """
     + _ORDER_BY_RECENCY
     + """

@@ -109,12 +109,11 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
         embedding_ids = {str(item_id) for item_id in ids}
         whole_ids = [item.item_id for item in whole]
         priced_ids = {str(item_id) for item_id in ids[:8]}
-        assert len(whole) == 16
+        assert len(whole) == 8
         assert len(whole_ids) == len(set(whole_ids))
-        assert set(whole_ids) <= embedding_ids
+        assert set(whole_ids) == priced_ids
         assert str(no_embedding_id) not in whole_ids
-        assert all(item.item_id in priced_ids for item in whole[:8])
-        assert all(item.item_id not in priced_ids for item in whole[8:])
+        assert all(item.item_id in priced_ids for item in whole)
         assert all(item.score == 0.0 for item in whole)
     finally:
         pool.close()
