@@ -26,7 +26,11 @@ def upgrade() -> None:
         UPDATE items
         SET attributes = attributes || jsonb_build_object('image', jsonb_build_object(
           'status', CASE
-            WHEN jsonb_array_length(image_refs) > 0 AND image_refs ->> 0 ~ '^https://' THEN 'usable'
+            WHEN EXISTS (
+              SELECT 1
+              FROM jsonb_array_elements_text(image_refs) AS image_ref(value)
+              WHERE value ~ '^https://'
+            ) THEN 'usable'
             ELSE 'image_unavailable'
           END
         ))
