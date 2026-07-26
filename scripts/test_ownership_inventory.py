@@ -43,6 +43,30 @@ class OwnershipInventoryTests(unittest.TestCase):
 
             shutil.rmtree(root)
 
+    def test_dynamic_import_and_require_of_next_rollback_are_rejected(self) -> None:
+        root = Path(self._testMethodName)
+        root.mkdir()
+        try:
+            source = root / "apps/expo/src/unsafe.ts"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                '\n'.join(
+                    [
+                        'await import("../../../app/lib/api")',
+                        'const page = require("../../../app/lib/page")',
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            violations = inventory.production_import_violations(root, ["apps/expo/src/unsafe.ts"])
+            self.assertEqual(len(violations), 1)
+            self.assertIn("app/", violations[0])
+        finally:
+            import shutil
+
+            shutil.rmtree(root)
+
     def test_deploy_configuration_cannot_claim_next_rollback(self) -> None:
         root = Path(self._testMethodName)
         root.mkdir()
@@ -56,8 +80,31 @@ class OwnershipInventoryTests(unittest.TestCase):
             self.assertEqual(
                 violations,
                 [
-                    "deploy ownership violation: .github/workflows/cd.yml "
-                    "matches working-directory:[ \\t]*app[ \\t]*(?:#.*)?$"
+                    "deploy ownership violation: .github/workflows/cd.yml uses working-directory app"
+                ],
+            )
+        finally:
+            import shutil
+
+            shutil.rmtree(root)
+
+    def test_deploy_configuration_normalizes_app_working_directory_variants(self) -> None:
+        root = Path(self._testMethodName)
+        root.mkdir()
+        try:
+            workflow = root / ".github/workflows/cd.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text(
+                "working-directory: ./app/\nworking-directory: apps/expo\n",
+                encoding="utf-8",
+            )
+            render = root / "render.yaml"
+            render.write_text("services: []\n", encoding="utf-8")
+            violations = inventory.deployment_violations(root)
+            self.assertEqual(
+                violations,
+                [
+                    "deploy ownership violation: .github/workflows/cd.yml uses working-directory app"
                 ],
             )
         finally:

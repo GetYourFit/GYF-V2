@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import posixpath
 import re
 import subprocess
 import sys
@@ -55,7 +56,7 @@ LEGACY_PRODUCTION_IMPORTS = {
 }
 DEPLOYMENT_RULES = {
     ".github/workflows/cd.yml": (
-        r"working-directory:[ \t]*app[ \t]*(?:#.*)?$",
+        "app",
         r"app/Dockerfile",
         r"vercel deploy",
         r"vercel --prod",
@@ -79,6 +80,33 @@ def group_paths(files: Iterable[str], prefixes: tuple[str, ...]) -> list[str]:
 
 def path_digest(paths: Iterable[str]) -> str:
     return hashlib.sha256("\n".join(sorted(paths)).encode()).hexdigest()
+
+
+def normalize_working_directory(value: str) -> str:
+    normalized = posixpath.normpath(value.strip())
+    return "." if normalized == "" else normalized
+
+
+def extract_import_targets(text: str) -> list[str]:
+    patterns = (
+        r"\bfrom\s+[\"']([^\"']+)[\"']",
+        r"\bimport\s+[\"']([^\"']+)[\"']",
+        r"\bimport\s*\(\s*[\"']([^\"']+)[\"']\s*\)",
+        r"\brequire\s*\(\s*[\"']([^\"']+)[\"']\s*\)",
+    )
+    targets: list[str] = []
+    for pattern in patterns:
+        targets.extend(match.group(1) for match in re.finditer(pattern, text))
+    return targets
+
+
+def references_frozen_path(import_target: str, frozen_path: str) -> bool:
+    normalized = posixpath.normpath(import_target)
+    while normalized.startswith("../"):
+        normalized = normalized[3:]
+    if normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized == frozen_path.removesuffix("/") or normalized.startswith(frozen_path)
 
 
 def classify(path: str) -> str:
@@ -127,13 +155,10 @@ def production_import_violations(root: Path, files: Iterable[str]) -> list[str]:
         if not path.startswith(PRODUCTION_ROOTS) or not path.endswith((".py", ".ts", ".tsx")):
             continue
         text = (root / path).read_text(encoding="utf-8")
+        import_targets = extract_import_targets(text)
         for frozen_path in frozen_paths:
-            if frozen_path == "app/":
-                referenced = (
-                    re.search(r"(?:from|import)\s*(?:\([^)]*\)\s*=>\s*)?[\"'](?:\.\./)*app/", text)
-                    is not None
-                )
-            else:
+            referenced = any(references_frozen_path(target, frozen_path) for target in import_targets)
+            if not referenced and frozen_path != "app/":
                 referenced = frozen_path in text
             if referenced and frozen_path not in LEGACY_PRODUCTION_IMPORTS.get(path, set()):
                 violations.append(
@@ -147,7 +172,13 @@ def deployment_violations(root: Path) -> list[str]:
     for path, forbidden in DEPLOYMENT_RULES.items():
         text = (root / path).read_text(encoding="utf-8")
         for pattern in forbidden:
-            if re.search(pattern, text, re.MULTILINE):
+            if path.endswith("cd.yml") and pattern == "app":
+                for match in re.finditer(r"working-directory:[ \t]*([^\n#]+)", text):
+                    if normalize_working_directory(match.group(1)) == pattern:
+                        violations.append(
+                            f"deploy ownership violation: {path} uses working-directory {pattern}"
+                        )
+            elif re.search(pattern, text, re.MULTILINE):
                 violations.append(f"deploy ownership violation: {path} matches {pattern}")
     return violations
 
