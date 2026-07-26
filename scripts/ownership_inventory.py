@@ -83,7 +83,10 @@ def path_digest(paths: Iterable[str]) -> str:
 
 
 def normalize_working_directory(value: str) -> str:
-    normalized = posixpath.normpath(value.strip())
+    stripped = value.strip()
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] in {"'", '"'}:
+        stripped = stripped[1:-1].strip()
+    normalized = posixpath.normpath(stripped)
     return "." if normalized == "" else normalized
 
 
@@ -178,6 +181,7 @@ def deployment_violations(root: Path) -> list[str]:
                         violations.append(
                             f"deploy ownership violation: {path} uses working-directory {pattern}"
                         )
+                        break
             elif re.search(pattern, text, re.MULTILINE):
                 violations.append(f"deploy ownership violation: {path} matches {pattern}")
     return violations
