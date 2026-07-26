@@ -124,6 +124,15 @@ describe("Expo interaction boundaries", () => {
     );
   });
 
+  test("refresh pagination cannot load until the audience generation is ready", () => {
+    expect(exploreSource).toMatch(
+      /const load = useCallback\([\s\S]{0,300}if \(!audienceCanBrowse\(audience\)\) return;/,
+    );
+    expect(exploreSource).toMatch(
+      /const loadNextPage = \(\) => \{\s*if \(audienceCanBrowse\(audience\) && hasMore && !loading && !loadingMore\)/,
+    );
+  });
+
   test("Stylist style choices stay interactive and scope the next request", () => {
     // Anchored on the filter rows themselves, not on visible label copy — the
     // uppercase headings they used to bracket are gone from the design.

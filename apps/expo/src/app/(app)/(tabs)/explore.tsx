@@ -119,6 +119,9 @@ export default function ExploreRoute() {
 
   const load = useCallback(
     async (nextPage: number, replace: boolean) => {
+      // Every entry point must fail closed while an authenticated profile is
+      // resolving; scroll events can arrive during pull-to-refresh.
+      if (!audienceCanBrowse(audience)) return;
       // Tapping chips faster than the network answers leaves several requests in
       // flight. Two things must happen. First, abandon the superseded request on
       // the wire: an uncached search pays a remote text embed, so leaving it to
@@ -291,7 +294,9 @@ export default function ExploreRoute() {
   const activeCount = activeFilterCount(filters);
 
   const loadNextPage = () => {
-    if (hasMore && !loading && !loadingMore) void load(page + 1, false);
+    if (audienceCanBrowse(audience) && hasMore && !loading && !loadingMore) {
+      void load(page + 1, false);
+    }
   };
 
   // The board tiles a finite set over an infinite plane, so it never runs out
