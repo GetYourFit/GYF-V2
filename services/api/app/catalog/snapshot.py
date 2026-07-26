@@ -26,7 +26,9 @@ class CatalogueSnapshot:
     scopes: dict[str, dict[str, Any]]
 
     def facets(self, region: str | None) -> dict[str, Any] | None:
-        return self.scopes.get(region or "all")
+        if not region:
+            return self.scopes.get("all")
+        return self.scopes.get(region) or self.scopes.get("__global__")
 
 
 class PostgresCatalogueSnapshotRepository:
@@ -62,7 +64,7 @@ class PostgresCatalogueSnapshotRepository:
                        WHERE region <> '' ORDER BY region"""
                 )
             ]
-            scopes = {"all": self._scope(conn, None)}
+            scopes = {"all": self._scope(conn, None), "__global__": self._scope(conn, "__global__")}
             scopes.update({region: self._scope(conn, region) for region in regions})
             row = conn.execute(
                 """
@@ -85,7 +87,9 @@ class PostgresCatalogueSnapshotRepository:
     def _scope(self, conn: object, region: str | None) -> dict[str, Any]:
         where = SEARCHABLE_ITEM_PREDICATE
         params: list[object] = []
-        if region:
+        if region == "__global__":
+            where += " AND i.region_tags = '{}'"
+        elif region:
             where += " AND (i.region_tags = '{}' OR i.region_tags @> ARRAY[%s]::text[])"
             params.append(region)
 

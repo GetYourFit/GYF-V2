@@ -109,6 +109,42 @@ def test_snapshot_matches_browse_and_search_eligibility_and_reports_truth(live_d
     assert [row.item_id for row in search] == [good]
 
 
+def test_snapshot_region_fallback_matches_region_neutral_browse_and_search(live_db: str):
+    with psycopg.connect(live_db) as conn:
+        conn.execute("DELETE FROM items WHERE source_provider = %s", (_SOURCE,))
+        global_item = _insert(
+            conn,
+            "global",
+            attributes={"taxonomy": {"audience": "adult"}, "image": {"status": "usable"}},
+            image_refs=["https://cdn.example.com/global.jpg"],
+            regions="{}",
+        )
+        _insert(
+            conn,
+            "in-only",
+            attributes={"taxonomy": {"audience": "adult"}, "image": {"status": "usable"}},
+            image_refs=["https://cdn.example.com/in-only.jpg"],
+            regions="{IN}",
+        )
+        conn.commit()
+
+    snapshots = PostgresCatalogueSnapshotRepository(PostgresVectorSearchRepository(live_db)._pool)
+    snapshots.refresh()
+    repo = PostgresVectorSearchRepository(live_db)
+
+    facets = repo.catalog_facets("US")
+    browse = repo.browse(None, 20, "US", seed="truth")
+    search = repo.keyword_search("Truth", 20, "US")
+
+    assert facets.total == facets.priced == 1
+    assert facets.by_category == {"t_shirt": 1}
+    assert facets.by_audience == {"adult": 1}
+    assert facets.by_source == {_SOURCE: 1}
+    assert facets.by_image_status == {"usable": 1}
+    assert [row.item_id for row in browse] == [global_item]
+    assert [row.item_id for row in search] == [global_item]
+
+
 def test_failed_snapshot_refresh_preserves_the_prior_good_snapshot(live_db: str, monkeypatch):
     repo = PostgresVectorSearchRepository(live_db)
     snapshots = PostgresCatalogueSnapshotRepository(repo._pool)
