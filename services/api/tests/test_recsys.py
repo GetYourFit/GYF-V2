@@ -2337,7 +2337,7 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
                     "INR",
                     json.dumps({"taxonomy": {"gender": "women"}}),
                     ["IN"],
-                    json.dumps([f"{item_id}.jpg"]),
+                    json.dumps([f"https://cdn.example.com/{item_id}.jpg"]),
                     provider,
                     item_id,
                     True,
@@ -2346,12 +2346,12 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
             )
     # Each row violates exactly one server-truth predicate and must stay out.
     for suffix, price, gender, region, images, available, embedding in (
-        ("price", 9000, "women", ["IN"], ["x.jpg"], True, vector),
-        ("gender", 999, "men", ["IN"], ["x.jpg"], True, vector),
-        ("region", 999, "women", ["US"], ["x.jpg"], True, vector),
+        ("price", 9000, "women", ["IN"], ["https://cdn.example.com/x.jpg"], True, vector),
+        ("gender", 999, "men", ["IN"], ["https://cdn.example.com/x.jpg"], True, vector),
+        ("region", 999, "women", ["US"], ["https://cdn.example.com/x.jpg"], True, vector),
         ("image", 999, "women", ["IN"], [], True, vector),
-        ("availability", 999, "women", ["IN"], ["x.jpg"], False, vector),
-        ("perception", 999, "women", ["IN"], ["x.jpg"], True, None),
+        ("availability", 999, "women", ["IN"], ["https://cdn.example.com/x.jpg"], False, vector),
+        ("perception", 999, "women", ["IN"], ["https://cdn.example.com/x.jpg"], True, None),
     ):
         item_id = str(uuid.uuid4())
         rows.append(

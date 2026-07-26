@@ -93,6 +93,7 @@ def _seed_catalog(dsn: str) -> None:
     import psycopg
 
     rows = []
+    embedding = "[" + ",".join(["0.1"] * 768) + "]"
     for slot in ("top", "bottom", "footwear"):
         categories = _CATEGORIES_BY_SLOT[slot]
         for i in range(4):
@@ -105,16 +106,18 @@ def _seed_catalog(dsn: str) -> None:
                     json.dumps({"color": "navy"}),
                     49.0,
                     "USD",
-                    json.dumps([f"{key}.jpg"]),
+                    json.dumps([f"https://cdn.example.com/{key}.jpg"]),
                     "test-fixture",
                     "research",
                     key,  # image_hash
                     key,  # dedupe_key
+                    embedding,
                 )
             )
 
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
+            cur.execute("DELETE FROM item_embeddings WHERE item_id IN (SELECT id FROM items WHERE source_provider = 'test-fixture')")
             cur.execute("DELETE FROM items WHERE source_provider = 'test-fixture'")
             cur.executemany(
                 """
@@ -123,9 +126,25 @@ def _seed_catalog(dsn: str) -> None:
                     affiliate_url, image_refs, source_provider, source_license,
                     image_hash, dedupe_key
                 ) VALUES (%s, %s, %s, %s, %s, '{}', NULL, %s, %s, %s, %s, %s)
-                ON CONFLICT (dedupe_key) DO NOTHING
+                ON CONFLICT (dedupe_key) DO UPDATE SET
+                    image_refs = EXCLUDED.image_refs,
+                    price = EXCLUDED.price,
+                    currency = EXCLUDED.currency,
+                    attributes = EXCLUDED.attributes
                 """,
-                rows,
+                [row[:-1] for row in rows],
+            )
+            cur.executemany(
+                """
+                INSERT INTO item_embeddings (item_id, embedding, model_version)
+                SELECT id, %s::vector, 'test'
+                FROM items
+                WHERE dedupe_key = %s
+                ON CONFLICT (item_id) DO UPDATE SET
+                    embedding = EXCLUDED.embedding,
+                    model_version = EXCLUDED.model_version
+                """,
+                [(row[-1], row[9]) for row in rows],
             )
         conn.commit()
 
