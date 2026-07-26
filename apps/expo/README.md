@@ -30,12 +30,17 @@ SDK 57.0.6, React Native 0.86.0, and the new architecture are pinned in `package
 The signed-in `Stylist` tab calls `/outfits/recommend` and records save/skip feedback against the
 returned recommendation. When a user requests the next look, it also sends the displayed item IDs
 so the API avoids repeating the same non-footwear category family when the catalogue offers an
-alternative. `Explore` calls `/items/browse` for an unfiltered catalogue page and switches to
-`/items/search` whenever a query, slot, sort, or maximum-price filter is active. This keeps filters
-truthful because browse intentionally ignores those search filters. It also loads `/items/facets`
-for server-reported catalogue coverage, saves items through `/collections`, and uses only HTTPS
-catalogue and purchase URLs. Missing images, prices, unavailable ML search, and expired sessions
-are shown as explicit states; the client never invents catalogue items or scores.
+alternative. `Explore` waits for the authenticated profile audience before its first catalogue
+request: signed-in users see accessible loading, needs-profile, or retryable audience-error states
+instead of a temporary ungendered grid. Anonymous and explicitly unknown audiences still widen
+under the server's existing null-gender policy. Once the audience is ready, `Explore` calls
+`/items/browse` for an unfiltered catalogue page and switches to `/items/search` whenever a query,
+slot, sort, or maximum-price filter is active. This keeps filters truthful because browse
+intentionally ignores those search filters. It also loads `/items/facets` with the same canonical
+audience slice for server-reported catalogue coverage, saves items through `/collections`, and uses
+only HTTPS catalogue and purchase URLs. Missing images, prices, unavailable ML search, expired
+sessions, and audience-readiness failures are shown as explicit states; the client never invents
+catalogue items or scores.
 
 Pull requests also run the `Supabase Preview` GitHub check. GYF keeps Alembic as the single
 database migration source, so the check applies `services/api/db/migrations` to a disposable

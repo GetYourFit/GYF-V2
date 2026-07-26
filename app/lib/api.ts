@@ -253,7 +253,7 @@ export class GyfApi {
   }
 
   /** Available catalog filter ranges (price coverage + min/max) for the optional
-   *  region. Drives which filters Explore renders. */
+   *  region and canonical audience slice. Drives which filters Explore renders. */
   facets(region?: string, gender?: string): Promise<CatalogFacets> {
     const query = toQuery({ ...(region ? { region } : {}), ...(gender ? { gender } : {}) });
     return this.request<CatalogFacets>("GET", `/items/facets${query}`);
