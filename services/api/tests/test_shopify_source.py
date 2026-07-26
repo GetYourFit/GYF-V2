@@ -143,6 +143,7 @@ def test_media_passes_remote_image_urls_through_untouched():
     assert image_url_from_refs([remote]) == remote
     assert image_url_from_refs(["http://cdn.shopify.com/insecure.jpg"]) is None
     assert image_url_from_refs(["http://cdn.shopify.com/insecure.jpg", remote]) == remote
+    assert image_url_from_refs(["not-a-url", remote]) == remote
     # local refs keep the existing rebasing behavior
     assert image_url_from_refs(["catalog/tee.jpg"]).endswith("/tee.jpg")
 

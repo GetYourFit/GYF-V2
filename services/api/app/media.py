@@ -26,6 +26,7 @@ def image_url_from_refs(refs: Sequence[str] | None) -> str | None:
     """
     if not refs:
         return None
+    local_ref: str | None = None
     for ref in refs:
         if not ref:
             continue
@@ -33,6 +34,9 @@ def image_url_from_refs(refs: Sequence[str] | None) -> str | None:
             return ref
         if ref.startswith("http://"):
             continue
-        base = settings.media_base_url.rstrip("/") or _MEDIA_MOUNT
-        return f"{base}/{os.path.basename(ref)}"
-    return None
+        if local_ref is None:
+            local_ref = ref
+    if local_ref is None:
+        return None
+    base = settings.media_base_url.rstrip("/") or _MEDIA_MOUNT
+    return f"{base}/{os.path.basename(local_ref)}"
