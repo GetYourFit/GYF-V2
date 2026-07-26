@@ -159,7 +159,7 @@ evidence, protected branches, release state, or unique/unproven work without exp
 | Assets | Build manifest: owner, runtime/evidence-only, license/provenance and deletion gate; move runtime assets into owning client trees. | Do not delete `Reference/`, design-review assets, Flutter goldens or Next public assets without F13 approval. | Planned. |
 | Generated files | Guard generated-type drift; regenerate OpenAPI types with `make types`. | Never hand-edit `packages/types/src/api.ts`; do not delete generated artifacts still consumed by CI/app code. | Planned. |
 | Branch cleanup | Dissolve stale branches only after ancestry/patch-equivalence, PR dependency and worktree checks. | No remote branch deletion in code PRs; never delete protected/default/release/open-PR/unique branches. | Inventory below; deletion operation separate. |
-| Local tool/cache hygiene | Block tracked machine-local tool/cache artifacts and oversized binaries. | Remove only clearly local bootstrap/cache artifacts; document real source exceptions. | First slice: `.tooling/bin/uv` and `.tooling/bin/uvx` stopped being tracked, `.tooling/bin/` ignored, and `scripts/check_repo_hygiene.py` added to `make doctrine`, CI and pre-commit. |
+| Local tool/cache hygiene | Block tracked machine-local tool/cache artifacts, oversized binaries and protected rollback/reference-surface drift. | Remove only clearly local bootstrap/cache artifacts; document real source exceptions. | First slice: `.tooling/bin/uv` and `.tooling/bin/uvx` stopped being tracked, `.tooling/bin/` ignored, `scripts/check_repo_hygiene.py` was added to `make doctrine`, CI and pre-commit, and `scripts/ownership_inventory.py` now guards protected rollback/reference surfaces in the same gates. |
 
 First cleanup execution slice evidence to record with this PR:
 
@@ -169,9 +169,8 @@ First cleanup execution slice evidence to record with this PR:
   H1 finding. Runtime gates already require a real `uv` on `PATH` (`make check-uv` prints the
   install command), and CI installs `uv`; therefore the binaries are removed from git rather than
   preserved as source.
-- Broad env-var reconciliation, Dockerfile comment cleanup, route/workflow ownership reporting,
-  generated-type drift checks and doc orphan reporting remain later H0/H1 tasks unless a future PR
-  protects them with tests/evidence.
+- Broad env-var reconciliation, Dockerfile comment cleanup, generated-type drift checks and doc
+  orphan reporting remain later H0/H1 tasks unless a future PR protects them with tests/evidence.
 
 #### Branch cleanup inventory and required proof
 

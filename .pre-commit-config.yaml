@@ -13,16 +13,16 @@ repos:
     hooks:
       # docs/vision/drafts/ are frozen raw idea inputs kept for history (see CLAUDE.md).
       - id: trailing-whitespace
-        exclude: '^(ECC/|docs/vision/drafts/)'
+        exclude: "^(ECC/|docs/vision/drafts/)"
       - id: end-of-file-fixer
-        exclude: '^(ECC/|docs/vision/drafts/)'
+        exclude: "^(ECC/|docs/vision/drafts/)"
       - id: check-merge-conflict
       - id: check-added-large-files
         args: ["--maxkb=1024"]
       - id: check-yaml
-        exclude: '^ECC/'
+        exclude: "^ECC/"
       - id: check-json
-        exclude: '^(ECC/|.*tsconfig.*\.json$)'  # tsconfig allows comments (JSONC)
+        exclude: '^(ECC/|.*tsconfig.*\.json$)' # tsconfig allows comments (JSONC)
       - id: detect-private-key
 
   # Python (API + ML) — lint and format with Ruff.
@@ -31,9 +31,9 @@ repos:
     hooks:
       - id: ruff
         args: ["--fix"]
-        files: '^(services/api|ml)/'
+        files: "^(services/api|ml)/"
       - id: ruff-format
-        files: '^(services/api|ml)/'
+        files: "^(services/api|ml)/"
 
   # Repository hygiene + JS/TS/JSON/MD formatting.
   - repo: local
@@ -44,13 +44,19 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: ownership-inventory-guard
+        name: ownership inventory guard
+        entry: python3 scripts/ownership_inventory.py --check
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: prettier
         name: prettier
         entry: bun run format:check
         language: system
         pass_filenames: false
         files: '\.(ts|tsx|js|jsx|json|md)$'
-        exclude: '^ECC/'
+        exclude: "^ECC/"
 
   # Pre-push safety net: mirror the CI format gate against the WHOLE tree, not just
   # staged files. This catches format drift that slipped in via `--no-verify`, a

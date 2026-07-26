@@ -34,6 +34,9 @@ jobs:
       # Cleanup H0/H1: no tracked machine-local tool/cache artifacts or oversized binaries.
       - run: python -m unittest discover -s scripts -p "test_check_repo_hygiene.py"
       - run: python scripts/check_repo_hygiene.py
+      # Cleanup inventory: frozen rollback/reference surfaces cannot silently grow or deploy.
+      - run: python -m unittest discover -s scripts -p "test_ownership_inventory.py"
+      - run: python scripts/ownership_inventory.py --check
       # engineering-doctrine D2: no non-commercial model in the serving path.
       - run: python scripts/check_model_licenses.py
       # engineering-doctrine D5: no unevaluated model in the serving path.
