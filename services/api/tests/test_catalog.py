@@ -154,6 +154,24 @@ def test_normalize_uses_later_https_image_when_first_ref_is_invalid():
     )
     assert item.attributes["image"] == {"status": "usable"}
     assert item.image_refs == ["https://cdn.example.com/b.jpg"]
+    assert item.image_hash == ing._image_hash(["https://cdn.example.com/b.jpg"])
+
+
+def test_normalize_keeps_usable_https_image_despite_failing_verifier_metadata():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=["http://cdn.example.com/a.jpg", "https://cdn.example.com/b.jpg"],
+            image_http_status=404,
+            image_content_type="text/html",
+            image_size_bytes=0,
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["image"] == {"status": "usable"}
+    assert item.image_refs == ["https://cdn.example.com/b.jpg"]
 
 
 def test_normalize_filters_mixed_image_refs_to_usable_https_only():
@@ -176,6 +194,24 @@ def test_normalize_filters_mixed_image_refs_to_usable_https_only():
         "https://cdn.example.com/good-a.jpg",
         "https://cdn.example.com/good-b.jpg",
     ]
+
+
+def test_dedupe_key_uses_selected_usable_https_image():
+    mixed = normalize(
+        RawFeedItem(
+            title="Plain Tee",
+            image_urls=["http://cdn.example.com/a.jpg", "https://cdn.example.com/b.jpg"],
+        ),
+        provider="ds",
+        license="l",
+    )
+    https_only = normalize(
+        RawFeedItem(title="Plain Tee", image_urls=["https://cdn.example.com/b.jpg"]),
+        provider="ds",
+        license="l",
+    )
+    assert mixed.image_hash == https_only.image_hash
+    assert mixed.dedupe_key == https_only.dedupe_key
 
 
 # --- ingest orchestration + idempotency ---

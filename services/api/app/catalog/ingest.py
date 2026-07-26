@@ -82,6 +82,8 @@ def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
         for ref in refs
         if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc
     ]
+    if https_refs:
+        return https_refs, {"status": "usable"}
     reason: str | None = None
     if raw.image_http_status is not None and not 200 <= raw.image_http_status < 300:
         reason = "http_status"
@@ -94,8 +96,6 @@ def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
         reason = "size"
     if reason:
         return [], {"status": "image_unavailable", "quarantine_reason": reason}
-    if https_refs:
-        return https_refs, {"status": "usable"}
     if not refs:
         return [], {"status": "image_unavailable", "quarantine_reason": "missing"}
     return [], {"status": "image_unavailable", "quarantine_reason": "invalid_url"}
@@ -125,9 +125,17 @@ def _image_hash(image_urls: list[str]) -> str | None:
     Once images are fetched for embedding (A2), this becomes a perceptual/content
     hash of the bytes; the column and call site stay the same.
     """
-    if not image_urls:
+    usable_refs = [
+        image.strip()
+        for image in image_urls
+        if image.strip() and (parsed := urlparse(image.strip())).scheme == "https" and parsed.netloc
+    ]
+    if usable_refs:
+        return hashlib.sha1(usable_refs[0].encode("utf-8")).hexdigest()
+    stripped_refs = [image.strip() for image in image_urls if image.strip()]
+    if not stripped_refs:
         return None
-    return hashlib.sha1(image_urls[0].encode("utf-8")).hexdigest()
+    return hashlib.sha1(stripped_refs[0].encode("utf-8")).hexdigest()
 
 
 def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedItem:
