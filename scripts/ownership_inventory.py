@@ -90,6 +90,13 @@ def normalize_working_directory(value: str) -> str:
     return "." if normalized == "" else normalized
 
 
+def is_expression_working_directory(value: str) -> bool:
+    stripped = value.strip()
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] in {"'", '"'}:
+        stripped = stripped[1:-1].strip()
+    return "${{" in stripped and "}}" in stripped
+
+
 def extract_import_targets(text: str) -> list[str]:
     patterns = (
         r"\bfrom\s+[\"']([^\"']+)[\"']",
@@ -177,7 +184,13 @@ def deployment_violations(root: Path) -> list[str]:
         for pattern in forbidden:
             if path.endswith("cd.yml") and pattern == "app":
                 for match in re.finditer(r"working-directory:[ \t]*([^\n#]+)", text):
-                    if normalize_working_directory(match.group(1)) == pattern:
+                    candidate = match.group(1)
+                    if is_expression_working_directory(candidate):
+                        violations.append(
+                            f"deploy ownership violation: {path} uses dynamic working-directory"
+                        )
+                        break
+                    if normalize_working_directory(candidate) == pattern:
                         violations.append(
                             f"deploy ownership violation: {path} uses working-directory {pattern}"
                         )
