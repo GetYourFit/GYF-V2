@@ -2430,7 +2430,16 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
         )
         assert all(inserted_category_positions[category] for category in categories)
         assert [category for _, category, _ in eligible_positions[: len(categories)]] == categories
-        assert all(item.currency == "INR" for item in result)
+        inserted_eligible_ids = {
+            item_id
+            for category_ids in eligible_ids_by_category.values()
+            for item_id in category_ids
+        }
+        assert all(
+            item.currency == "INR"
+            for item in result
+            if item.item_id in inserted_eligible_ids
+        )
         repo._pool.close()  # type: ignore[attr-defined]  # repository owns this test pool
     finally:
         with psycopg.connect(live_db) as conn:

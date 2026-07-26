@@ -117,7 +117,7 @@ def test_normalize_quarantines_adult_kids_audience_conflicts_and_bad_images():
     assert item.attributes["taxonomy"]["quarantine"]["reason"] == "adult_kids_conflict"
     assert item.attributes["image"] == {
         "status": "image_unavailable",
-        "quarantine_reason": "http_status",
+        "quarantine_reason": "invalid_url",
     }
     assert item.image_refs == []
 
@@ -172,6 +172,22 @@ def test_normalize_keeps_usable_https_image_despite_failing_verifier_metadata():
     )
     assert item.attributes["image"] == {"status": "usable"}
     assert item.image_refs == ["https://cdn.example.com/b.jpg"]
+
+
+def test_normalize_uses_later_https_when_verified_primary_is_bad():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=["https://cdn.example.com/bad.jpg", "https://cdn.example.com/good.jpg"],
+            image_http_status=404,
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["image"] == {"status": "usable"}
+    assert item.image_refs == ["https://cdn.example.com/good.jpg"]
+    assert item.image_hash == ing._image_hash(item.image_refs)
 
 
 def test_normalize_filters_mixed_image_refs_to_usable_https_only():

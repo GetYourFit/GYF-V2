@@ -80,18 +80,27 @@ def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
     https_refs = [
         ref for ref in refs if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc
     ]
+    # Verification metadata describes the primary feed reference. A bad insecure
+    # primary cannot poison a later HTTPS ref, while a bad HTTPS primary is
+    # removed before an unverified later HTTPS fallback is considered.
+    primary_is_https = bool(
+        refs and (parsed := urlparse(refs[0])).scheme == "https" and parsed.netloc
+    )
+    reason: str | None = None
+    if primary_is_https:
+        if raw.image_http_status is not None and not 200 <= raw.image_http_status < 300:
+            reason = "http_status"
+        elif raw.image_content_type is not None and (
+            not raw.image_content_type.lower().split(";", 1)[0].strip().startswith("image/")
+            or raw.image_content_type.lower().startswith("image/svg")
+        ):
+            reason = "content_type"
+        elif raw.image_size_bytes is not None and not 0 < raw.image_size_bytes <= _MAX_IMAGE_BYTES:
+            reason = "size"
+        if reason:
+            https_refs = https_refs[1:]
     if https_refs:
         return https_refs, {"status": "usable"}
-    reason: str | None = None
-    if raw.image_http_status is not None and not 200 <= raw.image_http_status < 300:
-        reason = "http_status"
-    elif raw.image_content_type is not None and (
-        not raw.image_content_type.lower().split(";", 1)[0].strip().startswith("image/")
-        or raw.image_content_type.lower().startswith("image/svg")
-    ):
-        reason = "content_type"
-    elif raw.image_size_bytes is not None and not 0 < raw.image_size_bytes <= _MAX_IMAGE_BYTES:
-        reason = "size"
     if reason:
         return [], {"status": "image_unavailable", "quarantine_reason": reason}
     if not refs:
@@ -167,9 +176,10 @@ def normalize(raw: RawFeedItem, *, provider: str, license: str) -> NormalizedIte
     region_tags = sorted({*raw.region_hints, *final_category.region_tags})
     image_refs, image = _image_truth(raw)
     audience, audience_quarantine = _audience_truth(raw)
-    # Keep the source identity stable even when an invalid image is quarantined;
-    # otherwise a repaired URL could collide with a distinct no-image feed row.
-    image_hash = _image_hash(raw.image_urls)
+    # Identity follows the selected usable image when one exists. Keep a
+    # quarantined source ref only when no usable ref survives, so a repair remains
+    # distinguishable from a genuinely image-less source row.
+    image_hash = _image_hash(image_refs or raw.image_urls)
     # Merchant text is more trustworthy than the feed's facet tag: a title that
     # says "Women's" wins over a feed-supplied "unisex" (observed in the wild).
     # When the feed carries no gender at all, text inference fills the gap so
