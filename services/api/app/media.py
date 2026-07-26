@@ -17,6 +17,10 @@ from .config import settings
 _MEDIA_MOUNT = "/media"
 
 
+def _supported_local_ref(ref: str) -> bool:
+    return os.path.isabs(ref) or "/" in ref or "\\" in ref
+
+
 def image_url_from_refs(refs: Sequence[str] | None) -> str | None:
     """First usable image ref as a fetchable URL, or ``None``.
 
@@ -34,7 +38,7 @@ def image_url_from_refs(refs: Sequence[str] | None) -> str | None:
             return ref
         if ref.startswith("http://"):
             continue
-        if local_ref is None:
+        if local_ref is None and _supported_local_ref(ref):
             local_ref = ref
     if local_ref is None:
         return None
