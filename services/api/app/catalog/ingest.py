@@ -80,14 +80,19 @@ def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
     https_refs = [
         ref for ref in refs if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc
     ]
+    primary_https_ref = next(
+        (
+            ref
+            for ref in refs
+            if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc
+        ),
+        None,
+    )
     # Verification metadata describes the primary feed reference. A bad insecure
     # primary cannot poison a later HTTPS ref, while a bad HTTPS primary is
     # removed before an unverified later HTTPS fallback is considered.
-    primary_is_https = bool(
-        refs and (parsed := urlparse(refs[0])).scheme == "https" and parsed.netloc
-    )
     reason: str | None = None
-    if primary_is_https:
+    if primary_https_ref is not None:
         if raw.image_http_status is not None and not 200 <= raw.image_http_status < 300:
             reason = "http_status"
         elif raw.image_content_type is not None and (
@@ -98,7 +103,7 @@ def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
         elif raw.image_size_bytes is not None and not 0 < raw.image_size_bytes <= _MAX_IMAGE_BYTES:
             reason = "size"
         if reason:
-            https_refs = https_refs[1:]
+            https_refs = [ref for ref in https_refs if ref != primary_https_ref]
     if https_refs:
         return https_refs, {"status": "usable"}
     if reason:

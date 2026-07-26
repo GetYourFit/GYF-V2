@@ -157,7 +157,7 @@ def test_normalize_uses_later_https_image_when_first_ref_is_invalid():
     assert item.image_hash == ing._image_hash(["https://cdn.example.com/b.jpg"])
 
 
-def test_normalize_keeps_usable_https_image_despite_failing_verifier_metadata():
+def test_normalize_quarantines_first_valid_https_even_after_http_prefix():
     item = normalize(
         RawFeedItem(
             title="Adult Shirt",
@@ -170,8 +170,32 @@ def test_normalize_keeps_usable_https_image_despite_failing_verifier_metadata():
         provider="feed",
         license="licensed",
     )
+    assert item.attributes["image"] == {
+        "status": "image_unavailable",
+        "quarantine_reason": "http_status",
+    }
+    assert item.image_refs == []
+
+
+def test_normalize_ignores_malformed_or_http_prefix_before_verified_primary_https():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=[
+                "not-a-url",
+                "http://cdn.example.com/insecure.jpg",
+                "https://cdn.example.com/bad.jpg",
+                "https://cdn.example.com/good.jpg",
+            ],
+            image_http_status=404,
+        ),
+        provider="feed",
+        license="licensed",
+    )
     assert item.attributes["image"] == {"status": "usable"}
-    assert item.image_refs == ["https://cdn.example.com/b.jpg"]
+    assert item.image_refs == ["https://cdn.example.com/good.jpg"]
+    assert item.image_hash == ing._image_hash(item.image_refs)
 
 
 def test_normalize_uses_later_https_when_verified_primary_is_bad():

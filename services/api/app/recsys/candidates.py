@@ -37,6 +37,10 @@ _ORDER_BY_RECENCY = _HAS_PERCEPTION + ", i.created_at DESC"
 # already-checked-out connection; no global database or pool setting changes.
 _QUERY_TIMEOUT_MS = 5_000
 _STYLE_RESERVE_PER_SLOT = 4
+_CATALOG_AUDIENCE_GUARD = """
+  AND COALESCE(i.attributes #>> '{{taxonomy,audience}}', 'adult') <> 'kids'
+  AND i.attributes #>> '{{taxonomy,quarantine}}' IS NULL
+"""
 
 # The taste/HNSW path orders purely by vector distance (diagnostic Slice C,
 # candidates.py:204-212 finding): a strong taste vector can return a pool where
@@ -212,6 +216,7 @@ WHERE i.available
   )
   """
     + f"AND i.title !~* '{_KIDS_RE}'"
+    + _CATALOG_AUDIENCE_GUARD
     + """
   AND COALESCE(i.attributes #>> '{{image,status}}', 'usable') = 'usable'
   AND EXISTS (
@@ -296,6 +301,7 @@ WITH per_category AS MATERIALIZED (
            OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
   """
     + f"AND i.title !~* '{_KIDS_RE}'\n"
+    + _CATALOG_AUDIENCE_GUARD
     + """
       AND EXISTS (SELECT 1 FROM item_embeddings seen WHERE seen.item_id = i.id)
     ORDER BY (i.price IS NOT NULL) DESC, i.id
@@ -362,6 +368,7 @@ WITH per_category AS MATERIALIZED (
       )
   """
     + f"AND i.title !~* '{_KIDS_RE}'\n"
+    + _CATALOG_AUDIENCE_GUARD
     + """
       AND EXISTS (SELECT 1 FROM item_embeddings seen WHERE seen.item_id = i.id)
     ORDER BY (i.price IS NOT NULL) DESC, i.id

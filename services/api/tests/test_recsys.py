@@ -1888,6 +1888,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     assert "JOIN items i ON i.id = e.item_id" in sql
     assert "ORDER BY e.embedding <=> %s::vector" in sql
     assert "i.attributes #>> '{commerce,merchant_name}'" in sql
+    assert "COALESCE(i.attributes #>> '{taxonomy,audience}', 'adult') <> 'kids'" in sql
+    assert "i.attributes #>> '{taxonomy,quarantine}' IS NULL" in sql
     assert params == (
         "[0.1,0.2]",
         list(conditioning._CATEGORIES_BY_SLOT["top"]),
@@ -1931,6 +1933,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     assert "CROSS JOIN LATERAL" in sql
     assert "jsonb_array_elements_text(i.image_refs)" in sql
     assert "value ~ '^https://'" in sql
+    assert "COALESCE(i.attributes #>> '{taxonomy,audience}', 'adult') <> 'kids'" in sql
+    assert "i.attributes #>> '{taxonomy,quarantine}' IS NULL" in sql
     assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in sql
     assert "ORDER BY category_rank, category_order" in sql
     assert sql.index("LIMIT %s") < sql.rindex("e.embedding::text")
@@ -2347,13 +2351,79 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
                 )
             )
     # Each row violates exactly one server-truth predicate and must stay out.
-    for suffix, price, gender, region, images, available, embedding in (
-        ("price", 9000, "women", ["IN"], ["https://cdn.example.com/x.jpg"], True, vector),
-        ("gender", 999, "men", ["IN"], ["https://cdn.example.com/x.jpg"], True, vector),
-        ("region", 999, "women", ["US"], ["https://cdn.example.com/x.jpg"], True, vector),
-        ("image", 999, "women", ["IN"], [], True, vector),
-        ("availability", 999, "women", ["IN"], ["https://cdn.example.com/x.jpg"], False, vector),
-        ("perception", 999, "women", ["IN"], ["https://cdn.example.com/x.jpg"], True, None),
+    for suffix, price, region, images, available, embedding, attributes in (
+        (
+            "price",
+            9000,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "gender",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "men"}},
+        ),
+        (
+            "region",
+            999,
+            ["US"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "image",
+            999,
+            ["IN"],
+            [],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "availability",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            False,
+            vector,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "perception",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            None,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "kids",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women", "audience": "kids"}},
+        ),
+        (
+            "quarantine",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women", "quarantine": {"reason": "adult_kids_conflict"}}},
+        ),
     ):
         item_id = f"10000000-0000-0000-0000-00000000{len(rejected_ids):04d}"
         rejected_ids.add(item_id)
@@ -2364,7 +2434,7 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
                 categories[0],
                 price,
                 "INR",
-                json.dumps({"taxonomy": {"gender": gender}}),
+                json.dumps(attributes),
                 region,
                 json.dumps(images),
                 provider,
