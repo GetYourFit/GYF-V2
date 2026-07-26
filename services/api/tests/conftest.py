@@ -117,7 +117,9 @@ def _seed_catalog(dsn: str) -> None:
 
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM item_embeddings WHERE item_id IN (SELECT id FROM items WHERE source_provider = 'test-fixture')")
+            cur.execute(
+                "DELETE FROM item_embeddings WHERE item_id IN (SELECT id FROM items WHERE source_provider = 'test-fixture')"
+            )
             cur.execute("DELETE FROM items WHERE source_provider = 'test-fixture'")
             cur.executemany(
                 """

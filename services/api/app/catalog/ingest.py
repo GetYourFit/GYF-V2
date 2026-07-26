@@ -78,9 +78,7 @@ def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
     """
     refs = [image.strip() for image in raw.image_urls if image.strip()]
     https_refs = [
-        ref
-        for ref in refs
-        if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc
+        ref for ref in refs if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc
     ]
     if https_refs:
         return https_refs, {"status": "usable"}

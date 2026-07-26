@@ -2405,14 +2405,17 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
         eligible_positions = [
             (index, item.category, item.item_id)
             for index, item in enumerate(result)
-            if item.item_id in {
+            if item.item_id
+            in {
                 eligible_id
                 for category_ids in eligible_ids_by_category.values()
                 for eligible_id in category_ids
             }
         ]
         inserted_category_positions = {
-            category: [index for index, seen_category, _ in eligible_positions if seen_category == category]
+            category: [
+                index for index, seen_category, _ in eligible_positions if seen_category == category
+            ]
             for category in categories
         }
         # `live_db` deliberately seeds valid top categories too. The contract is
@@ -2426,10 +2429,7 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
             for category in categories
         )
         assert all(inserted_category_positions[category] for category in categories)
-        assert [
-            category
-            for _, category, _ in eligible_positions[: len(categories)]
-        ] == categories
+        assert [category for _, category, _ in eligible_positions[: len(categories)]] == categories
         assert all(item.currency == "INR" for item in result)
         repo._pool.close()  # type: ignore[attr-defined]  # repository owns this test pool
     finally:
