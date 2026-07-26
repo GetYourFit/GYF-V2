@@ -115,6 +115,24 @@ class OwnershipInventoryTests(unittest.TestCase):
 
             shutil.rmtree(root)
 
+    def test_namespace_re_export_of_next_rollback_is_rejected(self) -> None:
+        root = Path(self._testMethodName)
+        root.mkdir()
+        try:
+            source = root / "apps/expo/src/unsafe.ts"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                'export * as api from "../../../app/lib/api"\n',
+                encoding="utf-8",
+            )
+            violations = inventory.production_import_violations(root, ["apps/expo/src/unsafe.ts"])
+            self.assertEqual(len(violations), 1)
+            self.assertIn("app/", violations[0])
+        finally:
+            import shutil
+
+            shutil.rmtree(root)
+
     def test_deploy_configuration_cannot_claim_next_rollback(self) -> None:
         root = Path(self._testMethodName)
         root.mkdir()
