@@ -142,6 +142,42 @@ def test_normalize_quarantines_non_image_and_oversize_verified_images():
         assert item.attributes["image"]["quarantine_reason"] == reason
 
 
+def test_normalize_uses_later_https_image_when_first_ref_is_invalid():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=["http://cdn.example.com/a.jpg", "https://cdn.example.com/b.jpg"],
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["image"] == {"status": "usable"}
+    assert item.image_refs == ["https://cdn.example.com/b.jpg"]
+
+
+def test_normalize_filters_mixed_image_refs_to_usable_https_only():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=[
+                "not-a-url",
+                "https://cdn.example.com/good-a.jpg",
+                "http://cdn.example.com/bad.jpg",
+                " https://cdn.example.com/good-b.jpg ",
+            ],
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["image"] == {"status": "usable"}
+    assert item.image_refs == [
+        "https://cdn.example.com/good-a.jpg",
+        "https://cdn.example.com/good-b.jpg",
+    ]
+
+
 # --- ingest orchestration + idempotency ---
 
 

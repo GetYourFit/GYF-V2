@@ -2314,23 +2314,22 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
 
 def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(live_db):
     import json
-    import uuid
 
     import psycopg
 
     from app.recsys.candidates import PostgresCandidateRepository
 
     categories = list(conditioning._CATEGORIES_BY_SLOT["top"][:3])
-    provider = f"candidate-fairness-{uuid.uuid4()}"
+    provider = "candidate-fairness-seed-safe"
     vector = "[" + ",".join(["0.1"] * 768) + "]"
     rows: list[tuple] = []
-    eligible_ids: set[str] = set()
+    eligible_ids_by_category: dict[str, list[str]] = {category: [] for category in categories}
     rejected_ids: set[str] = set()
     expected_counts = {categories[0]: 3, categories[1]: 2, categories[2]: 1}
-    for category, count in expected_counts.items():
+    for category_index, (category, count) in enumerate(expected_counts.items(), start=1):
         for position in range(count):
-            item_id = str(uuid.uuid4())
-            eligible_ids.add(item_id)
+            item_id = f"00000000-0000-0000-0000-{category_index:04d}{position:08d}"
+            eligible_ids_by_category[category].append(item_id)
             rows.append(
                 (
                     item_id,
@@ -2356,7 +2355,7 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
         ("availability", 999, "women", ["IN"], ["https://cdn.example.com/x.jpg"], False, vector),
         ("perception", 999, "women", ["IN"], ["https://cdn.example.com/x.jpg"], True, None),
     ):
-        item_id = str(uuid.uuid4())
+        item_id = f"10000000-0000-0000-0000-00000000{len(rejected_ids):04d}"
         rejected_ids.add(item_id)
         rows.append(
             (
@@ -2403,13 +2402,34 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
         )["top"]
         result_ids = {item.item_id for item in result}
         result_categories = [item.category for item in result]
+        eligible_positions = [
+            (index, item.category, item.item_id)
+            for index, item in enumerate(result)
+            if item.item_id in {
+                eligible_id
+                for category_ids in eligible_ids_by_category.values()
+                for eligible_id in category_ids
+            }
+        ]
+        inserted_category_positions = {
+            category: [index for index, seen_category, _ in eligible_positions if seen_category == category]
+            for category in categories
+        }
         # `live_db` deliberately seeds valid top categories too. The contract is
         # fair bucket interleaving, not a brittle exact sequence that assumes an
         # otherwise empty migrated database.
         assert set(categories) <= set(result_categories)
         assert all(left != right for left, right in zip(result_categories, result_categories[1:]))
         assert result_ids.isdisjoint(rejected_ids)
-        assert result_ids & eligible_ids
+        assert all(
+            any(item_id in result_ids for item_id in eligible_ids_by_category[category])
+            for category in categories
+        )
+        assert all(inserted_category_positions[category] for category in categories)
+        assert [
+            category
+            for _, category, _ in eligible_positions[: len(categories)]
+        ] == categories
         assert all(item.currency == "INR" for item in result)
         repo._pool.close()  # type: ignore[attr-defined]  # repository owns this test pool
     finally:

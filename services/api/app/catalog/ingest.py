@@ -76,12 +76,14 @@ def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
     verifier facts do not trigger network work here; a syntactically safe HTTPS
     URL is usable until that asynchronous boundary reports otherwise.
     """
-    url = raw.image_urls[0].strip() if raw.image_urls else ""
-    parsed = urlparse(url)
+    refs = [image.strip() for image in raw.image_urls if image.strip()]
+    https_refs = [
+        ref
+        for ref in refs
+        if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc
+    ]
     reason: str | None = None
-    if parsed.scheme != "https" or not parsed.netloc:
-        reason = "invalid_url"
-    elif raw.image_http_status is not None and not 200 <= raw.image_http_status < 300:
+    if raw.image_http_status is not None and not 200 <= raw.image_http_status < 300:
         reason = "http_status"
     elif raw.image_content_type is not None and (
         not raw.image_content_type.lower().split(";", 1)[0].strip().startswith("image/")
@@ -92,9 +94,11 @@ def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
         reason = "size"
     if reason:
         return [], {"status": "image_unavailable", "quarantine_reason": reason}
-    if not url:
+    if https_refs:
+        return https_refs, {"status": "usable"}
+    if not refs:
         return [], {"status": "image_unavailable", "quarantine_reason": "missing"}
-    return [image.strip() for image in raw.image_urls if image.strip()], {"status": "usable"}
+    return [], {"status": "image_unavailable", "quarantine_reason": "invalid_url"}
 
 
 def _audience_truth(raw: RawFeedItem) -> tuple[str, dict[str, object] | None]:
