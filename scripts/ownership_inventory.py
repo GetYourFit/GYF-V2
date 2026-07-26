@@ -106,7 +106,9 @@ def extract_import_targets(text: str) -> list[str]:
         r"\bfrom\s+[\"']([^\"']+)[\"']",
         r"\bimport\s+[\"']([^\"']+)[\"']",
         r"\bimport\s*\(\s*[\"']([^\"']+)[\"']\s*\)",
+        r"\bimport\s*\(\s*`([^`$]+)`\s*\)",
         r"\brequire\s*\(\s*[\"']([^\"']+)[\"']\s*\)",
+        r"\brequire\s*\(\s*`([^`$]+)`\s*\)",
     )
     targets: list[str] = []
     for pattern in patterns:
