@@ -97,6 +97,13 @@ def is_expression_working_directory(value: str) -> bool:
     return "${{" in stripped and "}}" in stripped
 
 
+def expression_resolves_to_root_working_directory(value: str) -> bool:
+    stripped = value.strip()
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] in {"'", '"'}:
+        stripped = stripped[1:-1].strip()
+    return stripped in {"${{ github.workspace }}", "${{github.workspace}}"}
+
+
 def is_multiline_working_directory(value: str) -> bool:
     return value.strip().startswith((">", "|"))
 
@@ -197,6 +204,8 @@ def deployment_violations(root: Path) -> list[str]:
                             f"deploy ownership violation: {path} uses multiline working-directory"
                         )
                         break
+                    if expression_resolves_to_root_working_directory(candidate):
+                        continue
                     if is_expression_working_directory(candidate):
                         violations.append(
                             f"deploy ownership violation: {path} uses dynamic working-directory"

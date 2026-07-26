@@ -226,6 +226,24 @@ class OwnershipInventoryTests(unittest.TestCase):
 
             shutil.rmtree(root)
 
+    def test_deploy_configuration_allows_root_workspace_expression(self) -> None:
+        root = Path(self._testMethodName)
+        root.mkdir()
+        try:
+            workflow = root / ".github/workflows/cd.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text(
+                "working-directory: ${{ github.workspace }}\n",
+                encoding="utf-8",
+            )
+            render = root / "render.yaml"
+            render.write_text("services: []\n", encoding="utf-8")
+            self.assertEqual(inventory.deployment_violations(root), [])
+        finally:
+            import shutil
+
+            shutil.rmtree(root)
+
     def test_deploy_configuration_rejects_multiline_working_directory_variants(self) -> None:
         root = Path(self._testMethodName)
         root.mkdir()

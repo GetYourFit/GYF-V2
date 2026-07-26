@@ -60,6 +60,8 @@ same interaction spine used by training exports.
 - **Pre-commit hooks** mirror CI — install once with `pre-commit install --install-hooks`
   to wire up both the commit and pre-push stages
   (see [`.pre-commit-config.yaml`](./.pre-commit-config.yaml)).
+- **Doctrine gate:** `make doctrine` runs repo hygiene, protected ownership inventory, model
+  license/promotion checks, import-boundary lint, and doc-alignment checks.
 - **Local gate:** `make ci` runs format-check, lint, typecheck, doctrine, standards, and tests.
 - **CI:** GitHub Actions runs web, Expo and API checks; the API lane uses real Postgres.
 - **CD:** repository automation deploys Expo web to EAS Hosting after main CI. The FastAPI API runs
