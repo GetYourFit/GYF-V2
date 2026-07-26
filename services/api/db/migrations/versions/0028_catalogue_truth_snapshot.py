@@ -1,7 +1,7 @@
 """Durable catalogue eligibility snapshot and image/audience truth fields.
 
 Revision ID: 0028_catalogue_truth_snapshot
-Revises: 0027_certain_aesthetic_browse_index
+Revises: 0027_certain_aesthetic_browse
 Create Date: 2026-07-25
 """
 
@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from alembic import op
 
 revision: str = "0028_catalogue_truth_snapshot"
-down_revision: str | None = "0027_certain_aesthetic_browse_index"
+down_revision: str | None = "0027_certain_aesthetic_browse"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
