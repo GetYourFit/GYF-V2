@@ -97,6 +97,10 @@ def is_expression_working_directory(value: str) -> bool:
     return "${{" in stripped and "}}" in stripped
 
 
+def is_multiline_working_directory(value: str) -> bool:
+    return value.strip() in {">", ">-", ">+", "|", "|-", "|+"}
+
+
 def extract_import_targets(text: str) -> list[str]:
     patterns = (
         r"\bfrom\s+[\"']([^\"']+)[\"']",
@@ -185,6 +189,11 @@ def deployment_violations(root: Path) -> list[str]:
             if path.endswith("cd.yml") and pattern == "app":
                 for match in re.finditer(r"working-directory:[ \t]*([^\n#]+)", text):
                     candidate = match.group(1)
+                    if is_multiline_working_directory(candidate):
+                        violations.append(
+                            f"deploy ownership violation: {path} uses multiline working-directory"
+                        )
+                        break
                     if is_expression_working_directory(candidate):
                         violations.append(
                             f"deploy ownership violation: {path} uses dynamic working-directory"
