@@ -37,6 +37,7 @@ class ItemDetail:
     # never fabricated (the open-dataset seed has no buy links yet).
     buy_url: str | None
     image_url: str | None
+    image_status: str = "image_unavailable"
 
 
 class ItemDirectory(Protocol):
@@ -62,6 +63,7 @@ WHERE i.id = ANY(%s)
 
 def _detail_from_row(row: tuple) -> ItemDetail:
     category = row[2] or "unknown"
+    image_url = image_url_from_refs(row[6])
     return ItemDetail(
         item_id=str(row[0]),
         title=row[1],
@@ -71,7 +73,8 @@ def _detail_from_row(row: tuple) -> ItemDetail:
         currency=row[4],
         color=row[7],
         buy_url=row[5],
-        image_url=image_url_from_refs(row[6]),
+        image_url=image_url,
+        image_status="usable" if image_url else "image_unavailable",
     )
 
 

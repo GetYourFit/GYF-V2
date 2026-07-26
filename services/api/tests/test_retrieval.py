@@ -491,6 +491,13 @@ def test_keyword_fallback_uses_bounded_indexable_full_text_search():
     assert params[-2:] == (12, 0)
 
 
+def test_searchable_predicate_accepts_any_https_image_ref():
+    from app.catalog.retrieval import SEARCHABLE_ITEM_PREDICATE
+
+    assert "jsonb_array_elements_text(i.image_refs)" in SEARCHABLE_ITEM_PREDICATE
+    assert "value ~ '^https://'" in SEARCHABLE_ITEM_PREDICATE
+
+
 def test_keyword_fallback_rejects_punctuation_only_without_querying_postgres():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)

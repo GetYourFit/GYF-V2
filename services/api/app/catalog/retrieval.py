@@ -192,7 +192,11 @@ i.available
 AND i.category <> 'unknown'
 AND i.price IS NOT NULL AND i.price > 0
 AND jsonb_array_length(i.image_refs) > 0
-AND i.image_refs ->> 0 ~ '^https://'
+AND EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements_text(i.image_refs) AS image_ref(value)
+    WHERE value ~ '^https://'
+)
 AND COALESCE(i.attributes #>> '{image,status}', 'usable') = 'usable'
 AND COALESCE(i.attributes #>> '{taxonomy,audience}', 'adult') <> 'kids'
 AND i.attributes #>> '{taxonomy,quarantine}' IS NULL

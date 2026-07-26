@@ -1929,7 +1929,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     # Cold start uses the existing visible-catalogue index shape, samples every
     # category fairly, and hydrates embeddings only after the bounded ID slice.
     assert "CROSS JOIN LATERAL" in sql
-    assert "jsonb_array_length(i.image_refs) > 0" in sql
+    assert "jsonb_array_elements_text(i.image_refs)" in sql
+    assert "value ~ '^https://'" in sql
     assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in sql
     assert "ORDER BY category_rank, category_order" in sql
     assert sql.index("LIMIT %s") < sql.rindex("e.embedding::text")

@@ -18,7 +18,7 @@ _MEDIA_MOUNT = "/media"
 
 
 def image_url_from_refs(refs: Sequence[str] | None) -> str | None:
-    """First image ref as a fetchable URL, or ``None``.
+    """First usable image ref as a fetchable URL, or ``None``.
 
     Uses ``settings.media_base_url`` when configured (external store), else the
     local ``/media/<filename>`` mount. Only the basename is used: the store is
@@ -26,15 +26,13 @@ def image_url_from_refs(refs: Sequence[str] | None) -> str | None:
     """
     if not refs:
         return None
-    first = refs[0]
-    if not first:
-        return None
-    # Remote catalogs (Shopify/affiliate feeds) store absolute CDN URLs — those
-    # are already fetchable and must pass through untouched; only local file
-    # refs get rebased onto the media store.
-    if first.startswith("https://"):
-        return first
-    if first.startswith("http://"):
-        return None
-    base = settings.media_base_url.rstrip("/") or _MEDIA_MOUNT
-    return f"{base}/{os.path.basename(first)}"
+    for ref in refs:
+        if not ref:
+            continue
+        if ref.startswith("https://"):
+            return ref
+        if ref.startswith("http://"):
+            continue
+        base = settings.media_base_url.rstrip("/") or _MEDIA_MOUNT
+        return f"{base}/{os.path.basename(ref)}"
+    return None
