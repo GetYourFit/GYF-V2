@@ -1337,10 +1337,11 @@ in stock flips available again on its next appearance. Every serving path filter
 *directory* deliberately does not, so an owned or saved garment still renders.
 
 Verified already true: rights are recorded per feed (`source_provider`/`source_license`, and
-`ShopifySource` states its `merchant-public-feed` basis — listing with attribution and buy-through,
+`ShopifySource` states its `merchant-public-feed` basis - listing with attribution and buy-through,
 never generative training on merchant imagery without terms, which is what F8 must clear); prices
 and currency come from the feed with a currency guard and sanity bound, and coverage is reported
-from live aggregates (`/items/facets`), never a hardcoded count.
+from the versioned completed-ingest catalogue-truth snapshot surfaced at `/items/facets`, never a
+hardcoded count.
 
 Regressions: `test_catalog_availability.py` — reconciliation, the come-back-in-stock path, the
 broken-run guard, and (real-PG lane) proof that a delisted item is gone from search, browse,
@@ -1460,15 +1461,22 @@ present a costed non-Singapore topology experiment for owner approval. F2.5 is *
 this local result.
 
 **2026-07-25 bounded-latency search/facets slice (local evidence only).** Search/facets now add
-rollback-safe instrumentation and bounded SQL budgets without changing the JSON API, catalogue
-sources, audience policy, or topology. Search and facets set transaction-local
-`statement_timeout` budgets, propagate PostgreSQL cancellation/database errors instead of fabricating
-empty success, preserve the normalized-query-plus-model-ID embedding cache key, echo the sanitized
-request ID, expose `X-GYF-Search-Mode: semantic|lexical`, and log only privacy-safe fixed-label
-catalogue stage totals plus total wall time for `/items/*`. Focused local evidence and the rollback
-notes live in [`docs/evidence/f2.5-search-facets-bounded-latency-2026-07-25.md`](../evidence/f2.5-search-facets-bounded-latency-2026-07-25.md).
-This is not promotion evidence: Virginia deployment, India-vantage sustained samples, and production
-`EXPLAIN (ANALYZE, BUFFERS)` remain required before any F2.5 closeout claim.
+rollback-safe instrumentation, bounded SQL budgets, and a durable searchable-catalogue truth
+snapshot without changing the JSON API, catalogue sources, source cutover, audience policy, or
+topology. Search and facets set transaction-local `statement_timeout` budgets, propagate PostgreSQL
+cancellation/database errors instead of fabricating empty success, preserve the
+normalized-query-plus-model-ID embedding cache key, echo the sanitized request ID, expose
+`X-GYF-Search-Mode: semantic|lexical`, and log only privacy-safe fixed-label catalogue stage totals
+plus total wall time for `/items/*`. Completed ingest now refreshes one versioned
+`catalogue_truth_snapshots` row that matches Explore browse/search eligibility, retains the prior
+good row if refresh fails, and returns `503 catalogue truth is refreshing` until the first
+successful snapshot exists instead of inventing an empty catalogue. Ingestion also quarantines
+adult/kids conflicts and feed-supplied invalid image URL, HTTP status, content type, or size facts
+without in-band remote fetching; searchable rows must keep a usable HTTPS image. Focused local
+evidence and the rollback notes live in
+[`docs/evidence/f2.5-search-facets-bounded-latency-2026-07-25.md`](../evidence/f2.5-search-facets-bounded-latency-2026-07-25.md).
+This is not promotion evidence: Virginia deployment, India-vantage sustained samples, and
+production `EXPLAIN (ANALYZE, BUFFERS)` remain required before any F2.5 closeout claim.
 
 **2026-07-16 measurement correction and root cause (supersedes the stage diagnosis above).**
 

@@ -81,11 +81,7 @@ def _image_truth(raw: RawFeedItem) -> tuple[list[str], dict[str, str]]:
         ref for ref in refs if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc
     ]
     primary_https_ref = next(
-        (
-            ref
-            for ref in refs
-            if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc
-        ),
+        (ref for ref in refs if (parsed := urlparse(ref)).scheme == "https" and parsed.netloc),
         None,
     )
     # Verification metadata describes the primary feed reference. A bad insecure

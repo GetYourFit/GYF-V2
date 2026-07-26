@@ -2506,9 +2506,7 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
             for item_id in category_ids
         }
         assert all(
-            item.currency == "INR"
-            for item in result
-            if item.item_id in inserted_eligible_ids
+            item.currency == "INR" for item in result if item.item_id in inserted_eligible_ids
         )
         repo._pool.close()  # type: ignore[attr-defined]  # repository owns this test pool
     finally:
