@@ -117,7 +117,7 @@ def test_normalize_quarantines_adult_kids_audience_conflicts_and_bad_images():
     assert item.attributes["taxonomy"]["quarantine"]["reason"] == "adult_kids_conflict"
     assert item.attributes["image"] == {
         "status": "image_unavailable",
-        "quarantine_reason": "invalid_url",
+        "quarantine_reason": "http_status",
     }
     assert item.image_refs == []
 
