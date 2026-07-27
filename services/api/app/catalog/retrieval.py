@@ -127,6 +127,7 @@ class VectorSearchRepository(Protocol):
         sort: str = "relevance",
         genders: frozenset[str] | None = None,
         categories: list[str] | None = None,
+        currency: str | None = None,
     ) -> list[SearchResult]: ...
 
     def keyword_search(
@@ -139,9 +140,16 @@ class VectorSearchRepository(Protocol):
         sort: str = "relevance",
         genders: frozenset[str] | None = None,
         categories: list[str] | None = None,
+        currency: str | None = None,
     ) -> list[SearchResult]:
         """Title keyword fallback when the semantic encoder lane is unavailable —
-        no embedding, so search still returns items instead of a 500/503."""
+        no embedding, so search still returns items instead of a 500/503.
+
+        ``currency`` scopes ``max_price`` to same-currency (or currency-unset)
+        rows, mirroring ``recsys.candidates``: region does not imply currency,
+        so a mismatched-currency row is dropped rather than compared as if its
+        price were in the same currency as the ceiling.
+        """
         ...
 
     def browse(
@@ -401,6 +409,7 @@ class PostgresVectorSearchRepository:
         sort: str = "relevance",
         genders: frozenset[str] | None = None,
         categories: list[str] | None = None,
+        currency: str | None = None,
     ) -> list[SearchResult]:
         vec = _pgvector(embedding)
         # The score column always reflects relevance to the query; `sort` only
@@ -416,6 +425,9 @@ class PostgresVectorSearchRepository:
         if max_price is not None:
             where += " AND i.price IS NOT NULL AND i.price <= %s"
             params.append(max_price)
+            if currency is not None:
+                where += " AND (i.currency IS NULL OR i.currency = %s)"
+                params.append(currency)
         if genders:
             where += " " + _GENDER_FILTER
             params.append(sorted(genders))
@@ -603,6 +615,7 @@ class PostgresVectorSearchRepository:
         sort: str = "relevance",
         genders: frozenset[str] | None = None,
         categories: list[str] | None = None,
+        currency: str | None = None,
     ) -> list[SearchResult]:
         # Content tokens only (stopwords/single-chars dropped), bounded to 6. The
         # fallback has to remain fast specifically when the encoder is unhealthy;
@@ -635,6 +648,9 @@ class PostgresVectorSearchRepository:
         if max_price is not None:
             where += " AND i.price IS NOT NULL AND i.price <= %s"
             params.append(max_price)
+            if currency is not None:
+                where += " AND (i.currency IS NULL OR i.currency = %s)"
+                params.append(currency)
         if genders:
             where += " " + _GENDER_FILTER
             params.append(sorted(genders))
@@ -748,6 +764,7 @@ def search_text(
     sort: str = "relevance",
     genders: frozenset[str] | None = None,
     categories: list[str] | None = None,
+    currency: str | None = None,
 ) -> list[SearchResult]:
     """Embed a text query and return the matching items (relevance- or price-ordered)."""
     return repo.search_by_vector(
@@ -759,6 +776,7 @@ def search_text(
         sort=sort,
         genders=genders,
         categories=categories,
+        currency=currency,
     )
 
 
@@ -773,6 +791,7 @@ def search_text_multi_slot(
     max_price: float | None = None,
     sort: str = "relevance",
     genders: frozenset[str] | None = None,
+    currency: str | None = None,
 ) -> list[SearchResult]:
     """One embed, one page per slot, round-robin interleaved.
 
@@ -791,6 +810,7 @@ def search_text_multi_slot(
             sort=sort,
             genders=genders,
             categories=categories,
+            currency=currency,
         )
         for categories in slot_categories
     ]

@@ -75,6 +75,11 @@ def _item(
     pattern=None,
     silhouette=None,
     fit=None,
+    # Currency-neutral by default (mirrors the region-neutral pattern): most
+    # tests here exercise price/colour/diversity logic, not currency, so they
+    # should not accidentally trip the currency guard. Tests that specifically
+    # cover currency behaviour pass ``currency`` explicitly.
+    currency=None,
 ) -> Candidate:
     return Candidate(
         item_id=item_id,
@@ -82,7 +87,7 @@ def _item(
         category=category,
         slot=slot,
         price=price,
-        currency="USD",
+        currency=currency,
         affiliate_url=f"https://shop/{item_id}",
         lch=lch,
         hue_name=hue_name,
@@ -249,6 +254,27 @@ def test_budget_max_becomes_price_ceiling():
     profile = Profile(budget_range=BudgetRange(min=0, max=80, currency="USD"))
     c = conditioning.resolve(profile, "casual", None)
     assert c.max_price == 80
+
+
+def test_in_memory_candidate_repo_drops_mismatched_currency_from_budget_pool():
+    """Region is proven independent of currency (gyf-budget-currency-integrity
+    scout report): an INR budget must never treat a same-priced USD row as
+    in-budget just because the numbers happen to compare favourably. The
+    mismatched-currency row is dropped from the pool entirely (never kept-but-
+    unconstrained), per the firstmate decision — showing a cross-currency item
+    as "within budget" with no FX layer would be an affirmatively false claim."""
+    usd_row = _item("usd-shirt", "shirt", "top", price=30, currency="USD")
+    inr_in_budget = _item("inr-shirt", "shirt", "top", price=999, currency="INR")
+    inr_over_budget = _item("inr-shirt-2", "shirt", "top", price=5000, currency="INR")
+    unset_currency = _item("unset-shirt", "shirt", "top", price=500, currency=None)
+    repo = InMemoryCandidateRepository([usd_row, inr_in_budget, inr_over_budget, unset_currency])
+
+    pool = repo.candidates_by_slot(frozenset({"top"}), None, 1000, 10, currency="INR")["top"]
+
+    result_ids = {item.item_id for item in pool}
+    assert result_ids == {"inr-shirt", "unset-shirt"}
+    assert usd_row.item_id not in result_ids
+    assert inr_over_budget.item_id not in result_ids
 
 
 # --- Composition ------------------------------------------------------------
@@ -660,6 +686,34 @@ def test_seen_set_uses_prior_slate_items_missing_from_the_current_pool():
         (item.slot, item.category) for item in rec.outfits[0].items if item.slot != "footwear"
     }
     assert family != {("top", "shirt"), ("bottom", "jeans")}
+
+
+def test_service_threads_constraints_currency_into_candidate_retrieval():
+    """gyf-budget-currency-integrity: service.py used to compute
+    constraints.currency and then silently drop it before calling
+    candidates_by_slot, so the SQL/in-memory currency guard never received a
+    value to guard with. Assert the call actually carries it end to end."""
+    catalog = [_item("t1", "t_shirt", "top", price=500, currency="INR")]
+
+    captured_kwargs: dict = {}
+
+    class CapturingRepository(InMemoryCandidateRepository):
+        def candidates_by_slot(self, *args, **kwargs):
+            captured_kwargs.update(kwargs)
+            return super().candidates_by_slot(*args, **kwargs)
+
+    profile = Profile(occasion="casual", budget_range=BudgetRange(min=0, max=1000, currency="INR"))
+    recommend(
+        profile,
+        DEV_USER,
+        CapturingRepository(catalog),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        1,
+    )
+    assert captured_kwargs.get("currency") == "INR"
 
 
 # --- Service + API end to end ----------------------------------------------
@@ -1558,6 +1612,35 @@ def test_budget_phrase_appears_when_every_piece_fits():
     assert "within your ₹1,000 budget" in rec.outfits[0].explanation
 
 
+def test_budget_phrase_absent_when_a_counted_item_currency_mismatches():
+    """gyf-budget-currency-integrity: _budget_phrase must never claim "stays
+    within budget" by comparing raw prices across currencies (e.g. $30 vs
+    ₹30) — that is an affirmatively false money claim, not just a wrongly
+    included item. This holds even though the candidate pool already drops
+    mismatched-currency rows: the composer must not regain the false claim
+    via an owned/anchor item that bypassed the pool filter."""
+    from app.recsys.compose import _budget_phrase
+
+    constraints = conditioning.resolve(
+        Profile(occasion="casual", budget_range=BudgetRange(min=0, max=1000, currency="INR")),
+        "casual",
+        None,
+    )
+    matching = (
+        _item("t1", "t_shirt", "top", price=500, currency="INR"),
+        _item("b1", "jeans", "bottom", price=900, currency="INR"),
+    )
+    assert _budget_phrase(matching, constraints) != ""
+
+    mismatched = (
+        _item("t1", "t_shirt", "top", price=500, currency="INR"),
+        # Same numeric price, wrong currency — would read as in-budget if
+        # compared as raw numbers.
+        _item("usd", "jeans", "bottom", price=900, currency="USD"),
+    )
+    assert _budget_phrase(mismatched, constraints) == ""
+
+
 def test_undertone_phrase_names_the_undertone_only_when_earned():
     # Warm-toned look for a warm-undertone user: the claim is earned.
     warm = [
@@ -1896,6 +1979,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
         None,
         None,
         None,
+        None,  # currency (null check)
+        None,  # currency (match)
         None,
         None,
         None,
@@ -1913,6 +1998,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
         None,
         None,
         None,
+        None,  # currency (null check)
+        None,  # currency (match)
         None,
         None,
         None,
@@ -1938,8 +2025,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in sql
     assert "ORDER BY category_rank, category_order" in sql
     assert sql.index("LIMIT %s") < sql.rindex("e.embedding::text")
-    filter_params = params[:7]
-    assert params[7:] == (80, 80, None, None, 80)
+    filter_params = params[:9]
+    assert params[9:] == (80, 80, None, None, 80)
     assert "affinity DESC" not in sql
     assert len(pool.calls) == 3
     assert "(e.item_id IS NOT NULL) DESC, i.created_at DESC" in pool.calls[2][0]
@@ -1959,6 +2046,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
         "IN",
         "IN",
         500,
+        None,  # currency (null check) — no budget currency stated
+        None,  # currency (match)
         500,
         ["women"],
         ["women"],
@@ -1976,6 +2065,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
         "IN",
         "IN",
         500,
+        None,  # currency (null check)
+        None,  # currency (match)
         500,
         ["women"],
         ["women"],
@@ -2508,6 +2599,78 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
         assert all(
             item.currency == "INR" for item in result if item.item_id in inserted_eligible_ids
         )
+        repo._pool.close()  # type: ignore[attr-defined]  # repository owns this test pool
+    finally:
+        with psycopg.connect(live_db) as conn:
+            conn.execute("DELETE FROM items WHERE source_provider = %s", (provider,))
+
+
+def test_postgres_candidate_pool_drops_mismatched_currency_from_budget_pool(live_db):
+    """gyf-budget-currency-integrity: region is proven independent of currency
+    (US merchants and IN merchants both sell region-neutral western staples),
+    so the budget ceiling predicate must key off ``items.currency`` directly,
+    never off ``region_tags``. Seed a same-category USD row and INR row, both
+    priced under the ceiling as raw numbers (so the pre-fix bug — comparing
+    ``i.price`` with no currency term — would have kept the USD row); request
+    an INR budget and assert the USD row is dropped while the in-budget INR
+    row is kept."""
+    import json
+
+    import psycopg
+
+    from app.recsys.candidates import PostgresCandidateRepository
+
+    category = conditioning._CATEGORIES_BY_SLOT["top"][0]
+    provider = "currency-guard-seed-safe"
+    vector = "[" + ",".join(["0.1"] * 768) + "]"
+    usd_id = "00000000-0000-0000-0000-cc0000000001"
+    inr_id = "00000000-0000-0000-0000-cc0000000002"
+    attributes = json.dumps({"taxonomy": {"gender": "women"}})
+    rows = [
+        (usd_id, "currency guard usd top", category, 30, "USD", attributes, ["IN"]),
+        (inr_id, "currency guard inr top", category, 999, "INR", attributes, ["IN"]),
+    ]
+
+    try:
+        with psycopg.connect(live_db) as conn:
+            for item_id, title, cat, price, currency, attrs, region in rows:
+                conn.execute(
+                    "INSERT INTO items (id, title, category, price, currency, attributes, "
+                    "region_tags, image_refs, source_provider, source_license, dedupe_key, "
+                    "available) VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s, "
+                    "'research', %s, true)",
+                    (
+                        item_id,
+                        title,
+                        cat,
+                        price,
+                        currency,
+                        attrs,
+                        region,
+                        json.dumps([f"https://cdn.example.com/{item_id}.jpg"]),
+                        provider,
+                        item_id,
+                    ),
+                )
+                conn.execute(
+                    "INSERT INTO item_embeddings (item_id, embedding, model_version) "
+                    "VALUES (%s, %s::vector, 'test')",
+                    (item_id, vector),
+                )
+
+        repo = PostgresCandidateRepository(live_db)
+        result = repo.candidates_by_slot(
+            frozenset({"top"}),
+            "IN",
+            1000,
+            50,
+            genders=frozenset({"women"}),
+            request_id="real-postgres-currency-guard",
+            currency="INR",
+        )["top"]
+        result_ids = {item.item_id for item in result}
+        assert inr_id in result_ids
+        assert usd_id not in result_ids
         repo._pool.close()  # type: ignore[attr-defined]  # repository owns this test pool
     finally:
         with psycopg.connect(live_db) as conn:

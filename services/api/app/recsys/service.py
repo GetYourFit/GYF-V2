@@ -149,6 +149,7 @@ def recommend(
             genders if genders != CATALOG_GENDERS else None,
             constraints.preferred_aesthetics,
             request_id=request_id,
+            currency=constraints.currency,
         )
     with _stage(request_id, "wardrobe_grounding"):
         wardrobe = _ground_in_wardrobe(pools, wardrobe_records, owned)

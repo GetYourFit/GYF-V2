@@ -504,11 +504,22 @@ _CURRENCY_SYMBOL: dict[str, str] = {"INR": "₹", "USD": "$", "EUR": "€", "GBP
 
 def _budget_phrase(items: tuple[Candidate, ...], constraints: Constraints) -> str:
     """Confirm the budget was honoured — only when a budget exists and every
-    priced (non-owned) garment respects it."""
+    priced (non-owned) garment respects it in the budget's own currency.
+
+    A garment priced in a different currency than the budget can never credit
+    this claim: comparing raw numbers across currencies (e.g. $30 vs 30) would
+    be an affirmatively false money claim, not just an incorrectly-included
+    item."""
     if constraints.max_price is None:
         return ""
-    prices = [it.price for it in items if not it.owned and it.price is not None]
-    if not prices or any(p > constraints.max_price for p in prices):
+    priced = [it for it in items if not it.owned and it.price is not None]
+    if not priced:
+        return ""
+    if any(it.price > constraints.max_price for it in priced):
+        return ""
+    if constraints.currency is not None and any(
+        it.currency is not None and it.currency != constraints.currency for it in priced
+    ):
         return ""
     symbol = _CURRENCY_SYMBOL.get(constraints.currency or "", constraints.currency or "")
     ceiling = f"{symbol}{constraints.max_price:,.0f}"
