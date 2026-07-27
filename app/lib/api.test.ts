@@ -115,6 +115,29 @@ describe("GyfApi", () => {
     await expect(api.deleteAccount()).resolves.toBeUndefined();
   });
 
+  it("keeps audience-scoped facet cache keys distinct", async () => {
+    const fetchSpy = mockFetch({
+      status: 200,
+      body: { total: 1, priced: 1, price_min: 99, price_max: 99 },
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    const api = new GyfApi(() => null, "http://api");
+
+    await api.facets(undefined, "men");
+    await api.facets(undefined, "women");
+
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      "http://api/items/facets?gender=men",
+      expect.anything(),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      "http://api/items/facets?gender=women",
+      expect.anything(),
+    );
+  });
+
   it("unwraps the results array for search", async () => {
     vi.stubGlobal(
       "fetch",

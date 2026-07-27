@@ -1,5 +1,6 @@
+import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, View } from "react-native";
 
 import { cardWidthFor, columnsForWidth, feedColumnsForWidth } from "@/components/grid/column-count";
 import { BoardDetail } from "@/components/board/board-detail";
@@ -17,15 +18,19 @@ import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { MasonryFeed } from "@/components/ui/masonry-feed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type CatalogFacets, type SearchResult } from "@/lib/api";
+import { getSession } from "@/lib/auth";
 import {
   activeFilterCount,
   appendUniqueItems,
+  audienceCanBrowse,
+  audienceGender,
   buildExploreRequest,
   EMPTY_EXPLORE_FILTERS,
   formatCatalogPrice,
   priceFiltersUsable,
   scopeGender,
   withUsablePriceFilters,
+  type AudienceReadiness,
   type ExploreFilters,
 } from "@/lib/explore-feed";
 import { radii, spacing } from "@/theme/tokens";
@@ -95,14 +100,28 @@ export default function ExploreRoute() {
   const [pendingSave, setPendingSave] = useState<string | null>(null);
   const [facets, setFacets] = useState<CatalogFacets | null>(null);
   const [selected, setSelected] = useState<SearchResult | null>(null);
-  // `undefined` = the profile has not answered yet. The first fetch waits for it
-  // so the grid is never built from the wrong catalogue slice and re-filtered.
-  const [gender, setGender] = useState<string | null | undefined>(undefined);
+  // Catalogue constraints are server-authoritative. In particular, an authenticated
+  // profile may never briefly receive an ungendered grid while its audience loads.
+  const [audience, setAudience] = useState<AudienceReadiness>({ state: "loading" });
+  const [profileAttempt, setProfileAttempt] = useState(0);
   const loadSequence = useRef(0);
+  const profileGeneration = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
+
+  const invalidateCatalogue = useCallback(() => {
+    loadSequence.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setLoading(false);
+    setLoadingMore(false);
+    setError(null);
+  }, []);
 
   const load = useCallback(
     async (nextPage: number, replace: boolean) => {
+      // Every entry point must fail closed while an authenticated profile is
+      // resolving; scroll events can arrive during pull-to-refresh.
+      if (!audienceCanBrowse(audience)) return;
       // Tapping chips faster than the network answers leaves several requests in
       // flight. Two things must happen. First, abandon the superseded request on
       // the wire: an uncached search pays a remote text embed, so leaving it to
@@ -115,6 +134,7 @@ export default function ExploreRoute() {
       const controller = new AbortController();
       abortRef.current = controller;
       const sequence = ++loadSequence.current;
+      const generation = profileGeneration.current;
       if (nextPage > 0) setLoadingMore(true);
       else setLoading(true);
       setError(null);
@@ -123,7 +143,7 @@ export default function ExploreRoute() {
           filters,
           nextPage,
           browseSeed,
-          gender,
+          audienceGender(audience),
           similarAnchor?.item_id,
         );
         const results =
@@ -132,51 +152,73 @@ export default function ExploreRoute() {
             : request.mode === "similar"
               ? await api.similar(request.itemId, request.params, controller.signal)
               : await api.search(request.query, request.params, controller.signal);
-        if (sequence !== loadSequence.current) return;
+        if (sequence !== loadSequence.current || generation !== profileGeneration.current) return;
         setItems((current) => (replace ? results : appendUniqueItems(current, results)));
         setPage(nextPage);
         setHasMore(results.length > 0);
       } catch (nextError) {
         // A request this screen deliberately cancelled is not an error to report.
-        if (sequence !== loadSequence.current || controller.signal.aborted) return;
+        if (
+          sequence !== loadSequence.current ||
+          generation !== profileGeneration.current ||
+          controller.signal.aborted
+        ) {
+          return;
+        }
         setError(nextError);
       } finally {
-        if (sequence === loadSequence.current) {
+        if (sequence === loadSequence.current && generation === profileGeneration.current) {
           setLoading(false);
           setLoadingMore(false);
         }
       }
     },
-    [api, browseSeed, filters, gender, similarAnchor],
+    [api, audience, browseSeed, filters, similarAnchor],
   );
 
   useEffect(() => {
-    if (gender === undefined) return;
+    if (!audienceCanBrowse(audience)) return;
     void load(0, true);
-  }, [gender, load]);
+  }, [audience, load]);
 
   useEffect(() => {
     let active = true;
-    // A cold profile round trip must not gate first paint: after 500ms, paint an
-    // ungendered grid. Without this, a request that never settles leaves `gender`
-    // undefined forever and the grid sits on its skeleton with no way out. If the
-    // real profile lands later carrying a gender, the grid re-filters once.
-    const timer = setTimeout(() => {
-      if (active) setGender((current) => (current === undefined ? null : current));
-    }, 500);
-    api
-      .getProfile()
-      .then((profile) => {
-        if (active) setGender(scopeGender(profile.gender));
+    profileGeneration.current += 1;
+    invalidateCatalogue();
+    setAudience({ state: "loading" });
+    setItems([]);
+    setFacets(null);
+    void getSession()
+      .then(async (session) => {
+        if (!session) return { state: "anonymous" } as AudienceReadiness;
+        const profile = await api.getProfile();
+        const gender = scopeGender(profile.gender);
+        return gender
+          ? ({ state: "known", gender } as AudienceReadiness)
+          : ({ state: "unknown" } as AudienceReadiness);
       })
-      .catch(() => {
-        // Not onboarded, or the profile call failed: browse the whole catalogue
-        // rather than blocking the grid on a scope GYF does not have.
-        if (active) setGender(null);
+      .then((nextAudience) => {
+        if (active) setAudience(nextAudience);
       })
-      .finally(() => clearTimeout(timer));
+      .catch((cause: unknown) => {
+        if (!active) return;
+        if (cause instanceof ApiError && cause.isNotOnboarded) {
+          setAudience({ state: "needs-profile" });
+          return;
+        }
+        setAudience({ state: "error", error: cause });
+      });
+    return () => {
+      active = false;
+    };
+  }, [api, invalidateCatalogue, profileAttempt]);
+
+  useEffect(() => {
+    if (!audienceCanBrowse(audience)) return;
+    let active = true;
+    const gender = audienceGender(audience);
     api
-      .facets()
+      .facets(undefined, gender ?? undefined)
       .then((result) => {
         if (!active) return;
         setFacets(result);
@@ -185,6 +227,13 @@ export default function ExploreRoute() {
       .catch(() => {
         // Facets are advisory. The catalogue stays usable if this call fails.
       });
+    return () => {
+      active = false;
+    };
+  }, [api, audience]);
+
+  useEffect(() => {
+    let active = true;
     api
       .listSaved()
       .then((rows) => {
@@ -195,7 +244,6 @@ export default function ExploreRoute() {
       });
     return () => {
       active = false;
-      clearTimeout(timer);
       // Leaving Explore abandons its grid; don't keep paying for the fetch.
       abortRef.current?.abort();
     };
@@ -246,7 +294,9 @@ export default function ExploreRoute() {
   const activeCount = activeFilterCount(filters);
 
   const loadNextPage = () => {
-    if (hasMore && !loading && !loadingMore) void load(page + 1, false);
+    if (audienceCanBrowse(audience) && hasMore && !loading && !loadingMore) {
+      void load(page + 1, false);
+    }
   };
 
   // The board tiles a finite set over an infinite plane, so it never runs out
@@ -259,27 +309,63 @@ export default function ExploreRoute() {
     [items],
   );
 
-  const emptyFeed = loading ? (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
-      {Array.from({ length: columns * 2 }, (_, i) => (
-        <Skeleton height={cardWidth * (4 / 3) + 64} key={i} width={cardWidth} />
-      ))}
-    </View>
-  ) : error ? (
-    <ErrorState
-      illustration={<IllustrationLooseThread color={palette.textMuted} />}
-      message={readableError(error)}
-      onRetry={() => void load(0, true)}
-    />
-  ) : (
-    <EmptyState
-      actionLabel={activeCount > 0 ? "Clear filters" : undefined}
-      description="Change the search or remove a filter. GYF will not invent catalogue results."
-      headline="No pieces matched"
-      illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
-      onAction={activeCount > 0 ? clearFilters : undefined}
-    />
-  );
+  useEffect(() => {
+    if (refreshing && audience.state !== "loading") setRefreshing(false);
+  }, [audience.state, refreshing]);
+
+  const retryProfile = () => {
+    invalidateCatalogue();
+    setAudience({ state: "loading" });
+    setItems([]);
+    setFacets(null);
+    setProfileAttempt((attempt) => attempt + 1);
+  };
+  const emptyFeed =
+    audience.state === "loading" ? (
+      <View
+        accessibilityLiveRegion="polite"
+        accessibilityRole="progressbar"
+        accessibilityLabel="Loading your audience settings"
+        style={{ alignItems: "center", gap: spacing.sm, paddingVertical: spacing.xxl }}
+      >
+        <ActivityIndicator color={palette.text} />
+        <GyfText tone="muted">Loading your audience settings…</GyfText>
+      </View>
+    ) : audience.state === "needs-profile" ? (
+      <EmptyState
+        actionLabel="Set up profile"
+        description="Tell GYF who you are shopping for before browsing. We will not guess or widen your catalogue."
+        headline="Choose your catalogue audience"
+        illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
+        onAction={() => router.push("/onboarding")}
+      />
+    ) : audience.state === "error" ? (
+      <ErrorState
+        illustration={<IllustrationLooseThread color={palette.textMuted} />}
+        message="GYF could not confirm your audience. Your catalogue has not been loaded."
+        onRetry={retryProfile}
+      />
+    ) : loading ? (
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
+        {Array.from({ length: columns * 2 }, (_, i) => (
+          <Skeleton height={cardWidth * (4 / 3) + 64} key={i} width={cardWidth} />
+        ))}
+      </View>
+    ) : error ? (
+      <ErrorState
+        illustration={<IllustrationLooseThread color={palette.textMuted} />}
+        message={readableError(error)}
+        onRetry={() => void load(0, true)}
+      />
+    ) : (
+      <EmptyState
+        actionLabel={activeCount > 0 ? "Clear filters" : undefined}
+        description="Change the search or remove a filter. GYF will not invent catalogue results."
+        headline="No pieces matched"
+        illustration={<IllustrationEmptyHanger color={palette.textMuted} />}
+        onAction={activeCount > 0 ? clearFilters : undefined}
+      />
+    );
 
   // Ref1/Ref2: pure imagery on a dark ground, panned without limit in every
   // direction and zoomed by pinch. No price, no title, no chrome on a tile —
@@ -394,10 +480,9 @@ export default function ExploreRoute() {
         }}
         refreshControl={
           <RefreshControl
-            onRefresh={async () => {
+            onRefresh={() => {
               setRefreshing(true);
-              await load(0, true);
-              setRefreshing(false);
+              retryProfile();
             }}
             refreshing={refreshing}
             tintColor={palette.text}

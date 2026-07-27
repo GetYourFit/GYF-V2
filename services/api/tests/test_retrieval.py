@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from datetime import UTC, datetime
 from hashlib import sha256
 from uuid import UUID
 
@@ -620,6 +622,65 @@ def test_search_statement_timeout_is_scoped_and_database_cancellation_propagates
     assert len(pool.calls) == 2
 
 
+def _snapshot_row(payload: dict) -> tuple:
+    return (
+        7,
+        datetime(2026, 7, 27, tzinfo=UTC),
+        datetime(2026, 7, 26, tzinfo=UTC),
+        json.dumps(payload),
+    )
+
+
+def test_catalog_facets_narrows_to_the_precomputed_gender_bucket():
+    payload = {
+        "IN": {
+            "total": 900,
+            "priced": 400,
+            "price_min": 20.0,
+            "price_max": 900.0,
+            "by_category": {"dress": 400},
+            "by_audience": {"adult": 900},
+            "by_source": {"myntra": 900},
+            "by_image_status": {"usable": 900},
+            "by_gender": {
+                "men": {"total": 300, "priced": 100, "price_min": 25.0, "price_max": 800.0},
+                "women": {"total": 600, "priced": 300, "price_min": 20.0, "price_max": 900.0},
+            },
+        }
+    }
+    pool = _FacetsPool(_snapshot_row(payload))
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+
+    men = repo.catalog_facets("IN", genders=frozenset({"men", "unisex"}))
+    assert (men.total, men.priced, men.price_min, men.price_max) == (300, 100, 25.0, 800.0)
+    # Category/audience/source/image-status facets stay region-wide, not re-narrowed.
+    assert men.by_category == {"dress": 400}
+
+    women = repo.catalog_facets("IN", genders=frozenset({"women", "unisex"}))
+    assert (women.total, women.priced, women.price_min, women.price_max) == (
+        600,
+        300,
+        20.0,
+        900.0,
+    )
+
+    unfiltered = repo.catalog_facets("IN")
+    assert (unfiltered.total, unfiltered.priced, unfiltered.price_min, unfiltered.price_max) == (
+        900,
+        400,
+        20.0,
+        900.0,
+    )
+    assert unfiltered.catalogue_version == 7
+
+
+def test_catalog_facets_raises_when_no_snapshot_exists_yet():
+    pool = _FacetsPool(None)
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    with pytest.raises(RuntimeError):
+        repo.catalog_facets(region="IN")
+
+
 def test_postgres_repo_hydrates_and_attributes_results_in_one_query():
     class PrefixLinker:
         def wrap(self, url, subid):
@@ -773,16 +834,23 @@ def test_search_endpoint_requires_query_and_returns_results():
         app.dependency_overrides.clear()
 
 
-def test_facets_endpoint_returns_coverage():
+def test_facets_endpoint_returns_coverage_and_forwards_canonical_audience():
+    captured: dict[str, object] = {}
+
     class FacetsRepo:
-        def catalog_facets(self, region):
+        def catalog_facets(self, region, genders=None):
+            captured["region"] = region
+            captured["genders"] = genders
             return CatalogFacets(total=900, priced=0, price_min=None, price_max=None)
 
     app.dependency_overrides[get_search_repo] = lambda: FacetsRepo()
     try:
-        resp = TestClient(app).get("/items/facets", headers={"X-Request-ID": "facet-trace-1"})
+        resp = TestClient(app).get(
+            "/items/facets?region=IN&gender=men", headers={"X-Request-ID": "facet-trace-1"}
+        )
         assert resp.status_code == 200
         assert resp.headers["X-Request-ID"] == "facet-trace-1"
+        assert captured == {"region": "IN", "genders": frozenset({"men", "unisex"})}
         assert resp.json() == {
             "total": 900,
             "priced": 0,
@@ -803,7 +871,7 @@ def test_facets_endpoint_returns_coverage():
 
 def test_facets_request_log_contains_fixed_stage_timings(caplog):
     class FacetsRepo:
-        def catalog_facets(self, region):
+        def catalog_facets(self, region, genders=None):
             from app.metrics import observe_stage_duration, stage_timer
 
             with stage_timer("search", "pool_acquire"):

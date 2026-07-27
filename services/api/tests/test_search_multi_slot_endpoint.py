@@ -42,7 +42,7 @@ class _CapturingRepo:
     def similar_to_item(self, *a, **k):  # pragma: no cover - unused here
         return []
 
-    def catalog_facets(self, region):  # pragma: no cover - unused here
+    def catalog_facets(self, region, genders=None):  # pragma: no cover - unused here
         raise NotImplementedError
 
 

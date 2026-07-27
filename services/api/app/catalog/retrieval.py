@@ -168,7 +168,9 @@ class VectorSearchRepository(Protocol):
         ``categories`` restricts to one slot's garments; None = all slots."""
         ...
 
-    def catalog_facets(self, region: str | None) -> CatalogFacets: ...
+    def catalog_facets(
+        self, region: str | None, genders: frozenset[str] | None = None
+    ) -> CatalogFacets: ...
 
 
 # pgvector cosine distance (`<=>`) in [0, 2]; similarity = 1 - distance. A region
@@ -191,6 +193,20 @@ _GENDER_FILTER = (
 )
 
 _CATEGORY_FILTER = "AND i.category = ANY(%s::text[])"
+
+# The two canonical narrowed audience sets a snapshot precomputes a gender
+# bucket for. Anything else (including the full unfiltered CATALOG_GENDERS)
+# falls back to the region-wide scope rather than guessing a narrower one.
+_GENDER_BUCKETS: dict[frozenset[str], str] = {
+    frozenset({"men", "unisex"}): "men",
+    frozenset({"women", "unisex"}): "women",
+}
+
+
+def _gender_bucket_key(genders: frozenset[str] | None) -> str | None:
+    if genders is None:
+        return None
+    return _GENDER_BUCKETS.get(genders)
 
 # One predicate defines catalogue truth for every Explore retrieval and the
 # persisted facet snapshot. Ingest records image/audience conflicts here rather
@@ -459,7 +475,9 @@ class PostgresVectorSearchRepository:
             statement_timeout_ms=settings.catalog_search_statement_timeout_ms,
         )
 
-    def catalog_facets(self, region: str | None) -> CatalogFacets:
+    def catalog_facets(
+        self, region: str | None, genders: frozenset[str] | None = None
+    ) -> CatalogFacets:
         # Facets are a completed-ingest snapshot, never a request-time aggregate.
         # Absence is an honest unavailable state until the first successful refresh.
         from .snapshot import PostgresCatalogueSnapshotRepository, snapshot_freshness
@@ -479,13 +497,21 @@ class PostgresVectorSearchRepository:
                 "by_audience": {},
                 "by_source": {},
                 "by_image_status": {},
+                "by_gender": {},
             }
+        # Facets MUST describe the same searchable audience slice as Explore.
+        # Null-gender widening remains deliberate: `_GENDER_FILTER` preserves
+        # unclassified adult items while excluding title-detected kids when an
+        # adult audience was stated. by_category/by_audience/by_source/
+        # by_image_status stay region-wide (not re-narrowed per audience).
+        bucket_key = _gender_bucket_key(genders)
+        bucket = scope.get("by_gender", {}).get(bucket_key, scope) if bucket_key else scope
         age, freshness = snapshot_freshness(snapshot)
         return CatalogFacets(
-            total=int(scope["total"]),
-            priced=int(scope["priced"]),
-            price_min=scope["price_min"],
-            price_max=scope["price_max"],
+            total=int(bucket["total"]),
+            priced=int(bucket["priced"]),
+            price_min=bucket["price_min"],
+            price_max=bucket["price_max"],
             catalogue_version=snapshot.catalogue_version,
             facet_age_seconds=age,
             last_successful_ingest_at=(

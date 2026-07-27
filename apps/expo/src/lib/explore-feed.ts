@@ -30,6 +30,32 @@ export const EMPTY_EXPLORE_FILTERS: ExploreFilters = {
   maxPrice: null,
 };
 
+export type AudienceReadiness =
+  | { state: "loading" }
+  | { state: "anonymous" }
+  | { state: "known"; gender: string }
+  | { state: "unknown" }
+  | { state: "needs-profile" }
+  | { state: "error"; error: unknown };
+
+/**
+ * An absent gender means two intentionally distinct things: an anonymous user
+ * and an authenticated user who explicitly has no stated audience. Both retain
+ * the server's existing null-gender widening policy, but neither may arise from
+ * a profile-read race.
+ */
+export function audienceGender(audience: AudienceReadiness): string | null | undefined {
+  if (audience.state === "known") return scopeGender(audience.gender);
+  if (audience.state === "anonymous" || audience.state === "unknown") return null;
+  return undefined;
+}
+
+export function audienceCanBrowse(audience: AudienceReadiness): boolean {
+  return (
+    audience.state === "anonymous" || audience.state === "unknown" || audience.state === "known"
+  );
+}
+
 export type ExploreRequest =
   | {
       mode: "browse";
