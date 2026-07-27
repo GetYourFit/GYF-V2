@@ -124,6 +124,19 @@ describe("Expo interaction boundaries", () => {
     );
   });
 
+  test("pull-to-refresh spinner stays up until the audience reload actually resolves", () => {
+    // retryProfile() sets audience.state to "loading" synchronously, so the
+    // effect below is what clears refreshing once that reload finishes.
+    // Resetting refreshing=false in the same onRefresh tick as setting it
+    // true would batch away with React and the spinner would never render.
+    expect(exploreSource).toMatch(
+      /onRefresh=\{\(\) => \{\s*setRefreshing\(true\);\s*retryProfile\(\);\s*\}\}/,
+    );
+    expect(exploreSource).toMatch(
+      /if \(refreshing && audience\.state !== "loading"\) setRefreshing\(false\);/,
+    );
+  });
+
   test("refresh pagination cannot load until the audience generation is ready", () => {
     expect(exploreSource).toMatch(
       /const load = useCallback\([\s\S]{0,300}if \(!audienceCanBrowse\(audience\)\) return;/,
