@@ -480,10 +480,9 @@ export default function ExploreRoute() {
         }}
         refreshControl={
           <RefreshControl
-            onRefresh={async () => {
+            onRefresh={() => {
               setRefreshing(true);
               retryProfile();
-              setRefreshing(false);
             }}
             refreshing={refreshing}
             tintColor={palette.text}
