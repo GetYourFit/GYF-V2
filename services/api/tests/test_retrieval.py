@@ -581,10 +581,18 @@ def test_max_price_with_currency_excludes_same_priced_cross_currency_item(
         )
         assert [r.title for r in keyword_hits] == ["currency guard inr shirt"]
 
-        vector_hits = repo.search_by_vector(
-            [1.0] + [0.0] * 767, k=10, region=None, max_price=500, currency="INR"
-        )
-        assert [r.title for r in vector_hits] == ["currency guard inr shirt"]
+        # k=10 with an unscoped probe vector can also surface unrelated same-shaped
+        # rows left behind by other live-Postgres tests, so assert on membership
+        # rather than an exact list - the guard under test is inclusion/exclusion
+        # of the same-priced cross-currency row, not result-set isolation.
+        vector_titles = [
+            r.title
+            for r in repo.search_by_vector(
+                [1.0] + [0.0] * 767, k=10, region=None, max_price=500, currency="INR"
+            )
+        ]
+        assert "currency guard inr shirt" in vector_titles
+        assert "currency guard usd shirt" not in vector_titles
     finally:
         with psycopg.connect(live_db) as conn:
             conn.execute("DELETE FROM items WHERE source_provider = %s", (source,))
