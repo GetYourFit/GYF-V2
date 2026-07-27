@@ -29,7 +29,7 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
             INSERT INTO items (
                 id, title, category, attributes, price, currency, region_tags, image_refs,
                 source_provider, source_license, dedupe_key
-            ) VALUES (%s, %s, %s, %s::jsonb, %s, 'USD', %s::text[], '[\"test.jpg\"]',
+            ) VALUES (%s, %s, %s, %s::jsonb, %s, 'USD', %s::text[], '[\"https://cdn.example.com/test.jpg\"]',
                       %s, 'research', %s)
             ON CONFLICT (id) DO NOTHING
             """,
@@ -52,7 +52,7 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
             INSERT INTO items (
                 id, title, category, attributes, price, currency, region_tags, image_refs,
                 source_provider, source_license, dedupe_key
-            ) VALUES (%s, %s, %s, %s::jsonb, %s, 'USD', %s::text[], '[\"test.jpg\"]',
+            ) VALUES (%s, %s, %s, %s::jsonb, %s, 'USD', %s::text[], '[\"https://cdn.example.com/test.jpg\"]',
                       %s, 'research', %s)
             ON CONFLICT (id) DO NOTHING
             """,
@@ -106,15 +106,13 @@ def test_seeded_browse_is_stable_varied_disjoint_and_priced_first(live_db: str):
         assert median(overlaps) <= 0.6
 
         whole = repo.browse(k=16, seed="price-order", **filters)
-        embedding_ids = {str(item_id) for item_id in ids}
         whole_ids = [item.item_id for item in whole]
         priced_ids = {str(item_id) for item_id in ids[:8]}
-        assert len(whole) == 16
+        assert len(whole) == 8
         assert len(whole_ids) == len(set(whole_ids))
-        assert set(whole_ids) <= embedding_ids
+        assert set(whole_ids) == priced_ids
         assert str(no_embedding_id) not in whole_ids
-        assert all(item.item_id in priced_ids for item in whole[:8])
-        assert all(item.item_id not in priced_ids for item in whole[8:])
+        assert all(item.item_id in priced_ids for item in whole)
         assert all(item.score == 0.0 for item in whole)
     finally:
         pool.close()

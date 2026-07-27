@@ -1888,6 +1888,8 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     assert "JOIN items i ON i.id = e.item_id" in sql
     assert "ORDER BY e.embedding <=> %s::vector" in sql
     assert "i.attributes #>> '{commerce,merchant_name}'" in sql
+    assert "COALESCE(i.attributes #>> '{taxonomy,audience}', 'adult') <> 'kids'" in sql
+    assert "i.attributes #>> '{taxonomy,quarantine}' IS NULL" in sql
     assert params == (
         "[0.1,0.2]",
         list(conditioning._CATEGORIES_BY_SLOT["top"]),
@@ -1929,7 +1931,10 @@ def test_candidate_pool_ordered_by_taste_when_signal_present(caplog):
     # Cold start uses the existing visible-catalogue index shape, samples every
     # category fairly, and hydrates embeddings only after the bounded ID slice.
     assert "CROSS JOIN LATERAL" in sql
-    assert "jsonb_array_length(i.image_refs) > 0" in sql
+    assert "jsonb_array_elements_text(i.image_refs)" in sql
+    assert "value ~ '^https://'" in sql
+    assert "COALESCE(i.attributes #>> '{taxonomy,audience}', 'adult') <> 'kids'" in sql
+    assert "i.attributes #>> '{taxonomy,quarantine}' IS NULL" in sql
     assert "ORDER BY (i.price IS NOT NULL) DESC, i.id" in sql
     assert "ORDER BY category_rank, category_order" in sql
     assert sql.index("LIMIT %s") < sql.rindex("e.embedding::text")
@@ -2313,20 +2318,22 @@ def test_candidate_pool_logs_failed_query_duration(caplog, monkeypatch):
 
 def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(live_db):
     import json
-    import uuid
 
     import psycopg
 
     from app.recsys.candidates import PostgresCandidateRepository
 
     categories = list(conditioning._CATEGORIES_BY_SLOT["top"][:3])
-    provider = f"candidate-fairness-{uuid.uuid4()}"
+    provider = "candidate-fairness-seed-safe"
     vector = "[" + ",".join(["0.1"] * 768) + "]"
     rows: list[tuple] = []
+    eligible_ids_by_category: dict[str, list[str]] = {category: [] for category in categories}
+    rejected_ids: set[str] = set()
     expected_counts = {categories[0]: 3, categories[1]: 2, categories[2]: 1}
-    for category, count in expected_counts.items():
+    for category_index, (category, count) in enumerate(expected_counts.items(), start=1):
         for position in range(count):
-            item_id = str(uuid.uuid4())
+            item_id = f"00000000-0000-0000-0000-{category_index:04d}{position:08d}"
+            eligible_ids_by_category[category].append(item_id)
             rows.append(
                 (
                     item_id,
@@ -2336,7 +2343,7 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
                     "INR",
                     json.dumps({"taxonomy": {"gender": "women"}}),
                     ["IN"],
-                    json.dumps([f"{item_id}.jpg"]),
+                    json.dumps([f"https://cdn.example.com/{item_id}.jpg"]),
                     provider,
                     item_id,
                     True,
@@ -2344,15 +2351,82 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
                 )
             )
     # Each row violates exactly one server-truth predicate and must stay out.
-    for suffix, price, gender, region, images, available, embedding in (
-        ("price", 9000, "women", ["IN"], ["x.jpg"], True, vector),
-        ("gender", 999, "men", ["IN"], ["x.jpg"], True, vector),
-        ("region", 999, "women", ["US"], ["x.jpg"], True, vector),
-        ("image", 999, "women", ["IN"], [], True, vector),
-        ("availability", 999, "women", ["IN"], ["x.jpg"], False, vector),
-        ("perception", 999, "women", ["IN"], ["x.jpg"], True, None),
+    for suffix, price, region, images, available, embedding, attributes in (
+        (
+            "price",
+            9000,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "gender",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "men"}},
+        ),
+        (
+            "region",
+            999,
+            ["US"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "image",
+            999,
+            ["IN"],
+            [],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "availability",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            False,
+            vector,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "perception",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            None,
+            {"taxonomy": {"gender": "women"}},
+        ),
+        (
+            "kids",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women", "audience": "kids"}},
+        ),
+        (
+            "quarantine",
+            999,
+            ["IN"],
+            ["https://cdn.example.com/x.jpg"],
+            True,
+            vector,
+            {"taxonomy": {"gender": "women", "quarantine": {"reason": "adult_kids_conflict"}}},
+        ),
     ):
-        item_id = str(uuid.uuid4())
+        item_id = f"10000000-0000-0000-0000-00000000{len(rejected_ids):04d}"
+        rejected_ids.add(item_id)
         rows.append(
             (
                 item_id,
@@ -2360,7 +2434,7 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
                 categories[0],
                 price,
                 "INR",
-                json.dumps({"taxonomy": {"gender": gender}}),
+                json.dumps(attributes),
                 region,
                 json.dumps(images),
                 provider,
@@ -2396,15 +2470,44 @@ def test_postgres_candidate_pool_interleaves_categories_and_preserves_filters(li
             genders=frozenset({"women"}),
             request_id="real-postgres-fairness",
         )["top"]
-        assert [item.category for item in result] == [
-            categories[0],
-            categories[1],
-            categories[2],
-            categories[0],
-            categories[1],
-            categories[0],
+        result_ids = {item.item_id for item in result}
+        result_categories = [item.category for item in result]
+        eligible_positions = [
+            (index, item.category, item.item_id)
+            for index, item in enumerate(result)
+            if item.item_id
+            in {
+                eligible_id
+                for category_ids in eligible_ids_by_category.values()
+                for eligible_id in category_ids
+            }
         ]
-        assert all(item.currency == "INR" for item in result)
+        inserted_category_positions = {
+            category: [
+                index for index, seen_category, _ in eligible_positions if seen_category == category
+            ]
+            for category in categories
+        }
+        # `live_db` deliberately seeds valid top categories too. The contract is
+        # fair bucket interleaving, not a brittle exact sequence that assumes an
+        # otherwise empty migrated database.
+        assert set(categories) <= set(result_categories)
+        assert all(left != right for left, right in zip(result_categories, result_categories[1:]))
+        assert result_ids.isdisjoint(rejected_ids)
+        assert all(
+            any(item_id in result_ids for item_id in eligible_ids_by_category[category])
+            for category in categories
+        )
+        assert all(inserted_category_positions[category] for category in categories)
+        assert [category for _, category, _ in eligible_positions[: len(categories)]] == categories
+        inserted_eligible_ids = {
+            item_id
+            for category_ids in eligible_ids_by_category.values()
+            for item_id in category_ids
+        }
+        assert all(
+            item.currency == "INR" for item in result if item.item_id in inserted_eligible_ids
+        )
         repo._pool.close()  # type: ignore[attr-defined]  # repository owns this test pool
     finally:
         with psycopg.connect(live_db) as conn:

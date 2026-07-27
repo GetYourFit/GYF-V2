@@ -37,6 +37,10 @@ _ORDER_BY_RECENCY = _HAS_PERCEPTION + ", i.created_at DESC"
 # already-checked-out connection; no global database or pool setting changes.
 _QUERY_TIMEOUT_MS = 5_000
 _STYLE_RESERVE_PER_SLOT = 4
+_CATALOG_AUDIENCE_GUARD = """
+  AND COALESCE(i.attributes #>> '{{taxonomy,audience}}', 'adult') <> 'kids'
+  AND i.attributes #>> '{{taxonomy,quarantine}}' IS NULL
+"""
 
 # The taste/HNSW path orders purely by vector distance (diagnostic Slice C,
 # candidates.py:204-212 finding): a strong taste vector can return a pool where
@@ -212,6 +216,15 @@ WHERE i.available
   )
   """
     + f"AND i.title !~* '{_KIDS_RE}'"
+    + _CATALOG_AUDIENCE_GUARD
+    + """
+  AND COALESCE(i.attributes #>> '{{image,status}}', 'usable') = 'usable'
+  AND EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements_text(i.image_refs) AS image_ref(value)
+      WHERE value ~ '^https://'
+  )
+"""
 )
 
 _CANDIDATES = (
@@ -275,7 +288,12 @@ WITH per_category AS MATERIALIZED (
     WHERE i.available
       AND i.category = requested.category
       AND i.category <> 'unknown'
-      AND jsonb_array_length(i.image_refs) > 0
+      AND COALESCE(i.attributes #>> '{{image,status}}', 'usable') = 'usable'
+      AND EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements_text(i.image_refs) AS image_ref(value)
+          WHERE value ~ '^https://'
+      )
       AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
       AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
       AND (%s::text[] IS NULL
@@ -283,13 +301,14 @@ WITH per_category AS MATERIALIZED (
            OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
   """
     + f"AND i.title !~* '{_KIDS_RE}'\n"
+    + _CATALOG_AUDIENCE_GUARD
     + """
       AND EXISTS (SELECT 1 FROM item_embeddings seen WHERE seen.item_id = i.id)
     ORDER BY (i.price IS NOT NULL) DESC, i.id
     LIMIT %s
   ) AS selected
 ), picked AS MATERIALIZED (
-  SELECT id
+  SELECT id, row_number() OVER (ORDER BY category_rank, category_order) AS picked_order
   FROM per_category
   ORDER BY category_rank, category_order
   LIMIT %s
@@ -304,6 +323,7 @@ ORDER BY CASE
          AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
          AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = ANY(%s::text[])
     THEN 0 ELSE 1 END,
+    p.picked_order,
     """
     + _ORDER_BY_RECENCY
     + """
@@ -327,7 +347,12 @@ WITH per_category AS MATERIALIZED (
     WHERE i.available
       AND i.category = requested.category
       AND i.category <> 'unknown'
-      AND jsonb_array_length(i.image_refs) > 0
+      AND COALESCE(i.attributes #>> '{{image,status}}', 'usable') = 'usable'
+      AND EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements_text(i.image_refs) AS image_ref(value)
+          WHERE value ~ '^https://'
+      )
       AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
       AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = preferred.aesthetic
       AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
@@ -343,6 +368,7 @@ WITH per_category AS MATERIALIZED (
       )
   """
     + f"AND i.title !~* '{_KIDS_RE}'\n"
+    + _CATALOG_AUDIENCE_GUARD
     + """
       AND EXISTS (SELECT 1 FROM item_embeddings seen WHERE seen.item_id = i.id)
     ORDER BY (i.price IS NOT NULL) DESC, i.id
@@ -638,6 +664,7 @@ def _merge_style_reserve(
 
 def _row_to_candidate(slot: str, row: tuple) -> Candidate:
     lch = tuple(float(x) for x in row[6]) if row[6] is not None else None
+    image_url = image_url_from_refs(row[15])
     return Candidate(
         item_id=str(row[0]),
         title=row[1],
@@ -656,7 +683,7 @@ def _row_to_candidate(slot: str, row: tuple) -> Candidate:
         silhouette=_certain(row[12], row[18]),
         fit=_certain(row[13], row[19]),
         affinity=float(row[14]) if row[14] is not None else None,
-        image_url=image_url_from_refs(row[15]),
+        image_url=image_url,
         gender=row[20],
         brand=row[21],
         embedding=_parse_vector(row[22]) if len(row) > 22 else None,

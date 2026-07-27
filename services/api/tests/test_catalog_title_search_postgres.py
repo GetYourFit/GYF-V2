@@ -50,7 +50,7 @@ def test_title_fallback_uses_gin_with_unicode_prefix_and_rank(live_db: str) -> N
               source_provider, source_license, dedupe_key
             )
             SELECT 'catalog filler ' || n, 'shirt', '{}'::jsonb, 999, 'INR', '{}',
-                   '["filler.jpg"]'::jsonb, %s, 'research', %s || '-filler-' || n
+                   '["https://cdn.example.com/filler.jpg"]'::jsonb, %s, 'research', %s || '-filler-' || n
             FROM generate_series(1, 2500) AS n
             """,
             (_SOURCE, _SOURCE),
@@ -62,7 +62,7 @@ def test_title_fallback_uses_gin_with_unicode_prefix_and_rank(live_db: str) -> N
                   title, category, attributes, price, currency, region_tags, image_refs,
                   source_provider, source_license, dedupe_key
                 ) VALUES (%s, 'shirt', '{}'::jsonb, 999, 'INR', '{}',
-                          '["match.jpg"]'::jsonb, %s, 'research', %s)
+                          '["https://cdn.example.com/match.jpg"]'::jsonb, %s, 'research', %s)
                 """,
                 [
                     ("विशेष लाल कुर्ता", _SOURCE, f"{_SOURCE}-hindi-two"),

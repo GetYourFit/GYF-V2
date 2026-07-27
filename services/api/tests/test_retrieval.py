@@ -145,6 +145,7 @@ def test_similar_sql_excludes_self_and_orders_by_distance():
             "Other Tee",
             0.91,
             image_url="/media/22222222.jpg",
+            image_status="usable",
             price=799.0,
             currency="INR",
             color="navy",
@@ -292,7 +293,7 @@ def test_browse_taste_timeout_retries_once_after_rollback_through_indexed_ring()
     )
     assert "i.category = ANY(%s::text[])" in fallback_sql
     expected_pivot = UUID(bytes=sha256(b"expo-session").digest()[:16])
-    assert fallback_params[0::5][:4] == (expected_pivot,) * 4
+    assert fallback_params[0::5][:2] == (expected_pivot,) * 2
     assert fallback_params[1:5] == ("IN", ["men", "unisex"], ["sherwani"], 12)
     assert fallback_params[-2:] == (6, 6)
     assert [item.item_id for item in result] == [cold_row[0]]
@@ -380,23 +381,13 @@ def test_cold_browse_uses_bounded_uuid_ring_windows():
 
     sql, params = pool.calls[-1]
     assert "hashtextextended" not in sql
-    assert sql.count("EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)") == 4
+    assert sql.count("EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)") == 2
     assert "JOIN item_embeddings e ON e.item_id = i.id" not in sql
     assert "WITH browse_seed" not in sql
-    assert sql.count("i.id >= %s::uuid") == 2
-    assert sql.count("i.id < %s::uuid") == 2
+    assert sql.count("i.id >= %s::uuid") == 1
+    assert sql.count("i.id < %s::uuid") == 1
     assert isinstance(params[0], UUID)
     assert params == (
-        params[0],
-        "IN",
-        ["men", "unisex"],
-        ["shirt"],
-        18,
-        params[0],
-        "IN",
-        ["men", "unisex"],
-        ["shirt"],
-        18,
         params[0],
         "IN",
         ["men", "unisex"],
@@ -500,6 +491,13 @@ def test_keyword_fallback_uses_bounded_indexable_full_text_search():
     assert params[-2:] == (12, 0)
 
 
+def test_searchable_predicate_accepts_any_https_image_ref():
+    from app.catalog.retrieval import SEARCHABLE_ITEM_PREDICATE
+
+    assert "jsonb_array_elements_text(i.image_refs)" in SEARCHABLE_ITEM_PREDICATE
+    assert "value ~ '^https://'" in SEARCHABLE_ITEM_PREDICATE
+
+
 def test_keyword_fallback_rejects_punctuation_only_without_querying_postgres():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
@@ -578,58 +576,6 @@ def test_search_statement_timeout_is_scoped_and_database_cancellation_propagates
     assert len(pool.calls) == 2
 
 
-def test_catalog_facets_reports_price_coverage_and_range():
-    pool = _FacetsPool((1200, 340, 9.99, 499.0))
-    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
-    facets = repo.catalog_facets(region=None)
-    assert facets == CatalogFacets(total=1200, priced=340, price_min=9.99, price_max=499.0)
-    sql, params = pool.calls[-1]
-    assert "COUNT(*)" in sql and "COUNT(i.price)" in sql
-    # Must join embeddings so facets describe only the searchable set (an item
-    # with a price but no embedding can never appear in results).
-    assert "JOIN items i ON i.id = e.item_id" in sql
-    assert params == ()  # no region bind
-
-
-def test_catalog_facets_statement_timeout_is_scoped_and_database_cancellation_propagates():
-    class _TimeoutPool(_FacetsPool):
-        def connection(self):
-            pool = self
-
-            class _Conn:
-                def execute(self, sql, params=None):
-                    pool.calls.append((sql, params))
-                    if "statement_timeout" in sql:
-                        return iter([])
-                    raise QueryCanceled("statement timeout")
-
-                def __enter__(self):
-                    return self
-
-                def __exit__(self, *exc):
-                    return False
-
-            return _Conn()
-
-    pool = _TimeoutPool(None)
-    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
-    with pytest.raises(QueryCanceled):
-        repo.catalog_facets(region="IN")
-    assert pool.calls[0][1] == ("1500ms",)
-    assert len(pool.calls) == 2
-
-
-def test_catalog_facets_priced_zero_yields_null_range_and_region_bind():
-    # All-NULL prices (the current academic seed) => priced 0, no min/max.
-    pool = _FacetsPool((900, 0, None, None))
-    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
-    facets = repo.catalog_facets(region="IN")
-    assert facets == CatalogFacets(total=900, priced=0, price_min=None, price_max=None)
-    sql, params = pool.calls[-1]
-    assert "i.region_tags @> ARRAY[%s]::text[]" in sql  # region filter applied
-    assert params == ("IN",)
-
-
 def test_postgres_repo_hydrates_and_attributes_results_in_one_query():
     class PrefixLinker:
         def wrap(self, url, subid):
@@ -650,6 +596,7 @@ def test_postgres_repo_hydrates_and_attributes_results_in_one_query():
             "Linen Shirt",
             0.77,
             image_url="/media/hit.jpg",
+            image_status="usable",
             price=49.0,
             currency="USD",
             color="cream",
@@ -794,6 +741,14 @@ def test_facets_endpoint_returns_coverage():
             "priced": 0,
             "price_min": None,
             "price_max": None,
+            "catalogue_version": 0,
+            "facet_age_seconds": 0,
+            "last_successful_ingest_at": None,
+            "freshness": "unknown",
+            "by_category": {},
+            "by_audience": {},
+            "by_source": {},
+            "by_image_status": {},
         }
     finally:
         app.dependency_overrides.clear()

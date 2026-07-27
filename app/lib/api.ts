@@ -121,15 +121,21 @@ interface SearchResults {
   results: SearchResult[];
 }
 
-/** Real, server-computed filter ranges for the (region-scoped) catalog. Lets the
- *  client offer only filters the data can satisfy — `priced === 0` means no item
- *  has a price, so Explore hides the price control instead of showing a slider
- *  that empties the grid. */
+/** Versioned snapshot of exactly the rows Explore can browse or search, including
+ *  bounded category/audience/source/image-status coverage and freshness facts. */
 export interface CatalogFacets {
   total: number;
   priced: number;
   price_min: number | null;
   price_max: number | null;
+  catalogue_version: number;
+  facet_age_seconds: number;
+  last_successful_ingest_at: string | null;
+  freshness: string;
+  by_category: Record<string, number>;
+  by_audience: Record<string, number>;
+  by_source: Record<string, number>;
+  by_image_status: Record<string, number>;
 }
 
 interface FeedbackAck {

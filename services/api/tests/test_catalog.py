@@ -64,6 +64,7 @@ def test_normalize_merges_region_hints_with_facet():
     assert item.attributes["taxonomy"] == {
         "slot": "full_body",
         "raw_category": "saree",
+        "audience": "adult",
         "gender": "women",
     }
 
@@ -98,6 +99,159 @@ def test_dedupe_key_falls_back_to_title_and_image():
     )
     assert no_img.dedupe_key != with_img.dedupe_key
     assert with_img.image_hash is not None
+
+
+def test_normalize_quarantines_adult_kids_audience_conflicts_and_bad_images():
+    item = normalize(
+        RawFeedItem(
+            title="Boys Cotton T-Shirt",
+            category="t shirt",
+            gender="men",
+            image_urls=["http://cdn.example.com/boys.jpg"],
+            image_http_status=404,
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["taxonomy"]["audience"] == "kids"
+    assert item.attributes["taxonomy"]["quarantine"]["reason"] == "adult_kids_conflict"
+    assert item.attributes["image"] == {
+        "status": "image_unavailable",
+        "quarantine_reason": "invalid_url",
+    }
+    assert item.image_refs == []
+
+
+def test_normalize_quarantines_non_image_and_oversize_verified_images():
+    for content_type, size, reason in [
+        ("text/html", 100, "content_type"),
+        ("image/jpeg", 21 * 1024 * 1024, "size"),
+    ]:
+        item = normalize(
+            RawFeedItem(
+                title="Adult Shirt",
+                category="shirt",
+                image_urls=["https://cdn.example.com/a.jpg"],
+                image_http_status=200,
+                image_content_type=content_type,
+                image_size_bytes=size,
+            ),
+            provider="feed",
+            license="licensed",
+        )
+        assert item.attributes["image"]["quarantine_reason"] == reason
+
+
+def test_normalize_uses_later_https_image_when_first_ref_is_invalid():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=["http://cdn.example.com/a.jpg", "https://cdn.example.com/b.jpg"],
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["image"] == {"status": "usable"}
+    assert item.image_refs == ["https://cdn.example.com/b.jpg"]
+    assert item.image_hash == ing._image_hash(["https://cdn.example.com/b.jpg"])
+
+
+def test_normalize_quarantines_first_valid_https_even_after_http_prefix():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=["http://cdn.example.com/a.jpg", "https://cdn.example.com/b.jpg"],
+            image_http_status=404,
+            image_content_type="text/html",
+            image_size_bytes=0,
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["image"] == {
+        "status": "image_unavailable",
+        "quarantine_reason": "http_status",
+    }
+    assert item.image_refs == []
+
+
+def test_normalize_ignores_malformed_or_http_prefix_before_verified_primary_https():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=[
+                "not-a-url",
+                "http://cdn.example.com/insecure.jpg",
+                "https://cdn.example.com/bad.jpg",
+                "https://cdn.example.com/good.jpg",
+            ],
+            image_http_status=404,
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["image"] == {"status": "usable"}
+    assert item.image_refs == ["https://cdn.example.com/good.jpg"]
+    assert item.image_hash == ing._image_hash(item.image_refs)
+
+
+def test_normalize_uses_later_https_when_verified_primary_is_bad():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=["https://cdn.example.com/bad.jpg", "https://cdn.example.com/good.jpg"],
+            image_http_status=404,
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["image"] == {"status": "usable"}
+    assert item.image_refs == ["https://cdn.example.com/good.jpg"]
+    assert item.image_hash == ing._image_hash(item.image_refs)
+
+
+def test_normalize_filters_mixed_image_refs_to_usable_https_only():
+    item = normalize(
+        RawFeedItem(
+            title="Adult Shirt",
+            category="shirt",
+            image_urls=[
+                "not-a-url",
+                "https://cdn.example.com/good-a.jpg",
+                "http://cdn.example.com/bad.jpg",
+                " https://cdn.example.com/good-b.jpg ",
+            ],
+        ),
+        provider="feed",
+        license="licensed",
+    )
+    assert item.attributes["image"] == {"status": "usable"}
+    assert item.image_refs == [
+        "https://cdn.example.com/good-a.jpg",
+        "https://cdn.example.com/good-b.jpg",
+    ]
+
+
+def test_dedupe_key_uses_selected_usable_https_image():
+    mixed = normalize(
+        RawFeedItem(
+            title="Plain Tee",
+            image_urls=["http://cdn.example.com/a.jpg", "https://cdn.example.com/b.jpg"],
+        ),
+        provider="ds",
+        license="l",
+    )
+    https_only = normalize(
+        RawFeedItem(title="Plain Tee", image_urls=["https://cdn.example.com/b.jpg"]),
+        provider="ds",
+        license="l",
+    )
+    assert mixed.image_hash == https_only.image_hash
+    assert mixed.dedupe_key == https_only.dedupe_key
 
 
 # --- ingest orchestration + idempotency ---

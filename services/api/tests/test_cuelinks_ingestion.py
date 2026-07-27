@@ -63,6 +63,18 @@ def test_campaign_registry_records_deeplink_yes_no_without_hardcoding_columbia(t
     }
 
 
+def test_campaign_only_cuelinks_payload_never_creates_product_rows(tmp_path) -> None:
+    registry = load_cuelinks_campaigns(_campaigns(tmp_path))
+    repo = InMemoryItemRepository()
+    campaign_payload_as_products = CuelinksProductFeedSource(
+        _campaigns(tmp_path), campaigns=registry
+    )
+
+    with pytest.raises(ValueError, match="missing required columns"):
+        ingest(campaign_payload_as_products, repo)
+    assert repo.items == {}
+
+
 def test_cuelinks_product_feed_yields_only_deeplink_yes_indian_fashion_rows(tmp_path) -> None:
     registry = load_cuelinks_campaigns(_campaigns(tmp_path))
     source = CuelinksProductFeedSource(_products(tmp_path), campaigns=registry)

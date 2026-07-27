@@ -1143,9 +1143,7 @@ export interface components {
         };
         /**
          * CatalogFacets
-         * @description Real, server-computed filter ranges for the in-scope (region-filtered)
-         *     catalog so the client offers only filters the data can actually satisfy —
-         *     never a price control that empties the grid because no item is priced.
+         * @description A versioned snapshot of exactly the rows Explore can search or browse.
          */
         CatalogFacets: {
             /** Total */
@@ -1156,6 +1154,39 @@ export interface components {
             price_min: number | null;
             /** Price Max */
             price_max: number | null;
+            /**
+             * Catalogue Version
+             * @default 0
+             */
+            catalogue_version: number;
+            /**
+             * Facet Age Seconds
+             * @default 0
+             */
+            facet_age_seconds: number;
+            /** Last Successful Ingest At */
+            last_successful_ingest_at?: string | null;
+            /**
+             * Freshness
+             * @default unknown
+             */
+            freshness: string;
+            /** By Category */
+            by_category?: {
+                [key: string]: number;
+            };
+            /** By Audience */
+            by_audience?: {
+                [key: string]: number;
+            };
+            /** By Source */
+            by_source?: {
+                [key: string]: number;
+            };
+            /** By Image Status */
+            by_image_status?: {
+                [key: string]: number;
+            };
         };
         /**
          * CatalogHealth
@@ -1807,6 +1838,8 @@ export interface components {
             score: number;
             /** Image Url */
             image_url?: string | null;
+            /** Image Status */
+            image_status?: string | null;
             /** Price */
             price?: number | null;
             /** Currency */
