@@ -215,7 +215,7 @@ Therefore GYF scales by gates:
 | F8/F9 | Frozen until evidence; benchmark cost per successful render, then enforce transparent trial/quota, global kill switch and separate paid-render capital cap before any paid opening |
 | **F10** | current-topology proof; bandwidth/cost alerts, durable audit export and store release declarations; non-Singapore comparison only after measured SLO failure and owner approval |
 | F12 | reconciled real cost vs ceiling; no Supabase Pro upgrade fits the fixed ceiling alongside the API, so trigger a topology review before 70% of any free-tier limit |
-| F13 | deletion of everything replaced above (old project/provider lane, Vercel production config, keepalive bandaid once always-on) |
+| F13 | deletion of everything replaced above (old project/provider lane, Vercel production config); `.github/workflows/keepalive.yml` stays as permanent warm-keep infra for the paid always-on Virginia Starter's DB pool/page cache, not a deletion target |
 
 Verification for every slice: the contract's phase set (`make fmt-check lint typecheck doctrine
 test`, `bun run build`) plus this plan's §2 SLO measurements from an Indian vantage.
