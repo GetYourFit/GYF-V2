@@ -537,6 +537,59 @@ def test_keyword_search_max_price_with_currency_drops_mismatched_currency_rows()
     assert params[price_index + 1] == "INR"
 
 
+def test_max_price_with_currency_excludes_same_priced_cross_currency_item(
+    live_db: str,
+) -> None:
+    """gyf-budget-currency-integrity, PR #41 follow-up: `/items/search`'s two
+    retrieval paths (`keyword_search` and `search_by_vector`) must drop a
+    cross-currency row even when its raw price number would pass the ceiling
+    unmodified — proving the guard keys off `items.currency`, not region."""
+    import psycopg
+
+    source = "test-search-currency-guard"
+    vector = "[1," + ",".join(["0"] * 767) + "]"
+    with psycopg.connect(live_db) as conn:
+        conn.execute("DELETE FROM items WHERE source_provider = %s", (source,))
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO items (
+                  title, category, attributes, price, currency, region_tags, image_refs,
+                  source_provider, source_license, dedupe_key
+                ) VALUES (%s, 'shirt', '{}'::jsonb, 500, %s, '{}',
+                          '["https://cdn.example.com/currency-guard.jpg"]'::jsonb, %s, 'research', %s)
+                """,
+                [
+                    ("currency guard inr shirt", "INR", source, f"{source}-inr"),
+                    ("currency guard usd shirt", "USD", source, f"{source}-usd"),
+                ],
+            )
+        conn.execute(
+            """
+            INSERT INTO item_embeddings (item_id, embedding, model_version)
+            SELECT id, %s::vector, 'test' FROM items WHERE source_provider = %s
+            """,
+            (vector, source),
+        )
+        conn.commit()
+
+    try:
+        repo = PostgresVectorSearchRepository(live_db)
+
+        keyword_hits = repo.keyword_search(
+            "currency guard shirt", k=10, region=None, max_price=500, currency="INR"
+        )
+        assert [r.title for r in keyword_hits] == ["currency guard inr shirt"]
+
+        vector_hits = repo.search_by_vector(
+            [1.0] + [0.0] * 767, k=10, region=None, max_price=500, currency="INR"
+        )
+        assert [r.title for r in vector_hits] == ["currency guard inr shirt"]
+    finally:
+        with psycopg.connect(live_db) as conn:
+            conn.execute("DELETE FROM items WHERE source_provider = %s", (source,))
+
+
 def test_searchable_predicate_accepts_any_https_image_ref():
     from app.catalog.retrieval import SEARCHABLE_ITEM_PREDICATE
 
