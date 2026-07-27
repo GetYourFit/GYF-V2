@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Image, Linking, RefreshControl, ScrollView, View } from "react-native";
+import { Linking, RefreshControl, ScrollView, View } from "react-native";
 
 import {
   ExpandableCollectionGrid,
@@ -8,6 +8,7 @@ import {
 import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
+import { CatalogImage } from "@/components/ui/catalog-image";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { GyfText } from "@/components/ui/gyf-text";
@@ -26,10 +27,6 @@ import { useResponsive } from "@/theme/use-responsive";
 
 type Status = "loading" | "ready" | "error";
 const SHOP_OPEN_ERROR = "shop-open-failed";
-
-function isRemoteImage(url: string | null | undefined): url is string {
-  return Boolean(url && /^https:\/\//i.test(url));
-}
 
 function readableError(error: unknown): string {
   if (error instanceof Error && error.message === SHOP_OPEN_ERROR) {
@@ -61,34 +58,17 @@ function SavedLookCard({
   const cover = outfitCoverImage(look.items);
   return (
     <AtelierCard style={{ gap: spacing.md }}>
-      {isRemoteImage(cover) ? (
-        <Image
-          accessibilityLabel={`Saved look: ${summary || "outfit"}`}
-          source={{ uri: cover }}
-          style={{
-            backgroundColor: palette.surfaceRaised,
-            borderRadius: radii.control,
-            height: coverHeight,
-            width: "100%",
-          }}
-        />
-      ) : (
-        <View
-          accessibilityLabel="Saved look; image unavailable"
-          style={{
-            alignItems: "center",
-            backgroundColor: palette.surfaceRaised,
-            borderRadius: radii.control,
-            height: coverHeight,
-            justifyContent: "center",
-            padding: spacing.sm,
-          }}
-        >
-          <GyfText tone="muted" variant="bodySmall">
-            Image unavailable
-          </GyfText>
-        </View>
-      )}
+      <CatalogImage
+        label={`Saved look: ${summary || "outfit"}`}
+        recyclingKey={look.id}
+        style={{
+          backgroundColor: palette.surfaceRaised,
+          borderRadius: radii.control,
+          height: coverHeight,
+          width: "100%",
+        }}
+        uri={cover}
+      />
       <View style={{ gap: spacing.xs }}>
         <GyfText variant="title">{look.occasion ? `${look.occasion} look` : "Saved look"}</GyfText>
         {summary ? (

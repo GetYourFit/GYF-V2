@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, Image, RefreshControl, TextInput, View } from "react-native";
+import { FlatList, RefreshControl, TextInput, View } from "react-native";
 
 import { IconHeart } from "@/components/icons";
 import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
+import { CatalogImage } from "@/components/ui/catalog-image";
 import { EmptyState, ErrorState } from "@/components/ui/empty-state";
 import { AnimatedGyfMark } from "@/components/explore/animated-gyf-mark";
 import { AppMenu } from "@/components/ui/app-menu";
@@ -58,39 +59,20 @@ function RecreatedLook({ result }: { result: OutfitRecommendation }) {
         Rebuilt for your profile and context — a new composition, not a copy or a try-on.
       </GyfText>
       <View style={{ flexDirection: "row", gap: spacing.xs }}>
-        {outfit.items.slice(0, 3).map((item) =>
-          item.image_url && /^https:\/\//i.test(item.image_url) ? (
-            <Image
-              accessibilityLabel={item.title}
-              key={item.item_id}
-              source={{ uri: item.image_url }}
-              style={{
-                backgroundColor: palette.surfaceRaised,
-                borderRadius: radii.control,
-                flex: 1,
-                height: 120,
-              }}
-            />
-          ) : (
-            <View
-              accessibilityLabel={`${item.title}; image unavailable`}
-              key={item.item_id}
-              style={{
-                alignItems: "center",
-                backgroundColor: palette.surfaceRaised,
-                borderRadius: radii.control,
-                flex: 1,
-                height: 120,
-                justifyContent: "center",
-                padding: spacing.xs,
-              }}
-            >
-              <GyfText tone="faint" variant="mono">
-                IMAGE UNAVAILABLE
-              </GyfText>
-            </View>
-          ),
-        )}
+        {outfit.items.slice(0, 3).map((item) => (
+          <CatalogImage
+            key={item.item_id}
+            label={item.title}
+            recyclingKey={item.item_id}
+            style={{
+              backgroundColor: palette.surfaceRaised,
+              borderRadius: radii.control,
+              flex: 1,
+              height: 120,
+            }}
+            uri={item.image_url}
+          />
+        ))}
       </View>
       <GyfText tone="muted" variant="bodySmall">
         {outfit.explanation}
@@ -161,10 +143,10 @@ function PostCard({
       {covers.length > 0 ? (
         <View style={{ flexDirection: "row", gap: spacing.xs }}>
           {covers.map((uri, index) => (
-            <Image
-              accessibilityLabel={`Look piece ${index + 1}`}
+            <CatalogImage
               key={uri}
-              source={{ uri }}
+              label={`Look piece ${index + 1}`}
+              recyclingKey={uri}
               style={{
                 backgroundColor: palette.surfaceRaised,
                 // Ref4 plate: sharp edges, boxy tone, whole look visible.
@@ -174,6 +156,7 @@ function PostCard({
                 // gets, so the plate keeps its 5:4 whatever the phone is.
                 height: coverHeight,
               }}
+              uri={uri}
             />
           ))}
         </View>

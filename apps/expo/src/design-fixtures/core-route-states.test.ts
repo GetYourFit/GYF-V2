@@ -365,11 +365,7 @@ describe("full experience matrix (EXPO-20/21)", () => {
   });
 
   test("every remote image outside CatalogImage carries explicit dimensions and a label", async () => {
-    const rawImageFiles = [
-      "(app)/(tabs)/social.tsx",
-      "(app)/(tabs)/profile.tsx",
-      "(app)/saved.tsx",
-    ];
+    const rawImageFiles = ["(app)/(tabs)/profile.tsx"];
     for (const file of rawImageFiles) {
       const source = await routeSource(file);
       const images = source.match(/<Image[\s\S]*?\/>/g) ?? [];
