@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Glob } from "bun";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { URL, fileURLToPath } from "node:url";
 
 /**
  * Motion and haptic grammar (EXPO-19-FINAL), enforced at the source level:
