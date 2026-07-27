@@ -2210,8 +2210,10 @@ export interface operations {
                 k?: number;
                 offset?: number;
                 region?: string | null;
-                /** @description Upper price bound (inclusive, in the item's catalog currency). Null means no price filter. */
+                /** @description Upper price bound (inclusive). Null means no price filter. The catalog spans multiple currencies (e.g. USD and INR merchants both carry region-neutral categories), so pass `currency` to state which currency this ceiling is denominated in — otherwise it is compared against each item's raw price regardless of currency. */
                 max_price?: number | null;
+                /** @description Currency code (e.g. 'INR', 'USD') that `max_price` is denominated in. When set, items priced in a different currency are dropped rather than compared as if the numbers were the same currency. Null applies no currency guard. */
+                currency?: string | null;
                 /** @description Result ordering: relevance (cosine similarity), price_asc, or price_desc. Price-sorted pages still carry honest relevance scores. */
                 sort?: "relevance" | "price_asc" | "price_desc";
                 /** @description Styling gender: results narrow to that slice + unisex. */

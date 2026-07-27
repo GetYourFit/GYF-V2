@@ -218,8 +218,19 @@ def search_items(
         None,
         ge=0,
         le=100_000,
-        description="Upper price bound (inclusive, in the item's catalog currency). "
-        "Null means no price filter.",
+        description="Upper price bound (inclusive). Null means no price filter. "
+        "The catalog spans multiple currencies (e.g. USD and INR merchants both "
+        "carry region-neutral categories), so pass `currency` to state which "
+        "currency this ceiling is denominated in — otherwise it is compared "
+        "against each item's raw price regardless of currency.",
+    ),
+    currency: str | None = Query(
+        None,
+        max_length=8,
+        description="Currency code (e.g. 'INR', 'USD') that `max_price` is denominated "
+        "in. When set, items priced in a different currency are dropped rather than "
+        "compared as if the numbers were the same currency. Null applies no currency "
+        "guard.",
     ),
     sort: Literal["relevance", "price_asc", "price_desc"] = Query(
         "relevance",
@@ -269,6 +280,7 @@ def search_items(
             sort=sort,
             genders=_genders(gender),
             categories=_slot_categories(slot),
+            currency=currency,
         )
     elif slots:
         slot_list = [s.strip() for s in slots.split(",") if s.strip()]
@@ -284,6 +296,7 @@ def search_items(
             max_price=max_price,
             sort=sort,
             genders=_genders(gender),
+            currency=currency,
         )[:k]
     else:
         hits = search_text(
@@ -297,6 +310,7 @@ def search_items(
             sort=sort,
             genders=_genders(gender),
             categories=_slot_categories(slot),
+            currency=currency,
         )
     with stage_timer("search", "directory_lookup", "bypass"):
         pass

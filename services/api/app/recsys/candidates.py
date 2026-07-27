@@ -127,6 +127,7 @@ class CandidateRepository(Protocol):
         genders: frozenset[str] | None = None,
         preferred_aesthetics: frozenset[str] | None = None,
         request_id: str = "-",
+        currency: str | None = None,
     ) -> dict[str, list[Candidate]]:
         """Return up to ``limit_per_slot`` candidates for each requested slot.
 
@@ -136,6 +137,12 @@ class CandidateRepository(Protocol):
         (unfaceted items always pass); ``None`` applies no gender predicate.
         ``preferred_aesthetics`` boosts items whose perceived aesthetic matches
         one of the preferred aesthetics; ``None`` applies no aesthetic boost.
+        ``currency`` scopes ``max_price`` to same-currency (or currency-unset)
+        rows: region does not imply currency, so a mismatched-currency row is
+        dropped from the budget-constrained pool rather than compared as if its
+        price were in the same currency as the ceiling. ``None`` applies no
+        currency predicate (matches prior behaviour when no budget currency is
+        known).
         """
         ...
 
@@ -204,7 +211,9 @@ _FILTERS = (
 WHERE i.available
   AND i.category = ANY(%s)
   AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
-  AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
+  AND (%s::numeric IS NULL OR i.price IS NULL
+       OR ((i.currency IS NULL OR %s::text IS NULL OR i.currency = %s::text)
+           AND i.price <= %s::numeric))
   AND (%s::text[] IS NULL
        OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
        OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
@@ -295,7 +304,9 @@ WITH per_category AS MATERIALIZED (
           WHERE value ~ '^https://'
       )
       AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
-      AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
+      AND (%s::numeric IS NULL OR i.price IS NULL
+           OR ((i.currency IS NULL OR %s::text IS NULL OR i.currency = %s::text)
+               AND i.price <= %s::numeric))
       AND (%s::text[] IS NULL
            OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
            OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
@@ -356,7 +367,9 @@ WITH per_category AS MATERIALIZED (
       AND i.attributes #>> '{{perception,attributes,aesthetic,certain}}' = 'true'
       AND i.attributes #>> '{{perception,attributes,aesthetic,value}}' = preferred.aesthetic
       AND (i.region_tags = '{{}}' OR %s::text IS NULL OR %s::text = ANY(i.region_tags))
-      AND (%s::numeric IS NULL OR i.price IS NULL OR i.price <= %s::numeric)
+      AND (%s::numeric IS NULL OR i.price IS NULL
+           OR ((i.currency IS NULL OR %s::text IS NULL OR i.currency = %s::text)
+               AND i.price <= %s::numeric))
       AND (%s::text[] IS NULL
            OR i.attributes #>> '{{taxonomy,gender}}' IS NULL
            OR i.attributes #>> '{{taxonomy,gender}}' = ANY(%s::text[]))
@@ -444,6 +457,7 @@ class PostgresCandidateRepository:
         genders: frozenset[str] | None = None,
         preferred_aesthetics: frozenset[str] | None = None,
         request_id: str = "-",
+        currency: str | None = None,
     ) -> dict[str, list[Candidate]]:
         from psycopg.errors import QueryCanceled  # lazy: postgres extra only
 
@@ -476,6 +490,8 @@ class PostgresCandidateRepository:
                 region,
                 region,
                 max_price,
+                currency,
+                currency,
                 max_price,
                 gender_list,
                 gender_list,
@@ -751,13 +767,20 @@ class InMemoryCandidateRepository:
         genders: frozenset[str] | None = None,
         preferred_aesthetics: frozenset[str] | None = None,
         request_id: str = "-",
+        currency: str | None = None,
     ) -> dict[str, list[Candidate]]:
         buckets: dict[str, list[Candidate]] = {slot: [] for slot in slots}
         for item in self.items:
             if item.slot not in slots:
                 continue
-            if max_price is not None and item.price is not None and item.price > max_price:
-                continue
+            if max_price is not None and item.price is not None:
+                currency_known_mismatch = (
+                    item.currency is not None and currency is not None and item.currency != currency
+                )
+                if currency_known_mismatch:
+                    continue
+                if item.price > max_price:
+                    continue
             if genders is not None and item.gender is not None and item.gender not in genders:
                 continue
             buckets[item.slot].append(item)

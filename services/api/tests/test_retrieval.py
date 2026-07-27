@@ -467,6 +467,36 @@ def test_max_price_adds_server_side_filter():
     assert params[-2:] == (10, 10)  # limit, offset
 
 
+def test_max_price_with_currency_drops_mismatched_currency_rows():
+    """gyf-budget-currency-integrity: the catalog spans multiple currencies
+    (US and IN merchants both carry region-neutral western staples), so
+    region does not imply currency. When the caller states which currency
+    `max_price` is denominated in, the SQL predicate must key off
+    `items.currency` directly — never off region — and drop mismatched-
+    currency rows rather than compare their raw price as if it were the
+    same currency as the ceiling."""
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo.search_by_vector([0.1, 0.2], k=10, region="IN", offset=10, max_price=80.0, currency="INR")
+    sql, params = pool.calls[-1]
+    assert "i.price IS NOT NULL AND i.price <= %s" in sql
+    assert "AND (i.currency IS NULL OR i.currency = %s)" in sql
+    # The currency param binds immediately after the price ceiling it guards.
+    price_index = params.index(80.0)
+    assert params[price_index + 1] == "INR"
+
+
+def test_max_price_without_currency_applies_no_currency_guard():
+    """Omitting `currency` preserves prior behaviour (no currency predicate) —
+    a caller that does not state a budget currency gets the same unconstrained
+    price comparison as before this fix."""
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo.search_by_vector([0.1, 0.2], k=10, region="IN", offset=10, max_price=80.0)
+    sql, _ = pool.calls[-1]
+    assert "AND (i.currency IS NULL OR i.currency = %s)" not in sql
+
+
 def test_keyword_fallback_uses_bounded_indexable_full_text_search():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
@@ -489,6 +519,20 @@ def test_keyword_fallback_uses_bounded_indexable_full_text_search():
     # bounded query is used for ranking and the index-backed match predicate.
     assert params[:2] == ("red:* | dresses:* | evening:*",) * 2
     assert params[-2:] == (12, 0)
+
+
+def test_keyword_search_max_price_with_currency_drops_mismatched_currency_rows():
+    """Same guard shape as search_by_vector: keyword_search backs /items/search
+    when the semantic encoder is unavailable, and it shares the identical
+    price-ceiling-with-no-currency-term defect until this predicate is added."""
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    repo.keyword_search("red dress", k=12, region="IN", max_price=2500, currency="INR")
+    sql, params = pool.calls[-1]
+    assert "i.price IS NOT NULL AND i.price <= %s" in sql
+    assert "AND (i.currency IS NULL OR i.currency = %s)" in sql
+    price_index = params.index(2500)
+    assert params[price_index + 1] == "INR"
 
 
 def test_searchable_predicate_accepts_any_https_image_ref():
@@ -619,6 +663,7 @@ def test_search_text_embeds_query_then_searches():
             sort="relevance",
             genders=None,
             categories=None,
+            currency=None,
         ):
             captured["embedding"] = embedding
             captured["offset"] = offset
@@ -653,6 +698,7 @@ class StubRepo:
         sort="relevance",
         genders=None,
         categories=None,
+        currency=None,
     ):
         return [SearchResult("hit", "Search Hit", 0.77)]
 
@@ -666,6 +712,7 @@ class StubRepo:
         sort="relevance",
         genders=None,
         categories=None,
+        currency=None,
     ):
         return [SearchResult("kw", "Keyword Hit", 0.0)]
 
@@ -792,10 +839,12 @@ def test_search_endpoint_validates_and_forwards_price_and_sort():
             sort="relevance",
             genders=None,
             categories=None,
+            currency=None,
         ):
             captured["max_price"] = max_price
             captured["sort"] = sort
             captured["categories"] = categories
+            captured["currency"] = currency
             return [SearchResult("hit", "Search Hit", 0.77)]
 
     app.dependency_overrides[get_search_repo] = lambda: CapturingRepo()
@@ -805,7 +854,17 @@ def test_search_endpoint_validates_and_forwards_price_and_sort():
         # valid combined filter + sort is accepted and reaches the repo
         resp = client.get("/items/search?q=dress&max_price=80&sort=price_asc")
         assert resp.status_code == 200
-        assert captured == {"max_price": 80.0, "sort": "price_asc", "categories": None}
+        assert captured == {
+            "max_price": 80.0,
+            "sort": "price_asc",
+            "categories": None,
+            "currency": None,
+        }
+        # gyf-budget-currency-integrity: the max_price ceiling is denominated in
+        # `currency` when given, and that must reach the repository too.
+        resp = client.get("/items/search?q=dress&max_price=80&sort=price_asc&currency=INR")
+        assert resp.status_code == 200
+        assert captured["currency"] == "INR"
         # slot hard-filter maps to the taxonomy's categories for that slot
         resp = client.get("/items/search?q=denim&slot=bottom")
         assert resp.status_code == 200
