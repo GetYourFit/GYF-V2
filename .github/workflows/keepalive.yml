@@ -1,18 +1,18 @@
-# Keep the free-tier Render API warm — STOPGAP for the cold-start tax.
+# Keep the production Render API's DB pool and page cache warm.
 #
-# Render's free web service spins down after ~15 min idle and cold-starts in
-# 30–60s on the next request, so the first user after any lull waits ~a minute
-# for items to load. Pinging /health every ~10 min keeps the instance warm.
+# Production is the single paid, always-on Render Starter in Virginia
+# (`gyf-api-va`) — it does not auto-sleep like Render's free tier. But an idle
+# gap still lets the Postgres connection pool and page cache go cold, so the
+# first real catalog request after a lull pays a 10-13s penalty. Pinging a
+# DB-touching route every ~5 min keeps that path warm.
 #
-# This is a bandaid, NOT the fix: GitHub's scheduled runs are best-effort and can
-# be delayed 10–30 min under load, so cold starts still slip through. The real fix
-# is moving the API off an auto-sleeping tier (a paid Render instance, Fly.io with
-# min-machines=1, etc.). Tracked as the top infra item.
+# GitHub's scheduled runs are best-effort and can be delayed 10-30 min under
+# load, so an occasional cold hit can still slip through.
 name: keepalive
 
 on:
   schedule:
-    - cron: "*/5 * * * *" # every ~5 min (GitHub may delay under load; Render sleeps at 15min)
+    - cron: "*/5 * * * *" # every ~5 min (GitHub may delay this under load)
   workflow_dispatch: {} # allow manual "wake it now"
 
 # Never let overlapping pings pile up if a run is slow.
