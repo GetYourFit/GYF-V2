@@ -143,11 +143,20 @@ describe("Expo Explore request model", () => {
     );
   });
 
-  test("a tapped board item pages through visual similarity, not text search", () => {
-    expect(buildExploreRequest(clean, 2, "ignored", "women", "item/42")).toEqual({
+  test("a tapped board item keeps filtered similarity inside the same budget currency", () => {
+    expect(
+      buildExploreRequest(
+        { ...clean, maxPrice: 5_000 },
+        2,
+        "ignored",
+        "women",
+        "item/42",
+        { max: 2_000, currency: "INR" },
+      ),
+    ).toEqual({
       mode: "similar",
       itemId: "item/42",
-      params: { k: 24, offset: 48, gender: "women" },
+      params: { k: 24, offset: 48, max_price: 2_000, currency: "INR", gender: "women" },
     });
   });
 

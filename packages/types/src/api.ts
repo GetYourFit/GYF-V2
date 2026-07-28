@@ -2115,6 +2115,10 @@ export interface operations {
                 k?: number;
                 offset?: number;
                 region?: string | null;
+                /** @description Upper price bound (inclusive). Null means no price filter. When paired with `currency`, mismatched-currency rows are excluded instead of being compared by raw number. */
+                max_price?: number | null;
+                /** @description Currency code (e.g. 'INR', 'USD') that `max_price` is denominated in. Null applies no currency guard. */
+                currency?: string | null;
                 /** @description Styling gender: results narrow to that slice + unisex. */
                 gender?: string | null;
             };

@@ -173,7 +173,7 @@ export function buildExploreRequest(
     return {
       mode: "similar",
       itemId: similarItemId,
-      params: { k: EXPLORE_PAGE_SIZE, offset, ...scope },
+      params: { k: EXPLORE_PAGE_SIZE, offset, ...budgetScope, ...scope },
     };
   }
 

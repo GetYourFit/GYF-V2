@@ -125,6 +125,8 @@ class VectorSearchRepository(Protocol):
         offset: int = 0,
         genders: frozenset[str] | None = None,
         categories: list[str] | None = None,
+        max_price: float | None = None,
+        currency: str | None = None,
     ) -> list[SearchResult]:
         """Nearest neighbours of an item. ``categories``, when given, restricts
         results to those catalog categories (swap-a-piece: same-slot alternates)."""
@@ -334,7 +336,7 @@ SELECT i.id, i.title,
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 WHERE EXISTS (SELECT 1 FROM item_embeddings WHERE item_id = %s)
-  AND e.item_id <> %s AND {searchable} {region} {gender} {category}
+  AND e.item_id <> %s AND {searchable} {region} {budget} {gender} {category}
 ORDER BY e.embedding <=> (SELECT embedding FROM item_embeddings WHERE item_id = %s)
 LIMIT %s OFFSET %s
 """
@@ -531,6 +533,8 @@ class PostgresVectorSearchRepository:
         offset: int = 0,
         genders: frozenset[str] | None = None,
         categories: list[str] | None = None,
+        max_price: float | None = None,
+        currency: str | None = None,
     ) -> list[SearchResult]:
         gender_list = sorted(genders) if genders else None
         # HNSW requires the ORDER BY vector to be a query constant. Joining the
@@ -541,12 +545,22 @@ class PostgresVectorSearchRepository:
         sql = _SIMILAR.format(
             searchable=SEARCHABLE_ITEM_PREDICATE,
             region=_REGION_FILTER if region else "",
+            budget=(
+                "AND i.price IS NOT NULL AND i.price <= %s"
+                + (" AND (i.currency IS NULL OR i.currency = %s)" if currency is not None else "")
+                if max_price is not None
+                else ""
+            ),
             gender=_GENDER_FILTER if gender_list else "",
             category=_CATEGORY_FILTER if categories else "",
         )
         params: list[object] = [item_id, item_id, item_id]
         if region:
             params.append(region)
+        if max_price is not None:
+            params.append(max_price)
+            if currency is not None:
+                params.append(currency)
         if gender_list:
             params.append(gender_list)
         if categories:
@@ -557,7 +571,7 @@ class PostgresVectorSearchRepository:
             sql,
             tuple(params),
             depth=k + offset,
-            iterative_scan=bool(region or gender_list or categories),
+            iterative_scan=bool(region or max_price is not None or gender_list or categories),
             surface="search",
             statement_timeout_ms=settings.catalog_search_statement_timeout_ms,
         )

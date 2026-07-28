@@ -83,6 +83,20 @@ def similar_items(
     k: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0, le=10_000),
     region: str | None = Query(None, max_length=64),
+    max_price: float | None = Query(
+        None,
+        ge=0,
+        le=100_000,
+        description="Upper price bound (inclusive). Null means no price filter. "
+        "When paired with `currency`, mismatched-currency rows are excluded instead "
+        "of being compared by raw number.",
+    ),
+    currency: str | None = Query(
+        None,
+        max_length=8,
+        description="Currency code (e.g. 'INR', 'USD') that `max_price` is denominated "
+        "in. Null applies no currency guard.",
+    ),
     gender: str | None = Query(
         None, description="Styling gender: results narrow to that slice + unisex."
     ),
@@ -90,7 +104,15 @@ def similar_items(
 ) -> dict[str, list[SearchResult]]:
     """Visually-similar items (nearest neighbours of the item's embedding)."""
     response.headers["Cache-Control"] = "public, max-age=30"
-    hits = repo.similar_to_item(item_id, k, region, offset, genders=_genders(gender))
+    hits = repo.similar_to_item(
+        item_id,
+        k,
+        region,
+        offset,
+        genders=_genders(gender),
+        max_price=max_price,
+        currency=currency,
+    )
     with stage_timer("search", "directory_lookup", "bypass"):
         pass
     return {"results": hits}

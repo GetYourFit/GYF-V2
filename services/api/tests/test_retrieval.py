@@ -252,6 +252,8 @@ def test_similar_binds_optional_filters_in_sql_order():
         offset=2,
         genders=frozenset({"women", "unisex"}),
         categories=["shirt", "blouse"],
+        max_price=2000,
+        currency="INR",
     )
 
     _, params = pool.calls[-1]
@@ -260,12 +262,26 @@ def test_similar_binds_optional_filters_in_sql_order():
         "source",
         "source",
         "IN",
+        2000,
+        "INR",
         ["unisex", "women"],
         ["shirt", "blouse"],
         "source",
         4,
         2,
     )
+
+
+def test_similar_sql_applies_budget_before_gender_and_category_filters():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+
+    repo.similar_to_item("source", k=4, region=None, max_price=2000, currency="INR")
+
+    sql, params = pool.calls[-1]
+    assert "AND i.price IS NOT NULL AND i.price <= %s" in sql
+    assert "AND (i.currency IS NULL OR i.currency = %s)" in sql
+    assert params == ("source", "source", "source", 2000, "INR", "source", 4, 0)
 
 
 def test_browse_sql_requires_an_embedding_to_exist():
@@ -1050,7 +1066,32 @@ def test_search_text_embeds_query_then_searches():
 
 
 class StubRepo:
-    def similar_to_item(self, item_id, k, region, offset=0, genders=None):
+    def __init__(self):
+        self.similar_calls = []
+
+    def similar_to_item(
+        self,
+        item_id,
+        k,
+        region,
+        offset=0,
+        genders=None,
+        categories=None,
+        max_price=None,
+        currency=None,
+    ):
+        self.similar_calls.append(
+            {
+                "item_id": item_id,
+                "k": k,
+                "region": region,
+                "offset": offset,
+                "genders": genders,
+                "categories": categories,
+                "max_price": max_price,
+                "currency": currency,
+            }
+        )
         return [SearchResult("sibling", "Sibling Item", 0.88)]
 
     def search_by_vector(
@@ -1088,7 +1129,7 @@ class StubEmbedder:
 
 
 def _client() -> TestClient:
-    app.dependency_overrides[get_search_repo] = lambda: StubRepo()
+    app.dependency_overrides[get_search_repo] = StubRepo
     app.dependency_overrides[get_text_embedder] = lambda: StubEmbedder()
     return TestClient(app)
 
@@ -1096,9 +1137,23 @@ def _client() -> TestClient:
 def test_similar_endpoint():
     client = _client()
     try:
-        resp = client.get("/items/abc/similar?k=5")
+        repo = StubRepo()
+        app.dependency_overrides[get_search_repo] = lambda: repo
+        resp = client.get("/items/abc/similar?k=5&max_price=2000&currency=INR&gender=women")
         assert resp.status_code == 200
         assert resp.json()["results"][0]["item_id"] == "sibling"
+        assert repo.similar_calls == [
+            {
+                "item_id": "abc",
+                "k": 5,
+                "region": None,
+                "offset": 0,
+                "genders": frozenset({"women", "unisex"}),
+                "categories": None,
+                "max_price": 2000,
+                "currency": "INR",
+            }
+        ]
     finally:
         app.dependency_overrides.clear()
 
