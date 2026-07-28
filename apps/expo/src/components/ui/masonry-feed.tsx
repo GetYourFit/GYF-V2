@@ -49,6 +49,7 @@ function Tile({
         label={item.label}
         onRatio={setRatio}
         recyclingKey={item.id}
+        retryable={false}
         style={{
           backgroundColor: palette.surfaceRaised,
           borderRadius: radii.control,
