@@ -420,10 +420,9 @@ def _browse_filter_params(
     categories: list[str] | None,
     budget_params: list[object],
 ) -> list[object]:
-    params: list[object] = []
+    params: list[object] = list(budget_params)
     if region:
         params.append(region)
-    params.extend(budget_params)
     if gender_list:
         params.append(gender_list)
     if categories:
