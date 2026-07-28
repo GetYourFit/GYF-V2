@@ -11,9 +11,9 @@ This records the Expo web/static Cuelinks JavaScript integration requested by th
   - `data-gyf-cuelinks-web="true"`
   - `<meta name="gyf-cuelinks-web-cid" ...>`
   - the browser-only `cdn0.cuelinks.com/js/cuelinksv2.js` loader.
-- The public web snippet id defaults to captain-provided `305057` through
-  `apps/expo/src/lib/cuelinks-web.ts` and can be changed safely with
-  `EXPO_PUBLIC_CUELINKS_CID`.
+- The public web snippet id is fixed in source to captain-provided `305057` through
+  `apps/expo/src/lib/cuelinks-web.ts`. `EXPO_PUBLIC_CUELINKS_CID` may only repeat that same public
+  value; divergent overrides now fail the build/test path.
 - No API token, Cuelinks transaction token or other secret is added to frontend code. The value is
   the public snippet/channel id only.
 
@@ -25,18 +25,20 @@ authoritative product-card commerce lane because it preserves product-level URLs
 subids for recommendation/catalogue reconciliation.
 
 The new Expo web JavaScript is supplemental link-conversion/earning safety for static web pages. It
-should not be used as product ingestion and should not replace backend `buy_url` generation. If the
-Cuelinks dashboard expects the web snippet and backend deeplinks to share one channel id, set either
-`EXPO_PUBLIC_CUELINKS_CID` or `GYF_CUELINKS_CID` in the deployment environment after operator review;
-the code paths are intentionally configurable instead of hard-coupled.
+should not be used as product ingestion and should not replace backend `buy_url` generation. The
+frontend snippet id and backend deeplink channel remain separate lanes; changing that relationship
+requires a separate operator decision, not a frontend env override.
 
 ## Detection and tests
 
-- `apps/expo/src/lib/cuelinks-web.test.ts` proves the default cId is `305057`, rejects non-numeric
-  values, builds a loader that appends `cuelinksv2.js`, and verifies the Expo `+html.tsx` document
-  hook contains the visible marker.
+- `apps/expo/src/lib/cuelinks-web.test.ts` proves the default cId is `305057`, rejects divergent env
+  overrides, builds a loader that appends `cuelinksv2.js`, and verifies the Expo `+html.tsx`
+  document hook contains the visible marker.
 - A built web/static page can be inspected for `gyf-cuelinks-web-loader`,
   `gyf-cuelinks-web-cid`, `data-cuelinks-cid`, and `cuelinksv2.js`.
+
+For the 2026-07-28 source-divergence diagnosis and the still-required post-deploy dashboard/browser
+checks, see [`cuelinks-web-js-install-check-fix-2026-07-28.md`](./cuelinks-web-js-install-check-fix-2026-07-28.md).
 
 ## Product boundary
 

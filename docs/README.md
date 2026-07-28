@@ -83,7 +83,8 @@ the subordinate launch-plan ledger but is not a separate roadmap.
 - Cuelinks Expo web JS marker: [`evidence/cuelinks-web-js-integration-2026-07-22.md`](./evidence/cuelinks-web-js-integration-2026-07-22.md) —
   supplemental static-web `cuelinksv2.js` loader evidence; backend `buy_url` links remain authoritative.
 - Cuelinks Expo web JS install-check fix: [`evidence/cuelinks-web-js-install-check-fix-2026-07-28.md`](./evidence/cuelinks-web-js-install-check-fix-2026-07-28.md) —
-  follow-up proof that the Expo web loader now matches Cuelinks' literal EXPO snippet so the dashboard installation check can pass.
+  source-divergence diagnosis, exact-loader regression proof, and the still-required deployed
+  browser/dashboard verification before claiming live installation success.
 - Profitability measurement (conversion rate, repeat-use rate, parameterized contribution-margin
   estimate): [`evidence/c4-profitability-measurement-2026-07-27.md`](./evidence/c4-profitability-measurement-2026-07-27.md) —
   produced by `scripts/report_profitability.py`; honestly reports insufficient data in this
