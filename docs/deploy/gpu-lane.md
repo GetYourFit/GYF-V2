@@ -13,6 +13,7 @@ pick the backend from one env var:
 | `GYF_ENCODER_REMOTE_URL` | `GYF_ENCODER_REMOTE_KIND` | Backend | When |
 | --- | --- | --- | --- |
 | **unset** (default) | — | `SiglipEncoder` — local CPU or local CUDA | laptop dev, CI |
+| ignored, may be stale | `local_cpu` | `SiglipEncoder(..., device="cpu")` | explicit always-on SigLIP2 CPU baseline on Render-compatible compute |
 | a Gradio URL | `gradio` (default) | `RemoteEncoder` — HF ZeroGPU Space | the **image**-embed batch lane (catalog backfill) |
 | a JSON URL | `http` | `HttpEncoder` — plain JSON POST | the **search** lane: Modal CPU, scale-to-zero (F2.5) |
 
@@ -21,7 +22,7 @@ the remote ones are optional swaps, never a requirement.
 
 ---
 
-## ▶ Search lane (F2.5) — Modal CPU, scale-to-zero
+## ▶ Search lane (F2.5) - Modal CPU, scale-to-zero
 
 Why it exists: `/items/search` embeds the user's text. On the ZeroGPU Space that cost
 **29.7 s** cold from India (`docs/plans/scale-3k-inr.md` §1) — product-killing. The SigLIP
@@ -48,6 +49,22 @@ The lane serves exactly one model — the promoted production encoder baked in a
 — and refuses any other `model_id`, so no research checkpoint can reach it by config drift.
 Verify with `python3 scripts/measure_slo.py` from an Indian connection: `search_uncached`
 must land under 3 s p95, `search_cached` under 0.9 s.
+
+## ▶ Local CPU foundation (POC only) - explicit Render-compatible baseline
+
+This lane is opt-in and reversible. It does not promote a model, change
+`models.registry.json`, reindex production, or require a live remote service. Set only:
+
+```
+GYF_ENCODER_REMOTE_KIND=local_cpu
+```
+
+`encoder_for()` then ignores any stale `GYF_ENCODER_REMOTE_URL` and instantiates the incumbent
+shared `google-siglip2-base-v1` text/image encoder on CPU. Use it only for the bounded local
+foundation work documented in [`docs/plans/scale-3k-inr.md`](../plans/scale-3k-inr.md). Before any
+future runtime export or deployment promotion, pass the frozen parity/truth/latency/RSS harness in
+`ml/eval/encoder_foundation.py`, then complete the shadow, canary, India-SLO, reindex, and
+rollback gates from that plan.
 
 ---
 

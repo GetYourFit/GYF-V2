@@ -225,7 +225,9 @@ def test_fallback_stays_remote_while_the_lane_works() -> None:
     from perception.remote import FallbackEncoder
 
     live = _LiveEncoder()
-    enc = FallbackEncoder(live, lambda: (_ for _ in ()).throw(AssertionError("must not build local")))
+    enc = FallbackEncoder(
+        live, lambda: (_ for _ in ()).throw(AssertionError("must not build local"))
+    )
 
     enc.encode_images([Image.new("RGB", (8, 8))])
     enc.encode_images([Image.new("RGB", (8, 8))])

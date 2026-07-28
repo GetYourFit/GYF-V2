@@ -25,9 +25,7 @@ class _FakeEncoder:
 
     def __init__(self, rows: np.ndarray | None = None) -> None:
         self._rows = (
-            rows
-            if rows is not None
-            else np.array([[1.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+            rows if rows is not None else np.array([[1.0, 0.0, 0.0, 0.0]], dtype=np.float32)
         )
         self.calls = 0
 

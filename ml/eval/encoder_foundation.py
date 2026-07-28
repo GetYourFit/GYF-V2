@@ -88,7 +88,9 @@ def _rss_bytes() -> int | None:
         return None
 
 
-def measure_text_runtime(encoder: TextImageEncoder, texts: list[str], *, repeats: int = 5) -> RuntimeMeasurement:
+def measure_text_runtime(
+    encoder: TextImageEncoder, texts: list[str], *, repeats: int = 5
+) -> RuntimeMeasurement:
     """Measure one cold call and bounded warm calls without implying promotion."""
     if not texts or repeats < 1:
         raise ValueError("texts and repeats must be non-empty/positive")
