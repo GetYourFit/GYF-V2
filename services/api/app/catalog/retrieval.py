@@ -401,6 +401,18 @@ def _profile_score(result: SearchResult, constraints: Constraints) -> float:
     return score
 
 
+def _browse_budget_sql(preferences: ExplorePreferences | None) -> tuple[str, list[object]]:
+    if preferences is None or preferences.constraints.max_price is None:
+        return "", []
+    constraints = preferences.constraints
+    params: list[object] = [constraints.max_price]
+    clause = "AND i.price <= %s"
+    if constraints.currency is not None:
+        clause += " AND i.currency = %s"
+        params.append(constraints.currency)
+    return clause, params
+
+
 def _apply_explore_preferences(
     results: list[SearchResult], preferences: ExplorePreferences | None, k: int
 ) -> list[SearchResult]:
@@ -418,9 +430,7 @@ def _apply_explore_preferences(
             and result.price <= constraints.max_price
             and (constraints.currency is None or result.currency == constraints.currency)
         ]
-    return sorted(
-        results, key=lambda result: (-_profile_score(result, constraints), result.item_id)
-    )[:k]
+    return sorted(results, key=lambda result: -_profile_score(result, constraints))[:k]
 
 
 def _parse_vec(v: object) -> list[float]:
@@ -639,11 +649,12 @@ class PostgresVectorSearchRepository:
         region_clause = _REGION_FILTER if region else ""
         gender_clause = _GENDER_FILTER if gender_list else ""
         category_clause = _CATEGORY_FILTER if categories else ""
+        budget_clause, budget_params = _browse_budget_sql(preferences)
         # Personalized path: rank by cosine to the taste vector over the HNSW index.
         if taste_vector is not None:
             vec = _pgvector(taste_vector)
             sql = _BROWSE_TASTE.format(
-                searchable=SEARCHABLE_ITEM_PREDICATE,
+                searchable=SEARCHABLE_ITEM_PREDICATE + ("\n  " + budget_clause if budget_clause else ""),
                 region=region_clause,
                 gender=gender_clause,
                 category=category_clause,
@@ -655,6 +666,7 @@ class PostgresVectorSearchRepository:
                 params.append(gender_list)
             if categories:
                 params.append(categories)
+            params.extend(budget_params)
             params.append(vec)  # ORDER BY expression
             # Over-fetch a disjoint per-page window, then MMR-rerank to k so the feed
             # stops stacking near-identical products. The window scales with offset so
@@ -688,7 +700,7 @@ class PostgresVectorSearchRepository:
             _BROWSE_INDEXED if self._indexed_browse or taste_vector is not None else _BROWSE_LEGACY
         )
         sql = browse_query.format(
-            searchable=SEARCHABLE_ITEM_PREDICATE,
+            searchable=SEARCHABLE_ITEM_PREDICATE + ("\n     " + budget_clause if budget_clause else ""),
             region=region_clause,
             gender=gender_clause,
             category=category_clause,
@@ -708,6 +720,7 @@ class PostgresVectorSearchRepository:
                 params.append(gender_list)
             if categories:
                 params.append(categories)
+            params.extend(budget_params)
             # Optional predicates appear before the ORDER BY seed placeholder.
             # Keep bindings in SQL order; putting the seed first silently bound it
             # as a region and made filtered browse fail with PostgreSQL 22P02.
@@ -738,6 +751,7 @@ class PostgresVectorSearchRepository:
                 params.append(gender_list)
             if categories:
                 params.append(categories)
+            params.extend(budget_params)
             params.append((k + offset) * _OVERFETCH if preferences else k + offset)
         params.extend(
             [k * _OVERFETCH if preferences else k, offset * _OVERFETCH if preferences else offset]

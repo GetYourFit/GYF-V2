@@ -81,6 +81,19 @@ def test_profile_preferences_materially_change_explore_and_never_break_budget():
     assert all(item.price <= 1000 and item.currency == "INR" for item in warm_feed + cool_feed)
 
 
+def test_profile_preferences_preserve_retrieval_order_when_scores_tie():
+    items = [
+        SearchResult("first", "First", 0, price=900, currency="INR"),
+        SearchResult("second", "Second", 0, price=900, currency="INR"),
+        SearchResult("third", "Third", 0, price=900, currency="INR"),
+    ]
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    feed = _apply_explore_preferences(items, ExplorePreferences(resolve(profile, None, None)), 3)
+
+    assert [item.item_id for item in feed] == ["first", "second", "third"]
+
+
 class FakePool:
     """Captures the SQL/params and returns canned rows."""
 
@@ -427,6 +440,61 @@ def test_legacy_browse_binds_filters_before_order_seed():
         "session-a",
         6,
         12,
+    )
+
+
+def test_browse_pushes_budget_constraint_into_legacy_sql_window():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    repo.browse(
+        categories=["shirt"],
+        k=6,
+        region="IN",
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+        seed="session-a",
+    )
+
+    sql, params = pool.calls[-1]
+    assert "AND i.price <= %s" in sql
+    assert "AND i.currency = %s" in sql
+    assert params == (
+        "IN",
+        ["shirt"],
+        1000,
+        "INR",
+        "session-a",
+        18,
+        0,
+    )
+
+
+def test_browse_pushes_budget_constraint_into_taste_sql_window():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    repo.browse(
+        categories=["shirt"],
+        k=6,
+        region="IN",
+        taste_vector=[0.1, 0.2],
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+    )
+
+    sql, params = pool.calls[-1]
+    assert "AND i.price <= %s" in sql
+    assert "AND i.currency = %s" in sql
+    assert params == (
+        "[0.1,0.2]",
+        "IN",
+        ["shirt"],
+        1000,
+        "INR",
+        "[0.1,0.2]",
+        18,
+        0,
     )
 
 
