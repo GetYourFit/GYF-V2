@@ -34,6 +34,9 @@ jobs:
       # Cleanup H0/H1: no tracked machine-local tool/cache artifacts or oversized binaries.
       - run: python -m unittest discover -s scripts -p "test_check_repo_hygiene.py"
       - run: python scripts/check_repo_hygiene.py
+      # PR workflow policy: sensitive jobs never execute PR-head code or artifacts.
+      - run: ruby scripts/test_check_workflow_security.rb
+      - run: ruby scripts/check_workflow_security.rb
       # Cleanup inventory: frozen rollback/reference surfaces cannot silently grow or deploy.
       - run: python -m unittest discover -s scripts -p "test_ownership_inventory.py"
       - run: python scripts/ownership_inventory.py --check

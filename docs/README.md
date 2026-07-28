@@ -90,7 +90,9 @@ the subordinate launch-plan ledger but is not a separate roadmap.
   produced by `scripts/report_profitability.py`; honestly reports insufficient data in this
   sandboxed run (no `GYF_DATABASE_URL`), not a production reading.
 - Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) (superseded
-  historical preview runbook retained until F13) and [`deploy/gpu-lane.md`](./deploy/gpu-lane.md).
+  historical preview runbook retained until F13), [`deploy/gpu-lane.md`](./deploy/gpu-lane.md), and
+  [`deploy/supabase-preview-security.md`](./deploy/supabase-preview-security.md) (active PR preview
+  credential-boundary containment).
 - Historical user evidence: [`feedbacks/gyf-feedback-v1.md`](./feedbacks/gyf-feedback-v1.md),
   [`feedbacks/gyf-feedback-v2.md`](./feedbacks/gyf-feedback-v2.md),
   [`feedbacks/gyf-feedback-v3-design.md`](./feedbacks/gyf-feedback-v3-design.md),
