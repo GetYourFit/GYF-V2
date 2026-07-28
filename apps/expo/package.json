@@ -19,7 +19,6 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@expo-google-fonts/bricolage-grotesque": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@gyf/types": "workspace:*",
     "@supabase/supabase-js": "^2.47.10",

@@ -78,7 +78,7 @@ This is the flagship interaction GYF is known for; port it faithfully rather tha
 - **Body** — system sans (`San Francisco`/`Roboto` via RN default). Deliberate: body copy is read, not looked at — a system font here is invisible in the right way, and it's the one place "generic" is correct, not a compromise. Only the two display faces need to be distinctive.
 - **Mono** — keep existing `typography.mono` (already token-defined) for numeric/data readouts (match-%, prices, counts) — reinforces the "precise instrument" read.
 
-Both faces ship via `@expo-google-fonts/fraunces` and `@expo-google-fonts/bricolage-grotesque` (OFL-licensed, first-party Expo font packages, loaded once via `expo-font`/`useFonts` at the root `_layout.tsx` with a splash-screen hold until loaded — standard Expo pattern, no custom font-loading logic needed).
+Fraunces ships via `@expo-google-fonts/fraunces` (OFL-licensed, first-party Expo package), loaded once via `expo-font`/`useFonts` at the root `_layout.tsx` with a splash-screen hold until loaded. Bricolage Grotesque remains design intent only until a real Expo owner exists; do not carry the package as an unused dependency.
 
 ## Liquid Glass — used correctly, not as blanket decoration
 
@@ -137,7 +137,7 @@ Everything above that isn't already installed, in one place, all first-party Exp
 - `expo-blur` — Liquid Glass surfaces.
 - `expo-linear-gradient` — glass edge highlights only, not a color-scheme gradient.
 - `react-native-svg` — custom icons and empty-state illustrations.
-- `expo-font` + `@expo-google-fonts/fraunces` + `@expo-google-fonts/bricolage-grotesque` — typography.
+- `expo-font` + `@expo-google-fonts/fraunces` — shipped typography. Add `@expo-google-fonts/bricolage-grotesque` only with a real Expo caller.
 - `expo-haptics` — pairs naturally with the press-feedback and save-toggle micro-interactions above; add here rather than deferring, since this pass is explicitly about interactive polish.
 
 Reanimated and gesture-handler, already installed, cover everything else (stagger, press scale, swipe-to-remove, tab morph).
