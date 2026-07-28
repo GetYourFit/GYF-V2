@@ -44,6 +44,7 @@ import {
   type StylistFeedbackStatus,
 } from "@/lib/stylist-feed";
 import { formatCatalogPrice } from "@/lib/explore-feed";
+import { createEventId, createLazyEventId } from "@/lib/event-id";
 import { SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import { railTileWidth } from "@/components/grid/column-count";
@@ -357,7 +358,7 @@ export default function StylistRoute() {
   const retryEvents = useRef<Record<string, FeedbackRequest[]>>({});
   const swapRetryEvents = useRef<Record<number, FeedbackRequest>>({});
   const seenItemIds = useRef("");
-  const commerceSessionId = useRef(crypto.randomUUID());
+  const getCommerceSessionId = useRef(createLazyEventId()).current;
 
   const flushSwapRetries = useCallback(async () => {
     const queued = Object.entries(swapRetryEvents.current);
@@ -448,7 +449,7 @@ export default function StylistRoute() {
           data.recommendation_id,
           action,
           index,
-          outfit.items.map(() => crypto.randomUUID()),
+          outfit.items.map(() => createEventId()),
         );
       retryEvents.current[retryKey] = events;
       if (action === "save") {
@@ -543,7 +544,7 @@ export default function StylistRoute() {
       return next;
     });
     const event: FeedbackRequest = {
-      event_id: crypto.randomUUID(),
+      event_id: createEventId(),
       target_type: "item",
       target_id: alternate.item_id,
       action: "swap",
@@ -564,8 +565,8 @@ export default function StylistRoute() {
       item,
       data.recommendation_id,
       index,
-      crypto.randomUUID(),
-      commerceSessionId.current,
+      createEventId(),
+      getCommerceSessionId(),
     );
     void Linking.openURL(url)
       .then(() => {
