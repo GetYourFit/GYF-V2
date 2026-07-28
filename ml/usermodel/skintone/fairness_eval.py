@@ -1,11 +1,13 @@
-"""The skin-tone fairness gate (⚠ P1-B Cycle 3's defining deliverable).
+"""Legacy MST-only aggregation for the shadow skin-tone estimator.
 
 Runs the **real** skin-tone pipeline across a balanced, full-MST-spectrum image
 set and reports, **per Monk Skin Tone band**, how far the estimate lands from the
 labelled truth — then the worst gap between any two bands. That cross-band gap is
-the fairness metric the M1 promotion gate (``GATES['skin_tone']``) checks: the
-module may only be surfaced in production once the gap is within one bucket, so it
-is provably not worse for darker (or lighter) skin. Until then it runs in shadow.
+still useful shadow evidence, but it is no longer sufficient for promotion by
+itself: the production gate now also requires calibration, abstention and an
+independently attested approved panel via :mod:`usermodel.photo_fairness_eval`.
+Until that complete gate clears, manual values remain authoritative and this
+module stays shadowed.
 
 The aggregation (:func:`summarize`) is pure and unit-tested; the CLI wires it to
 the real estimator over a manifest of labelled photos and writes a canonical
@@ -13,9 +15,9 @@ the real estimator over a manifest of labelled photos and writes a canonical
 
     python -m usermodel.skintone.fairness_eval <manifest.json> [report_id]
 
-``manifest.json`` is ``[{"path": "a.jpg", "true_mst": "mst7"}, ...]`` — a small
-consented or public fairness set (e.g. MST-E / FairFace-derived), **never** served
-user data (D8). The labelled photos are not committed; the manifest points at them.
+``manifest.json`` is ``[{"path": "a.jpg", "true_mst": "mst7"}, ...]`` using a
+labelled, separately consented evaluation set, **never** served user data (D8).
+The labelled photos are not committed; the manifest points at them.
 """
 
 from __future__ import annotations

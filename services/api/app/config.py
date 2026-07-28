@@ -97,7 +97,8 @@ class Settings(BaseSettings):
     # photo-derived tone now feeds RANKING (recsys conditioning, ce61dac) — a
     # near-random estimate must not steer picks or inflate confidence
     # (invariants #1/#3). Flip via GYF_SKIN_TONE_ENABLED=true only after the
-    # full-MST fairness eval passes. Manual skin tone is unaffected.
+    # approved-panel photo fairness report passes with protected attestation,
+    # calibration and abstention evidence. Manual skin tone is unaffected.
     skin_tone_enabled: bool = False
 
     # Exact encoder identity consumed by the optional ML adapter. Keeping the
