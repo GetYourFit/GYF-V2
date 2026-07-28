@@ -41,13 +41,31 @@ class WorkflowSecurityPolicyTest < Minitest::Test
 
   def test_rejects_pull_request_target_secret_job_that_checks_out_pr_head
     errors = errors_for(<<~YAML)
-      on:
-        pull_request_target:
+      on: pull_request_target
       jobs:
         remote-preview:
           env:
             PROVIDER_TOKEN: ${{ secrets.PROVIDER_TOKEN }}
           if: github.event_name == 'pull_request_target' && github.event.action != 'closed'
+          steps:
+            - uses: actions/checkout@v4
+              with:
+                ref: ${{ github.event.pull_request.head.sha }}
+    YAML
+
+    assert(errors.any? { |error| error.include?("non-closed") })
+    assert(errors.any? { |error| error.include?("actions/checkout") })
+    assert(errors.any? { |error| error.include?("pull-request-head-controlled") })
+  end
+
+  def test_rejects_sequence_form_pr_trigger_with_sensitive_non_closed_job
+    errors = errors_for(<<~YAML)
+      on: [pull_request, workflow_dispatch]
+      jobs:
+        remote-preview:
+          env:
+            PROVIDER_TOKEN: ${{ secrets.PROVIDER_TOKEN }}
+          if: github.event_name == 'pull_request' && github.event.action != 'closed'
           steps:
             - uses: actions/checkout@v4
               with:
@@ -98,9 +116,7 @@ class WorkflowSecurityPolicyTest < Minitest::Test
 
   def test_allows_closed_pull_request_target_cleanup_without_checkout_or_head_expression
     errors = errors_for(<<~YAML)
-      on:
-        pull_request_target:
-          types: [closed]
+      on: [workflow_dispatch, pull_request_target]
       jobs:
         cleanup:
           if: github.event_name == 'pull_request_target' && github.event.action == 'closed'

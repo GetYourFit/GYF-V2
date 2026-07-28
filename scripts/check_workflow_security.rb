@@ -37,7 +37,14 @@ class WorkflowSecurityPolicy
 
   def pull_request_trigger?
     triggers = @workflow["on"] || @workflow[true]
-    triggers.is_a?(Hash) && PR_EVENTS.any? { |event| triggers.key?(event) }
+    case triggers
+    when Hash
+      PR_EVENTS.any? { |event| triggers.key?(event) }
+    when Array
+      (triggers.map(&:to_s) & PR_EVENTS).any?
+    else
+      PR_EVENTS.include?(triggers.to_s)
+    end
   end
 
   def sensitive?(job)
