@@ -82,6 +82,10 @@ the subordinate launch-plan ledger but is not a separate roadmap.
   fixture-backed Deeplink=Yes/No import evidence, backend-only Publisher API client evidence and the exact product-feed blocker.
 - Cuelinks Expo web JS marker: [`evidence/cuelinks-web-js-integration-2026-07-22.md`](./evidence/cuelinks-web-js-integration-2026-07-22.md) —
   supplemental static-web `cuelinksv2.js` loader evidence; backend `buy_url` links remain authoritative.
+- Profitability measurement (conversion rate, repeat-use rate, parameterized contribution-margin
+  estimate): [`evidence/c4-profitability-measurement-2026-07-27.md`](./evidence/c4-profitability-measurement-2026-07-27.md) —
+  produced by `scripts/report_profitability.py`; honestly reports insufficient data in this
+  sandboxed run (no `GYF_DATABASE_URL`), not a production reading.
 - Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) (superseded
   historical preview runbook retained until F13) and [`deploy/gpu-lane.md`](./deploy/gpu-lane.md).
 - Historical user evidence: [`feedbacks/gyf-feedback-v1.md`](./feedbacks/gyf-feedback-v1.md),
