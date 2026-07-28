@@ -44,7 +44,7 @@ import modal
 from gyf_contracts.eval_report import RUNTIME_MODELS, runtime_model_verdict
 
 _PRODUCTION_ENCODER = RUNTIME_MODELS["encoder"]
-_POLICY_ROOT = Path(__file__).resolve().parents[2]
+_POLICY_ROOT = Path("/opt/gyf-runtime")
 _REGISTRY_PATH = _POLICY_ROOT / "models.registry.json"
 _REPORTS_PATH = _POLICY_ROOT / "eval-reports"
 

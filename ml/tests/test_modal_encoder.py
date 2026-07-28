@@ -96,6 +96,41 @@ def _copy_isolated_modal_bundle(destination: Path) -> Path:
     return module_path
 
 
+def _redirect_opt_runtime_policy(monkeypatch: pytest.MonkeyPatch, bundle_root: Path) -> None:
+    original_read_text = Path.read_text
+    original_exists = Path.exists
+    original_is_file = Path.is_file
+    original_is_dir = Path.is_dir
+
+    def resolve_bundle_path(path: Path) -> Path:
+        try:
+            relative = path.relative_to("/opt/gyf-runtime")
+        except ValueError:
+            return path
+        return bundle_root / relative
+
+    monkeypatch.setattr(
+        Path,
+        "read_text",
+        lambda self, *args, **kwargs: original_read_text(resolve_bundle_path(self), *args, **kwargs),
+    )
+    monkeypatch.setattr(
+        Path,
+        "exists",
+        lambda self: original_exists(resolve_bundle_path(self)),
+    )
+    monkeypatch.setattr(
+        Path,
+        "is_file",
+        lambda self: original_is_file(resolve_bundle_path(self)),
+    )
+    monkeypatch.setattr(
+        Path,
+        "is_dir",
+        lambda self: original_is_dir(resolve_bundle_path(self)),
+    )
+
+
 def test_modal_lane_defaults_to_the_canonical_runtime_binding(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("GYF_PERCEPTION_MODEL", raising=False)
 
@@ -113,7 +148,9 @@ def test_modal_lane_accepts_the_canonical_override_from_the_bundled_policy(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     binding = RUNTIME_MODELS["encoder"]
-    module_path = _copy_isolated_modal_bundle(tmp_path / "bundle")
+    bundle_root = tmp_path / "bundle"
+    module_path = _copy_isolated_modal_bundle(bundle_root)
+    _redirect_opt_runtime_policy(monkeypatch, bundle_root)
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", binding.model_uri)
 
     module, _fake_modal = _load_modal_encoder_from_path(monkeypatch, module_path)
@@ -124,7 +161,9 @@ def test_modal_lane_accepts_the_canonical_override_from_the_bundled_policy(
 def test_modal_lane_rejects_invalid_override_from_the_bundled_policy(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    module_path = _copy_isolated_modal_bundle(tmp_path / "bundle")
+    bundle_root = tmp_path / "bundle"
+    module_path = _copy_isolated_modal_bundle(bundle_root)
+    _redirect_opt_runtime_policy(monkeypatch, bundle_root)
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", "hf-hub:unapproved/model")
 
     with pytest.raises(RuntimeError, match="invalid GYF_PERCEPTION_MODEL override"):
@@ -139,6 +178,7 @@ def test_modal_lane_rejects_override_when_the_bundled_policy_is_missing_reports(
     module_path.parent.mkdir(parents=True)
     shutil.copy2(MODULE_PATH, module_path)
     shutil.copy2(ROOT / "models.registry.json", bundle_root / "models.registry.json")
+    _redirect_opt_runtime_policy(monkeypatch, bundle_root)
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", RUNTIME_MODELS["encoder"].model_uri)
 
     with pytest.raises(RuntimeError, match="does not resolve under"):
