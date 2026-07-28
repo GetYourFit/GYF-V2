@@ -6,8 +6,16 @@
   "parity_top_k": 10,
   "eligible_catalogue_ids": ["item-a", "item-b", "item-c"],
   "queries": [
-    {"id": "q-red-dress", "text": "red summer dress", "relevant_ids": ["item-a"]},
-    {"id": "q-linen-shirt", "text": "linen shirt", "relevant_ids": ["item-b"]}
+    {
+      "id": "q-red-dress",
+      "text": "red summer dress",
+      "relevant_ids": ["item-a"]
+    },
+    {
+      "id": "q-linen-shirt",
+      "text": "linen shirt",
+      "relevant_ids": ["item-b"]
+    }
   ],
   "gates": {
     "india_uncached_p50_seconds": 1.5,
