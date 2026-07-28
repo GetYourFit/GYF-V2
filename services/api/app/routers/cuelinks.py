@@ -251,10 +251,16 @@ def convert_link(
     recommendation surfaces — idempotent and safe to call repeatedly.
     """
     # Validate and extract the product URL (rejects homepages, shortlinks, etc.)
-    from ..affiliate import product_serving_url
+    from ..affiliate import merchant_resolution_url, product_serving_url
 
     product_url = product_serving_url(request.url)
     if product_url is None:
+        return LinkConversionResponse(
+            affiliate_url=None,
+            deeplink_allowed=False,
+        )
+    merchant_url = merchant_resolution_url(product_url)
+    if merchant_url is None:
         return LinkConversionResponse(
             affiliate_url=None,
             deeplink_allowed=False,
@@ -263,7 +269,7 @@ def convert_link(
     # Resolve campaign from the product URL's domain
     from urllib.parse import urlparse
 
-    domain = (urlparse(product_url).hostname or "").lower().rstrip(".")
+    domain = (urlparse(merchant_url).hostname or "").lower().rstrip(".")
     campaign = registry.resolve(domain=domain)
 
     if campaign is None:
@@ -317,14 +323,17 @@ def preview_link_conversion(
     Uses a fixed 'preview' subid by default. Useful for client-side
     "copy link" previews. Rate-limited by the global API rate limiter.
     """
-    from ..affiliate import product_serving_url
+    from ..affiliate import merchant_resolution_url, product_serving_url
     from urllib.parse import urlparse
 
     product_url = product_serving_url(url)
     if product_url is None:
         return LinkConversionResponse(affiliate_url=None, deeplink_allowed=False)
+    merchant_url = merchant_resolution_url(product_url)
+    if merchant_url is None:
+        return LinkConversionResponse(affiliate_url=None, deeplink_allowed=False)
 
-    domain = (urlparse(product_url).hostname or "").lower().rstrip(".")
+    domain = (urlparse(merchant_url).hostname or "").lower().rstrip(".")
     campaign = registry.resolve(domain=domain)
 
     if campaign is None or not campaign.product_deeplink_allowed:

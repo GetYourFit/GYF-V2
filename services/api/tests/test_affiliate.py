@@ -9,7 +9,13 @@ from __future__ import annotations
 
 import json
 
-from app.affiliate import CuelinksLinker, NullAffiliateLinker, catalog_subid, product_serving_url
+from app.affiliate import (
+    CuelinksLinker,
+    NullAffiliateLinker,
+    catalog_subid,
+    merchant_resolution_url,
+    product_serving_url,
+)
 from app.catalog.directory import InMemoryItemDirectory, ItemDetail
 
 # --- CuelinksLinker: the deeplink contract ----------------------------------
@@ -94,6 +100,16 @@ def test_linksredirect_product_targets_without_the_requested_subid_are_rewrapped
     assert wrapped == (
         "https://linksredirect.com/?cid=274785&source=api&subid=rec-123"
         "&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige"
+    )
+
+
+def test_merchant_resolution_url_unwraps_safe_deeplinks_for_campaign_lookup():
+    wrapped = (
+        "https://linksredirect.com/?cid=274785&source=api&subid=catalog_i1"
+        "&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige"
+    )
+    assert merchant_resolution_url(wrapped) == (
+        "https://www.thehouseofrare.com/products/fullsleen-mens-shirt-beige"
     )
 
 
