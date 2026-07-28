@@ -276,7 +276,7 @@ def resolve_promotion(
     reasons: list[str] = []
 
     # License/lane (D2). We re-check eval presence here ourselves, so don't double-count it.
-    ok_license, license_reasons = is_servable(card, require_eval=False)
+    _ok_license, license_reasons = is_servable(card, require_eval=False)
     reasons.extend(license_reasons)
 
     if not card.eval_report:
@@ -300,7 +300,7 @@ def resolve_promotion(
             f"eval report model version '{report.model_version}' does not match "
             f"'{card.model_version}'"
         )
-    ok_gate, gate_reasons = meets_gate(report)
+    _ok_gate, gate_reasons = meets_gate(report)
     reasons.extend(gate_reasons)
 
     return (not reasons, reasons)

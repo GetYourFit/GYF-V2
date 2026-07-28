@@ -1306,10 +1306,12 @@ offline comparison.
 **F6 — small learned challenger. Blocked on the same evidence**, by construction: a pairwise/logistic
 ranker trains on exactly the data F5 lacks. Not startable, not faked.
 
-**F7 — colour and photo assistance. Blocked at the gate, not at the code.** The skin-tone module
-still fails its fairness eval (max band gap 3.2 vs the ≤1.0 DoD), so it stays shadowed and manual
-entry stays the truth — which is the honest state, not a gap to close by loosening the gate.
-Promotion needs an owner-approved consented evaluation panel.
+**F7 — colour and photo assistance. Blocked at the gate, not at the code.** Manual body and
+skin-tone entries remain authoritative. The checked-in photo fairness manifest is a clearly marked
+placeholder that cannot promote either assistant; it exists only to exercise the fail-closed gate
+until the captain sources a real diverse consented panel. Promotion requires an owner-approved
+panel report with subgroup error, calibration, abstention and `max_band_gap`, plus the remaining
+licence, privacy, rollback and F7 evidence. Until then both candidates stay research/shadow.
 
 **Next code slice: F8's durable try-on spine** — private Postgres jobs, bounded retries,
 cancellation, TTL deletion, per-user quotas and the global cost kill switch. All of that is code and
