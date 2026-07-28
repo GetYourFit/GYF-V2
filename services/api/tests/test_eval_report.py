@@ -102,15 +102,34 @@ def test_lower_is_better_gate():
     assert not gate.evaluate(_report(capability="fairness", metrics={"max_tone_gap": 0.2}))[0]
 
 
-def test_photo_gate_requires_calibration_abstention_and_approved_panel():
+def test_photo_gate_requires_calibration_abstention_and_protected_panel(monkeypatch):
     report = _report(
         capability="skin_tone",
         metrics={"max_band_gap": 0.0, "error_rate": 0.0, "ece": 0.0, "abstention_rate": 0.0},
     )
     ok, reasons = meets_gate(report)
-    assert not ok and "approved, complete consented panel" in reasons[0]
+    assert not ok and "protected panel attestation is unavailable" in reasons[0]
 
-    approved = EvalReport(**{**report.__dict__, "evidence": {"promotion_eligible_panel": True}})
+    monkeypatch.setenv("GYF_PHOTO_FAIRNESS_PANEL_DIGEST", "protected-digest")
+    monkeypatch.setenv("GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID", "captain-attestation")
+    locally_claimed = EvalReport(
+        **{
+            **report.__dict__,
+            "evidence": {"promotion_eligible_panel": True, "panel_hash": "local-digest"},
+        }
+    )
+    assert not meets_gate(locally_claimed)[0]
+
+    approved = EvalReport(
+        **{
+            **report.__dict__,
+            "evidence": {
+                "promotion_eligible_panel": True,
+                "panel_hash": "protected-digest",
+                "attestation_id": "captain-attestation",
+            },
+        }
+    )
     assert meets_gate(approved)[0]
     assert "body_estimator" in GATES
 

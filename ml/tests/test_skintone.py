@@ -182,7 +182,12 @@ def test_photo_fairness_reports_subgroup_error_calibration_and_abstention():
     assert report.metrics["subgroup.band.mst10.ece"] == 0.0
     assert 0.0 <= report.metrics["ece"] <= 1.0
     assert report.metrics["max_band_gap"] == 9.0
-    assert report.evidence["promotion_eligible_panel"] is True
+    # A local manifest is never attested merely because it says "approved".
+    assert report.evidence["promotion_eligible_panel"] is False
+    assert (
+        "panel digest does not match protected exact-digest attestation"
+        in report.evidence["ineligibility_reasons"]
+    )
 
 
 def test_photo_fairness_normalizes_skin_tone_calibration_correctness():
@@ -212,6 +217,64 @@ def test_photo_fairness_normalizes_skin_tone_calibration_correctness():
     assert report.metrics["ece"] == 0.9
 
 
+def test_two_sample_local_manifest_cannot_bypass_attestation_or_power_minimum():
+    import hashlib
+    import json
+
+    from usermodel.photo_fairness_eval import summarize
+
+    panel = {
+        "panel_id": "local-two-sample-panel",
+        "status": "approved",
+        "consent_basis": "locally authored",
+        "data_license": "locally authored",
+        "collection_provenance": "locally authored",
+        "label_protocol": "locally authored",
+        "attestation_id": "captain-attestation",
+        # An author may claim an unjustified n=1 minimum, but the harness has a
+        # non-bypassable >2 floor in addition to a protected exact digest.
+        "cohort_justification": {
+            "method": "preregistered_power_analysis",
+            "reference": "local-claim",
+            "minimum_total": 1,
+            "minimum_per_band": 1,
+        },
+    }
+    samples = [
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst1"},
+        },
+        {
+            "label": "mst10",
+            "prediction": "mst10",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst10"},
+        },
+    ]
+    digest = hashlib.sha256(
+        json.dumps(
+            {"panel": panel, "samples": samples}, sort_keys=True, separators=(",", ":")
+        ).encode()
+    ).hexdigest()
+    report = summarize(
+        samples,
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel=panel,
+        protected_attestation={"digest": digest, "attestation_id": "captain-attestation"},
+    )
+    assert report.num_samples == 2
+    assert report.evidence["promotion_eligible_panel"] is False
+    assert (
+        "cohort minimum_total must be power-justified and greater than two"
+        in report.evidence["ineligibility_reasons"]
+    )
+
+
 def test_placeholder_panel_cannot_promote_even_with_perfect_predictions():
     from gyf_contracts.eval_report import meets_gate
     from usermodel.photo_fairness_eval import summarize
@@ -232,4 +295,4 @@ def test_placeholder_panel_cannot_promote_even_with_perfect_predictions():
     )
     ok, reasons = meets_gate(report)
     assert not ok
-    assert "approved, complete consented panel" in reasons[0]
+    assert "protected panel attestation is unavailable" in reasons[0]

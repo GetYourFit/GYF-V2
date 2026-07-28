@@ -89,6 +89,19 @@ def _ece(observations: list[tuple[float, float]], bins: int = 10) -> float:
     )
 
 
+def _protected_attestation() -> dict[str, str]:
+    """Read values injected only by protected evaluation/CI configuration.
+
+    These values intentionally are not committed alongside a panel. An author can
+    create a manifest, but cannot make it eligible without the independently held
+    exact digest and attestation identifier.
+    """
+    return {
+        "digest": os.environ.get("GYF_PHOTO_FAIRNESS_PANEL_DIGEST", ""),
+        "attestation_id": os.environ.get("GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID", ""),
+    }
+
+
 def summarize(
     samples: list[dict[str, Any]],
     *,
@@ -96,6 +109,7 @@ def summarize(
     model_version: str,
     report_id: str,
     panel: dict[str, Any],
+    protected_attestation: dict[str, str] | None = None,
 ) -> EvalReport:
     """Return error, calibration and abstention metrics by every declared subgroup.
 
@@ -159,19 +173,70 @@ def summarize(
         max(all_group_errors) - min(all_group_errors) if all_group_errors else 0.0
     )
 
-    required = {"panel_id", "consent_basis", "data_license", "label_protocol", "status"}
+    required = {
+        "panel_id",
+        "consent_basis",
+        "data_license",
+        "collection_provenance",
+        "label_protocol",
+        "status",
+        "attestation_id",
+        "cohort_justification",
+    }
     missing = sorted(key for key in required if not panel.get(key))
     panel_status = str(panel.get("status", "placeholder"))
     panel_hash = hashlib.sha256(
-        json.dumps({"panel": panel, "samples": samples}, sort_keys=True).encode("utf-8")
+        json.dumps(
+            {"panel": panel, "samples": samples}, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
     ).hexdigest()
+    protected = (
+        protected_attestation if protected_attestation is not None else _protected_attestation()
+    )
+    justification = panel.get("cohort_justification")
+    ineligibility: list[str] = []
+    if missing:
+        ineligibility.append(f"missing panel metadata: {', '.join(missing)}")
+    if panel_status != "approved":
+        ineligibility.append("panel is not captain-approved")
+    if not all_rows:
+        ineligibility.append("panel has no scored samples")
+    if protected.get("digest") != panel_hash or not protected.get("digest"):
+        ineligibility.append("panel digest does not match protected exact-digest attestation")
+    if protected.get("attestation_id") != panel.get("attestation_id") or not protected.get(
+        "attestation_id"
+    ):
+        ineligibility.append("panel attestation id does not match protected attestation")
+    if not isinstance(justification, dict):
+        ineligibility.append("cohort lacks preregistered power/statistical justification")
+    else:
+        method = justification.get("method")
+        minimum_total = justification.get("minimum_total")
+        minimum_per_band = justification.get("minimum_per_band")
+        if method not in {
+            "preregistered_power_analysis",
+            "equivalent_statistical_justification",
+        } or not justification.get("reference"):
+            ineligibility.append("cohort lacks preregistered power/statistical justification")
+        if not isinstance(minimum_total, int) or minimum_total < 3:
+            ineligibility.append(
+                "cohort minimum_total must be power-justified and greater than two"
+            )
+        elif len(all_rows) < minimum_total:
+            ineligibility.append("panel does not meet its preregistered minimum_total")
+        if not isinstance(minimum_per_band, int) or minimum_per_band < 1:
+            ineligibility.append("cohort minimum_per_band must be a positive justified integer")
+        elif any(len(rows) < minimum_per_band for rows in by_slice.get("band", {}).values()):
+            ineligibility.append("panel does not meet its preregistered minimum_per_band")
     evidence = {
         "panel_status": panel_status,
         "panel_hash": panel_hash,
+        "attestation_id": panel.get("attestation_id", ""),
         "panel_complete": not missing and bool(all_rows),
-        "promotion_eligible_panel": panel_status == "approved" and not missing and bool(all_rows),
+        "promotion_eligible_panel": not ineligibility,
         "missing_panel_metadata": missing,
         "subgroup_dimensions": sorted(by_slice),
+        "ineligibility_reasons": ineligibility,
     }
     return EvalReport(
         report_id=report_id,

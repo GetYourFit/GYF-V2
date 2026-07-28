@@ -14,6 +14,7 @@ online checks scaffolded in :mod:`gyf_contracts.online_eval` (the known offlineâ
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -150,11 +151,21 @@ class CapabilityGate:
                 False,
                 f"report is missing gate metric(s): {', '.join(repr(metric) for metric in missing)}",
             )
-        if self.require_approved_panel and not report.evidence.get("promotion_eligible_panel"):
-            return (
-                False,
-                "report lacks an approved, complete consented panel; promotion remains HOLD",
-            )
+        if self.require_approved_panel:
+            expected_digest = os.environ.get("GYF_PHOTO_FAIRNESS_PANEL_DIGEST", "")
+            expected_attestation = os.environ.get("GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID", "")
+            if not expected_digest or not expected_attestation:
+                return False, "protected panel attestation is unavailable; promotion remains HOLD"
+            if not report.evidence.get("promotion_eligible_panel"):
+                return (
+                    False,
+                    "report lacks an approved, complete consented panel; promotion remains HOLD",
+                )
+            if (
+                report.evidence.get("panel_hash") != expected_digest
+                or report.evidence.get("attestation_id") != expected_attestation
+            ):
+                return False, "report does not match the protected exact panel attestation"
         value = report.metrics[self.metric]
         if self.op.passes(value, self.threshold):
             return True, ""
