@@ -42,7 +42,6 @@ export function buildCuelinksWebLoaderScript(cid: string): string {
     `  var s = document.createElement('script');`,
     `  s.type = 'text/javascript';`,
     `  s.async = true;`,
-    `  s.setAttribute('data-gyf-cuelinks-web', 'true');`,
     `  s.src = (location.protocol=='https:'?'https://${CUELINKS_CDN_BASE}':'http://${CUELINKS_CDN_BASE}')+'${CUELINKS_SCRIPT_NAME}';`,
     `  document.getElementsByTagName('body')[0].appendChild(s);`,
     `})();`,

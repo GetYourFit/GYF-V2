@@ -30,7 +30,6 @@ describe("Cuelinks web loader", () => {
     expect(script).toContain("var cId='305057';");
     expect(script).toContain("cdn0.cuelinks.com/js/");
     expect(script).toContain("'cuelinksv2.js'");
-    expect(script).toContain("data-gyf-cuelinks-web");
     expect(script).toContain("getElementsByTagName('body')[0].appendChild(s)");
     expect(script).toContain(
       "(location.protocol=='https:'?'https://cdn0.cuelinks.com/js/':'http://cdn0.cuelinks.com/js/')+'cuelinksv2.js'",
