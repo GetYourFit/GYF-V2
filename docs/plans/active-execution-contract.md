@@ -77,14 +77,18 @@ not advance the current pointer or any F2.5, native-acceptance, F10, F11, F13 or
 SDK 57 supports the required global HTML response headers through the `expo-router` header
 configuration with `expo-server`, and EAS Hosting provides immutable deployment IDs whose
 production alias can be reassigned to a prior verified deployment. The packet may add the header
-configuration and post-deploy verifier; it must prove the production alias returns
+configuration and post-deploy verifier; it must prove the immutable per-deployment URL
+(`https://get-your-fit--<id>.expo.app`) that `eas-cli` prints for that deploy returns
 `Content-Security-Policy: frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`,
 `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and
 `Cross-Origin-Opener-Policy: same-origin`, and that its entry bundle matches the just-exported
-artifact. The verifier is required after every EAS production deploy. Once a landed-main deployment
-passes that live proof, it is the web rollback artifact; rollback is reassignment of the production
-alias to that immutable deployment ID. Preserve the deployment ID, commit, entry hash and response
-header evidence outside Vercel.
+artifact. The production alias edge-caches `index.html` for up to an hour and cannot be proven
+fresh within the CI verification window, so production-alias promotion is instead confirmed from
+`eas-cli`'s own `Promoted deployment to production` log line, and the alias is probed only
+best-effort as an informational note that never blocks the gate. The verifier is required after
+every EAS production deploy. Once a landed-main deployment passes that live proof, it is the web
+rollback artifact; rollback is reassignment of the production alias to that immutable deployment
+ID. Preserve the deployment ID, commit, entry hash and response header evidence outside Vercel.
 
 Do not change Vercel DNS, provider project/domain/deployments/build hooks/Git integration or
 provider/environment secrets in Phase A. Keep the Vercel API CORS origin until the landed-main
