@@ -430,6 +430,25 @@ def _browse_filter_params(
     return params
 
 
+def _browse_indexed_branch_params(
+    *,
+    pivot: UUID,
+    region: str | None,
+    gender_list: list[str] | None,
+    categories: list[str] | None,
+    budget_params: list[object],
+) -> list[object]:
+    params: list[object] = list(budget_params)
+    params.append(pivot)
+    if region:
+        params.append(region)
+    if gender_list:
+        params.append(gender_list)
+    if categories:
+        params.append(categories)
+    return params
+
+
 def _apply_explore_preferences(
     results: list[SearchResult], preferences: ExplorePreferences | None, k: int
 ) -> list[SearchResult]:
@@ -760,9 +779,9 @@ class PostgresVectorSearchRepository:
             # Bind the pivot inside each branch rather than through a one-row CTE.
             # PostgreSQL can then use it as an `id` index bound instead of scanning
             # the ring and applying the pivot as a join filter.
-            params.append(pivot)
             params.extend(
-                _browse_filter_params(
+                _browse_indexed_branch_params(
+                    pivot=pivot,
                     region=region,
                     gender_list=gender_list,
                     categories=categories,

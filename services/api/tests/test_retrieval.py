@@ -514,16 +514,16 @@ def test_browse_budget_params_precede_gender_and_category_filters():
 
     _, params = pool.calls[-1]
     assert params == (
-        params[0],
         1000,
         "INR",
+        params[2],
         "IN",
         ["men", "unisex"],
         ["shirt"],
         18,
-        params[0],
         1000,
         "INR",
+        params[9],
         "IN",
         ["men", "unisex"],
         ["shirt"],
@@ -556,6 +556,60 @@ def test_browse_budget_and_region_filter_truthfully_after_sql_pushdown():
     assert [item.item_id for item in results] == ["affordable"]
 
 
+def test_indexed_browse_budget_only_keeps_budget_before_pivot():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    repo.browse(
+        categories=None,
+        k=6,
+        region=None,
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+        seed="session-a",
+    )
+
+    _, params = pool.calls[-1]
+    assert params == (
+        1000,
+        "INR",
+        params[2],
+        18,
+        1000,
+        "INR",
+        params[6],
+        18,
+        18,
+        0,
+    )
+    assert isinstance(params[2], UUID)
+    assert isinstance(params[6], UUID)
+
+
+def test_indexed_browse_budget_and_region_precede_pivot_and_filter_truthfully():
+    rows = [
+        ("over-budget", "Over budget", 0.0, ["/a.jpg"], 1200.0, "INR", None, None, None, None, None, None),
+        ("affordable", "Affordable", 0.0, ["/b.jpg"], 900.0, "INR", None, None, None, None, None, None),
+    ]
+    pool = FakePool(rows)
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    results = repo.browse(
+        categories=["shirt"],
+        k=1,
+        region="IN",
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+        seed="session-a",
+    )
+
+    sql, params = pool.calls[-1]
+    assert "i.id >= %s::uuid" in sql
+    assert params[:5] == (1000, "INR", params[2], "IN", ["shirt"])
+    assert isinstance(params[2], UUID)
+    assert [item.item_id for item in results] == ["affordable"]
+
+
 def test_cold_browse_uses_bounded_uuid_ring_windows():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
@@ -576,14 +630,13 @@ def test_cold_browse_uses_bounded_uuid_ring_windows():
     assert "WITH browse_seed" not in sql
     assert sql.count("i.id >= %s::uuid") == 1
     assert sql.count("i.id < %s::uuid") == 1
-    assert isinstance(params[0], UUID)
     assert params == (
         params[0],
         "IN",
         ["men", "unisex"],
         ["shirt"],
         18,
-        params[0],
+        params[5],
         "IN",
         ["men", "unisex"],
         ["shirt"],
@@ -591,6 +644,8 @@ def test_cold_browse_uses_bounded_uuid_ring_windows():
         6,
         12,
     )
+    assert isinstance(params[0], UUID)
+    assert isinstance(params[5], UUID)
 
 
 def test_mmr_rerank_breaks_near_duplicate_run():
