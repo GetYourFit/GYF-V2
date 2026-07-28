@@ -1,6 +1,7 @@
 const DEFAULT_CUELINKS_WEB_CID = "305057";
 const CUELINKS_CDN_BASE = "cdn0.cuelinks.com/js/";
 const CUELINKS_SCRIPT_NAME = "cuelinksv2.js";
+const CUELINKS_RUNTIME_GUARD = "__gyfCuelinksWebLoaderInstalled";
 
 type CuelinksWebConfigValues = {
   EXPO_PUBLIC_CUELINKS_CID?: string;
@@ -8,16 +9,15 @@ type CuelinksWebConfigValues = {
 
 export type CuelinksWebConfig = {
   cid: string;
-  source: "configured" | "default";
+  source: "default";
 };
 
 export function readCuelinksWebConfig(values: CuelinksWebConfigValues): CuelinksWebConfig {
   const raw = values.EXPO_PUBLIC_CUELINKS_CID?.trim();
-  if (!raw) return { cid: DEFAULT_CUELINKS_WEB_CID, source: "default" };
-  if (!/^\d+$/.test(raw)) {
-    throw new Error("EXPO_PUBLIC_CUELINKS_CID must contain only the public numeric Cuelinks cId");
+  if (raw && raw !== DEFAULT_CUELINKS_WEB_CID) {
+    throw new Error(`EXPO_PUBLIC_CUELINKS_CID must be fixed to ${DEFAULT_CUELINKS_WEB_CID}`);
   }
-  return { cid: raw, source: "configured" };
+  return { cid: DEFAULT_CUELINKS_WEB_CID, source: "default" };
 }
 
 export function cuelinksScriptUrlForProtocol(protocol: "http:" | "https:"): string {
@@ -35,7 +35,7 @@ export function buildCuelinksWebLoaderScript(cid: string): string {
     throw new Error("Cuelinks cId must contain only digits");
   }
 
-  return [
+  const vendorLoader = [
     `var cId =  "${cid}";`,
     ``,
     `(function(d, t) {`,
@@ -45,6 +45,16 @@ export function buildCuelinksWebLoaderScript(cid: string): string {
     `  s.src = (document.location.protocol == "https:" ? "https://${CUELINKS_CDN_BASE}" : "http://${CUELINKS_CDN_BASE}")  + "${CUELINKS_SCRIPT_NAME}";`,
     `  document.getElementsByTagName("body")[0].appendChild(s);`,
     `}());`,
+  ].join("\n");
+
+  return [
+    `if (!window.${CUELINKS_RUNTIME_GUARD}) {`,
+    `  window.${CUELINKS_RUNTIME_GUARD} = true;`,
+    vendorLoader
+      .split("\n")
+      .map((line) => `  ${line}`)
+      .join("\n"),
+    `}`,
   ].join("\n");
 }
 
