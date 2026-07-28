@@ -1,23 +1,24 @@
-"""Cuelinks conversions → the behavioral spine (closing the revenue loop).
+"""Affiliate statements → the canonical commerce attribution contract.
 
-Pulls confirmed transactions from the Cuelinks publisher API and writes each as
-a ``purchase`` interaction — the ground-truth commerce label. The deeplink subid
-carries the ``recommendation_id`` a link was served under (see app/affiliate.py),
-so a conversion joins back to the exact impression slate: the recommender learns
-from real money, not just clicks.
+Cuelinks is a link-conversion service, not a product feed. This job reads its
+transaction statement and emits only server-trusted commerce outcomes into the
+existing append-only interaction spine:
 
-Idempotent: a transaction lands at most once (keyed by its Cuelinks id in the
-event context). Attribution: subid → the impression with that recommendation_id
-→ that impression's user + item. Non-recommendation subids (``catalog_<item_id>``)
-land as product-reconcilable but user-less revenue records only in Cuelinks —
-they are skipped here, honestly, rather than guessed at.
+* ``shop_click`` is emitted by Expo only after a disclosed retailer handoff opens;
+  it carries the backend deeplink ``subid``, product placement and a random
+  route-local session id.
+* ``purchase`` is emitted only for an explicitly confirmed affiliate status.
+* ``conversion_reversal`` records a later refund/cancellation/reversal for the
+  same transaction. Unknown and pending statuses remain unknown; they are never
+  called purchases.
 
-Run (nightly via .github/workflows/data-export.yml, or by hand):
+The Cuelinks transaction id makes each outcome idempotent. A conversion can name
+an item only when its subid has exactly one clicked item. When several products
+shared the recommendation subid, it is honestly attributed to the recommendation
+(outfit target), not guessed onto the first served item.
 
+Run:
     GYF_DATABASE_URL=... GYF_CUELINKS_API_TOKEN=... python scripts/sync_conversions.py
-
-Requires: psycopg (the API service extra). Read-only against Cuelinks; inserts
-into ``interactions`` only.
 """
 
 from __future__ import annotations
@@ -31,7 +32,13 @@ from datetime import date, timedelta
 from typing import Any
 
 _API = "https://www.cuelinks.com/api/v2/transactions.json"
-_LOOKBACK_DAYS = 60  # cookie windows + validation delays; idempotency makes overlap free
+_LOOKBACK_DAYS = 60  # reconciliation windows; outcome identity makes overlap safe
+# We do not know a sale occurred until the statement uses one of these explicit
+# final states. All other statuses, including blank/pending, are unknown.
+_CONFIRMED_STATUSES = frozenset({"approved", "confirmed", "paid", "success", "successful"})
+_REVERSED_STATUSES = frozenset(
+    {"reversed", "refunded", "cancelled", "canceled", "rejected", "declined", "void", "chargeback"}
+)
 
 
 def fetch_transactions(token: str, start: str, end: str, transport=None) -> list[dict[str, Any]]:
@@ -62,51 +69,92 @@ def _http_get(url: str, token: str) -> str:
         return "" if resp.status == 204 else resp.read().decode("utf-8")
 
 
-def sync(conn, transactions: list[dict[str, Any]]) -> tuple[int, int]:
-    """Insert unseen recommendation-attributed transactions as purchase events.
+def _status(tx: dict[str, Any]) -> str:
+    return str(tx.get("status") or "").strip().lower()
 
-    Returns (inserted, skipped). Tolerant of field naming across API revisions
-    (sub_id/subid, transaction id under id/transaction_id).
-    """
+
+def _outcome_for(tx: dict[str, Any]) -> str | None:
+    status = _status(tx)
+    if status in _CONFIRMED_STATUSES:
+        return "purchase"
+    if status in _REVERSED_STATUSES:
+        return "conversion_reversal"
+    return None
+
+
+def _already_recorded(conn, action: str, transaction_id: str) -> bool:
+    return bool(
+        conn.execute(
+            "SELECT 1 FROM interactions WHERE action = %s "
+            "AND context ->> 'affiliate_transaction_id' = %s",
+            (action, transaction_id),
+        ).fetchone()
+    )
+
+
+def _attribution_target(conn, subid: str) -> tuple[str, str, str] | None:
+    """Return (user_id, target_type, target_id), abstaining from ambiguous item joins."""
+    clicks = conn.execute(
+        "SELECT user_id, target_id FROM interactions WHERE action = 'shop_click' "
+        "AND context ->> 'subid' = %s ORDER BY ts",
+        (subid,),
+    ).fetchall()
+    distinct_clicks = {(str(user_id), str(item_id)) for user_id, item_id in clicks}
+    if len(distinct_clicks) == 1:
+        user_id, item_id = distinct_clicks.pop()
+        return user_id, "item", item_id
+
+    # The recommendation itself still tells us which authenticated styling
+    # session drove the conversion. It does not tell us which of several items
+    # was bought, so preserve that uncertainty with an outfit target.
+    impression = conn.execute(
+        "SELECT user_id FROM interactions WHERE action = 'impression' "
+        "AND context ->> 'recommendation_id' = %s ORDER BY ts LIMIT 1",
+        (subid,),
+    ).fetchone()
+    if impression is None:
+        return None
+    return str(impression[0]), "outfit", subid
+
+
+def sync(conn, transactions: list[dict[str, Any]]) -> tuple[int, int]:
+    """Reconcile final affiliate outcomes without turning clicks/pending into purchases."""
     inserted = skipped = 0
     for tx in transactions:
-        tx_id = str(tx.get("id") or tx.get("transaction_id") or "")
+        transaction_id = str(tx.get("id") or tx.get("transaction_id") or "")
         subid = str(tx.get("sub_id") or tx.get("subid") or "")
-        if not tx_id or not subid or subid == "catalog" or subid.startswith("catalog_"):
+        outcome = _outcome_for(tx)
+        if not transaction_id or not subid or outcome is None:
             skipped += 1
             continue
-        seen = conn.execute(
-            "SELECT 1 FROM interactions WHERE action = 'purchase' "
-            "AND context ->> 'cuelinks_transaction_id' = %s",
-            (tx_id,),
-        ).fetchone()
-        if seen:
+        if _already_recorded(conn, outcome, transaction_id):
             skipped += 1
             continue
-        # subid = recommendation_id → the impression carries user + item.
-        imp = conn.execute(
-            "SELECT user_id, target_id FROM interactions WHERE action = 'impression' "
-            "AND context ->> 'recommendation_id' = %s ORDER BY ts LIMIT 1",
-            (subid,),
-        ).fetchone()
-        if imp is None:
-            skipped += 1  # not one of ours (foreign/stale subid) — never guess
+        attribution = _attribution_target(conn, subid)
+        if attribution is None:
+            skipped += 1
             continue
-        user_id, item_id = imp
+        user_id, target_type, target_id = attribution
         context = json.dumps(
             {
-                "recommendation_id": subid,
-                "cuelinks_transaction_id": tx_id,
+                "attribution_version": 1,
+                "affiliate_network": "cuelinks",
+                "affiliate_transaction_id": transaction_id,
+                "subid": subid,
+                "recommendation_id": subid if not subid.startswith("catalog_") else None,
                 "sale_amount": tx.get("sale_amount"),
                 "commission": tx.get("commission"),
-                "status": tx.get("status"),
+                "status": _status(tx),
                 "campaign": tx.get("campaign_name") or tx.get("campaign_id"),
+                "item_attribution": "exact_click"
+                if target_type == "item"
+                else "recommendation_only",
             }
         )
         conn.execute(
             "INSERT INTO interactions (user_id, target_type, target_id, action, context) "
-            "VALUES (%s, 'item', %s, 'purchase', %s)",
-            (user_id, item_id, context),
+            "VALUES (%s, %s, %s, %s, %s)",
+            (user_id, target_type, target_id, outcome, context),
         )
         inserted += 1
     return inserted, skipped
@@ -122,13 +170,15 @@ def main() -> int:
     start = end - timedelta(days=_LOOKBACK_DAYS)
     transactions = fetch_transactions(token, start.isoformat(), end.isoformat())
     if not transactions:
-        print("no transactions in window — nothing to sync")
+        print("no transactions in window — nothing to reconcile")
         return 0
     import psycopg
 
     with psycopg.connect(dsn) as conn:
         inserted, skipped = sync(conn, transactions)
-    print(f"synced {inserted} purchases ({skipped} skipped) from {len(transactions)} transactions")
+    print(
+        f"reconciled {inserted} outcomes ({skipped} skipped) from {len(transactions)} transactions"
+    )
     return 0
 
 

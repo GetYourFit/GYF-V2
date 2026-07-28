@@ -145,6 +145,13 @@ interface FeedbackAck {
   action: string;
 }
 
+interface LinkConversionResponse {
+  affiliate_url: string | null;
+  campaign_id?: string | null;
+  merchant_name?: string | null;
+  deeplink_allowed: boolean;
+}
+
 export class GyfApi {
   constructor(
     private readonly getToken: TokenProvider = () => null,
@@ -273,6 +280,10 @@ export class GyfApi {
       undefined,
       signal,
     ).then((r) => r.results);
+  }
+
+  convertAffiliateLink(url: string, subid: string): Promise<LinkConversionResponse> {
+    return this.request<LinkConversionResponse>("POST", "/cuelinks/links/convert", { url, subid });
   }
 
   // --- Collections (saved shortlist) ---

@@ -71,10 +71,59 @@ def test_feedback_rejects_invalid_action():
     assert res.status_code == 422
 
 
+def test_feedback_accepts_only_joinable_shop_click_attribution():
+    valid = {
+        "event_id": "00000000-0000-4000-8000-000000000010",
+        "target_type": "item",
+        "target_id": "item-1",
+        "action": "shop_click",
+        "context": {
+            "attribution_version": 1,
+            "placement": "stylist_outfit",
+            "recommendation_id": "rec-1",
+            "rank": 0,
+            "session_id": "00000000-0000-4000-8000-000000000011",
+            "subid": "rec-1",
+        },
+    }
+    assert client.post("/feedback", json=valid).status_code == 202
+    invalid = {**valid, "event_id": "00000000-0000-4000-8000-000000000012"}
+    invalid["context"] = {**valid["context"], "subid": "another-rec"}
+    assert client.post("/feedback", json=invalid).status_code == 422
+
+    catalog_click = {
+        "event_id": "00000000-0000-4000-8000-000000000013",
+        "target_type": "item",
+        "target_id": "item-1",
+        "action": "shop_click",
+        "context": {
+            "attribution_version": 1,
+            "placement": "product_detail",
+            "rank": 0,
+            "session_id": "00000000-0000-4000-8000-000000000014",
+            "subid": "catalog_opaque-123",
+        },
+    }
+    assert client.post("/feedback", json=catalog_click).status_code == 202
+    unattributed_click = {
+        "event_id": "00000000-0000-4000-8000-000000000015",
+        "target_type": "item",
+        "target_id": "item-1",
+        "action": "shop_click",
+        "context": {
+            "attribution_version": 1,
+            "placement": "product_detail",
+            "session_id": "00000000-0000-4000-8000-000000000016",
+            "unattributed": True,
+        },
+    }
+    assert client.post("/feedback", json=unattributed_click).status_code == 202
+
+
 def test_feedback_rejects_server_only_actions():
-    # impression/purchase are trusted training labels (recommender-emitted /
-    # affiliate-synced); a client-forged one would poison the taste model.
-    for action in ("impression", "purchase"):
+    # Impression, purchase and reconciliation are trusted server outcomes; a
+    # client-forged one would poison learning or revenue reporting.
+    for action in ("impression", "purchase", "conversion_reversal"):
         res = client.post(
             "/feedback",
             json={"target_type": "item", "target_id": "i1", "action": action},

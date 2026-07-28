@@ -13,6 +13,7 @@ export function CatalogImage({
   label,
   onRatio,
   recyclingKey,
+  retryable = true,
   style,
   uri,
 }: {
@@ -20,6 +21,7 @@ export function CatalogImage({
   /** Reports the source's shape once known, so a caller can size its frame to it. */
   onRatio?: (ratio: number) => void;
   recyclingKey: string;
+  retryable?: boolean;
   style: StyleProp<ImageStyle>;
   uri?: string | null;
 }) {
@@ -34,7 +36,7 @@ export function CatalogImage({
 
   if (!valid || failed) {
     const fallbackStyle = StyleSheet.flatten(style) as ViewStyle;
-    return failed ? (
+    return failed && retryable ? (
       <Pressable
         accessibilityLabel={`Retry image for ${label}`}
         accessibilityRole="button"

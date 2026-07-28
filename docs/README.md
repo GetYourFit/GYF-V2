@@ -89,6 +89,8 @@ the subordinate launch-plan ledger but is not a separate roadmap.
   estimate): [`evidence/c4-profitability-measurement-2026-07-27.md`](./evidence/c4-profitability-measurement-2026-07-27.md) —
   produced by `scripts/report_profitability.py`; honestly reports insufficient data in this
   sandboxed run (no `GYF_DATABASE_URL`), not a production reading.
+- Commerce attribution operations: [`operations/commerce-attribution.md`](./operations/commerce-attribution.md) —
+  canonical disclosed-handoff, confirmed-conversion and reversal reconciliation contract, guardrails and rollback.
 - Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) (superseded
   historical preview runbook retained until F13), [`deploy/gpu-lane.md`](./deploy/gpu-lane.md), and
   [`deploy/supabase-preview-security.md`](./deploy/supabase-preview-security.md) (active PR preview

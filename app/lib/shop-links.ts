@@ -1,5 +1,6 @@
 const CUELINKS_SHORT_HOST = "clnk.in";
 const DEEPLINK_HOSTS = new Set(["linksredirect.com", "www.linksredirect.com"]);
+const SAFE_SUBID = /^[A-Za-z0-9_-]{1,64}$/;
 const TRACKING_HOME_QUERY_KEYS = new Set([
   "aff_sub",
   "aff_sub2",
@@ -78,6 +79,21 @@ function safeExternalShopUrlInternal(url: string | null | undefined, depth: numb
 
 export function safeExternalShopUrl(url: string | null | undefined): string | null {
   return safeExternalShopUrlInternal(url, 0);
+}
+
+export function deeplinkSubid(url: string | null | undefined): string | null {
+  const safeUrl = safeExternalShopUrl(url);
+  if (!safeUrl) return null;
+  try {
+    const parsed = new URL(safeUrl);
+    const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
+    if (!DEEPLINK_HOSTS.has(host)) return null;
+    if (parsed.searchParams.get("source") !== "api") return null;
+    const subid = parsed.searchParams.get("subid");
+    return subid && SAFE_SUBID.test(subid) ? subid : null;
+  } catch {
+    return null;
+  }
 }
 
 export function shopDisclosureForUrl(url: string | null | undefined): string | null {

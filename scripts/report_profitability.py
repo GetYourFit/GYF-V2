@@ -4,12 +4,10 @@ Reads the same ``interactions`` spine that ``scripts/sync_conversions.py`` write
 purchases into, and reports the minimum honest monetization measurement for a
 period:
 
-1. **Conversion rate**: outbound shop clicks (``action='cart'`` — the event the
-   Expo Stylist ``shopItem`` handler in ``apps/expo/src/app/(app)/(tabs)/index.tsx``
-   logs immediately before ``Linking.openURL`` on a retailer link; there is no
-   separate "shop_click" action in this codebase) versus Cuelinks-confirmed
-   conversions (``action='purchase'`` rows synced by ``sync_conversions.py``,
-   excluding any whose ``context.status`` marks a reversal/cancellation).
+1. **Conversion rate**: disclosed outbound handoffs (``action='shop_click'`` —
+   emitted only after Expo opens the retailer link) versus explicitly confirmed
+   affiliate statements (``action='purchase'``), excluding transaction ids that
+   later receive ``conversion_reversal`` reconciliation.
 2. **Repeat-use rate**: the fraction of users active on a core engagement action
    (save/skip/swap/cart/tryon) in the period who are active on at least one
    other calendar day in that same period. This approximates the plan's D1/D7/D30
@@ -52,14 +50,15 @@ from typing import Any
 # Core engagement actions used for the repeat-use proxy. Impressions and
 # purchases are server-only ground truth, not user engagement signals, and are
 # excluded here.
-_CORE_ENGAGEMENT_ACTIONS = frozenset({"save", "skip", "swap", "cart", "tryon"})
+_CORE_ENGAGEMENT_ACTIONS = frozenset({"save", "skip", "swap", "cart", "shop_click", "tryon"})
 
 # Cuelinks/affiliate-network status values that mean "not a confirmed sale".
 # Kept permissive (case-insensitive substring-free exact match) since the
 # ingested vocabulary here is a placeholder — see the status note in main().
 _REVERSED_STATUSES = frozenset(
-    {"reversed", "cancelled", "canceled", "rejected", "declined", "void", "chargeback"}
+    {"reversed", "refunded", "cancelled", "canceled", "rejected", "declined", "void", "chargeback"}
 )
+_CONFIRMED_STATUSES = frozenset({"approved", "confirmed", "paid", "success", "successful"})
 
 
 def _status_of(row: dict[str, Any]) -> str:
@@ -68,7 +67,31 @@ def _status_of(row: dict[str, Any]) -> str:
 
 
 def _is_confirmed_purchase(row: dict[str, Any]) -> bool:
-    return _status_of(row) not in _REVERSED_STATUSES
+    # The sync worker only creates purchases from this final vocabulary. Legacy
+    # rows without it remain unknown rather than inflating conversion/profit.
+    return _status_of(row) in _CONFIRMED_STATUSES
+
+
+def _transaction_id(row: dict[str, Any]) -> str | None:
+    value = (row.get("context") or {}).get("affiliate_transaction_id")
+    return str(value) if value else None
+
+
+def _confirmed_purchases(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    reversed_ids = {
+        transaction_id
+        for row in rows
+        if row["action"] == "conversion_reversal"
+        for transaction_id in [_transaction_id(row)]
+        if transaction_id
+    }
+    return [
+        row
+        for row in rows
+        if row["action"] == "purchase"
+        and _is_confirmed_purchase(row)
+        and _transaction_id(row) not in reversed_ids
+    ]
 
 
 def _numeric(value: Any) -> float | None:
@@ -111,10 +134,9 @@ class ContributionMargin:
 
 
 def compute_conversion_metrics(rows: list[dict[str, Any]]) -> ConversionMetrics:
-    clicks = [r for r in rows if r["action"] == "cart"]
-    purchases = [r for r in rows if r["action"] == "purchase"]
-    confirmed = [p for p in purchases if _is_confirmed_purchase(p)]
-    reversed_ = [p for p in purchases if not _is_confirmed_purchase(p)]
+    clicks = [r for r in rows if r["action"] == "shop_click"]
+    confirmed = _confirmed_purchases(rows)
+    reversed_ = [r for r in rows if r["action"] == "conversion_reversal"]
     rate = (len(confirmed) / len(clicks)) if clicks else None
     return ConversionMetrics(
         outbound_clicks=len(clicks),
@@ -151,9 +173,8 @@ def compute_contribution_margin(
     hosting_cost_month_inr: float,
     hosting_cost_source: str,
 ) -> ContributionMargin:
-    purchases = [r for r in rows if r["action"] == "purchase"]
-    confirmed = [p for p in purchases if _is_confirmed_purchase(p)]
-    reversed_ = [p for p in purchases if not _is_confirmed_purchase(p)]
+    confirmed = _confirmed_purchases(rows)
+    reversed_ = [r for r in rows if r["action"] == "conversion_reversal"]
 
     confirmed_sale_amount_inr = sum(
         v for v in (_numeric((p.get("context") or {}).get("sale_amount")) for p in confirmed) if v
@@ -210,17 +231,17 @@ def build_report(
         "",
         data_source_note,
         "",
-        "## 1. Conversion rate — outbound shop clicks → Cuelinks-confirmed conversions",
+        "## 1. Conversion rate — disclosed retailer handoffs → confirmed affiliate conversions",
         "",
-        f"- Outbound shop clicks (`action='cart'`): **{conversion.outbound_clicks}**",
-        f"- Confirmed conversions (`action='purchase'`, non-reversed): **{conversion.confirmed_conversions}**",
-        f"- Reversed/cancelled conversions (excluded from the rate): **{conversion.reversed_conversions}**",
+        f"- Outbound shop clicks (`action='shop_click'`): **{conversion.outbound_clicks}**",
+        f"- Confirmed conversions (`action='purchase'`, no later reversal): **{conversion.confirmed_conversions}**",
+        f"- Reversal/refund reconciliations (`action='conversion_reversal'`): **{conversion.reversed_conversions}**",
         f"- Conversion rate: **{_rate_str(conversion.conversion_rate)}**",
         "",
         "## 2. Repeat-use rate",
         "",
         "Definition: of users active on a core engagement action "
-        "(save/skip/swap/cart/tryon) in the period, the fraction active on a "
+        "(save/skip/swap/cart/shop_click/tryon) in the period, the fraction active on a "
         "second distinct calendar day within the same period. Approximates the "
         "plan's D1/D7/D30 repeat-save/correction/wardrobe-decision definition "
         "(docs/plans/gyf-launch-refactor-plan.md); wardrobe-item edits are not yet "
@@ -270,7 +291,7 @@ def _fetch_rows(dsn: str, start: date, end: date) -> list[dict[str, Any]]:
     import psycopg
     from psycopg.rows import dict_row
 
-    actions = (*_CORE_ENGAGEMENT_ACTIONS, "purchase")
+    actions = (*_CORE_ENGAGEMENT_ACTIONS, "purchase", "conversion_reversal")
     with psycopg.connect(dsn, row_factory=dict_row) as conn:
         rows = conn.execute(
             "SELECT i.user_id::text, i.target_type, i.target_id, i.action, i.context, i.ts "

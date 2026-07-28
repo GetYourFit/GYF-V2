@@ -23,12 +23,25 @@ class ConversionMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.outbound_clicks, 0)
         self.assertIsNone(metrics.conversion_rate)
 
-    def test_confirmed_purchase_counts_reversed_does_not(self):
+    def test_confirmed_purchase_counts_only_after_shop_click_and_reversal_excludes_it(self):
         rows = [
-            _row("cart", "2026-07-01T10:00:00+00:00"),
-            _row("cart", "2026-07-02T10:00:00+00:00"),
-            _row("purchase", "2026-07-01T11:00:00+00:00", context={"status": "confirmed"}),
-            _row("purchase", "2026-07-03T11:00:00+00:00", context={"status": "reversed"}),
+            _row("shop_click", "2026-07-01T10:00:00+00:00"),
+            _row("shop_click", "2026-07-02T10:00:00+00:00"),
+            _row(
+                "purchase",
+                "2026-07-01T11:00:00+00:00",
+                context={"status": "confirmed", "affiliate_transaction_id": "tx-confirmed"},
+            ),
+            _row(
+                "purchase",
+                "2026-07-03T11:00:00+00:00",
+                context={"status": "approved", "affiliate_transaction_id": "tx-reversed"},
+            ),
+            _row(
+                "conversion_reversal",
+                "2026-07-04T11:00:00+00:00",
+                context={"status": "reversed", "affiliate_transaction_id": "tx-reversed"},
+            ),
         ]
         metrics = rp.compute_conversion_metrics(rows)
         self.assertEqual(metrics.outbound_clicks, 2)
@@ -36,13 +49,13 @@ class ConversionMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.reversed_conversions, 1)
         self.assertAlmostEqual(metrics.conversion_rate, 0.5)
 
-    def test_purchase_with_no_status_counts_as_confirmed(self):
+    def test_purchase_with_no_status_is_not_implicitly_confirmed(self):
         rows = [
-            _row("cart", "2026-07-01T10:00:00+00:00"),
+            _row("shop_click", "2026-07-01T10:00:00+00:00"),
             _row("purchase", "2026-07-01T11:00:00+00:00"),
         ]
         metrics = rp.compute_conversion_metrics(rows)
-        self.assertEqual(metrics.confirmed_conversions, 1)
+        self.assertEqual(metrics.confirmed_conversions, 0)
 
 
 class RepeatUseMetricsTests(unittest.TestCase):
@@ -92,12 +105,22 @@ class ContributionMarginTests(unittest.TestCase):
             _row(
                 "purchase",
                 "2026-07-01T11:00:00+00:00",
-                context={"status": "confirmed", "sale_amount": "1000", "commission": "40"},
+                context={
+                    "status": "confirmed",
+                    "affiliate_transaction_id": "tx-confirmed",
+                    "sale_amount": "1000",
+                    "commission": "40",
+                },
             ),
             _row(
-                "purchase",
+                "conversion_reversal",
                 "2026-07-02T11:00:00+00:00",
-                context={"status": "reversed", "sale_amount": "500", "commission": "20"},
+                context={
+                    "status": "reversed",
+                    "affiliate_transaction_id": "tx-reversed",
+                    "sale_amount": "500",
+                    "commission": "20",
+                },
             ),
         ]
         margin = rp.compute_contribution_margin(

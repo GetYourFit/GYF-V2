@@ -140,6 +140,18 @@ def product_serving_url(url: str | None) -> str | None:
     return candidate
 
 
+def merchant_resolution_url(url: str | None) -> str | None:
+    """Return the retailer product URL used for merchant lookup and rewrapping."""
+
+    product_url = product_serving_url(url)
+    if product_url is None:
+        return None
+    if _host(product_url) not in _DEEPLINK_HOSTS:
+        return product_url
+    embedded = _embedded_linksredirect_target(product_url)
+    return product_serving_url(embedded)
+
+
 def safe_cuelinks_subid(subid: str) -> str:
     """Return a Cuelinks-safe subid without leaking arbitrary caller text."""
 

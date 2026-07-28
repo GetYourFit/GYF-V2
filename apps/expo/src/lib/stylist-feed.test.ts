@@ -3,10 +3,12 @@ import { describe, expect, test } from "bun:test";
 import {
   SHOP_AFFILIATE_DISCLOSURE,
   SHOP_AFFILIATE_DISCLOSURE_COMPACT,
+  deeplinkSubid,
   compactShopDisclosureForUrl,
   safeExternalShopUrl,
   shopDisclosureForUrl,
 } from "./shop-links";
+import { shopClickFeedback } from "./commerce-attribution";
 import {
   feedbackReceipt,
   feedbackForOutfit,
@@ -16,7 +18,7 @@ import {
   safeShopUrl,
   savedOutfitInput,
   slateItemIds,
-  shopFeedbackForItem,
+  shopClickFeedbackForItem,
   tastePersonalizationMessage,
 } from "./stylist-feed";
 
@@ -152,6 +154,30 @@ describe("Expo stylist feed model", () => {
     );
   });
 
+  test("extracts deeplink subids only from safe GYF deeplinks", () => {
+    expect(
+      deeplinkSubid(
+        "https://linksredirect.com/?cid=274785&source=api&subid=rec-123&url=https%3A%2F%2Fshop.test%2Fitem",
+      ),
+    ).toBe("rec-123");
+    expect(
+      deeplinkSubid(
+        "https://linksredirect.com/?cid=274785&source=api&subid=catalog_legacy&url=https%3A%2F%2Fshop.test%2Fitem",
+      ),
+    ).toBe("catalog_legacy");
+    expect(
+      deeplinkSubid(
+        "https://linksredirect.com/?cid=274785&source=linkkit&subid=rec-123&url=https%3A%2F%2Fshop.test%2Fitem",
+      ),
+    ).toBeNull();
+    expect(
+      deeplinkSubid(
+        "https://linksredirect.com/?cid=274785&source=api&subid=alice%40private.invalid&url=https%3A%2F%2Fshop.test%2Fitem",
+      ),
+    ).toBeNull();
+    expect(deeplinkSubid("https://shop.test/item")).toBeNull();
+  });
+
   test("shows the next-look receipt only after save or skip", () => {
     expect(feedbackReceipt(undefined)).toBeNull();
     expect(feedbackReceipt("saved")).toMatchObject({
@@ -162,9 +188,10 @@ describe("Expo stylist feed model", () => {
     expect(feedbackReceipt("skipped")?.message).toContain("refine future looks");
   });
 
-  test("joins shop intent to the served slate and rank", () => {
+  test("joins a disclosed shop handoff to its served slate, placement, and subid", () => {
+    const sessionId = "00000000-0000-4000-8000-000000000001";
     expect(
-      shopFeedbackForItem(
+      shopClickFeedbackForItem(
         {
           item_id: "top-1",
           affiliate_url: "https://shop.test/item",
@@ -172,22 +199,56 @@ describe("Expo stylist feed model", () => {
         } as never,
         "rec-1",
         3,
-        "event-cart",
+        "event-click",
+        sessionId,
       ),
     ).toEqual({
-      event_id: "event-cart",
+      event_id: "event-click",
       target_type: "item",
       target_id: "top-1",
-      action: "cart",
-      context: { recommendation_id: "rec-1", rank: 3 },
+      action: "shop_click",
+      context: {
+        attribution_version: 1,
+        placement: "stylist_outfit",
+        recommendation_id: "rec-1",
+        rank: 3,
+        session_id: sessionId,
+        subid: "rec-1",
+      },
     });
     expect(
-      shopFeedbackForItem(
+      shopClickFeedbackForItem(
         { item_id: "owned-1", affiliate_url: "https://shop.test/item", owned: true } as never,
         "rec-1",
         0,
-        "event-cart",
+        "event-click",
+        sessionId,
       ),
     ).toBeNull();
+  });
+
+  test("allows honest unattributed product-detail handoffs", () => {
+    expect(
+      shopClickFeedback(
+        { item_id: "top-1", affiliate_url: "https://shop.test/item", owned: false } as never,
+        {
+          eventId: "event-click",
+          placement: "product_detail",
+          sessionId: "00000000-0000-4000-8000-000000000001",
+          unattributed: true,
+        },
+      ),
+    ).toEqual({
+      event_id: "event-click",
+      target_type: "item",
+      target_id: "top-1",
+      action: "shop_click",
+      context: {
+        attribution_version: 1,
+        placement: "product_detail",
+        session_id: "00000000-0000-4000-8000-000000000001",
+        unattributed: true,
+      },
+    });
   });
 });

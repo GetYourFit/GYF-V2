@@ -1,5 +1,6 @@
 import type { FeedbackRequest, Outfit, OutfitItem } from "@gyf/types";
 
+import { shopClickFeedback } from "./commerce-attribution";
 import { safeExternalShopUrl } from "./shop-links";
 
 export const STYLIST_GOAL_MAX = 200;
@@ -80,20 +81,21 @@ export function safeShopUrl(item: OutfitItem): string | null {
   return safeExternalShopUrl(item.affiliate_url);
 }
 
-export function shopFeedbackForItem(
+export function shopClickFeedbackForItem(
   item: OutfitItem,
   recommendationId: string,
   rank: number,
   eventId: string,
+  sessionId: string,
 ): FeedbackRequest | null {
   if (!safeShopUrl(item)) return null;
-  return {
-    event_id: eventId,
-    target_type: "item",
-    target_id: item.item_id,
-    action: "cart",
-    context: { recommendation_id: recommendationId, rank },
-  };
+  return shopClickFeedback(item, {
+    eventId,
+    placement: "stylist_outfit",
+    recommendationId,
+    rank,
+    sessionId,
+  });
 }
 
 export function savedOutfitInput(

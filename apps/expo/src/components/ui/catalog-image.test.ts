@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { isRemoteImage } from "./catalog-image-url";
 
 const source = await Bun.file(new URL("./catalog-image.tsx", import.meta.url)).text();
+const masonrySource = await Bun.file(new URL("./masonry-feed.tsx", import.meta.url)).text();
 
 describe("CatalogImage", () => {
   test("accepts only HTTPS catalogue images", () => {
@@ -18,5 +19,11 @@ describe("CatalogImage", () => {
     expect(source).toContain("recyclingKey={recyclingKey}");
     expect(source).toContain("onError={() => setFailed(true)}");
     expect(source).toContain("Retry image");
+  });
+
+  test("lets nested pressable tiles opt out of retry buttons on web", () => {
+    expect(source).toContain("retryable = true");
+    expect(source).toContain("return failed && retryable ? (");
+    expect(masonrySource).toContain("retryable={false}");
   });
 });

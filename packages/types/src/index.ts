@@ -62,6 +62,7 @@ export const INTERACTION_ACTIONS = [
   "view",
   "save",
   "cart",
+  "shop_click",
   "skip",
   "react",
   "share",

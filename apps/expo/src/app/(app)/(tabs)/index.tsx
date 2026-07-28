@@ -37,12 +37,14 @@ import {
   replaceOutfitItem,
   safeShopUrl,
   savedOutfitInput,
-  shopFeedbackForItem,
+  shopClickFeedbackForItem,
   slateItemIds,
   STYLIST_GOAL_MAX,
   tastePersonalizationMessage,
   type StylistFeedbackStatus,
 } from "@/lib/stylist-feed";
+import { formatCatalogPrice } from "@/lib/explore-feed";
+import { SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import { railTileWidth } from "@/components/grid/column-count";
 import { radii, spacing, typography } from "@/theme/tokens";
@@ -113,17 +115,30 @@ function ItemTile({
       <GyfText numberOfLines={2} variant="bodySmall">
         {item.title}
       </GyfText>
+      <GyfText tone="faint" variant="mono">
+        {formatCatalogPrice(item.price, item.currency)}
+      </GyfText>
+      {shopUrl ? (
+        <GyfText tone="faint" variant="bodySmall">
+          {SHOP_AFFILIATE_DISCLOSURE}
+        </GyfText>
+      ) : (
+        <GyfText tone="faint" variant="bodySmall">
+          Retailer link unavailable for this piece.
+        </GyfText>
+      )}
       <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.md }}>
         {shopUrl ? (
           <Pressable
-            accessibilityLabel={`Shop ${item.title}`}
+            accessibilityHint="Opens the retailer product page. Return here to continue styling."
+            accessibilityLabel={`Shop ${item.title} at the retailer`}
             accessibilityRole="link"
             hitSlop={hitSlopFor(40)}
             onPress={onShop}
             style={{ minHeight: 40, justifyContent: "center" }}
           >
             <GyfText style={{ color: palette.accentInk }} variant="label">
-              SHOP
+              SHOP AT RETAILER
             </GyfText>
           </Pressable>
         ) : null}
@@ -295,6 +310,9 @@ function OutfitCard({
           style={{ flex: 1 }}
         />
       </View>
+      <GyfText tone="faint" variant="bodySmall">
+        After shopping, return here to save, correct, or get the next look.
+      </GyfText>
       {receipt ? (
         <View style={{ gap: spacing.xs }}>
           <GyfText accessibilityLabel="Feedback recorded" tone="muted" variant="bodySmall">
@@ -339,6 +357,7 @@ export default function StylistRoute() {
   const retryEvents = useRef<Record<string, FeedbackRequest[]>>({});
   const swapRetryEvents = useRef<Record<number, FeedbackRequest>>({});
   const seenItemIds = useRef("");
+  const commerceSessionId = useRef(crypto.randomUUID());
 
   const flushSwapRetries = useCallback(async () => {
     const queued = Object.entries(swapRetryEvents.current);
@@ -541,7 +560,13 @@ export default function StylistRoute() {
     if (!data) return;
     const url = safeShopUrl(item);
     if (!url) return;
-    const event = shopFeedbackForItem(item, data.recommendation_id, index, crypto.randomUUID());
+    const event = shopClickFeedbackForItem(
+      item,
+      data.recommendation_id,
+      index,
+      crypto.randomUUID(),
+      commerceSessionId.current,
+    );
     void Linking.openURL(url)
       .then(() => {
         if (event) void api.feedback(event).catch(() => undefined);

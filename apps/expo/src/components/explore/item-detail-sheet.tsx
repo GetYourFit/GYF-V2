@@ -1,7 +1,7 @@
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Linking, Modal, Pressable, ScrollView, View } from "react-native";
 
 import { IconClose } from "@/components/icons";
@@ -12,8 +12,9 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createApi, type Outfit, type OutfitItem, type SearchResult } from "@/lib/api";
+import { catalogClickSubid, shopClickFeedback } from "@/lib/commerce-attribution";
 import { compatibilityReason, formatCatalogPrice } from "@/lib/explore-feed";
-import { safeExternalShopUrl } from "@/lib/shop-links";
+import { deeplinkSubid, safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { colors, materials, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
 
@@ -23,10 +24,12 @@ import { useTheme } from "@/theme/use-color-scheme";
 function CompleteTheLook({
   itemId,
   api,
+  onShopPairing,
   theme,
 }: {
   itemId: string;
   api: ReturnType<typeof createApi>;
+  onShopPairing: (item: OutfitItem) => Promise<void>;
   theme: ThemeName;
 }) {
   const [look, setLook] = useState<Outfit | null | undefined>(undefined);
@@ -89,7 +92,7 @@ function CompleteTheLook({
               <PairingTile
                 item={pair}
                 key={pair.item_id}
-                onOpenError={() => setShopError(true)}
+                onPress={() => void onShopPairing(pair).catch(() => setShopError(true))}
                 theme={theme}
               />
             ))}
@@ -108,11 +111,11 @@ function CompleteTheLook({
 
 function PairingTile({
   item,
-  onOpenError,
+  onPress,
   theme,
 }: {
   item: OutfitItem;
-  onOpenError: () => void;
+  onPress?: () => void;
   theme: ThemeName;
 }) {
   const palette = colors[theme];
@@ -122,7 +125,7 @@ function PairingTile({
     <PressableScale
       accessibilityLabel={shopUrl ? `Shop ${item.title}` : item.title}
       accessibilityRole={shopUrl ? "link" : undefined}
-      onPress={shopUrl ? () => void Linking.openURL(shopUrl).catch(onOpenError) : undefined}
+      onPress={shopUrl ? onPress : undefined}
       style={{ gap: spacing.xs, width: 100 }}
     >
       <CatalogImage
@@ -166,6 +169,7 @@ export function ItemDetailSheet({
   const [api] = useState(() => createApi());
   const [wardrobeState, setWardrobeState] = useState<"idle" | "busy" | "added">("idle");
   const [actionError, setActionError] = useState<string | null>(null);
+  const commerceSessionId = useRef(crypto.randomUUID());
 
   // Every open is a fresh item: never show the previous item's success state.
   useEffect(() => {
@@ -188,6 +192,40 @@ export function ItemDetailSheet({
 
   const shopUrl = safeExternalShopUrl(item?.buy_url);
   const compatibility = compatibilityReason(item?.score);
+
+  const openTrackedShopLink = async (shopItem: {
+    item_id: string;
+    affiliate_url?: string | null;
+    owned?: boolean;
+  }) => {
+    const rawUrl = safeExternalShopUrl(shopItem.affiliate_url);
+    if (!rawUrl) return;
+    let trackedUrl = rawUrl;
+    let recommendationId: string | undefined;
+    let subid = deeplinkSubid(rawUrl);
+    if (subid && !subid.startsWith("catalog_")) {
+      recommendationId = subid;
+    } else {
+      const clickSubid = catalogClickSubid();
+      try {
+        const converted = await api.convertAffiliateLink(rawUrl, clickSubid);
+        trackedUrl = safeExternalShopUrl(converted.affiliate_url) ?? rawUrl;
+        subid = converted.affiliate_url ? clickSubid : null;
+      } catch {
+        subid = null;
+      }
+    }
+    await Linking.openURL(trackedUrl);
+    const event = shopClickFeedback(shopItem, {
+      eventId: crypto.randomUUID(),
+      placement: "product_detail",
+      recommendationId,
+      sessionId: commerceSessionId.current,
+      subid: subid ?? undefined,
+      unattributed: !recommendationId && !subid,
+    });
+    if (event) await api.feedback(event).catch(() => undefined);
+  };
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={item !== null}>
@@ -264,7 +302,12 @@ export function ItemDetailSheet({
               </GyfText>
             </View>
 
-            <CompleteTheLook api={api} itemId={item.item_id} theme={theme} />
+            <CompleteTheLook
+              api={api}
+              itemId={item.item_id}
+              onShopPairing={openTrackedShopLink}
+              theme={theme}
+            />
 
             {actionError ? (
               <GyfText
@@ -278,20 +321,23 @@ export function ItemDetailSheet({
             ) : null}
 
             {shopUrl ? (
-              /* Full notice on /terms; one tappable line here, where the money
-                 decision is actually made. */
-              <PressableScale
-                accessibilityHint="Opens terms and disclosures"
-                accessibilityRole="link"
-                onPress={() => {
-                  onClose();
-                  router.push("/terms");
-                }}
-              >
+              <View style={{ gap: spacing.xs }}>
                 <GyfText theme={theme} tone="faint" variant="bodySmall">
-                  Affiliate link — how GYF makes money
+                  {SHOP_AFFILIATE_DISCLOSURE}
                 </GyfText>
-              </PressableScale>
+                <PressableScale
+                  accessibilityHint="Opens terms and disclosures"
+                  accessibilityRole="link"
+                  onPress={() => {
+                    onClose();
+                    router.push("/terms");
+                  }}
+                >
+                  <GyfText theme={theme} tone="faint" variant="bodySmall">
+                    Read affiliate disclosure
+                  </GyfText>
+                </PressableScale>
+              </View>
             ) : null}
 
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
@@ -310,11 +356,14 @@ export function ItemDetailSheet({
               />
               {shopUrl ? (
                 <AtelierButton
-                  label="Shop now"
+                  accessibilityHint="Opens the retailer product page. Close it or return to keep exploring."
+                  label="Shop at retailer"
                   onPress={() =>
-                    void Linking.openURL(shopUrl).catch(() =>
-                      setActionError("Could not open the retailer link. Try again."),
-                    )
+                    void openTrackedShopLink({
+                      item_id: item.item_id,
+                      affiliate_url: item.buy_url,
+                      owned: false,
+                    }).catch(() => setActionError("Could not open the retailer link. Try again."))
                   }
                   style={{ flex: 1 }}
                 />
@@ -322,7 +371,7 @@ export function ItemDetailSheet({
             </View>
             {shopUrl ? null : (
               <GyfText theme={theme} tone="faint" variant="bodySmall">
-                No retailer link is available for this piece right now.
+                No verified retailer link is available for this piece right now.
               </GyfText>
             )}
           </ScrollView>
