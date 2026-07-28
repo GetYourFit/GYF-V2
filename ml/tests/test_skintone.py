@@ -275,6 +275,68 @@ def test_two_sample_local_manifest_cannot_bypass_attestation_or_power_minimum():
     )
 
 
+def test_single_band_attested_panel_cannot_claim_cross_band_fairness():
+    import hashlib
+    import json
+
+    from usermodel.photo_fairness_eval import summarize
+
+    panel = {
+        "panel_id": "single-band-panel",
+        "status": "approved",
+        "consent_basis": "captain approved",
+        "data_license": "captain approved",
+        "collection_provenance": "captain approved",
+        "label_protocol": "captain approved",
+        "attestation_id": "captain-attestation",
+        "cohort_justification": {
+            "method": "preregistered_power_analysis",
+            "reference": "captain-plan",
+            "minimum_total": 3,
+            "minimum_per_band": 3,
+        },
+    }
+    samples = [
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst1"},
+        },
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst1"},
+        },
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst1"},
+        },
+    ]
+    digest = hashlib.sha256(
+        json.dumps(
+            {"panel": panel, "samples": samples}, sort_keys=True, separators=(",", ":")
+        ).encode()
+    ).hexdigest()
+    report = summarize(
+        samples,
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel=panel,
+        protected_attestation={"digest": digest, "attestation_id": "captain-attestation"},
+    )
+    assert report.metrics["max_band_gap"] == 0.0
+    assert report.evidence["promotion_eligible_panel"] is False
+    assert (
+        "panel must contain at least two approved band groups"
+        in report.evidence["ineligibility_reasons"]
+    )
+
+
 def test_placeholder_panel_cannot_promote_even_with_perfect_predictions():
     from gyf_contracts.eval_report import meets_gate
     from usermodel.photo_fairness_eval import summarize

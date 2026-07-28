@@ -224,9 +224,12 @@ def summarize(
             )
         elif len(all_rows) < minimum_total:
             ineligibility.append("panel does not meet its preregistered minimum_total")
+        band_groups = by_slice.get("band", {})
+        if len(band_groups) < 2:
+            ineligibility.append("panel must contain at least two approved band groups")
         if not isinstance(minimum_per_band, int) or minimum_per_band < 1:
             ineligibility.append("cohort minimum_per_band must be a positive justified integer")
-        elif any(len(rows) < minimum_per_band for rows in by_slice.get("band", {}).values()):
+        elif any(len(rows) < minimum_per_band for rows in band_groups.values()):
             ineligibility.append("panel does not meet its preregistered minimum_per_band")
     evidence = {
         "panel_status": panel_status,
