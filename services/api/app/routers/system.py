@@ -26,6 +26,7 @@ from gyf_contracts.model_policy import load_registry
 from pydantic import BaseModel
 
 from ..config import settings
+from ..db import psycopg_pool_kwargs
 from ..observability import database_ready
 from ..profile.avatar import avatar_uploads_available
 
@@ -124,7 +125,7 @@ class PostgresSystemStatsRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=2, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=2, open=True, **psycopg_pool_kwargs())
         self._pool = pool
         self._cached: tuple[float, CatalogHealth] | None = None
         self._cache_lock = threading.Lock()

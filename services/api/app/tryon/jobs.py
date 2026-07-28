@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
+from ..db import psycopg_pool_kwargs
+
 # Terminal = a worker never touches it again.
 TERMINAL_STATUSES = frozenset({"succeeded", "abstained", "failed", "cancelled"})
 
@@ -235,7 +237,7 @@ class PostgresTryOnJobRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def enqueue(

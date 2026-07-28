@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Protocol
 
 from .config import settings
+from .db import psycopg_pool_kwargs
 from .events import InteractionEvent
 
 logger = logging.getLogger("gyf")
@@ -93,7 +94,7 @@ class PostgresSink:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when this sink is used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def publish(self, event: InteractionEvent) -> None:

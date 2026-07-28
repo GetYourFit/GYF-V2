@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from ..catalog.retrieval import _KIDS_RE  # shared kids-title guard (DRY with search)
+from ..db import psycopg_pool_kwargs
 from ..media import image_url_from_refs
 from .conditioning import CANDIDATE_SLOTS, _CATEGORIES_BY_SLOT
 
@@ -436,7 +437,7 @@ class PostgresCandidateRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
         self._admission = _admission_for(pool)
 

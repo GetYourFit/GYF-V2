@@ -22,6 +22,8 @@ from typing import Protocol
 
 from gyf_contracts.consent import normalize_consent_flags
 
+from ..db import psycopg_pool_kwargs
+
 # Tombstone only if not already deleted, so re-deletion is a no-op (idempotent).
 _SOFT_DELETE_USER = "UPDATE users SET deleted_at = now() WHERE id = %s AND deleted_at IS NULL"
 _IS_DELETED = "SELECT deleted_at IS NOT NULL FROM users WHERE id = %s"
@@ -149,7 +151,7 @@ class PostgresAccountRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def ensure_user(self, user_id: str) -> None:

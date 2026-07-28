@@ -24,6 +24,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .db import psycopg_connection_kwargs
 from .metrics import begin_catalog_request, catalog_timing_snapshot, reset_catalog_request
 
 logger = logging.getLogger("gyf.access")
@@ -143,9 +144,15 @@ def database_ready(database_url: str) -> bool:
     try:
         import psycopg
 
-        with psycopg.connect(database_url, connect_timeout=2) as conn:
+        with psycopg.connect(
+            database_url,
+            connect_timeout=2,
+            **psycopg_connection_kwargs(),
+        ) as conn:
             with conn.cursor() as cur:
-                cur.execute("SET statement_timeout = 1000")  # ms — never stall a probe
+                # Transaction-scoped so Supavisor transaction pooling cannot
+                # hand a later query this probe's timeout on a reused backend.
+                cur.execute("SET LOCAL statement_timeout = 1000")  # ms — never stall a probe
                 cur.execute("SELECT 1")
                 cur.fetchone()
         return True

@@ -28,6 +28,7 @@ from typing import Protocol
 
 from gyf_contracts.taxonomy import classify, infer_gender
 
+from ..db import psycopg_pool_kwargs
 from .sources import FeedSource, OpenDatasetSource, RawFeedItem
 
 
@@ -355,7 +356,7 @@ class PostgresItemRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def upsert(self, item: NormalizedItem) -> bool:

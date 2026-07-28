@@ -116,10 +116,13 @@ services:
       # Keep production performance telemetry useful without tracing every request.
       - key: GYF_TRACE_SAMPLE_RATE
         value: "0.1"
-      # Runtime uses Supabase transaction pooling (6543); keep the pool small
-      # because the free Supabase project exposes only 15 session clients.
+      # Runtime uses Supabase transaction pooling (:6543), which multiplexes
+      # client connections rather than pinning backend sessions. Ten warm API
+      # connections safely exceed the former three-connection ceiling; lower it
+      # only when GYF_DATABASE_URL is deliberately switched to a direct/session
+      # endpoint with a tighter budget.
       - key: GYF_DB_POOL_MAX_SIZE
-        value: "3"
+        value: "10"
       # Virtual try-on (M9): the licensed rendering lane. Primary pick (2026-07-06
       # license/infra research pass, see models.registry.json fal-leffa-vto-v1
       # notes): fal.ai hosting Leffa (MIT-licensed, independently verified — not
@@ -142,9 +145,9 @@ services:
       # queries use the transaction pooler (:6543); migrations use the separate
       # :5432 session URL below. A fresh Supabase DB also needs the
       # catalog ingested after migrating, or /outfits/recommend returns nothing.
-      - key: GYF_DATABASE_URL # Supabase connection (use :5432 session URL for migrations)
+      - key: GYF_DATABASE_URL # runtime target: Supavisor transaction URL (:6543); set a direct/session URL to fall back
         sync: false
-      - key: GYF_MIGRATION_DATABASE_URL # optional :5432 session URL; runtime GYF_DATABASE_URL should use :6543
+      - key: GYF_MIGRATION_DATABASE_URL # required direct/session URL (:5432); DDL/advisory locks do not use transaction pooling
         sync: false
       # Auth: modern Supabase signs ES256 — verified against the project JWKS, which
       # is PREFERRED over the legacy HS256 secret (see app/auth.py + config.py). This

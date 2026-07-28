@@ -19,6 +19,7 @@ from typing import Protocol
 from gyf_contracts.taxonomy import get as get_category
 
 from ..affiliate import catalog_subid
+from ..db import psycopg_pool_kwargs
 from ..media import image_url_from_refs
 
 
@@ -85,7 +86,7 @@ class PostgresItemDirectory:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
         # AffiliateLinker port (duck-typed to avoid an import cycle): every buy
         # link leaving the directory is monetized + channel-attributed here, the

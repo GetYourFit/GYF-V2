@@ -25,6 +25,7 @@ from .catalog.directory import ItemDirectory
 from .catalog.retrieval import TextEmbedder, VectorSearchRepository
 from .collections import CollectionRepository
 from .config import settings
+from .db import psycopg_pool_kwargs
 from .observability import database_ready
 from .profile.account import AccountRepository
 from .profile.photo import BodyAdapter, SkinToneAdapter
@@ -52,15 +53,17 @@ def shared_pool(dsn: str):
 
     return ConnectionPool(
         dsn,
-        # Production is an always-on Starter and the first authenticated request
-        # is the activation path. Keep the already-budgeted three connections
-        # warm instead of making that user pay serial TLS/pooler handshakes.
-        # Render's old/new overlap doubles this configured maximum; any future
-        # worker/pool increase must re-run the connection-budget gate.
+        # Supabase transaction pooling (:6543) multiplexes these client
+        # connections onto its backend pool. Keep every configured connection
+        # warm for the activation path, while GYF_DATABASE_URL remains the
+        # explicit direct/session-pooler fallback for a tighter DB budget.
         min_size=settings.db_pool_max_size,
         max_size=settings.db_pool_max_size,
         timeout=3.0,
-        kwargs={"prepare_threshold": None},
+        # psycopg uses server-side prepared statements only after this threshold.
+        # Disable them: transaction poolers may route consecutive transactions to
+        # different backends, where a named prepared statement does not exist.
+        **psycopg_pool_kwargs(),
         open=True,
     )
 

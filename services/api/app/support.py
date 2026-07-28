@@ -12,6 +12,8 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, Field
 
+from .db import psycopg_pool_kwargs
+
 _CREATE = """
 INSERT INTO support_messages (id, user_id, kind, category, message, reply_email)
 VALUES (%s, %s, %s, %s, %s, %s)
@@ -38,7 +40,7 @@ class PostgresSupportRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def create(self, user_id: str, req: SupportMessageRequest) -> str:

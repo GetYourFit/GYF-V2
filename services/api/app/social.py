@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from .catalog.directory import ItemDirectory
 from .collections import SavedItem
+from .db import psycopg_pool_kwargs
 
 _CREATE = """
 INSERT INTO social_posts (id, user_id, recommendation_id, item_ids, caption, occasion, region)
@@ -187,7 +188,7 @@ class PostgresSocialRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def create(self, record: PostRecord) -> None:
