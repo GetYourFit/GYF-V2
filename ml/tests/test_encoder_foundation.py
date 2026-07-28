@@ -74,6 +74,11 @@ def test_cosine_topk_parity_is_one_for_identical_vectors() -> None:
     assert cosine_topk_parity(vectors, vectors, k=2) == 1.0
 
 
+def test_cosine_topk_parity_clamps_k_to_fixture_size() -> None:
+    vectors = np.eye(3, dtype=np.float32)
+    assert cosine_topk_parity(vectors, vectors, k=10) == 1.0
+
+
 def test_retrieval_truth_rejects_unknown_ids() -> None:
     retrieval_truth(["item-a", "item-b"], {"item-a", "item-b"})
     with pytest.raises(AssertionError):

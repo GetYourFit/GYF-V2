@@ -60,11 +60,12 @@ def cosine_topk_parity(
         pass
     left = incumbent @ incumbent.T
     right = candidate @ candidate.T
+    width = min(k, left.shape[1])
     overlaps = []
     for row_left, row_right in zip(left, right, strict=True):
-        a = set(np.argsort(-row_left)[:k])
-        b = set(np.argsort(-row_right)[:k])
-        overlaps.append(len(a & b) / max(1, k))
+        a = set(np.argsort(-row_left)[:width])
+        b = set(np.argsort(-row_right)[:width])
+        overlaps.append(len(a & b) / max(1, width))
     return float(np.mean(overlaps))
 
 
