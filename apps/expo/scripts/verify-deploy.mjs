@@ -19,6 +19,13 @@ const PRODUCTION_URL = "https://get-your-fit.expo.app";
 const BUNDLE_DIR = "dist/_expo/static/js/web";
 const ATTEMPTS = 6;
 const INTERVAL_MS = 10_000;
+const REQUIRED_HEADERS = {
+  "content-security-policy": "frame-ancestors 'none'",
+  "cross-origin-opener-policy": "same-origin",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY",
+};
 
 function localEntry() {
   const files = readdirSync(join(process.cwd(), BUNDLE_DIR));
@@ -34,6 +41,19 @@ async function liveEntry() {
     headers: { "cache-control": "no-cache" },
   });
   if (!response.ok) throw new Error(`${PRODUCTION_URL} returned ${response.status}`);
+
+  const missingHeaders = Object.entries(REQUIRED_HEADERS).filter(
+    ([name, value]) => response.headers.get(name) !== value,
+  );
+  if (missingHeaders.length > 0) {
+    const detail = missingHeaders
+      .map(
+        ([name, value]) => `${name}=${response.headers.get(name) ?? "missing"} (expected ${value})`,
+      )
+      .join(", ");
+    throw new Error(`${PRODUCTION_URL} is missing required security headers: ${detail}`);
+  }
+
   return /entry-[a-f0-9]+\.js/.exec(await response.text())?.[0] ?? null;
 }
 
@@ -67,6 +87,8 @@ console.error(
     `  serving:  ${(await liveEntry().catch(() => null)) ?? "unknown"}`,
     "",
     "The edge caches index.html for up to an hour (cache-control: max-age=3600).",
+    "The production alias must serve the expected immutable bundle and all required",
+    "security headers before this deployment is accepted as a rollback artifact.",
     "The build is live and correct on its own deployment URL right now — use that",
     "to review, or wait for the alias to expire. Nothing needs redeploying.",
     "",

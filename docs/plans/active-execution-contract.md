@@ -69,6 +69,34 @@ is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 
 `CURRENT EXECUTION POINTER: COSMOS-DESIGN-BUILD` (restored after `AUDIT-REENTRY-0721224554` merged and `main` CI passed; held for the reconciliation decision below, not advanced to `NATIVE-ACCEPTANCE`)
 
+**Captain-authorised complete Vercel retirement — 2026-07-28.** The captain supersedes the
+previous protected Vercel rollback exception for this single provider-retirement packet. This does
+not advance the current pointer or any F2.5, native-acceptance, F10, F11, F13 or hard-launch gate.
+
+**Phase A (repository replacement proof):** EAS Hosting is the selected replacement because Expo
+SDK 57 supports the required global HTML response headers through the `expo-router` header
+configuration with `expo-server`, and EAS Hosting provides immutable deployment IDs whose
+production alias can be reassigned to a prior verified deployment. The packet may add the header
+configuration and post-deploy verifier; it must prove the production alias returns
+`Content-Security-Policy: frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`,
+`X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and
+`Cross-Origin-Opener-Policy: same-origin`, and that its entry bundle matches the just-exported
+artifact. The verifier is required after every EAS production deploy. Once a landed-main deployment
+passes that live proof, it is the web rollback artifact; rollback is reassignment of the production
+alias to that immutable deployment ID. Preserve the deployment ID, commit, entry hash and response
+header evidence outside Vercel.
+
+Do not change Vercel DNS, provider project/domain/deployments/build hooks/Git integration or
+provider/environment secrets in Phase A. Keep the Vercel API CORS origin until the landed-main
+replacement proof passes, because removing it earlier would make the still-live legacy origin fail
+without a verified replacement. The exact next Phase B operation is then provider-owned removal of
+the Vercel Git integration, project/deployments/hooks/domain attachments and Vercel secret names,
+followed by removal of the Vercel CORS origin only after the Expo alias remains healthy. No other
+provider, client, API, database, native-store or rollback asset is in scope. Historical evidence
+remains intact. A live Vercel response, deployment/check after the integration removal, missing
+Expo security header, unavailable immutable rollback artifact, DNS collision or failed Expo health
+check is a HOLD with the smallest correcting slice; do not perform an unproven irreversible action.
+
 **Owner-authorised audience-integrity re-entry — 2026-07-25.** The captain authorises the
 production-diagnostic Slice C audience-integrity correction from the current
 `COSMOS-DESIGN-BUILD` pointer. This companion amendment does not advance, replace or otherwise

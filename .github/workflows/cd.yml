@@ -99,3 +99,4 @@ jobs:
             exit 1
           fi
           npm exec --yes eas-cli@latest -- deploy --prod --non-interactive --dev-domain=get-your-fit
+          node scripts/verify-deploy.mjs

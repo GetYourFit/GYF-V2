@@ -40,6 +40,9 @@ jobs:
       # Cleanup inventory: frozen rollback/reference surfaces cannot silently grow or deploy.
       - run: python -m unittest discover -s scripts -p "test_ownership_inventory.py"
       - run: python scripts/ownership_inventory.py --check
+      # Expo Hosting must retain the required response headers and post-deploy proof.
+      - run: python -m unittest discover -s scripts -p "test_check_expo_hosting.py"
+      - run: python scripts/check_expo_hosting.py
       # engineering-doctrine D2: no non-commercial model in the serving path.
       - run: python scripts/check_model_licenses.py
       # engineering-doctrine D5: no unevaluated model in the serving path.

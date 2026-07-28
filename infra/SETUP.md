@@ -13,9 +13,11 @@ authority for production promotion, rollback and cost decisions.
 | Expo web/static | Web client target                    | `.github/workflows/cd.yml` exports `apps/expo` and deploys to EAS Hosting after main CI succeeds. A later commercial static host (currently Render Static candidate) needs its own F10/F11 gate. |
 | Next.js `app/`  | Protected rollback/oracle client     | Preserve until F13/cutover deletion. Do **not** wire routine CI, Makefile or docs back to Vercel production deploys.                                                                             |
 
-Vercel external project state, credentials and deployed resources are intentionally untouched by
-this repository cleanup. If any external Vercel Git integration still exists, it is outside this
-repo-side guide and must not be treated as the current production path.
+Vercel external project state, credentials and deployed resources remain untouched until the
+captain-authorised 2026-07-28 Phase A PR lands and a landed-main EAS production alias proves its
+security headers and immutable rollback artifact. Phase B then removes the Vercel provider boundary
+through provider-owned controls; do not remove its CORS origin, Git integration, project, domain,
+hooks or secrets before that proof.
 
 ## Provision stateful backends
 
