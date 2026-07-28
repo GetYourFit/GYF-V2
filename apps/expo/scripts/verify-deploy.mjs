@@ -12,7 +12,7 @@
  * So compare the entry filename in the local export against the one the
  * production URL is really serving, and say plainly which build is live.
  */
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const PRODUCTION_URL = "https://get-your-fit.expo.app";
@@ -34,7 +34,25 @@ function localEntry() {
   return entry;
 }
 
-async function liveEntry() {
+function parseArgs(argv) {
+  const options = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (!token.startsWith("--")) {
+      throw new Error(`Unexpected argument: ${token}`);
+    }
+    const name = token.slice(2);
+    const value = argv[index + 1];
+    if (!value || value.startsWith("--")) {
+      throw new Error(`Missing value for --${name}`);
+    }
+    options[name] = value;
+    index += 1;
+  }
+  return options;
+}
+
+async function liveState() {
   // Cache-bust the request itself, or we measure our own cached response
   // rather than what the edge holds for real visitors.
   const response = await fetch(`${PRODUCTION_URL}/?deploy-check=${Date.now()}`, {
@@ -54,27 +72,69 @@ async function liveEntry() {
     throw new Error(`${PRODUCTION_URL} is missing required security headers: ${detail}`);
   }
 
-  return /entry-[a-f0-9]+\.js/.exec(await response.text())?.[0] ?? null;
+  return {
+    entryBundle: /entry-[a-f0-9]+\.js/.exec(await response.text())?.[0] ?? null,
+    headers: Object.fromEntries(
+      Object.keys(REQUIRED_HEADERS).map((name) => [name, response.headers.get(name) ?? null]),
+    ),
+  };
 }
 
+function deploymentFromLog(logText) {
+  const matches = [...logText.matchAll(/https:\/\/[a-z0-9-]+--([a-z0-9]+)\.expo\.app\/?/gi)];
+  if (matches.length === 0) {
+    throw new Error("Deploy log is missing the immutable deployment URL");
+  }
+  return {
+    deploymentId: matches.at(-1)[1],
+    deploymentUrl: matches.at(-1)[0],
+  };
+}
+
+const options = parseArgs(process.argv.slice(2));
 const expected = localEntry();
+const deployLogPath = options["deploy-log"];
+const evidenceFile = options["evidence-file"];
+const deployment =
+  deployLogPath == null
+    ? { deploymentId: null, deploymentUrl: null }
+    : deploymentFromLog(readFileSync(deployLogPath, "utf8"));
 
 for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
   let live = null;
   try {
-    live = await liveEntry();
+    live = await liveState();
   } catch (error) {
     // A transient edge blip must not fail the whole deploy; keep polling.
     console.warn(`verify-deploy: attempt ${attempt} could not read production — ${error.message}`);
   }
 
-  if (live === expected) {
+  if (live?.entryBundle === expected) {
+    if (evidenceFile) {
+      writeFileSync(
+        evidenceFile,
+        `${JSON.stringify(
+          {
+            verified_at: new Date().toISOString(),
+            production_url: PRODUCTION_URL,
+            expected_entry_bundle: expected,
+            live_entry_bundle: live.entryBundle,
+            expected_deployment_id: deployment.deploymentId,
+            expected_deployment_url: deployment.deploymentUrl,
+            headers: live.headers,
+          },
+          null,
+          2,
+        )}\n`,
+        "utf8",
+      );
+    }
     console.log(`verify-deploy: production is serving this build (${expected}).`);
     process.exit(0);
   }
 
   if (attempt < ATTEMPTS) {
-    console.log(`verify-deploy: production still on ${live ?? "unknown"}, waiting…`);
+    console.log(`verify-deploy: production still on ${live?.entryBundle ?? "unknown"}, waiting...`);
     await new Promise((resolve) => setTimeout(resolve, INTERVAL_MS));
   }
 }
@@ -84,7 +144,7 @@ console.error(
     "",
     "verify-deploy: the deploy succeeded but production has NOT picked it up yet.",
     `  expected: ${expected}`,
-    `  serving:  ${(await liveEntry().catch(() => null)) ?? "unknown"}`,
+    `  serving:  ${(await liveState().then((state) => state.entryBundle).catch(() => null)) ?? "unknown"}`,
     "",
     "The edge caches index.html for up to an hour (cache-control: max-age=3600).",
     "The production alias must serve the expected immutable bundle and all required",

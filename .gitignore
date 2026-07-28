@@ -102,3 +102,4 @@ ml/data/e2e/
 
 # Supabase CLI local link state (machine-local project ref, never committed)
 supabase/.temp/
+apps/expo/deploy-records/

@@ -53,6 +53,10 @@ def findings(root: Path) -> list[str]:
     cd = (root / ".github/workflows/cd.yml").read_text(encoding="utf-8")
     if "node scripts/verify-deploy.mjs" not in cd:
         errors.append("CD must verify the live EAS production alias after deployment")
+    if "node scripts/capture-deploy-record.mjs" not in cd:
+        errors.append("CD must persist the immutable Expo rollback record after deployment")
+    if "actions/upload-artifact@v4" not in cd or "rollback-record-summary.md" not in cd:
+        errors.append("CD must publish the Expo rollback record artifact and summary")
 
     return errors
 

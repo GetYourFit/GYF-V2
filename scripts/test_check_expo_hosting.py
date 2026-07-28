@@ -38,7 +38,16 @@ class ExpoHostingGuardTests(unittest.TestCase):
             json.dumps({"dependencies": {"expo-server": "~57.0.1"}}), encoding="utf-8"
         )
         (self.root / ".github/workflows/cd.yml").write_text(
-            "- run: node scripts/verify-deploy.mjs\n", encoding="utf-8"
+            "\n".join(
+                [
+                    "- run: node scripts/verify-deploy.mjs",
+                    "- run: node scripts/capture-deploy-record.mjs",
+                    "- uses: actions/upload-artifact@v4",
+                    "- run: cat deploy-records/rollback-record-summary.md >> \"$GITHUB_STEP_SUMMARY\"",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
         )
 
     def test_accepts_complete_hosting_boundary(self) -> None:
@@ -60,6 +69,16 @@ class ExpoHostingGuardTests(unittest.TestCase):
 
         self.assertIn(
             "CD must verify the live EAS production alias after deployment",
+            check_expo_hosting.findings(self.root),
+        )
+
+    def test_rejects_missing_rollback_record_publication(self) -> None:
+        (self.root / ".github/workflows/cd.yml").write_text(
+            "- run: node scripts/verify-deploy.mjs\n", encoding="utf-8"
+        )
+
+        self.assertIn(
+            "CD must persist the immutable Expo rollback record after deployment",
             check_expo_hosting.findings(self.root),
         )
 

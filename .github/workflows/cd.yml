@@ -44,6 +44,8 @@ jobs:
       EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
       EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      SOURCE_WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      SOURCE_WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -98,5 +100,26 @@ jobs:
             echo "Expo bundle contains a legacy Supabase JWT; refusing deploy." >&2
             exit 1
           fi
-          npm exec --yes eas-cli@latest -- deploy --prod --non-interactive --dev-domain=get-your-fit
-          node scripts/verify-deploy.mjs
+          mkdir -p deploy-records
+          npm exec --yes eas-cli@latest -- deploy --prod --non-interactive --dev-domain=get-your-fit | tee deploy-records/eas-deploy.log
+          node scripts/verify-deploy.mjs \
+            --deploy-log deploy-records/eas-deploy.log \
+            --evidence-file deploy-records/verification-evidence.json
+          node scripts/capture-deploy-record.mjs \
+            --deploy-log deploy-records/eas-deploy.log \
+            --verification-evidence deploy-records/verification-evidence.json \
+            --artifact-output deploy-records/rollback-record.json \
+            --summary-output deploy-records/rollback-record-summary.md
+
+      - name: Publish Expo rollback record
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: expo-web-rollback-record-${{ github.event.workflow_run.run_id }}
+          path: apps/expo/deploy-records/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publish Expo rollback summary
+        if: steps.gate.outputs.enabled == 'true'
+        run: cat deploy-records/rollback-record-summary.md >> "$GITHUB_STEP_SUMMARY"
