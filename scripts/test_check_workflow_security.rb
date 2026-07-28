@@ -39,6 +39,26 @@ class WorkflowSecurityPolicyTest < Minitest::Test
     assert(errors.any? { |error| error.include?("pull-request-head-controlled") })
   end
 
+  def test_rejects_pull_request_target_secret_job_that_checks_out_pr_head
+    errors = errors_for(<<~YAML)
+      on:
+        pull_request_target:
+      jobs:
+        remote-preview:
+          env:
+            PROVIDER_TOKEN: ${{ secrets.PROVIDER_TOKEN }}
+          if: github.event_name == 'pull_request_target' && github.event.action != 'closed'
+          steps:
+            - uses: actions/checkout@v4
+              with:
+                ref: ${{ github.event.pull_request.head.sha }}
+    YAML
+
+    assert(errors.any? { |error| error.include?("non-closed") })
+    assert(errors.any? { |error| error.include?("actions/checkout") })
+    assert(errors.any? { |error| error.include?("pull-request-head-controlled") })
+  end
+
   def test_rejects_generated_database_credentials_with_pr_artifact_execution
     errors = errors_for(<<~YAML)
       on:
@@ -64,6 +84,26 @@ class WorkflowSecurityPolicyTest < Minitest::Test
       jobs:
         cleanup:
           if: github.event_name == 'pull_request' && github.event.action == 'closed'
+          environment: provider-cleanup
+          env:
+            PROVIDER_TOKEN: ${{ secrets.PROVIDER_TOKEN }}
+            PREVIEW_BRANCH: pr-${{ github.event.pull_request.number }}
+          steps:
+            - uses: supabase/setup-cli@v1
+            - run: supabase branches delete "$PREVIEW_BRANCH"
+    YAML
+
+    assert_empty errors
+  end
+
+  def test_allows_closed_pull_request_target_cleanup_without_checkout_or_head_expression
+    errors = errors_for(<<~YAML)
+      on:
+        pull_request_target:
+          types: [closed]
+      jobs:
+        cleanup:
+          if: github.event_name == 'pull_request_target' && github.event.action == 'closed'
           environment: provider-cleanup
           env:
             PROVIDER_TOKEN: ${{ secrets.PROVIDER_TOKEN }}

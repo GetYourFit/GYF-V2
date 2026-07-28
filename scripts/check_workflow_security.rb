@@ -10,6 +10,7 @@ class WorkflowSecurityPolicy
   SENSITIVE_NAMES = /(?:secret|token|api[_-]?key|password|database[_-]?url|postgres[_-]?url|dsn)/i
   HEAD_CONTROLLED = /github\.(?:event\.pull_request\.(?:head|title|body)|head_ref)/i
   PR_NUMBER = /github\.event\.pull_request\.number/i
+  PR_EVENTS = %w[pull_request pull_request_target].freeze
 
   def initialize(workflow, path)
     @workflow = workflow
@@ -36,7 +37,7 @@ class WorkflowSecurityPolicy
 
   def pull_request_trigger?
     triggers = @workflow["on"] || @workflow[true]
-    triggers.is_a?(Hash) && triggers.key?("pull_request")
+    triggers.is_a?(Hash) && PR_EVENTS.any? { |event| triggers.key?(event) }
   end
 
   def sensitive?(job)
@@ -61,7 +62,7 @@ class WorkflowSecurityPolicy
 
   def closed_pr_only?(condition)
     condition.is_a?(String) &&
-      condition.match?(/github\.event_name\s*==\s*['"]pull_request['"]/i) &&
+      condition.match?(/github\.event_name\s*==\s*['"](?:pull_request|pull_request_target)['"]/i) &&
       condition.match?(/github\.event\.action\s*==\s*['"]closed['"]/i)
   end
 
