@@ -21,6 +21,22 @@ def test_database_target_and_pool_size_are_environment_configurable(monkeypatch)
     assert settings.db_pool_max_size == 12
 
 
+def test_migration_database_url_defaults_to_runtime_target():
+    settings = Settings(database_url="postgresql://pooler.example:6543/postgres")
+
+    assert settings.migration_target_database_url == "postgresql://pooler.example:6543/postgres"
+
+
+def test_migration_database_url_can_override_runtime_target(monkeypatch):
+    monkeypatch.setenv("GYF_DATABASE_URL", "postgresql://pooler.example:6543/postgres")
+    monkeypatch.setenv("GYF_MIGRATION_DATABASE_URL", "postgresql://direct.example:5432/postgres")
+
+    settings = Settings()
+
+    assert settings.migration_database_url == "postgresql://direct.example:5432/postgres"
+    assert settings.migration_target_database_url == "postgresql://direct.example:5432/postgres"
+
+
 def test_db_pool_size_rejects_invalid_values():
     with pytest.raises(ValueError, match="db_pool_max_size"):
         Settings(db_pool_max_size=0)

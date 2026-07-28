@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     env: str = "local"
     database_url: str = "postgresql://postgres:postgres@localhost:5432/gyf"
+    migration_database_url: str = ""
     # Event sink backend: "local" (append-only JSONL) or "postgres" (the
     # behavioral spine that feeds the learning flywheel — prod default). See
     # sink.py: prod must set GYF_EVENT_SINK=postgres or the flywheel captures
@@ -228,6 +229,11 @@ class Settings(BaseSettings):
     def jwks_url(self) -> str:
         """The Supabase project's public JWKS endpoint (for ES256 verification)."""
         return f"{self.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+
+    @property
+    def migration_target_database_url(self) -> str:
+        """Direct/session DSN for Alembic, falling back to the runtime target."""
+        return self.migration_database_url or self.database_url
 
     @property
     def auth_is_open(self) -> bool:
