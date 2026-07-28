@@ -179,8 +179,37 @@ def test_photo_fairness_reports_subgroup_error_calibration_and_abstention():
     assert report.metrics["subgroup.band.mst10.error_rate"] == 9.0
     assert report.metrics["subgroup.band.mst10.abstention_rate"] == 1.0
     assert report.metrics["subgroup.lighting.daylight.ece"] > 0
+    assert report.metrics["subgroup.band.mst10.ece"] == 0.0
+    assert 0.0 <= report.metrics["ece"] <= 1.0
     assert report.metrics["max_band_gap"] == 9.0
     assert report.evidence["promotion_eligible_panel"] is True
+
+
+def test_photo_fairness_normalizes_skin_tone_calibration_correctness():
+    from usermodel.photo_fairness_eval import summarize
+
+    report = summarize(
+        [
+            {
+                "label": "mst10",
+                "prediction": "mst1",
+                "confidence": 0.9,
+                "subgroups": {"band": "mst10"},
+            }
+        ],
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel={
+            "panel_id": "test-panel",
+            "status": "approved",
+            "consent_basis": "test only",
+            "data_license": "test only",
+            "label_protocol": "test only",
+        },
+    )
+    assert report.metrics["error_rate"] == 9.0
+    assert report.metrics["ece"] == 0.9
 
 
 def test_placeholder_panel_cannot_promote_even_with_perfect_predictions():

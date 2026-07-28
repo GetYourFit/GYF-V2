@@ -61,6 +61,14 @@ def _error(capability: str, label: object, prediction: object) -> float:
     return float(abs(true_mst - predicted_mst))
 
 
+def _max_error(capability: str) -> float:
+    return 9.0 if capability == "skin_tone" else 1.0
+
+
+def _correctness(capability: str, error: float) -> float:
+    return max(0.0, 1.0 - error / _max_error(capability))
+
+
 def _ece(observations: list[tuple[float, float]], bins: int = 10) -> float:
     """Expected calibration error, including abstentions as confidence zero."""
     if not observations:
@@ -124,7 +132,7 @@ def summarize(
             return 0.0, 0.0, 0.0
         error = sum(row[0] for row in rows) / count
         abstention = sum(row[2] for row in rows) / count
-        calibration = _ece([(row[1], 1.0 - row[0]) for row in rows])
+        calibration = _ece([(row[1], _correctness(capability, row[0])) for row in rows])
         return error, calibration, abstention
 
     metrics: dict[str, float] = {}
