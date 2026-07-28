@@ -314,6 +314,18 @@ def test_sync_keeps_pending_unknown_and_ambiguous_products_at_recommendation_lev
     assert json.loads(conn.outcomes[0][4])["item_attribution"] == "recommendation_only"
 
 
+def test_sync_uses_opaque_catalog_click_subids_for_exact_item_attribution():
+    sync_mod = _load_sync()
+    conn = _FakeConn({}, [("catalog_opaque-123", "user-9", "item-7")])
+    inserted, skipped = sync_mod.sync(
+        conn,
+        [{"id": 557, "sub_id": "catalog_opaque-123", "status": "confirmed"}],
+    )
+    assert (inserted, skipped) == (1, 0)
+    assert conn.outcomes[0][0:4] == ("user-9", "item", "item-7", "purchase")
+    assert json.loads(conn.outcomes[0][4])["recommendation_id"] is None
+
+
 def test_sync_reconciles_reversal_idempotently_without_counting_it_as_a_purchase():
     sync_mod = _load_sync()
     conn = _FakeConn({"rec-1": "user-9"}, [("rec-1", "user-9", "item-7")])

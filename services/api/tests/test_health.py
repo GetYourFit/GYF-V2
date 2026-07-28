@@ -91,6 +91,21 @@ def test_feedback_accepts_only_joinable_shop_click_attribution():
     invalid["context"] = {**valid["context"], "subid": "another-rec"}
     assert client.post("/feedback", json=invalid).status_code == 422
 
+    catalog_click = {
+        "event_id": "00000000-0000-4000-8000-000000000013",
+        "target_type": "item",
+        "target_id": "item-1",
+        "action": "shop_click",
+        "context": {
+            "attribution_version": 1,
+            "placement": "product_detail",
+            "rank": 0,
+            "session_id": "00000000-0000-4000-8000-000000000014",
+            "subid": "catalog_opaque-123",
+        },
+    }
+    assert client.post("/feedback", json=catalog_click).status_code == 202
+
 
 def test_feedback_rejects_server_only_actions():
     # Impression, purchase and reconciliation are trusted server outcomes; a

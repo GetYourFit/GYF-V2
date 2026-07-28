@@ -12,8 +12,8 @@ export const COMMERCE_ATTRIBUTION_VERSION = 1;
 export const COMMERCE_PLACEMENTS = ["stylist_outfit", "product_detail"] as const;
 export type CommercePlacement = (typeof COMMERCE_PLACEMENTS)[number];
 
-export function catalogSubid(itemId: string): string {
-  return `catalog_${itemId}`;
+export function catalogClickSubid(): string {
+  return `catalog_${crypto.randomUUID()}`;
 }
 
 export function shopClickFeedback(
@@ -24,16 +24,19 @@ export function shopClickFeedback(
     recommendationId,
     rank,
     sessionId,
+    subid,
   }: {
     eventId: string;
     placement: CommercePlacement;
     recommendationId?: string;
     rank?: number;
     sessionId: string;
+    subid?: string;
   },
 ): FeedbackRequest | null {
   if (item.owned || !safeExternalShopUrl(item.affiliate_url)) return null;
-  const subid = recommendationId ?? catalogSubid(item.item_id);
+  const effectiveSubid = recommendationId ?? subid;
+  if (!effectiveSubid) return null;
   return {
     event_id: eventId,
     target_type: "item",
@@ -45,7 +48,7 @@ export function shopClickFeedback(
       recommendation_id: recommendationId,
       rank,
       session_id: sessionId,
-      subid,
+      subid: effectiveSubid,
     },
   };
 }

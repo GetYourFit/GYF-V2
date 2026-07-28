@@ -155,10 +155,8 @@ class FeedbackRequest(BaseModel):
         if recommendation_id is not None:
             if not isinstance(recommendation_id, str) or recommendation_id != subid:
                 raise ValueError("shop_click recommendation_id must equal subid")
-        else:
-            target_id = info.data.get("target_id")
-            if subid != f"catalog_{target_id}":
-                raise ValueError("catalog shop_click subid must match target_id")
+        elif not subid.startswith("catalog_"):
+            raise ValueError("catalog shop_click subid must be opaque and catalog-scoped")
         rank = context.get("rank")
         if rank is not None and (not isinstance(rank, int) or rank < 0):
             raise ValueError("shop_click rank must be a non-negative integer")

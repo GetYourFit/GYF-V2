@@ -12,7 +12,7 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createApi, type Outfit, type OutfitItem, type SearchResult } from "@/lib/api";
-import { shopClickFeedback } from "@/lib/commerce-attribution";
+import { catalogClickSubid, shopClickFeedback } from "@/lib/commerce-attribution";
 import { compatibilityReason, formatCatalogPrice } from "@/lib/explore-feed";
 import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { colors, materials, radii, spacing, type ThemeName } from "@/theme/tokens";
@@ -24,10 +24,12 @@ import { useTheme } from "@/theme/use-color-scheme";
 function CompleteTheLook({
   itemId,
   api,
+  onShopPairing,
   theme,
 }: {
   itemId: string;
   api: ReturnType<typeof createApi>;
+  onShopPairing: (item: OutfitItem) => Promise<void>;
   theme: ThemeName;
 }) {
   const [look, setLook] = useState<Outfit | null | undefined>(undefined);
@@ -90,7 +92,7 @@ function CompleteTheLook({
               <PairingTile
                 item={pair}
                 key={pair.item_id}
-                onOpenError={() => setShopError(true)}
+                onPress={() => void onShopPairing(pair).catch(() => setShopError(true))}
                 theme={theme}
               />
             ))}
@@ -109,11 +111,11 @@ function CompleteTheLook({
 
 function PairingTile({
   item,
-  onOpenError,
+  onPress,
   theme,
 }: {
   item: OutfitItem;
-  onOpenError: () => void;
+  onPress?: () => void;
   theme: ThemeName;
 }) {
   const palette = colors[theme];
@@ -123,7 +125,7 @@ function PairingTile({
     <PressableScale
       accessibilityLabel={shopUrl ? `Shop ${item.title}` : item.title}
       accessibilityRole={shopUrl ? "link" : undefined}
-      onPress={shopUrl ? () => void Linking.openURL(shopUrl).catch(onOpenError) : undefined}
+      onPress={shopUrl ? onPress : undefined}
       style={{ gap: spacing.xs, width: 100 }}
     >
       <CatalogImage
@@ -190,6 +192,44 @@ export function ItemDetailSheet({
 
   const shopUrl = safeExternalShopUrl(item?.buy_url);
   const compatibility = compatibilityReason(item?.score);
+
+  const openTrackedShopLink = async (shopItem: {
+    item_id: string;
+    affiliate_url?: string | null;
+    owned?: boolean;
+  }) => {
+    const rawUrl = safeExternalShopUrl(shopItem.affiliate_url);
+    if (!rawUrl) return;
+    const fallbackSubid = (() => {
+      try {
+        const subid = new URL(rawUrl).searchParams.get("subid");
+        return subid?.startsWith("catalog_") ? subid : null;
+      } catch {
+        return null;
+      }
+    })();
+    let trackedUrl = rawUrl;
+    let subid = fallbackSubid;
+    if (!subid) {
+      const clickSubid = catalogClickSubid();
+      try {
+        const converted = await api.convertAffiliateLink(rawUrl, clickSubid);
+        trackedUrl = safeExternalShopUrl(converted.affiliate_url) ?? rawUrl;
+        subid = converted.affiliate_url ? clickSubid : null;
+      } catch {
+        subid = null;
+      }
+    }
+    await Linking.openURL(trackedUrl);
+    if (!subid) return;
+    const event = shopClickFeedback(shopItem, {
+      eventId: crypto.randomUUID(),
+      placement: "product_detail",
+      sessionId: commerceSessionId.current,
+      subid,
+    });
+    if (event) await api.feedback(event).catch(() => undefined);
+  };
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={item !== null}>
@@ -266,7 +306,12 @@ export function ItemDetailSheet({
               </GyfText>
             </View>
 
-            <CompleteTheLook api={api} itemId={item.item_id} theme={theme} />
+            <CompleteTheLook
+              api={api}
+              itemId={item.item_id}
+              onShopPairing={openTrackedShopLink}
+              theme={theme}
+            />
 
             {actionError ? (
               <GyfText
@@ -318,16 +363,11 @@ export function ItemDetailSheet({
                   accessibilityHint="Opens the retailer product page. Close it or return to keep exploring."
                   label="Shop at retailer"
                   onPress={() =>
-                    void Linking.openURL(shopUrl)
-                      .then(() => {
-                        const event = shopClickFeedback(item, {
-                          eventId: crypto.randomUUID(),
-                          placement: "product_detail",
-                          sessionId: commerceSessionId.current,
-                        });
-                        if (event) void api.feedback(event).catch(() => undefined);
-                      })
-                      .catch(() => setActionError("Could not open the retailer link. Try again."))
+                    void openTrackedShopLink({
+                      item_id: item.item_id,
+                      affiliate_url: item.buy_url,
+                      owned: false,
+                    }).catch(() => setActionError("Could not open the retailer link. Try again."))
                   }
                   style={{ flex: 1 }}
                 />
