@@ -44,7 +44,7 @@ import modal
 from gyf_contracts.eval_report import RUNTIME_MODELS, runtime_model_verdict
 
 _PRODUCTION_ENCODER = RUNTIME_MODELS["encoder"]
-_POLICY_ROOT = Path(os.environ.get("GYF_RUNTIME_POLICY_ROOT", Path(__file__).resolve().parents[2]))
+_POLICY_ROOT = Path(__file__).resolve().parents[2]
 _REGISTRY_PATH = _POLICY_ROOT / "models.registry.json"
 _REPORTS_PATH = _POLICY_ROOT / "eval-reports"
 
@@ -102,7 +102,6 @@ image = (
         {
             "HF_HOME": "/cache/hf",
             "GYF_PERCEPTION_MODEL": MODEL_ID,
-            "GYF_RUNTIME_POLICY_ROOT": "/opt/gyf-runtime",
         }
     )
 )
