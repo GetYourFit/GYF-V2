@@ -13,7 +13,7 @@ import json
 from threading import Lock
 from typing import Callable, Protocol
 
-from .db import psycopg_pool_kwargs
+from ..db import psycopg_pool_kwargs
 from .models import PROFILE_FIELDS, BudgetRange, Profile, ProfileInput, profile_from_manual
 from .photo import BodyResult, SkinToneResult, profile_from_photo
 
