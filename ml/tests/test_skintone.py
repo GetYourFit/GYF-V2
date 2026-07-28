@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 from usermodel.skintone.classify import (
@@ -337,8 +339,12 @@ def test_single_band_attested_panel_cannot_claim_cross_band_fairness():
     )
 
 
-def test_placeholder_panel_cannot_promote_even_with_perfect_predictions():
-    from gyf_contracts.eval_report import meets_gate
+def test_placeholder_panel_still_cannot_reach_production_via_the_registry():
+    """The numeric gate (Slice A1) is the sole predicate on the report itself, but the
+    placeholder panel still cannot promote skin_tone/body_estimator: no registry card
+    wires an eval_report to it and both models sit in the research lane."""
+    from gyf_contracts.eval_report import resolve_promotion
+    from gyf_contracts.model_policy import load_registry
     from usermodel.photo_fairness_eval import summarize
 
     report = summarize(
@@ -355,6 +361,14 @@ def test_placeholder_panel_cannot_promote_even_with_perfect_predictions():
         report_id="test",
         panel={"panel_id": "placeholder", "status": "placeholder"},
     )
-    ok, reasons = meets_gate(report)
+    assert report.evidence["promotion_eligible_panel"] is False
+
+    root = Path(__file__).resolve().parents[2]
+    skin_card = next(
+        card
+        for card in load_registry(root / "models.registry.json")
+        if card.capability == "skin_tone"
+    )
+    ok, reasons = resolve_promotion(skin_card)
     assert not ok
-    assert "protected panel attestation is unavailable" in reasons[0]
+    assert any("eval report" in reason or "not commercial-OK" in reason for reason in reasons)

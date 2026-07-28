@@ -209,6 +209,108 @@ def test_status_never_advertises_registry_blocked_models_as_live(monkeypatch):
         assert caps[capability]["status"] not in {"live", "beta"}
 
 
+def test_photo_capability_promotes_on_numeric_metrics_alone(monkeypatch, tmp_path: Path):
+    """Slice A1 regression: the unsourceable panel-attestation veto is gone. A skin_tone
+    report that clears max_band_gap/error_rate/ece/abstention_rate promotes with no
+    attestation env vars set at all."""
+    monkeypatch.delenv("GYF_PHOTO_FAIRNESS_PANEL_DIGEST", raising=False)
+    monkeypatch.delenv("GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID", raising=False)
+
+    registry = tmp_path / "registry.json"
+    reports = tmp_path / "reports"
+    binding = RUNTIME_MODELS["skin_tone"]
+    card = {
+        "name": binding.name,
+        "capability": binding.capability,
+        "provider": "test",
+        "license": "MIT",
+        "lane": "production",
+        "commercial_ok": True,
+        "train_data_commercial_ok": True,
+        "eval_report": "skin-tone-test",
+        "model_version": binding.model_version,
+        "model_uri": binding.model_uri,
+    }
+    registry.write_text(json.dumps({"models": [card]}), encoding="utf-8")
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "skin-tone-test.json").write_text(
+        json.dumps(
+            {
+                "report_id": "skin-tone-test",
+                "capability": binding.capability,
+                "model_version": binding.model_version,
+                "metrics": {
+                    "max_band_gap": 0.5,
+                    "error_rate": 0.1,
+                    "ece": 0.05,
+                    "abstention_rate": 0.1,
+                },
+                "num_samples": 500,
+                "dataset": "test",
+                "created_at": "2026-07-10T00:00:00Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert runtime_model_verdict("skin_tone", registry=registry, reports_dir=reports)[0]
+
+
+def test_photo_capability_still_fails_on_wide_band_gap(monkeypatch, tmp_path: Path):
+    """A failing max_band_gap still blocks promotion, with or without attestation env
+    vars present -- proving the numeric gate, not the old attestation, does the work."""
+    monkeypatch.setenv("GYF_PHOTO_FAIRNESS_PANEL_DIGEST", "irrelevant-now")
+    monkeypatch.setenv("GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID", "irrelevant-now")
+
+    registry = tmp_path / "registry.json"
+    reports = tmp_path / "reports"
+    binding = RUNTIME_MODELS["body"]
+    card = {
+        "name": binding.name,
+        "capability": binding.capability,
+        "provider": "test",
+        "license": "Apache-2.0",
+        "lane": "production",
+        "commercial_ok": True,
+        "train_data_commercial_ok": True,
+        "eval_report": "body-test",
+        "model_version": binding.model_version,
+        "model_uri": binding.model_uri,
+    }
+    registry.write_text(json.dumps({"models": [card]}), encoding="utf-8")
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "body-test.json").write_text(
+        json.dumps(
+            {
+                "report_id": "body-test",
+                "capability": binding.capability,
+                "model_version": binding.model_version,
+                "metrics": {
+                    "max_band_gap": 3.2,
+                    "error_rate": 0.1,
+                    "ece": 0.05,
+                    "abstention_rate": 0.1,
+                },
+                "num_samples": 500,
+                "dataset": "test",
+                "created_at": "2026-07-10T00:00:00Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+    ok, reasons = runtime_model_verdict("body", registry=registry, reports_dir=reports)
+    assert not ok
+    assert any("fails gate" in reason for reason in reasons)
+
+
+def test_placeholder_panel_still_does_not_promote_the_live_registry():
+    """The real registry today has no eval_report wired for skin_tone/body_estimator, so
+    nothing is promoted by this de-gating slice on its own."""
+    for runtime in ("skin_tone", "body"):
+        ok, reasons = runtime_model_verdict(runtime)
+        assert not ok
+        assert reasons
+
+
 def test_api_image_bundles_registry_and_eval_reports():
     root = Path(__file__).resolve().parents[3]
     dockerfile = (root / "services/api/Dockerfile").read_text(encoding="utf-8")

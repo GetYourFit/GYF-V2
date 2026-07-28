@@ -19,12 +19,16 @@ pre-registered power-analysis (or equivalent statistical) reference plus justifi
 and `minimum_per_band`. A two-sample cohort is categorically ineligible. The protected evaluation
 or CI environment—not the manifest—must supply the exact canonical SHA-256 digest through
 `GYF_PHOTO_FAIRNESS_PANEL_DIGEST` and the matching ID through
-`GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID`. These independently protected values bind the
-promotion report to the exact approved panel; a locally authored manifest that declares itself
-approved cannot pass.
+`GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID`. These independently protected values bind
+`photo_fairness_eval`'s own `promotion_eligible_panel` evidence field to the exact approved panel;
+a locally authored manifest that declares itself approved cannot mark itself eligible.
 
-A report may pass the machine gate only when the exact protected attestation, provenance,
-cohort justification and all required metrics are present. This is necessary but not sufficient for
-production: model licence, privacy, rollback and the remaining F7 evidence gates still apply.
-Manual values remain authoritative and both runtime candidates stay research/shadow until all gates
-pass.
+`gyf_contracts.eval_report`'s `CapabilityGate` promotion predicate for `skin_tone` and
+`body_estimator` checks only the numeric fairness metrics (`max_band_gap` plus the required
+`error_rate`/`ece`/`abstention_rate` thresholds) against `report.metrics`; it does not read
+`promotion_eligible_panel` or the attestation evidence above. Sourcing and attesting a real
+diverse panel is still required before a captain wires an `eval_report` to either capability's
+registry card at all — until then both cards keep `eval_report=null` and stay in the research lane.
+This is necessary but not sufficient for production: model licence, privacy, rollback and the
+remaining F7 evidence gates still apply. Manual values remain authoritative and both runtime
+candidates stay research/shadow until all gates pass.
