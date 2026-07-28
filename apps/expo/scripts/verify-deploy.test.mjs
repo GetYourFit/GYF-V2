@@ -16,103 +16,174 @@ const REQUIRED_HEADERS = {
 const SCRIPT_PATH = new URL("./verify-deploy.mjs", import.meta.url).pathname;
 const execFileAsync = promisify(execFile);
 
-async function withFixture(callback) {
+function withFixtureRoot() {
   const root = mkdtempSync(join(tmpdir(), "verify-deploy-"));
+  const bundleDir = join(root, "dist", "client", "_expo", "static", "js", "web");
+  mkdirSync(bundleDir, { recursive: true });
+  writeFileSync(join(bundleDir, "entry-deadbeef.js"), "console.log('ok');\n", "utf8");
+  return root;
+}
+
+function writeDeployLog(root, { deploymentId = "or1170q9ix", promoted = true } = {}) {
+  writeFileSync(
+    join(root, "deploy-log.txt"),
+    [
+      "Creating deployment",
+      `Deployment URL  https://get-your-fit--${deploymentId}.expo.app`,
+      "Production URL  https://get-your-fit.expo.app",
+      promoted ? "Promoted deployment to production." : "",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+}
+
+async function withServer(handler, callback) {
+  const instance = createServer(handler);
+  await new Promise((resolve) => instance.listen(0, "127.0.0.1", resolve));
+  const address = instance.address();
   try {
-    const bundleDir = join(root, "dist", "client", "_expo", "static", "js", "web");
-    mkdirSync(bundleDir, { recursive: true });
-    writeFileSync(join(bundleDir, "entry-deadbeef.js"), "console.log('ok');\n", "utf8");
-    writeFileSync(
-      join(root, "deploy-log.txt"),
-      [
-        "Published deployment:",
-        "https://get-your-fit--or1170q9ix.expo.app/",
-        "Promoted deployment to production.",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
-    await callback(root);
+    await callback(`http://127.0.0.1:${address.port}`);
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    instance.closeAllConnections();
+    instance.close();
+    instance.unref();
   }
 }
 
-async function runScenario(deploymentId, expectSuccess) {
-  const server = await new Promise((resolve) => {
-    const instance = createServer((request, response) => {
-      for (const [name, value] of Object.entries(REQUIRED_HEADERS)) {
-        response.setHeader(name, value);
-      }
-      if (request.url.startsWith("/__deployment")) {
-        response.setHeader("content-type", "application/json");
-        response.end(
-          JSON.stringify({
-            requestUrl: `https://get-your-fit--${deploymentId}.expo.app/__deployment`,
-            origin: "https://get-your-fit.expo.app",
-            forwardedHost: "get-your-fit.expo.app",
-            environment: null,
-          }),
-        );
-        return;
-      }
-      response.setHeader("content-type", "text/html");
-      response.end("<!doctype html><script src=\"/_expo/static/js/web/entry-deadbeef.js\"></script>");
-    });
-    instance.listen(0, "127.0.0.1", () => {
-      const address = instance.address();
-      resolve({
-        close: async () => {
-          instance.closeAllConnections();
-          instance.close();
-          instance.unref();
-        },
-        url: `http://127.0.0.1:${address.port}`,
-      });
-    });
-  });
+function correctHandler(request, response) {
+  if (request.url.startsWith("/__deployment")) {
+    response.setHeader("content-type", "application/json");
+    response.end(JSON.stringify({ requestUrl: request.url, origin: null, forwardedHost: null }));
+    return;
+  }
+  for (const [name, value] of Object.entries(REQUIRED_HEADERS)) {
+    response.setHeader(name, value);
+  }
+  response.setHeader("content-type", "text/html");
+  response.end('<!doctype html><script src="/_expo/static/js/web/entry-deadbeef.js"></script>');
+}
 
-  try {
-    await withFixture(async (root) => {
+function missingHeaderHandler(request, response) {
+  // Simulates the real failure mode: an edge-cached response from before
+  // security headers were configured - x-frame-options is absent.
+  for (const [name, value] of Object.entries(REQUIRED_HEADERS)) {
+    if (name === "x-frame-options") continue;
+    response.setHeader(name, value);
+  }
+  response.setHeader("content-type", "text/html");
+  response.end('<!doctype html><script src="/_expo/static/js/web/entry-deadbeef.js"></script>');
+}
+
+// The immutable deployment URL, correctly configured and freshly created
+// (no cache to go stale), must verify successfully on the first attempt.
+async function testSucceedsOnImmutableDeploymentUrl() {
+  await withServer(correctHandler, async (serverUrl) => {
+    const root = withFixtureRoot();
+    try {
+      writeDeployLog(root, { deploymentId: "or1170q9ix" });
       const evidenceFile = join(root, "verification-evidence.json");
-      const args = [
+      await execFileAsync(
+        process.execPath,
+        [
           SCRIPT_PATH,
+          "--deploy-log",
+          join(root, "deploy-log.txt"),
+          "--deployment-url",
+          serverUrl,
           "--production-url",
-          server.url,
+          "http://127.0.0.1:1",
+          "--attempts",
+          "1",
+          "--evidence-file",
+          evidenceFile,
+        ],
+        { cwd: root },
+      );
+      const evidence = JSON.parse(readFileSync(evidenceFile, "utf8"));
+      assert.equal(evidence.live_deployment_id, "or1170q9ix");
+      assert.equal(evidence.expected_entry_bundle, "entry-deadbeef.js");
+      assert.equal(evidence.live_entry_bundle, "entry-deadbeef.js");
+      assert.equal(evidence.headers["x-frame-options"], "DENY");
+      assert.equal(evidence.promoted_to_production, true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
+
+// If the immutable deployment URL is genuinely missing a required security
+// header, verification must still fail - this proves the check has teeth,
+// not just that it stopped fetching the flaky cached alias.
+async function testFailsWhenHeaderTrulyMissing() {
+  await withServer(missingHeaderHandler, async (serverUrl) => {
+    const root = withFixtureRoot();
+    try {
+      writeDeployLog(root, { deploymentId: "or1170q9ix" });
+      await assert.rejects(
+        execFileAsync(
+          process.execPath,
+          [
+            SCRIPT_PATH,
+            "--deploy-log",
+            join(root, "deploy-log.txt"),
+            "--deployment-url",
+            serverUrl,
+            "--production-url",
+            "http://127.0.0.1:1",
+            "--attempts",
+            "1",
+            "--evidence-file",
+            join(root, "verification-evidence.json"),
+          ],
+          { cwd: root },
+        ),
+        (error) => {
+          assert.match(error.stderr, /missing required security headers/);
+          assert.match(error.stderr, /x-frame-options/);
+          return true;
+        },
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
+
+// A deploy log that never confirms promotion must fail fast, without ever
+// depending on network access to an alias that might be edge-cached stale.
+async function testFailsWhenLogDoesNotConfirmPromotion() {
+  const root = withFixtureRoot();
+  try {
+    writeDeployLog(root, { deploymentId: "or1170q9ix", promoted: false });
+    await assert.rejects(
+      execFileAsync(
+        process.execPath,
+        [
+          SCRIPT_PATH,
           "--deploy-log",
           join(root, "deploy-log.txt"),
           "--attempts",
           "1",
           "--evidence-file",
-          evidenceFile,
-        ];
-
-      if (!expectSuccess) {
-        await assert.rejects(
-          execFileAsync(process.execPath, args, { cwd: root }),
-          (error) => {
-            assert.match(error.stderr, /wanted ID: or1170q9ix/);
-            assert.match(error.stderr, new RegExp(`live ID:\\s+${deploymentId}`));
-            return true;
-          },
-        );
-        return;
-      }
-
-      await execFileAsync(process.execPath, args, { cwd: root });
-      const evidence = JSON.parse(readFileSync(evidenceFile, "utf8"));
-      assert.equal(evidence.live_deployment_id, deploymentId);
-      assert.equal(evidence.live_deployment_url, `https://get-your-fit--${deploymentId}.expo.app/`);
-      assert.equal(evidence.expected_entry_bundle, "entry-deadbeef.js");
-    });
+          join(root, "verification-evidence.json"),
+        ],
+        { cwd: root },
+      ),
+      (error) => {
+        assert.match(error.stderr, /does not confirm the deployment was promoted to production/);
+        return true;
+      },
+    );
   } finally {
-    await server.close();
+    rmSync(root, { recursive: true, force: true });
   }
 }
 
 try {
-  await runScenario("oldprod1", false);
-  await runScenario("or1170q9ix", true);
+  await testSucceedsOnImmutableDeploymentUrl();
+  await testFailsWhenHeaderTrulyMissing();
+  await testFailsWhenLogDoesNotConfirmPromotion();
   console.log("verify-deploy tests passed");
   process.exit(0);
 } catch (error) {
