@@ -26,6 +26,7 @@ from ..affiliate import AffiliateLinker, NullAffiliateLinker, catalog_subid
 from ..config import settings
 from ..media import image_url_from_refs
 from ..metrics import stage_timer
+from ..recsys.conditioning import Constraints
 
 # Keyword-fallback tokenization. Stopwords must never become search terms: a
 # conversational query ("something cozy for a rainy evening") otherwise ANDs
@@ -73,6 +74,17 @@ class SearchResult:
     currency: str | None = None
     color: str | None = None
     buy_url: str | None = None
+    lch: tuple[float, float, float] | None = None
+    aesthetic: str | None = None
+    silhouette: str | None = None
+    fit: str | None = None
+
+
+@dataclass(frozen=True)
+class ExplorePreferences:
+    """Stated profile facts used by deterministic Explore browse ranking."""
+
+    constraints: Constraints
 
 
 @dataclass(frozen=True)
@@ -161,6 +173,7 @@ class VectorSearchRepository(Protocol):
         genders: frozenset[str] | None = None,
         taste_vector: list[float] | None = None,
         seed: str | None = None,
+        preferences: ExplorePreferences | None = None,
     ) -> list[SearchResult]:
         """Catalogue page for the Explore feed. With ``taste_vector`` set, ranks by
         cosine to it (personalized two-tower retrieval); without, a cheap relational
@@ -208,6 +221,7 @@ def _gender_bucket_key(genders: frozenset[str] | None) -> str | None:
         return None
     return _GENDER_BUCKETS.get(genders)
 
+
 # One predicate defines catalogue truth for every Explore retrieval and the
 # persisted facet snapshot. Ingest records image/audience conflicts here rather
 # than making a request fetch remote images or relying on title heuristics.
@@ -235,7 +249,11 @@ AND i.attributes #>> '{taxonomy,category_conflict}' IS NULL
 _BROWSE_INDEXED = """
 WITH candidates AS (
   (SELECT 0 AS band, i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
-          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
+          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name,
+          i.attributes #> '{{perception,color,lch}}' AS lch,
+          i.attributes #>> '{{perception,attributes,aesthetic,value}}' AS aesthetic,
+          i.attributes #>> '{{perception,attributes,silhouette,value}}' AS silhouette,
+          i.attributes #>> '{{perception,attributes,fit,value}}' AS fit
    FROM items i
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND {searchable} AND i.id >= %s::uuid
@@ -244,7 +262,11 @@ WITH candidates AS (
    LIMIT %s)
   UNION ALL
   (SELECT 1 AS band, i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
-          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
+          i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name,
+          i.attributes #> '{{perception,color,lch}}' AS lch,
+          i.attributes #>> '{{perception,attributes,aesthetic,value}}' AS aesthetic,
+          i.attributes #>> '{{perception,attributes,silhouette,value}}' AS silhouette,
+          i.attributes #>> '{{perception,attributes,fit,value}}' AS fit
    FROM items i
    WHERE EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
      AND {searchable} AND i.id < %s::uuid
@@ -252,7 +274,8 @@ WITH candidates AS (
    ORDER BY i.id
    LIMIT %s)
 )
-SELECT id, title, score, image_refs, price, currency, affiliate_url, hue_name
+SELECT id, title, score, image_refs, price, currency, affiliate_url, hue_name,
+       lch, aesthetic, silhouette, fit
 FROM candidates
 ORDER BY band, id
 LIMIT %s OFFSET %s
@@ -262,7 +285,11 @@ LIMIT %s OFFSET %s
 # deploy cannot promote an unmeasured query and rollback is one env-var change.
 _BROWSE_LEGACY = """
 SELECT i.id, i.title, 0.0 AS score, i.image_refs, i.price, i.currency,
-       i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
+       i.affiliate_url, i.attributes #>> '{{perception,color,hue_name}}' AS hue_name,
+       i.attributes #> '{{perception,color,lch}}' AS lch,
+       i.attributes #>> '{{perception,attributes,aesthetic,value}}' AS aesthetic,
+       i.attributes #>> '{{perception,attributes,silhouette,value}}' AS silhouette,
+       i.attributes #>> '{{perception,attributes,fit,value}}' AS fit
 FROM items i
 WHERE {searchable}
   AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)
@@ -282,7 +309,11 @@ LIMIT %s OFFSET %s
 _BROWSE_TASTE = """
 SELECT i.id, i.title, 1 - (e.embedding <=> %s::vector) AS score, i.image_refs,
        i.price, i.currency, i.affiliate_url,
-       i.attributes #>> '{{perception,color,hue_name}}' AS hue_name, e.embedding
+       i.attributes #>> '{{perception,color,hue_name}}' AS hue_name,
+       i.attributes #> '{{perception,color,lch}}' AS lch,
+       i.attributes #>> '{{perception,attributes,aesthetic,value}}' AS aesthetic,
+       i.attributes #>> '{{perception,attributes,silhouette,value}}' AS silhouette,
+       i.attributes #>> '{{perception,attributes,fit,value}}' AS fit, e.embedding
 FROM item_embeddings e
 JOIN items i ON i.id = e.item_id
 WHERE {searchable}
@@ -323,6 +354,73 @@ _SORT_CLAUSES = {
 # distinct items. Free: reuses the embeddings already fetched, no GPU, no new dep.
 _OVERFETCH = 3  # candidate pool = k * this; windows are disjoint per page (clean paging)
 _MMR_RELEVANCE = 0.7  # weight on relevance vs (1 - redundancy); quality stays first
+
+
+def _parse_lch(value: object) -> tuple[float, float, float] | None:
+    if value is None:
+        return None
+    try:
+        values = _parse_vec(value)
+        return (values[0], values[1], values[2]) if len(values) == 3 else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _profile_score(result: SearchResult, constraints: Constraints) -> float:
+    """Deterministic, evidence-backed score for facts the catalogue actually has."""
+    # Preserve the learned-taste cosine relevance when present; profile facts
+    # refine it rather than erasing behavioural preference.
+    score = result.score
+    if constraints.preferred_aesthetics and result.aesthetic in constraints.preferred_aesthetics:
+        score += 3.0
+    if constraints.preferred_hues and result.lch is not None:
+        hue = result.lch[2]
+        score += max(
+            0.0,
+            1.0 - min(abs((hue - p + 180) % 360 - 180) for p in constraints.preferred_hues) / 90,
+        )
+    if constraints.skin_tone and result.lch is not None:
+        try:
+            depth = (int(constraints.skin_tone.removeprefix("mst")) - 1) / 9
+        except ValueError:
+            depth = None
+        if depth is not None:
+            score += 1.0 - abs(min(result.lch[1] / 60, 1.0) - (0.3 + 0.5 * depth))
+    # The same explicit silhouette/fit effects that Stylist uses for a stated
+    # body type; unknown perception facts get no invented credit.
+    body_terms = {
+        "oval": ("elongated", "vertical", "straight"),
+        "triangle": ("structured", "volume", "wide"),
+        "inverted_triangle": ("tailored", "straight", "slim"),
+        "rectangle": ("waist", "fitted", "defined"),
+        "hourglass": ("waist", "fitted", "defined"),
+    }.get(constraints.body_type or "", ())
+    structural = " ".join(x or "" for x in (result.silhouette, result.fit)).lower()
+    if body_terms and any(term in structural for term in body_terms):
+        score += 2.0
+    return score
+
+
+def _apply_explore_preferences(
+    results: list[SearchResult], preferences: ExplorePreferences | None, k: int
+) -> list[SearchResult]:
+    if preferences is None:
+        return results[:k]
+    constraints = preferences.constraints
+    # Budget is a hard user constraint: an item in a different currency cannot
+    # be compared or shown as affordable. Other stated fit/taste facts are soft
+    # ranking preferences so sparse catalogues remain useful.
+    if constraints.max_price is not None:
+        results = [
+            result
+            for result in results
+            if result.price is not None
+            and result.price <= constraints.max_price
+            and (constraints.currency is None or result.currency == constraints.currency)
+        ]
+    return sorted(
+        results, key=lambda result: (-_profile_score(result, constraints), result.item_id)
+    )[:k]
 
 
 def _parse_vec(v: object) -> list[float]:
@@ -535,6 +633,7 @@ class PostgresVectorSearchRepository:
         genders: frozenset[str] | None = None,
         taste_vector: list[float] | None = None,
         seed: str | None = None,
+        preferences: ExplorePreferences | None = None,
     ) -> list[SearchResult]:
         gender_list = sorted(genders) if genders else None
         region_clause = _REGION_FILTER if region else ""
@@ -563,13 +662,17 @@ class PostgresVectorSearchRepository:
             params.extend([k * _OVERFETCH, offset * _OVERFETCH])
             # HNSW scan: size ef_search to the deepest fetched row.
             try:
-                return self._run(
-                    sql,
-                    tuple(params),
-                    depth=(k + offset) * _OVERFETCH,
-                    mmr_k=k,
-                    iterative_scan=bool(region or gender_list or categories),
-                    surface="browse",
+                return _apply_explore_preferences(
+                    self._run(
+                        sql,
+                        tuple(params),
+                        depth=(k + offset) * _OVERFETCH,
+                        mmr_k=k * _OVERFETCH if preferences is not None else k,
+                        iterative_scan=bool(region or gender_list or categories),
+                        surface="browse",
+                    ),
+                    preferences,
+                    k,
                 )
             except QueryCanceled:
                 # _run has exited the failed connection (and therefore rolled its
@@ -608,8 +711,16 @@ class PostgresVectorSearchRepository:
             # Optional predicates appear before the ORDER BY seed placeholder.
             # Keep bindings in SQL order; putting the seed first silently bound it
             # as a region and made filtered browse fail with PostgreSQL 22P02.
-            params.extend([browse_seed, k, offset])
-            return self._run(sql, tuple(params), surface="browse")
+            params.extend(
+                [
+                    browse_seed,
+                    k * _OVERFETCH if preferences else k,
+                    offset * _OVERFETCH if preferences else offset,
+                ]
+            )
+            return _apply_explore_preferences(
+                self._run(sql, tuple(params), surface="browse"), preferences, k
+            )
 
         pivot = UUID(bytes=sha256(browse_seed.encode("utf-8")).digest()[:16])
         params = []
@@ -627,9 +738,13 @@ class PostgresVectorSearchRepository:
                 params.append(gender_list)
             if categories:
                 params.append(categories)
-            params.append(k + offset)
-        params.extend([k, offset])
-        return self._run(sql, tuple(params), surface="browse")
+            params.append((k + offset) * _OVERFETCH if preferences else k + offset)
+        params.extend(
+            [k * _OVERFETCH if preferences else k, offset * _OVERFETCH if preferences else offset]
+        )
+        return _apply_explore_preferences(
+            self._run(sql, tuple(params), surface="browse"), preferences, k
+        )
 
     def keyword_search(
         self,
@@ -764,6 +879,10 @@ class PostgresVectorSearchRepository:
                 currency=r[5],
                 buy_url=self._linker.wrap(r[6], catalog_subid(str(r[0]))),
                 color=r[7],
+                lch=_parse_lch(r[8]) if len(r) > 8 else None,
+                aesthetic=r[9] if len(r) > 9 else None,
+                silhouette=r[10] if len(r) > 10 else None,
+                fit=r[11] if len(r) > 11 else None,
             )
             for r in rows
         ]
@@ -775,7 +894,7 @@ class PostgresVectorSearchRepository:
                 timer.set_outcome("empty")
                 return results
             # MMR path appends the embedding after the eight public result columns.
-            ranked = [(res, _parse_vec(r[8])) for res, r in zip(results, rows)]
+            ranked = [(res, _parse_vec(r[-1])) for res, r in zip(results, rows)]
             return _mmr_rerank(ranked, mmr_k, _MMR_RELEVANCE)
 
 
@@ -852,6 +971,7 @@ def browse_multi_slot(
     genders: frozenset[str] | None = None,
     taste_vector: list[float] | None = None,
     seed: str | None = None,
+    preferences: ExplorePreferences | None = None,
 ) -> list[SearchResult]:
     """Explore feed: one catalogue page per slot, interleaved. With ``taste_vector``
     each slot is ranked by cosine to it (personalized); otherwise a cheap read. The
@@ -865,7 +985,7 @@ def browse_multi_slot(
         per_slot = list(
             pool.map(
                 lambda categories: repo.browse(
-                    categories, per_slot_k, region, offset, genders, taste_vector, seed
+                    categories, per_slot_k, region, offset, genders, taste_vector, seed, preferences
                 ),
                 slot_categories,
             )

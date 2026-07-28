@@ -12,11 +12,73 @@ from fastapi.testclient import TestClient
 from psycopg.errors import QueryCanceled
 from app.catalog.retrieval import (
     CatalogFacets,
+    ExplorePreferences,
     PostgresVectorSearchRepository,
     SearchResult,
+    _apply_explore_preferences,
     search_text,
 )
 from app.main import app, get_search_repo, get_text_embedder
+from app.profile.models import BudgetRange, Profile
+from app.recsys.conditioning import resolve
+
+
+def test_profile_preferences_materially_change_explore_and_never_break_budget():
+    items = [
+        SearchResult(
+            "warm-tailored",
+            "Warm tailored blazer",
+            0,
+            price=900,
+            currency="INR",
+            lch=(50, 55, 40),
+            aesthetic="vintage",
+            silhouette="tailored",
+            fit="slim",
+        ),
+        SearchResult(
+            "cool-waist",
+            "Cool waist dress",
+            0,
+            price=900,
+            currency="INR",
+            lch=(55, 25, 270),
+            aesthetic="minimalist",
+            silhouette="waist defined",
+            fit="fitted",
+        ),
+        SearchResult(
+            "over-budget",
+            "Luxury dress",
+            0,
+            price=9000,
+            currency="INR",
+            lch=(55, 25, 270),
+            aesthetic="minimalist",
+            silhouette="waist defined",
+            fit="fitted",
+        ),
+    ]
+    warm = Profile(
+        undertone="warm",
+        skin_tone="mst10",
+        body_type="inverted_triangle",
+        style_intent=["classic"],
+        budget_range=BudgetRange(max=1000, currency="INR"),
+    )
+    cool = Profile(
+        undertone="cool",
+        skin_tone="mst1",
+        body_type="rectangle",
+        style_intent=["minimalist"],
+        budget_range=BudgetRange(max=1000, currency="INR"),
+    )
+    warm_feed = _apply_explore_preferences(items, ExplorePreferences(resolve(warm, None, None)), 1)
+    cool_feed = _apply_explore_preferences(items, ExplorePreferences(resolve(cool, None, None)), 1)
+    assert warm_feed[0].item_id == "warm-tailored"
+    assert cool_feed[0].item_id == "cool-waist"
+    assert {item.item_id for item in warm_feed} != {item.item_id for item in cool_feed}
+    assert all(item.price <= 1000 and item.currency == "INR" for item in warm_feed + cool_feed)
 
 
 class FakePool:
