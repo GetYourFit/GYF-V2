@@ -102,36 +102,45 @@ def test_lower_is_better_gate():
     assert not gate.evaluate(_report(capability="fairness", metrics={"max_tone_gap": 0.2}))[0]
 
 
-def test_photo_gate_requires_calibration_abstention_and_protected_panel(monkeypatch):
+def test_photo_gate_requires_calibration_and_abstention_metrics():
     report = _report(
         capability="skin_tone",
         metrics={"max_band_gap": 0.0, "error_rate": 0.0, "ece": 0.0, "abstention_rate": 0.0},
     )
-    ok, reasons = meets_gate(report)
-    assert not ok and "protected panel attestation is unavailable" in reasons[0]
+    assert meets_gate(report)[0]
+
+    missing_calibration = _report(
+        capability="skin_tone", metrics={"max_band_gap": 0.0, "error_rate": 0.0}
+    )
+    ok, reasons = meets_gate(missing_calibration)
+    assert not ok and "missing gate metric" in reasons[0]
+    assert "body_estimator" in GATES
+
+
+def test_photo_gate_promotion_depends_only_on_numeric_metrics_not_attestation(monkeypatch):
+    """De-gating regression (Slice A1): no env var or evidence field can veto or bypass the
+    numeric fairness gate; only max_band_gap/error_rate/ece/abstention_rate decide it."""
+    monkeypatch.delenv("GYF_PHOTO_FAIRNESS_PANEL_DIGEST", raising=False)
+    monkeypatch.delenv("GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID", raising=False)
+
+    passing_no_evidence = _report(
+        capability="skin_tone",
+        metrics={"max_band_gap": 0.5, "error_rate": 0.1, "ece": 0.05, "abstention_rate": 0.1},
+        evidence={},
+    )
+    assert meets_gate(passing_no_evidence)[0]
+
+    failing_wide_gap = _report(
+        capability="body_estimator",
+        metrics={"max_band_gap": 3.2, "error_rate": 0.1, "ece": 0.05, "abstention_rate": 0.1},
+        evidence={},
+    )
+    ok, reasons = meets_gate(failing_wide_gap)
+    assert not ok and "fails gate" in reasons[0]
 
     monkeypatch.setenv("GYF_PHOTO_FAIRNESS_PANEL_DIGEST", "protected-digest")
     monkeypatch.setenv("GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID", "captain-attestation")
-    locally_claimed = EvalReport(
-        **{
-            **report.__dict__,
-            "evidence": {"promotion_eligible_panel": True, "panel_hash": "local-digest"},
-        }
-    )
-    assert not meets_gate(locally_claimed)[0]
-
-    approved = EvalReport(
-        **{
-            **report.__dict__,
-            "evidence": {
-                "promotion_eligible_panel": True,
-                "panel_hash": "protected-digest",
-                "attestation_id": "captain-attestation",
-            },
-        }
-    )
-    assert meets_gate(approved)[0]
-    assert "body_estimator" in GATES
+    assert not meets_gate(failing_wide_gap)[0]
 
 
 # --- regression check -------------------------------------------------------
