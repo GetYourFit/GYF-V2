@@ -2,6 +2,7 @@ import {
   createClient,
   type AuthChangeEvent,
   type AuthResponse,
+  type AuthTokenResponse,
   type Session,
   type SupabaseClient,
   type UserResponse,
@@ -22,7 +23,12 @@ export function getSupabaseClient(storage: AuthStorage = secureStorage): Supabas
   client = createClient(url, anonKey, {
     auth: {
       autoRefreshToken: true,
+      // PKCE (not implicit) so recovery links carry an opaque `?code=` query param
+      // instead of tokens in the URL fragment. detectSessionInUrl stays false on
+      // both native and web: RN has no window.location to parse, so the code is
+      // pulled from expo-router's parsed params instead (see resolveRecoverySession).
       detectSessionInUrl: false,
+      flowType: "pkce",
       persistSession: true,
       storage,
       storageKey: AUTH_STORAGE_KEY,
@@ -78,6 +84,45 @@ export async function sendPasswordRecovery(email: string, redirectTo?: string): 
     redirectTo,
   });
   if (error) throw error;
+}
+
+export type RecoveryLinkParams = {
+  code?: string | string[] | null;
+  error?: string | string[] | null;
+  error_description?: string | string[] | null;
+};
+
+function firstParam(value?: string | string[] | null): string | null {
+  return (Array.isArray(value) ? value[0] : value) ?? null;
+}
+
+/**
+ * Resolves the recovery session a `/reset-password` deep link should land with.
+ * The link carries a PKCE `?code=` (exchanged for a session here) or an
+ * `?error=` from Supabase when the link was already expired/invalid; either way
+ * this never throws, so an honest "invalid or expired" screen is always possible
+ * instead of a blank one.
+ */
+export async function resolveRecoverySession(
+  params: RecoveryLinkParams,
+  deps: {
+    exchangeCodeForSession: (code: string) => Promise<AuthTokenResponse>;
+    getSession: () => Promise<Session | null>;
+  } = {
+    exchangeCodeForSession: (code) => getSupabaseClient().auth.exchangeCodeForSession(code),
+    getSession,
+  },
+): Promise<Session | null> {
+  if (firstParam(params.error) ?? firstParam(params.error_description)) return null;
+  const code = firstParam(params.code);
+  if (!code) return deps.getSession();
+  try {
+    const { data, error } = await deps.exchangeCodeForSession(code);
+    if (error) return null;
+    return data.session;
+  } catch {
+    return null;
+  }
 }
 
 export async function updatePassword(password: string): Promise<UserResponse["data"]> {

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
-import { useRouter } from "expo-router";
+import * as Linking from "expo-linking";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { getSession, sendPasswordRecovery, updatePassword } from "@/lib/auth";
+import { resolveRecoverySession, sendPasswordRecovery, updatePassword } from "@/lib/auth";
 import { normalizeEmail, validateEmail, validatePassword } from "@/lib/auth-validation";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { GyfText } from "@/components/ui/gyf-text";
@@ -70,7 +71,7 @@ export function PasswordRecoveryForm() {
     setError(null);
     setBusy(true);
     try {
-      await sendPasswordRecovery(normalizeEmail(email));
+      await sendPasswordRecovery(normalizeEmail(email), Linking.createURL("reset-password"));
       setSent(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not send the reset link.");
@@ -116,6 +117,11 @@ export function PasswordRecoveryForm() {
 export function ResetPasswordForm() {
   const palette = useThemeColors();
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    code?: string;
+    error?: string;
+    error_description?: string;
+  }>();
   const [password, setPassword] = useState("");
   const [hasSession, setHasSession] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
@@ -123,21 +129,19 @@ export function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    try {
-      void getSession()
-        .then((session) => {
-          if (active) setHasSession(Boolean(session));
-        })
-        .catch(() => {
-          if (active) setHasSession(false);
-        });
-    } catch {
-      setHasSession(false);
-    }
+    void resolveRecoverySession(params)
+      .then((session) => {
+        if (active) setHasSession(Boolean(session));
+      })
+      .catch(() => {
+        if (active) setHasSession(false);
+      });
     return () => {
       active = false;
     };
-  }, []);
+    // Depend on the individual params, not `params` itself: expo-router returns
+    // a fresh object every render, which would re-run the exchange in a loop.
+  }, [params.code, params.error, params.error_description]);
   async function submit() {
     const validationError = validatePassword(password);
     if (validationError) {
