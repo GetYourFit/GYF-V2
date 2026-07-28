@@ -145,7 +145,9 @@ def database_ready(database_url: str) -> bool:
 
         with psycopg.connect(database_url, connect_timeout=2) as conn:
             with conn.cursor() as cur:
-                cur.execute("SET statement_timeout = 1000")  # ms — never stall a probe
+                # Transaction-scoped so Supavisor transaction pooling cannot
+                # hand a later query this probe's timeout on a reused backend.
+                cur.execute("SET LOCAL statement_timeout = 1000")  # ms — never stall a probe
                 cur.execute("SELECT 1")
                 cur.fetchone()
         return True

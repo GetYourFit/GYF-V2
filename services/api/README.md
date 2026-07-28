@@ -41,8 +41,14 @@ uv run uvicorn app.main:app --reload --port 8000
 ## Configuration
 
 12-factor via the `GYF_` env prefix (see `app/config.py` and the repo `.env.example`).
-Key vars: `GYF_ENV`, `GYF_DATABASE_URL`, `GYF_EVENT_SINK`, `GYF_SUPABASE_JWT_SECRET`,
-`GYF_SENTRY_DSN`, `GYF_TRACE_SAMPLE_RATE`. `GYF_OTEL_EXPORTER_OTLP_ENDPOINT` is
+Key vars: `GYF_ENV`, `GYF_DATABASE_URL`, `GYF_DB_POOL_MAX_SIZE`, `GYF_EVENT_SINK`,
+`GYF_SUPABASE_JWT_SECRET`, `GYF_SENTRY_DSN`, `GYF_TRACE_SAMPLE_RATE`.
+Production sets `GYF_DATABASE_URL` to Supabase's Supavisor **transaction-pooler** URL
+(port `6543`) and defaults the shared client pool to 10 connections. psycopg server-side
+prepared statements are disabled because transaction pooling may use a different backend
+for each transaction. Set `GYF_DATABASE_URL` to a direct/session-pooler URL and lower
+`GYF_DB_POOL_MAX_SIZE` to use the direct fallback; migrations always use the direct/session
+`GYF_MIGRATION_DATABASE_URL` (port `5432`). `GYF_OTEL_EXPORTER_OTLP_ENDPOINT` is
 collector-gated and is not set by the production blueprint.
 
 ## Tests

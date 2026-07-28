@@ -63,13 +63,12 @@ class Settings(BaseSettings):
     account_deletion_grace_days: int = 30
 
     # Max connections in the process-wide Postgres pool every repository shares.
-    # Sync routes run on Starlette's threadpool (default 40 concurrent), so under
-    # load more coroutines can want a connection than this caps — tune up (DB tier
-    # permitting) as beta traffic grows. Env: GYF_DB_POOL_MAX_SIZE.
-    # Supabase's shared session pooler defaults to 15 clients. Keep one API
-    # instance from consuming the whole project budget; transaction mode can
-    # serve the rest without holding a backend session per idle client.
-    db_pool_max_size: int = 3
+    # Runtime defaults to Supabase's transaction pooler (:6543), so these are
+    # client connections rather than pinned database backends. Ten lets the API
+    # use the free pooler concurrency without consuming every available client
+    # slot. Point GYF_DATABASE_URL at a direct/session endpoint to fall back;
+    # lower this value if that endpoint has a tighter connection budget.
+    db_pool_max_size: int = Field(10, ge=1, le=40)
 
     # Candidate cold-browse index path. Default-off until the deployed latency,
     # query-plan, and variety gates pass; flipping this env var is also the

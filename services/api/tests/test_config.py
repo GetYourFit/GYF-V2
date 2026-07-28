@@ -5,6 +5,27 @@ import pytest
 from app.config import Settings
 
 
+def test_db_pool_default_supports_transaction_pooler_concurrency():
+    settings = Settings()
+
+    assert settings.db_pool_max_size == 10
+
+
+def test_database_target_and_pool_size_are_environment_configurable(monkeypatch):
+    monkeypatch.setenv("GYF_DATABASE_URL", "postgresql://pooler.example:6543/postgres")
+    monkeypatch.setenv("GYF_DB_POOL_MAX_SIZE", "12")
+
+    settings = Settings()
+
+    assert settings.database_url == "postgresql://pooler.example:6543/postgres"
+    assert settings.db_pool_max_size == 12
+
+
+def test_db_pool_size_rejects_invalid_values():
+    with pytest.raises(ValueError, match="db_pool_max_size"):
+        Settings(db_pool_max_size=0)
+
+
 def test_cors_anchor_blocks_empty_origins_in_production():
     """Production with no allowed origins must refuse to construct (L-3)."""
     with pytest.raises(ValueError, match="GYF_ALLOWED_ORIGINS"):
