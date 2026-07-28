@@ -10,7 +10,7 @@ Do not implement without confirmation on phase boundaries below — each phase e
 
 ## Phase 0 — dependencies, tokens, fonts, responsive foundation
 
-1. Install the design doc's "New dependencies" list: `expo-blur`, `expo-linear-gradient`, `react-native-svg`, `expo-font`, `@expo-google-fonts/fraunces`, `@expo-google-fonts/bricolage-grotesque`, `expo-haptics`. One commit, `bun install`, confirm `expo start --web` still boots before anything else.
+1. Install the design doc's "New dependencies" list: `expo-blur`, `expo-linear-gradient`, `react-native-svg`, `expo-font`, `@expo-google-fonts/fraunces`, `expo-haptics`. Add `@expo-google-fonts/bricolage-grotesque` only if a concrete Expo caller lands with it. One commit, `bun install`, confirm `expo start --web` still boots before anything else.
 2. Load fonts in root `apps/expo/src/app/_layout.tsx` via `useFonts` + a splash-screen hold (standard `expo-splash-screen` pattern) — app must not render text in the wrong face on cold start, so this gates first paint.
 3. Extend `theme/tokens.ts`:
    - `typography`: repoint `display`/`title` to Fraunces, `label`/`caption`/button text to Bricolage Grotesque, leave `body`/`bodySmall` on system sans, keep `mono` as-is (per design doc's Typography section).
