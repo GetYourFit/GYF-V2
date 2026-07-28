@@ -62,9 +62,11 @@ Repository CD deploys only the Expo web export:
 2. GitHub environment `EXPO_TOKEN` variables: `EXPO_PUBLIC_API_URL` (Virginia API) and
    `EXPO_PUBLIC_SUPABASE_URL`.
 3. Main CI must pass; `.github/workflows/cd.yml` then runs `npx expo export --platform web --clear`
-   and `eas deploy --prod --dev-domain=get-your-fit`, verifies that the production alias serves the
-   expected immutable deployment ID with the required HTML security headers, and uploads the
-   rollback record artifact bound to that verified deployment.
+   and `eas deploy --prod --dev-domain=get-your-fit`, verifies the deploy's own immutable
+   per-deployment URL serves the expected entry bundle with the required HTML security headers and
+   that eas-cli confirmed promotion to production (see
+   [`../apps/expo/README.md`](../apps/expo/README.md#production)), and uploads the rollback record
+   artifact bound to that verified deployment.
 
 A commercial Render Static (or fallback) cutover is future gated work. Do not add Vercel Hobby,
 Vercel Pro, Singapore hosting or another paid path without the active contract's explicit measured

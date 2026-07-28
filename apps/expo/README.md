@@ -60,10 +60,13 @@ active containment boundary, residual risk, and the conditions for any future re
 The Expo Router configuration emits the security headers required on every served HTML response:
 `Content-Security-Policy: frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`,
 `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and
-`Cross-Origin-Opener-Policy: same-origin`. The CD job rejects a deployment unless the production
-alias serves those headers and its entry bundle matches the just-exported artifact. EAS deployment
-IDs are immutable; retain the successful deployment ID, commit and entry hash as the rollback
-record, then restore production only by reassigning the alias to that verified ID.
+`Cross-Origin-Opener-Policy: same-origin`. The CD job rejects a deployment unless its immutable
+per-deployment URL (`https://get-your-fit--<id>.expo.app`, parsed from the `eas deploy` log) serves
+those headers and its entry bundle matches the just-exported artifact, and eas-cli's own log
+confirms promotion to production; the production alias is edge-cached for up to an hour, so
+`scripts/verify-deploy.mjs` only probes it best-effort for an informational note and never gates on
+it. EAS deployment IDs are immutable; retain the successful deployment ID, commit and entry hash as
+the rollback record, then restore production only by reassigning the alias to that verified ID.
 
 The deploy job uses the GitHub Actions environment named `EXPO_TOKEN` and reads
 `EXPO_TOKEN` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from its secrets, plus
