@@ -26,6 +26,7 @@ import math
 from dataclasses import dataclass
 from typing import Protocol
 
+from ..db import psycopg_pool_kwargs
 from ..events import InteractionAction
 from .signals import is_positive, reward
 
@@ -168,7 +169,7 @@ class PostgresTasteRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def engagements(self, user_id: str, limit: int) -> list[EngagedItem]:

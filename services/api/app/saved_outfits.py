@@ -17,6 +17,7 @@ from typing import Protocol
 from pydantic import BaseModel
 
 from .catalog.directory import ItemDirectory
+from .db import psycopg_pool_kwargs
 
 _SAVE = """
 INSERT INTO saved_outfits
@@ -112,7 +113,7 @@ class PostgresSavedOutfitRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def save(self, user_id: str, req: SaveOutfitRequest) -> str:

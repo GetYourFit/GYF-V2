@@ -13,6 +13,7 @@ import json
 from threading import Lock
 from typing import Callable, Protocol
 
+from .db import psycopg_pool_kwargs
 from .models import PROFILE_FIELDS, BudgetRange, Profile, ProfileInput, profile_from_manual
 from .photo import BodyResult, SkinToneResult, profile_from_photo
 
@@ -104,7 +105,7 @@ class PostgresProfileRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def upsert(self, user_id: str, profile: Profile) -> None:

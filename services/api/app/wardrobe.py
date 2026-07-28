@@ -16,6 +16,7 @@ from gyf_contracts.taxonomy import classify
 from pydantic import BaseModel, model_validator
 
 from .catalog.directory import ItemDirectory
+from .db import psycopg_pool_kwargs
 
 _ADD = """
 INSERT INTO wardrobe_items (id, user_id, item_id, title, category, slot)
@@ -104,7 +105,7 @@ class PostgresWardrobeRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def add(self, user_id: str, record: WardrobeRecord) -> None:

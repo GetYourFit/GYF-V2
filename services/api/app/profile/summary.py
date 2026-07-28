@@ -14,6 +14,8 @@ from typing import Protocol
 
 from pydantic import BaseModel
 
+from ..db import psycopg_pool_kwargs
+
 _COUNTS = """
 SELECT
     (SELECT count(*) FROM outfits        WHERE user_id = %(uid)s)                    AS outfits_made,
@@ -89,7 +91,7 @@ class PostgresSummaryRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy: only when used
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
 
     def stats(self, user_id: str) -> SummaryStats:

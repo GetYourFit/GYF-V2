@@ -25,6 +25,7 @@ from .catalog.directory import ItemDirectory
 from .catalog.retrieval import TextEmbedder, VectorSearchRepository
 from .collections import CollectionRepository
 from .config import settings
+from .db import psycopg_pool_kwargs
 from .observability import database_ready
 from .profile.account import AccountRepository
 from .profile.photo import BodyAdapter, SkinToneAdapter
@@ -62,7 +63,7 @@ def shared_pool(dsn: str):
         # psycopg uses server-side prepared statements only after this threshold.
         # Disable them: transaction poolers may route consecutive transactions to
         # different backends, where a named prepared statement does not exist.
-        kwargs={"prepare_threshold": None},
+        **psycopg_pool_kwargs(),
         open=True,
     )
 

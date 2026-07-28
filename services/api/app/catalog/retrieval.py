@@ -24,6 +24,7 @@ from psycopg.errors import QueryCanceled
 
 from ..affiliate import AffiliateLinker, NullAffiliateLinker, catalog_subid
 from ..config import settings
+from ..db import psycopg_pool_kwargs
 from ..media import image_url_from_refs
 from ..metrics import stage_timer
 
@@ -371,7 +372,7 @@ class PostgresVectorSearchRepository:
         if pool is None:
             from psycopg_pool import ConnectionPool  # lazy
 
-            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True)
+            pool = ConnectionPool(dsn, min_size=0, max_size=4, open=True, **psycopg_pool_kwargs())
         self._pool = pool
         self._indexed_browse = indexed_browse
         self._linker = linker or NullAffiliateLinker()
