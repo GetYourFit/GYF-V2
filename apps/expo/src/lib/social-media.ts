@@ -1,7 +1,13 @@
 import { isRemoteImage } from "@/components/ui/catalog-image-url";
 
 export type SocialMediaOutcome =
-  "success" | "requested" | "cancelled" | "invalid" | "unavailable" | "denied" | "failed";
+  | "success"
+  | "requested"
+  | "cancelled"
+  | "invalid"
+  | "unavailable"
+  | "denied"
+  | "failed";
 
 export type SocialMediaResult = {
   outcome: SocialMediaOutcome;
