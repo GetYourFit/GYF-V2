@@ -54,7 +54,9 @@ async function saveImageToPhotos(url: string): Promise<void> {
 
 async function downloadImageOnWeb(url: string): Promise<void> {
   const { bytes, contentType } = await downloadValidatedPostImage(url);
-  const blob = new Blob([bytes], { type: contentType });
+  const blobBytes = new Uint8Array(bytes.byteLength);
+  blobBytes.set(bytes);
+  const blob = new Blob([blobBytes], { type: contentType });
   const objectUrl = URL.createObjectURL(blob);
   try {
     const anchor = document.createElement("a");
