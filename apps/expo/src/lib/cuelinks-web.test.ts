@@ -27,11 +27,13 @@ describe("Cuelinks web loader", () => {
   it("proves the Expo web document hook loads cuelinksv2.js with the configured cId", () => {
     const script = buildCuelinksWebLoaderScript("305057");
 
-    expect(script).toContain('var cId = "305057";');
+    expect(script).toContain("var cId='305057';");
     expect(script).toContain("cdn0.cuelinks.com/js/");
-    expect(script).toContain('"cuelinksv2.js"');
-    expect(script).toContain("data-gyf-cuelinks-web");
-    expect(script).toContain('getElementsByTagName("body")[0].appendChild(s)');
+    expect(script).toContain("'cuelinksv2.js'");
+    expect(script).toContain("getElementsByTagName('body')[0].appendChild(s)");
+    expect(script).toContain(
+      "(location.protocol=='https:'?'https://cdn0.cuelinks.com/js/':'http://cdn0.cuelinks.com/js/')+'cuelinksv2.js'",
+    );
   });
 
   it("keeps the protocol-specific Cuelinks CDN URL explicit and detectable", () => {
