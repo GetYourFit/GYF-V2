@@ -1,0 +1,28 @@
+{
+  "fixture_id": "encoder-foundation-v1",
+  "model_version": "google-siglip2-base-v1",
+  "dimension": 768,
+  "normalization_tolerance": 0.001,
+  "parity_top_k": 10,
+  "eligible_catalogue_ids": ["item-a", "item-b", "item-c"],
+  "queries": [
+    {
+      "id": "q-red-dress",
+      "text": "red summer dress",
+      "relevant_ids": ["item-a"]
+    },
+    {
+      "id": "q-linen-shirt",
+      "text": "linen shirt",
+      "relevant_ids": ["item-b"]
+    }
+  ],
+  "gates": {
+    "india_uncached_p50_seconds": 1.5,
+    "india_uncached_p95_seconds": 3.0,
+    "india_cached_p50_seconds": 0.4,
+    "india_cached_p95_seconds": 0.9,
+    "max_top_k_regression": 0.05
+  },
+  "note": "Fixture contract only; no weights, private photos, production catalogue, or promotion claim. Replace judgments with an independently frozen corpus before shadow."
+}

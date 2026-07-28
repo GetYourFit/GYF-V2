@@ -105,6 +105,10 @@ def run_backfill(
     idle waiting on the other. Items with no loadable image are skipped, never
     fatal. Behaviour matches one-at-a-time processing; only throughput differs.
     """
+    if batch_size < 1:
+        raise ValueError("batch_size must be positive")
+    if io_workers < 1:
+        raise ValueError("io_workers must be positive")
     result = BackfillResult()
     # Counted before any work, so an empty queue is provably an empty queue rather than an
     # embedder that silently produced nothing.

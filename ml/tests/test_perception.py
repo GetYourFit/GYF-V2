@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import numpy as np
+import pytest
 from PIL import Image
 
 from perception.attributes import (
@@ -216,6 +217,14 @@ class InMemoryBatchBackfillStore(InMemoryBackfillStore):
         self.batch_calls.append(len(results))
         for item_id, result in results:
             self.saved[item_id] = result
+
+
+def test_backfill_rejects_unbounded_batch_parameters():
+    store = InMemoryBackfillStore([])
+    with pytest.raises(ValueError, match="batch_size"):
+        run_backfill(store, Perceptor(FakeEncoder()), lambda r: _solid_image(), "v1", batch_size=0)
+    with pytest.raises(ValueError, match="io_workers"):
+        run_backfill(store, Perceptor(FakeEncoder()), lambda r: _solid_image(), "v1", io_workers=0)
 
 
 def test_backfill_prefers_save_batch_over_per_item_save():

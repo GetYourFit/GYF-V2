@@ -61,6 +61,46 @@ class BrokenPool:
         raise RuntimeError("database is down")
 
 
+class FakePool:
+    def __init__(self) -> None:
+        self.rows: dict[tuple[str, str], list[float]] = {}
+
+    def connection(self):
+        return _FakeConnection(self.rows)
+
+
+class _FakeConnection:
+    def __init__(self, rows: dict[tuple[str, str], list[float]]) -> None:
+        self._rows = rows
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        return False
+
+    def execute(self, query: str, params: tuple[object, ...]):
+        if query.startswith("UPDATE query_embeddings SET hits = hits + 1"):
+            key = (params[0], params[1])
+            row = self._rows.get(key)
+            return _FakeResult((row,) if row is not None else None)
+        if query.startswith("INSERT INTO query_embeddings"):
+            normalized_query, model_id, embedding = params
+            self._rows[(normalized_query, model_id)] = [float(x) for x in embedding]
+            return _FakeResult(None)
+        if query.startswith("DELETE FROM query_embeddings"):
+            return _FakeResult(None)
+        raise AssertionError(f"unexpected query: {query}")
+
+
+class _FakeResult:
+    def __init__(self, row):
+        self._row = row
+
+    def fetchone(self):
+        return self._row
+
+
 def test_normalize_query_folds_case_and_whitespace():
     assert normalize_query("  Red   Floral  DRESS ") == "red floral dress"
 
@@ -100,6 +140,22 @@ def test_process_hot_query_skips_the_second_postgres_read(monkeypatch):
     assert embedder.embed_query("red dress") == pytest.approx([0.1, 0.2, 0.3])
     assert reads == ["red dress"]
     assert encoder.calls == ["  Red   Dress "]
+
+
+def test_model_id_change_invalidates_cached_query_embedding():
+    pool = FakePool()
+    encoder = FakeEncoder()
+    old_model = CachedTextEmbedder(encoder, pool, "old-model")
+    new_model = CachedTextEmbedder(encoder, pool, "new-model")
+
+    first = old_model.embed_query("  Red   Dress ")
+    second = old_model.embed_query("red dress")
+    third = new_model.embed_query("red dress")
+
+    assert first == pytest.approx([0.1, 0.2, 0.3])
+    assert second == pytest.approx(first)
+    assert third == pytest.approx(first)
+    assert encoder.calls == ["  Red   Dress ", "red dress"]
 
 
 def test_siglip_adapter_delegates_encoder_timings():

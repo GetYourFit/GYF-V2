@@ -15,7 +15,7 @@ from PIL import Image
 
 from perception.model import EMBEDDING_DIM
 from common.remote_client import image_to_b64_png
-from perception.remote import RemoteEncoder, encoder_for
+from perception.remote import RemoteEncoder, batch_encoder_for, encoder_for
 
 
 class _FakeClient:
@@ -40,6 +40,45 @@ def _encoder_with(rows: list[list[float]]) -> tuple[RemoteEncoder, _FakeClient]:
 def test_requires_url() -> None:
     with pytest.raises(ValueError):
         RemoteEncoder("m", "")
+
+
+def test_encoder_for_explicit_local_cpu(monkeypatch) -> None:
+    from common.config import settings
+    import perception.model as model
+
+    calls: list[tuple[str, str]] = []
+
+    class FakeLocal:
+        def __init__(self, model_id: str, *, device: str) -> None:
+            calls.append((model_id, device))
+
+    monkeypatch.setattr(model, "SiglipEncoder", FakeLocal)
+    monkeypatch.setattr(settings, "encoder_remote_kind", "local_cpu")
+    monkeypatch.setattr(settings, "encoder_remote_url", "")
+
+    encoder_for("hf-hub:timm/ViT-B-16-SigLIP2")
+
+    assert calls == [("hf-hub:timm/ViT-B-16-SigLIP2", "cpu")]
+
+
+def test_batch_encoder_for_explicit_local_cpu_ignores_stale_remote_url(monkeypatch) -> None:
+    from common.config import settings
+    import perception.model as model
+
+    calls: list[tuple[str, str]] = []
+
+    class FakeLocal:
+        def __init__(self, model_id: str, *, device: str) -> None:
+            calls.append((model_id, device))
+
+    monkeypatch.setattr(model, "SiglipEncoder", FakeLocal)
+    monkeypatch.setattr(settings, "encoder_remote_kind", "local_cpu")
+    monkeypatch.setattr(settings, "encoder_remote_url", "https://stale.example")
+
+    encoder = batch_encoder_for("hf-hub:timm/ViT-B-16-SigLIP2")
+
+    assert type(encoder).__name__ == "FakeLocal"
+    assert calls == [("hf-hub:timm/ViT-B-16-SigLIP2", "cpu")]
 
 
 def test_image_to_b64_png_roundtrips() -> None:
@@ -186,7 +225,9 @@ def test_fallback_stays_remote_while_the_lane_works() -> None:
     from perception.remote import FallbackEncoder
 
     live = _LiveEncoder()
-    enc = FallbackEncoder(live, lambda: (_ for _ in ()).throw(AssertionError("must not build local")))
+    enc = FallbackEncoder(
+        live, lambda: (_ for _ in ()).throw(AssertionError("must not build local"))
+    )
 
     enc.encode_images([Image.new("RGB", (8, 8))])
     enc.encode_images([Image.new("RGB", (8, 8))])
