@@ -151,7 +151,48 @@ If future measured SLO failure requires another topology experiment, F10 must pr
 non-Singapore comparison with secret parity, cost proof and rollback before any provisioning.
 Any future auth move must update Supabase `site_url`/allowlists and JWKS configuration atomically.
 
-## 4. Close the catalogue/search incident (F2.5)
+## 4. Local SigLIP2 encoder foundation (POC only)
+
+This bounded foundation is reversible and does not promote a model, alter the registry binding,
+reindex production, deploy a provider, or commit weights. The incumbent remains the shared
+`google-siglip2-base-v1` image/text space at 768 dimensions. `GYF_ENCODER_REMOTE_KIND=local_cpu`
+selects the lazy PyTorch `SiglipEncoder(..., device="cpu")` on always-on Render-compatible
+compute; it is explicit opt-in and leaves the existing remote and local defaults unchanged.
+ONNX Runtime/OpenVINO exports are future optimisations only: they may enter shadow after exact
+preprocessing, finite/unit-vector, cosine/top-k, retrieval-truth, and zero-shot parity tests pass.
+
+Catalogue images remain offline/resumable work in bounded batches. A batch must validate its size,
+load images with per-item failure isolation, write only complete validated rows stamped with the
+registry-resolved version, and resume by model version. Online text uses the existing durable
+(normalized query, model ID) cache, 512-row hot cache, lexical fallback and
+`X-GYF-Search-Mode`; no path may depend on a sleeping remote service during Indian daytime.
+
+The frozen no-weight harness is `ml/eval/encoder_foundation.py` with fixture contract
+`ml/tests/fixtures/encoder_foundation.json`. It checks dimension/norm, cosine/top-k parity,
+eligible-catalogue truth, and records cold/warm latency, throughput, batch size and RSS when run
+against a supplied encoder. Fixture evidence is not SOTA or promotion evidence.
+
+### Required gates before any implementation is promoted
+
+1. Freeze an immutable catalogue/query/relevance manifest with rights, audience, region, price and
+   availability truth; fixture tests alone cannot select a model.
+2. Compare local PyTorch CPU with every runtime export using identical preprocessing and hashes;
+   require no retrieval, fairness, calibration, abstention or truth regression and record p50/p95/
+   p99, cold load, RSS and batch throughput.
+3. Run a no-response shadow, then a small canary with the incumbent index and lexical fallback
+   available. Do not change production `models.registry.json` or reindex the live vector table in
+   this POC.
+4. For a future reindex, build a versioned shadow `vector(768)` index, validate counts/dimensions/
+   joins, switch model binding and cache key atomically, retain the old index, and rehearse binding
+   rollback before deletion. A different dimension requires a separately approved migration.
+5. Close the India-vantage gate only with sustained all-HTTP-200 warm/cold cached/uncached samples,
+   production `EXPLAIN (ANALYZE, BUFFERS)`, and the fixed §2 SLOs. Any SLO/error/truth/fairness/
+   consent/cost regression rolls back to the previous model/index and honest lexical fallback.
+
+No free hosted GPU or trial credit is a production SLA. A paid serverless fallback remains a
+separate captain-approved spend/credential decision and is not part of this foundation.
+
+## 5. Close the catalogue/search incident (F2.5)
 
 The cache and HTTP encoder port already shipped; immediate repetition proved the cache works. The
 remaining work is evidence, not another speculative cache:

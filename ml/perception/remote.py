@@ -460,12 +460,20 @@ def encoder_for(model_id: str) -> Encoder:
     the local :class:`~perception.model.SiglipEncoder`.
 
     ``GYF_ENCODER_REMOTE_KIND`` picks the wire: ``gradio`` (HF ZeroGPU Space, the
-    image-embed batch lane) or ``http`` (the JSON/Modal lane that serves search).
+    image-embed batch lane), ``http`` (the JSON/Modal lane that serves search), or
+    ``local_cpu`` (the always-on Render-compatible correctness baseline).
     """
     from common.config import settings
 
     from .model import SiglipEncoder
 
+    # Explicit local_cpu is intentionally independent of any remote URL. It is the
+    # measured, always-on lane for Render-compatible compute and keeps the lazy
+    # PyTorch implementation as the correctness baseline until a runtime export
+    # proves parity. It is opt-in so this foundation does not change production
+    # binding or deployment configuration by itself.
+    if settings.encoder_remote_kind == "local_cpu":
+        return SiglipEncoder(model_id, device="cpu")
     if settings.encoder_remote_url:
         if settings.encoder_remote_kind == "http":
             return HttpEncoder(

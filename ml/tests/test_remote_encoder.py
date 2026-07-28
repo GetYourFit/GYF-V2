@@ -42,6 +42,25 @@ def test_requires_url() -> None:
         RemoteEncoder("m", "")
 
 
+def test_encoder_for_explicit_local_cpu(monkeypatch) -> None:
+    from common.config import settings
+    import perception.model as model
+
+    calls: list[tuple[str, str]] = []
+
+    class FakeLocal:
+        def __init__(self, model_id: str, *, device: str) -> None:
+            calls.append((model_id, device))
+
+    monkeypatch.setattr(model, "SiglipEncoder", FakeLocal)
+    monkeypatch.setattr(settings, "encoder_remote_kind", "local_cpu")
+    monkeypatch.setattr(settings, "encoder_remote_url", "")
+
+    encoder_for("hf-hub:timm/ViT-B-16-SigLIP2")
+
+    assert calls == [("hf-hub:timm/ViT-B-16-SigLIP2", "cpu")]
+
+
 def test_image_to_b64_png_roundtrips() -> None:
     img = Image.new("RGB", (4, 4), (10, 20, 30))
     decoded = Image.open(__import__("io").BytesIO(base64.b64decode(image_to_b64_png(img))))
