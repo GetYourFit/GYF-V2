@@ -17,15 +17,11 @@ const vendorLoader = `var cId =  "${cid}";
   s.src = (document.location.protocol == "https:" ? "https://cdn0.cuelinks.com/js/" : "http://cdn0.cuelinks.com/js/")  + "cuelinksv2.js";
   document.getElementsByTagName("body")[0].appendChild(s);
 }());`;
-const loader = `if (!window.__gyfCuelinksWebLoaderInstalled) {
-  window.__gyfCuelinksWebLoaderInstalled = true;
-  ${vendorLoader.split("\n").join("\n  ")}
-}`;
 const executableLoaderPattern =
   /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
 const executableSdkReferencePattern =
   /<script\b(?=[^>]*\bsrc\s*=\s*["'][^"']*cuelinksv2\.js(?:\?[^"']*)?["'])(?![^>]*\btype\s*=\s*["']application\/(?:json|ld\+json)["'])[^>]*>\s*<\/script>/gi;
-const exactLoader = `<script id="gyf-cuelinks-web-loader" type="text/javascript" data-gyf-cuelinks-web="true" data-cuelinks-cid="${cid}">${loader}</script>`;
+const exactLoader = `<script id="gyf-cuelinks-web-loader" type="text/javascript" data-gyf-cuelinks-web="true" data-cuelinks-cid="${cid}">${vendorLoader}</script>`;
 
 function countExecutableInlineLoaders(html) {
   let count = 0;

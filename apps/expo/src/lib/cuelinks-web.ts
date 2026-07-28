@@ -1,7 +1,6 @@
 const DEFAULT_CUELINKS_WEB_CID = "305057";
 const CUELINKS_CDN_BASE = "cdn0.cuelinks.com/js/";
 const CUELINKS_SCRIPT_NAME = "cuelinksv2.js";
-const CUELINKS_RUNTIME_GUARD = "__gyfCuelinksWebLoaderInstalled";
 
 type CuelinksWebConfigValues = {
   EXPO_PUBLIC_CUELINKS_CID?: string;
@@ -35,7 +34,7 @@ export function buildCuelinksWebLoaderScript(cid: string): string {
     throw new Error("Cuelinks cId must contain only digits");
   }
 
-  const vendorLoader = [
+  return [
     `var cId =  "${cid}";`,
     ``,
     `(function(d, t) {`,
@@ -45,16 +44,6 @@ export function buildCuelinksWebLoaderScript(cid: string): string {
     `  s.src = (document.location.protocol == "https:" ? "https://${CUELINKS_CDN_BASE}" : "http://${CUELINKS_CDN_BASE}")  + "${CUELINKS_SCRIPT_NAME}";`,
     `  document.getElementsByTagName("body")[0].appendChild(s);`,
     `}());`,
-  ].join("\n");
-
-  return [
-    `if (!window.${CUELINKS_RUNTIME_GUARD}) {`,
-    `  window.${CUELINKS_RUNTIME_GUARD} = true;`,
-    vendorLoader
-      .split("\n")
-      .map((line) => `  ${line}`)
-      .join("\n"),
-    `}`,
   ].join("\n");
 }
 
