@@ -57,6 +57,14 @@ active containment boundary, residual risk, and the conditions for any future re
 ## Production
 
 `.github/workflows/cd.yml` deploys Expo web to EAS Hosting after the `main` CI workflow succeeds.
+The Expo Router configuration emits the security headers required on every served HTML response:
+`Content-Security-Policy: frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`,
+`X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and
+`Cross-Origin-Opener-Policy: same-origin`. The CD job rejects a deployment unless the production
+alias serves those headers and its entry bundle matches the just-exported artifact. EAS deployment
+IDs are immutable; retain the successful deployment ID, commit and entry hash as the rollback
+record, then restore production only by reassigning the alias to that verified ID.
+
 The deploy job uses the GitHub Actions environment named `EXPO_TOKEN` and reads
 `EXPO_TOKEN` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from its secrets, plus
 `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SUPABASE_URL` from its variables. The EAS project is pinned in `app.json`; CI passes
