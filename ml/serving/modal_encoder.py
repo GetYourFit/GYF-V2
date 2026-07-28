@@ -40,10 +40,23 @@ import os
 import time
 
 import modal
+from gyf_contracts.eval_report import RUNTIME_MODELS, runtime_model_verdict
 
-# The production encoder (must match the API's GYF_PERCEPTION_MODEL / the promoted
-# registry card). Override at deploy time with GYF_PERCEPTION_MODEL in the shell.
-MODEL_ID = os.environ.get("GYF_PERCEPTION_MODEL", "hf-hub:timm/ViT-B-16-SigLIP2")
+_PRODUCTION_ENCODER = RUNTIME_MODELS["encoder"]
+
+
+def _resolve_model_id() -> str:
+    configured = os.environ.get("GYF_PERCEPTION_MODEL")
+    if not configured:
+        return _PRODUCTION_ENCODER.model_uri
+    ok, reasons = runtime_model_verdict("encoder", configured_model_uri=configured)
+    if ok:
+        return configured
+    detail = "; ".join(reasons) if reasons else "unknown validation failure"
+    raise RuntimeError(f"invalid GYF_PERCEPTION_MODEL override {configured!r}: {detail}")
+
+
+MODEL_ID = _resolve_model_id()
 
 # Request guards — mirror the Space's (spaces/gyf-gpu/app.py); a serving lane never
 # trusts its caller, even an internal one.
@@ -56,6 +69,7 @@ MAX_IMAGE_B64_CHARS = ((MAX_IMAGE_BYTES + 2) // 3) * 4
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
+    .add_local_python_source("gyf_contracts", copy=True)
     # CPU-only torch: the CUDA wheels are ~5x larger and this lane has no GPU, so
     # they would only slow the cold start we exist to remove.
     # Pin the Torch/TorchVision pair. Leaving torchvision unbounded lets pip
