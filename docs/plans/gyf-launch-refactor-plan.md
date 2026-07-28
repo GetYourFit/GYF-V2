@@ -905,8 +905,8 @@ rollback. The model registry and existing doctrine gates remain authoritative.
 | Visual retrieval | SigLIP 2 + pgvector | Fashion-tuned adapter; SigLIP 2 multi-resolution variants; test Matryoshka/coarse-to-fine retrieval rather than assuming truncation is safe ([SigLIP 2](https://arxiv.org/abs/2502.14786), [MRL](https://arxiv.org/abs/2205.13147)) | licensed catalogue images + attributes; Recall@K/MRR, gender/region slices, p95 latency |
 | Taste ranking | deterministic rules + MMR | pairwise/logistic ranker first; HSTU/generative recommender only at sufficient event volume ([HSTU](https://arxiv.org/abs/2402.17152), [official code](https://github.com/meta-recsys/generative-recommenders)) | consented exposure/outcome joins; NDCG, save-rate lift, diversity, calibration, IPS |
 | Outfit compatibility | per-pair colour/formality/slot checks | set transformer/GNN or compatibility adapter over outfit embeddings | real catalogue outfits + corrected/user-engaged looks; compatibility AUC, human review, slot diversity |
-| Body assistance | manual truth + RTMW candidate | SAM 3D Body/MHR, Fast SAM 3D Body, Anny/Anny-Fit ([SAM 3D Body](https://arxiv.org/abs/2602.15989), [Fast SAM 3D Body](https://arxiv.org/abs/2603.15603), [Anny](https://arxiv.org/abs/2511.03589)) | separately consented diverse panel; accuracy × fairness, latency, commercial license check |
-| Skin-tone assistance | manual truth; photo shadow only | robust face/skin segmentation + CIELAB/CAM16 calibration; no production claim until fairness gate | consented panel across tones/lighting; Monk-spectrum fairness gap, abstention and correction rate |
+| Body assistance | manual truth + RTMW candidate | SAM 3D Body/MHR, Fast SAM 3D Body, Anny/Anny-Fit ([SAM 3D Body](https://arxiv.org/abs/2602.15989), [Fast SAM 3D Body](https://arxiv.org/abs/2603.15603), [Anny](https://arxiv.org/abs/2511.03589)) | approved consented diverse panel; per-subgroup error/calibration/abstention, `max_band_gap`, latency, commercial license check |
+| Skin-tone assistance | manual truth; photo shadow only | robust face/skin segmentation + CIELAB/CAM16 calibration; no production claim until fairness gate | approved consented panel across tones/lighting; Monk-spectrum subgroup error/calibration/abstention, `max_band_gap`, correction rate |
 | Intent and explanation | structured rules + reason templates | small structured-output open model behind `IntentParser`; explanations must cite actual item signals | goal-shift/no-goal parity, invalid-input abstention, factuality review, license gate |
 | Try-on | closed async `TryOnRenderer` spine | pinned Apache-2.0 FASHN candidate plus rights-clean GYF-owned challenger; Leffa/MuGa-VTON remain offline architecture references ([related research](https://arxiv.org/abs/2508.08488)) | rights-cleared GYF pairs; garment fidelity, identity, human review, safety, p95 GPU seconds, cost kill switch |
 | Confidence | calibrated incumbent scores | temperature/isotonic calibration, conformal sets where semantics are valid | ECE/Brier/coverage, abstention utility, per-user and slice audits |
@@ -1669,18 +1669,26 @@ No challenger promotion without a passing frozen report plus shadow/cohort evide
 
 - **Write set:** `ml/usermodel/body/**`, adapter, registry/eval report, profile route tests.
 - **Work:** benchmark RTMW against SAM 3D Body/MHR/Anny candidates; test Fast SAM 3D Body only if
-  latency matters; verify commercial terms independently.
-- **Acceptance:** accuracy × fairness and latency gates clear; low-quality input abstains; manual
-  fallback remains; no body measurement claim is made without a validated error bound.
+  latency matters; verify commercial terms independently; evaluate only against a separately
+  consented, rights-cleared approved panel and keep the checked-in placeholder manifest
+  fail-closed.
+- **Acceptance:** approved-panel reports include per-subgroup error, calibration, abstention and
+  `max_band_gap`; low-quality input abstains; manual fallback remains authoritative until licence,
+  privacy, rollback and the remaining F7 evidence gates clear; no body measurement claim is made
+  without a validated error bound.
 
 ### F7-03 — Skin-tone fairness gate
 
 - **Write set:** `ml/usermodel/skintone/**`, `fairness_eval.py`, eval panel manifest/report,
   capability flag, frontend labels/tests.
-- **Work:** evaluate lighting/skin-tone slices; promote only if owner-approved fairness threshold
-  passes; otherwise keep computed value shadowed and manual value authoritative.
-- **Acceptance:** no silent `unknown`/confidence contradiction; abstention and correction are
-  visible; capability status is truthful.
+- **Work:** evaluate lighting/skin-tone slices with a separately consented, rights-cleared
+  approved panel; use a clearly labelled placeholder manifest only to prove schema and gate wiring;
+  record a captain HOLD until a real diverse panel exists; promote only if the approved-panel
+  report clears the threshold and all other F7 gates.
+- **Acceptance:** approved-panel reports include per-subgroup error, calibration, abstention and
+  `max_band_gap`; no silent `unknown`/confidence contradiction; abstention and correction are
+  visible; computed values stay shadowed and manual values stay authoritative until licence,
+  privacy and the remaining F7 evidence clear.
 
 ### F7 gate
 

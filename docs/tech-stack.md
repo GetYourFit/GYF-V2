@@ -406,7 +406,7 @@ This table is strategic sequencing only; the active execution contract owns exac
 | Recsys | Existing deterministic/online-taste baseline → evaluated simplest winning ranker | Two-tower, TIGER/HSTU, DLRM and LLM rankers remain research until evidence earns them |
 | Try-on | Pinned FASHN v1.5 after F9 → rights-clean GYF-owned challenger after the data trigger | IDM-VTON/CatVTON/FitDiT and public Leffa weights remain offline research ceilings |
 | Body type | SAM 3D Body (3DB) → MHR + Anny calibration (Apache-2.0, SMPL-free) | SMPL/SMPL-X/SHAPY/NLF (non-commercial-gated), MediaPipe-ratios-only, manual-only |
-| Skin tone (separate module ⚠️) | Custom CIELAB tone + fairness gate | RGB heuristics (biased), manual-only |
+| Skin tone (separate module ⚠️) | Custom CIELAB tone + approved-panel fairness gate with attested subgroup error/calibration/abstention | RGB heuristics (biased), manual-only |
 | Controllable styling | Intent parser + color-theory/body-type effects engine | Free-text-only with no structure |
 | Serving | Triton + vLLM | TorchServe, BentoML, KServe |
 

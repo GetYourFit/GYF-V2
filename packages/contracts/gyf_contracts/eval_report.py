@@ -14,7 +14,8 @@ online checks scaffolded in :mod:`gyf_contracts.online_eval` (the known offlineâ
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
@@ -85,6 +86,9 @@ class EvalReport:
     dataset: str
     created_at: str  # ISO-8601
     notes: str = ""
+    # Non-numeric provenance/panel approval evidence; prevents a placeholder panel
+    # from being confused with promotion evidence.
+    evidence: dict[str, object] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -96,6 +100,7 @@ class EvalReport:
             "dataset": self.dataset,
             "created_at": self.created_at,
             "notes": self.notes,
+            "evidence": self.evidence,
         }
 
     @classmethod
@@ -109,6 +114,7 @@ class EvalReport:
             dataset=d["dataset"],
             created_at=d["created_at"],
             notes=d.get("notes", ""),
+            evidence=d.get("evidence") or {},
         )
 
 
@@ -131,10 +137,35 @@ class CapabilityGate:
     op: GateOp
     threshold: float
     rationale: str = ""
+    required_metrics: tuple[str, ...] = ()
+    require_approved_panel: bool = False
 
     def evaluate(self, report: EvalReport) -> tuple[bool, str]:
-        if self.metric not in report.metrics:
-            return False, f"report is missing gate metric '{self.metric}'"
+        missing = [
+            metric
+            for metric in (self.metric, *self.required_metrics)
+            if metric not in report.metrics
+        ]
+        if missing:
+            return (
+                False,
+                f"report is missing gate metric(s): {', '.join(repr(metric) for metric in missing)}",
+            )
+        if self.require_approved_panel:
+            expected_digest = os.environ.get("GYF_PHOTO_FAIRNESS_PANEL_DIGEST", "")
+            expected_attestation = os.environ.get("GYF_PHOTO_FAIRNESS_PANEL_ATTESTATION_ID", "")
+            if not expected_digest or not expected_attestation:
+                return False, "protected panel attestation is unavailable; promotion remains HOLD"
+            if not report.evidence.get("promotion_eligible_panel"):
+                return (
+                    False,
+                    "report lacks an approved, complete consented panel; promotion remains HOLD",
+                )
+            if (
+                report.evidence.get("panel_hash") != expected_digest
+                or report.evidence.get("attestation_id") != expected_attestation
+            ):
+                return False, "report does not match the protected exact panel attestation"
         value = report.metrics[self.metric]
         if self.op.passes(value, self.threshold):
             return True, ""
@@ -167,6 +198,21 @@ GATES: dict[str, CapabilityGate] = {
             "skin tone. Until a real run on a balanced full-MST set clears this, skin-tone stays "
             "in shadow (computed, not surfaced) behind the GYF_SKIN_TONE_ENABLED flag."
         ),
+        required_metrics=("error_rate", "ece", "abstention_rate"),
+        require_approved_panel=True,
+    ),
+    "body_estimator": CapabilityGate(
+        capability="body_estimator",
+        metric="max_band_gap",
+        op=GateOp.LTE,
+        threshold=1.0,
+        rationale=(
+            "Body assistance requires the same approved diverse-panel subgroup error gap as tone, "
+            "plus reported calibration and abstention. Manual body type remains authoritative "
+            "until a separately approved panel report clears this gate."
+        ),
+        required_metrics=("error_rate", "ece", "abstention_rate"),
+        require_approved_panel=True,
     ),
 }
 
@@ -241,7 +287,7 @@ def resolve_promotion(
     reasons: list[str] = []
 
     # License/lane (D2). We re-check eval presence here ourselves, so don't double-count it.
-    ok_license, license_reasons = is_servable(card, require_eval=False)
+    _ok_license, license_reasons = is_servable(card, require_eval=False)
     reasons.extend(license_reasons)
 
     if not card.eval_report:
@@ -265,7 +311,7 @@ def resolve_promotion(
             f"eval report model version '{report.model_version}' does not match "
             f"'{card.model_version}'"
         )
-    ok_gate, gate_reasons = meets_gate(report)
+    _ok_gate, gate_reasons = meets_gate(report)
     reasons.extend(gate_reasons)
 
     return (not reasons, reasons)

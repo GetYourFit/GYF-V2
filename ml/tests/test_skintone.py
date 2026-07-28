@@ -120,7 +120,7 @@ def test_estimate_no_face_abstains():
 # --- fairness gate (pure aggregation) --------------------------------------
 
 
-def test_fairness_summarize_perfect_passes_gate():
+def test_legacy_tone_summary_cannot_bypass_complete_photo_gate():
     from gyf_contracts.eval_report import meets_gate
 
     from usermodel.skintone.fairness_eval import summarize
@@ -130,7 +130,7 @@ def test_fairness_summarize_perfect_passes_gate():
     assert report.capability == "skin_tone"
     assert report.metrics["max_band_gap"] == 0.0
     assert report.metrics["mean_abs_bucket_error"] == 0.0
-    assert meets_gate(report)[0] is True
+    assert meets_gate(report)[0] is False  # no calibration/abstention or approved panel evidence
 
 
 def test_fairness_summarize_penalizes_abstention_on_one_band():
@@ -143,3 +143,218 @@ def test_fairness_summarize_penalizes_abstention_on_one_band():
     report = summarize(pairs, model_version="v1", report_id="t")
     assert report.metrics["max_band_gap"] == 9.0
     assert meets_gate(report)[0] is False
+
+
+def test_photo_fairness_reports_subgroup_error_calibration_and_abstention():
+    from usermodel.photo_fairness_eval import summarize
+
+    samples = [
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 0.9,
+            "subgroups": {"band": "mst1", "lighting": "daylight"},
+        },
+        {
+            "label": "mst10",
+            "prediction": "unknown",
+            "confidence": 0.8,
+            "subgroups": {"band": "mst10", "lighting": "low-light"},
+        },
+    ]
+    panel = {
+        "panel_id": "test-panel",
+        "status": "approved",
+        "consent_basis": "test only",
+        "data_license": "test only",
+        "label_protocol": "test only",
+    }
+    report = summarize(
+        samples,
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel=panel,
+    )
+    assert report.metrics["subgroup.band.mst10.error_rate"] == 9.0
+    assert report.metrics["subgroup.band.mst10.abstention_rate"] == 1.0
+    assert report.metrics["subgroup.lighting.daylight.ece"] > 0
+    assert report.metrics["subgroup.band.mst10.ece"] == 0.0
+    assert 0.0 <= report.metrics["ece"] <= 1.0
+    assert report.metrics["max_band_gap"] == 9.0
+    # A local manifest is never attested merely because it says "approved".
+    assert report.evidence["promotion_eligible_panel"] is False
+    assert (
+        "panel digest does not match protected exact-digest attestation"
+        in report.evidence["ineligibility_reasons"]
+    )
+
+
+def test_photo_fairness_normalizes_skin_tone_calibration_correctness():
+    from usermodel.photo_fairness_eval import summarize
+
+    report = summarize(
+        [
+            {
+                "label": "mst10",
+                "prediction": "mst1",
+                "confidence": 0.9,
+                "subgroups": {"band": "mst10"},
+            }
+        ],
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel={
+            "panel_id": "test-panel",
+            "status": "approved",
+            "consent_basis": "test only",
+            "data_license": "test only",
+            "label_protocol": "test only",
+        },
+    )
+    assert report.metrics["error_rate"] == 9.0
+    assert report.metrics["ece"] == 0.9
+
+
+def test_two_sample_local_manifest_cannot_bypass_attestation_or_power_minimum():
+    import hashlib
+    import json
+
+    from usermodel.photo_fairness_eval import summarize
+
+    panel = {
+        "panel_id": "local-two-sample-panel",
+        "status": "approved",
+        "consent_basis": "locally authored",
+        "data_license": "locally authored",
+        "collection_provenance": "locally authored",
+        "label_protocol": "locally authored",
+        "attestation_id": "captain-attestation",
+        # An author may claim an unjustified n=1 minimum, but the harness has a
+        # non-bypassable >2 floor in addition to a protected exact digest.
+        "cohort_justification": {
+            "method": "preregistered_power_analysis",
+            "reference": "local-claim",
+            "minimum_total": 1,
+            "minimum_per_band": 1,
+        },
+    }
+    samples = [
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst1"},
+        },
+        {
+            "label": "mst10",
+            "prediction": "mst10",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst10"},
+        },
+    ]
+    digest = hashlib.sha256(
+        json.dumps(
+            {"panel": panel, "samples": samples}, sort_keys=True, separators=(",", ":")
+        ).encode()
+    ).hexdigest()
+    report = summarize(
+        samples,
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel=panel,
+        protected_attestation={"digest": digest, "attestation_id": "captain-attestation"},
+    )
+    assert report.num_samples == 2
+    assert report.evidence["promotion_eligible_panel"] is False
+    assert (
+        "cohort minimum_total must be power-justified and greater than two"
+        in report.evidence["ineligibility_reasons"]
+    )
+
+
+def test_single_band_attested_panel_cannot_claim_cross_band_fairness():
+    import hashlib
+    import json
+
+    from usermodel.photo_fairness_eval import summarize
+
+    panel = {
+        "panel_id": "single-band-panel",
+        "status": "approved",
+        "consent_basis": "captain approved",
+        "data_license": "captain approved",
+        "collection_provenance": "captain approved",
+        "label_protocol": "captain approved",
+        "attestation_id": "captain-attestation",
+        "cohort_justification": {
+            "method": "preregistered_power_analysis",
+            "reference": "captain-plan",
+            "minimum_total": 3,
+            "minimum_per_band": 3,
+        },
+    }
+    samples = [
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst1"},
+        },
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst1"},
+        },
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 1.0,
+            "subgroups": {"band": "mst1"},
+        },
+    ]
+    digest = hashlib.sha256(
+        json.dumps(
+            {"panel": panel, "samples": samples}, sort_keys=True, separators=(",", ":")
+        ).encode()
+    ).hexdigest()
+    report = summarize(
+        samples,
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel=panel,
+        protected_attestation={"digest": digest, "attestation_id": "captain-attestation"},
+    )
+    assert report.metrics["max_band_gap"] == 0.0
+    assert report.evidence["promotion_eligible_panel"] is False
+    assert (
+        "panel must contain at least two approved band groups"
+        in report.evidence["ineligibility_reasons"]
+    )
+
+
+def test_placeholder_panel_cannot_promote_even_with_perfect_predictions():
+    from gyf_contracts.eval_report import meets_gate
+    from usermodel.photo_fairness_eval import summarize
+
+    report = summarize(
+        [
+            {
+                "label": "mst1",
+                "prediction": "mst1",
+                "confidence": 1.0,
+                "subgroups": {"band": "mst1"},
+            }
+        ],
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel={"panel_id": "placeholder", "status": "placeholder"},
+    )
+    ok, reasons = meets_gate(report)
+    assert not ok
+    assert "protected panel attestation is unavailable" in reasons[0]

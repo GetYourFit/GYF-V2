@@ -121,8 +121,9 @@ Each doctrine = **principle → why → how → enforcement**.
   offline, to tell us how far our clean stack is from the frontier.
 - **Why.** Closes the offline→online gap (a named project risk); guarantees Invariant 1.
 - **How.** A shared eval harness per capability (retrieval: MRR/Recall; compatibility:
-  AUC/diversity; recsys: NDCG/ECE/diversity; try-on: FID/LPIPS + human-eval; body: accuracy
-  × fairness band). Shadow deploys, interleaving, auto-rollback.
+  AUC/diversity; recsys: NDCG/ECE/diversity; try-on: FID/LPIPS + human-eval; photo body/tone:
+  approved consented panel with per-subgroup error, calibration, abstention and
+  `max_band_gap`). Shadow deploys, interleaving, auto-rollback.
 - **Enforcement.** Promotion to the production lane (D2) **requires** an attached eval report
   meeting the gate; no report ⇒ no promotion.
 
@@ -164,8 +165,8 @@ research-lane north-star → data source → eval gate`.
 | Pillar | Capability port | Production lane (clean) | Research-lane north-star (offline only) | Data (D4) | Eval gate (D5) |
 |---|---|---|---|---|---|
 | **Visual perception** | `Encoder` | SigLIP 2 / Marqo-FashionSigLIP-2 (Apache) + **GCL adapter on our catalog** | newest fashion VLMs | catalog + attributes | MRR / Recall@K |
-| **Body-type** | `BodyEstimator` | SAM 3D Body→MHR + Anny calib (SAM License/Apache) | SMPL-X/SHAPY/NLF (NC) | consented user photos | acc × fairness band |
-| **Skin-tone** ⚠️ | `SkinToneEstimator` | SAM/BiSeNet seg + custom CIELAB (commercial-clean) | — | consented user photos | Monk-spectrum fairness gate |
+| **Body-type** | `BodyEstimator` | SAM 3D Body→MHR + Anny calib (SAM License/Apache) | SMPL-X/SHAPY/NLF (NC) | consented user photos | approved panel: subgroup error/calibration/abstention + `max_band_gap` |
+| **Skin-tone** ⚠️ | `SkinToneEstimator` | SAM/BiSeNet seg + custom CIELAB (commercial-clean) | — | consented user photos | approved panel: Monk-spectrum subgroup error/calibration/abstention + `max_band_gap` |
 | **Taste / recsys** | `Ranker` | online taste (shipped) → **HSTU (Apache) trained on our events** → OneRec-arch | OneRec/ReSID weights (restricted) | first-party behaviour | NDCG/ECE + online A/B/IPS |
 | **Outfit compatibility** | `CompatibilityScorer` | content+color-theory (shipped) → **TATTOO-style training-free on Qwen-VL (Apache)** → GNN on our data | NC compatibility papers | brand catalog + first-party outfits | compat-AUC + diversity |
 | **Controllable styling** | `IntentParser` | rule-based (shipped) → **Qwen 3.x (Apache) structured output** | larger NC LLMs | goal-conditioned slates | goal-shift eval + no-goal parity |
