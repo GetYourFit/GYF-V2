@@ -80,6 +80,19 @@ export function safeExternalShopUrl(url: string | null | undefined): string | nu
   return safeExternalShopUrlInternal(url, 0);
 }
 
+export function deeplinkSubid(url: string | null | undefined): string | null {
+  const safeUrl = safeExternalShopUrl(url);
+  if (!safeUrl) return null;
+  try {
+    const parsed = new URL(safeUrl);
+    const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
+    if (!DEEPLINK_HOSTS.has(host)) return null;
+    return parsed.searchParams.get("subid");
+  } catch {
+    return null;
+  }
+}
+
 export function shopDisclosureForUrl(url: string | null | undefined): string | null {
   return safeExternalShopUrl(url) ? SHOP_AFFILIATE_DISCLOSURE : null;
 }

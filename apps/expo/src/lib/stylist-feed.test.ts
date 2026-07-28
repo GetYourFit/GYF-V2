@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   SHOP_AFFILIATE_DISCLOSURE,
   SHOP_AFFILIATE_DISCLOSURE_COMPACT,
+  deeplinkSubid,
   compactShopDisclosureForUrl,
   safeExternalShopUrl,
   shopDisclosureForUrl,
@@ -150,6 +151,20 @@ describe("Expo stylist feed model", () => {
     ).toBe(
       "https://linksredirect.com/?cid=274785&source=api&subid=catalog&url=https%3A%2F%2Fwww.thehouseofrare.com%2Fproducts%2Ffullsleen-mens-shirt-beige",
     );
+  });
+
+  test("extracts deeplink subids only from safe GYF deeplinks", () => {
+    expect(
+      deeplinkSubid(
+        "https://linksredirect.com/?cid=274785&source=api&subid=rec-123&url=https%3A%2F%2Fshop.test%2Fitem",
+      ),
+    ).toBe("rec-123");
+    expect(
+      deeplinkSubid(
+        "https://linksredirect.com/?cid=274785&source=api&subid=catalog_legacy&url=https%3A%2F%2Fshop.test%2Fitem",
+      ),
+    ).toBe("catalog_legacy");
+    expect(deeplinkSubid("https://shop.test/item")).toBeNull();
   });
 
   test("shows the next-look receipt only after save or skip", () => {

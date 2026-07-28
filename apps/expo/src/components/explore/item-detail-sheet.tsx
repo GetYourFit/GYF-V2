@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { createApi, type Outfit, type OutfitItem, type SearchResult } from "@/lib/api";
 import { catalogClickSubid, shopClickFeedback } from "@/lib/commerce-attribution";
 import { compatibilityReason, formatCatalogPrice } from "@/lib/explore-feed";
-import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
+import { deeplinkSubid, safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { colors, materials, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
 
@@ -200,17 +200,12 @@ export function ItemDetailSheet({
   }) => {
     const rawUrl = safeExternalShopUrl(shopItem.affiliate_url);
     if (!rawUrl) return;
-    const fallbackSubid = (() => {
-      try {
-        const subid = new URL(rawUrl).searchParams.get("subid");
-        return subid?.startsWith("catalog_") ? subid : null;
-      } catch {
-        return null;
-      }
-    })();
     let trackedUrl = rawUrl;
-    let subid = fallbackSubid;
-    if (!subid) {
+    let recommendationId: string | undefined;
+    let subid = deeplinkSubid(rawUrl);
+    if (subid && !subid.startsWith("catalog_")) {
+      recommendationId = subid;
+    } else {
       const clickSubid = catalogClickSubid();
       try {
         const converted = await api.convertAffiliateLink(rawUrl, clickSubid);
@@ -225,6 +220,7 @@ export function ItemDetailSheet({
     const event = shopClickFeedback(shopItem, {
       eventId: crypto.randomUUID(),
       placement: "product_detail",
+      recommendationId,
       sessionId: commerceSessionId.current,
       subid,
     });
