@@ -17,6 +17,7 @@ import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type OutfitRecommendation, type Post } from "@/lib/api";
 import { downloadValidatedPostImage, imageExtension } from "@/lib/post-image-transfer";
+import { primaryActionablePostImageUrl } from "@/lib/social-post-media";
 import {
   appendUniquePosts,
   applyReaction,
@@ -147,6 +148,7 @@ function PostCard({
   const palette = useThemeColors();
   const { width } = useResponsive();
   const covers = postCoverImages(post.items, 3);
+  const primaryImageUrl = primaryActionablePostImageUrl(covers);
   const coverHeight = Math.round(((width - spacing.lg * 2 - spacing.xs * 2) / 3) * 1.25);
   // Inline two-step report (works on web too, unlike Alert): tap Report, pick a
   // reason chip; "sent" is per-card local state — the server keeps the record.
@@ -261,13 +263,13 @@ function PostCard({
           accessibilityHint="Opens your device share options for this post image"
           accessibilityLabel="Share this look"
           accessibilityRole="button"
-          disabled={covers.length === 0}
+          disabled={!primaryImageUrl}
           hitSlop={hitSlopFor(32)}
-          onPress={() => onShare(covers[0])}
+          onPress={() => onShare(primaryImageUrl)}
           style={{ minHeight: 44, justifyContent: "center" }}
         >
           <GyfText
-            style={{ color: covers.length ? palette.textMuted : palette.textFaint }}
+            style={{ color: primaryImageUrl ? palette.textMuted : palette.textFaint }}
             variant="bodySmall"
           >
             Share
@@ -277,13 +279,13 @@ function PostCard({
           accessibilityHint="Saves this post image to your device or starts a browser download"
           accessibilityLabel="Save this look image to my device"
           accessibilityRole="button"
-          disabled={covers.length === 0}
+          disabled={!primaryImageUrl}
           hitSlop={hitSlopFor(32)}
-          onPress={() => onSave(covers[0])}
+          onPress={() => onSave(primaryImageUrl)}
           style={{ minHeight: 44, justifyContent: "center" }}
         >
           <GyfText
-            style={{ color: covers.length ? palette.textMuted : palette.textFaint }}
+            style={{ color: primaryImageUrl ? palette.textMuted : palette.textFaint }}
             variant="bodySmall"
           >
             Save image
