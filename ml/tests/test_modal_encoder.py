@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import shutil
 import sys
 import types
 from pathlib import Path
@@ -17,10 +18,20 @@ MODULE_PATH = ROOT / "ml" / "serving" / "modal_encoder.py"
 class _FakeImage:
     def __init__(self) -> None:
         self.local_sources: list[tuple[str, bool]] = []
+        self.local_files: list[tuple[str, str]] = []
+        self.local_dirs: list[tuple[str, str]] = []
         self.env_vars: dict[str, str] = {}
 
     def add_local_python_source(self, package: str, *, copy: bool = False):
         self.local_sources.append((package, copy))
+        return self
+
+    def add_local_file(self, local_path: str, *, remote_path: str):
+        self.local_files.append((local_path, remote_path))
+        return self
+
+    def add_local_dir(self, local_path: str, *, remote_path: str):
+        self.local_dirs.append((local_path, remote_path))
         return self
 
     def pip_install(self, *_args, **_kwargs):
@@ -68,6 +79,11 @@ def _load_modal_encoder(monkeypatch: pytest.MonkeyPatch):
     return module, fake_modal
 
 
+def _copy_policy_bundle(destination: Path) -> None:
+    shutil.copy2(ROOT / "models.registry.json", destination / "models.registry.json")
+    shutil.copytree(ROOT / "eval-reports", destination / "eval-reports")
+
+
 def test_modal_lane_defaults_to_the_canonical_runtime_binding(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("GYF_PERCEPTION_MODEL", raising=False)
 
@@ -76,11 +92,20 @@ def test_modal_lane_defaults_to_the_canonical_runtime_binding(monkeypatch: pytes
     binding = RUNTIME_MODELS["encoder"]
     assert module.MODEL_ID == binding.model_uri
     assert fake_modal._image.env_vars["GYF_PERCEPTION_MODEL"] == binding.model_uri
+    assert fake_modal._image.env_vars["GYF_RUNTIME_POLICY_ROOT"] == "/opt/gyf-runtime"
     assert ("gyf_contracts", True) in fake_modal._image.local_sources
+    assert ("models.registry.json", "/opt/gyf-runtime/models.registry.json") in fake_modal._image.local_files
+    assert ("eval-reports", "/opt/gyf-runtime/eval-reports") in fake_modal._image.local_dirs
 
 
-def test_modal_lane_accepts_the_canonical_override(monkeypatch: pytest.MonkeyPatch):
+def test_modal_lane_accepts_the_canonical_override_from_the_bundled_policy(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     binding = RUNTIME_MODELS["encoder"]
+    bundle_root = tmp_path / "bundle"
+    bundle_root.mkdir()
+    _copy_policy_bundle(bundle_root)
+    monkeypatch.setenv("GYF_RUNTIME_POLICY_ROOT", str(bundle_root))
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", binding.model_uri)
 
     module, _fake_modal = _load_modal_encoder(monkeypatch)
@@ -88,8 +113,27 @@ def test_modal_lane_accepts_the_canonical_override(monkeypatch: pytest.MonkeyPat
     assert module.MODEL_ID == binding.model_uri
 
 
-def test_modal_lane_rejects_invalid_override(monkeypatch: pytest.MonkeyPatch):
+def test_modal_lane_rejects_invalid_override_from_the_bundled_policy(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    bundle_root = tmp_path / "bundle"
+    bundle_root.mkdir()
+    _copy_policy_bundle(bundle_root)
+    monkeypatch.setenv("GYF_RUNTIME_POLICY_ROOT", str(bundle_root))
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", "hf-hub:unapproved/model")
 
     with pytest.raises(RuntimeError, match="invalid GYF_PERCEPTION_MODEL override"):
+        _load_modal_encoder(monkeypatch)
+
+
+def test_modal_lane_rejects_override_when_the_bundled_policy_is_missing_reports(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    bundle_root = tmp_path / "bundle"
+    bundle_root.mkdir()
+    shutil.copy2(ROOT / "models.registry.json", bundle_root / "models.registry.json")
+    monkeypatch.setenv("GYF_RUNTIME_POLICY_ROOT", str(bundle_root))
+    monkeypatch.setenv("GYF_PERCEPTION_MODEL", RUNTIME_MODELS["encoder"].model_uri)
+
+    with pytest.raises(RuntimeError, match="does not resolve under"):
         _load_modal_encoder(monkeypatch)

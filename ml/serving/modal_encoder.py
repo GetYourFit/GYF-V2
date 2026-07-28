@@ -38,18 +38,27 @@ import binascii
 import io
 import os
 import time
+from pathlib import Path
 
 import modal
 from gyf_contracts.eval_report import RUNTIME_MODELS, runtime_model_verdict
 
 _PRODUCTION_ENCODER = RUNTIME_MODELS["encoder"]
+_POLICY_ROOT = Path(os.environ.get("GYF_RUNTIME_POLICY_ROOT", Path(__file__).resolve().parents[2]))
+_REGISTRY_PATH = _POLICY_ROOT / "models.registry.json"
+_REPORTS_PATH = _POLICY_ROOT / "eval-reports"
 
 
 def _resolve_model_id() -> str:
     configured = os.environ.get("GYF_PERCEPTION_MODEL")
     if not configured:
         return _PRODUCTION_ENCODER.model_uri
-    ok, reasons = runtime_model_verdict("encoder", configured_model_uri=configured)
+    ok, reasons = runtime_model_verdict(
+        "encoder",
+        configured_model_uri=configured,
+        registry=_REGISTRY_PATH,
+        reports_dir=_REPORTS_PATH,
+    )
     if ok:
         return configured
     detail = "; ".join(reasons) if reasons else "unknown validation failure"
@@ -70,6 +79,8 @@ MAX_IMAGE_B64_CHARS = ((MAX_IMAGE_BYTES + 2) // 3) * 4
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .add_local_python_source("gyf_contracts", copy=True)
+    .add_local_file("models.registry.json", remote_path="/opt/gyf-runtime/models.registry.json")
+    .add_local_dir("eval-reports", remote_path="/opt/gyf-runtime/eval-reports")
     # CPU-only torch: the CUDA wheels are ~5x larger and this lane has no GPU, so
     # they would only slow the cold start we exist to remove.
     # Pin the Torch/TorchVision pair. Leaving torchvision unbounded lets pip
@@ -87,7 +98,13 @@ image = (
         "pillow>=10.0",
         "fastapi[standard]",
     )
-    .env({"HF_HOME": "/cache/hf", "GYF_PERCEPTION_MODEL": MODEL_ID})
+    .env(
+        {
+            "HF_HOME": "/cache/hf",
+            "GYF_PERCEPTION_MODEL": MODEL_ID,
+            "GYF_RUNTIME_POLICY_ROOT": "/opt/gyf-runtime",
+        }
+    )
 )
 
 # Weights survive scale-to-zero here, so a cold container never re-downloads them.
