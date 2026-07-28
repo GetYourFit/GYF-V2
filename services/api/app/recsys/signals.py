@@ -21,7 +21,9 @@ from ..events import InteractionAction
 # real engagement once volume exists (offline calibration, then online gate).
 ACTION_REWARD: dict[InteractionAction, float] = {
     InteractionAction.PURCHASE: 1.5,  # ground truth: money changed hands
-    InteractionAction.CART: 1.2,  # strongest purchase intent
+    InteractionAction.CART: 1.2,  # legacy explicit cart intent
+    # A retailer handoff is operational attribution, not a taste/purchase label.
+    InteractionAction.SHOP_CLICK: 0.0,
     InteractionAction.TRYON: 1.0,  # high intent: imagining it on themselves
     InteractionAction.SAVE: 1.0,  # explicit "I like this"
     InteractionAction.SHARE: 0.8,  # endorses to others
@@ -30,6 +32,7 @@ ACTION_REWARD: dict[InteractionAction, float] = {
     InteractionAction.VIEW: 0.1,  # weak positive (dwell unknown at v1)
     InteractionAction.SKIP: -0.6,  # explicit rejection
     InteractionAction.IMPRESSION: 0.0,  # shown only; label is "not engaged"
+    InteractionAction.CONVERSION_REVERSAL: 0.0,  # reconciliation, never a taste label
 }
 
 

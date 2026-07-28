@@ -217,29 +217,43 @@ def test_recommendation_items_carry_the_recommendation_id_subid():
 
 
 class _FakeConn:
-    """Minimal DB-API-ish connection over in-memory interaction rows."""
+    """Minimal DB-API-ish connection over attribution fixtures."""
 
-    def __init__(self, impressions):
-        self.impressions = impressions  # {recommendation_id: (user_id, item_id)}
-        self.purchases = []  # inserted (user_id, item_id, context)
+    def __init__(self, impressions, clicks=()):
+        self.impressions = impressions  # {recommendation_id: user_id}
+        self.clicks = list(clicks)  # [(subid, user_id, item_id)]
+        self.outcomes = []  # inserted (user_id, target_type, target_id, action, context)
 
     def execute(self, sql, params=()):
         class _Cursor:
-            def __init__(self, row):
+            def __init__(self, row=None, rows=()):
                 self._row = row
+                self._rows = rows
 
             def fetchone(self):
                 return self._row
 
-        if "action = 'purchase'" in sql:
-            tx_id = params[0]
-            seen = any(json.loads(p[2])["cuelinks_transaction_id"] == tx_id for p in self.purchases)
+            def fetchall(self):
+                return self._rows
+
+        if "action = %s" in sql:
+            action, tx_id = params
+            seen = any(
+                row[3] == action and json.loads(row[4])["affiliate_transaction_id"] == tx_id
+                for row in self.outcomes
+            )
             return _Cursor((1,) if seen else None)
+        if "action = 'shop_click'" in sql:
+            subid = params[0]
+            return _Cursor(
+                rows=[(user_id, item_id) for key, user_id, item_id in self.clicks if key == subid]
+            )
         if "action = 'impression'" in sql:
-            return _Cursor(self.impressions.get(params[0]))
+            user_id = self.impressions.get(params[0])
+            return _Cursor((user_id,) if user_id else None)
         if sql.startswith("INSERT"):
-            self.purchases.append(params)
-            return _Cursor(None)
+            self.outcomes.append(params)
+            return _Cursor()
         raise AssertionError(f"unexpected sql: {sql}")
 
 
@@ -254,35 +268,64 @@ def _load_sync():
     return mod
 
 
-def test_sync_attributes_purchase_to_the_impression_user_and_item():
+def test_sync_records_only_confirmed_purchase_and_uses_the_unique_clicked_item():
     sync_mod = _load_sync()
-    conn = _FakeConn({"rec-1": ("user-9", "item-7")})
+    conn = _FakeConn({"rec-1": "user-9"}, [("rec-1", "user-9", "item-7")])
     tx = {
         "id": 555,
         "sub_id": "rec-1",
         "sale_amount": "1999.0",
         "commission": "80.0",
-        "status": "pending",
+        "status": "approved",
     }
     inserted, skipped = sync_mod.sync(conn, [tx])
     assert (inserted, skipped) == (1, 0)
-    user_id, item_id, context = conn.purchases[0]
-    assert (user_id, item_id) == ("user-9", "item-7")
-    assert json.loads(context)["cuelinks_transaction_id"] == "555"
+    user_id, target_type, target_id, action, context = conn.outcomes[0]
+    assert (user_id, target_type, target_id, action) == ("user-9", "item", "item-7", "purchase")
+    assert json.loads(context) == {
+        "attribution_version": 1,
+        "affiliate_network": "cuelinks",
+        "affiliate_transaction_id": "555",
+        "subid": "rec-1",
+        "recommendation_id": "rec-1",
+        "sale_amount": "1999.0",
+        "commission": "80.0",
+        "status": "approved",
+        "campaign": None,
+        "item_attribution": "exact_click",
+    }
 
 
-def test_sync_is_idempotent_and_skips_foreign_subids():
+def test_sync_keeps_pending_unknown_and_ambiguous_products_at_recommendation_level():
     sync_mod = _load_sync()
-    conn = _FakeConn({"rec-1": ("user-9", "item-7")})
+    conn = _FakeConn(
+        {"rec-1": "user-9"},
+        [("rec-1", "user-9", "item-7"), ("rec-1", "user-9", "item-8")],
+    )
+    inserted, skipped = sync_mod.sync(
+        conn,
+        [
+            {"id": 555, "sub_id": "rec-1", "status": "pending"},
+            {"id": 556, "sub_id": "rec-1", "status": "confirmed"},
+        ],
+    )
+    assert (inserted, skipped) == (1, 1)
+    assert conn.outcomes[0][1:4] == ("outfit", "rec-1", "purchase")
+    assert json.loads(conn.outcomes[0][4])["item_attribution"] == "recommendation_only"
+
+
+def test_sync_reconciles_reversal_idempotently_without_counting_it_as_a_purchase():
+    sync_mod = _load_sync()
+    conn = _FakeConn({"rec-1": "user-9"}, [("rec-1", "user-9", "item-7")])
     txs = [
-        {"id": 555, "sub_id": "rec-1"},
-        {"id": 555, "sub_id": "rec-1"},  # duplicate
-        {"id": 556, "sub_id": "catalog_item-7"},  # channel-only, no user join
-        {"id": 557, "sub_id": "someone-elses"},  # unknown recommendation
-        {"id": "", "sub_id": "rec-1"},  # malformed
+        {"id": 555, "sub_id": "rec-1", "status": "approved"},
+        {"id": 555, "sub_id": "rec-1", "status": "reversed"},
+        {"id": 555, "sub_id": "rec-1", "status": "reversed"},
+        {"id": 556, "sub_id": "unknown", "status": "approved"},
     ]
     inserted, skipped = sync_mod.sync(conn, txs)
-    assert (inserted, skipped) == (1, 4)
+    assert (inserted, skipped) == (2, 2)
+    assert [row[3] for row in conn.outcomes] == ["purchase", "conversion_reversal"]
 
 
 def test_fetch_transactions_handles_empty_204_and_pages():

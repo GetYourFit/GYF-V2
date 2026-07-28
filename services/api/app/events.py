@@ -8,17 +8,22 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
+import re
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, field_validator
 
 SCHEMA_VERSION = 1
+_SUBID_SAFE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
 class InteractionAction(str, Enum):
     VIEW = "view"
     SAVE = "save"
     CART = "cart"
+    # A retailer handoff opened from a product-level, disclosed link. This is
+    # intent only — it never means a cart was created or a purchase occurred.
+    SHOP_CLICK = "shop_click"
     SKIP = "skip"
     REACT = "react"
     SHARE = "share"
@@ -37,10 +42,19 @@ class InteractionAction(str, Enum):
     # (scripts/sync_conversions.py), joined to its recommendation via the deeplink
     # subid. Never user-supplied — the ground-truth commerce label.
     PURCHASE = "purchase"
+    # A later affiliate statement reversed/refunded a previously confirmed sale.
+    # This is reconciliation truth, not client feedback or a negative taste label.
+    CONVERSION_REVERSAL = "conversion_reversal"
 
 
 # Trusted, server-emitted labels — never accepted from clients (see FeedbackRequest).
-_SERVER_ONLY_ACTIONS = frozenset({InteractionAction.IMPRESSION, InteractionAction.PURCHASE})
+_SERVER_ONLY_ACTIONS = frozenset(
+    {
+        InteractionAction.IMPRESSION,
+        InteractionAction.PURCHASE,
+        InteractionAction.CONVERSION_REVERSAL,
+    }
+)
 
 
 class InteractionTarget(str, Enum):
@@ -116,6 +130,39 @@ class FeedbackRequest(BaseModel):
         if v in _SERVER_ONLY_ACTIONS:
             raise ValueError(f"action '{v.value}' is server-emitted, not client feedback")
         return v
+
+    @field_validator("context")
+    @classmethod
+    def _valid_shop_click_attribution(cls, context: dict[str, object], info) -> dict[str, object]:
+        """Keep the client handoff contract joinable without accepting new PII."""
+        if info.data.get("action") != InteractionAction.SHOP_CLICK:
+            return context
+        required = {"attribution_version", "placement", "session_id", "subid"}
+        if not required.issubset(context):
+            raise ValueError("shop_click attribution context is incomplete")
+        if context["attribution_version"] != 1:
+            raise ValueError("unsupported shop_click attribution version")
+        if context["placement"] not in {"stylist_outfit", "product_detail"}:
+            raise ValueError("unsupported shop_click placement")
+        try:
+            UUID(str(context["session_id"]))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("shop_click session_id must be a UUID") from exc
+        subid = context["subid"]
+        if not isinstance(subid, str) or not _SUBID_SAFE.fullmatch(subid):
+            raise ValueError("shop_click subid is invalid")
+        recommendation_id = context.get("recommendation_id")
+        if recommendation_id is not None:
+            if not isinstance(recommendation_id, str) or recommendation_id != subid:
+                raise ValueError("shop_click recommendation_id must equal subid")
+        else:
+            target_id = info.data.get("target_id")
+            if subid != f"catalog_{target_id}":
+                raise ValueError("catalog shop_click subid must match target_id")
+        rank = context.get("rank")
+        if rank is not None and (not isinstance(rank, int) or rank < 0):
+            raise ValueError("shop_click rank must be a non-negative integer")
+        return context
 
     def to_event(self, user_id: str) -> InteractionEvent:
         return InteractionEvent(

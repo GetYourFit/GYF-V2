@@ -7,7 +7,7 @@ import {
   feedbackReceipt,
   replaceOutfitItem,
   savedOutfitInput,
-  shopFeedbackForItem,
+  shopClickFeedbackForItem,
 } from "./stylist-feed";
 import { GyfApi } from "./api";
 
@@ -162,13 +162,20 @@ describe("synthetic R2 helper composition", () => {
       [
         "POST",
         "/feedback",
-        { status: "accepted", action: "cart" },
+        { status: "accepted", action: "shop_click" },
         {
-          event_id: "evt-r2-cart",
+          event_id: "evt-r2-click",
           target_type: "item",
           target_id: "top-1",
-          action: "cart",
-          context: { recommendation_id: "rec-r2-1", rank: 0 },
+          action: "shop_click",
+          context: {
+            attribution_version: 1,
+            placement: "stylist_outfit",
+            recommendation_id: "rec-r2-1",
+            rank: 0,
+            session_id: "00000000-0000-4000-8000-000000000001",
+            subid: "rec-r2-1",
+          },
         },
       ],
       [
@@ -266,9 +273,15 @@ describe("synthetic R2 helper composition", () => {
         "evt-r2-save-shoe",
       ]))
         await api.feedback(event);
-      const cart = shopFeedbackForItem(firstOutfit.items[0], recommendationId, rank, "evt-r2-cart");
-      expect(cart).not.toBeNull();
-      await api.feedback(cart!);
+      const shopClick = shopClickFeedbackForItem(
+        firstOutfit.items[0],
+        recommendationId,
+        rank,
+        "evt-r2-click",
+        "00000000-0000-4000-8000-000000000001",
+      );
+      expect(shopClick).not.toBeNull();
+      await api.feedback(shopClick!);
       const alternates = await api.alternates("top-1", recommendationId);
       const corrected = replaceOutfitItem(firstOutfit, "top-1", alternates[0]);
       await api.feedback({
@@ -303,7 +316,7 @@ describe("synthetic R2 helper composition", () => {
       ).toEqual([
         "evt-r2-save-top",
         "evt-r2-save-shoe",
-        "evt-r2-cart",
+        "evt-r2-click",
         "evt-r2-swap",
         "evt-r2-correction",
         "evt-r2-skip-top",

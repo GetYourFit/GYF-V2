@@ -16,7 +16,7 @@ import {
   safeShopUrl,
   savedOutfitInput,
   slateItemIds,
-  shopFeedbackForItem,
+  shopClickFeedbackForItem,
   tastePersonalizationMessage,
 } from "./stylist-feed";
 
@@ -162,9 +162,10 @@ describe("Expo stylist feed model", () => {
     expect(feedbackReceipt("skipped")?.message).toContain("refine future looks");
   });
 
-  test("joins shop intent to the served slate and rank", () => {
+  test("joins a disclosed shop handoff to its served slate, placement, and subid", () => {
+    const sessionId = "00000000-0000-4000-8000-000000000001";
     expect(
-      shopFeedbackForItem(
+      shopClickFeedbackForItem(
         {
           item_id: "top-1",
           affiliate_url: "https://shop.test/item",
@@ -172,21 +173,30 @@ describe("Expo stylist feed model", () => {
         } as never,
         "rec-1",
         3,
-        "event-cart",
+        "event-click",
+        sessionId,
       ),
     ).toEqual({
-      event_id: "event-cart",
+      event_id: "event-click",
       target_type: "item",
       target_id: "top-1",
-      action: "cart",
-      context: { recommendation_id: "rec-1", rank: 3 },
+      action: "shop_click",
+      context: {
+        attribution_version: 1,
+        placement: "stylist_outfit",
+        recommendation_id: "rec-1",
+        rank: 3,
+        session_id: sessionId,
+        subid: "rec-1",
+      },
     });
     expect(
-      shopFeedbackForItem(
+      shopClickFeedbackForItem(
         { item_id: "owned-1", affiliate_url: "https://shop.test/item", owned: true } as never,
         "rec-1",
         0,
-        "event-cart",
+        "event-click",
+        sessionId,
       ),
     ).toBeNull();
   });

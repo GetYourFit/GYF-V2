@@ -1,7 +1,7 @@
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Linking, Modal, Pressable, ScrollView, View } from "react-native";
 
 import { IconClose } from "@/components/icons";
@@ -12,8 +12,9 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createApi, type Outfit, type OutfitItem, type SearchResult } from "@/lib/api";
+import { shopClickFeedback } from "@/lib/commerce-attribution";
 import { compatibilityReason, formatCatalogPrice } from "@/lib/explore-feed";
-import { safeExternalShopUrl } from "@/lib/shop-links";
+import { safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { colors, materials, radii, spacing, type ThemeName } from "@/theme/tokens";
 import { useTheme } from "@/theme/use-color-scheme";
 
@@ -166,6 +167,7 @@ export function ItemDetailSheet({
   const [api] = useState(() => createApi());
   const [wardrobeState, setWardrobeState] = useState<"idle" | "busy" | "added">("idle");
   const [actionError, setActionError] = useState<string | null>(null);
+  const commerceSessionId = useRef(crypto.randomUUID());
 
   // Every open is a fresh item: never show the previous item's success state.
   useEffect(() => {
@@ -278,20 +280,23 @@ export function ItemDetailSheet({
             ) : null}
 
             {shopUrl ? (
-              /* Full notice on /terms; one tappable line here, where the money
-                 decision is actually made. */
-              <PressableScale
-                accessibilityHint="Opens terms and disclosures"
-                accessibilityRole="link"
-                onPress={() => {
-                  onClose();
-                  router.push("/terms");
-                }}
-              >
+              <View style={{ gap: spacing.xs }}>
                 <GyfText theme={theme} tone="faint" variant="bodySmall">
-                  Affiliate link — how GYF makes money
+                  {SHOP_AFFILIATE_DISCLOSURE}
                 </GyfText>
-              </PressableScale>
+                <PressableScale
+                  accessibilityHint="Opens terms and disclosures"
+                  accessibilityRole="link"
+                  onPress={() => {
+                    onClose();
+                    router.push("/terms");
+                  }}
+                >
+                  <GyfText theme={theme} tone="faint" variant="bodySmall">
+                    Read affiliate disclosure
+                  </GyfText>
+                </PressableScale>
+              </View>
             ) : null}
 
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
@@ -310,11 +315,19 @@ export function ItemDetailSheet({
               />
               {shopUrl ? (
                 <AtelierButton
-                  label="Shop now"
+                  accessibilityHint="Opens the retailer product page. Close it or return to keep exploring."
+                  label="Shop at retailer"
                   onPress={() =>
-                    void Linking.openURL(shopUrl).catch(() =>
-                      setActionError("Could not open the retailer link. Try again."),
-                    )
+                    void Linking.openURL(shopUrl)
+                      .then(() => {
+                        const event = shopClickFeedback(item, {
+                          eventId: crypto.randomUUID(),
+                          placement: "product_detail",
+                          sessionId: commerceSessionId.current,
+                        });
+                        if (event) void api.feedback(event).catch(() => undefined);
+                      })
+                      .catch(() => setActionError("Could not open the retailer link. Try again."))
                   }
                   style={{ flex: 1 }}
                 />
@@ -322,7 +335,7 @@ export function ItemDetailSheet({
             </View>
             {shopUrl ? null : (
               <GyfText theme={theme} tone="faint" variant="bodySmall">
-                No retailer link is available for this piece right now.
+                No verified retailer link is available for this piece right now.
               </GyfText>
             )}
           </ScrollView>
