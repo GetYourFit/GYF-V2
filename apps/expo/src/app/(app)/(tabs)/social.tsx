@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, RefreshControl, TextInput, View } from "react-native";
+import { FlatList, Platform, RefreshControl, Share, TextInput, View } from "react-native";
+import { File, Paths } from "expo-file-system";
+import * as MediaLibrary from "expo-media-library";
 
 import { IconHeart } from "@/components/icons";
 import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
@@ -14,6 +16,8 @@ import { ScreenBar } from "@/components/ui/screen-bar";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type OutfitRecommendation, type Post } from "@/lib/api";
+import { downloadValidatedPostImage, imageExtension } from "@/lib/post-image-transfer";
+import { primaryActionablePostImageUrl } from "@/lib/social-post-media";
 import {
   appendUniquePosts,
   applyReaction,
@@ -25,11 +29,44 @@ import {
   withoutAuthor,
   type FeedScope,
 } from "@/lib/social-feed";
+import { savePostImage, sharePostImage, type SocialMediaResult } from "@/lib/social-media";
 import { colors, radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 import { useResponsive } from "@/theme/use-responsive";
 
 type Status = "loading" | "ready" | "error";
+
+async function saveImageToPhotos(url: string): Promise<void> {
+  const { bytes, contentType } = await downloadValidatedPostImage(url);
+  const file = new File(Paths.cache, `gyf-look-${Date.now()}.${imageExtension(url, contentType)}`);
+  try {
+    file.create({ overwrite: true });
+    file.write(bytes);
+    await MediaLibrary.Asset.create(file.uri);
+  } finally {
+    try {
+      file.delete();
+    } catch {
+      // The cached file is best-effort cleanup only; never mask a save failure.
+    }
+  }
+}
+
+async function downloadImageOnWeb(url: string): Promise<void> {
+  const { bytes, contentType } = await downloadValidatedPostImage(url);
+  const blobBytes = new Uint8Array(bytes.byteLength);
+  blobBytes.set(bytes);
+  const blob = new Blob([blobBytes], { type: contentType });
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = `gyf-look.${imageExtension(url, contentType)}`;
+    anchor.click();
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
 
 function readableError(error: unknown): string {
   if (error instanceof ApiError && error.isUnauthorized) {
@@ -92,6 +129,9 @@ function PostCard({
   recreatePending,
   onReport,
   onBlock,
+  onSave,
+  onShare,
+  mediaResult,
 }: {
   post: Post;
   isSelf: boolean;
@@ -103,10 +143,14 @@ function PostCard({
   recreatePending: boolean;
   onReport: (reason: string) => void;
   onBlock: () => void;
+  onSave: (url: string | null | undefined) => void;
+  onShare: (url: string | null | undefined) => void;
+  mediaResult?: SocialMediaResult;
 }) {
   const palette = useThemeColors();
   const { width } = useResponsive();
   const covers = postCoverImages(post.items, 3);
+  const primaryImageUrl = primaryActionablePostImageUrl(covers);
   const coverHeight = Math.round(((width - spacing.lg * 2 - spacing.xs * 2) / 3) * 1.25);
   // Inline two-step report (works on web too, unlike Alert): tap Report, pick a
   // reason chip; "sent" is per-card local state — the server keeps the record.
@@ -179,33 +223,92 @@ function PostCard({
 
       {post.caption ? <GyfText variant="body">{post.caption}</GyfText> : null}
 
-      <PressableScale
-        accessibilityLabel={
-          post.reacted
-            ? `Remove your like; ${post.reaction_count} likes`
-            : `Like this look; ${post.reaction_count} likes`
-        }
-        accessibilityRole="button"
-        accessibilityState={{ selected: post.reacted }}
-        hitSlop={hitSlopFor(32)}
-        onPress={onReact}
+      <View
         style={{
           alignItems: "center",
           alignSelf: "flex-start",
           flexDirection: "row",
-          gap: spacing.xs,
-          minHeight: 32,
+          gap: spacing.md,
         }}
       >
-        <IconHeart
-          color={post.reacted ? palette.error : palette.textMuted}
-          filled={post.reacted}
-          size={18}
-        />
-        <GyfText style={{ color: post.reacted ? palette.text : palette.textMuted }} variant="mono">
-          {post.reaction_count}
+        <PressableScale
+          accessibilityLabel={
+            post.reacted
+              ? `Remove your like; ${post.reaction_count} likes`
+              : `Like this look; ${post.reaction_count} likes`
+          }
+          accessibilityRole="button"
+          accessibilityState={{ selected: post.reacted }}
+          hitSlop={hitSlopFor(32)}
+          onPress={onReact}
+          style={{
+            alignItems: "center",
+            alignSelf: "flex-start",
+            flexDirection: "row",
+            gap: spacing.xs,
+            minHeight: 32,
+          }}
+        >
+          <IconHeart
+            color={post.reacted ? palette.error : palette.textMuted}
+            filled={post.reacted}
+            size={18}
+          />
+          <GyfText
+            style={{ color: post.reacted ? palette.text : palette.textMuted }}
+            variant="mono"
+          >
+            {post.reaction_count}
+          </GyfText>
+        </PressableScale>
+        <PressableScale
+          accessibilityHint="Opens your device share options for this post image"
+          accessibilityLabel="Share this look"
+          accessibilityRole="button"
+          disabled={!primaryImageUrl}
+          hitSlop={hitSlopFor(32)}
+          onPress={() => onShare(primaryImageUrl)}
+          style={{ minHeight: 44, justifyContent: "center" }}
+        >
+          <GyfText
+            style={{ color: primaryImageUrl ? palette.textMuted : palette.textFaint }}
+            variant="bodySmall"
+          >
+            Share
+          </GyfText>
+        </PressableScale>
+        <PressableScale
+          accessibilityHint="Saves this post image to your device or starts a browser download"
+          accessibilityLabel="Save this look image to my device"
+          accessibilityRole="button"
+          disabled={!primaryImageUrl}
+          hitSlop={hitSlopFor(32)}
+          onPress={() => onSave(primaryImageUrl)}
+          style={{ minHeight: 44, justifyContent: "center" }}
+        >
+          <GyfText
+            style={{ color: primaryImageUrl ? palette.textMuted : palette.textFaint }}
+            variant="bodySmall"
+          >
+            Save image
+          </GyfText>
+        </PressableScale>
+      </View>
+      {mediaResult ? (
+        <GyfText
+          accessibilityRole="alert"
+          tone={
+            mediaResult.outcome === "failed" ||
+            mediaResult.outcome === "invalid" ||
+            mediaResult.outcome === "denied"
+              ? "faint"
+              : "muted"
+          }
+          variant="bodySmall"
+        >
+          {mediaResult.message}
         </GyfText>
-      </PressableScale>
+      ) : null}
 
       {isSelf ? null : (
         <AtelierButton
@@ -305,6 +408,7 @@ export default function SocialRoute() {
   const [recreating, setRecreating] = useState<string | null>(null);
   const [recreated, setRecreated] = useState<Record<string, OutfitRecommendation>>({});
   const [recreateErrors, setRecreateErrors] = useState<Record<string, string>>({});
+  const [mediaResults, setMediaResults] = useState<Record<string, SocialMediaResult>>({});
   const composerRequestId = useRef(0);
 
   const closeComposer = useCallback(() => {
@@ -388,6 +492,57 @@ export default function SocialRoute() {
     },
     [api, recreating],
   );
+
+  const share = useCallback(async (postId: string, url: string | null | undefined) => {
+    const result = await sharePostImage(url, {
+      native:
+        Platform.OS === "web"
+          ? undefined
+          : async (imageUrl) => {
+              const result = await Share.share({
+                message: "A look from Get Your Fit",
+                title: "GYF look",
+                url: imageUrl,
+              });
+              return result.action === Share.dismissedAction ? "dismissed" : "shared";
+            },
+      web:
+        Platform.OS === "web" &&
+        typeof navigator !== "undefined" &&
+        typeof navigator.share === "function"
+          ? async (imageUrl) => {
+              try {
+                await navigator.share({ title: "GYF look", url: imageUrl });
+                return "shared";
+              } catch (error) {
+                if (error instanceof DOMException && error.name === "AbortError") {
+                  return "dismissed";
+                }
+                throw error;
+              }
+            }
+          : undefined,
+    });
+    setMediaResults((current) => ({ ...current, [postId]: result }));
+  }, []);
+
+  const save = useCallback(async (postId: string, url: string | null | undefined) => {
+    const result = await savePostImage(url, {
+      platform:
+        Platform.OS === "web"
+          ? "web"
+          : Platform.OS === "ios" || Platform.OS === "android"
+            ? "native"
+            : "unsupported",
+      requestPhotoPermission: async () => {
+        const permission = await MediaLibrary.requestPermissionsAsync(true, ["photo"]);
+        return permission.granted ? "granted" : permission.canAskAgain ? "denied" : "blocked";
+      },
+      saveNative: saveImageToPhotos,
+      downloadWeb: downloadImageOnWeb,
+    });
+    setMediaResults((current) => ({ ...current, [postId]: result }));
+  }, []);
 
   const load = useCallback(
     async (nextPage: number, replace: boolean) => {
@@ -528,9 +683,12 @@ export default function SocialRoute() {
             onReact={() => void react(item)}
             onReport={(reason) => report(item.id, reason)}
             onRecreate={() => void recreate(item.id)}
+            onSave={(url) => void save(item.id, url)}
+            onShare={(url) => void share(item.id, url)}
             pending={pending === item.user_id}
             post={item}
             recreatePending={recreating === item.id}
+            mediaResult={mediaResults[item.id]}
           />
           {recreated[item.id] ? (
             <AtelierCard>

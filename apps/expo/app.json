@@ -26,6 +26,13 @@
           "photosPermission": "Allow Get Your Fit to choose your profile picture."
         }
       ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Get Your Fit to save looks to your photos.",
+          "savePhotosPermission": "Allow Get Your Fit to save looks to your photos."
+        }
+      ],
       "expo-image"
     ],
     "extra": {
