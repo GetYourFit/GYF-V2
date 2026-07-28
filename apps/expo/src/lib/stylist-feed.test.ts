@@ -165,6 +165,16 @@ describe("Expo stylist feed model", () => {
         "https://linksredirect.com/?cid=274785&source=api&subid=catalog_legacy&url=https%3A%2F%2Fshop.test%2Fitem",
       ),
     ).toBe("catalog_legacy");
+    expect(
+      deeplinkSubid(
+        "https://linksredirect.com/?cid=274785&source=linkkit&subid=rec-123&url=https%3A%2F%2Fshop.test%2Fitem",
+      ),
+    ).toBeNull();
+    expect(
+      deeplinkSubid(
+        "https://linksredirect.com/?cid=274785&source=api&subid=alice%40private.invalid&url=https%3A%2F%2Fshop.test%2Fitem",
+      ),
+    ).toBeNull();
     expect(deeplinkSubid("https://shop.test/item")).toBeNull();
   });
 
