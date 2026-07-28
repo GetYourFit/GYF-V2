@@ -146,7 +146,7 @@ describe("Expo Explore request model", () => {
   test("a tapped board item keeps filtered similarity inside the same budget currency", () => {
     expect(
       buildExploreRequest(
-        { ...clean, maxPrice: 5_000 },
+        { ...clean, slot: "top", maxPrice: 5_000 },
         2,
         "ignored",
         "women",
@@ -156,7 +156,14 @@ describe("Expo Explore request model", () => {
     ).toEqual({
       mode: "similar",
       itemId: "item/42",
-      params: { k: 24, offset: 48, max_price: 2_000, currency: "INR", gender: "women" },
+      params: {
+        k: 24,
+        offset: 48,
+        slot: "top",
+        max_price: 2_000,
+        currency: "INR",
+        gender: "women",
+      },
     });
   });
 

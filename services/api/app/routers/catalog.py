@@ -100,6 +100,13 @@ def similar_items(
     gender: str | None = Query(
         None, description="Styling gender: results narrow to that slice + unisex."
     ),
+    slot: Literal["top", "bottom", "full_body", "outerwear", "footwear", "accessory"] | None = (
+        Query(
+            None,
+            description="Outfit slot: hard-filters results to that slot's garment "
+            "categories (e.g. bottom = jeans/trousers/skirt/…). Null means all slots.",
+        )
+    ),
     repo: VectorSearchRepository = Depends(get_search_repo),
 ) -> dict[str, list[SearchResult]]:
     """Visually-similar items (nearest neighbours of the item's embedding)."""
@@ -110,6 +117,7 @@ def similar_items(
         region,
         offset,
         genders=_genders(gender),
+        categories=_slot_categories(slot),
         max_price=max_price,
         currency=currency,
     )

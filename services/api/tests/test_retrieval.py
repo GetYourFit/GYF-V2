@@ -21,6 +21,7 @@ from app.catalog.retrieval import (
 from app.main import app, get_search_repo, get_text_embedder
 from app.profile.models import BudgetRange, Profile
 from app.recsys.conditioning import resolve
+from app.routers.catalog import _slot_categories
 
 
 def test_profile_preferences_materially_change_explore_and_never_break_budget():
@@ -282,6 +283,29 @@ def test_similar_sql_applies_budget_before_gender_and_category_filters():
     assert "AND i.price IS NOT NULL AND i.price <= %s" in sql
     assert "AND (i.currency IS NULL OR i.currency = %s)" in sql
     assert params == ("source", "source", "source", 2000, "INR", "source", 4, 0)
+
+
+def test_similar_endpoint_maps_slot_to_canonical_categories():
+    client = _client()
+    try:
+        repo = StubRepo()
+        app.dependency_overrides[get_search_repo] = lambda: repo
+        resp = client.get("/items/abc/similar?k=5&slot=top")
+        assert resp.status_code == 200
+        assert repo.similar_calls == [
+            {
+                "item_id": "abc",
+                "k": 5,
+                "region": None,
+                "offset": 0,
+                "genders": None,
+                "categories": _slot_categories("top"),
+                "max_price": None,
+                "currency": None,
+            }
+        ]
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_browse_sql_requires_an_embedding_to_exist():
