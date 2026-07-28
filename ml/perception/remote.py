@@ -498,9 +498,9 @@ def batch_encoder_for(model_id: str) -> Encoder:
     from .model import SiglipEncoder
 
     remote = encoder_for(model_id)
-    if not settings.encoder_remote_url:
-        return remote  # already the local baseline — nothing to fall back to
+    if settings.encoder_remote_kind == "local_cpu" or not settings.encoder_remote_url:
+        return remote
     return FallbackEncoder(
         remote,
-        lambda: SiglipEncoder(model_id, device=settings.perception_device),
+        lambda: SiglipEncoder(model_id, device="cpu"),
     )

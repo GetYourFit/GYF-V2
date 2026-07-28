@@ -10,12 +10,40 @@ import pytest
 
 from eval.encoder_foundation import (
     cosine_topk_parity,
+    measure_text_runtime,
+    query_cache_key,
     retrieval_truth,
     validate_embeddings,
 )
+from perception.remote import FallbackEncoder
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "encoder_foundation.json"
+
+
+class _FakeEncoder:
+    dim = 4
+
+    def __init__(self, rows: np.ndarray | None = None) -> None:
+        self._rows = (
+            rows
+            if rows is not None
+            else np.array([[1.0, 0.0, 0.0, 0.0]], dtype=np.float32)
+        )
+        self.calls = 0
+
+    def encode_texts(self, texts: list[str]) -> np.ndarray:
+        self.calls += 1
+        return np.repeat(self._rows, len(texts), axis=0)
+
+    def encode_images(self, images: list[object]) -> np.ndarray:
+        return np.repeat(self._rows, len(images), axis=0)
+
+
+class _DeadEncoder(_FakeEncoder):
+    def encode_texts(self, texts: list[str]) -> np.ndarray:
+        self.calls += 1
+        raise RuntimeError("remote unavailable")
 
 
 def test_fixture_pins_incumbent_contract() -> None:
@@ -51,3 +79,36 @@ def test_retrieval_truth_rejects_unknown_ids() -> None:
     retrieval_truth(["item-a", "item-b"], {"item-a", "item-b"})
     with pytest.raises(AssertionError):
         retrieval_truth(["item-a", "unavailable"], {"item-a"})
+
+
+def test_measure_text_runtime_uses_conservative_p95(monkeypatch) -> None:
+    encoder = _FakeEncoder()
+    samples = iter([0.0, 1.0, 1.1, 1.3, 1.6, 2.0, 2.6, 3.5, 4.7, 6.2, 8.0, 10.4])
+    monkeypatch.setattr("eval.encoder_foundation.time.perf_counter", lambda: next(samples))
+
+    measurement = measure_text_runtime(encoder, ["a", "b"], repeats=5)
+
+    assert measurement.cold_seconds == 1.0
+    assert measurement.warm_p50_seconds == pytest.approx(0.9)
+    assert measurement.warm_p95_seconds == pytest.approx(2.4)
+    assert measurement.items_per_second == pytest.approx(2 / 1.08)
+
+
+def test_fallback_encoder_demotes_to_local_baseline() -> None:
+    local = _FakeEncoder()
+    encoder = FallbackEncoder(_DeadEncoder(), lambda: local)
+
+    out = encoder.encode_texts(["dress"])
+
+    assert out.shape == (1, 4)
+    assert encoder.lane == "local"
+    assert "remote unavailable" in encoder.fallback_reason
+    assert local.calls == 1
+
+
+def test_query_cache_key_changes_with_model_version() -> None:
+    normalized_query = "red summer dress"
+    current = query_cache_key(normalized_query, "google-siglip2-base-v1")
+    next_version = query_cache_key(normalized_query, "google-siglip2-base-v2")
+
+    assert current != next_version
