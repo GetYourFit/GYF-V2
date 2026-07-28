@@ -3,7 +3,7 @@
 The GYF ML platform. Modules (gated by `docs/plans/active-execution-contract.md`, grounded in
 `docs/research/deep-research-report.md`):
 
-- `perception/` — fashion embeddings (Marqo-FashionSigLIP), attributes, color (CIELAB/CAM16)
+- `perception/` — SigLIP2 image/text embeddings through the shared `gyf_contracts.encoder.ImageTextEncoder` port, attributes and color (CIELAB/CAM16)
 - `usermodel/` — body-type module (SMPL) and skin-tone module (separate, fairness-gated ⚠️)
 - `recsys/` — two-tower, transformer ranker, generative (Semantic IDs / TIGER) later
 - `compat/` — outfit compatibility & composition
@@ -27,8 +27,10 @@ lazily, and all logic is tested against an injected fake `Encoder` (see
 
 ## P1-A — Perception (Cycle 1: A0–A2, shipped)
 
-- `perception/model.py` — `Encoder` protocol + `SiglipEncoder` (Marqo-FashionSigLIP,
-  shared 768-d image/text space; lazy weights).
+- `packages/contracts/gyf_contracts/encoder.py` — the canonical dependency-light
+  `ImageTextEncoder` port and 768-d index contract shared by ML and API adapters.
+- `perception/model.py` — lazy local SigLIP2 implementation of that port; legacy
+  `Encoder` is a compatibility alias, not a second port.
 - `perception/attributes.py` — zero-shot garment attributes via per-attribute text prompts,
   each with a **calibrated** confidence (cosine sims scaled by the encoder's learned
   `logit_scale`, not raw). Attributes are **category-gated**: category is predicted first
@@ -66,9 +68,9 @@ drift. Schema changes (vector(768), HNSW index, catalog provenance) are in
 
 - **A3 retrieval** — pgvector cosine retrieval in `services/api/app/catalog/retrieval.py`
   (visually-similar + text->image, optional region filter). Endpoints: `GET /items/{id}/similar`
-  and `GET /items/search?q=`. The text-query encoder is the SigLIP encoder, bridged via
-  `app/catalog/perception_adapter.py` (in-process for beta; replace with a perception-service
-  client at scale). Search returns an honest 503 when the perception runtime is not installed.
+  and `GET /items/search?q=`. The API's sole model boundary is
+  `app/catalog/perception_adapter.py`, which consumes the shared port and query cache; an absent
+  or failed encoder takes the tested lexical fallback rather than claiming semantic results.
 - **A4 eval** — `eval/metrics.py` (MRR, Recall@K) + `eval/retrieval_eval.py`
   (leave-one-out image->image evaluation over grouped open-dataset embeddings, writes a
   versioned JSON report). Offline signal for candidate selection only — promotion still

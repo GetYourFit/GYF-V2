@@ -2,7 +2,7 @@
 
     python -m perception.inspect path/to/garment.jpg [--json]
 
-Loads the configured Marqo-FashionSigLIP encoder (weights download on first run)
+Loads the configured registry-approved SigLIP encoder (weights download on first run)
 and prints the attributes, color, and embedding summary the pipeline would store.
 Requires the perception extra: ``pip install -e ".[perception]"``.
 """

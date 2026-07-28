@@ -140,6 +140,12 @@ def test_runtime_gate_rejects_duplicate_name_capability_and_uri_mismatches(tmp_p
     assert not runtime_model_verdict("encoder", registry=registry, reports_dir=reports)[0]
 
 
+def test_api_default_derives_from_the_canonical_runtime_binding():
+    from app.config import Settings as ApiSettings
+
+    assert ApiSettings().perception_model == RUNTIME_MODELS["encoder"].model_uri
+
+
 def test_encoder_provider_rejects_configured_uri_mismatch(monkeypatch):
     from app import dependencies as deps
     from app.catalog import perception_adapter

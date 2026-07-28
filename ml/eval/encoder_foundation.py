@@ -8,31 +8,67 @@ cold/warm/batch/resource measurements for a caller-supplied Encoder.
 
 from __future__ import annotations
 
+import re
 import time
 from dataclasses import dataclass
-from typing import Protocol
 
 import numpy as np
-
-from perception.model import EMBEDDING_DIM
-
-
-class TextImageEncoder(Protocol):
-    dim: int
-
-    def encode_texts(self, texts: list[str]) -> np.ndarray: ...
-
-    def encode_images(self, images: list) -> np.ndarray: ...
+from gyf_contracts.encoder import EMBEDDING_DIM, ImageTextEncoder
 
 
 @dataclass(frozen=True)
 class RuntimeMeasurement:
     cold_seconds: float
+    cold_cpu_seconds: float
     warm_p50_seconds: float
     warm_p95_seconds: float
+    warm_cpu_p95_seconds: float
     batch_size: int
     items_per_second: float
     rss_bytes: int | None
+
+
+@dataclass(frozen=True)
+class RuntimeBudget:
+    """Explicit local-foundation ceilings; callers supply measured gate values."""
+
+    max_cold_seconds: float
+    max_warm_p95_seconds: float
+    max_warm_cpu_p95_seconds: float
+    max_rss_bytes: int | None = None
+
+
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def validate_artifact_sha256(value: str) -> None:
+    """Reject absent or malformed artifact hashes in a future runtime attestation.
+
+    The current registry has no weight hash, so this helper deliberately cannot
+    turn the local foundation into promotion evidence. It prevents a future
+    attestation from accepting a mutable tag or an invented checksum.
+    """
+    if not _SHA256_RE.fullmatch(value):
+        raise AssertionError("artifact SHA-256 must be 64 lowercase hexadecimal characters")
+
+
+def assert_runtime_budget(measurement: RuntimeMeasurement, budget: RuntimeBudget) -> None:
+    """Fail a candidate that exceeds its declared wall, CPU, or RSS budget."""
+    failures: list[str] = []
+    if measurement.cold_seconds > budget.max_cold_seconds:
+        failures.append(f"cold={measurement.cold_seconds:.3f}s")
+    if measurement.warm_p95_seconds > budget.max_warm_p95_seconds:
+        failures.append(f"warm_p95={measurement.warm_p95_seconds:.3f}s")
+    if measurement.warm_cpu_p95_seconds > budget.max_warm_cpu_p95_seconds:
+        failures.append(f"warm_cpu_p95={measurement.warm_cpu_p95_seconds:.3f}s")
+    if (
+        budget.max_rss_bytes is not None
+        and measurement.rss_bytes is not None
+        and measurement.rss_bytes > budget.max_rss_bytes
+    ):
+        failures.append(f"rss={measurement.rss_bytes}B")
+    if failures:
+        raise AssertionError("runtime budget exceeded: " + ", ".join(failures))
 
 
 def validate_embeddings(vectors: np.ndarray, *, dim: int = EMBEDDING_DIM) -> None:
@@ -89,26 +125,35 @@ def _rss_bytes() -> int | None:
 
 
 def measure_text_runtime(
-    encoder: TextImageEncoder, texts: list[str], *, repeats: int = 5
+    encoder: ImageTextEncoder, texts: list[str], *, repeats: int = 5
 ) -> RuntimeMeasurement:
     """Measure one cold call and bounded warm calls without implying promotion."""
     if not texts or repeats < 1:
         raise ValueError("texts and repeats must be non-empty/positive")
     started = time.perf_counter()
+    cpu_started = time.process_time()
     encoder.encode_texts(texts)
     cold = time.perf_counter() - started
+    cold_cpu = time.process_time() - cpu_started
     warm: list[float] = []
+    warm_cpu: list[float] = []
     for _ in range(repeats):
         started = time.perf_counter()
+        cpu_started = time.process_time()
         encoder.encode_texts(texts)
         warm.append(time.perf_counter() - started)
+        warm_cpu.append(time.process_time() - cpu_started)
     ordered = sorted(warm)
+    ordered_cpu = sorted(warm_cpu)
     p95_index = max(0, int(np.ceil(len(ordered) * 0.95)) - 1)
     p95 = ordered[min(len(ordered) - 1, p95_index)]
+    cpu_p95 = ordered_cpu[min(len(ordered_cpu) - 1, p95_index)]
     return RuntimeMeasurement(
         cold_seconds=cold,
+        cold_cpu_seconds=cold_cpu,
         warm_p50_seconds=float(np.median(warm)),
         warm_p95_seconds=p95,
+        warm_cpu_p95_seconds=cpu_p95,
         batch_size=len(texts),
         items_per_second=len(texts) / max(float(np.mean(warm)), 1e-9),
         rss_bytes=_rss_bytes(),

@@ -6,6 +6,10 @@ database URL and conventions.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from gyf_contracts.eval_report import RUNTIME_MODELS
+
+
+_PRODUCTION_ENCODER = RUNTIME_MODELS["encoder"]
 
 
 class Settings(BaseSettings):
@@ -17,8 +21,8 @@ class Settings(BaseSettings):
     # Perception model identity. The version string is written to
     # item_embeddings.model_version and items.attributes so backfill is idempotent
     # and every derived attribute is traceable to the model that produced it.
-    perception_model: str = "hf-hub:timm/ViT-B-16-SigLIP2"
-    perception_model_version: str = "google-siglip2-base-v1"
+    perception_model: str = _PRODUCTION_ENCODER.model_uri
+    perception_model_version: str = _PRODUCTION_ENCODER.model_version
     # "auto" picks the most powerful device available (CUDA > Intel XPU > CPU);
     # Apple MPS is never auto-selected. Set GYF_PERCEPTION_DEVICE explicitly
     # (e.g. "cpu") to override.

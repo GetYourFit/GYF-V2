@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from perception.model import EMBEDDING_DIM
+from gyf_contracts.encoder import EMBEDDING_DIM
 from common.remote_client import image_to_b64_png
 from perception.remote import RemoteEncoder, batch_encoder_for, encoder_for
 
@@ -31,7 +31,7 @@ class _FakeClient:
 
 
 def _encoder_with(rows: list[list[float]]) -> tuple[RemoteEncoder, _FakeClient]:
-    enc = RemoteEncoder("hf-hub:Marqo/marqo-fashionSigLIP", "https://x.hf.space")
+    enc = RemoteEncoder("hf-hub:timm/ViT-B-16-SigLIP2", "https://x.hf.space")
     client = _FakeClient(rows)
     enc._client = client  # inject the fake; bypasses lazy gradio_client import
     return enc, client
@@ -104,7 +104,7 @@ def test_encode_texts_calls_text_api() -> None:
     enc, client = _encoder_with([[1.0] + [0.0] * (EMBEDDING_DIM - 1)])
     enc.encode_texts(["a red dress"])
     assert client.calls[0][1] == "/embed_texts"
-    assert client.calls[0][0] == ("hf-hub:Marqo/marqo-fashionSigLIP", ["a red dress"])
+    assert client.calls[0][0] == ("hf-hub:timm/ViT-B-16-SigLIP2", ["a red dress"])
 
 
 class _RawClient:

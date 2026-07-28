@@ -1409,9 +1409,13 @@ Shipped in code:
   repeated query costs a primary-key read instead of a remote encode, and a promoted model
   invalidates by construction. Database failure degrades to a direct encode, never to a failed
   search. LRU-pruned to 5k rows (~15 MB) to respect the 500 MB free tier.
-- **`HttpEncoder`** + `GYF_ENCODER_REMOTE_KIND` (`ml/perception/remote.py`) and the Modal
-  scale-to-zero CPU lane (`ml/serving/modal_encoder.py`): the SigLIP text tower needs no GPU, so
+- **`HttpEncoder`** + `GYF_ENCODER_REMOTE_KIND` (`ml/perception/remote.py`) and the canonical Modal
+  scale-to-zero CPU owner (`ml/serving/modal_encoder.py`): the SigLIP text tower needs no GPU, so
   the search miss path stops paying the ZeroGPU cold start. The Space stays the image-embed lane.
+  The shared image/text contract is `gyf_contracts.encoder.ImageTextEncoder`; the retained
+  `infra/modal/encoder.py` is custody-only pending external rollback proof and is not a deploy
+  target. PR #57's `local_cpu` path is a bounded foundation, not a model promotion, reindex or
+  substitute for frozen-corpus, India resource/latency, artifact-hash, shadow/canary and rollback evidence.
 - **`scripts/measure_slo.py`**: the §2 SLO gate itself — before/after, from the user's vantage.
 
 Measured *after* the code lane deployed (same command, same vantage, commit `c752161`):

@@ -1,15 +1,8 @@
-"""The fashion image/text encoder.
+"""SigLIP2 implementation of GYF's canonical image/text embedding port.
 
-:class:`Encoder` is the abstraction the rest of perception depends on; it maps
-images and text into a shared, L2-normalized embedding space so cosine
-similarity is meaningful across modalities (image->image retrieval, text->image
-search, zero-shot attributes).
-
-:class:`SiglipEncoder` is the production implementation backed by
-Marqo-FashionSigLIP via ``open_clip``. Its heavy dependencies (``torch``,
-``open_clip``) are imported lazily inside ``_load`` so importing this module — and
-unit-testing everything that depends on :class:`Encoder` with a fake — needs no
-model weights (mirrors the lazy-dependency pattern in services/api app.sink).
+The dependency-light :class:`gyf_contracts.encoder.ImageTextEncoder` contract owns
+embedding shape and semantics. This module owns only the lazy local SigLIP2
+implementation; remote adapters implement the same port without caller changes.
 """
 
 from __future__ import annotations
@@ -19,39 +12,17 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 import numpy as np
+from gyf_contracts.encoder import DEFAULT_LOGIT_SCALE, EMBEDDING_DIM, ImageTextEncoder
 
 if TYPE_CHECKING:
     from PIL.Image import Image
 
-# Marqo-FashionSigLIP (ViT-B-16-SigLIP) embedding dimension; matches the
-# item_embeddings.embedding vector(768) column (migration 0002).
-EMBEDDING_DIM = 768
-
-
-# Fallback temperature for zero-shot scoring when an encoder does not expose a
-# learned scale (e.g. test doubles). Real SigLIP carries its own `logit_scale`;
-# this CLIP-typical value only keeps softmax confidences non-degenerate offline.
-DEFAULT_LOGIT_SCALE = 100.0
-
-
-class Encoder(Protocol):
-    """Encodes images/text into the shared, L2-normalized embedding space."""
-
-    dim: int
-    # Learned softmax temperature: cosine sims must be multiplied by this before
-    # softmax, otherwise zero-shot confidences collapse toward uniform.
-    logit_scale: float
-
-    def encode_images(self, images: list[Image]) -> np.ndarray:
-        """Return an (N, dim) float32 array of L2-normalized image embeddings."""
-        ...
-
-    def encode_texts(self, texts: list[str]) -> np.ndarray:
-        """Return an (N, dim) float32 array of L2-normalized text embeddings."""
-        ...
+# Compatibility alias for third-party/offline callers. New code imports the
+# canonical contract directly from ``gyf_contracts.encoder``.
+Encoder = ImageTextEncoder
 
 
 # Accelerator backends we are willing to auto-select, most powerful first. Apple
@@ -163,7 +134,7 @@ def l2_normalize(x: np.ndarray) -> np.ndarray:
 
 
 class SiglipEncoder:
-    """Marqo-FashionSigLIP encoder. Lazily loads weights on first use."""
+    """Local SigLIP-family encoder. Lazily loads the registry-selected weights on first use."""
 
     dim = EMBEDDING_DIM
 
@@ -243,7 +214,7 @@ class SiglipEncoder:
         gc.collect()
 
 
-def default_encoder() -> Encoder:
+def default_encoder() -> ImageTextEncoder:
     """Build the configured production encoder.
 
     Delegates to :func:`perception.remote.encoder_for`, which returns the remote

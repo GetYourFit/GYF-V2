@@ -20,7 +20,8 @@ from pathlib import Path
 from gyf_contracts.model_policy import Lane, load_registry
 from gyf_contracts.taxonomy import classify
 
-from perception.model import Encoder, SiglipEncoder
+from gyf_contracts.encoder import ImageTextEncoder
+from perception.model import SiglipEncoder
 
 from .compare import compare_encoders, rank_candidates
 
@@ -67,7 +68,7 @@ def load_dataset(feed_path: Path, images_dir: Path) -> tuple[list, list[str]]:
 
 def encoders_from_registry(
     registry_path: Path, *, only: set[str] | None = None
-) -> dict[str, Encoder]:
+) -> dict[str, ImageTextEncoder]:
     """Build one encoder per registry `encoder` model (incumbent + research candidates).
 
     The registry is the single source of truth for *what to benchmark*; we never hand-list models
@@ -83,7 +84,7 @@ def encoders_from_registry(
     # only the heavy forward pass goes remote). Otherwise load weights locally.
     remote_url = settings.encoder_remote_url
 
-    encoders: dict[str, Encoder] = {}
+    encoders: dict[str, ImageTextEncoder] = {}
     for card in load_registry(registry_path):
         if card.capability != ENCODER_CAPABILITY:
             continue

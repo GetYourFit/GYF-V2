@@ -33,7 +33,9 @@ from dataclasses import dataclass
 import numpy as np
 from gyf_contracts.taxonomy import CATEGORIES
 
-from .model import DEFAULT_LOGIT_SCALE, Encoder, l2_normalize
+from gyf_contracts.encoder import DEFAULT_LOGIT_SCALE, ImageTextEncoder
+
+from .model import l2_normalize
 
 CATEGORY = "category"  # the meta-attribute that selects which others apply
 DEFAULT_MIN_CONFIDENCE = 0.35  # below this, a prediction is flagged uncertain
@@ -157,7 +159,9 @@ class AttributeExtractor:
     dominates cost.
     """
 
-    def __init__(self, encoder: Encoder, specs: dict[str, AttributeSpec] | None = None) -> None:
+    def __init__(
+        self, encoder: ImageTextEncoder, specs: dict[str, AttributeSpec] | None = None
+    ) -> None:
         self._encoder = encoder
         self._specs = specs or ATTRIBUTE_SPECS
         self._text_emb: dict[str, np.ndarray] = {}

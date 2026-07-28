@@ -13,7 +13,7 @@
       "eval_report": "encoder-marqo-fashionSigLIP-v1",
       "model_version": "marqo-fashionSigLIP-v1",
       "model_uri": "hf-hub:Marqo/marqo-fashionSigLIP",
-      "notes": "Shipped P1-A perception; superseded by google-siglip2-base at M2 (lost the bake-off on mrr/recall@5/recall@10). Kept as the commercial-clean fallback baseline behind the encoder port (invariant #5)."
+      "notes": "Historical P1-A perception baseline; it lost the image-category bake-off to google-siglip2-base and is research-lane only. It is not the configured serving fallback: remote failure falls back to the same production SigLIP2 model locally. The immutable text-retrieval corpus and artifact hash required for any future promotion decision are not yet attached."
     },
     {
       "name": "google-siglip2-base",
@@ -27,7 +27,7 @@
       "eval_report": "encoder-google-siglip2-base-v1",
       "model_version": "google-siglip2-base-v1",
       "model_uri": "hf-hub:timm/ViT-B-16-SigLIP2",
-      "notes": "Promoted at M2. SigLIP 2 recipe, B/16, 768-dim (same width as the old incumbent => no vector migration). Won the M2 bake-off against marqo-fashionSigLIP on mrr/recall@5/recall@10; despite not being fashion-tuned, the SigLIP 2 training recipe wins. Served via local SiglipEncoder baseline or the ZeroGPU remote lane."
+      "notes": "Current production registry binding. SigLIP 2 recipe, B/16, 768-dim (same width as the historical baseline, so no vector migration). It won the M2 image-category bake-off against marqo-fashionSigLIP. It is served through the canonical ImageTextEncoder port by the local SiglipEncoder or configured remote adapter; remote batch failure falls back to local SigLIP2. This evidence does not establish text-search, personalization, outfit, fairness or conversion lift. Artifact SHA-256 and frozen text-retrieval/India-resource evidence remain required before any new promotion or runtime replacement."
     },
     {
       "name": "google-siglip2-so400m",
