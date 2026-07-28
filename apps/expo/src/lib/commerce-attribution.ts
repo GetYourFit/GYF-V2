@@ -25,6 +25,7 @@ export function shopClickFeedback(
     rank,
     sessionId,
     subid,
+    unattributed,
   }: {
     eventId: string;
     placement: CommercePlacement;
@@ -32,11 +33,12 @@ export function shopClickFeedback(
     rank?: number;
     sessionId: string;
     subid?: string;
+    unattributed?: boolean;
   },
 ): FeedbackRequest | null {
   if (item.owned || !safeExternalShopUrl(item.affiliate_url)) return null;
   const effectiveSubid = recommendationId ?? subid;
-  if (!effectiveSubid) return null;
+  if (!effectiveSubid && !unattributed) return null;
   return {
     event_id: eventId,
     target_type: "item",
@@ -48,7 +50,8 @@ export function shopClickFeedback(
       recommendation_id: recommendationId,
       rank,
       session_id: sessionId,
-      subid: effectiveSubid,
+      ...(effectiveSubid ? { subid: effectiveSubid } : null),
+      ...(unattributed ? { unattributed: true } : null),
     },
   };
 }

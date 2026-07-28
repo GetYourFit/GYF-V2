@@ -137,7 +137,7 @@ class FeedbackRequest(BaseModel):
         """Keep the client handoff contract joinable without accepting new PII."""
         if info.data.get("action") != InteractionAction.SHOP_CLICK:
             return context
-        required = {"attribution_version", "placement", "session_id", "subid"}
+        required = {"attribution_version", "placement", "session_id"}
         if not required.issubset(context):
             raise ValueError("shop_click attribution context is incomplete")
         if context["attribution_version"] != 1:
@@ -148,15 +148,21 @@ class FeedbackRequest(BaseModel):
             UUID(str(context["session_id"]))
         except (TypeError, ValueError) as exc:
             raise ValueError("shop_click session_id must be a UUID") from exc
-        subid = context["subid"]
-        if not isinstance(subid, str) or not _SUBID_SAFE.fullmatch(subid):
+        unattributed = context.get("unattributed") is True
+        subid = context.get("subid")
+        if subid is None:
+            if not unattributed or context["placement"] != "product_detail":
+                raise ValueError("shop_click attribution context is incomplete")
+        elif not isinstance(subid, str) or not _SUBID_SAFE.fullmatch(subid):
             raise ValueError("shop_click subid is invalid")
         recommendation_id = context.get("recommendation_id")
         if recommendation_id is not None:
             if not isinstance(recommendation_id, str) or recommendation_id != subid:
                 raise ValueError("shop_click recommendation_id must equal subid")
-        elif not subid.startswith("catalog_"):
+        elif isinstance(subid, str) and not subid.startswith("catalog_"):
             raise ValueError("catalog shop_click subid must be opaque and catalog-scoped")
+        if unattributed and (subid is not None or recommendation_id is not None):
+            raise ValueError("unattributed shop_click cannot carry attribution ids")
         rank = context.get("rank")
         if rank is not None and (not isinstance(rank, int) or rank < 0):
             raise ValueError("shop_click rank must be a non-negative integer")

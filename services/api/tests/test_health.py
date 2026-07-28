@@ -105,6 +105,19 @@ def test_feedback_accepts_only_joinable_shop_click_attribution():
         },
     }
     assert client.post("/feedback", json=catalog_click).status_code == 202
+    unattributed_click = {
+        "event_id": "00000000-0000-4000-8000-000000000015",
+        "target_type": "item",
+        "target_id": "item-1",
+        "action": "shop_click",
+        "context": {
+            "attribution_version": 1,
+            "placement": "product_detail",
+            "session_id": "00000000-0000-4000-8000-000000000016",
+            "unattributed": True,
+        },
+    }
+    assert client.post("/feedback", json=unattributed_click).status_code == 202
 
 
 def test_feedback_rejects_server_only_actions():

@@ -216,13 +216,13 @@ export function ItemDetailSheet({
       }
     }
     await Linking.openURL(trackedUrl);
-    if (!subid) return;
     const event = shopClickFeedback(shopItem, {
       eventId: crypto.randomUUID(),
       placement: "product_detail",
       recommendationId,
       sessionId: commerceSessionId.current,
       subid,
+      unattributed: !recommendationId && !subid,
     });
     if (event) await api.feedback(event).catch(() => undefined);
   };

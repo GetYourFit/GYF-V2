@@ -8,6 +8,7 @@ import {
   safeExternalShopUrl,
   shopDisclosureForUrl,
 } from "./shop-links";
+import { shopClickFeedback } from "./commerce-attribution";
 import {
   feedbackReceipt,
   feedbackForOutfit,
@@ -214,5 +215,30 @@ describe("Expo stylist feed model", () => {
         sessionId,
       ),
     ).toBeNull();
+  });
+
+  test("allows honest unattributed product-detail handoffs", () => {
+    expect(
+      shopClickFeedback(
+        { item_id: "top-1", affiliate_url: "https://shop.test/item", owned: false } as never,
+        {
+          eventId: "event-click",
+          placement: "product_detail",
+          sessionId: "00000000-0000-4000-8000-000000000001",
+          unattributed: true,
+        },
+      ),
+    ).toEqual({
+      event_id: "event-click",
+      target_type: "item",
+      target_id: "top-1",
+      action: "shop_click",
+      context: {
+        attribution_version: 1,
+        placement: "product_detail",
+        session_id: "00000000-0000-4000-8000-000000000001",
+        unattributed: true,
+      },
+    });
   });
 });
