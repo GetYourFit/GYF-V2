@@ -30,11 +30,13 @@ export const EMPTY_EXPLORE_FILTERS: ExploreFilters = {
   maxPrice: null,
 };
 
+export type ProfileBudget = { max: number; currency: string };
+
 export type AudienceReadiness =
   | { state: "loading" }
   | { state: "anonymous" }
-  | { state: "known"; gender: string }
-  | { state: "unknown" }
+  | { state: "known"; gender: string; budget?: ProfileBudget }
+  | { state: "unknown"; budget?: ProfileBudget }
   | { state: "needs-profile" }
   | { state: "error"; error: unknown };
 
@@ -150,15 +152,37 @@ export function buildExploreRequest(
   seed: string,
   gender?: string | null,
   similarItemId?: string | null,
+  profileBudget?: ProfileBudget,
 ): ExploreRequest {
   const offset = page * EXPLORE_PAGE_SIZE;
   const scope = gender ? { gender } : {};
+  // The default browse route reads the stored profile server-side. Filtered
+  // Explore requests become searches, so carry the same budget currency through
+  // the existing typed boundary. Similar-item requests must stay broad unless
+  // the user explicitly applied a price filter, so a board tap without filters
+  // does not silently drop above-budget but otherwise valid neighbours.
+  const maxPrice =
+    filters.maxPrice == null
+      ? null
+      : profileBudget
+        ? Math.min(profileBudget.max, filters.maxPrice)
+        : filters.maxPrice;
+  const budgetScope =
+    maxPrice != null
+      ? { max_price: maxPrice, ...(profileBudget ? { currency: profileBudget.currency } : {}) }
+      : {};
 
   if (similarItemId) {
     return {
       mode: "similar",
       itemId: similarItemId,
-      params: { k: EXPLORE_PAGE_SIZE, offset, ...scope },
+      params: {
+        k: EXPLORE_PAGE_SIZE,
+        offset,
+        ...(filters.slot ? { slot: filters.slot } : {}),
+        ...budgetScope,
+        ...scope,
+      },
     };
   }
 
@@ -183,7 +207,7 @@ export function buildExploreRequest(
       offset,
       sort: filters.sort,
       ...(filters.slot ? { slot: filters.slot } : { slots: EXPLORE_SLOTS.join(",") }),
-      ...(filters.maxPrice != null ? { max_price: filters.maxPrice } : {}),
+      ...budgetScope,
       ...scope,
     },
   };

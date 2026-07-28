@@ -32,6 +32,7 @@ import {
 import {
   feedbackReceipt,
   feedbackForOutfit,
+  missingSlotRecovery,
   normalizedTastePercent,
   replaceOutfitItem,
   safeShopUrl,
@@ -578,6 +579,7 @@ export default function StylistRoute() {
   };
 
   const tastePercent = data ? normalizedTastePercent(data.taste_strength) : 0;
+  const missingRecovery = data ? missingSlotRecovery(data.missing_slot_options) : null;
 
   // The closed REFINE row has to say what is applied, or collapsing the
   // controls would hide state the user set.
@@ -794,8 +796,8 @@ export default function StylistRoute() {
         <AtelierCard>
           <GyfText variant="title">No complete looks yet</GyfText>
           <GyfText tone="muted" variant="bodySmall">
-            Try another goal or refresh. GYF will not invent a look when the catalogue cannot
-            support one.
+            {missingRecovery ??
+              "Try another goal or refresh. GYF will not invent a look when the catalogue cannot support one."}
           </GyfText>
           <AtelierButton label="Get another slate" onPress={loadNextSlate} />
         </AtelierCard>

@@ -33,6 +33,13 @@ export function feedbackReceipt(status: StylistFeedbackStatus | undefined) {
   } as const;
 }
 
+export function missingSlotRecovery(options: readonly (readonly string[])[]): string | null {
+  if (options.length === 0) return null;
+  const describe = (slots: readonly string[]) =>
+    slots.map((slot) => slot.replace(/_/g, " ")).join(" and ");
+  return `The catalogue needs ${options.map(describe).join(" or ")} to make a complete look.`;
+}
+
 export function slateItemIds(outfits: readonly Outfit[]): string {
   return [...new Set(outfits.flatMap((outfit) => outfit.items.map((item) => item.item_id)))].join(
     ",",

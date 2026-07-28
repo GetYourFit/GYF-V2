@@ -418,6 +418,28 @@ def test_empty_when_a_slot_is_missing():
     assert compose(pools, c, k=3) == []
 
 
+def test_sparse_catalogue_returns_exact_missing_slot_recovery_options():
+    """The real service path must name both viable recovery alternatives instead
+    of returning a generic empty slate or fabricating a partial outfit."""
+    catalog = [
+        _item("top", "t_shirt", "top", lch=(50, 40, 30)),
+        _item("shoe", "sneakers", "footwear", lch=(80, 5, 0)),
+    ]
+    rec = recommend(
+        Profile(occasion="casual"),
+        DEV_USER,
+        InMemoryCandidateRepository(catalog),
+        InMemoryTasteRepository(),
+        _CollectingSink(),
+        "casual",
+        None,
+        3,
+    )
+
+    assert rec.outfits == []
+    assert rec.missing_slot_options == [["bottom"], ["full_body"]]
+
+
 def test_uncertain_formality_lowers_confidence():
     base = (
         _item("t1", "t_shirt", "top", lch=(50, 8, 0)),
@@ -755,6 +777,22 @@ def test_recommend_endpoint_returns_explained_outfits():
         assert first["explanation"]
         assert {it["slot"] for it in first["items"]} == {"top", "bottom", "footwear"}
         assert first["items"][0]["affiliate_url"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_recommend_endpoint_exposes_exact_sparse_catalogue_recovery():
+    sparse = [
+        _item("top", "t_shirt", "top", lch=(50, 40, 30)),
+        _item("shoe", "sneakers", "footwear", lch=(80, 5, 0)),
+    ]
+    try:
+        response = _client(
+            Profile(occasion="casual"), candidate_repo=InMemoryCandidateRepository(sparse)
+        ).get("/outfits/recommend?k=3")
+        assert response.status_code == 200
+        assert response.json()["outfits"] == []
+        assert response.json()["missing_slot_options"] == [["bottom"], ["full_body"]]
     finally:
         app.dependency_overrides.clear()
 

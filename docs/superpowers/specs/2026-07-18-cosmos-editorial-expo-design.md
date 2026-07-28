@@ -214,6 +214,7 @@ Stylist presents one complete outfit decision before secondary alternatives.
 - Save, skip, shop, correct, and undo have stable event identities.
 - Corrections must visibly affect the next recommendation while unrelated constraints stay stable.
 - Empty, partial, abstained, stale, loading, error, and unavailable-item states remain useful and honest.
+- When the catalogue cannot assemble a complete look, the empty slate names the exact missing slot alternatives instead of showing a generic retry or fabricating products.
 - Portfolio-style alternative looks reuse the shared editorial card only when the content shape matches.
 
 ### 8.4 Explore
@@ -223,6 +224,7 @@ Explore combines Ref3's discovery grid with Ref4's search-first header.
 - The top control is a capsule glass search field containing the original animated dot-cluster mark.
 - Search input is debounced or explicitly submitted through the existing retrieval path; replacement searches cancel stale work.
 - A custom filter icon opens an accessible sheet/dropdown with occasion, style, garment slot, category, gender scope, and price only when facets support it.
+- Filtered signed-in requests retain the profile budget's currency-denominated ceiling, and similar-item recovery keeps that same truthful budget guard only when the user explicitly applied a price filter.
 - Applied filters appear as removable pills and reset consistently.
 - The feed uses variable but bounded aspect ratios, tight dark gutters, stable keys, dedupe, pagination, refresh, end-of-catalogue, and retry.
 - Frames show the complete source image with an intentional `contentFit`; no accidental crop may hide the garment/article.

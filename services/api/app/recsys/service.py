@@ -26,7 +26,7 @@ from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 from . import conditioning
 from ..affiliate import AffiliateLinker, linker_from_settings
 from .candidates import CANDIDATE_SLOTS, Candidate, CandidateRepository
-from .compose import ScoredOutfit, WardrobeContext, compose
+from .compose import ScoredOutfit, WardrobeContext, compose, missing_slot_options
 from .goals import parse_goal
 from .models import Outfit, OutfitRecommendation
 from .taste import TasteProfile, TasteRepository, build_taste
@@ -164,6 +164,7 @@ def recommend(
     strength = taste.strength if taste.has_signal else 0.0
     with _stage(request_id, "composition"):
         scored = compose(pools, constraints, k, strength, wardrobe, seen_item_ids, seen_items)
+    recovery_options = missing_slot_options(pools, constraints) if not scored else []
 
     recommendation_id = str(uuid.uuid4())
     applied_goals = [g.value for g in goals]
@@ -200,6 +201,7 @@ def recommend(
         applied_goals=applied_goals,
         wardrobe_grounded=wardrobe is not None,
         anchor_item_id=anchor_item_id,
+        missing_slot_options=recovery_options,
     )
 
 

@@ -89,3 +89,8 @@ class OutfitRecommendation(BaseModel):
     # Set when this slate is a "complete the look" answer: every outfit contains
     # this catalog item and the rest is styled around it.
     anchor_item_id: str | None = None
+    # Exact unavailable slots for each complete-look path when no outfit can be
+    # assembled. Each inner list is an alternative recovery path, e.g.
+    # ``[["top", "bottom"], ["full_body"]]`` means GYF needs either separates
+    # or a full-body garment; it never fabricates a partial look.
+    missing_slot_options: list[list[str]] = []

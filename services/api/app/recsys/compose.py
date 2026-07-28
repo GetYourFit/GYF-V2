@@ -744,6 +744,25 @@ def _diversity(a: tuple[Candidate, ...], b: tuple[Candidate, ...]) -> float:
     return jaccard
 
 
+def missing_slot_options(
+    pools: dict[str, list[Candidate]], constraints: Constraints
+) -> list[list[str]]:
+    """Return the exact unavailable slots for each complete-look blueprint.
+
+    The composer never pads an incomplete outfit. When no blueprint can assemble,
+    this gives the UI an honest recovery path: for example, ``[["footwear"]]``
+    means every possible look needs footwear, while ``[["top", "bottom"],
+    ["full_body"]]`` means either a separates pair or a full-body piece is
+    needed. The result is a catalogue fact, not a ranking inference.
+    """
+    options: list[list[str]] = []
+    for blueprint in constraints.blueprints:
+        missing = [slot for slot in blueprint if not pools.get(slot)]
+        if missing and missing not in options:
+            options.append(missing)
+    return options
+
+
 def compose(
     pools: dict[str, list[Candidate]],
     constraints: Constraints,
