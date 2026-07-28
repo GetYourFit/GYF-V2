@@ -38,7 +38,9 @@ import numpy as np
 
 from common.remote_client import GradioSpaceClient, image_to_b64_png
 
-from .model import DEFAULT_LOGIT_SCALE, EMBEDDING_DIM, Encoder, l2_normalize
+from gyf_contracts.encoder import DEFAULT_LOGIT_SCALE, EMBEDDING_DIM, ImageTextEncoder
+
+from .model import l2_normalize
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -399,10 +401,12 @@ class FallbackEncoder:
     fact a nightly job must not keep to itself.
     """
 
-    def __init__(self, remote: Encoder, local_factory: Callable[[], Encoder]) -> None:
+    def __init__(
+        self, remote: ImageTextEncoder, local_factory: Callable[[], ImageTextEncoder]
+    ) -> None:
         self._remote = remote
         self._local_factory = local_factory
-        self._local: Encoder | None = None
+        self._local: ImageTextEncoder | None = None
         self.lane = "remote"
         self.fallback_reason = ""
 
@@ -415,7 +419,7 @@ class FallbackEncoder:
         return self._active.logit_scale
 
     @property
-    def _active(self) -> Encoder:
+    def _active(self) -> ImageTextEncoder:
         if self.lane == "remote":
             return self._remote
         if self._local is None:
@@ -452,7 +456,7 @@ class FallbackEncoder:
         return self._active.encode_texts(texts)
 
 
-def encoder_for(model_id: str) -> Encoder:
+def encoder_for(model_id: str) -> ImageTextEncoder:
     """Build the configured encoder for ``model_id``: remote lane if set, else local.
 
     Central factory honoring the doctrine's "baseline always behind the port"
@@ -485,7 +489,7 @@ def encoder_for(model_id: str) -> Encoder:
     return SiglipEncoder(model_id, device=settings.perception_device)
 
 
-def batch_encoder_for(model_id: str) -> Encoder:
+def batch_encoder_for(model_id: str) -> ImageTextEncoder:
     """The encoder for *batch* work (the nightly catalogue embed), not the hot path.
 
     Same lane selection as :func:`encoder_for`, but wrapped so a dead remote Space demotes

@@ -4,18 +4,54 @@
 > D7 (free-tier GPU serving), D5 (eval-gated promotion). **Source:** `ml/perception/`,
 > `spaces/gyf-gpu/`.
 
-## One model, two backends
+## Canonical owner and retained custody
 
-GPU work goes through a single port — `perception.model.Encoder` — so nothing in the app
-changes regardless of where the GPU is. `perception.default_encoder()` (and the bake-off)
-pick the backend from one env var:
+The one canonical image/text contract is
+`packages/contracts/gyf_contracts/encoder.py:ImageTextEncoder`; the one production
+model identity is `RUNTIME_MODELS["encoder"]` plus `models.registry.json`. Local,
+HTTP and Gradio adapters implement that port. The API reaches it only through
+`services/api/app/catalog/perception_adapter.py`, and the durable query cache is keyed by
+registry model ID.
+
+`ml/serving/modal_encoder.py` is the sole production-capable Modal owner: it pins the
+registry production model at deploy time, has required bearer auth, a health endpoint,
+CPU/memory limits, a persistent weight volume and memory snapshot. `infra/modal/encoder.py`
+is retained **custody only**, not a deploy target or rollback claim: it is an older
+multi-model Modal implementation with a different allow-list, optional auth and no pinned
+registry model/volume snapshot. It cannot be deleted or treated as a rollback until the
+owner verifies external Modal custody and rehearses rollback; no production config references it.
+
+The local foundation added in PR #57 is a correctness/shadow foundation, not a promotion:
+it has no frozen text-retrieval corpus, India latency/RSS/CPU measurement, artifact SHA-256,
+shadow/canary or rollback evidence. The present image-category bake-off and Apache-2.0 registry
+metadata do not establish any of those missing gates.
+
+| Owner/path | Actual role/caller | State and evidence owner |
+| --- | --- | --- |
+| `gyf_contracts.encoder.ImageTextEncoder` | shared image/text port; 768-d index contract | `packages/contracts/tests/test_encoder.py` |
+| `models.registry.json` + `RUNTIME_MODELS` | one allowed production identity | registry/eval-policy tests; Apache-2.0 and the existing image-category report only |
+| `ml/perception/model.py:SiglipEncoder` | local CPU/CUDA implementation; local and remote fallback | perception/model-load tests; artifact hash absent |
+| `ml/perception/remote.py:HttpEncoder` | API search HTTP adapter | HTTP contract, timeout and redirect tests |
+| `ml/perception/remote.py:RemoteEncoder` | ZeroGPU batch/lab adapter | remote shape, fallback and cache tests |
+| `ml/serving/modal_encoder.py` | configured production-capable Modal deployment | API wire tests; real Modal warm/cold/RSS/CPU evidence absent |
+| `infra/modal/encoder.py` | retained legacy Modal custody | no production config/test owner; external rollback custody unverified |
+| `spaces/gyf-gpu/app.py` | public ZeroGPU inference lab | allow-list registry test; never production |
+| `ml/pipelines/backfill.py`, `backfill_gender.py` | catalog writes/zero-shot prompt work | resumability/lane reporting tests; no production data mutation authorized |
+| `query_cache.py` + `perception_adapter.py` | API-only model bridge and `(query, model_id)` cache | API cache invalidation and lexical-fallback tests |
+
+The only completed maintenance reduction here is ownership, not deletion: the ML and API
+settings defaults now derive from `RUNTIME_MODELS["encoder"]` instead of carrying two extra
+model-URI literals. No implementation, dependency, provider or custody file was removed; that
+would be an unsupported reduction claim until the retained lane has rollback proof.
+
+`perception.default_encoder()` (and the bake-off) pick an implementation from one env var:
 
 | `GYF_ENCODER_REMOTE_URL` | `GYF_ENCODER_REMOTE_KIND` | Backend | When |
 | --- | --- | --- | --- |
 | **unset** (default) | — | `SiglipEncoder` — local CPU or local CUDA | laptop dev, CI |
 | ignored, may be stale | `local_cpu` | `SiglipEncoder(..., device="cpu")` | explicit always-on SigLIP2 CPU baseline on Render-compatible compute |
 | a Gradio URL | `gradio` (default) | `RemoteEncoder` — HF ZeroGPU Space | the **image**-embed batch lane (catalog backfill) |
-| a JSON URL | `http` | `HttpEncoder` — plain JSON POST | the **search** lane: Modal CPU, scale-to-zero (F2.5) |
+| a JSON URL | `http` | `HttpEncoder` — plain JSON POST | the **search** lane: canonical Modal CPU owner, scale-to-zero (F2.5) |
 
 That's the whole design: the local encoder is the always-present baseline (invariant #5);
 the remote ones are optional swaps, never a requirement.

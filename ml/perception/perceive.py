@@ -15,7 +15,7 @@ from PIL.Image import Image
 
 from .attributes import AttributeExtractor
 from .color import GarmentColor, dominant_color
-from .model import Encoder
+from gyf_contracts.encoder import ImageTextEncoder
 
 
 @dataclass(frozen=True)
@@ -43,7 +43,9 @@ class PerceptionResult:
 class Perceptor:
     """Embeds + attributes + colors garment images using one shared encoder."""
 
-    def __init__(self, encoder: Encoder, extractor: AttributeExtractor | None = None) -> None:
+    def __init__(
+        self, encoder: ImageTextEncoder, extractor: AttributeExtractor | None = None
+    ) -> None:
         self._encoder = encoder
         self._extractor = extractor or AttributeExtractor(encoder)
 

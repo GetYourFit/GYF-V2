@@ -164,7 +164,7 @@ research-lane north-star → data source → eval gate`.
 
 | Pillar | Capability port | Production lane (clean) | Research-lane north-star (offline only) | Data (D4) | Eval gate (D5) |
 |---|---|---|---|---|---|
-| **Visual perception** | `Encoder` | SigLIP 2 / Marqo-FashionSigLIP-2 (Apache) + **GCL adapter on our catalog** | newest fashion VLMs | catalog + attributes | MRR / Recall@K |
+| **Visual perception** | `ImageTextEncoder` | registry-pinned SigLIP 2 B/16 behind one shared image/text port; historical Marqo-FashionSigLIP stays research-only | newest fashion VLMs | catalog + attributes | MRR / Recall@K |
 | **Body-type** | `BodyEstimator` | SAM 3D Body→MHR + Anny calib (SAM License/Apache) | SMPL-X/SHAPY/NLF (NC) | consented user photos | approved panel: subgroup error/calibration/abstention + `max_band_gap` |
 | **Skin-tone** ⚠️ | `SkinToneEstimator` | SAM/BiSeNet seg + custom CIELAB (commercial-clean) | — | consented user photos | approved panel: Monk-spectrum subgroup error/calibration/abstention + `max_band_gap` |
 | **Taste / recsys** | `Ranker` | online taste (shipped) → **HSTU (Apache) trained on our events** → OneRec-arch | OneRec/ReSID weights (restricted) | first-party behaviour | NDCG/ECE + online A/B/IPS |

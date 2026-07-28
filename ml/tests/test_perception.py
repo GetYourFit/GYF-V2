@@ -1,13 +1,15 @@
 """Perception tests — color, zero-shot attributes, perceive, and backfill.
 
 A FakeEncoder provides deterministic embeddings so the logic around the encoder
-is tested without downloading Marqo-FashionSigLIP weights (the heavy SigLIP path
-is exercised separately, offline, when weights are available).
+is tested without downloading SigLIP2 weights (the heavy path is exercised
+separately, offline, when weights are available).
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterator
+import sys
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -20,7 +22,8 @@ from perception.attributes import (
     AttributeSpec,
 )
 from perception.color import dominant_color
-from perception.model import EMBEDDING_DIM, l2_normalize
+from gyf_contracts.encoder import EMBEDDING_DIM
+from perception.model import l2_normalize
 from perception.perceive import PerceptionResult, Perceptor
 from pipelines.backfill import (
     BackfillResult,
@@ -178,6 +181,26 @@ def test_perceptor_combines_embedding_attributes_color():
 
 def test_embedding_dim_matches_schema_constant():
     assert EMBEDDING_DIM == 768
+
+
+def test_corrupt_or_missing_model_does_not_leave_a_half_loaded_encoder(monkeypatch):
+    """A failed first load must be retriable, never a fake-ready encoder."""
+    from perception.model import SiglipEncoder
+
+    def fail_load(_model_id):
+        raise OSError("model artifact is missing or corrupt")
+
+    monkeypatch.setitem(
+        sys.modules, "open_clip", SimpleNamespace(create_model_from_pretrained=fail_load)
+    )
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace())
+    encoder = SiglipEncoder("missing-model")
+
+    with pytest.raises(OSError, match="missing or corrupt"):
+        encoder.encode_texts(["red dress"])
+    assert encoder._model is None
+    assert encoder._preprocess is None
+    assert encoder._tokenizer is None
 
 
 # --- backfill ---

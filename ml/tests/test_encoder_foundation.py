@@ -9,9 +9,13 @@ import numpy as np
 import pytest
 
 from eval.encoder_foundation import (
+    RuntimeBudget,
+    RuntimeMeasurement,
+    assert_runtime_budget,
     cosine_topk_parity,
     measure_text_runtime,
     retrieval_truth,
+    validate_artifact_sha256,
     validate_embeddings,
 )
 from perception.remote import FallbackEncoder
@@ -41,6 +45,15 @@ class _DeadEncoder(_FakeEncoder):
     def encode_texts(self, texts: list[str]) -> np.ndarray:
         self.calls += 1
         raise RuntimeError("remote unavailable")
+
+
+def test_ml_defaults_derive_from_the_canonical_runtime_binding() -> None:
+    from common.config import Settings
+    from gyf_contracts.eval_report import RUNTIME_MODELS
+
+    binding = RUNTIME_MODELS["encoder"]
+    assert Settings().perception_model == binding.model_uri
+    assert Settings().perception_model_version == binding.model_version
 
 
 def test_fixture_pins_incumbent_contract() -> None:
@@ -93,7 +106,26 @@ def test_measure_text_runtime_uses_conservative_p95(monkeypatch) -> None:
     assert measurement.cold_seconds == 1.0
     assert measurement.warm_p50_seconds == pytest.approx(0.9)
     assert measurement.warm_p95_seconds == pytest.approx(2.4)
+    assert measurement.cold_cpu_seconds >= 0
+    assert measurement.warm_cpu_p95_seconds >= 0
     assert measurement.items_per_second == pytest.approx(2 / 1.08)
+
+
+def test_runtime_budget_checks_wall_cpu_and_rss() -> None:
+    measurement = RuntimeMeasurement(1.0, 0.1, 0.2, 0.3, 0.15, 2, 10.0, 100)
+    assert_runtime_budget(measurement, RuntimeBudget(1.0, 0.3, 0.2, 100))
+    with pytest.raises(AssertionError, match="warm_p95=.*warm_cpu_p95=.*rss="):
+        assert_runtime_budget(measurement, RuntimeBudget(0.9, 0.1, 0.1, 99))
+
+
+@pytest.mark.parametrize("value", ["", "a" * 63, "A" * 64, "g" * 64])
+def test_artifact_hash_validation_rejects_missing_or_malformed_values(value: str) -> None:
+    with pytest.raises(AssertionError, match="SHA-256"):
+        validate_artifact_sha256(value)
+
+
+def test_artifact_hash_validation_accepts_a_sha256() -> None:
+    validate_artifact_sha256("a" * 64)
 
 
 def test_fallback_encoder_demotes_to_local_baseline() -> None:

@@ -18,13 +18,13 @@ from dataclasses import dataclass
 
 from gyf_contracts.eval_report import EvalReport, is_improvement
 
-from perception.model import Encoder
+from gyf_contracts.encoder import ImageTextEncoder
 
 from .retrieval_eval import evaluate_retrieval
 
 
 def compare_encoders(
-    encoders: dict[str, "Encoder"],
+    encoders: dict[str, ImageTextEncoder],
     images: list,
     groups: list,
     *,

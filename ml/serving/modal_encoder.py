@@ -38,12 +38,34 @@ import binascii
 import io
 import os
 import time
+from pathlib import Path
 
 import modal
+from gyf_contracts.eval_report import RUNTIME_MODELS, runtime_model_verdict
 
-# The production encoder (must match the API's GYF_PERCEPTION_MODEL / the promoted
-# registry card). Override at deploy time with GYF_PERCEPTION_MODEL in the shell.
-MODEL_ID = os.environ.get("GYF_PERCEPTION_MODEL", "hf-hub:timm/ViT-B-16-SigLIP2")
+_PRODUCTION_ENCODER = RUNTIME_MODELS["encoder"]
+_POLICY_ROOT = Path("/opt/gyf-runtime")
+_REGISTRY_PATH = _POLICY_ROOT / "models.registry.json"
+_REPORTS_PATH = _POLICY_ROOT / "eval-reports"
+
+
+def _resolve_model_id() -> tuple[str, str | None]:
+    configured = os.environ.get("GYF_PERCEPTION_MODEL")
+    if not configured:
+        return _PRODUCTION_ENCODER.model_uri, None
+    ok, reasons = runtime_model_verdict(
+        "encoder",
+        configured_model_uri=configured,
+        registry=_REGISTRY_PATH,
+        reports_dir=_REPORTS_PATH,
+    )
+    if ok:
+        return configured, None
+    detail = "; ".join(reasons) if reasons else "unknown validation failure"
+    return (
+        _PRODUCTION_ENCODER.model_uri,
+        f"rejected GYF_PERCEPTION_MODEL override {configured!r}: {detail}",
+    )
 
 # Request guards — mirror the Space's (spaces/gyf-gpu/app.py); a serving lane never
 # trusts its caller, even an internal one.
@@ -56,6 +78,9 @@ MAX_IMAGE_B64_CHARS = ((MAX_IMAGE_BYTES + 2) // 3) * 4
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
+    .add_local_python_source("gyf_contracts", copy=True)
+    .add_local_file("models.registry.json", remote_path="/opt/gyf-runtime/models.registry.json")
+    .add_local_dir("eval-reports", remote_path="/opt/gyf-runtime/eval-reports")
     # CPU-only torch: the CUDA wheels are ~5x larger and this lane has no GPU, so
     # they would only slow the cold start we exist to remove.
     # Pin the Torch/TorchVision pair. Leaving torchvision unbounded lets pip
@@ -73,7 +98,11 @@ image = (
         "pillow>=10.0",
         "fastapi[standard]",
     )
-    .env({"HF_HOME": "/cache/hf", "GYF_PERCEPTION_MODEL": MODEL_ID})
+    .env(
+        {
+            "HF_HOME": "/cache/hf",
+        }
+    )
 )
 
 # Weights survive scale-to-zero here, so a cold container never re-downloads them.
@@ -100,11 +129,14 @@ class Encoder:
         import open_clip
         import torch
 
+        self.model_id, self.override_rejection_reason = _resolve_model_id()
+        if self.override_rejection_reason:
+            print(self.override_rejection_reason)
         torch.set_num_threads(2)
-        model, preprocess = open_clip.create_model_from_pretrained(MODEL_ID)
+        model, preprocess = open_clip.create_model_from_pretrained(self.model_id)
         self.model = model.eval()
         self.preprocess = preprocess
-        self.tokenizer = open_clip.get_tokenizer(MODEL_ID)
+        self.tokenizer = open_clip.get_tokenizer(self.model_id)
 
     def _embed_texts(self, texts: list[str]) -> list[list[float]]:
         import torch
@@ -149,15 +181,19 @@ class Encoder:
                 raise HTTPException(status_code=401, detail="unauthorized")
 
         def _check_model(model_id: str) -> None:
-            if model_id != MODEL_ID:
+            if model_id != self.model_id:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"this lane serves only '{MODEL_ID}' (the promoted production encoder)",
+                    detail=(
+                        f"this lane serves only '{self.model_id}' "
+                        "(the promoted production encoder)"
+                    ),
                 )
 
         def _response(embeddings: list[list[float]], started: float) -> dict:
             return {
                 "embeddings": embeddings,
+                "model_id": self.model_id,
                 "timings": {
                     # snap=True loads during snapshot build; TTFB captures restore.
                     "model_load_ms": None,
@@ -166,15 +202,19 @@ class Encoder:
             }
 
         @api.get("/health")
-        def health() -> dict[str, str]:
-            return {"status": "ok", "model_id": MODEL_ID}
+        def health() -> dict[str, str | None]:
+            return {
+                "status": "ok",
+                "model_id": self.model_id,
+                "override_rejection_reason": self.override_rejection_reason,
+            }
 
         @api.post("/embed_texts")
         def embed_texts(
             payload: dict = Body(...), authorization: str | None = Header(None)
         ) -> dict:
             _authorize(authorization)
-            _check_model(payload.get("model_id", MODEL_ID))
+            _check_model(payload.get("model_id", self.model_id))
             texts = payload.get("texts") or []
             if not isinstance(texts, list) or not all(isinstance(t, str) for t in texts):
                 raise HTTPException(status_code=422, detail="texts must be a list of strings")
@@ -190,7 +230,7 @@ class Encoder:
             payload: dict = Body(...), authorization: str | None = Header(None)
         ) -> dict:
             _authorize(authorization)
-            _check_model(payload.get("model_id", MODEL_ID))
+            _check_model(payload.get("model_id", self.model_id))
             images = payload.get("images_b64") or []
             if not isinstance(images, list) or not all(isinstance(i, str) for i in images):
                 raise HTTPException(status_code=422, detail="images_b64 must be a list of strings")

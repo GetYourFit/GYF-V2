@@ -16,12 +16,12 @@ dependencies = [
 gyf-contracts = { path = "../packages/contracts", editable = true }
 
 [project.optional-dependencies]
-# Heavy perception runtime — Marqo-FashionSigLIP via open_clip. Optional so the
+# Heavy perception runtime — SigLIP-family inference via open_clip. Optional so the
 # library and its tests import without downloading model weights.
 perception = [
   "open-clip-torch>=2.24.0",
   "torch>=2.2.0",
-  # Marqo-FashionSigLIP loads its tokenizer via HF Transformers; required at runtime.
+  # SigLIP tokenizer/model loading uses HF Transformers at runtime.
   "transformers>=4.40.0",
 ]
 postgres = [

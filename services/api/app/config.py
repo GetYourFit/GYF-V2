@@ -1,5 +1,9 @@
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from gyf_contracts.eval_report import RUNTIME_MODELS
+
+
+_PRODUCTION_ENCODER = RUNTIME_MODELS["encoder"]
 
 
 class Settings(BaseSettings):
@@ -104,7 +108,7 @@ class Settings(BaseSettings):
     # Exact encoder identity consumed by the optional ML adapter. Keeping the
     # value in API settings lets policy checks run even when the ML package is
     # intentionally absent and search uses its keyword fallback.
-    perception_model: str = "hf-hub:timm/ViT-B-16-SigLIP2"
+    perception_model: str = _PRODUCTION_ENCODER.model_uri
 
     # --- Affiliate attribution (Cuelinks lane behind the AffiliateLinker port) ---
     # Cuelinks channel id (the `cid=` value in any deeplink the dashboard/API
