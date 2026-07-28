@@ -73,9 +73,9 @@ class _NoProfileRepo:
 
 
 class _NoSignalTasteRepo:
-    """In open-auth mode the caller is the dev principal, so browse builds a taste
-    vector — return no engagements so the page stays the anonymous-equivalent read
-    this test pins (offset splitting), not a personalized vector scan."""
+    """In open-auth mode the caller is the dev principal, so browse may still try
+    the taste path. Return no engagements so this test stays on the deterministic
+    offset-splitting path instead of a personalized vector scan."""
 
     def engagements(self, user_id, limit):
         return []

@@ -175,10 +175,12 @@ class VectorSearchRepository(Protocol):
         seed: str | None = None,
         preferences: ExplorePreferences | None = None,
     ) -> list[SearchResult]:
-        """Catalogue page for the Explore feed. With ``taste_vector`` set, ranks by
-        cosine to it (personalized two-tower retrieval); without, a cheap relational
-        read shuffled by ``seed`` (per browsing session; defaults to the day).
-        ``categories`` restricts to one slot's garments; None = all slots."""
+        """Catalogue page for the Explore feed. ``taste_vector`` keeps the learned
+        two-tower ranking when present, while ``preferences`` adds deterministic
+        manual-profile conditioning and truthful budget enforcement. Without either,
+        this falls back to a cheap relational read shuffled by ``seed`` (per
+        browsing session; defaults to the day). ``categories`` restricts to one
+        slot's garments; None = all slots."""
         ...
 
     def catalog_facets(

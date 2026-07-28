@@ -166,12 +166,12 @@ def browse_items(
     taste_repo: TasteRepository = Depends(get_taste_repo),
     profile_repo: ProfileRepository = Depends(get_profile_repo),
 ) -> dict[str, list[SearchResult]]:
-    """Explore feed. When the caller is signed in and has a learned taste vector,
-    this ranks the catalogue by cosine to it (two-tower content retrieval) — the
-    feed reflects what they actually engage with, per-user, and shifts as their
-    taste evolves. Callers without engagement get the same cheap rotating relational
-    read as anonymous users, so the first grid does not block on the remote encoder.
-    ``offset`` is the global count shown, split across slots."""
+    """Explore feed. Signed-in callers get a per-user page: learned taste still
+    ranks by cosine when present, and stated profile facts (budget, tone/body,
+    style intent) also condition the default browse ordering. Anonymous callers,
+    or signed-in callers with no usable profile/taste facts, keep the cheap
+    deterministic rotating fallback so the first grid never blocks on a remote
+    encoder. ``offset`` is the global count shown, split across slots."""
     taste_vector = None
     preferences = None
     if principal is not None:
