@@ -145,6 +145,7 @@ export default function ExploreRoute() {
           browseSeed,
           audienceGender(audience),
           similarAnchor?.item_id,
+          audience.state === "known" || audience.state === "unknown" ? audience.budget : undefined,
         );
         const results =
           request.mode === "browse"
@@ -193,9 +194,15 @@ export default function ExploreRoute() {
         if (!session) return { state: "anonymous" } as AudienceReadiness;
         const profile = await api.getProfile();
         const gender = scopeGender(profile.gender);
+        const max = profile.budget_range?.max;
+        const currency = profile.budget_range?.currency;
+        const budget =
+          typeof max === "number" && Number.isFinite(max) && max >= 0 && currency
+            ? { max, currency }
+            : undefined;
         return gender
-          ? ({ state: "known", gender } as AudienceReadiness)
-          : ({ state: "unknown" } as AudienceReadiness);
+          ? ({ state: "known", gender, budget } as AudienceReadiness)
+          : ({ state: "unknown", budget } as AudienceReadiness);
       })
       .then((nextAudience) => {
         if (active) setAudience(nextAudience);

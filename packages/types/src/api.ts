@@ -141,12 +141,12 @@ export interface paths {
         };
         /**
          * Browse Items
-         * @description Explore feed. When the caller is signed in and has a learned taste vector,
-         *     this ranks the catalogue by cosine to it (two-tower content retrieval) — the
-         *     feed reflects what they actually engage with, per-user, and shifts as their
-         *     taste evolves. Callers without engagement get the same cheap rotating relational
-         *     read as anonymous users, so the first grid does not block on the remote encoder.
-         *     ``offset`` is the global count shown, split across slots.
+         * @description Explore feed. Signed-in callers get a per-user page: learned taste still
+         *     ranks by cosine when present, and stated profile facts (budget, tone/body,
+         *     style intent) also condition the default browse ordering. Anonymous callers,
+         *     or signed-in callers with no usable profile/taste facts, keep the cheap
+         *     deterministic rotating fallback so the first grid never blocks on a remote
+         *     encoder. ``offset`` is the global count shown, split across slots.
          */
         get: operations["browse_items_items_browse_get"];
         put?: never;
@@ -1473,6 +1473,11 @@ export interface components {
             wardrobe_grounded: boolean;
             /** Anchor Item Id */
             anchor_item_id?: string | null;
+            /**
+             * Missing Slot Options
+             * @default []
+             */
+            missing_slot_options: string[][];
         };
         /**
          * PhotoAnalysis
@@ -1848,6 +1853,18 @@ export interface components {
             color?: string | null;
             /** Buy Url */
             buy_url?: string | null;
+            /** Lch */
+            lch?: [
+                number,
+                number,
+                number
+            ] | null;
+            /** Aesthetic */
+            aesthetic?: string | null;
+            /** Silhouette */
+            silhouette?: string | null;
+            /** Fit */
+            fit?: string | null;
         };
         /** SupportMessageRequest */
         SupportMessageRequest: {

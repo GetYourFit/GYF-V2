@@ -30,11 +30,13 @@ export const EMPTY_EXPLORE_FILTERS: ExploreFilters = {
   maxPrice: null,
 };
 
+export type ProfileBudget = { max: number; currency: string };
+
 export type AudienceReadiness =
   | { state: "loading" }
   | { state: "anonymous" }
-  | { state: "known"; gender: string }
-  | { state: "unknown" }
+  | { state: "known"; gender: string; budget?: ProfileBudget }
+  | { state: "unknown"; budget?: ProfileBudget }
   | { state: "needs-profile" }
   | { state: "error"; error: unknown };
 
@@ -150,9 +152,22 @@ export function buildExploreRequest(
   seed: string,
   gender?: string | null,
   similarItemId?: string | null,
+  profileBudget?: ProfileBudget,
 ): ExploreRequest {
   const offset = page * EXPLORE_PAGE_SIZE;
   const scope = gender ? { gender } : {};
+  // The default browse route reads the stored profile server-side. Filtered
+  // Explore requests become searches, so carry the same budget currency through
+  // the existing typed boundary. An explicit lower filter narrows the profile
+  // ceiling; it can never widen it or compare raw cross-currency numbers.
+  const maxPrice =
+    profileBudget && filters.maxPrice != null
+      ? Math.min(profileBudget.max, filters.maxPrice)
+      : (filters.maxPrice ?? profileBudget?.max);
+  const budgetScope =
+    maxPrice != null
+      ? { max_price: maxPrice, ...(profileBudget ? { currency: profileBudget.currency } : {}) }
+      : {};
 
   if (similarItemId) {
     return {
@@ -183,7 +198,7 @@ export function buildExploreRequest(
       offset,
       sort: filters.sort,
       ...(filters.slot ? { slot: filters.slot } : { slots: EXPLORE_SLOTS.join(",") }),
-      ...(filters.maxPrice != null ? { max_price: filters.maxPrice } : {}),
+      ...budgetScope,
       ...scope,
     },
   };

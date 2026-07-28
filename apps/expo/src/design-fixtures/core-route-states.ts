@@ -96,6 +96,7 @@ const STYLIST_RECOMMENDATION = deepFreeze({
   applied_goals: ["smart casual"],
   wardrobe_grounded: false,
   anchor_item_id: null,
+  missing_slot_options: [],
 }) satisfies DeepReadonly<OutfitRecommendation>;
 
 const CATALOGUE_ITEM = deepFreeze({

@@ -103,6 +103,8 @@ export interface SearchParams {
   region?: string;
   /** Server-side budget filter — only items at or below this price are returned. */
   max_price?: number;
+  /** Currency denomination for `max_price`; mismatched-currency rows are excluded. */
+  currency?: string;
   /** Result ordering: relevance (default), or price ascending/descending. */
   sort?: "relevance" | "price_asc" | "price_desc";
   /** Styling gender: results narrow to that slice + unisex (unfaceted items always pass). */

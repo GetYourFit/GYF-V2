@@ -71,6 +71,35 @@ describe("Expo Explore request model", () => {
     );
   });
 
+  test("filtered Explore retains each profile's currency-denominated budget", () => {
+    const filters = { ...clean, q: "linen shirt", maxPrice: 5_000 };
+    const inr = buildExploreRequest(filters, 0, "seed", "men", null, {
+      max: 2_000,
+      currency: "INR",
+    });
+    const usd = buildExploreRequest(filters, 0, "seed", "women", null, {
+      max: 80,
+      currency: "USD",
+    });
+
+    expect(inr).toMatchObject({
+      mode: "search",
+      params: { gender: "men", max_price: 2_000, currency: "INR" },
+    });
+    expect(usd).toMatchObject({
+      mode: "search",
+      params: { gender: "women", max_price: 80, currency: "USD" },
+    });
+    // An explicitly unstated audience widens gender only; it must not discard
+    // the separately stated budget and silently compare currencies by number.
+    expect(
+      buildExploreRequest(filters, 0, "seed", null, null, { max: 2_000, currency: "INR" }),
+    ).toMatchObject({
+      mode: "search",
+      params: { max_price: 2_000, currency: "INR" },
+    });
+  });
+
   test("does not construct a catalogue request while an authenticated audience is unresolved", () => {
     expect(audienceCanBrowse({ state: "loading" })).toBe(false);
     expect(audienceCanBrowse({ state: "needs-profile" })).toBe(false);
