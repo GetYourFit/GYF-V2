@@ -87,7 +87,7 @@ function deploymentFromLog(logText) {
   const urlMatch = urlMatches.at(-1);
   return {
     deploymentId: urlMatch[2],
-    deploymentUrl: `${urlMatch[0].replace(/\/?$/, "/")}`,
+    deploymentUrl: urlMatch[0],
   };
 }
 
