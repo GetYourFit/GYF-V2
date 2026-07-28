@@ -120,7 +120,7 @@ def test_estimate_no_face_abstains():
 # --- fairness gate (pure aggregation) --------------------------------------
 
 
-def test_fairness_summarize_perfect_passes_gate():
+def test_legacy_tone_summary_cannot_bypass_complete_photo_gate():
     from gyf_contracts.eval_report import meets_gate
 
     from usermodel.skintone.fairness_eval import summarize
@@ -130,7 +130,7 @@ def test_fairness_summarize_perfect_passes_gate():
     assert report.capability == "skin_tone"
     assert report.metrics["max_band_gap"] == 0.0
     assert report.metrics["mean_abs_bucket_error"] == 0.0
-    assert meets_gate(report)[0] is True
+    assert meets_gate(report)[0] is False  # no calibration/abstention or approved panel evidence
 
 
 def test_fairness_summarize_penalizes_abstention_on_one_band():
@@ -143,3 +143,64 @@ def test_fairness_summarize_penalizes_abstention_on_one_band():
     report = summarize(pairs, model_version="v1", report_id="t")
     assert report.metrics["max_band_gap"] == 9.0
     assert meets_gate(report)[0] is False
+
+
+def test_photo_fairness_reports_subgroup_error_calibration_and_abstention():
+    from usermodel.photo_fairness_eval import summarize
+
+    samples = [
+        {
+            "label": "mst1",
+            "prediction": "mst1",
+            "confidence": 0.9,
+            "subgroups": {"band": "mst1", "lighting": "daylight"},
+        },
+        {
+            "label": "mst10",
+            "prediction": "unknown",
+            "confidence": 0.8,
+            "subgroups": {"band": "mst10", "lighting": "low-light"},
+        },
+    ]
+    panel = {
+        "panel_id": "test-panel",
+        "status": "approved",
+        "consent_basis": "test only",
+        "data_license": "test only",
+        "label_protocol": "test only",
+    }
+    report = summarize(
+        samples,
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel=panel,
+    )
+    assert report.metrics["subgroup.band.mst10.error_rate"] == 9.0
+    assert report.metrics["subgroup.band.mst10.abstention_rate"] == 1.0
+    assert report.metrics["subgroup.lighting.daylight.ece"] > 0
+    assert report.metrics["max_band_gap"] == 9.0
+    assert report.evidence["promotion_eligible_panel"] is True
+
+
+def test_placeholder_panel_cannot_promote_even_with_perfect_predictions():
+    from gyf_contracts.eval_report import meets_gate
+    from usermodel.photo_fairness_eval import summarize
+
+    report = summarize(
+        [
+            {
+                "label": "mst1",
+                "prediction": "mst1",
+                "confidence": 1.0,
+                "subgroups": {"band": "mst1"},
+            }
+        ],
+        capability="skin_tone",
+        model_version="v1",
+        report_id="test",
+        panel={"panel_id": "placeholder", "status": "placeholder"},
+    )
+    ok, reasons = meets_gate(report)
+    assert not ok
+    assert "approved, complete consented panel" in reasons[0]

@@ -102,6 +102,19 @@ def test_lower_is_better_gate():
     assert not gate.evaluate(_report(capability="fairness", metrics={"max_tone_gap": 0.2}))[0]
 
 
+def test_photo_gate_requires_calibration_abstention_and_approved_panel():
+    report = _report(
+        capability="skin_tone",
+        metrics={"max_band_gap": 0.0, "error_rate": 0.0, "ece": 0.0, "abstention_rate": 0.0},
+    )
+    ok, reasons = meets_gate(report)
+    assert not ok and "approved, complete consented panel" in reasons[0]
+
+    approved = EvalReport(**{**report.__dict__, "evidence": {"promotion_eligible_panel": True}})
+    assert meets_gate(approved)[0]
+    assert "body_estimator" in GATES
+
+
 # --- regression check -------------------------------------------------------
 
 

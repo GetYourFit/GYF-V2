@@ -14,7 +14,7 @@ online checks scaffolded in :mod:`gyf_contracts.online_eval` (the known offlineâ
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
@@ -85,6 +85,9 @@ class EvalReport:
     dataset: str
     created_at: str  # ISO-8601
     notes: str = ""
+    # Non-numeric provenance/panel approval evidence; prevents a placeholder panel
+    # from being confused with promotion evidence.
+    evidence: dict[str, object] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -96,6 +99,7 @@ class EvalReport:
             "dataset": self.dataset,
             "created_at": self.created_at,
             "notes": self.notes,
+            "evidence": self.evidence,
         }
 
     @classmethod
@@ -109,6 +113,7 @@ class EvalReport:
             dataset=d["dataset"],
             created_at=d["created_at"],
             notes=d.get("notes", ""),
+            evidence=d.get("evidence") or {},
         )
 
 
@@ -131,10 +136,25 @@ class CapabilityGate:
     op: GateOp
     threshold: float
     rationale: str = ""
+    required_metrics: tuple[str, ...] = ()
+    require_approved_panel: bool = False
 
     def evaluate(self, report: EvalReport) -> tuple[bool, str]:
-        if self.metric not in report.metrics:
-            return False, f"report is missing gate metric '{self.metric}'"
+        missing = [
+            metric
+            for metric in (self.metric, *self.required_metrics)
+            if metric not in report.metrics
+        ]
+        if missing:
+            return (
+                False,
+                f"report is missing gate metric(s): {', '.join(repr(metric) for metric in missing)}",
+            )
+        if self.require_approved_panel and not report.evidence.get("promotion_eligible_panel"):
+            return (
+                False,
+                "report lacks an approved, complete consented panel; promotion remains HOLD",
+            )
         value = report.metrics[self.metric]
         if self.op.passes(value, self.threshold):
             return True, ""
@@ -167,6 +187,21 @@ GATES: dict[str, CapabilityGate] = {
             "skin tone. Until a real run on a balanced full-MST set clears this, skin-tone stays "
             "in shadow (computed, not surfaced) behind the GYF_SKIN_TONE_ENABLED flag."
         ),
+        required_metrics=("error_rate", "ece", "abstention_rate"),
+        require_approved_panel=True,
+    ),
+    "body_estimator": CapabilityGate(
+        capability="body_estimator",
+        metric="max_band_gap",
+        op=GateOp.LTE,
+        threshold=1.0,
+        rationale=(
+            "Body assistance requires the same approved diverse-panel subgroup error gap as tone, "
+            "plus reported calibration and abstention. Manual body type remains authoritative "
+            "until a separately approved panel report clears this gate."
+        ),
+        required_metrics=("error_rate", "ece", "abstention_rate"),
+        require_approved_panel=True,
     ),
 }
 
