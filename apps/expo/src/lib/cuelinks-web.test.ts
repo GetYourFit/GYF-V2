@@ -79,7 +79,10 @@ describe("Cuelinks web loader", () => {
     const loaderReferencesOutsideHtml = appFiles.filter((entry) => {
       if (entry === "+html.tsx") return false;
       const source = readFileSync(new URL(entry, appDir), "utf8");
-      return source.includes("buildCuelinksWebLoaderScript") || source.includes("gyf-cuelinks-web-loader");
+      return (
+        source.includes("buildCuelinksWebLoaderScript") ||
+        source.includes("gyf-cuelinks-web-loader")
+      );
     });
 
     expect(htmlHook).toContain("buildCuelinksWebLoaderScript");
