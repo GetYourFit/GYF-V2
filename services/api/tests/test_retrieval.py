@@ -461,9 +461,9 @@ def test_browse_pushes_budget_constraint_into_legacy_sql_window():
     assert "AND i.currency = %s" in sql
     assert params == (
         "IN",
-        ["shirt"],
         1000,
         "INR",
+        ["shirt"],
         "session-a",
         18,
         0,
@@ -489,10 +489,45 @@ def test_browse_pushes_budget_constraint_into_taste_sql_window():
     assert params == (
         "[0.1,0.2]",
         "IN",
-        ["shirt"],
         1000,
         "INR",
+        ["shirt"],
         "[0.1,0.2]",
+        18,
+        0,
+    )
+
+
+def test_browse_budget_params_precede_gender_and_category_filters():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    repo.browse(
+        categories=["shirt"],
+        k=6,
+        region="IN",
+        genders=frozenset({"men", "unisex"}),
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+        seed="session-a",
+    )
+
+    _, params = pool.calls[-1]
+    assert params == (
+        params[0],
+        "IN",
+        1000,
+        "INR",
+        ["men", "unisex"],
+        ["shirt"],
+        18,
+        params[0],
+        "IN",
+        1000,
+        "INR",
+        ["men", "unisex"],
+        ["shirt"],
+        18,
         18,
         0,
     )

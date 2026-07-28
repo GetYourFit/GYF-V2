@@ -413,6 +413,24 @@ def _browse_budget_sql(preferences: ExplorePreferences | None) -> tuple[str, lis
     return clause, params
 
 
+def _browse_filter_params(
+    *,
+    region: str | None,
+    gender_list: list[str] | None,
+    categories: list[str] | None,
+    budget_params: list[object],
+) -> list[object]:
+    params: list[object] = []
+    if region:
+        params.append(region)
+    params.extend(budget_params)
+    if gender_list:
+        params.append(gender_list)
+    if categories:
+        params.append(categories)
+    return params
+
+
 def _apply_explore_preferences(
     results: list[SearchResult], preferences: ExplorePreferences | None, k: int
 ) -> list[SearchResult]:
@@ -660,13 +678,14 @@ class PostgresVectorSearchRepository:
                 category=category_clause,
             )
             params: list[object] = [vec]  # score expression
-            if region:
-                params.append(region)
-            if gender_list:
-                params.append(gender_list)
-            if categories:
-                params.append(categories)
-            params.extend(budget_params)
+            params.extend(
+                _browse_filter_params(
+                    region=region,
+                    gender_list=gender_list,
+                    categories=categories,
+                    budget_params=budget_params,
+                )
+            )
             params.append(vec)  # ORDER BY expression
             # Over-fetch a disjoint per-page window, then MMR-rerank to k so the feed
             # stops stacking near-identical products. The window scales with offset so
@@ -713,14 +732,12 @@ class PostgresVectorSearchRepository:
 
         browse_seed = seed or str(date.today())
         if not self._indexed_browse:
-            params = []
-            if region:
-                params.append(region)
-            if gender_list:
-                params.append(gender_list)
-            if categories:
-                params.append(categories)
-            params.extend(budget_params)
+            params = _browse_filter_params(
+                region=region,
+                gender_list=gender_list,
+                categories=categories,
+                budget_params=budget_params,
+            )
             # Optional predicates appear before the ORDER BY seed placeholder.
             # Keep bindings in SQL order; putting the seed first silently bound it
             # as a region and made filtered browse fail with PostgreSQL 22P02.
@@ -745,13 +762,14 @@ class PostgresVectorSearchRepository:
             # PostgreSQL can then use it as an `id` index bound instead of scanning
             # the ring and applying the pivot as a join filter.
             params.append(pivot)
-            if region:
-                params.append(region)
-            if gender_list:
-                params.append(gender_list)
-            if categories:
-                params.append(categories)
-            params.extend(budget_params)
+            params.extend(
+                _browse_filter_params(
+                    region=region,
+                    gender_list=gender_list,
+                    categories=categories,
+                    budget_params=budget_params,
+                )
+            )
             params.append((k + offset) * _OVERFETCH if preferences else k + offset)
         params.extend(
             [k * _OVERFETCH if preferences else k, offset * _OVERFETCH if preferences else offset]
