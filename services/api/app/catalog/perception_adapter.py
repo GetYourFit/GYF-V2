@@ -17,7 +17,7 @@ from functools import lru_cache
 
 
 class SiglipTextEmbedder:
-    """Embeds free-text queries with the shared Marqo-FashionSigLIP text encoder."""
+    """Embeds free-text queries with the shared registry-approved SigLIP encoder."""
 
     def __init__(self) -> None:
         # Import here (not at module load) so the import error surfaces only when

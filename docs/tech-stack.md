@@ -122,15 +122,16 @@ rank → Visualize**, all fed by a continuous-learning loop.
 **Goal.** "See" garments like a stylist: vibe, color harmony, texture, silhouette,
 formality — directly from imagery, not tags.
 
-- **Primary embedding model: `Marqo-FashionSigLIP`** (ViT-B-16-SigLIP fine-tuned for
-  fashion with Generalised Contrastive Learning). It reports up to **+57% MRR/recall** over
-  prior fashion-CLIP models and is open and free — exactly the SOTA-but-free mandate. Used
-  for item↔text↔item retrieval, "shop the look," and as the visual backbone for taste and
-  compatibility. ([Marqo-FashionSigLIP card](https://huggingface.co/Marqo/marqo-fashionSigLIP),
-  [Marqo blog](https://www.marqo.ai/blog/search-model-for-fashion))
-- **Alternatives considered:** vanilla OpenCLIP / `FashionCLIP 2.0` (weaker on fashion
-  retrieval); SigLIP 2 / DINOv2 as general visual backbones (kept as 🧪 candidates for
-  texture/silhouette heads).
+- **Primary embedding model: registry-pinned `google-siglip2-base`** (`hf-hub:timm/ViT-B-16-SigLIP2`).
+  It is the current production binding for the shared 768-dimensional image/text port, so local
+  CPU/CUDA, API search, Modal HTTP serving and batch backfill all resolve through the same
+  runtime identity without a reindex. The current evidence is still bounded to the existing
+  image-category bake-off; frozen text-retrieval, artifact-hash, India latency/RSS/CPU,
+  shadow/canary and rollback proof remain open before any future promotion or replacement.
+- **Historical baseline and alternatives:** `Marqo-FashionSigLIP` remains the prior
+  fashion-tuned baseline and research lane; vanilla OpenCLIP / `FashionCLIP 2.0` were weaker on
+  fashion retrieval; `SigLIP 2` larger variants and `DINOv2` stay candidate backbones for
+  dedicated texture/silhouette heads.
 - **Attribute & structure extraction:** segmentation + attribute heads (category, color via
   perceptual Lab color space, pattern, formality, neckline, fit) trained on the embedding
   features. Color harmony scored in **CIELAB / CAM16** rather than RGB for human-faithful
