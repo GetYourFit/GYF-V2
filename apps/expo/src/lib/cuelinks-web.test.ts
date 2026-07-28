@@ -24,16 +24,40 @@ describe("Cuelinks web loader", () => {
     );
   });
 
-  it("proves the Expo web document hook loads cuelinksv2.js with the configured cId", () => {
-    const script = buildCuelinksWebLoaderScript("305057");
+  it("emits the captain-provided EXPO snippet exactly", () => {
+    expect(buildCuelinksWebLoaderScript("305057")).toBe(`var cId =  "305057";
 
-    expect(script).toContain("var cId='305057';");
-    expect(script).toContain("cdn0.cuelinks.com/js/");
-    expect(script).toContain("'cuelinksv2.js'");
-    expect(script).toContain("getElementsByTagName('body')[0].appendChild(s)");
-    expect(script).toContain(
-      "(location.protocol=='https:'?'https://cdn0.cuelinks.com/js/':'http://cdn0.cuelinks.com/js/')+'cuelinksv2.js'",
-    );
+(function(d, t) {
+  var s = document.createElement("script");
+  s.type = "text/javascript";
+  s.async = true;
+  s.src = (document.location.protocol == "https:" ? "https://cdn0.cuelinks.com/js/" : "http://cdn0.cuelinks.com/js/")  + "cuelinksv2.js";
+  document.getElementsByTagName("body")[0].appendChild(s);
+}());`);
+  });
+
+  it("loads one HTTPS SDK script when the static loader executes", () => {
+    const appended: { type?: string; async?: boolean; src?: string }[] = [];
+    const document = {
+      location: { protocol: "https:" },
+      createElement: () => ({}) as { type?: string; async?: boolean; src?: string },
+      getElementsByTagName: () => [
+        {
+          appendChild: (script: { type?: string; async?: boolean; src?: string }) =>
+            appended.push(script),
+        },
+      ],
+    };
+
+    new Function("document", buildCuelinksWebLoaderScript("305057"))(document);
+
+    expect(appended).toEqual([
+      {
+        type: "text/javascript",
+        async: true,
+        src: "https://cdn0.cuelinks.com/js/cuelinksv2.js",
+      },
+    ]);
   });
 
   it("keeps the protocol-specific Cuelinks CDN URL explicit and detectable", () => {
@@ -43,12 +67,14 @@ describe("Cuelinks web loader", () => {
     expect(cuelinksScriptUrlForProtocol("http:")).toBe("http://cdn0.cuelinks.com/js/cuelinksv2.js");
   });
 
-  it("is wired into the Expo web document hook as a visible marker", () => {
+  it("is wired once into Expo's web-only document hook, not the native root layout", () => {
     const htmlHook = readFileSync(new URL("../app/+html.tsx", import.meta.url), "utf8");
+    const rootLayout = readFileSync(new URL("../app/_layout.tsx", import.meta.url), "utf8");
 
     expect(htmlHook).toContain("buildCuelinksWebLoaderScript");
-    expect(htmlHook).toContain('id="gyf-cuelinks-web-loader"');
+    expect(htmlHook.match(/id="gyf-cuelinks-web-loader"/g)).toHaveLength(1);
     expect(htmlHook).toContain('name="gyf-cuelinks-web-cid"');
     expect(htmlHook).toContain("data-cuelinks-cid={cuelinksWebConfig.cid}");
+    expect(rootLayout).not.toContain("cuelinks-web");
   });
 });

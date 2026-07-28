@@ -25,11 +25,10 @@ export function cuelinksScriptUrlForProtocol(protocol: "http:" | "https:"): stri
 }
 
 /**
- * Mirrors Cuelinks' own EXPO channel installation snippet byte-for-byte (single
- * quotes, no spacing, inline ternary), because Cuelinks' installation checker
- * matches against that literal text rather than executing the page. A
- * functionally-equivalent but differently-formatted rewrite still fails their
- * "Javascript Code added is incorrect" check.
+ * Keep this as the captain-provided EXPO channel snippet, including its source
+ * spelling. The live vendor check rejected the previous single-quoted rewrite;
+ * source inspection shows it diverges from this supplied reference before the
+ * browser can request the SDK.
  */
 export function buildCuelinksWebLoaderScript(cid: string): string {
   if (!/^\d+$/.test(cid)) {
@@ -37,14 +36,15 @@ export function buildCuelinksWebLoaderScript(cid: string): string {
   }
 
   return [
-    `var cId='${cid}';`,
-    `(function() {`,
-    `  var s = document.createElement('script');`,
-    `  s.type = 'text/javascript';`,
+    `var cId =  "${cid}";`,
+    ``,
+    `(function(d, t) {`,
+    `  var s = document.createElement("script");`,
+    `  s.type = "text/javascript";`,
     `  s.async = true;`,
-    `  s.src = (location.protocol=='https:'?'https://${CUELINKS_CDN_BASE}':'http://${CUELINKS_CDN_BASE}')+'${CUELINKS_SCRIPT_NAME}';`,
-    `  document.getElementsByTagName('body')[0].appendChild(s);`,
-    `})();`,
+    `  s.src = (document.location.protocol == "https:" ? "https://${CUELINKS_CDN_BASE}" : "http://${CUELINKS_CDN_BASE}")  + "${CUELINKS_SCRIPT_NAME}";`,
+    `  document.getElementsByTagName("body")[0].appendChild(s);`,
+    `}());`,
   ].join("\n");
 }
 
