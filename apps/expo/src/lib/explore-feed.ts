@@ -158,12 +158,15 @@ export function buildExploreRequest(
   const scope = gender ? { gender } : {};
   // The default browse route reads the stored profile server-side. Filtered
   // Explore requests become searches, so carry the same budget currency through
-  // the existing typed boundary. An explicit lower filter narrows the profile
-  // ceiling; it can never widen it or compare raw cross-currency numbers.
+  // the existing typed boundary. Similar-item requests must stay broad unless
+  // the user explicitly applied a price filter, so a board tap without filters
+  // does not silently drop above-budget but otherwise valid neighbours.
   const maxPrice =
-    profileBudget && filters.maxPrice != null
-      ? Math.min(profileBudget.max, filters.maxPrice)
-      : (filters.maxPrice ?? profileBudget?.max);
+    filters.maxPrice == null
+      ? null
+      : profileBudget
+        ? Math.min(profileBudget.max, filters.maxPrice)
+        : filters.maxPrice;
   const budgetScope =
     maxPrice != null
       ? { max_price: maxPrice, ...(profileBudget ? { currency: profileBudget.currency } : {}) }
