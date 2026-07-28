@@ -16,6 +16,7 @@ import { ScreenBar } from "@/components/ui/screen-bar";
 import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type OutfitRecommendation, type Post } from "@/lib/api";
+import { downloadValidatedPostImage, imageExtension } from "@/lib/post-image-transfer";
 import {
   appendUniquePosts,
   applyReaction,
@@ -34,34 +35,8 @@ import { useResponsive } from "@/theme/use-responsive";
 
 type Status = "loading" | "ready" | "error";
 
-const MAX_POST_IMAGE_BYTES = 10 * 1024 * 1024;
-
-function imageExtension(url: string, contentType: string): string {
-  if (contentType.includes("png")) return "png";
-  if (contentType.includes("webp")) return "webp";
-  if (contentType.includes("gif")) return "gif";
-  return /\.jpe?g(?:$|[?#])/i.test(url) ? "jpg" : "jpeg";
-}
-
-function isSupportedPostImage(contentType: string): boolean {
-  return /^(image\/(jpeg|png|webp|gif))(?:;|$)/.test(contentType);
-}
-
 async function saveImageToPhotos(url: string): Promise<void> {
-  // Fetch explicitly rejects redirects, so a post cannot silently switch to a different origin.
-  const response = await fetch(url, { redirect: "error" });
-  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
-  const contentLength = Number(response.headers.get("content-length"));
-  if (
-    !response.ok ||
-    response.redirected ||
-    !isSupportedPostImage(contentType) ||
-    contentLength > MAX_POST_IMAGE_BYTES
-  ) {
-    throw new Error("Image download was unavailable");
-  }
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength > MAX_POST_IMAGE_BYTES) throw new Error("Image download was too large");
+  const { bytes, contentType } = await downloadValidatedPostImage(url);
   const file = new File(Paths.cache, `gyf-look-${Date.now()}.${imageExtension(url, contentType)}`);
   try {
     file.create({ overwrite: true });
@@ -77,12 +52,8 @@ async function saveImageToPhotos(url: string): Promise<void> {
 }
 
 async function downloadImageOnWeb(url: string): Promise<void> {
-  const response = await fetch(url, { redirect: "error" });
-  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
-  if (!response.ok || response.redirected || !isSupportedPostImage(contentType)) {
-    throw new Error("Image download was unavailable");
-  }
-  const blob = await response.blob();
+  const { bytes, contentType } = await downloadValidatedPostImage(url);
+  const blob = new Blob([bytes], { type: contentType });
   const objectUrl = URL.createObjectURL(blob);
   try {
     const anchor = document.createElement("a");
@@ -322,7 +293,13 @@ function PostCard({
       {mediaResult ? (
         <GyfText
           accessibilityRole="alert"
-          tone={mediaResult.outcome === "success" ? "muted" : "faint"}
+          tone={
+            mediaResult.outcome === "failed" ||
+            mediaResult.outcome === "invalid" ||
+            mediaResult.outcome === "denied"
+              ? "faint"
+              : "muted"
+          }
           variant="bodySmall"
         >
           {mediaResult.message}
@@ -518,17 +495,28 @@ export default function SocialRoute() {
         Platform.OS === "web"
           ? undefined
           : async (imageUrl) => {
-              await Share.share({
+              const result = await Share.share({
                 message: "A look from Get Your Fit",
                 title: "GYF look",
                 url: imageUrl,
               });
+              return result.action === Share.dismissedAction ? "dismissed" : "shared";
             },
       web:
         Platform.OS === "web" &&
         typeof navigator !== "undefined" &&
         typeof navigator.share === "function"
-          ? async (imageUrl) => navigator.share({ title: "GYF look", url: imageUrl })
+          ? async (imageUrl) => {
+              try {
+                await navigator.share({ title: "GYF look", url: imageUrl });
+                return "shared";
+              } catch (error) {
+                if (error instanceof DOMException && error.name === "AbortError") {
+                  return "dismissed";
+                }
+                throw error;
+              }
+            }
           : undefined,
     });
     setMediaResults((current) => ({ ...current, [postId]: result }));
@@ -544,7 +532,7 @@ export default function SocialRoute() {
             : "unsupported",
       requestPhotoPermission: async () => {
         const permission = await MediaLibrary.requestPermissionsAsync(true, ["photo"]);
-        return permission.granted ? "granted" : permission.canAskAgain ? "denied" : "unavailable";
+        return permission.granted ? "granted" : permission.canAskAgain ? "denied" : "blocked";
       },
       saveNative: saveImageToPhotos,
       downloadWeb: downloadImageOnWeb,
