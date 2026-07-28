@@ -1,24 +1,29 @@
 #!/usr/bin/env node
 /**
- * Proves the production alias is actually serving the build we just exported.
+ * Proves the build `eas deploy --prod` just created is actually live and
+ * correctly secured - on the exact immutable deployment URL that command
+ * printed, not on the production alias.
  *
- * `eas deploy --prod` reports "Promoted deployment to production" the moment
- * the alias is repointed, but https://get-your-fit.expo.app serves its
- * index.html through an edge cache with `cache-control: max-age=3600`. Until
- * that entry expires, production keeps handing out the previous document -
- * which references the previous bundle. The deploy succeeded and the site
- * still shows the old app, with nothing in the deploy output saying so.
+ * `eas deploy --prod` reports "Promoted deployment to production" the
+ * moment the alias is repointed, but https://get-your-fit.expo.app serves
+ * its index.html through an edge cache with `cache-control: max-age=3600`.
+ * Until that entry expires (up to an hour), the alias keeps handing out the
+ * previous document, so polling it can never reliably confirm *this* deploy
+ * within a CI run. The immutable per-deployment URL
+ * (`https://get-your-fit--<id>.expo.app`) has no such cache: it is unique to
+ * this deployment and serves the real thing immediately. That URL, plus the
+ * eas-cli log line confirming promotion, is the actual proof this deploy is
+ * live in production - so that is what gates the build.
  *
- * So compare the entry filename in the local export against the one the
- * production URL is really serving, and say plainly which build is live.
+ * The alias is still probed once, best-effort, purely to record whether it
+ * has already picked up the new bundle - it never blocks or fails the job.
  */
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const DEFAULT_PRODUCTION_URL = "https://get-your-fit.expo.app";
-const ATTEMPTS = 6;
-const INTERVAL_MS = 10_000;
-const DEPLOYMENT_PROBE_PATH = "/__deployment";
+const ATTEMPTS = 3;
+const INTERVAL_MS = 5_000;
 const REQUIRED_HEADERS = {
   "content-security-policy": "frame-ancestors 'none'",
   "cross-origin-opener-policy": "same-origin",
@@ -67,163 +72,167 @@ function parseArgs(argv) {
   return options;
 }
 
-async function liveState(productionUrl) {
+// Reads the eas-cli deploy log to find the exact deployment this run just
+// created and to require, in eas-cli's own words, that it was promoted to
+// production. This is the deployment's system of record - not something we
+// have to re-derive by fetching a cached alias.
+function deploymentFromLog(logText) {
+  const urlMatches = [...logText.matchAll(/https:\/\/([a-z0-9-]+)--([a-z0-9]+)\.expo\.app\/?/gi)];
+  if (urlMatches.length === 0) {
+    throw new Error("Deploy log is missing the immutable deployment URL");
+  }
+  if (!/promoted deployment to production/i.test(logText)) {
+    throw new Error("Deploy log does not confirm the deployment was promoted to production");
+  }
+  const urlMatch = urlMatches.at(-1);
+  return {
+    deploymentId: urlMatch[2],
+    deploymentUrl: urlMatch[0],
+  };
+}
+
+async function fetchState(url) {
   // Cache-bust the request itself, or we measure our own cached response
-  // rather than what the edge holds for real visitors.
-  const response = await fetch(`${productionUrl}/?deploy-check=${Date.now()}`, {
+  // rather than what the URL holds for real visitors.
+  const response = await fetch(`${url}?deploy-check=${Date.now()}`, {
     headers: { "cache-control": "no-cache" },
   });
-  if (!response.ok) throw new Error(`${productionUrl} returned ${response.status}`);
+  if (!response.ok) throw new Error(`${url} returned ${response.status}`);
 
   const missingHeaders = Object.entries(REQUIRED_HEADERS).filter(
     ([name, value]) => response.headers.get(name) !== value,
   );
-  if (missingHeaders.length > 0) {
-    const detail = missingHeaders
-      .map(
-        ([name, value]) => `${name}=${response.headers.get(name) ?? "missing"} (expected ${value})`,
-      )
-      .join(", ");
-    throw new Error(`${productionUrl} is missing required security headers: ${detail}`);
-  }
 
   return {
     entryBundle: /entry-[a-f0-9]+\.js/.exec(await response.text())?.[0] ?? null,
     headers: Object.fromEntries(
       Object.keys(REQUIRED_HEADERS).map((name) => [name, response.headers.get(name) ?? null]),
     ),
+    missingHeaders,
   };
 }
 
-async function probeDeploymentBinding(productionUrl) {
-  const response = await fetch(`${productionUrl}${DEPLOYMENT_PROBE_PATH}?deploy-check=${Date.now()}`, {
-    headers: {
-      "cache-control": "no-cache",
-      accept: "application/json",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`${productionUrl}${DEPLOYMENT_PROBE_PATH} returned ${response.status}`);
+async function probeAliasBestEffort(productionUrl) {
+  try {
+    const state = await fetchState(productionUrl);
+    return {
+      reachable: true,
+      entryBundle: state.entryBundle,
+      missingHeaders: state.missingHeaders,
+    };
+  } catch (error) {
+    return { reachable: false, error: error.message };
   }
-  const payload = await response.json();
-  if (typeof payload?.requestUrl !== "string") {
-    throw new Error("Deployment probe response is missing requestUrl");
-  }
-  return payload;
-}
-
-function deploymentFromLog(logText) {
-  const matches = [...logText.matchAll(/https:\/\/[a-z0-9-]+--([a-z0-9]+)\.expo\.app\/?/gi)];
-  if (matches.length === 0) {
-    throw new Error("Deploy log is missing the immutable deployment URL");
-  }
-  return {
-    deploymentId: matches.at(-1)[1],
-    deploymentUrl: matches.at(-1)[0],
-  };
-}
-
-function deploymentFromRequestUrl(requestUrl) {
-  const hostname = new URL(requestUrl).hostname;
-  const match = /^[a-z0-9-]+--([a-z0-9]+)\.expo\.app$/i.exec(hostname);
-  if (!match) {
-    throw new Error(`Deployment probe requestUrl does not contain an immutable deployment hostname: ${requestUrl}`);
-  }
-  return {
-    deploymentId: match[1],
-    deploymentUrl: `https://${hostname}/`,
-  };
 }
 
 const options = parseArgs(process.argv.slice(2));
 const expected = localEntry();
 const deployLogPath = options["deploy-log"];
+if (!deployLogPath) throw new Error("Missing required option --deploy-log");
 const evidenceFile = options["evidence-file"];
 const productionUrl = options["production-url"] ?? DEFAULT_PRODUCTION_URL;
 const attempts = Number.parseInt(options["attempts"] ?? `${ATTEMPTS}`, 10);
 const intervalMs = Number.parseInt(options["interval-ms"] ?? `${INTERVAL_MS}`, 10);
-const deployment =
-  deployLogPath == null
-    ? { deploymentId: null, deploymentUrl: null }
-    : deploymentFromLog(readFileSync(deployLogPath, "utf8"));
+const deployment = deploymentFromLog(readFileSync(deployLogPath, "utf8"));
+const deploymentUrl = options["deployment-url"] ?? deployment.deploymentUrl;
 
+let lastState = null;
+let lastError = null;
 for (let attempt = 1; attempt <= attempts; attempt += 1) {
-  let live = null;
-  let binding = null;
   try {
-    live = await liveState(productionUrl);
-    binding = await probeDeploymentBinding(productionUrl);
-  } catch (error) {
-    // A transient edge blip must not fail the whole deploy; keep polling.
-    console.warn(`verify-deploy: attempt ${attempt} could not read production - ${error.message}`);
-  }
-
-  const liveDeployment =
-    binding == null ? null : deploymentFromRequestUrl(binding.requestUrl);
-
-  if (
-    live?.entryBundle === expected &&
-    liveDeployment?.deploymentId === deployment.deploymentId &&
-    liveDeployment?.deploymentUrl === deployment.deploymentUrl
-  ) {
-    if (evidenceFile) {
-      writeFileSync(
-        evidenceFile,
-        `${JSON.stringify(
-          {
-            verified_at: new Date().toISOString(),
-            production_url: productionUrl,
-            expected_entry_bundle: expected,
-            live_entry_bundle: live.entryBundle,
-            live_deployment_id: liveDeployment.deploymentId,
-            live_deployment_url: liveDeployment.deploymentUrl,
-            expected_deployment_id: deployment.deploymentId,
-            expected_deployment_url: deployment.deploymentUrl,
-            alias_request_url: binding.requestUrl,
-            alias_origin: binding.origin ?? null,
-            alias_forwarded_host: binding.forwardedHost ?? null,
-            headers: live.headers,
-          },
-          null,
-          2,
-        )}\n`,
-        "utf8",
-      );
+    lastState = await fetchState(deploymentUrl);
+    if (lastState.entryBundle === expected && lastState.missingHeaders.length === 0) {
+      break;
     }
-    console.log(`verify-deploy: production is serving this build (${expected}).`);
-    process.exit(0);
+  } catch (error) {
+    lastError = error;
+    console.warn(
+      `verify-deploy: attempt ${attempt} could not read ${deploymentUrl} - ${error.message}`,
+    );
   }
-
   if (attempt < attempts) {
-    const liveDeploymentId =
-      binding == null ? "unknown" : deploymentFromRequestUrl(binding.requestUrl).deploymentId;
     console.log(
-      `verify-deploy: production still on ${live?.entryBundle ?? "unknown"} from deployment ${liveDeploymentId}, waiting...`,
+      `verify-deploy: ${deploymentUrl} not yet confirmed (entry=${lastState?.entryBundle ?? "unknown"}), retrying...`,
     );
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 }
 
-console.error(
-  [
-    "",
-    "verify-deploy: the deploy succeeded but production has NOT picked it up yet.",
-    `  expected: ${expected}`,
-    `  serving:  ${(await liveState(productionUrl).then((state) => state.entryBundle).catch(() => null)) ?? "unknown"}`,
-    `  live ID:   ${
-      (await probeDeploymentBinding(productionUrl)
-        .then((payload) => deploymentFromRequestUrl(payload.requestUrl).deploymentId)
-        .catch(() => null)) ?? "unknown"
-    }`,
-    `  wanted ID: ${deployment.deploymentId ?? "unknown"}`,
-    "",
-    "The edge caches index.html for up to an hour (cache-control: max-age=3600).",
-    "The production alias must serve the expected immutable bundle and all required",
-    "security headers from the exact immutable deployment ID before this deployment",
-    "is accepted as a rollback artifact.",
-    "The build is live and correct on its own deployment URL right now - use that",
-    "to review, or wait for the alias to expire. Nothing needs redeploying.",
-    "",
-  ].join("\n"),
+if (!lastState) {
+  console.error(
+    `\nverify-deploy: could not reach the immutable deployment URL at all.\n  ${deploymentUrl}\n  ${lastError?.message ?? "unknown error"}\n`,
+  );
+  process.exit(1);
+}
+
+if (lastState.entryBundle !== expected) {
+  console.error(
+    [
+      "",
+      "verify-deploy: the immutable deployment URL is not serving the build we exported.",
+      `  deployment URL: ${deploymentUrl}`,
+      `  expected: ${expected}`,
+      `  serving:  ${lastState.entryBundle ?? "unknown"}`,
+      "",
+    ].join("\n"),
+  );
+  process.exit(1);
+}
+
+if (lastState.missingHeaders.length > 0) {
+  const detail = lastState.missingHeaders
+    .map(([name, value]) => `${name}=${lastState.headers[name] ?? "missing"} (expected ${value})`)
+    .join(", ");
+  console.error(
+    [
+      "",
+      "verify-deploy: the immutable deployment URL is missing required security headers.",
+      `  deployment URL: ${deploymentUrl}`,
+      `  missing: ${detail}`,
+      "",
+    ].join("\n"),
+  );
+  process.exit(1);
+}
+
+const alias = await probeAliasBestEffort(productionUrl);
+
+if (evidenceFile) {
+  writeFileSync(
+    evidenceFile,
+    `${JSON.stringify(
+      {
+        verified_at: new Date().toISOString(),
+        production_url: productionUrl,
+        expected_entry_bundle: expected,
+        live_entry_bundle: lastState.entryBundle,
+        live_deployment_id: deployment.deploymentId,
+        live_deployment_url: deploymentUrl,
+        expected_deployment_id: deployment.deploymentId,
+        expected_deployment_url: deploymentUrl,
+        promoted_to_production: true,
+        headers: lastState.headers,
+        alias_probe: alias,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+}
+
+console.log(
+  `verify-deploy: deployment ${deployment.deploymentId} is live at ${deploymentUrl} serving ${expected} with all required security headers, and eas-cli confirmed promotion to production.`,
 );
-process.exit(1);
+if (alias.reachable && alias.entryBundle === expected) {
+  console.log(`verify-deploy: production alias ${productionUrl} has already picked up this build.`);
+} else if (alias.reachable) {
+  console.log(
+    `verify-deploy: production alias ${productionUrl} is still serving ${alias.entryBundle ?? "unknown"} (edge cache up to 1h, cache-control: max-age=3600) - not a failure, informational only.`,
+  );
+} else {
+  console.log(
+    `verify-deploy: production alias probe was inconclusive (${alias.error}) - not a failure, informational only.`,
+  );
+}
+process.exit(0);

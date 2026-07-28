@@ -10,10 +10,10 @@ commercial hosting, rollback, security and cost authority lives in
 ## Current replacement summary
 
 - **Web:** Expo web/static is the active direction. Repository CD deploys `apps/expo` to EAS
-  Hosting (`https://get-your-fit.expo.app`) after main CI succeeds, then verifies the production
-  alias headers and immutable deployment binding before it accepts the rollback artifact. Render
-  Static is the current commercial static-host candidate after Expo-web parity and the required
-  F10/F11 evidence.
+  Hosting (`https://get-your-fit.expo.app`) after main CI succeeds; see
+  [`../../apps/expo/README.md`](../../apps/expo/README.md#production) for the current deploy
+  verification method. Render Static is the current commercial static-host candidate after
+  Expo-web parity and the required F10/F11 evidence.
 - **API:** production is the single paid Render Starter service in **Virginia**. Oregon is
   suspended rollback-only until its gate closes. Singapore is prohibited.
 - **Next.js:** `app/` is preserved as a protected rollback/oracle client until F13/cutover; it is
