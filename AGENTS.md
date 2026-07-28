@@ -116,6 +116,9 @@ consent-filtered events → offline evaluation → shadow/cohort → promotion
 
 - Local development: Apple `container`.
 - Linux production: Docker image on the existing Virginia Render Starter.
+- PR migration proof stays secretless on disposable local Postgres. Do not restore remote
+  Supabase create/update previews until `docs/deploy/supabase-preview-security.md`'s trusted
+  boundary conditions are independently reviewed; closed-PR provider cleanup is the only retention.
 - Cache/rate limits: existing Upstash Redis.
 - Heavy inference: measured scale-to-zero adapter only after its gate.
 - Web commercial candidate: Expo static output on a commercially permitted host after parity.

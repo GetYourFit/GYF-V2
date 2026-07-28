@@ -46,12 +46,13 @@ prices, unavailable ML search, expired sessions, and audience-readiness failures
 explicit states; the client never invents catalogue items or scores.
 
 Pull requests also run the `Supabase Preview` GitHub check. GYF keeps Alembic as the single
-database migration source, so the check applies `services/api/db/migrations` to a disposable
-Postgres service and runs the API suite. To use an isolated hosted Supabase branch as well, add
-`SUPABASE_ACCESS_TOKEN` as a secret and `SUPABASE_PROJECT_REF` as a variable in the existing
-`EXPO_TOKEN` GitHub Actions environment. The workflow names branches `pr-<number>`, never copies
-production data, and deletes the branch when the pull request closes. Without those optional
-credentials, the local preview contract still runs and production remains untouched.
+database migration source, so the check applies `services/api/db/migrations` only to a disposable
+local Postgres service and runs the API suite. Remote Supabase create/update previews are
+intentionally disabled because pull-request code must not run with provider tokens or generated
+database credentials. Closing a pull request may still delete a pre-existing `pr-<number>` preview
+branch from the reviewed base workflow only. See
+[`docs/deploy/supabase-preview-security.md`](../../docs/deploy/supabase-preview-security.md) for the
+active containment boundary, residual risk, and the conditions for any future remote preview.
 
 ## Production
 
