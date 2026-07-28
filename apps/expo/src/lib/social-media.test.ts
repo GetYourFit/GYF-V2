@@ -45,9 +45,9 @@ describe("Social post media actions", () => {
       "file:///private/look.jpg",
       "https://token@cdn.example.test/look.jpg",
     ]) {
-      await expect(
-        sharePostImage(url, { native: async () => "shared" }),
-      ).resolves.toMatchObject({ outcome: "invalid" });
+      await expect(sharePostImage(url, { native: async () => "shared" })).resolves.toMatchObject({
+        outcome: "invalid",
+      });
       await expect(
         savePostImage(url, { platform: "web", downloadWeb: async () => undefined }),
       ).resolves.toMatchObject({
@@ -172,6 +172,25 @@ describe("Validated post-image downloads", () => {
     }
   });
 
+  test("rejects non-image content types even when the body is otherwise small", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () =>
+      new Response(JPEG_BYTES, {
+        status: 200,
+        headers: {
+          "content-type": "text/html",
+          "content-length": String(JPEG_BYTES.byteLength),
+        },
+      });
+    try {
+      await expect(downloadValidatedPostImage(IMAGE)).rejects.toThrow(
+        "Image download was unavailable",
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test("accepts only WebP payloads with a WEBP RIFF brand", async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () =>
@@ -183,12 +202,12 @@ describe("Validated post-image downloads", () => {
         },
       });
     try {
-      await expect(downloadValidatedPostImage("https://cdn.example.test/look.webp")).resolves.toEqual(
-        {
-          bytes: WEBP_BYTES,
-          contentType: "image/webp",
-        },
-      );
+      await expect(
+        downloadValidatedPostImage("https://cdn.example.test/look.webp"),
+      ).resolves.toEqual({
+        bytes: WEBP_BYTES,
+        contentType: "image/webp",
+      });
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -197,9 +216,7 @@ describe("Validated post-image downloads", () => {
   test("rejects non-WebP RIFF payloads and truncated WebP headers", async () => {
     const originalFetch = globalThis.fetch;
     const invalidBodies = [
-      Uint8Array.from([
-        0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45,
-      ]),
+      Uint8Array.from([0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45]),
       Uint8Array.from([0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00]),
     ];
     try {
@@ -212,9 +229,9 @@ describe("Validated post-image downloads", () => {
               "content-length": String(body.byteLength),
             },
           });
-        await expect(downloadValidatedPostImage("https://cdn.example.test/look.webp")).rejects.toThrow(
-          "Image download was unavailable",
-        );
+        await expect(
+          downloadValidatedPostImage("https://cdn.example.test/look.webp"),
+        ).rejects.toThrow("Image download was unavailable");
       }
     } finally {
       globalThis.fetch = originalFetch;
@@ -231,6 +248,28 @@ describe("Validated post-image downloads", () => {
           "content-length": String(11 * 1024 * 1024),
         },
       });
+    try {
+      await expect(downloadValidatedPostImage(IMAGE)).rejects.toThrow(
+        "Image download was unavailable",
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("rejects redirected responses", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      const response = new Response(JPEG_BYTES, {
+        status: 200,
+        headers: {
+          "content-type": "image/jpeg",
+          "content-length": String(JPEG_BYTES.byteLength),
+        },
+      });
+      Object.defineProperty(response, "redirected", { configurable: true, value: true });
+      return response;
+    };
     try {
       await expect(downloadValidatedPostImage(IMAGE)).rejects.toThrow(
         "Image download was unavailable",

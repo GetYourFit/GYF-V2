@@ -3,9 +3,7 @@ const MAX_POST_IMAGE_BYTES = 10 * 1024 * 1024;
 const IMAGE_SIGNATURES = {
   "image/jpeg": [[0xff, 0xd8, 0xff]],
   "image/png": [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
-  "image/webp": [[
-    0x52, 0x49, 0x46, 0x46, -1, -1, -1, -1, 0x57, 0x45, 0x42, 0x50,
-  ]],
+  "image/webp": [[0x52, 0x49, 0x46, 0x46, -1, -1, -1, -1, 0x57, 0x45, 0x42, 0x50]],
   "image/gif": [
     [0x47, 0x49, 0x46, 0x38, 0x37, 0x61],
     [0x47, 0x49, 0x46, 0x38, 0x39, 0x61],
@@ -17,7 +15,9 @@ export type DownloadedPostImage = {
   contentType: keyof typeof IMAGE_SIGNATURES;
 };
 
-function normalizeImageContentType(contentType: string | null): keyof typeof IMAGE_SIGNATURES | null {
+function normalizeImageContentType(
+  contentType: string | null,
+): keyof typeof IMAGE_SIGNATURES | null {
   const normalized = contentType?.toLowerCase().split(";")[0]?.trim() ?? "";
   return normalized in IMAGE_SIGNATURES ? (normalized as keyof typeof IMAGE_SIGNATURES) : null;
 }
