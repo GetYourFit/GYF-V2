@@ -49,10 +49,10 @@ _REGISTRY_PATH = _POLICY_ROOT / "models.registry.json"
 _REPORTS_PATH = _POLICY_ROOT / "eval-reports"
 
 
-def _resolve_model_id() -> str:
+def _resolve_model_id() -> tuple[str, str | None]:
     configured = os.environ.get("GYF_PERCEPTION_MODEL")
     if not configured:
-        return _PRODUCTION_ENCODER.model_uri
+        return _PRODUCTION_ENCODER.model_uri, None
     ok, reasons = runtime_model_verdict(
         "encoder",
         configured_model_uri=configured,
@@ -60,9 +60,12 @@ def _resolve_model_id() -> str:
         reports_dir=_REPORTS_PATH,
     )
     if ok:
-        return configured
+        return configured, None
     detail = "; ".join(reasons) if reasons else "unknown validation failure"
-    raise RuntimeError(f"invalid GYF_PERCEPTION_MODEL override {configured!r}: {detail}")
+    return (
+        _PRODUCTION_ENCODER.model_uri,
+        f"rejected GYF_PERCEPTION_MODEL override {configured!r}: {detail}",
+    )
 
 # Request guards — mirror the Space's (spaces/gyf-gpu/app.py); a serving lane never
 # trusts its caller, even an internal one.
@@ -126,7 +129,9 @@ class Encoder:
         import open_clip
         import torch
 
-        self.model_id = _resolve_model_id()
+        self.model_id, self.override_rejection_reason = _resolve_model_id()
+        if self.override_rejection_reason:
+            print(self.override_rejection_reason)
         torch.set_num_threads(2)
         model, preprocess = open_clip.create_model_from_pretrained(self.model_id)
         self.model = model.eval()
@@ -188,6 +193,7 @@ class Encoder:
         def _response(embeddings: list[list[float]], started: float) -> dict:
             return {
                 "embeddings": embeddings,
+                "model_id": self.model_id,
                 "timings": {
                     # snap=True loads during snapshot build; TTFB captures restore.
                     "model_load_ms": None,
@@ -196,8 +202,12 @@ class Encoder:
             }
 
         @api.get("/health")
-        def health() -> dict[str, str]:
-            return {"status": "ok", "model_id": self.model_id}
+        def health() -> dict[str, str | None]:
+            return {
+                "status": "ok",
+                "model_id": self.model_id,
+                "override_rejection_reason": self.override_rejection_reason,
+            }
 
         @api.post("/embed_texts")
         def embed_texts(

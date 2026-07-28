@@ -86,6 +86,7 @@ def _load_modal_encoder_from_path(monkeypatch: pytest.MonkeyPatch, module_path: 
 class _LoadedEncoder:
     def __init__(self, module):
         self.model_id = None
+        self.override_rejection_reason = None
         self.model = None
         self.preprocess = None
         self.tokenizer = None
@@ -120,6 +121,42 @@ def _run_encoder_load(module, monkeypatch: pytest.MonkeyPatch):
     encoder = _LoadedEncoder(module)
     module.Encoder.load(encoder)
     return encoder, calls
+
+
+class _FakeFastAPIApp:
+    def __init__(self, **_kwargs):
+        self.routes: dict[tuple[str, str], object] = {}
+
+    def get(self, path: str):
+        def decorator(fn):
+            self.routes[("GET", path)] = fn
+            return fn
+
+        return decorator
+
+    def post(self, path: str):
+        def decorator(fn):
+            self.routes[("POST", path)] = fn
+            return fn
+
+        return decorator
+
+
+def _build_web_app(module, monkeypatch: pytest.MonkeyPatch, encoder):
+    class _FakeHTTPException(Exception):
+        def __init__(self, status_code: int, detail: str):
+            self.status_code = status_code
+            self.detail = detail
+            super().__init__(detail)
+
+    fake_fastapi = types.SimpleNamespace(
+        Body=lambda *args, **kwargs: kwargs.get("default", args[0] if args else ...),
+        Header=lambda default=None: default,
+        HTTPException=_FakeHTTPException,
+        FastAPI=lambda **kwargs: _FakeFastAPIApp(**kwargs),
+    )
+    monkeypatch.setitem(sys.modules, "fastapi", fake_fastapi)
+    return module.Encoder.web(encoder)
 
 
 def _copy_policy_bundle(destination: Path) -> None:
@@ -183,6 +220,7 @@ def test_modal_lane_defaults_to_the_canonical_runtime_binding(monkeypatch: pytes
     assert ("eval-reports", "/opt/gyf-runtime/eval-reports") in fake_modal._image.local_dirs
     encoder, calls = _run_encoder_load(module, monkeypatch)
     assert encoder.model_id == binding.model_uri
+    assert encoder.override_rejection_reason is None
     assert calls == {
         "threads": 2,
         "model_id": binding.model_uri,
@@ -203,35 +241,62 @@ def test_modal_lane_accepts_the_canonical_override_from_the_bundled_policy(
     encoder, calls = _run_encoder_load(module, monkeypatch)
 
     assert encoder.model_id == binding.model_uri
+    assert encoder.override_rejection_reason is None
     assert calls["model_id"] == binding.model_uri
 
 
-def test_modal_lane_rejects_invalid_override_from_the_bundled_policy(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-):
+def test_modal_lane_falls_back_from_invalid_override(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    binding = RUNTIME_MODELS["encoder"]
     bundle_root = tmp_path / "bundle"
     module_path = _copy_isolated_modal_bundle(bundle_root)
     _redirect_opt_runtime_policy(monkeypatch, bundle_root)
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", "hf-hub:unapproved/model")
 
     module, _fake_modal = _load_modal_encoder_from_path(monkeypatch, module_path)
+    encoder, calls = _run_encoder_load(module, monkeypatch)
 
-    with pytest.raises(RuntimeError, match="invalid GYF_PERCEPTION_MODEL override"):
-        _run_encoder_load(module, monkeypatch)
+    assert encoder.model_id == binding.model_uri
+    assert calls["model_id"] == binding.model_uri
+    assert encoder.override_rejection_reason is not None
+    assert "hf-hub:unapproved/model" in encoder.override_rejection_reason
 
 
-def test_modal_lane_rejects_override_when_the_bundled_policy_is_missing_reports(
+def test_modal_lane_falls_back_when_bundled_policy_reports_are_missing(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
+    binding = RUNTIME_MODELS["encoder"]
     bundle_root = tmp_path / "bundle"
     module_path = bundle_root / "ml" / "serving" / "modal_encoder.py"
     module_path.parent.mkdir(parents=True)
     shutil.copy2(MODULE_PATH, module_path)
     shutil.copy2(ROOT / "models.registry.json", bundle_root / "models.registry.json")
     _redirect_opt_runtime_policy(monkeypatch, bundle_root)
-    monkeypatch.setenv("GYF_PERCEPTION_MODEL", RUNTIME_MODELS["encoder"].model_uri)
+    monkeypatch.setenv("GYF_PERCEPTION_MODEL", binding.model_uri)
 
     module, _fake_modal = _load_modal_encoder_from_path(monkeypatch, module_path)
+    encoder, calls = _run_encoder_load(module, monkeypatch)
 
-    with pytest.raises(RuntimeError, match="does not resolve under"):
-        _run_encoder_load(module, monkeypatch)
+    assert encoder.model_id == binding.model_uri
+    assert calls["model_id"] == binding.model_uri
+    assert encoder.override_rejection_reason is not None
+    assert "does not resolve under" in encoder.override_rejection_reason
+
+
+def test_modal_health_reports_override_rejection_reason(monkeypatch: pytest.MonkeyPatch):
+    encoder = types.SimpleNamespace(
+        model_id=RUNTIME_MODELS["encoder"].model_uri,
+        override_rejection_reason="rejected GYF_PERCEPTION_MODEL override 'bad': detail",
+        _embed_texts=lambda texts: [],
+        _embed_images=lambda images: [],
+    )
+    module, _fake_modal = _load_modal_encoder(monkeypatch)
+    monkeypatch.setenv("GYF_ENCODER_API_KEY", "secret")
+    app = _build_web_app(module, monkeypatch, encoder)
+
+    health = app.routes[("GET", "/health")]()
+
+    assert health == {
+        "status": "ok",
+        "model_id": RUNTIME_MODELS["encoder"].model_uri,
+        "override_rejection_reason": "rejected GYF_PERCEPTION_MODEL override 'bad': detail",
+    }
