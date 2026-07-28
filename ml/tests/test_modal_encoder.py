@@ -83,6 +83,45 @@ def _load_modal_encoder_from_path(monkeypatch: pytest.MonkeyPatch, module_path: 
     return module, fake_modal
 
 
+class _LoadedEncoder:
+    def __init__(self, module):
+        self.model_id = None
+        self.model = None
+        self.preprocess = None
+        self.tokenizer = None
+        self._module = module
+
+
+def _run_encoder_load(module, monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, object] = {}
+
+    class _FakeModel:
+        def eval(self):
+            return "model-eval"
+
+    def create_model_from_pretrained(model_id):
+        calls["model_id"] = model_id
+        return _FakeModel(), "preprocess"
+
+    def get_tokenizer(model_id):
+        calls["tokenizer_model_id"] = model_id
+        return "tokenizer"
+
+    def set_num_threads(value):
+        calls["threads"] = value
+
+    fake_open_clip = types.SimpleNamespace(
+        create_model_from_pretrained=create_model_from_pretrained,
+        get_tokenizer=get_tokenizer,
+    )
+    fake_torch = types.SimpleNamespace(set_num_threads=set_num_threads)
+    monkeypatch.setitem(sys.modules, "open_clip", fake_open_clip)
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+    encoder = _LoadedEncoder(module)
+    module.Encoder.load(encoder)
+    return encoder, calls
+
+
 def _copy_policy_bundle(destination: Path) -> None:
     shutil.copy2(ROOT / "models.registry.json", destination / "models.registry.json")
     shutil.copytree(ROOT / "eval-reports", destination / "eval-reports")
@@ -137,11 +176,18 @@ def test_modal_lane_defaults_to_the_canonical_runtime_binding(monkeypatch: pytes
     module, fake_modal = _load_modal_encoder(monkeypatch)
 
     binding = RUNTIME_MODELS["encoder"]
-    assert module.MODEL_ID == binding.model_uri
-    assert fake_modal._image.env_vars["GYF_PERCEPTION_MODEL"] == binding.model_uri
+    assert not hasattr(module, "MODEL_ID")
+    assert "GYF_PERCEPTION_MODEL" not in fake_modal._image.env_vars
     assert ("gyf_contracts", True) in fake_modal._image.local_sources
     assert ("models.registry.json", "/opt/gyf-runtime/models.registry.json") in fake_modal._image.local_files
     assert ("eval-reports", "/opt/gyf-runtime/eval-reports") in fake_modal._image.local_dirs
+    encoder, calls = _run_encoder_load(module, monkeypatch)
+    assert encoder.model_id == binding.model_uri
+    assert calls == {
+        "threads": 2,
+        "model_id": binding.model_uri,
+        "tokenizer_model_id": binding.model_uri,
+    }
 
 
 def test_modal_lane_accepts_the_canonical_override_from_the_bundled_policy(
@@ -154,8 +200,10 @@ def test_modal_lane_accepts_the_canonical_override_from_the_bundled_policy(
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", binding.model_uri)
 
     module, _fake_modal = _load_modal_encoder_from_path(monkeypatch, module_path)
+    encoder, calls = _run_encoder_load(module, monkeypatch)
 
-    assert module.MODEL_ID == binding.model_uri
+    assert encoder.model_id == binding.model_uri
+    assert calls["model_id"] == binding.model_uri
 
 
 def test_modal_lane_rejects_invalid_override_from_the_bundled_policy(
@@ -166,8 +214,10 @@ def test_modal_lane_rejects_invalid_override_from_the_bundled_policy(
     _redirect_opt_runtime_policy(monkeypatch, bundle_root)
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", "hf-hub:unapproved/model")
 
+    module, _fake_modal = _load_modal_encoder_from_path(monkeypatch, module_path)
+
     with pytest.raises(RuntimeError, match="invalid GYF_PERCEPTION_MODEL override"):
-        _load_modal_encoder_from_path(monkeypatch, module_path)
+        _run_encoder_load(module, monkeypatch)
 
 
 def test_modal_lane_rejects_override_when_the_bundled_policy_is_missing_reports(
@@ -181,5 +231,7 @@ def test_modal_lane_rejects_override_when_the_bundled_policy_is_missing_reports(
     _redirect_opt_runtime_policy(monkeypatch, bundle_root)
     monkeypatch.setenv("GYF_PERCEPTION_MODEL", RUNTIME_MODELS["encoder"].model_uri)
 
+    module, _fake_modal = _load_modal_encoder_from_path(monkeypatch, module_path)
+
     with pytest.raises(RuntimeError, match="does not resolve under"):
-        _load_modal_encoder_from_path(monkeypatch, module_path)
+        _run_encoder_load(module, monkeypatch)

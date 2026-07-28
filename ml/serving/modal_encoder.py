@@ -64,9 +64,6 @@ def _resolve_model_id() -> str:
     detail = "; ".join(reasons) if reasons else "unknown validation failure"
     raise RuntimeError(f"invalid GYF_PERCEPTION_MODEL override {configured!r}: {detail}")
 
-
-MODEL_ID = _resolve_model_id()
-
 # Request guards — mirror the Space's (spaces/gyf-gpu/app.py); a serving lane never
 # trusts its caller, even an internal one.
 MAX_TEXT_BATCH = 64
@@ -101,7 +98,6 @@ image = (
     .env(
         {
             "HF_HOME": "/cache/hf",
-            "GYF_PERCEPTION_MODEL": MODEL_ID,
         }
     )
 )
@@ -130,11 +126,12 @@ class Encoder:
         import open_clip
         import torch
 
+        self.model_id = _resolve_model_id()
         torch.set_num_threads(2)
-        model, preprocess = open_clip.create_model_from_pretrained(MODEL_ID)
+        model, preprocess = open_clip.create_model_from_pretrained(self.model_id)
         self.model = model.eval()
         self.preprocess = preprocess
-        self.tokenizer = open_clip.get_tokenizer(MODEL_ID)
+        self.tokenizer = open_clip.get_tokenizer(self.model_id)
 
     def _embed_texts(self, texts: list[str]) -> list[list[float]]:
         import torch
@@ -179,10 +176,13 @@ class Encoder:
                 raise HTTPException(status_code=401, detail="unauthorized")
 
         def _check_model(model_id: str) -> None:
-            if model_id != MODEL_ID:
+            if model_id != self.model_id:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"this lane serves only '{MODEL_ID}' (the promoted production encoder)",
+                    detail=(
+                        f"this lane serves only '{self.model_id}' "
+                        "(the promoted production encoder)"
+                    ),
                 )
 
         def _response(embeddings: list[list[float]], started: float) -> dict:
@@ -197,14 +197,14 @@ class Encoder:
 
         @api.get("/health")
         def health() -> dict[str, str]:
-            return {"status": "ok", "model_id": MODEL_ID}
+            return {"status": "ok", "model_id": self.model_id}
 
         @api.post("/embed_texts")
         def embed_texts(
             payload: dict = Body(...), authorization: str | None = Header(None)
         ) -> dict:
             _authorize(authorization)
-            _check_model(payload.get("model_id", MODEL_ID))
+            _check_model(payload.get("model_id", self.model_id))
             texts = payload.get("texts") or []
             if not isinstance(texts, list) or not all(isinstance(t, str) for t in texts):
                 raise HTTPException(status_code=422, detail="texts must be a list of strings")
@@ -220,7 +220,7 @@ class Encoder:
             payload: dict = Body(...), authorization: str | None = Header(None)
         ) -> dict:
             _authorize(authorization)
-            _check_model(payload.get("model_id", MODEL_ID))
+            _check_model(payload.get("model_id", self.model_id))
             images = payload.get("images_b64") or []
             if not isinstance(images, list) or not all(isinstance(i, str) for i in images):
                 raise HTTPException(status_code=422, detail="images_b64 must be a list of strings")
