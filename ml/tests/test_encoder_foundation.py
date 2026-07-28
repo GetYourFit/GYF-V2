@@ -11,7 +11,6 @@ import pytest
 from eval.encoder_foundation import (
     cosine_topk_parity,
     measure_text_runtime,
-    query_cache_key,
     retrieval_truth,
     validate_embeddings,
 )
@@ -104,11 +103,3 @@ def test_fallback_encoder_demotes_to_local_baseline() -> None:
     assert encoder.lane == "local"
     assert "remote unavailable" in encoder.fallback_reason
     assert local.calls == 1
-
-
-def test_query_cache_key_changes_with_model_version() -> None:
-    normalized_query = "red summer dress"
-    current = query_cache_key(normalized_query, "google-siglip2-base-v1")
-    next_version = query_cache_key(normalized_query, "google-siglip2-base-v2")
-
-    assert current != next_version

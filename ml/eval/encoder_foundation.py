@@ -75,12 +75,6 @@ def retrieval_truth(ranked_ids: list[str], eligible_ids: set[str]) -> None:
         raise AssertionError(f"retrieval returned ineligible ids: {sorted(unknown)}")
 
 
-def query_cache_key(normalized_query: str, model_version: str) -> tuple[str, str]:
-    if not normalized_query or not model_version:
-        raise ValueError("normalized_query and model_version must be non-empty")
-    return normalized_query, model_version
-
-
 def _rss_bytes() -> int | None:
     try:
         import resource
