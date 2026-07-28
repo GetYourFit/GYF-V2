@@ -146,7 +146,9 @@ def sync(conn, transactions: list[dict[str, Any]]) -> tuple[int, int]:
                 "commission": tx.get("commission"),
                 "status": _status(tx),
                 "campaign": tx.get("campaign_name") or tx.get("campaign_id"),
-                "item_attribution": "exact_click" if target_type == "item" else "recommendation_only",
+                "item_attribution": "exact_click"
+                if target_type == "item"
+                else "recommendation_only",
             }
         )
         conn.execute(
@@ -174,7 +176,9 @@ def main() -> int:
 
     with psycopg.connect(dsn) as conn:
         inserted, skipped = sync(conn, transactions)
-    print(f"reconciled {inserted} outcomes ({skipped} skipped) from {len(transactions)} transactions")
+    print(
+        f"reconciled {inserted} outcomes ({skipped} skipped) from {len(transactions)} transactions"
+    )
     return 0
 
 

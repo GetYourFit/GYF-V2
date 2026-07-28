@@ -59,6 +59,7 @@ def get_campaign_registry() -> CuelinksCampaignRegistry:
     except Exception as exc:  # noqa: BLE001 — never 500 on config issues
         # Log and return empty registry; ingestion has its own hard blocker.
         import logging
+
         logging.getLogger("gyf.cuelinks.api").warning(
             "Failed to load Cuelinks campaigns from %s: %s", path, exc
         )
@@ -108,9 +109,7 @@ class LinkConversionResponse(BaseModel):
     campaign_id: Optional[str] = Field(
         None, description="Campaign ID that would be used for attribution"
     )
-    merchant_name: Optional[str] = Field(
-        None, description="Merchant name resolved from the URL"
-    )
+    merchant_name: Optional[str] = Field(None, description="Merchant name resolved from the URL")
     deeplink_allowed: bool = Field(
         False, description="Whether the campaign permits product-level deeplinks"
     )

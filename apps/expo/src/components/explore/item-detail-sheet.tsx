@@ -221,7 +221,7 @@ export function ItemDetailSheet({
       placement: "product_detail",
       recommendationId,
       sessionId: commerceSessionId.current,
-      subid,
+      subid: subid ?? undefined,
       unattributed: !recommendationId && !subid,
     });
     if (event) await api.feedback(event).catch(() => undefined);
