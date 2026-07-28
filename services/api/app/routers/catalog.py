@@ -10,6 +10,7 @@ from gyf_contracts.usermodel import CATALOG_GENDERS, catalog_genders_for
 
 from ..catalog.retrieval import (
     CatalogFacets,
+    ExplorePreferences,
     SearchResult,
     TextEmbedder,
     VectorSearchRepository,
@@ -19,13 +20,16 @@ from ..catalog.retrieval import (
 )
 from ..auth import Principal, get_optional_principal
 from ..dependencies import (
+    get_profile_repo,
     get_search_repo,
     get_taste_repo,
     get_text_embedder,
 )
 from ..metrics import stage_timer
 from ..ratelimit import rate_limit
+from ..recsys.conditioning import resolve
 from ..recsys.taste import TasteRepository, build_taste
+from ..profile.repository import ProfileRepository
 
 # How many recent engagements feed the Explore taste vector — matches the feed's
 # horizon so both surfaces learn from the same window.
@@ -160,14 +164,20 @@ def browse_items(
     repo: VectorSearchRepository = Depends(get_search_repo),
     principal: Principal | None = Depends(get_optional_principal),
     taste_repo: TasteRepository = Depends(get_taste_repo),
+    profile_repo: ProfileRepository = Depends(get_profile_repo),
 ) -> dict[str, list[SearchResult]]:
-    """Explore feed. When the caller is signed in and has a learned taste vector,
-    this ranks the catalogue by cosine to it (two-tower content retrieval) — the
-    feed reflects what they actually engage with, per-user, and shifts as their
-    taste evolves. Callers without engagement get the same cheap rotating relational
-    read as anonymous users, so the first grid does not block on the remote encoder.
-    ``offset`` is the global count shown, split across slots."""
+    """Explore feed. Signed-in callers get a per-user page: learned taste still
+    ranks by cosine when present, and stated profile facts (budget, tone/body,
+    style intent) also condition the default browse ordering. Anonymous callers,
+    or signed-in callers with no usable profile/taste facts, keep the cheap
+    deterministic rotating fallback so the first grid never blocks on a remote
+    encoder. ``offset`` is the global count shown, split across slots."""
     taste_vector = None
+    preferences = None
+    if principal is not None:
+        profile = profile_repo.get(principal.user_id)
+        if profile is not None:
+            preferences = ExplorePreferences(resolve(profile, None, region))
     with stage_timer("browse", "taste") as timer:
         if principal is None:
             timer.set_outcome("bypass")
@@ -175,7 +185,7 @@ def browse_items(
             taste = build_taste(taste_repo.engagements(principal.user_id, _TASTE_HISTORY))
             taste_vector = taste.vector if taste.has_signal else None
             timer.set_outcome("signal" if taste.has_signal else "empty")
-    if taste_vector is not None:
+    if taste_vector is not None or preferences is not None:
         response.headers["Cache-Control"] = "private, max-age=30"  # per-user, never shared
     else:
         response.headers["Cache-Control"] = "public, max-age=60"
@@ -191,6 +201,7 @@ def browse_items(
             genders=_genders(gender),
             taste_vector=taste_vector,
             seed=seed,
+            preferences=preferences,
         )
     else:
         hits = repo.browse(
@@ -201,6 +212,7 @@ def browse_items(
             genders=_genders(gender),
             taste_vector=taste_vector,
             seed=seed,
+            preferences=preferences,
         )
     with stage_timer("browse", "directory_lookup", "bypass"):
         pass

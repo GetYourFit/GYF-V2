@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from app.catalog.retrieval import SearchResult
 from app.dependencies import (
     get_item_directory,
+    get_profile_repo,
     get_search_repo,
     get_taste_repo,
     get_text_embedder,
@@ -34,7 +35,17 @@ class _CapturingRepo:
         self.calls.append((cats, offset))
         return [SearchResult(item_id=f"{cats}-{offset}", title="x", score=1.0)]
 
-    def browse(self, categories, k, region, offset=0, genders=None, taste_vector=None, seed=None):
+    def browse(
+        self,
+        categories,
+        k,
+        region,
+        offset=0,
+        genders=None,
+        taste_vector=None,
+        seed=None,
+        preferences=None,
+    ):
         cats = tuple(categories or ())
         self.calls.append((cats, offset))
         return [SearchResult(item_id=f"{cats}-{offset}", title="x", score=0.0)]
@@ -56,10 +67,15 @@ class _EmptyDirectory:
         return {}
 
 
+class _NoProfileRepo:
+    def get(self, user_id):
+        return None
+
+
 class _NoSignalTasteRepo:
-    """In open-auth mode the caller is the dev principal, so browse builds a taste
-    vector — return no engagements so the page stays the anonymous-equivalent read
-    this test pins (offset splitting), not a personalized vector scan."""
+    """In open-auth mode the caller is the dev principal, so browse may still try
+    the taste path. Return no engagements so this test stays on the deterministic
+    offset-splitting path instead of a personalized vector scan."""
 
     def engagements(self, user_id, limit):
         return []
@@ -75,6 +91,7 @@ def _call(query_string: str, path: str = "/items/search") -> tuple[_CapturingRep
     )
     app.dependency_overrides[get_item_directory] = _EmptyDirectory
     app.dependency_overrides[get_taste_repo] = _NoSignalTasteRepo
+    app.dependency_overrides[get_profile_repo] = _NoProfileRepo
     try:
         resp = TestClient(app).get(f"{path}{query_string}")
     finally:

@@ -12,11 +12,86 @@ from fastapi.testclient import TestClient
 from psycopg.errors import QueryCanceled
 from app.catalog.retrieval import (
     CatalogFacets,
+    ExplorePreferences,
     PostgresVectorSearchRepository,
     SearchResult,
+    _apply_explore_preferences,
     search_text,
 )
 from app.main import app, get_search_repo, get_text_embedder
+from app.profile.models import BudgetRange, Profile
+from app.recsys.conditioning import resolve
+
+
+def test_profile_preferences_materially_change_explore_and_never_break_budget():
+    items = [
+        SearchResult(
+            "warm-tailored",
+            "Warm tailored blazer",
+            0,
+            price=900,
+            currency="INR",
+            lch=(50, 55, 40),
+            aesthetic="vintage",
+            silhouette="tailored",
+            fit="slim",
+        ),
+        SearchResult(
+            "cool-waist",
+            "Cool waist dress",
+            0,
+            price=900,
+            currency="INR",
+            lch=(55, 25, 270),
+            aesthetic="minimalist",
+            silhouette="waist defined",
+            fit="fitted",
+        ),
+        SearchResult(
+            "over-budget",
+            "Luxury dress",
+            0,
+            price=9000,
+            currency="INR",
+            lch=(55, 25, 270),
+            aesthetic="minimalist",
+            silhouette="waist defined",
+            fit="fitted",
+        ),
+    ]
+    warm = Profile(
+        undertone="warm",
+        skin_tone="mst10",
+        body_type="inverted_triangle",
+        style_intent=["classic"],
+        budget_range=BudgetRange(max=1000, currency="INR"),
+    )
+    cool = Profile(
+        undertone="cool",
+        skin_tone="mst1",
+        body_type="rectangle",
+        style_intent=["minimalist"],
+        budget_range=BudgetRange(max=1000, currency="INR"),
+    )
+    warm_feed = _apply_explore_preferences(items, ExplorePreferences(resolve(warm, None, None)), 1)
+    cool_feed = _apply_explore_preferences(items, ExplorePreferences(resolve(cool, None, None)), 1)
+    assert warm_feed[0].item_id == "warm-tailored"
+    assert cool_feed[0].item_id == "cool-waist"
+    assert {item.item_id for item in warm_feed} != {item.item_id for item in cool_feed}
+    assert all(item.price <= 1000 and item.currency == "INR" for item in warm_feed + cool_feed)
+
+
+def test_profile_preferences_preserve_retrieval_order_when_scores_tie():
+    items = [
+        SearchResult("first", "First", 0, price=900, currency="INR"),
+        SearchResult("second", "Second", 0, price=900, currency="INR"),
+        SearchResult("third", "Third", 0, price=900, currency="INR"),
+    ]
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    feed = _apply_explore_preferences(items, ExplorePreferences(resolve(profile, None, None)), 3)
+
+    assert [item.item_id for item in feed] == ["first", "second", "third"]
 
 
 class FakePool:
@@ -368,6 +443,173 @@ def test_legacy_browse_binds_filters_before_order_seed():
     )
 
 
+def test_browse_pushes_budget_constraint_into_legacy_sql_window():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    repo.browse(
+        categories=["shirt"],
+        k=6,
+        region="IN",
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+        seed="session-a",
+    )
+
+    sql, params = pool.calls[-1]
+    assert "AND i.price <= %s" in sql
+    assert "AND i.currency = %s" in sql
+    assert params == (
+        1000,
+        "INR",
+        "IN",
+        ["shirt"],
+        "session-a",
+        18,
+        0,
+    )
+
+
+def test_browse_pushes_budget_constraint_into_taste_sql_window():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    repo.browse(
+        categories=["shirt"],
+        k=6,
+        region="IN",
+        taste_vector=[0.1, 0.2],
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+    )
+
+    sql, params = pool.calls[-1]
+    assert "AND i.price <= %s" in sql
+    assert "AND i.currency = %s" in sql
+    assert params == (
+        "[0.1,0.2]",
+        1000,
+        "INR",
+        "IN",
+        ["shirt"],
+        "[0.1,0.2]",
+        18,
+        0,
+    )
+
+
+def test_browse_budget_params_precede_gender_and_category_filters():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    repo.browse(
+        categories=["shirt"],
+        k=6,
+        region="IN",
+        genders=frozenset({"men", "unisex"}),
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+        seed="session-a",
+    )
+
+    _, params = pool.calls[-1]
+    assert params == (
+        1000,
+        "INR",
+        params[2],
+        "IN",
+        ["men", "unisex"],
+        ["shirt"],
+        18,
+        1000,
+        "INR",
+        params[9],
+        "IN",
+        ["men", "unisex"],
+        ["shirt"],
+        18,
+        18,
+        0,
+    )
+
+
+def test_browse_budget_and_region_filter_truthfully_after_sql_pushdown():
+    rows = [
+        ("over-budget", "Over budget", 0.0, ["/a.jpg"], 1200.0, "INR", None, None, None, None, None, None),
+        ("affordable", "Affordable", 0.0, ["/b.jpg"], 900.0, "INR", None, None, None, None, None, None),
+    ]
+    pool = FakePool(rows)
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    results = repo.browse(
+        categories=["shirt"],
+        k=1,
+        region="IN",
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+        seed="session-a",
+    )
+
+    sql, params = pool.calls[-1]
+    assert "AND i.price <= %s" in sql
+    assert params[:4] == (1000, "INR", "IN", ["shirt"])
+    assert [item.item_id for item in results] == ["affordable"]
+
+
+def test_indexed_browse_budget_only_keeps_budget_before_pivot():
+    pool = FakePool([])
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    repo.browse(
+        categories=None,
+        k=6,
+        region=None,
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+        seed="session-a",
+    )
+
+    _, params = pool.calls[-1]
+    assert params == (
+        1000,
+        "INR",
+        params[2],
+        18,
+        1000,
+        "INR",
+        params[6],
+        18,
+        18,
+        0,
+    )
+    assert isinstance(params[2], UUID)
+    assert isinstance(params[6], UUID)
+
+
+def test_indexed_browse_budget_and_region_precede_pivot_and_filter_truthfully():
+    rows = [
+        ("over-budget", "Over budget", 0.0, ["/a.jpg"], 1200.0, "INR", None, None, None, None, None, None),
+        ("affordable", "Affordable", 0.0, ["/b.jpg"], 900.0, "INR", None, None, None, None, None, None),
+    ]
+    pool = FakePool(rows)
+    repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
+    profile = Profile(budget_range=BudgetRange(max=1000, currency="INR"))
+
+    results = repo.browse(
+        categories=["shirt"],
+        k=1,
+        region="IN",
+        preferences=ExplorePreferences(resolve(profile, None, None)),
+        seed="session-a",
+    )
+
+    sql, params = pool.calls[-1]
+    assert "i.id >= %s::uuid" in sql
+    assert params[:5] == (1000, "INR", params[2], "IN", ["shirt"])
+    assert isinstance(params[2], UUID)
+    assert [item.item_id for item in results] == ["affordable"]
+
+
 def test_cold_browse_uses_bounded_uuid_ring_windows():
     pool = FakePool([])
     repo = PostgresVectorSearchRepository("postgresql://unused", pool=pool, indexed_browse=True)
@@ -388,14 +630,13 @@ def test_cold_browse_uses_bounded_uuid_ring_windows():
     assert "WITH browse_seed" not in sql
     assert sql.count("i.id >= %s::uuid") == 1
     assert sql.count("i.id < %s::uuid") == 1
-    assert isinstance(params[0], UUID)
     assert params == (
         params[0],
         "IN",
         ["men", "unisex"],
         ["shirt"],
         18,
-        params[0],
+        params[5],
         "IN",
         ["men", "unisex"],
         ["shirt"],
@@ -403,6 +644,8 @@ def test_cold_browse_uses_bounded_uuid_ring_windows():
         6,
         12,
     )
+    assert isinstance(params[0], UUID)
+    assert isinstance(params[5], UUID)
 
 
 def test_mmr_rerank_breaks_near_duplicate_run():

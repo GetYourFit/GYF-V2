@@ -107,9 +107,11 @@ function TwoColumns({ children }: { children: React.ReactNode[] }) {
   );
 }
 
-// Browse (/items/browse) honours NO user filter — it is only legal when the
-// user asked for nothing. Exported for the regression test (F1b): a set
-// occasion/style used to fall through to browse and get silently ignored.
+// Browse (/items/browse) still ignores explicit query/filter controls, so it is
+// only legal when the user asked for no search filters. Signed-in default browse
+// may still personalize from profile/taste server-side. Exported for the
+// regression test (F1b): a set occasion/style used to fall through to browse and
+// get silently ignored.
 export function isPlainBrowse(f: ExploreFilters): boolean {
   return !f.q && !f.slot && !f.occasion && !f.style && !f.maxPrice && f.sort === "relevance";
 }

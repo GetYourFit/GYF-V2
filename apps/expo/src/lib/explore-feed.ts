@@ -73,9 +73,11 @@ export type ExploreRequest =
     };
 
 /**
- * Browse honours neither text, price, sort nor style — only slot interleave and
- * gender. Any other active filter must route to search or it is silently lost,
- * which would show the user a grid that contradicts their own chips.
+ * Browse honours neither text, price, sort nor style. The explicit request only
+ * carries slot interleave, seed, and audience gender; signed-in personalization
+ * still happens server-side from profile/taste. Any other active filter must
+ * route to search or it is silently lost, which would show the user a grid that
+ * contradicts their own chips.
  */
 export function isPlainBrowse(filters: ExploreFilters): boolean {
   return (

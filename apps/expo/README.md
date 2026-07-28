@@ -34,13 +34,16 @@ alternative. `Explore` waits for the authenticated profile audience before its f
 request: signed-in users see accessible loading, needs-profile, or retryable audience-error states
 instead of a temporary ungendered grid. Anonymous and explicitly unknown audiences still widen
 under the server's existing null-gender policy. Once the audience is ready, `Explore` calls
-`/items/browse` for an unfiltered catalogue page and switches to `/items/search` whenever a query,
-slot, sort, or maximum-price filter is active. This keeps filters truthful because browse
-intentionally ignores those search filters. It also loads `/items/facets` with the same canonical
-audience slice for server-reported catalogue coverage, saves items through `/collections`, and uses
-only HTTPS catalogue and purchase URLs. Missing images, prices, unavailable ML search, expired
-sessions, and audience-readiness failures are shown as explicit states; the client never invents
-catalogue items or scores.
+`/items/browse` for the default catalogue page and switches to `/items/search` whenever a query,
+slot, sort, or maximum-price filter is active. Browse still ignores those explicit search filters,
+but it is no longer generic for signed-in users: the API now conditions the default page on the
+stated profile facts it already has, including gender slice, budget ceiling, skin tone, undertone,
+body type, and style intent, while preserving behaviour-learned taste when present. Anonymous users
+and signed-in users without profile facts still get the deterministic rotating fallback. It also
+loads `/items/facets` with the same canonical audience slice for server-reported catalogue coverage,
+saves items through `/collections`, and uses only HTTPS catalogue and purchase URLs. Missing images,
+prices, unavailable ML search, expired sessions, and audience-readiness failures are shown as
+explicit states; the client never invents catalogue items or scores.
 
 Pull requests also run the `Supabase Preview` GitHub check. GYF keeps Alembic as the single
 database migration source, so the check applies `services/api/db/migrations` to a disposable
