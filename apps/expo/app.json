@@ -16,7 +16,7 @@
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png",
-      "output": "static"
+      "output": "server"
     },
     "plugins": [
       [

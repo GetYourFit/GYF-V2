@@ -10,11 +10,25 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const BUNDLE_DIR = join(import.meta.dirname, "..", "dist", "_expo", "static", "js", "web");
+function bundleDirectory() {
+  const candidates = [
+    join(import.meta.dirname, "..", "dist", "client", "_expo", "static", "js", "web"),
+    join(import.meta.dirname, "..", "dist", "_expo", "static", "js", "web"),
+  ];
+  for (const candidate of candidates) {
+    try {
+      readdirSync(candidate);
+      return candidate;
+    } catch {}
+  }
+  throw new Error("check-web-env: no JS bundle directory in dist - run the build first.");
+}
+
+const BUNDLE_DIR = bundleDirectory();
 
 const files = readdirSync(BUNDLE_DIR).filter((name) => name.endsWith(".js"));
 if (files.length === 0) {
-  console.error("check-web-env: no JS bundle in dist — run the build first.");
+  console.error("check-web-env: no JS bundle in dist - run the build first.");
   process.exit(1);
 }
 

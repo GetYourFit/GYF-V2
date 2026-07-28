@@ -28,8 +28,13 @@ function withFixture(callback) {
           production_url: "https://get-your-fit.expo.app",
           expected_entry_bundle: "entry-deadbeef.js",
           live_entry_bundle: "entry-deadbeef.js",
+          live_deployment_id: "or1170q9ix",
+          live_deployment_url: "https://get-your-fit--or1170q9ix.expo.app/",
           expected_deployment_id: "or1170q9ix",
           expected_deployment_url: "https://get-your-fit--or1170q9ix.expo.app/",
+          alias_request_url: "https://get-your-fit--or1170q9ix.expo.app/__deployment?deploy-check=1",
+          alias_origin: "https://get-your-fit.expo.app",
+          alias_forwarded_host: "get-your-fit.expo.app",
           headers: {
             "content-security-policy": "frame-ancestors 'none'",
             "cross-origin-opener-policy": "same-origin",
@@ -117,5 +122,33 @@ test("capture-deploy-record fails when verification evidence is not bound to the
 
     assert.notEqual(result.status, 0);
     assert.match(result.stderr.toString(), /deployment ID does not match deploy output/);
+  });
+});
+
+test("capture-deploy-record fails when the live alias deployment differs from the deploy output", () => {
+  withFixture((root) => {
+    const evidencePath = join(root, "deploy-records", "verification-evidence.json");
+    const evidence = JSON.parse(readFileSync(evidencePath, "utf8"));
+    evidence.live_deployment_id = "oldprod1";
+    writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        "scripts/capture-deploy-record.mjs",
+        "--deploy-log",
+        join(root, "deploy-log.txt"),
+        "--verification-evidence",
+        evidencePath,
+        "--artifact-output",
+        join(root, "rollback-record.json"),
+        "--summary-output",
+        join(root, "rollback-record-summary.md"),
+      ],
+      { cwd: new URL("..", import.meta.url) },
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr.toString(), /live deployment ID does not match deploy output/);
   });
 });

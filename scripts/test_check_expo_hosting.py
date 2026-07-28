@@ -12,6 +12,7 @@ class ExpoHostingGuardTests(unittest.TestCase):
     def setUp(self) -> None:
         self.root = Path(self._testMethodName)
         (self.root / "apps/expo").mkdir(parents=True)
+        (self.root / "apps/expo/src/app").mkdir(parents=True)
         (self.root / ".github/workflows").mkdir(parents=True)
         self.write_fixture()
 
@@ -23,6 +24,7 @@ class ExpoHostingGuardTests(unittest.TestCase):
             json.dumps(
                 {
                     "expo": {
+                        "web": {"output": "server"},
                         "plugins": [
                             [
                                 "expo-router",
@@ -36,6 +38,9 @@ class ExpoHostingGuardTests(unittest.TestCase):
         )
         (self.root / "apps/expo/package.json").write_text(
             json.dumps({"dependencies": {"expo-server": "~57.0.1"}}), encoding="utf-8"
+        )
+        (self.root / "apps/expo/src/app/__deployment+api.ts").write_text(
+            "export function GET() { return Response.json({ ok: true }); }\n", encoding="utf-8"
         )
         (self.root / ".github/workflows/cd.yml").write_text(
             "\n".join(
@@ -61,6 +66,17 @@ class ExpoHostingGuardTests(unittest.TestCase):
 
         self.assertIn(
             "Expo Hosting header X-Frame-Options must equal 'DENY'",
+            check_expo_hosting.findings(self.root),
+        )
+
+    def test_rejects_missing_server_output(self) -> None:
+        config_path = self.root / "apps/expo/app.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        config["expo"]["web"]["output"] = "static"
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+
+        self.assertIn(
+            "apps/expo/app.json must use server web output for deployment-ID verification",
             check_expo_hosting.findings(self.root),
         )
 

@@ -77,6 +77,12 @@ function validateVerificationEvidence(evidence, deployment) {
   if (evidence.expected_deployment_url !== deployment.deploymentUrl) {
     throw new Error("Verification evidence deployment URL does not match deploy output");
   }
+  if (evidence.live_deployment_id !== deployment.deploymentId) {
+    throw new Error("Verification evidence live deployment ID does not match deploy output");
+  }
+  if (evidence.live_deployment_url !== deployment.deploymentUrl) {
+    throw new Error("Verification evidence live deployment URL does not match deploy output");
+  }
   if (evidence.live_entry_bundle !== evidence.expected_entry_bundle) {
     throw new Error("Verification evidence does not prove production served the exported entry bundle");
   }
@@ -114,8 +120,14 @@ function validateRecord(record) {
   if (record.deployment.id !== record.verification.expected_deployment_id) {
     throw new Error("Rollback record deployment ID is not bound to verification evidence");
   }
+  if (record.deployment.id != record.verification.live_deployment_id) {
+    throw new Error("Rollback record deployment ID is not the live immutable deployment ID");
+  }
   if (record.deployment.url !== record.verification.expected_deployment_url) {
     throw new Error("Rollback record deployment URL is not bound to verification evidence");
+  }
+  if (record.deployment.url !== record.verification.live_deployment_url) {
+    throw new Error("Rollback record deployment URL is not the live immutable deployment URL");
   }
   if (record.bundle.entry_hash !== extractEntryHash(record.bundle.entry_bundle)) {
     throw new Error("Rollback record entry hash does not match entry bundle");

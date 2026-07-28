@@ -45,10 +45,14 @@ def findings(root: Path) -> list[str]:
         for name, value in REQUIRED_HEADERS.items()
         if headers.get(name) != value
     ]
+    if app_config["expo"].get("web", {}).get("output") != "server":
+        errors.append("apps/expo/app.json must use server web output for deployment-ID verification")
 
     package = json.loads((root / "apps/expo/package.json").read_text(encoding="utf-8"))
     if "expo-server" not in package.get("dependencies", {}):
         errors.append("apps/expo/package.json must retain expo-server for static response headers")
+    if not (root / "apps/expo/src/app/__deployment+api.ts").exists():
+        errors.append("apps/expo/src/app/__deployment+api.ts must prove alias-to-deployment binding")
 
     cd = (root / ".github/workflows/cd.yml").read_text(encoding="utf-8")
     if "node scripts/verify-deploy.mjs" not in cd:
