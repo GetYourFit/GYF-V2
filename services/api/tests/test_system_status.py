@@ -162,6 +162,33 @@ def test_text_search_reports_remote_gpu_lane(monkeypatch):
     assert "verified per request" in cap["detail"]
 
 
+def test_text_search_status_matches_disabled_encoder_lexical_fallback(monkeypatch):
+    import app.routers.system as system_module
+
+    monkeypatch.delenv("GYF_ENCODER_REMOTE_URL", raising=False)
+    monkeypatch.setattr(system_module, "_configured_runtime_verdict", lambda _runtime: (True, []))
+    monkeypatch.setattr(system_module, "_runtime_installed", lambda _package: False)
+    cap = _get().json()["capabilities"]["text_search"]
+    assert cap == {
+        "status": "degraded",
+        "lane": "keyword-fallback",
+        "detail": "No semantic encoder lane is available — search serves bounded lexical title matches.",
+    }
+
+
+def test_text_search_status_matches_unreachable_encoder_lexical_fallback(monkeypatch):
+    import app.routers.system as system_module
+
+    monkeypatch.setenv("GYF_ENCODER_REMOTE_URL", "https://encoder.example")
+    monkeypatch.setattr(system_module, "_remote_reachable", lambda _url: False)
+    cap = _get().json()["capabilities"]["text_search"]
+    assert cap == {
+        "status": "degraded",
+        "lane": "keyword-fallback",
+        "detail": "GPU encoder lane is unreachable — search serves bounded lexical title matches.",
+    }
+
+
 def test_remote_probe_rejects_auth_and_missing_routes(monkeypatch):
     import app.routers.system as system_module
 

@@ -799,11 +799,13 @@ def test_keyword_fallback_uses_bounded_indexable_full_text_search():
     assert "to_tsvector('simple'::regconfig, i.title)" in sql
     assert sql.count("to_tsquery('simple'::regconfig, %s)") == 2
     assert "ts_rank_cd" in sql and ", 32) AS score" in sql
+    assert "MATERIALIZED" in sql
     assert "ILIKE" not in sql
-    # Stopwords are removed, useful terms use safe prefix lexemes, and the same
-    # bounded query is used for ranking and the index-backed match predicate.
-    assert params[:2] == ("red:* | dresses:* | evening:*",) * 2
-    assert params[-2:] == (12, 0)
+    # Stopwords are removed, useful terms use safe prefix lexemes. The matching
+    # phase is bounded before ranking, while the score still receives the same
+    # query expression.
+    assert params[0] == "red:* | dresses:* | evening:*"
+    assert params[-4:] == (12, "red:* | dresses:* | evening:*", 12, 0)
 
 
 def test_keyword_search_max_price_with_currency_drops_mismatched_currency_rows():
@@ -903,7 +905,8 @@ def test_keyword_fallback_preserves_indic_words_and_combining_marks():
     repo.keyword_search("लाल कुर्ता चाहिए", k=12, region="IN")
 
     _, params = pool.calls[-1]
-    assert params[:2] == ("लाल:* | कुर्ता:* | चाहिए:*",) * 2
+    assert params[0] == "लाल:* | कुर्ता:* | चाहिए:*"
+    assert params[-4:] == (12, "लाल:* | कुर्ता:* | चाहिए:*", 12, 0)
 
 
 class _FacetsPool:
@@ -1338,10 +1341,47 @@ def test_search_endpoint_keyword_fallback_when_embedder_unavailable():
     app.dependency_overrides[get_search_repo] = lambda: StubRepo()
     app.dependency_overrides[get_text_embedder] = lambda: None
     try:
-        resp = TestClient(app).get("/items/search?q=x")
+        resp = TestClient(app).get("/items/search?q=red+floral+summer+dress")
+        assert resp.status_code == 200
+        assert resp.headers["X-GYF-Search-Mode"] == "lexical"
+        result = resp.json()["results"]
+        assert len(result) == 1
+        assert result[0]["item_id"] == "kw"
+        assert result[0]["title"] == "Keyword Hit"
+        assert result[0]["score"] == 0.0
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_search_endpoint_unreachable_encoder_still_uses_lexical_fallback():
+    class UnreachableEmbedder:
+        def embed_query(self, _text):
+            raise TimeoutError("encoder workspace is unavailable")
+
+    app.dependency_overrides[get_search_repo] = lambda: StubRepo()
+    app.dependency_overrides[get_text_embedder] = lambda: UnreachableEmbedder()
+    try:
+        resp = TestClient(app).get("/items/search?q=linen+shirt")
         assert resp.status_code == 200
         assert resp.headers["X-GYF-Search-Mode"] == "lexical"
         assert resp.json()["results"][0]["item_id"] == "kw"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_search_endpoint_does_not_hide_database_failure_after_encoder_fallback():
+    class BrokenRepo(StubRepo):
+        def keyword_search(self, *args, **kwargs):
+            raise RuntimeError("database unavailable")
+
+    app.dependency_overrides[get_search_repo] = BrokenRepo
+    app.dependency_overrides[get_text_embedder] = lambda: None
+    try:
+        resp = TestClient(app, raise_server_exceptions=False).get("/items/search?q=shirt")
+        assert resp.status_code == 500
+        assert resp.json()["error"]["code"] == "internal_error"
+        assert resp.headers["X-Request-ID"]
+        assert "X-GYF-Search-Mode" not in resp.headers
     finally:
         app.dependency_overrides.clear()
 
