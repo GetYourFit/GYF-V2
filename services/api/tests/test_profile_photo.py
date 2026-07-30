@@ -149,6 +149,29 @@ def test_photo_estimate_fills_field_over_prior_value(monkeypatch):
     assert body["body_type"] == "hourglass"
 
 
+def test_return_only_estimate_does_not_change_profile(monkeypatch):
+    monkeypatch.setattr(main.settings, "skin_tone_enabled", True)
+    profiles = InMemoryProfileRepository()
+    original = Profile(
+        skin_tone="mst3",
+        body_type="oval",
+        field_confidence={"skin_tone": 1.0, "body_type": 1.0},
+        source="manual",
+    )
+    profiles.upsert(DEV_USER, original)
+    client = _client(skin=_FakeSkin(SKIN), body=_FakeBody(BODY), profiles=profiles)
+
+    response = client.post(
+        "/profile/photo?persist=false",
+        files={"photo": ("me.png", _png_bytes(), "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["photo_analysis"]["skin_tone"] == "mst7"
+    assert response.json()["photo_analysis"]["body_type"] == "hourglass"
+    assert profiles.get(DEV_USER) == original
+
+
 def test_zero_confidence_undertone_guess_is_not_surfaced(monkeypatch):
     # Mirrors the live Space on an abstain: no clean face → skin_tone="unknown" but the
     # undertone classifier has no sentinel and falls back to "neutral", with quality

@@ -49,7 +49,7 @@ export class GyfApi extends SharedGyfApi {
       ? AbortSignal.any([signal, timeoutController.signal])
       : timeoutController.signal;
     try {
-      const response = await fetch(`${this.expoBase}/profile/photo`, {
+      const response = await fetch(`${this.expoBase}/profile/photo?persist=false`, {
         method: "POST",
         headers,
         body: form,
@@ -94,7 +94,7 @@ export class GyfApi extends SharedGyfApi {
         60_000,
       );
 
-      xhr.open("POST", `${this.expoBase}/profile/photo`);
+      xhr.open("POST", `${this.expoBase}/profile/photo?persist=false`);
       headers.forEach((value, key) => xhr.setRequestHeader(key, value));
       xhr.upload.onprogress = (event) =>
         onProgress({ loaded: event.loaded, total: event.lengthComputable ? event.total : null });

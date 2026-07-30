@@ -12,6 +12,7 @@ const onboardingRouteSource = await Bun.file(
 const personalFitRouteSource = await Bun.file(
   new URL("../app/(app)/personal-fit.tsx", import.meta.url),
 ).text();
+const apiSource = await Bun.file(new URL("../lib/api.ts", import.meta.url)).text();
 
 describe("Personal Fit Setup boundaries", () => {
   test("exports a shared create/edit form component", () => {
@@ -78,6 +79,10 @@ describe("Personal Fit Setup boundaries", () => {
   test("edit mode loads existing values without rerunning analysis on mount", () => {
     expect(formSource).toContain("api.getProfile()");
     expect(formSource).not.toMatch(/useEffect\([^)]*uploadProfilePhoto/s);
+  });
+
+  test("photo estimates remain unpersisted until the profile save", () => {
+    expect(apiSource).toContain("/profile/photo?persist=false");
   });
 
   test("the onboarding route completes profile then personal fit before Stylist", () => {

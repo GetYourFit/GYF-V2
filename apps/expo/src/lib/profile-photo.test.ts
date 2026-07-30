@@ -270,7 +270,7 @@ describe("profile photo boundary", () => {
       });
       expect(calls.map(([url]) => url)).toEqual([
         "https://api.test/system/status",
-        "https://api.test/profile/photo",
+        "https://api.test/profile/photo?persist=false",
       ]);
       const headers = new Headers(calls[1][1]?.headers);
       expect(headers.get("Authorization")).toBe("Bearer jwt-photo");

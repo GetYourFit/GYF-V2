@@ -7,7 +7,7 @@ import io
 import json
 import logging
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from starlette.concurrency import run_in_threadpool
 
 from ..auth import Principal, get_current_principal
@@ -23,7 +23,7 @@ from ..dependencies import (
 from ..profile.account import AccountRepository
 from ..profile.avatar import is_owned_avatar_url
 from ..profile.models import ConsentFlags, ConsentInput, Profile, ProfileInput, ProfilePhotoResponse
-from ..profile.photo import BodyAdapter, SkinToneAdapter
+from ..profile.photo import BodyAdapter, SkinToneAdapter, profile_from_photo
 from ..profile.repository import ProfileRepository
 from ..profile.summary import (
     ProfileSummary,
@@ -122,6 +122,10 @@ def delete_profile(
 )
 async def upsert_profile_from_photo(
     photo: UploadFile = File(..., description="A clear, well-lit photo of the user."),
+    persist: bool = Query(
+        True,
+        description="Persist adopted estimates immediately; false returns editable analysis only.",
+    ),
     principal: Principal = Depends(require_active_principal),
     profile_repo: ProfileRepository = Depends(get_profile_repo),
     account_repo: AccountRepository = Depends(get_account_repo),
@@ -191,9 +195,13 @@ async def upsert_profile_from_photo(
 
     # Sync psycopg calls — offload to the threadpool like the decode/estimate above,
     # or they block the event loop (this is the only async route) for the DB round trip.
-    profile = await run_in_threadpool(
-        profile_repo.patch_photo, principal.user_id, surfaced_skin, body
-    )
+    if persist:
+        profile = await run_in_threadpool(
+            profile_repo.patch_photo, principal.user_id, surfaced_skin, body
+        )
+    else:
+        existing = await run_in_threadpool(profile_repo.get, principal.user_id)
+        profile = profile_from_photo(skin=surfaced_skin, body=body, existing=existing)
 
     # Observability at the decision point (no PII — only which modules ran, the coarse
     # outcome, and adoption confidences). Lets a "fields didn't fill" report be diagnosed
