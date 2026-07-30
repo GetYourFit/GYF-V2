@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear && node scripts/verify-cuelinks-web-export.mjs",
+    "render:build": "GYF_RENDER_STATIC=true EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear && node scripts/verify-cuelinks-web-export.mjs && node scripts/check-web-env.mjs && node scripts/write-static-release-identity.mjs",
     "doctor": "EXPO_NO_TELEMETRY=1 expo-doctor",
     "check:web-env": "node scripts/check-web-env.mjs",
     "deploy": "npm run doctor && npx eas-cli@21.4.0 env:exec production \"EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear\" && mkdir -p deploy-records && node scripts/verify-cuelinks-web-export.mjs --evidence-file deploy-records/cuelinks-export-evidence.json && npm run check:web-env && npx eas-cli@21.4.0 deploy --non-interactive --dev-domain=get-your-fit | tee deploy-records/eas-deploy.log && node scripts/verify-deploy.mjs --deploy-log deploy-records/eas-deploy.log --cuelinks-evidence deploy-records/cuelinks-export-evidence.json --evidence-file deploy-records/verification-evidence.json",

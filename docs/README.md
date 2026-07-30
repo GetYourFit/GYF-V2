@@ -99,9 +99,10 @@ the subordinate launch-plan ledger but is not a separate roadmap.
   sandboxed run (no `GYF_DATABASE_URL`), not a production reading.
 - Commerce attribution operations: [`operations/commerce-attribution.md`](./operations/commerce-attribution.md) —
   canonical disclosed-handoff, confirmed-conversion and reversal reconciliation contract, guardrails and rollback.
-- Deployment: [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md) (superseded
-  historical preview runbook retained until F13), [`deploy/gpu-lane.md`](./deploy/gpu-lane.md), and
-  [`deploy/supabase-preview-security.md`](./deploy/supabase-preview-security.md) (active PR preview
+- Deployment: [`deploy/render-expo-static.md`](./deploy/render-expo-static.md) (authorized Render
+  candidate/provenance/rollback lane), [`deploy/free-deploy-checklist.md`](./deploy/free-deploy-checklist.md)
+  (superseded historical preview runbook retained until F13), [`deploy/gpu-lane.md`](./deploy/gpu-lane.md),
+  and [`deploy/supabase-preview-security.md`](./deploy/supabase-preview-security.md) (active PR preview
   credential-boundary containment).
 - Historical user evidence: [`feedbacks/gyf-feedback-v1.md`](./feedbacks/gyf-feedback-v1.md),
   [`feedbacks/gyf-feedback-v2.md`](./feedbacks/gyf-feedback-v2.md),

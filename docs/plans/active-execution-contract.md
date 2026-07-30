@@ -22,6 +22,19 @@ undocumented post-Task-11 commits.
 
 This is the single source of truth for execution order. Product intent remains in `docs/vision/ideas-complete.md`; non-negotiable engineering rules remain in `docs/engineering-doctrine.md`; the launch/refactor ticket board is subordinate and research/runbooks are evidence only. The latest master launch audit evidence is `/Users/rvzaku/atharv-agent-workspace/data/gyf-master-final-launch-plan-audit/report.md`; it refreshes blockers, cleanup inventory and next-PR evidence for the subordinate ticket register, but it is read-only evidence and cannot create a second pointer or override this contract.
 
+**Captain-authorised Render Static fallback — 2026-07-30.** The Expo web release owner may use the
+Render Static candidate/production transaction in [`docs/deploy/render-expo-static.md`](../deploy/render-expo-static.md)
+and [`infra/render-expo-static.yaml`](../../infra/render-expo-static.yaml) as the authorized fallback
+for the EAS header blocker. This is a release-lane correction, not a launch or phase promotion.
+Render is not enabled until the approved workspace supplies the service IDs/URLs and secret stores,
+the existing canonical URL is provider-attached without a DNS mutation in this task, and a live
+candidate→production proof passes. The Render path verifies the actual CDN boundary for HTML, assets,
+identity and errors, exact source/entry/API SHA, Cuelinks and browser routes before the production
+service deploy. Render's lack of immutable per-deploy public URLs is recorded as a limitation; the
+isolated candidate service URL plus deploy IDs and retained artifact are the evidence. EAS, Vercel,
+DNS and their rollback assets remain untouched until that proof passes. No local or CI result claims
+F2.5, native acceptance, production cutover or hard launch.
+
 ## Feedback v7 planning freeze and master-plan decision (2026-07-17)
 
 **Application implementation is frozen until P0 reconciliation passes and the owner records
