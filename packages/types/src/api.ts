@@ -1899,6 +1899,8 @@ export interface components {
             catalog: components["schemas"]["CatalogHealth"];
             /** Event Sink */
             event_sink: string;
+            /** Release Sha */
+            release_sha: string;
         };
         /** TryOnJobCreated */
         TryOnJobCreated: {

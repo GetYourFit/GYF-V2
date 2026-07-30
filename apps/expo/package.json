@@ -11,7 +11,7 @@
     "build": "EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear && node scripts/verify-cuelinks-web-export.mjs",
     "doctor": "EXPO_NO_TELEMETRY=1 expo-doctor",
     "check:web-env": "node scripts/check-web-env.mjs",
-    "deploy": "npm run doctor && npx eas-cli@21.4.0 env:exec production \"EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear\" && node scripts/verify-cuelinks-web-export.mjs && npm run check:web-env && mkdir -p deploy-records && npx eas-cli@21.4.0 deploy --prod | tee deploy-records/eas-deploy.log && npm run verify:deploy -- --deploy-log deploy-records/eas-deploy.log --evidence-file deploy-records/verification-evidence.json",
+    "deploy": "npm run doctor && npx eas-cli@21.4.0 env:exec production \"EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear\" && node scripts/verify-cuelinks-web-export.mjs --evidence-file deploy-records/cuelinks-export-evidence.json && npm run check:web-env && mkdir -p deploy-records && npx eas-cli@21.4.0 deploy --non-interactive --dev-domain=get-your-fit | tee deploy-records/eas-deploy.log && node scripts/verify-deploy.mjs --deploy-log deploy-records/eas-deploy.log --cuelinks-evidence deploy-records/cuelinks-export-evidence.json --evidence-file deploy-records/verification-evidence.json",
     "verify:deploy": "node scripts/verify-deploy.mjs",
     "budget:web": "bash scripts/check-bundle-budget.sh web 2700000",
     "budget:android": "bash scripts/check-bundle-budget.sh android 5000000",

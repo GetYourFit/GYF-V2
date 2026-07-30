@@ -1,3 +1,5 @@
+import os
+
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from gyf_contracts.eval_report import RUNTIME_MODELS
@@ -175,6 +177,14 @@ class Settings(BaseSettings):
 
     # --- Observability (P0-E). All env-driven; unset = no-op (free-tier first). ---
     service_name: str = "gyf-api"
+    # Safe release provenance for the public operator status surface. Render supplies
+    # RENDER_GIT_COMMIT automatically; GYF_RELEASE_SHA is an explicit override for
+    # other production runtimes and tests. Unknown is reported honestly, never guessed.
+    release_sha: str = Field(
+        default_factory=lambda: os.environ.get("GYF_RELEASE_SHA")
+        or os.environ.get("RENDER_GIT_COMMIT")
+        or "unknown"
+    )
     # OTLP traces endpoint (e.g. http://localhost:4318). Unset = tracing disabled.
     otel_exporter_otlp_endpoint: str = ""
     # Sentry DSN for error reporting. Unset = Sentry disabled.

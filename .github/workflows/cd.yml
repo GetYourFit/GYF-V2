@@ -2,11 +2,10 @@ name: CD
 
 # Continuous delivery. Runs only after CI succeeds on main.
 #
-# Current web target: Expo web/static via EAS Hosting. The later commercial static
-# host cutover remains gated by the active execution contract (Render Static is the
-# current candidate after Expo-web parity). The temporary Next.js app under app/ is
-# preserved only as the protected rollback/oracle client until the F13/cutover
-# deletion gate; this workflow must not deploy it to Vercel.
+# The EAS release is transactional at the repository boundary: create an immutable
+# non-production deployment, verify it (including source/API identity, bundle,
+# headers and Cuelinks), then promote that exact ID. A failed verification has no
+# path to deploy:alias --prod and publishes a diagnostic instead.
 #
 # API production is the owner-approved Virginia Render Starter service managed
 # outside this workflow from render.yaml. Oregon is rollback-only. Do not add a
@@ -77,7 +76,12 @@ jobs:
           fi
           echo "checked_out_sha=$checked_out_sha" >> "$GITHUB_OUTPUT"
           echo "CHECKED_OUT_SHA=$checked_out_sha" >> "$GITHUB_ENV"
+          echo "EXPO_PUBLIC_RELEASE_SHA=$checked_out_sha" >> "$GITHUB_ENV"
           echo "Deploy source verified: $checked_out_sha is current $DEFAULT_BRANCH."
+
+      - name: Initialize release diagnostics
+        working-directory: ${{ github.workspace }}
+        run: mkdir -p apps/expo/deploy-records
 
       - name: Check EAS configuration
         run: |
@@ -110,10 +114,12 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: bun --cwd apps/expo run doctor
 
-      - name: Deploy Expo web to EAS Hosting
+      - name: Export and create immutable non-production deployment
         run: |
+          set -euo pipefail
+          echo "RELEASE_STAGE=immutable-deploy" >> "$GITHUB_ENV"
           npx expo export --platform web --clear
-          node scripts/verify-cuelinks-web-export.mjs
+          node scripts/verify-cuelinks-web-export.mjs --evidence-file deploy-records/cuelinks-export-evidence.json
           if ! grep -R -F -- "$EXPO_PUBLIC_SUPABASE_URL" dist >/dev/null; then
             echo "Expo bundle does not contain configured Supabase URL; refusing deploy." >&2
             exit 1
@@ -130,25 +136,70 @@ jobs:
             echo "Expo bundle contains a legacy Supabase JWT; refusing deploy." >&2
             exit 1
           fi
-          mkdir -p deploy-records
-          npm exec --yes eas-cli@21.4.0 -- deploy --prod --non-interactive --dev-domain=get-your-fit | tee deploy-records/eas-deploy.log
+          npm exec --yes eas-cli@21.4.0 -- deploy --non-interactive --dev-domain=get-your-fit | tee deploy-records/eas-deploy.log
+          node scripts/eas-deployment-id.mjs deploy-records/eas-deploy.log > deploy-records/deployment-id.txt
           node scripts/verify-deploy.mjs \
             --deploy-log deploy-records/eas-deploy.log \
             --api-url "$EXPO_PUBLIC_API_URL" \
+            --expected-source-sha "$CHECKED_OUT_SHA" \
+            --cuelinks-evidence deploy-records/cuelinks-export-evidence.json \
+            --evidence-file deploy-records/verification-evidence.json
+
+      - name: Promote the verified immutable deployment
+        run: |
+          set -euo pipefail
+          echo "RELEASE_STAGE=promotion" >> "$GITHUB_ENV"
+          deployment_id=$(cat deploy-records/deployment-id.txt)
+          npm exec --yes eas-cli@21.4.0 -- deploy:alias --prod --non-interactive --id="$deployment_id" | tee deploy-records/eas-promotion.log
+          if ! grep -qi "promoted deployment to production" deploy-records/eas-promotion.log; then
+            echo "Pinned EAS CLI did not confirm production promotion; release is not successful." >&2
+            exit 1
+          fi
+
+      - name: Verify promoted release and capture provenance
+        run: |
+          set -euo pipefail
+          echo "RELEASE_STAGE=post-promotion-verification" >> "$GITHUB_ENV"
+          node scripts/verify-deploy.mjs \
+            --deploy-log deploy-records/eas-deploy.log \
+            --promotion-log deploy-records/eas-promotion.log \
+            --api-url "$EXPO_PUBLIC_API_URL" \
+            --expected-source-sha "$CHECKED_OUT_SHA" \
+            --cuelinks-evidence deploy-records/cuelinks-export-evidence.json \
             --evidence-file deploy-records/verification-evidence.json
           node scripts/capture-deploy-record.mjs \
             --deploy-log deploy-records/eas-deploy.log \
+            --promotion-log deploy-records/eas-promotion.log \
             --verification-evidence deploy-records/verification-evidence.json \
             --artifact-output deploy-records/rollback-record.json \
             --summary-output deploy-records/rollback-record-summary.md
 
       - name: Publish Expo rollback record
+        if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
-          name: expo-web-rollback-record-${{ github.event.workflow_run.run_id }}
+          name: expo-web-verified-release-${{ github.event.workflow_run.run_id }}
           path: apps/expo/deploy-records/
           retention-days: 30
           if-no-files-found: error
 
       - name: Publish Expo rollback summary
+        if: ${{ success() }}
         run: cat deploy-records/rollback-record-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Capture failed deployment diagnostic
+        if: ${{ failure() }}
+        working-directory: ${{ github.workspace }}
+        run: |
+          node apps/expo/scripts/capture-deploy-diagnostic.mjs \
+            --records-dir apps/expo/deploy-records \
+            --output apps/expo/deploy-records/failed-deployment-diagnostic.json
+
+      - name: Publish failed deployment diagnostic
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: expo-web-failed-deployment-${{ github.event.workflow_run.run_id }}
+          path: apps/expo/deploy-records/
+          retention-days: 30
+          if-no-files-found: warn

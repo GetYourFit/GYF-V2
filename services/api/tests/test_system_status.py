@@ -56,6 +56,14 @@ def test_status_reports_capabilities_and_catalog_health():
     assert caps["outfit_recommendations"]["status"] == "live"
     assert body["catalog"]["items"] == 24000
     assert body["catalog"]["with_price"] == 0  # the real prod data gap, reported
+    assert isinstance(body["release_sha"], str) and body["release_sha"]
+
+
+def test_status_exposes_the_configured_non_secret_release_identity(monkeypatch):
+    from app.routers.system import settings as system_settings
+
+    monkeypatch.setattr(system_settings, "release_sha", "a" * 40)
+    assert _get().json()["release_sha"] == "a" * 40
 
 
 def test_status_survives_unreachable_database():

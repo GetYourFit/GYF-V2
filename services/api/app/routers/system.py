@@ -98,6 +98,9 @@ class SystemStatus(BaseModel):
     capabilities: dict[str, Capability]
     catalog: CatalogHealth
     event_sink: str
+    # Public, non-secret identity of the API artifact serving this response.
+    # "unknown" is a valid local/degraded value; release verification rejects it.
+    release_sha: str
 
 
 class SystemStatsRepository(Protocol):
@@ -405,6 +408,7 @@ def system_status(
         capabilities=capabilities,
         catalog=catalog,
         event_sink=settings.event_sink,
+        release_sha=settings.release_sha,
     )
 
 

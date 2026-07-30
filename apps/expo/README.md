@@ -68,20 +68,24 @@ middleware emit the security headers required on every served HTML response:
 `Referrer-Policy: strict-origin-when-cross-origin`, and `Cross-Origin-Opener-Policy: same-origin`.
 Middleware is the response-boundary defense in depth for EAS Hosting, whose prior deployment
 served the four configured headers but omitted `X-Frame-Options` despite the exported route manifest
-containing it. The CD job rejects a deployment unless its immutable per-deployment URL
-(`https://get-your-fit--<id>.expo.app`, parsed from the `eas deploy` log) serves those headers and
-its entry bundle matches the just-exported artifact, the deployed API's `/health`, `/ready`, and
-`/system/status` return the expected content, and eas-cli's own log confirms promotion to
-production; the production alias is edge-cached for up to an hour, so `scripts/verify-deploy.mjs`
-only probes it best-effort for an informational note and never gates on it. EAS deployment IDs are
-immutable; retain the successful deployment ID, commit and entry hash as the rollback record, then
-restore production only by reassigning the alias to that verified ID.
+containing it. The CD job creates a non-production immutable deployment first, then rejects it
+unless its `https://get-your-fit--<id>.expo.app` URL serves those headers, the exact entry bundle,
+the exact Cuelinks loader and safe release identity, while the deployed API's `/health`, `/ready`,
+and `/system/status` return the expected content including the matching release SHA. Only after
+that verifier succeeds does the workflow run pinned `eas deploy:alias --prod --id=<id>`; a second
+verification captures the promotion evidence. A verification failure therefore cannot repoint the
+production alias. The alias is edge-cached for up to an hour, so its probe is best-effort and
+informational, never a substitute for the pinned promotion log. EAS deployment IDs are immutable;
+retain the successful deployment ID, source/API SHA and entry hash as the rollback record, then
+restore production only by reassigning the alias to that verified ID. Failed runs publish a
+redacted diagnostic artifact and do not claim release success.
 
 The deploy job uses the GitHub Actions environment named `EXPO_TOKEN` and reads
 `EXPO_TOKEN` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from its secrets, plus
 `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SUPABASE_URL` from its variables. The EAS project is pinned in `app.json`; CI passes
-`--dev-domain=get-your-fit` so the first non-interactive deploy activates Hosting at
-`https://get-your-fit.expo.app`. `eas-cli` is pinned to `21.4.0` (`apps/expo/eas.json` and every
+`--dev-domain=get-your-fit` on the immutable non-production create so the first non-interactive
+deploy activates Hosting at `https://get-your-fit.expo.app`. `eas-cli` is pinned to `21.4.0`
+(`apps/expo/eas.json` and every
 CD/deploy invocation); `eas.json` holds native production and internal-build profiles. Store
 submission remains credential-gated; no fake store deployment is claimed until Apple/Google
 credentials and a successful build exist.
