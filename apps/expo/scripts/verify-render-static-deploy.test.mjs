@@ -130,6 +130,27 @@ test("Render verifier rejects stale identity, API SHA, and cacheable release ide
   });
 });
 
+test("Render CLI installation is noninteractive and isolated from the repository root", () => {
+  const workflow = readFileSync(
+    new URL("../../../.github/workflows/cd.yml", import.meta.url),
+    "utf8",
+  );
+  const installStart = workflow.indexOf("- name: Install Render CLI 2.7.0");
+  const installEnd = workflow.indexOf("- name: Configure Render Static headers", installStart);
+  assert.ok(installStart >= 0 && installEnd > installStart);
+  const installStep = workflow.slice(installStart, installEnd);
+  assert.match(installStep, /render_cli_tmp=\$\(mktemp -d\)/);
+  assert.match(
+    installStep,
+    /unzip -q "\$render_cli_tmp\/render-cli\.zip" -d "\$render_cli_tmp"/,
+  );
+  assert.doesNotMatch(installStep, /unzip -q render-cli\.zip/);
+  assert.match(
+    installStep,
+    /sudo install -m 755 "\$render_cli_tmp\/cli_v2\.7\.0" \/usr\/local\/bin\/render/,
+  );
+});
+
 test("CD orders candidate verification before the Render production deploy and retains rollback evidence", () => {
   const workflow = readFileSync(
     new URL("../../../.github/workflows/cd.yml", import.meta.url),
