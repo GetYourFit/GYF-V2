@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** Verify a Render Static candidate or production service at its real HTTP boundary. */
 import { createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { readFileSync, writeFileSync } from "node:fs";
 
 export const REQUIRED_HEADERS = {
@@ -130,6 +131,19 @@ async function verifyStatic(baseUrl, expected, stage) {
       `deployment identity is missing required security headers: ${JSON.stringify(identityMissing)}`,
     );
   const identity = await jsonResponse(identityResponse, "deployment identity");
+  const identityJsonResponse = await get(new URL(`/__deployment/api.json?${cacheBust}`, baseUrl), {
+    headers: { "cache-control": "no-cache", accept: "application/json" },
+  });
+  if (!identityJsonResponse.ok)
+    throw new Error(`deployment identity JSON returned ${identityJsonResponse.status}`);
+  const identityJsonMissing = missingHeaders(identityJsonResponse);
+  if (identityJsonMissing.length)
+    throw new Error(
+      `deployment identity JSON is missing required security headers: ${JSON.stringify(identityJsonMissing)}`,
+    );
+  const identityJson = await jsonResponse(identityJsonResponse, "deployment identity JSON");
+  if (!isDeepStrictEqual(identity, identityJson))
+    throw new Error("/__deployment/api does not match /__deployment/api.json");
   if (identity.source_sha !== expected.source_sha || identity.release_sha !== expected.source_sha)
     throw new Error(
       `static release identity ${identity.source_sha ?? "unknown"} does not match ${expected.source_sha}`,
@@ -141,6 +155,8 @@ async function verifyStatic(baseUrl, expected, stage) {
     throw new Error("static release identity entry bundle does not match the exported candidate");
   if (!/no-store/i.test(identityResponse.headers.get("cache-control") ?? ""))
     throw new Error("deployment identity is cacheable; cache freshness cannot be proven");
+  if (!/no-store/i.test(identityJsonResponse.headers.get("cache-control") ?? ""))
+    throw new Error("deployment identity JSON is cacheable; cache freshness cannot be proven");
   const missingPath = new URL(`/render-verification-missing-${Date.now()}`, baseUrl);
   const errorResponse = await get(missingPath, { headers: { "cache-control": "no-cache" } });
   const errorMissing = missingHeaders(errorResponse);
@@ -166,9 +182,11 @@ async function verifyStatic(baseUrl, expected, stage) {
     headers: headers(htmlResponse),
     asset_headers: headers(assetResponse),
     identity_headers: headers(identityResponse),
+    identity_json_headers: headers(identityJsonResponse),
     error_headers: headers(errorResponse),
     cache_freshness: {
       identity_cache_control: identityResponse.headers.get("cache-control"),
+      identity_json_cache_control: identityJsonResponse.headers.get("cache-control"),
       html_cache_control: htmlResponse.headers.get("cache-control"),
       identity_query: cacheBust,
       proven: true,

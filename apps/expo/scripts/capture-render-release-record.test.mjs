@@ -47,6 +47,7 @@ test("Render release record binds source/API/entry/header/Cuelinks and exact rol
   const root = mkdtempSync(join(tmpdir(), "render-release-record-"));
   const candidate = writeFixture(root, "candidate.json", fixture(root, "candidate"));
   const production = writeFixture(root, "production.json", fixture(root, "production"));
+  const canonical = writeFixture(root, "canonical.json", fixture(root, "canonical"));
   const candidateDeploy = writeFixture(root, "candidate-deploy.json", { id: "candidate-deploy" });
   const productionDeploy = writeFixture(root, "production-deploy.json", {
     id: "production-deploy",
@@ -61,6 +62,11 @@ test("Render release record binds source/API/entry/header/Cuelinks and exact rol
     root,
     "production-browser.json",
     browserFixture("production"),
+  );
+  const canonicalBrowser = writeFixture(
+    root,
+    "canonical-browser.json",
+    browserFixture("canonical"),
   );
   const output = join(root, "record.json");
   const summary = join(root, "summary.md");
@@ -82,10 +88,14 @@ test("Render release record binds source/API/entry/header/Cuelinks and exact rol
       candidate,
       "--production-verification",
       production,
+      "--canonical-verification",
+      canonical,
       "--candidate-browser-verification",
       candidateBrowser,
       "--production-browser-verification",
       productionBrowser,
+      "--canonical-browser-verification",
+      canonicalBrowser,
       "--production-service-id",
       "prod-service",
       "--output",
@@ -112,11 +122,13 @@ test("Render release record rejects candidate evidence that was not verified", a
   const files = [
     writeFixture(root, "candidate.json", candidate),
     writeFixture(root, "production.json", production),
+    writeFixture(root, "canonical.json", fixture(root, "canonical")),
     writeFixture(root, "candidate-deploy.json", { id: "candidate-deploy" }),
     writeFixture(root, "production-deploy.json", { id: "production-deploy" }),
     writeFixture(root, "previous.json", [{ id: "old-deploy", status: "live" }]),
     writeFixture(root, "candidate-browser.json", browserFixture("candidate")),
     writeFixture(root, "production-browser.json", browserFixture("production")),
+    writeFixture(root, "canonical-browser.json", browserFixture("canonical")),
   ];
   const output = join(root, "record.json");
   const script = "apps/expo/scripts/capture-render-release-record.mjs";
@@ -127,19 +139,23 @@ test("Render release record rejects candidate evidence that was not verified", a
     "--workflow-run-id",
     "123",
     "--candidate-deploy",
-    files[2],
-    "--production-deploy",
     files[3],
-    "--previous-deploys",
+    "--production-deploy",
     files[4],
+    "--previous-deploys",
+    files[5],
     "--candidate-verification",
     files[0],
     "--production-verification",
     files[1],
+    "--canonical-verification",
+    files[2],
     "--candidate-browser-verification",
-    files[5],
-    "--production-browser-verification",
     files[6],
+    "--production-browser-verification",
+    files[7],
+    "--canonical-browser-verification",
+    files[8],
     "--production-service-id",
     "prod-service",
     "--output",

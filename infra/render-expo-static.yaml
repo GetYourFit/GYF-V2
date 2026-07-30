@@ -36,6 +36,9 @@ services:
       - path: /__deployment/*
         name: Cache-Control
         value: no-store
+      - path: /
+        name: Cache-Control
+        value: no-cache
       - path: /*.html
         name: Cache-Control
         value: no-cache

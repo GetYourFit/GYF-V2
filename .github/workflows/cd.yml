@@ -253,8 +253,9 @@ jobs:
           [[ "$RENDER_CANDIDATE_SERVICE_ID" != "$RENDER_PRODUCTION_SERVICE_ID" ]]
           [[ "$RENDER_CANDIDATE_URL" == https://* && "$RENDER_PRODUCTION_URL" == https://* && "$RENDER_CANONICAL_URL" == https://* ]]
           [[ "$RENDER_CANDIDATE_URL" != "$RENDER_PRODUCTION_URL" ]]
-          [[ "$RENDER_PRODUCTION_URL" == "$RENDER_CANONICAL_URL" ]]
-          [[ "$RENDER_CANONICAL_URL" == "https://get-your-fit.expo.app" ]]
+          [[ "$RENDER_CANDIDATE_URL" == "https://gyf-expo-web-candidate.onrender.com" ]]
+          [[ "$RENDER_PRODUCTION_URL" == "https://gyf-expo-web.onrender.com" ]]
+          [[ "$RENDER_CANONICAL_URL" == "https://app.getyourfit.co" ]]
           echo "CHECKED_OUT_SHA=$SOURCE_WORKFLOW_HEAD_SHA" >> "$GITHUB_ENV"
           echo "EXPO_PUBLIC_RELEASE_SHA=$SOURCE_WORKFLOW_HEAD_SHA" >> "$GITHUB_ENV"
 
@@ -270,6 +271,15 @@ jobs:
           sudo mv cli_v2.7.0 /usr/local/bin/render
           render --version
           render blueprints validate infra/render-expo-static.yaml --workspace "$RENDER_WORKSPACE_ID" --output json --confirm
+
+      - name: Configure Render Static headers and identity rewrite
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          node apps/expo/scripts/configure-render-static.mjs \
+            --workspace-id "$RENDER_WORKSPACE_ID" \
+            --candidate-service-id "$RENDER_CANDIDATE_SERVICE_ID" \
+            --production-service-id "$RENDER_PRODUCTION_SERVICE_ID"
 
       - name: Export and fingerprint the candidate locally
         working-directory: ${{ github.workspace }}
@@ -331,7 +341,7 @@ jobs:
           [[ "$production_deploy_id" =~ ^[a-z0-9-]+$ ]]
           echo "RENDER_PRODUCTION_DEPLOY_ID=$production_deploy_id" >> "$GITHUB_ENV"
 
-      - name: Verify canonical Render production release
+      - name: Verify Render production service and canonical domain
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -351,6 +361,22 @@ jobs:
             --expected-entry-sha256 "$EXPECTED_ENTRY_SHA256" \
             --cuelinks-evidence apps/expo/deploy-records/cuelinks-export-evidence.json \
             --evidence-file apps/expo/deploy-records/render-production-verification.json
+          node apps/expo/scripts/verify-render-browser-surfaces.mjs \
+            --stage canonical \
+            --deployment-url "$RENDER_CANONICAL_URL" \
+            --evidence-file apps/expo/deploy-records/render-canonical-browser-verification.json
+          node apps/expo/scripts/verify-render-static-deploy.mjs \
+            --stage canonical \
+            --deployment-url "$RENDER_CANONICAL_URL" \
+            --service-id "$RENDER_PRODUCTION_SERVICE_ID" \
+            --deploy-id "$RENDER_PRODUCTION_DEPLOY_ID" \
+            --api-url "$EXPO_PUBLIC_API_URL" \
+            --expected-source-sha "$CHECKED_OUT_SHA" \
+            --expected-entry-bundle "$EXPECTED_ENTRY_BUNDLE" \
+            --expected-entry-hash "$EXPECTED_ENTRY_HASH" \
+            --expected-entry-sha256 "$EXPECTED_ENTRY_SHA256" \
+            --cuelinks-evidence apps/expo/deploy-records/cuelinks-export-evidence.json \
+            --evidence-file apps/expo/deploy-records/render-canonical-verification.json
 
       - name: Capture Render provenance and rollback contract
         working-directory: ${{ github.workspace }}
@@ -366,6 +392,8 @@ jobs:
             --production-verification apps/expo/deploy-records/render-production-verification.json \
             --candidate-browser-verification apps/expo/deploy-records/render-candidate-browser-verification.json \
             --production-browser-verification apps/expo/deploy-records/render-production-browser-verification.json \
+            --canonical-verification apps/expo/deploy-records/render-canonical-verification.json \
+            --canonical-browser-verification apps/expo/deploy-records/render-canonical-browser-verification.json \
             --production-service-id "$RENDER_PRODUCTION_SERVICE_ID" \
             --output apps/expo/deploy-records/render-release-record.json \
             --summary-output apps/expo/deploy-records/render-release-summary.md

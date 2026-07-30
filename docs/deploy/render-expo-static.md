@@ -9,9 +9,9 @@ retained comparison/rollback assets until this lane proves the canonical URL.
 services in the already-approved workspace:
 
 - `gyf-expo-web-candidate` — isolated candidate URL; never the canonical URL.
-- `gyf-expo-web` — retained production service; its configured URL must be the approved
-  `https://get-your-fit.expo.app` only after the provider-side domain attachment is already
-  authorised. This task does not change DNS or attach/detach domains.
+- `gyf-expo-web` — retained production service at `https://gyf-expo-web.onrender.com`; the approved
+  canonical domain is `https://app.getyourfit.co` and must already be provider-attached before
+  verification. This task does not change DNS or attach/detach domains.
 
 The Render production environment in GitHub must contain `RENDER_API_KEY` as a secret and
 `RENDER_WORKSPACE_ID`, `RENDER_CANDIDATE_SERVICE_ID`, `RENDER_PRODUCTION_SERVICE_ID`, `RENDER_CANDIDATE_URL`,
@@ -29,17 +29,22 @@ artifact is validated with the current `render blueprints validate` command befo
 1. CI checks out the exact successful main workflow SHA and confirms main has not advanced.
 2. Expo web is exported locally; Cuelinks, public API/Supabase configuration and entry bundle
    name/hash are recorded.
-3. Render CLI deploys that SHA to the candidate service and waits for completion.
+3. The Render API configuration step validates both existing service IDs, names, static type and
+   approved workspace, then applies the checked-in header and `/__deployment/api` rewrite contract.
+   It is idempotent, fails closed rather than deleting unmanaged provider rules, never logs the API
+   key, and blocks every deploy if either service cannot be confirmed.
 4. `verify-render-static-deploy.mjs` probes the candidate's real HTML, hashed entry asset,
-   `/__deployment/api`, an actual missing-route error, and API `/health`, `/ready`, and
-   `/system/status`. Every response must carry CSP `frame-ancestors 'none'`, COOP `same-origin`,
-   strict-origin referrer policy, `nosniff`, and `X-Frame-Options: DENY`. The identity and API
-   release SHA must equal the source SHA, and the export/live Cuelinks evidence must match.
+   `/__deployment/api` and `/__deployment/api.json`, an actual missing-route error, and API
+   `/health`, `/ready`, and `/system/status`. Every response must carry CSP `frame-ancestors 'none'`,
+   COOP `same-origin`, strict-origin referrer policy, `nosniff`, and `X-Frame-Options: DENY`. The
+   identity routes must be equal, the identity and API release SHA must equal the source SHA, and
+   the export/live Cuelinks evidence must match.
    Headless Chrome must also directly load and render the welcome, terms, contact, and grievance
    surfaces, observe the root client-ready sentinel set after React mounts, and find no application
    error overlay.
 5. Only after step 4 succeeds does CI deploy the same SHA to `gyf-expo-web`.
-6. CI verifies the configured production/canonical URL again, then records provenance and the
+6. CI verifies both `https://gyf-expo-web.onrender.com` and `https://app.getyourfit.co` again,
+   including identity, headers, Cuelinks and browser evidence, then records provenance and the
    prior successful production deploy.
 
 A candidate failure stops the job before the production deploy command. The failure artifact
@@ -84,7 +89,7 @@ it does not claim EAS-style immutable provenance.
 ## Remaining external gate
 
 At the time this contract is added, the worktree has no `RENDER_API_KEY`, Render service IDs or
-Render candidate/production URLs, and `https://get-your-fit.expo.app` is still EAS-hosted. Those
+Render candidate/production URLs, and `https://get-your-fit.expo.app` is still Expo-owned. Those
 are concrete provider-setup credentials/access blockers, not reasons to weaken verification.
 Until the approved Render services are provisioned, the switch stays disabled and no DNS/provider
 retirement is performed.
