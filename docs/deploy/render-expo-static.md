@@ -13,13 +13,15 @@ services in the already-approved workspace:
   canonical domain is `https://app.getyourfit.co` and must already be provider-attached before
   verification. This task does not change DNS or attach/detach domains.
 
-The Render production environment in GitHub must contain `RENDER_API_KEY` as a secret and
-`RENDER_WORKSPACE_ID`, `RENDER_CANDIDATE_SERVICE_ID`, `RENDER_PRODUCTION_SERVICE_ID`, `RENDER_CANDIDATE_URL`,
-`RENDER_PRODUCTION_URL`, `RENDER_CANONICAL_URL`, `EXPO_PUBLIC_API_URL`, and
-`EXPO_PUBLIC_SUPABASE_URL` as variables. `EXPO_PUBLIC_SUPABASE_ANON_KEY` is a secret. The
-authenticated core-loop verifier also requires `GYF_E2E_EMAIL` and `GYF_E2E_PASSWORD` as secrets.
-The `RENDER_PRODUCTION_ENABLED=true` variable is the explicit owner switch; while it is absent or
-false, the existing EAS production lane remains unchanged.
+The Render production environment in GitHub must contain `RENDER_API_KEY`,
+`EXPO_PUBLIC_SUPABASE_ANON_KEY`, `GYF_E2E_EMAIL`, and `GYF_E2E_PASSWORD` as secrets. It must contain
+`RENDER_WORKSPACE_ID`, `RENDER_CANDIDATE_SERVICE_ID`, `RENDER_PRODUCTION_SERVICE_ID`,
+`RENDER_CANDIDATE_URL`, `RENDER_PRODUCTION_URL`, `RENDER_CANONICAL_URL`, `EXPO_PUBLIC_API_URL`, and
+`EXPO_PUBLIC_SUPABASE_URL` as variables. The environment validator requires the current Supabase
+publishable-key format, checks the disposable authenticated account's shape without printing either
+credential, and pins the Render workspace, service IDs, and three web origins to the approved
+values. `RENDER_PRODUCTION_ENABLED=true` is the explicit owner switch; while it is absent or false,
+the existing EAS production lane remains unchanged.
 
 The setup artifact deliberately contains no provider token, custom domain, DNS operation or
 unapproved service ID. Render CLI v2.7.0 is installed from its pinned release in CI and the
@@ -27,7 +29,8 @@ artifact is validated with the current `render blueprints validate` command befo
 
 ## Transaction
 
-1. CI checks out the exact successful main workflow SHA and confirms main has not advanced.
+1. CI checks out the exact successful main workflow SHA, confirms main has not advanced, and
+   validates every required environment value before any Render CLI or API operation.
 2. Expo web is exported locally; Cuelinks, public API/Supabase configuration and entry bundle
    name/hash are recorded.
 3. The Render API configuration step validates both existing service IDs, names, static type and
@@ -48,8 +51,10 @@ artifact is validated with the current `render blueprints validate` command befo
    including identity, headers, Cuelinks, browser and authenticated core-loop evidence, then
    records provenance and the prior successful production deploy.
 
-A candidate failure stops the job before the production deploy command. The failure artifact
-contains stage, service IDs, URLs, source SHA, and available deploy records without secrets.
+A candidate failure stops the job before the production deploy command. Even when configuration
+validation is the first failing step, the failure hook creates the diagnostic directory and
+artifact. The artifact contains service IDs, URLs, source SHA, workflow run ID, whether production
+was attempted, and the available deploy records without secrets.
 
 ## Response boundary and cache contract
 

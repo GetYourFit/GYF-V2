@@ -1,10 +1,16 @@
 #!/usr/bin/env node
-import { existsSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
 const recordsDir = process.argv[process.argv.indexOf("--records-dir") + 1];
 const output = process.argv[process.argv.indexOf("--output") + 1];
 if (!recordsDir || !output)
   throw new Error("capture-render-failure-diagnostic requires --records-dir and --output");
+// The failure hook is the first writer on a failed release. Create both locations
+// before inspecting records so an early configuration failure still leaves evidence.
+mkdirSync(recordsDir, { recursive: true });
+mkdirSync(dirname(output), { recursive: true });
+
 const diagnostic = {
   schema_version: 1,
   provider: "render-static",

@@ -221,6 +221,7 @@ jobs:
       run:
         working-directory: apps/expo
     env:
+      RENDER_PRODUCTION_ENABLED: ${{ vars.RENDER_PRODUCTION_ENABLED }}
       RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
       RENDER_CANDIDATE_SERVICE_ID: ${{ vars.RENDER_CANDIDATE_SERVICE_ID }}
       RENDER_PRODUCTION_SERVICE_ID: ${{ vars.RENDER_PRODUCTION_SERVICE_ID }}
@@ -253,15 +254,7 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$SOURCE_WORKFLOW_HEAD_SHA" ]]
           git fetch --no-tags --depth=1 origin "refs/heads/$DEFAULT_BRANCH"
           [[ "$(git rev-parse FETCH_HEAD)" == "$SOURCE_WORKFLOW_HEAD_SHA" ]]
-          for value in RENDER_API_KEY RENDER_WORKSPACE_ID RENDER_CANDIDATE_SERVICE_ID RENDER_PRODUCTION_SERVICE_ID RENDER_CANDIDATE_URL RENDER_PRODUCTION_URL RENDER_CANONICAL_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY GYF_E2E_EMAIL GYF_E2E_PASSWORD; do
-            if [[ -z "${!value:-}" ]]; then echo "$value is not configured in the RENDER_PRODUCTION environment." >&2; exit 1; fi
-          done
-          [[ "$RENDER_CANDIDATE_SERVICE_ID" != "$RENDER_PRODUCTION_SERVICE_ID" ]]
-          [[ "$RENDER_CANDIDATE_URL" == https://* && "$RENDER_PRODUCTION_URL" == https://* && "$RENDER_CANONICAL_URL" == https://* ]]
-          [[ "$RENDER_CANDIDATE_URL" != "$RENDER_PRODUCTION_URL" ]]
-          [[ "$RENDER_CANDIDATE_URL" == "https://gyf-expo-web-candidate.onrender.com" ]]
-          [[ "$RENDER_PRODUCTION_URL" == "https://gyf-expo-web.onrender.com" ]]
-          [[ "$RENDER_CANONICAL_URL" == "https://app.getyourfit.co" ]]
+          node apps/expo/scripts/validate-render-environment.mjs
           echo "CHECKED_OUT_SHA=$SOURCE_WORKFLOW_HEAD_SHA" >> "$GITHUB_ENV"
           echo "EXPO_PUBLIC_RELEASE_SHA=$SOURCE_WORKFLOW_HEAD_SHA" >> "$GITHUB_ENV"
 
