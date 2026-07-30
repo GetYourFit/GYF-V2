@@ -40,9 +40,11 @@ artifact is validated with the current `render blueprints validate` command befo
    COOP `same-origin`, strict-origin referrer policy, `nosniff`, and `X-Frame-Options: DENY`. The
    identity routes must be equal, the identity and API release SHA must equal the source SHA, and
    the export/live Cuelinks evidence must match.
-   Headless Chrome must also directly load and render the welcome, terms, contact, and grievance
-   surfaces, observe the root client-ready sentinel set after React mounts, and find no application
-   error overlay.
+   Headless Chrome connects through the Chrome DevTools Protocol and must directly load welcome,
+   login, terms, contact, grievance, onboarding, Explore, Stylist, and wardrobe. Each surface must
+   reach the post-React client-ready sentinel with its expected marker and usable control; the
+   verifier exercises that control, asserts the resulting navigation, and fails on protected-route
+   fallback drift, page exceptions, console/log errors, or an application error overlay.
 5. Only after step 4 succeeds does CI deploy the same SHA to `gyf-expo-web`.
 6. CI verifies both `https://gyf-expo-web.onrender.com` and `https://app.getyourfit.co` again,
    including identity, headers, Cuelinks, browser and authenticated core-loop evidence, then
