@@ -4,6 +4,9 @@ import { isRemoteImage } from "./catalog-image-url";
 
 const source = await Bun.file(new URL("./catalog-image.tsx", import.meta.url)).text();
 const masonrySource = await Bun.file(new URL("./masonry-feed.tsx", import.meta.url)).text();
+const webAdapterSource = await Bun.file(
+  new URL("../../lib/expo-image-web.tsx", import.meta.url),
+).text();
 
 describe("CatalogImage", () => {
   test("accepts only HTTPS catalogue images", () => {
@@ -19,6 +22,11 @@ describe("CatalogImage", () => {
     expect(source).toContain("recyclingKey={recyclingKey}");
     expect(source).toContain("onError={() => setFailed(true)}");
     expect(source).toContain("Retry image");
+  });
+
+  test("preserves the requested crop position in the web adapter", () => {
+    expect(source).toContain('contentPosition="top center"');
+    expect(webAdapterSource).toContain("objectPosition: contentPosition");
   });
 
   test("lets nested pressable tiles opt out of retry buttons on web", () => {

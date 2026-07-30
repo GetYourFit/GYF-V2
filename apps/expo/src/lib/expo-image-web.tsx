@@ -13,7 +13,7 @@ type WebImageProps = Record<string, unknown>;
 export function Image({
   cachePolicy: _cachePolicy,
   contentFit,
-  contentPosition: _contentPosition,
+  contentPosition,
   onError,
   onLoad,
   recyclingKey: _recyclingKey,
@@ -32,6 +32,10 @@ export function Image({
       }}
       resizeMode={contentFit === "contain" ? "contain" : "cover"}
       source={nativeSource}
+      style={[
+        rest.style as React.ComponentProps<typeof NativeImage>["style"],
+        contentPosition ? ({ objectPosition: contentPosition } as never) : undefined,
+      ]}
     />
   );
 }

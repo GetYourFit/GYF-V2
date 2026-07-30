@@ -20,25 +20,30 @@ let sessionRequest: Promise<Session | null> | null = null;
 export function getSupabaseClient(storage: AuthStorage = secureStorage): Promise<SupabaseClient> {
   if (client) return Promise.resolve(client);
   if (clientRequest) return clientRequest;
-  clientRequest = import("@supabase/supabase-js").then(({ createClient }) => {
-    if (client) return client;
-    const { url, anonKey } = readSupabaseEnv();
-    client = createClient(url, anonKey, {
-      auth: {
-        autoRefreshToken: true,
-        // PKCE (not implicit) so recovery links carry an opaque `?code=` query param
-        // instead of tokens in the URL fragment. detectSessionInUrl stays false on
-        // both native and web: RN has no window.location to parse, so the code is
-        // pulled from expo-router's parsed params instead (see resolveRecoverySession).
-        detectSessionInUrl: false,
-        flowType: "pkce",
-        persistSession: true,
-        storage,
-        storageKey: AUTH_STORAGE_KEY,
-      },
+  clientRequest = import("@supabase/supabase-js")
+    .then(({ createClient }) => {
+      if (client) return client;
+      const { url, anonKey } = readSupabaseEnv();
+      client = createClient(url, anonKey, {
+        auth: {
+          autoRefreshToken: true,
+          // PKCE (not implicit) so recovery links carry an opaque `?code=` query param
+          // instead of tokens in the URL fragment. detectSessionInUrl stays false on
+          // both native and web: RN has no window.location to parse, so the code is
+          // pulled from expo-router's parsed params instead (see resolveRecoverySession).
+          detectSessionInUrl: false,
+          flowType: "pkce",
+          persistSession: true,
+          storage,
+          storageKey: AUTH_STORAGE_KEY,
+        },
+      });
+      return client;
+    })
+    .catch((error: unknown) => {
+      clientRequest = null;
+      throw error;
     });
-    return client;
-  });
   return clientRequest;
 }
 
