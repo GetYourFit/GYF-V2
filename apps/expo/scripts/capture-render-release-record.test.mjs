@@ -44,8 +44,11 @@ function browserFixture(stage) {
 }
 function authenticatedFixture(stage) {
   return {
+    schema_version: 2,
     verified: true,
     stage,
+    deployment_url: `https://${stage}.onrender.com`,
+    browser: "chrome",
     checks: {
       authenticated_session: true,
       manual_onboarding: true,

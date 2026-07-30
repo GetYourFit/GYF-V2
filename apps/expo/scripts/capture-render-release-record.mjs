@@ -41,8 +41,9 @@ function validBrowserEvidence(value, stage) {
     )
   );
 }
-function validAuthenticatedEvidence(value, stage) {
-  return value.verified === true && value.stage === stage &&
+function validAuthenticatedEvidence(value, stage, deploymentUrl) {
+  return value.schema_version === 2 && value.verified === true && value.stage === stage &&
+    value.deployment_url === deploymentUrl && typeof value.browser === "string" && value.browser &&
     ["authenticated_session", "manual_onboarding", "stylist", "explore", "save_feedback"]
       .every((check) => value.checks?.[check] === true) &&
     ["verified", "not_applicable"].includes(value.checks?.shop);
@@ -100,7 +101,12 @@ if (
   throw new Error(
     "Browser-surface proof is missing from candidate, production, or canonical evidence",
   );
-if (!Object.entries(authenticated).every(([stage, value]) => validAuthenticatedEvidence(value, stage)))
+if (!Object.entries(authenticated).every(([stage, value]) =>
+  validAuthenticatedEvidence(
+    value,
+    stage,
+    { candidate, production, canonical }[stage].deployment_url,
+  )))
   throw new Error("Authenticated core-loop proof is missing or failed");
 const candidateDeployId = deployId(candidateDeploy) ?? candidate.deploy_id;
 const productionDeployId = deployId(productionDeploy) ?? production.deploy_id;

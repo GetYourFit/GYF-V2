@@ -241,6 +241,10 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
       - name: Verify source and Render release configuration
         working-directory: ${{ github.workspace }}
         run: |
@@ -331,7 +335,7 @@ jobs:
             --evidence-file apps/expo/deploy-records/render-candidate-verification.json
           node apps/expo/scripts/verify-render-authenticated-core-loop.mjs \
             --stage candidate --deployment-url "$RENDER_CANDIDATE_URL" \
-            --api-url "$EXPO_PUBLIC_API_URL" --supabase-url "$EXPO_PUBLIC_SUPABASE_URL" \
+            --api-url "$EXPO_PUBLIC_API_URL" \
             --evidence-file apps/expo/deploy-records/render-candidate-authenticated-core-loop.json
 
       - name: Capture retained production deploy for rollback
@@ -387,7 +391,7 @@ jobs:
             url_var="RENDER_${stage^^}_URL"
             node apps/expo/scripts/verify-render-authenticated-core-loop.mjs \
               --stage "$stage" --deployment-url "${!url_var}" \
-              --api-url "$EXPO_PUBLIC_API_URL" --supabase-url "$EXPO_PUBLIC_SUPABASE_URL" \
+              --api-url "$EXPO_PUBLIC_API_URL" \
               --evidence-file "apps/expo/deploy-records/render-${stage}-authenticated-core-loop.json"
           done
 
