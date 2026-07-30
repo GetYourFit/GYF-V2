@@ -19,7 +19,7 @@ explicit X-Frame-Options contract.
 ## Fix
 
 `apps/expo/src/app/+middleware.ts` is now enabled through
-`expo-router.unstable_useServerMiddleware` and calls `expo-server`'
+`expo-router.unstable_useServerMiddleware` and calls `expo-server`'s
 `setResponseHeaders` with the same five-header contract. This applies the headers
 at the server response boundary for HTML and API responses while retaining the
 exported `expo-router` configuration. It does not weaken the verifier, provenance

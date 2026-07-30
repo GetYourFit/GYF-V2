@@ -61,8 +61,9 @@ Before touching EAS it verifies the checked-out commit equals `workflow_run.head
 the current tip of the default branch, refusing to deploy a stale or mismatched source SHA, and it
 fails closed (rather than silently skipping) when `EXPO_TOKEN` or the public production environment
 is absent. It then runs Expo Doctor (`bun --cwd apps/expo run doctor`, also required in CI) against
-the checked-in SDK and native peer set. The Expo Router configuration and enabled server middleware emit the security headers
-required on every served HTML response: `Content-Security-Policy: frame-ancestors 'none'`,
+the checked-in SDK and native peer set. The Expo Router configuration and enabled server
+middleware emit the security headers required on every served HTML response:
+`Content-Security-Policy: frame-ancestors 'none'`,
 `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
 `Referrer-Policy: strict-origin-when-cross-origin`, and `Cross-Origin-Opener-Policy: same-origin`.
 Middleware is the response-boundary defense in depth for EAS Hosting, whose prior deployment
