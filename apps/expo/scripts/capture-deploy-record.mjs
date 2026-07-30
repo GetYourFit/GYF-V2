@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 const PRODUCTION_URL = "https://get-your-fit.expo.app";
+const EAS_CLI_VERSION = "21.4.0";
 const SCHEMA_VERSION = 1;
 
 function parseArgs(argv) {
@@ -36,7 +37,10 @@ function readJson(path) {
 
 function localEntryBundle(verificationEvidencePath) {
   const evidence = readJson(verificationEvidencePath);
-  if (typeof evidence.expected_entry_bundle !== "string" || evidence.expected_entry_bundle.length === 0) {
+  if (
+    typeof evidence.expected_entry_bundle !== "string" ||
+    evidence.expected_entry_bundle.length === 0
+  ) {
     throw new Error("Verification evidence is missing expected_entry_bundle");
   }
   return evidence.expected_entry_bundle;
@@ -64,12 +68,14 @@ function parseDeployment(logText) {
 }
 
 function buildRollbackCommand(deploymentId) {
-  return `npm exec --yes eas-cli@latest -- deploy:alias --prod --non-interactive --id=${deploymentId}`;
+  return `npm exec --yes eas-cli@${EAS_CLI_VERSION} -- deploy:alias --prod --non-interactive --id=${deploymentId}`;
 }
 
 function validateVerificationEvidence(evidence, deployment) {
   if (evidence.production_url !== PRODUCTION_URL) {
-    throw new Error(`Verification evidence has unexpected production URL: ${evidence.production_url}`);
+    throw new Error(
+      `Verification evidence has unexpected production URL: ${evidence.production_url}`,
+    );
   }
   if (evidence.expected_deployment_id !== deployment.deploymentId) {
     throw new Error("Verification evidence deployment ID does not match deploy output");
@@ -84,7 +90,9 @@ function validateVerificationEvidence(evidence, deployment) {
     throw new Error("Verification evidence live deployment URL does not match deploy output");
   }
   if (evidence.live_entry_bundle !== evidence.expected_entry_bundle) {
-    throw new Error("Verification evidence does not prove production served the exported entry bundle");
+    throw new Error(
+      "Verification evidence does not prove production served the exported entry bundle",
+    );
   }
 }
 
@@ -113,6 +121,9 @@ function validateRecord(record) {
   }
   if (!record.commit.sha || !record.commit.source_workflow_sha) {
     throw new Error("Rollback record is missing commit identity");
+  }
+  if (record.commit.sha !== record.commit.source_workflow_sha) {
+    throw new Error("Rollback record commit does not match the source workflow SHA");
   }
   if (!record.workflow.run_id || !record.workflow.source_run_id) {
     throw new Error("Rollback record is missing workflow run identity");
@@ -166,12 +177,20 @@ function main() {
   validateVerificationEvidence(verification, deployment);
 
   const entryBundle = localEntryBundle(verificationEvidencePath);
+  const sourceWorkflowSha = process.env.SOURCE_WORKFLOW_HEAD_SHA ?? "";
+  const checkedOutSha = process.env.CHECKED_OUT_SHA ?? "";
+  if (!sourceWorkflowSha || !checkedOutSha) {
+    throw new Error("Deployment provenance is missing the source or checked-out SHA");
+  }
+  if (sourceWorkflowSha !== checkedOutSha) {
+    throw new Error("Checked-out commit does not match the source workflow SHA");
+  }
   const record = {
     schema_version: SCHEMA_VERSION,
     verified_at: verification.verified_at,
     commit: {
-      sha: process.env.GITHUB_SHA ?? "",
-      source_workflow_sha: process.env.SOURCE_WORKFLOW_HEAD_SHA ?? "",
+      sha: checkedOutSha,
+      source_workflow_sha: sourceWorkflowSha,
     },
     workflow: {
       run_id: process.env.GITHUB_RUN_ID ?? "",

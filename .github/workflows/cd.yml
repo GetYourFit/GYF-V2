@@ -28,6 +28,9 @@ concurrency:
   group: cd-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   deploy-expo-web:
     name: Deploy Expo web (EAS Hosting)
@@ -46,17 +49,42 @@ jobs:
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
       SOURCE_WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
       SOURCE_WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Check EAS configuration
-        id: gate
+      - name: Verify source SHA and default-branch freshness
+        id: provenance
+        working-directory: ${{ github.workspace }}
         run: |
+          set -euo pipefail
+          if [[ ! "$SOURCE_WORKFLOW_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Source workflow SHA is missing or malformed." >&2
+            exit 1
+          fi
+          checked_out_sha=$(git rev-parse HEAD)
+          if [[ "$checked_out_sha" != "$SOURCE_WORKFLOW_HEAD_SHA" ]]; then
+            echo "Checked out $checked_out_sha, expected $SOURCE_WORKFLOW_HEAD_SHA." >&2
+            exit 1
+          fi
+          git fetch --no-tags --depth=1 origin "refs/heads/$DEFAULT_BRANCH"
+          latest_default_sha=$(git rev-parse FETCH_HEAD)
+          if [[ "$latest_default_sha" != "$SOURCE_WORKFLOW_HEAD_SHA" ]]; then
+            echo "Refusing to deploy stale main commit $SOURCE_WORKFLOW_HEAD_SHA; current $DEFAULT_BRANCH is $latest_default_sha." >&2
+            exit 1
+          fi
+          echo "checked_out_sha=$checked_out_sha" >> "$GITHUB_OUTPUT"
+          echo "CHECKED_OUT_SHA=$checked_out_sha" >> "$GITHUB_ENV"
+          echo "Deploy source verified: $checked_out_sha is current $DEFAULT_BRANCH."
+
+      - name: Check EAS configuration
+        run: |
+          set -euo pipefail
           if [ -z "$EXPO_TOKEN" ]; then
-            echo "EXPO_TOKEN is not configured; Expo production deploy is not enabled." >&2
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "EXPO_TOKEN is not configured; refusing an unverified production release." >&2
+            exit 1
           elif [ -z "$EXPO_PUBLIC_API_URL" ] || [ -z "$EXPO_PUBLIC_SUPABASE_URL" ] || [ -z "$EXPO_PUBLIC_SUPABASE_ANON_KEY" ]; then
             echo "Expo public production environment is incomplete." >&2
             exit 1
@@ -66,9 +94,8 @@ jobs:
           elif [[ "$EXPO_PUBLIC_SUPABASE_ANON_KEY" != sb_publishable_?* ]]; then
             echo "Expo requires a current Supabase publishable key; refusing a legacy anon JWT." >&2
             exit 1
-          else
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
+          echo "EAS production configuration is present and uses HTTPS/public Supabase credentials."
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -79,8 +106,11 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: bun install --frozen-lockfile
 
+      - name: Run Expo Doctor
+        working-directory: ${{ github.workspace }}
+        run: bun --cwd apps/expo run doctor
+
       - name: Deploy Expo web to EAS Hosting
-        if: steps.gate.outputs.enabled == 'true'
         run: |
           npx expo export --platform web --clear
           node scripts/verify-cuelinks-web-export.mjs
@@ -101,9 +131,10 @@ jobs:
             exit 1
           fi
           mkdir -p deploy-records
-          npm exec --yes eas-cli@latest -- deploy --prod --non-interactive --dev-domain=get-your-fit | tee deploy-records/eas-deploy.log
+          npm exec --yes eas-cli@21.4.0 -- deploy --prod --non-interactive --dev-domain=get-your-fit | tee deploy-records/eas-deploy.log
           node scripts/verify-deploy.mjs \
             --deploy-log deploy-records/eas-deploy.log \
+            --api-url "$EXPO_PUBLIC_API_URL" \
             --evidence-file deploy-records/verification-evidence.json
           node scripts/capture-deploy-record.mjs \
             --deploy-log deploy-records/eas-deploy.log \
@@ -112,7 +143,6 @@ jobs:
             --summary-output deploy-records/rollback-record-summary.md
 
       - name: Publish Expo rollback record
-        if: steps.gate.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: expo-web-rollback-record-${{ github.event.workflow_run.run_id }}
@@ -121,5 +151,4 @@ jobs:
           if-no-files-found: error
 
       - name: Publish Expo rollback summary
-        if: steps.gate.outputs.enabled == 'true'
         run: cat deploy-records/rollback-record-summary.md >> "$GITHUB_STEP_SUMMARY"

@@ -44,7 +44,8 @@
           "savePhotosPermission": "Allow Get Your Fit to save looks to your photos."
         }
       ],
-      "expo-image"
+      "expo-image",
+      "expo-splash-screen"
     ],
     "extra": {
       "eas": {

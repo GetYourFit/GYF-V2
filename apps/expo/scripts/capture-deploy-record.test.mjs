@@ -32,7 +32,8 @@ function withFixture(callback) {
           live_deployment_url: "https://get-your-fit--or1170q9ix.expo.app/",
           expected_deployment_id: "or1170q9ix",
           expected_deployment_url: "https://get-your-fit--or1170q9ix.expo.app/",
-          alias_request_url: "https://get-your-fit--or1170q9ix.expo.app/__deployment?deploy-check=1",
+          alias_request_url:
+            "https://get-your-fit--or1170q9ix.expo.app/__deployment?deploy-check=1",
           alias_origin: "https://get-your-fit.expo.app",
           alias_forwarded_host: "get-your-fit.expo.app",
           headers: {
@@ -75,7 +76,8 @@ test("capture-deploy-record binds rollback metadata to the exact deployment ID",
         cwd: new URL("..", import.meta.url),
         env: {
           ...process.env,
-          GITHUB_SHA: "221d3df5c3cf05c7a31439b9cfbfc3885882c335",
+          GITHUB_SHA: "different-cd-workflow-sha",
+          CHECKED_OUT_SHA: "221d3df5c3cf05c7a31439b9cfbfc3885882c335",
           GITHUB_RUN_ID: "12345",
           GITHUB_RUN_ATTEMPT: "2",
           SOURCE_WORKFLOW_RUN_ID: "67890",
@@ -90,10 +92,39 @@ test("capture-deploy-record binds rollback metadata to the exact deployment ID",
     assert.equal(artifact.deployment.id, "or1170q9ix");
     assert.equal(
       artifact.deployment.rollback_command,
-      "npm exec --yes eas-cli@latest -- deploy:alias --prod --non-interactive --id=or1170q9ix",
+      "npm exec --yes eas-cli@21.4.0 -- deploy:alias --prod --non-interactive --id=or1170q9ix",
     );
     assert.equal(artifact.bundle.entry_hash, "deadbeef");
     assert.match(readFileSync(summaryOutput, "utf8"), /Deployment ID: `or1170q9ix`/);
+  });
+});
+
+test("capture-deploy-record rejects a missing checked-out SHA", () => {
+  withFixture((root) => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        "scripts/capture-deploy-record.mjs",
+        "--deploy-log",
+        join(root, "deploy-log.txt"),
+        "--verification-evidence",
+        join(root, "deploy-records", "verification-evidence.json"),
+        "--artifact-output",
+        join(root, "rollback-record.json"),
+        "--summary-output",
+        join(root, "rollback-record-summary.md"),
+      ],
+      {
+        cwd: new URL("..", import.meta.url),
+        env: {
+          ...process.env,
+          SOURCE_WORKFLOW_HEAD_SHA: "221d3df5c3cf05c7a31439b9cfbfc3885882c335",
+        },
+      },
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr.toString(), /missing the source or checked-out SHA/);
   });
 });
 

@@ -45,14 +45,24 @@ class ExpoHostingGuardTests(unittest.TestCase):
         (self.root / ".github/workflows/cd.yml").write_text(
             "\n".join(
                 [
-                    "- run: node scripts/verify-deploy.mjs",
+                    "- run: node scripts/verify-deploy.mjs --api-url \"$EXPO_PUBLIC_API_URL\"",
                     "- run: node scripts/capture-deploy-record.mjs",
                     "- uses: actions/upload-artifact@v4",
                     "- run: cat deploy-records/rollback-record-summary.md >> \"$GITHUB_STEP_SUMMARY\"",
+                    "github.event.workflow_run.head_sha",
+                    "checked_out_sha=$(git rev-parse HEAD)",
+                    "latest_default_sha=$(git rev-parse FETCH_HEAD)",
+                    "echo current $DEFAULT_BRANCH",
+                    "echo \"CHECKED_OUT_SHA=$checked_out_sha\" >> \"$GITHUB_ENV\"",
+                    "npm exec --yes eas-cli@21.4.0 -- deploy --prod",
+                    "EXPO_TOKEN is not configured; refusing",
                     "",
                 ]
             ),
             encoding="utf-8",
+        )
+        (self.root / ".github/workflows/ci.yml").write_text(
+            "- run: bun --cwd apps/expo run doctor\n", encoding="utf-8"
         )
 
     def test_accepts_complete_hosting_boundary(self) -> None:
@@ -84,7 +94,7 @@ class ExpoHostingGuardTests(unittest.TestCase):
         (self.root / ".github/workflows/cd.yml").write_text("jobs: {}\n", encoding="utf-8")
 
         self.assertIn(
-            "CD must verify the live EAS production alias after deployment",
+            "CD must verify the immutable EAS deployment after deployment",
             check_expo_hosting.findings(self.root),
         )
 
@@ -95,6 +105,14 @@ class ExpoHostingGuardTests(unittest.TestCase):
 
         self.assertIn(
             "CD must persist the immutable Expo rollback record after deployment",
+            check_expo_hosting.findings(self.root),
+        )
+
+    def test_rejects_missing_expo_doctor(self) -> None:
+        (self.root / ".github/workflows/ci.yml").write_text("jobs: {}\n", encoding="utf-8")
+
+        self.assertIn(
+            "CI must run Expo Doctor against the checked-in SDK and native peer set",
             check_expo_hosting.findings(self.root),
         )
 
