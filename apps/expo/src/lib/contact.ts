@@ -1,4 +1,4 @@
-export { CONTACT_EMAIL, CONTACT_MAILTO } from "../../../../app/lib/contact";
+export { CONTACT_EMAIL, CONTACT_MAILTO } from "@gyf/types";
 
 export type ContactDraft = { name: string; email: string; message: string };
 

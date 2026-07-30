@@ -21,7 +21,7 @@ apps/expo/  # Expo Router replacement client for iOS, Android and web
 app/        # Next.js behavioural oracle and temporary rollback client
 services/   # FastAPI modular monolith (API, event spine, background jobs)
 ml/         # ML platform (perception, user model, recsys, compat, try-on, eval)
-packages/   # shared types (TS) + contracts (Python), config
+packages/   # generated API types, framework-neutral client, contracts (Python)
 infra/      # current IaC + local Apple-container stack
 scripts/    # ops + verification scripts (gates, e2e, seeders, flywheel)
 docs/       # vision, doctrine, one active execution contract, evidence and runbooks

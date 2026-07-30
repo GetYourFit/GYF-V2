@@ -8,6 +8,10 @@
 export type { paths, components, operations } from "./api";
 import type { components } from "./api";
 
+/** Public support address shared by every client surface. */
+export const CONTACT_EMAIL = "gyf1ltd@gmail.com";
+export const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}`;
+
 /** Convenience aliases for the API models the web app consumes most. */
 export type ProfileInput = components["schemas"]["ProfileInput"];
 export type Profile = components["schemas"]["Profile"];
