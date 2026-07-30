@@ -140,10 +140,7 @@ test("Render CLI installation is noninteractive and isolated from the repository
   assert.ok(installStart >= 0 && installEnd > installStart);
   const installStep = workflow.slice(installStart, installEnd);
   assert.match(installStep, /render_cli_tmp=\$\(mktemp -d\)/);
-  assert.match(
-    installStep,
-    /unzip -q "\$render_cli_tmp\/render-cli\.zip" -d "\$render_cli_tmp"/,
-  );
+  assert.match(installStep, /unzip -q "\$render_cli_tmp\/render-cli\.zip" -d "\$render_cli_tmp"/);
   assert.doesNotMatch(installStep, /unzip -q render-cli\.zip/);
   assert.match(
     installStep,
