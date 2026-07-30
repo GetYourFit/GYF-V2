@@ -115,6 +115,9 @@ F13 approval.
 
 ## Local validation record
 
+The measurements below were recorded at `12500ed`, before the subsequent review fixes. The active
+no-mistakes run owns validation of the final branch head.
+
 - `make install` completed cleanly; Expo Doctor passed all 17 checks.
 - `make ci` passed: formatting, typecheck, doctrine, standards, 591 API tests / 26 environment-gated
   skips, 276 Expo tests, 81 web tests, and workflow/repo-hygiene/ownership/security/model-license/
@@ -134,5 +137,3 @@ F13 approval.
   build was environment-killed (exit 137) during TypeScript while another worktree's Expo build was
   consuming host resources. Web typecheck/lint passed, and the source guard covers the proxy gate;
   rerun the production server probe when review capacity/resources permit.
-- No no-mistakes review/PR run was started because the requested review runtime quota is unavailable.
-  No merge or push was performed.

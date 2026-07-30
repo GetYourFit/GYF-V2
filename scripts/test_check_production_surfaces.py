@@ -14,7 +14,9 @@ class ProductionSurfaceGuardTests(unittest.TestCase):
     def test_artifact_rejects_fixture_markers(self):
         with tempfile.TemporaryDirectory() as directory:
             dist = Path(directory)
-            (dist / "index.html").write_text("fixture-recommendation-01", encoding="utf-8")
+            (dist / "index.html").write_text(
+                "fixture-recommendation-01", encoding="utf-8"
+            )
             self.assertTrue(guard.artifact_failures(dist))
 
     def test_artifact_accepts_product_only_export(self):
