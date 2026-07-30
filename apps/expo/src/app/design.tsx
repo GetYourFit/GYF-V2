@@ -1,18 +1,42 @@
+import { Link } from "expo-router";
 import { ScrollView, View } from "react-native";
 
-import { CoreRouteReview } from "@/components/design/core-route-review";
 import { AtelierButton } from "@/components/ui/atelier-button";
 import { AtelierCard } from "@/components/ui/atelier-card";
 import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
-import { CORE_ROUTE_REVIEW_FIXTURES } from "@/design-fixtures/core-route-states";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+import { reviewSurfaceEnabled } from "@/lib/review-surface";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
 // Live component gallery — the Expo counterpart of the web /design tester. Renders
 // every primitive from real tokens so a token change is visible here first.
 
 const TEXT_VARIANTS = Object.keys(typography) as Array<keyof typeof typography>;
+
+function ReviewGallery() {
+  // Keep the review graph out of production exports. Metro can tree-shake this
+  // branch because NODE_ENV is compile-time substituted for release builds.
+  if (process.env.NODE_ENV === "production") return null;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { CoreRouteReview } = require("@/components/design/core-route-review");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { CORE_ROUTE_REVIEW_FIXTURES } = require("@/design-fixtures/core-route-states");
+  return (
+    <Section title="Core route direction">
+      <GyfText tone="muted" variant="bodySmall">
+        Direction review: Stylist, Explore, item detail, and Personal Fit at compact Android (320),
+        regular Android (768), and responsive web (1280), in light and dark. Review controls are
+        disabled; each composition keeps one hero, one primary action, and one explanation path.
+      </GyfText>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.lg }}>
+        {CORE_ROUTE_REVIEW_FIXTURES.map((fixture: any) => (
+          <CoreRouteReview fixture={fixture} key={fixture.id} />
+        ))}
+      </View>
+    </Section>
+  );
+}
 const TONES = ["text", "muted", "faint"] as const;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -26,6 +50,31 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function DesignRoute() {
   const palette = useThemeColors();
+  if (!reviewSurfaceEnabled) {
+    return (
+      <View
+        accessibilityLabel="Design review unavailable"
+        style={{
+          alignItems: "center",
+          backgroundColor: palette.bg,
+          flex: 1,
+          gap: spacing.lg,
+          justifyContent: "center",
+          padding: spacing.lg,
+        }}
+      >
+        <GyfText accessibilityRole="header" variant="title">
+          Design review unavailable
+        </GyfText>
+        <GyfText tone="muted" variant="bodySmall">
+          This review surface is available only during local development.
+        </GyfText>
+        <Link href="/">
+          <GyfText tone="muted">Return to GYF</GyfText>
+        </Link>
+      </View>
+    );
+  }
   return (
     <ScrollView
       accessibilityLabel="Design system gallery"
@@ -36,19 +85,7 @@ export default function DesignRoute() {
         Design system
       </GyfText>
 
-      <Section title="Core route direction">
-        <GyfText tone="muted" variant="bodySmall">
-          Direction review: Stylist, Explore, item detail, and Personal Fit at compact Android
-          (320), regular Android (768), and responsive web (1280), in light and dark. Review
-          controls are disabled; each composition keeps one hero, one primary action, and one
-          explanation path.
-        </GyfText>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.lg }}>
-          {CORE_ROUTE_REVIEW_FIXTURES.map((fixture) => (
-            <CoreRouteReview fixture={fixture} key={fixture.id} />
-          ))}
-        </View>
-      </Section>
+      <ReviewGallery />
 
       <Section title="Typography">
         {TEXT_VARIANTS.map((variant) => (

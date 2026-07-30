@@ -4,30 +4,6 @@
  */
 
 export interface paths {
-    "/gallery": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Visual outfit gallery
-         * @description A self-contained page that renders recommended outfits with real photos.
-         *
-         *     Pure client-side: it calls ``/outfits/recommend`` and lays out each look with
-         *     its garments' ``image_url``. The single best way to *see* the stylist work —
-         *     the NL goal box and occasion selector are wired in.
-         */
-        get: operations["gallery_gallery_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/health": {
         parameters: {
             query?: never;
@@ -2027,26 +2003,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    gallery_gallery_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-        };
-    };
     health_health_get: {
         parameters: {
             query?: never;

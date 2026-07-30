@@ -1,5 +1,6 @@
 "use client";
 
+import { notFound } from "next/navigation";
 // Living style guide — renders every design-system primitive in one place so the
 // Editorial Gallery language can be reviewed at a glance and primitives stay in
 // lockstep. Self-contained (mounts its own ToastProvider); no app nav chrome.
@@ -234,6 +235,8 @@ function Gallery() {
 }
 
 export default function DesignSystemPage() {
+  if (process.env.NODE_ENV === "production") notFound();
+
   return (
     <ToastProvider>
       <Gallery />

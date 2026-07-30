@@ -29,11 +29,24 @@ def test_headers_present_on_json_response():
 
 
 def test_headers_present_on_html_gallery():
-    # The gallery is HTML served from the API origin — it must not be sniffable or framable.
+    # Local review HTML is still protected against sniffing and framing.
     res = client.get("/gallery")
     assert res.status_code == 200
     assert res.headers.get("x-content-type-options") == "nosniff"
     assert res.headers.get("x-frame-options") == "DENY"
+
+
+def test_gallery_is_not_available_outside_local(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(config.settings, "env", "production")
+    res = client.get("/gallery")
+    assert res.status_code == 404
+    assert "available only in local development" in res.text.lower()
+    for name, value in _EXPECTED.items():
+        assert res.headers.get(name) == value
+
+
+def test_gallery_is_not_a_production_openapi_endpoint():
+    assert "/gallery" not in app.openapi()["paths"]
 
 
 def test_headers_present_on_error_response():
