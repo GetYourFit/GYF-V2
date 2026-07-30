@@ -117,7 +117,8 @@ export class GyfApi extends SharedGyfApi {
 
 async function parsePhotoResponse(response: Response): Promise<ProfilePhotoResponse> {
   const data = parseJson(await response.text());
-  if (!response.ok) throw new ApiError(response.status, errorMessage(data, response.statusText), data);
+  if (!response.ok)
+    throw new ApiError(response.status, errorMessage(data, response.statusText), data);
   return data as ProfilePhotoResponse;
 }
 

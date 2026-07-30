@@ -1936,11 +1936,16 @@ but it never reorders the backend contract.
 - Added manual profile onboarding against the existing typed API: required gender slice, occasion,
   style intent, budget/currency and consent flags persist through `PUT /profile` and `PUT /consent`.
   Existing profile data is reloaded and remains editable; required processing consent is fail-closed.
-- Photo picker/camera integration is intentionally not claimed: the Expo image-picker install is
-  unavailable in this checkout's restricted package temp directory, so the screen labels photo
-  assistance unavailable and keeps manual fields authoritative. It remains the next EXPO-05 gate.
-- Expo typecheck and 17 Expo tests pass. Device smoke testing and sensitive-media lifecycle tests
-  remain open until the native picker dependency and Supabase recovery-link configuration exist.
+- Added optional camera/library photo assistance behind live per-module capability and active
+  `data_processing` consent. The client validates type, size and dimensions, previews the selected
+  image only on-screen, supports upload progress/cancel/retry/removal, and requests analysis with
+  `persist=false`; the API processes bytes ephemerally and returns editable estimates that are
+  persisted only when the user explicitly saves the profile. If capability, permission, upload or
+  analysis fails, truthful copy returns the user to the complete manual path.
+- Added account-scoped session/secure-storage onboarding drafts and two-step resume/back behavior
+  without retaining selected photo bytes or unconfirmed estimates. Full manual Personal Fit
+  readiness now gates Stylist/Explore instead of gender alone. Device smoke testing and the
+  Supabase recovery-link configuration remain open production evidence.
 
 ### EXPO-06 — Stylist and feedback
 

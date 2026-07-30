@@ -1335,14 +1335,19 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   to a stale local cache (`cache-control: public, max-age=3600` on the HTML shell)
   predating that session's fixes, not a live regression.
 
-  Task 5 commit `2b8057d` adds the shared `PersonalFitForm` (create/edit): photo analysis
-  behind live `photo_body_type`/`photo_skin_tone` capability plus `photo_storage`
-  consent, manual skin-tone/body-type/currency/budget always available. Documented scope
-  decision: Task 3's already-merged domain model narrows Personal Fit to
-  `{skin_tone, body_type, budget_range}`, so `/onboarding` chains the existing
-  `OnboardingForm` (gender/occasion/style) into `PersonalFitForm mode="create"` as a
-  second step rather than replacing it outright, preserving the `profile.gender`-gated
-  onboarded check; `/personal-fit` is the new Profile edit route.
+  Task 5 commit `2b8057d` adds the shared `PersonalFitForm` (create/edit). The repaired Expo
+  flow keeps manual skin-tone/body-type/currency/budget entry available, resumes either step
+  from an account-scoped session/secure-storage draft, and treats the full manually confirmed
+  profile—not
+  gender alone—as the Stylist/Explore readiness boundary. Optional photo analysis is offered
+  only when at least one live `photo_body_type`/`photo_skin_tone` capability is usable and
+  `data_processing` consent is active. The selected image and unconfirmed estimates stay
+  screen-local, the API analyses with `persist=false`, and the user must review and save the
+  editable fields explicitly; image bytes remain ephemeral and are not retained or used for
+  training. The flow supports camera/library choice, strict type/size/dimension validation,
+  upload progress, cancellation/retry/removal, and truthful manual fallback. `/onboarding`
+  chains `OnboardingForm` (gender/occasion/style) into `PersonalFitForm mode="create"`;
+  `/personal-fit` remains the Profile edit route.
 
   Cosmos Tasks 1–5 were complete and independently reviewed in the durable task ledger as
   of commit `cdba998`, which recorded Task 6 as current. Fresh controller gates at that

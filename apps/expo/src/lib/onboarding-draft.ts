@@ -35,7 +35,11 @@ function operationsFor(storage: DraftStorage): Map<string, Promise<void>> {
   return operations;
 }
 
-function enqueue(storage: DraftStorage, key: string, operation: () => Promise<void>): Promise<void> {
+function enqueue(
+  storage: DraftStorage,
+  key: string,
+  operation: () => Promise<void>,
+): Promise<void> {
   const operations = operationsFor(storage);
   const pending = operations.get(key) ?? Promise.resolve();
   const next = pending.catch(() => undefined).then(operation);
