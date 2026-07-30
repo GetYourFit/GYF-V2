@@ -8,6 +8,7 @@ only depend on generated/shared types and web platform primitives.
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -16,18 +17,8 @@ from typing import Iterable
 IMPORT_RE = re.compile(
     r"(?:\bfrom\s+|\bimport\s*(?:\(|[\s]+)|\bexport\s+(?:\*\s+|\{[^}]+\}\s+)from\s+|\brequire\s*\(\s*)([\"'`])([^\"'`]+)\1"
 )
-FORBIDDEN_PACKAGE_PREFIXES = (
-    "app/",
-    "next",
-    "@next/",
-    "@vercel/",
-    "expo",
-    "@expo/",
-    "react",
-    "react-dom",
-    "react-native",
-    "@supabase/",
-)
+ALLOWED_TRANSPORT_PACKAGES = {"@gyf/types"}
+RUNTIME_DEPENDENCY_FIELDS = ("dependencies", "optionalDependencies", "peerDependencies")
 
 
 def source_files(root: Path, directory: str) -> Iterable[Path]:
@@ -66,14 +57,32 @@ def transport_dependency_violations(root: Path) -> list[str]:
         if source.name.endswith(".test.ts"):
             continue
         for target in imports(source.read_text(encoding="utf-8")):
-            if target.startswith(".") or target == "@gyf/types":
+            if target.startswith(".") or target in ALLOWED_TRANSPORT_PACKAGES:
                 continue
-            if target.startswith(FORBIDDEN_PACKAGE_PREFIXES):
-                violations.append(
-                    f"framework dependency in transport: {source.relative_to(root)} -> {target}"
-                )
+            violations.append(
+                f"non-platform dependency in transport: {source.relative_to(root)} -> {target}"
+            )
     if not package_root.exists():
         violations.append("missing framework-neutral transport package: packages/api-client/src")
+    manifest = root / "packages/api-client/package.json"
+    if not manifest.is_file():
+        violations.append("missing transport package manifest: packages/api-client/package.json")
+        return violations
+    try:
+        package = json.loads(manifest.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as error:
+        violations.append(f"invalid transport package manifest: {error}")
+        return violations
+    for field in RUNTIME_DEPENDENCY_FIELDS:
+        dependencies = package.get(field, {})
+        if not isinstance(dependencies, dict):
+            violations.append(f"invalid transport package manifest field: {field}")
+            continue
+        for dependency in dependencies:
+            if dependency not in ALLOWED_TRANSPORT_PACKAGES:
+                violations.append(
+                    f"non-platform dependency in transport manifest: {field} -> {dependency}"
+                )
     return violations
 
 

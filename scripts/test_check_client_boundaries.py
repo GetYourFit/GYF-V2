@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,6 +9,16 @@ import check_client_boundaries as boundaries
 
 
 class ClientBoundaryTests(unittest.TestCase):
+    def write_transport_manifest(
+        self, root: Path, dependencies: dict[str, str] | None = None
+    ) -> None:
+        manifest = root / "packages/api-client/package.json"
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_text(
+            json.dumps({"dependencies": dependencies or {"@gyf/types": "workspace:*"}}),
+            encoding="utf-8",
+        )
+
     def test_current_boundary_is_clean(self) -> None:
         self.assertEqual(boundaries.check(Path.cwd()), [])
 
@@ -27,7 +38,34 @@ class ClientBoundaryTests(unittest.TestCase):
             source = root / "packages/api-client/src/api.ts"
             source.parent.mkdir(parents=True)
             source.write_text('import "next/headers"\n', encoding="utf-8")
-            self.assertTrue(any("framework dependency" in item for item in boundaries.check(root)))
+            self.write_transport_manifest(root)
+            self.assertTrue(
+                any("non-platform dependency" in item for item in boundaries.check(root))
+            )
+
+    def test_rejects_unlisted_package_import_in_transport(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "packages/api-client/src/api.ts"
+            source.parent.mkdir(parents=True)
+            source.write_text('import "svelte"\n', encoding="utf-8")
+            self.write_transport_manifest(root)
+            self.assertTrue(
+                any("non-platform dependency" in item for item in boundaries.check(root))
+            )
+
+    def test_rejects_unlisted_runtime_manifest_dependency(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "packages/api-client/src/api.ts"
+            source.parent.mkdir(parents=True)
+            source.write_text("void fetch;\n", encoding="utf-8")
+            self.write_transport_manifest(
+                root, {"@gyf/types": "workspace:*", "react": "^19.0.0"}
+            )
+            self.assertTrue(
+                any("transport manifest" in item for item in boundaries.check(root))
+            )
 
     def test_allows_platform_fetch_and_shared_types(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -41,6 +79,7 @@ class ClientBoundaryTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (source.parent / "helper.ts").write_text("export const helper = 1;\n", encoding="utf-8")
+            self.write_transport_manifest(root)
             self.assertEqual(boundaries.transport_dependency_violations(root), [])
 
 
