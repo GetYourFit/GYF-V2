@@ -28,7 +28,10 @@ class ExpoHostingGuardTests(unittest.TestCase):
                         "plugins": [
                             [
                                 "expo-router",
-                                {"headers": dict(check_expo_hosting.REQUIRED_HEADERS)},
+                                {
+                                    "headers": dict(check_expo_hosting.REQUIRED_HEADERS),
+                                    "unstable_useServerMiddleware": True,
+                                },
                             ]
                         ]
                     }
@@ -41,6 +44,9 @@ class ExpoHostingGuardTests(unittest.TestCase):
         )
         (self.root / "apps/expo/src/app/__deployment+api.ts").write_text(
             "export function GET() { return Response.json({ ok: true }); }\n", encoding="utf-8"
+        )
+        (self.root / "apps/expo/src/app/+middleware.ts").write_text(
+            "import { setResponseHeaders } from 'expo-server';\n", encoding="utf-8"
         )
         (self.root / ".github/workflows/cd.yml").write_text(
             "\n".join(
@@ -87,6 +93,14 @@ class ExpoHostingGuardTests(unittest.TestCase):
 
         self.assertIn(
             "apps/expo/app.json must use server web output for deployment-ID verification",
+            check_expo_hosting.findings(self.root),
+        )
+
+    def test_rejects_missing_server_middleware(self) -> None:
+        (self.root / "apps/expo/src/app/+middleware.ts").unlink()
+
+        self.assertIn(
+            "apps/expo/src/app/+middleware.ts must set response security headers",
             check_expo_hosting.findings(self.root),
         )
 
