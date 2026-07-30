@@ -1,4 +1,6 @@
-import { Image as NativeImage, type ImageSourcePropType } from "react-native";
+import { StyleSheet } from "react-native";
+
+import { webImageStyle } from "./expo-image-web-style";
 
 type LoadEvent = { source?: { height?: number; width?: number } };
 
@@ -18,24 +20,27 @@ export function Image({
   onLoad,
   recyclingKey: _recyclingKey,
   source,
+  style,
   ...rest
 }: WebImageProps) {
-  const nativeSource: ImageSourcePropType =
-    typeof source === "string" ? { uri: source } : (source as ImageSourcePropType);
+  const uri = typeof source === "string" ? source : (source as { uri?: string } | undefined)?.uri;
+  const accessibilityLabel =
+    typeof rest.accessibilityLabel === "string" ? rest.accessibilityLabel : "";
+  const flattenedStyle = StyleSheet.flatten(style as never) as Record<string, unknown> | undefined;
+
   return (
-    <NativeImage
-      {...(rest as React.ComponentProps<typeof NativeImage>)}
-      onError={onError as React.ComponentProps<typeof NativeImage>["onError"]}
+    <img
+      alt={accessibilityLabel}
+      draggable={false}
+      onError={onError as React.ComponentProps<"img">["onError"]}
       onLoad={(event) => {
-        const nativeEvent = event.nativeEvent as { source?: { height?: number; width?: number } };
-        (onLoad as ((event: LoadEvent) => void) | undefined)?.({ source: nativeEvent.source });
+        const image = event.currentTarget;
+        (onLoad as ((event: LoadEvent) => void) | undefined)?.({
+          source: { height: image.naturalHeight, width: image.naturalWidth },
+        });
       }}
-      resizeMode={contentFit === "contain" ? "contain" : "cover"}
-      source={nativeSource}
-      style={[
-        rest.style as React.ComponentProps<typeof NativeImage>["style"],
-        contentPosition ? ({ objectPosition: contentPosition } as never) : undefined,
-      ]}
+      src={uri}
+      style={webImageStyle(flattenedStyle, contentFit, contentPosition) as React.CSSProperties}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { webImageStyle } from "../../lib/expo-image-web-style";
 import { isRemoteImage } from "./catalog-image-url";
 
 const source = await Bun.file(new URL("./catalog-image.tsx", import.meta.url)).text();
@@ -26,7 +27,13 @@ describe("CatalogImage", () => {
 
   test("preserves the requested crop position in the web adapter", () => {
     expect(source).toContain('contentPosition="top center"');
-    expect(webAdapterSource).toContain("objectPosition: contentPosition");
+    expect(webAdapterSource).toContain("<img");
+    expect(webImageStyle({ borderRadius: 12 }, "cover", "top center")).toEqual({
+      borderRadius: 12,
+      display: "block",
+      objectFit: "cover",
+      objectPosition: "top center",
+    });
   });
 
   test("lets nested pressable tiles opt out of retry buttons on web", () => {
