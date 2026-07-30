@@ -17,7 +17,8 @@ The Render production environment in GitHub must contain `RENDER_API_KEY` as a s
 `RENDER_WORKSPACE_ID`, `RENDER_CANDIDATE_SERVICE_ID`, `RENDER_PRODUCTION_SERVICE_ID`, `RENDER_CANDIDATE_URL`,
 `RENDER_PRODUCTION_URL`, `RENDER_CANONICAL_URL`, `EXPO_PUBLIC_API_URL`, and
 `EXPO_PUBLIC_SUPABASE_URL` as variables. `EXPO_PUBLIC_SUPABASE_ANON_KEY` is a secret. The
-`RENDER_PRODUCTION_ENABLED=true` variable is the explicit owner switch; while it is absent or
+authenticated core-loop verifier also requires `GYF_E2E_EMAIL` and `GYF_E2E_PASSWORD` as secrets.
+The `RENDER_PRODUCTION_ENABLED=true` variable is the explicit owner switch; while it is absent or
 false, the existing EAS production lane remains unchanged.
 
 The setup artifact deliberately contains no provider token, custom domain, DNS operation or
@@ -44,8 +45,8 @@ artifact is validated with the current `render blueprints validate` command befo
    error overlay.
 5. Only after step 4 succeeds does CI deploy the same SHA to `gyf-expo-web`.
 6. CI verifies both `https://gyf-expo-web.onrender.com` and `https://app.getyourfit.co` again,
-   including identity, headers, Cuelinks and browser evidence, then records provenance and the
-   prior successful production deploy.
+   including identity, headers, Cuelinks, browser and authenticated core-loop evidence, then
+   records provenance and the prior successful production deploy.
 
 A candidate failure stops the job before the production deploy command. The failure artifact
 contains stage, service IDs, URLs, source SHA, and available deploy records without secrets.
@@ -67,7 +68,8 @@ entry bundle/hash, content hashes, build time and provider name. The API `/syste
 
 Each successful artifact records source SHA, CI run ID, candidate and production service/deploy
 IDs, candidate URL, production/canonical URL, entry bundle/hash, response headers, cache-freshness
-probes, API release SHA, Cuelinks export/live evidence and timestamp.
+probes, API release SHA, Cuelinks export/live evidence, browser evidence, authenticated core-loop
+evidence and timestamp.
 
 Render Static does **not** provide an immutable public URL for each deploy. The isolated candidate
 service URL is therefore the candidate evidence URL, not an immutable deployment URL. The Render
@@ -88,8 +90,8 @@ it does not claim EAS-style immutable provenance.
 
 ## Remaining external gate
 
-At the time this contract is added, the worktree has no `RENDER_API_KEY`, Render service IDs or
-Render candidate/production URLs, and `https://get-your-fit.expo.app` is still Expo-owned. Those
-are concrete provider-setup credentials/access blockers, not reasons to weaken verification.
-Until the approved Render services are provisioned, the switch stays disabled and no DNS/provider
-retirement is performed.
+The approved candidate and production services already exist. Merged-main GitHub Actions remains
+the only authorised path for applying their checked-in configuration and proving the exact three
+approved URLs. Missing environment credentials or a disabled owner switch blocks that transaction;
+it does not permit weaker verification. No DNS/provider mutation or retirement is performed here,
+and `https://get-your-fit.expo.app` remains Expo-owned comparison/rollback material.

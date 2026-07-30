@@ -71,31 +71,39 @@ async function waitFor(predicate, message, timeout = 90_000) {
 
 async function launchBrowser(command, profile) {
   const port = 9222;
-  const child = spawn(command, [
-    "--headless=new",
-    "--disable-gpu",
-    "--disable-dev-shm-usage",
-    "--no-sandbox",
-    `--remote-debugging-port=${port}`,
-    `--user-data-dir=${profile}`,
-    "about:blank",
-  ], { stdio: ["ignore", "ignore", "pipe"] });
+  const child = spawn(
+    command,
+    [
+      "--headless=new",
+      "--disable-gpu",
+      "--disable-dev-shm-usage",
+      "--no-sandbox",
+      `--remote-debugging-port=${port}`,
+      `--user-data-dir=${profile}`,
+      "about:blank",
+    ],
+    { stdio: ["ignore", "ignore", "pipe"] },
+  );
   let diagnostic = "";
   child.stderr.on("data", (chunk) => {
     diagnostic = `${diagnostic}${chunk}`.slice(-4000);
   });
   let target;
-  await waitFor(async () => {
-    if (child.exitCode !== null) throw new Error(`browser exited before startup: ${diagnostic}`);
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/json/list`);
-      const targets = await response.json();
-      target = targets.find((entry) => entry.type === "page");
-      return Boolean(target?.webSocketDebuggerUrl);
-    } catch {
-      return false;
-    }
-  }, "browser debugging endpoint did not start", 15_000);
+  await waitFor(
+    async () => {
+      if (child.exitCode !== null) throw new Error(`browser exited before startup: ${diagnostic}`);
+      try {
+        const response = await fetch(`http://127.0.0.1:${port}/json/list`);
+        const targets = await response.json();
+        target = targets.find((entry) => entry.type === "page");
+        return Boolean(target?.webSocketDebuggerUrl);
+      } catch {
+        return false;
+      }
+    },
+    "browser debugging endpoint did not start",
+    15_000,
+  );
   return { child, cdp: new Cdp(target.webSocketDebuggerUrl) };
 }
 
@@ -147,7 +155,10 @@ export async function verifyAuthenticatedCoreLoop(config) {
       evaluate(`document.body?.innerText.includes(${JSON.stringify(text)}) === true`);
     const navigate = async (path) => {
       await cdp.send("Page.navigate", { url: new URL(path, origin).toString() });
-      await waitFor(() => evaluate("document.documentElement.dataset.gyfClientReady === 'true'"), `client did not start at ${path}`);
+      await waitFor(
+        () => evaluate("document.documentElement.dataset.gyfClientReady === 'true'"),
+        `client did not start at ${path}`,
+      );
     };
     await navigate("/login");
     await evaluate(`(() => { ${browserHelpers}
@@ -155,17 +166,29 @@ export async function verifyAuthenticatedCoreLoop(config) {
       setInput("Password", ${JSON.stringify(config.password)});
       click("Continue");
     })()`);
-    await waitFor(() => evaluate(`location.origin === ${JSON.stringify(origin.origin)} && !location.pathname.includes("login")`), "browser authentication did not complete");
+    await waitFor(
+      () =>
+        evaluate(
+          `location.origin === ${JSON.stringify(origin.origin)} && !location.pathname.includes("login")`,
+        ),
+      "browser authentication did not complete",
+    );
 
     await navigate("/onboarding");
-    await waitFor(() => textIncludes("Tell GYF about your style"), "manual onboarding did not render");
+    await waitFor(
+      () => textIncludes("Tell GYF about your style"),
+      "manual onboarding did not render",
+    );
     await evaluate(`(() => { ${browserHelpers}
       click("Womenswear");
       click("INR");
       setInput("Maximum price per garment", "5000");
       click("Save profile");
     })()`);
-    await waitFor(() => textIncludes("Set up your personal fit"), "personal-fit onboarding did not render");
+    await waitFor(
+      () => textIncludes("Set up your personal fit"),
+      "personal-fit onboarding did not render",
+    );
     await evaluate(`(() => { ${browserHelpers}
       click("Medium");
       click("Rectangle");
@@ -176,24 +199,45 @@ export async function verifyAuthenticatedCoreLoop(config) {
     await waitFor(() => textIncludes("Stylist"), "Stylist did not render after onboarding");
     await waitFor(() => textIncludes("LOOK 01"), "Stylist returned no rendered outfit");
 
-    const shopLabel = await evaluate(`[...document.querySelectorAll('[aria-label^="Shop "]')][0]?.getAttribute("aria-label") ?? null`);
+    const shopLabel = await evaluate(
+      `[...document.querySelectorAll('[aria-label^="Shop "]')][0]?.getAttribute("aria-label") ?? null`,
+    );
     let shop = "not_applicable";
     if (shopLabel) {
       await evaluate(`(() => { ${browserHelpers} click(${JSON.stringify(shopLabel)}); })()`);
-      await waitFor(() => requests.some(({ url, status }) => url.endsWith("/feedback") && status === 202), "shop feedback was not accepted");
+      await waitFor(
+        () => requests.some(({ url, status }) => url.endsWith("/feedback") && status === 202),
+        "shop feedback was not accepted",
+      );
       shop = "verified";
     }
-    const feedbackCount = requests.filter(({ url, status }) => url.endsWith("/feedback") && status === 202).length;
+    const feedbackCount = requests.filter(
+      ({ url, status }) => url.endsWith("/feedback") && status === 202,
+    ).length;
     await evaluate(`(() => { ${browserHelpers} click("Save look"); })()`);
     await waitFor(
-      () => evaluate(`document.querySelector('[aria-label="Feedback recorded"]')?.textContent.includes("Saved.") === true`),
+      () =>
+        evaluate(
+          `document.querySelector('[aria-label="Feedback recorded"]')?.textContent.includes("Saved.") === true`,
+        ),
       "save feedback was not rendered",
     );
-    await waitFor(() => requests.filter(({ url, status }) => url.endsWith("/feedback") && status === 202).length > feedbackCount, "save feedback was not accepted");
+    await waitFor(
+      () =>
+        requests.filter(({ url, status }) => url.endsWith("/feedback") && status === 202).length >
+        feedbackCount,
+      "save feedback was not accepted",
+    );
 
     await evaluate(`(() => { ${browserHelpers} click("Explore"); })()`);
-    await waitFor(() => evaluate("location.pathname.includes('explore')"), "Explore navigation did not complete");
-    await waitFor(() => requests.some(({ url, status }) => url.includes("/items/browse") && status === 200), "Explore browse request did not succeed");
+    await waitFor(
+      () => evaluate("location.pathname.includes('explore')"),
+      "Explore navigation did not complete",
+    );
+    await waitFor(
+      () => requests.some(({ url, status }) => url.includes("/items/browse") && status === 200),
+      "Explore browse request did not succeed",
+    );
     await waitFor(() => textIncludes("catalogue pieces"), "Explore catalogue did not render");
     return {
       schema_version: 2,
