@@ -42,6 +42,20 @@ function browserFixture(stage) {
     })),
   };
 }
+function authenticatedFixture(stage) {
+  return {
+    verified: true,
+    stage,
+    checks: {
+      authenticated_session: true,
+      manual_onboarding: true,
+      stylist: true,
+      explore: true,
+      save_feedback: true,
+      shop: "verified",
+    },
+  };
+}
 
 test("Render release record binds source/API/entry/header/Cuelinks and exact rollback command", () => {
   const root = mkdtempSync(join(tmpdir(), "render-release-record-"));
@@ -67,6 +81,12 @@ test("Render release record binds source/API/entry/header/Cuelinks and exact rol
     root,
     "canonical-browser.json",
     browserFixture("canonical"),
+  );
+  const authenticated = Object.fromEntries(
+    ["candidate", "production", "canonical"].map((stage) => [
+      stage,
+      writeFixture(root, `${stage}-authenticated.json`, authenticatedFixture(stage)),
+    ]),
   );
   const output = join(root, "record.json");
   const summary = join(root, "summary.md");
@@ -96,6 +116,12 @@ test("Render release record binds source/API/entry/header/Cuelinks and exact rol
       productionBrowser,
       "--canonical-browser-verification",
       canonicalBrowser,
+      "--candidate-authenticated-core-loop",
+      authenticated.candidate,
+      "--production-authenticated-core-loop",
+      authenticated.production,
+      "--canonical-authenticated-core-loop",
+      authenticated.canonical,
       "--production-service-id",
       "prod-service",
       "--output",
@@ -129,6 +155,9 @@ test("Render release record rejects candidate evidence that was not verified", a
     writeFixture(root, "candidate-browser.json", browserFixture("candidate")),
     writeFixture(root, "production-browser.json", browserFixture("production")),
     writeFixture(root, "canonical-browser.json", browserFixture("canonical")),
+    writeFixture(root, "candidate-authenticated.json", authenticatedFixture("candidate")),
+    writeFixture(root, "production-authenticated.json", authenticatedFixture("production")),
+    writeFixture(root, "canonical-authenticated.json", authenticatedFixture("canonical")),
   ];
   const output = join(root, "record.json");
   const script = "apps/expo/scripts/capture-render-release-record.mjs";
@@ -156,6 +185,12 @@ test("Render release record rejects candidate evidence that was not verified", a
     files[7],
     "--canonical-browser-verification",
     files[8],
+    "--candidate-authenticated-core-loop",
+    files[9],
+    "--production-authenticated-core-loop",
+    files[10],
+    "--canonical-authenticated-core-loop",
+    files[11],
     "--production-service-id",
     "prod-service",
     "--output",

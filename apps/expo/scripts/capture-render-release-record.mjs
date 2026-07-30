@@ -41,6 +41,12 @@ function validBrowserEvidence(value, stage) {
     )
   );
 }
+function validAuthenticatedEvidence(value, stage) {
+  return value.verified === true && value.stage === stage &&
+    ["authenticated_session", "manual_onboarding", "stylist", "explore", "save_feedback"]
+      .every((check) => value.checks?.[check] === true) &&
+    ["verified", "not_applicable"].includes(value.checks?.shop);
+}
 
 const sourceSha = option("source-sha");
 if (!/^[0-9a-f]{40}$/.test(sourceSha))
@@ -51,6 +57,11 @@ const canonical = json(option("canonical-verification"));
 const candidateBrowser = json(option("candidate-browser-verification"));
 const productionBrowser = json(option("production-browser-verification"));
 const canonicalBrowser = json(option("canonical-browser-verification"));
+const authenticated = {
+  candidate: json(option("candidate-authenticated-core-loop")),
+  production: json(option("production-authenticated-core-loop")),
+  canonical: json(option("canonical-authenticated-core-loop")),
+};
 const candidateDeploy = json(option("candidate-deploy"));
 const productionDeploy = json(option("production-deploy"));
 const previousDeploys = json(option("previous-deploys"));
@@ -89,6 +100,8 @@ if (
   throw new Error(
     "Browser-surface proof is missing from candidate, production, or canonical evidence",
   );
+if (!Object.entries(authenticated).every(([stage, value]) => validAuthenticatedEvidence(value, stage)))
+  throw new Error("Authenticated core-loop proof is missing or failed");
 const candidateDeployId = deployId(candidateDeploy) ?? candidate.deploy_id;
 const productionDeployId = deployId(productionDeploy) ?? production.deploy_id;
 if (!candidateDeployId || !productionDeployId)
@@ -116,6 +129,7 @@ const record = {
     api_release_sha: candidate.api.release_sha,
     cuelinks: candidate.cuelinks,
     browser_surfaces: candidateBrowser.surfaces,
+    authenticated_core_loop: authenticated.candidate,
   },
   production: {
     service_id: production.service_id,
@@ -129,6 +143,7 @@ const record = {
     api_release_sha: production.api.release_sha,
     cuelinks: production.cuelinks,
     browser_surfaces: productionBrowser.surfaces,
+    authenticated_core_loop: authenticated.production,
   },
   canonical: {
     url: canonical.deployment_url,
@@ -140,6 +155,7 @@ const record = {
     api_release_sha: canonical.api.release_sha,
     cuelinks: canonical.cuelinks,
     browser_surfaces: canonicalBrowser.surfaces,
+    authenticated_core_loop: authenticated.canonical,
   },
   promotion: {
     method: "Render production-service deploy after candidate proof",
@@ -162,7 +178,7 @@ writeFileSync(option("output"), `${JSON.stringify(record, null, 2)}\n`, "utf8");
 const summary = option("summary-output");
 writeFileSync(
   summary,
-  `# Render Static release\n\n- Source/API SHA: \`${sourceSha}\`\n- Candidate service/deploy: \`${candidate.service_id}/${candidateDeployId}\`\n- Production service/deploy: \`${production.service_id}/${productionDeployId}\`\n- Entry bundle/hash: \`${record.production.entry_bundle}\` / \`${record.production.entry_hash}\`\n- Candidate verified before production deploy: **yes**\n- Required response headers: **verified on HTML, entry asset, identity, API and error probes**\n- Browser surfaces: **verified on candidate, Render production URL, and app.getyourfit.co**\n- Cuelinks: **verified in export and live HTML**\n- Rollback command: ${record.rollback.command}\n- Render limitation: ${record.rollback.limitation}\n- Recorded: ${now}\n`,
+  `# Render Static release\n\n- Source/API SHA: \`${sourceSha}\`\n- Candidate service/deploy: \`${candidate.service_id}/${candidateDeployId}\`\n- Production service/deploy: \`${production.service_id}/${productionDeployId}\`\n- Entry bundle/hash: \`${record.production.entry_bundle}\` / \`${record.production.entry_hash}\`\n- Candidate verified before production deploy: **yes**\n- Required response headers: **verified on HTML, entry asset, identity, API and error probes**\n- Browser surfaces: **verified on candidate, Render production URL, and app.getyourfit.co**\n- Authenticated core loop: **verified on candidate, Render production URL, and app.getyourfit.co**\n- Cuelinks: **verified in export and live HTML**\n- Rollback command: ${record.rollback.command}\n- Render limitation: ${record.rollback.limitation}\n- Recorded: ${now}\n`,
   "utf8",
 );
 console.log(`capture-render-release-record: recorded ${sourceSha}; rollback target ${previous}`);
