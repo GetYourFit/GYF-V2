@@ -38,6 +38,7 @@ function browserFixture(stage) {
     surfaces: ["/welcome", "/terms", "/contact", "/grievance"].map((path) => ({
       path,
       rendered: true,
+      client_ready: true,
     })),
   };
 }

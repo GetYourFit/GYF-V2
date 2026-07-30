@@ -66,9 +66,11 @@ export function verifyBrowserSurfaces({
       throw new Error(`browser returned no document for ${path}`);
     if (!dom.includes(marker))
       throw new Error(`browser surface ${path} did not render marker ${JSON.stringify(marker)}`);
+    if (!/<html\b[^>]*\bdata-gyf-client-ready=["']true["']/i.test(dom))
+      throw new Error(`browser surface ${path} did not complete client startup`);
     if (/id=["'](?:expo-error-overlay|webpack-dev-server-client-overlay)["']/i.test(dom))
       throw new Error(`browser surface ${path} rendered an error overlay`);
-    return { path, url, marker, rendered: true };
+    return { path, url, marker, rendered: true, client_ready: true };
   });
   return {
     schema_version: 1,

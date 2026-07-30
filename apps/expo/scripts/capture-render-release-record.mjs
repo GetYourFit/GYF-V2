@@ -28,6 +28,19 @@ function successfulDeploys(value) {
 function rollbackCommand(serviceId, deploy) {
   return `curl --fail --request POST "https://api.render.com/v1/services/${serviceId}/rollback" --header "Authorization: Bearer $RENDER_API_KEY" --header "Content-Type: application/json" --data '${JSON.stringify({ deployId: deploy })}'`;
 }
+function validBrowserEvidence(value, stage) {
+  const expectedPaths = ["/welcome", "/terms", "/contact", "/grievance"];
+  return (
+    value.verified === true &&
+    value.stage === stage &&
+    expectedPaths.every((path) =>
+      value.surfaces?.some(
+        (surface) =>
+          surface.path === path && surface.rendered === true && surface.client_ready === true,
+      ),
+    )
+  );
+}
 
 const sourceSha = option("source-sha");
 if (!/^[0-9a-f]{40}$/.test(sourceSha))
@@ -53,10 +66,8 @@ if (candidate.expected_entry_hash !== production.expected_entry_hash)
 if (!candidate.cuelinks?.static?.valid || !production.cuelinks?.static?.valid)
   throw new Error("Cuelinks proof is missing from candidate or production evidence");
 if (
-  candidateBrowser.verified !== true ||
-  candidateBrowser.stage !== "candidate" ||
-  productionBrowser.verified !== true ||
-  productionBrowser.stage !== "production"
+  !validBrowserEvidence(candidateBrowser, "candidate") ||
+  !validBrowserEvidence(productionBrowser, "production")
 )
   throw new Error("Browser-surface proof is missing from candidate or production evidence");
 const candidateDeployId = deployId(candidateDeploy) ?? candidate.deploy_id;
