@@ -22,7 +22,7 @@ Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for auth. Nat
 SecureStore; web uses browser session storage. Never put service-role keys or access tokens in
 `EXPO_PUBLIC_*` values.
 
-SDK 57.0.6, React Native 0.86.2, and the new architecture are pinned in `package.json` and
+SDK 57.0.9, React Native 0.86.2, and the new architecture are pinned in `package.json` and
 `app.json`. The route directory contains routes only; components and utilities live under `src`.
 
 ## Live surfaces
