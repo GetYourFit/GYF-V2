@@ -7,7 +7,7 @@ import { createSupabaseBrowserClient } from "./supabase/client";
 import { supabaseEnv } from "./supabase/env";
 import { accessTokenFromCookies, authStorageKey } from "./supabase/session-token";
 
-// Binds the typed API client (app/lib/api.ts) to the live Supabase session so every
+// Binds the shared typed API client through app/lib/api.ts to the live Supabase session so every
 // request carries the user's JWT — which the FastAPI `auth.py` verifier already
 // understands. The client itself stays Supabase-agnostic (and unit-testable); this
 // is the one place the two are wired together.

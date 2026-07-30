@@ -4,7 +4,10 @@ Status: **EVIDENCE ONLY — subordinate to** [`active-execution-contract.md`](./
 
 ## Flow inspected
 
-- **Expo:** `apps/expo/src/app/(app)/(tabs)/index.tsx`, `apps/expo/src/lib/stylist-feed.ts`, `apps/expo/src/lib/activation-loop.test.ts`, and the shared `GyfApi` transport in `app/lib/api.ts`.
+- **Expo:** `apps/expo/src/app/(app)/(tabs)/index.tsx`, `apps/expo/src/lib/stylist-feed.ts`,
+  `apps/expo/src/lib/activation-loop.test.ts`, the platform binding in
+  `apps/expo/src/lib/api.ts`, and the shared `GyfApi` transport in
+  `packages/api-client/src/api.ts`.
 - **API:** `services/api/app/routers/recommendations.py`, `services/api/app/routers/feedback.py`, `services/api/app/dependencies.py`, request IDs in `services/api/app/observability.py`, and consent gating in `services/api/app/profile/account.py` / `gyf_contracts.consent`.
 - **Recommendation/ML:** `services/api/app/recsys/{conditioning,candidates,compose,service,taste,signals}.py`, catalogue retrieval through `CandidateRepository`, and the event export in `ml/pipelines/export_events.py`.
 - **Existing evidence:** active-contract `F2.5-04 GO` production timing evidence, launch-plan F3/F5/F6 gates, `docs/plans/ml-data-flywheel.md`, and retained Expo activation-loop tests.

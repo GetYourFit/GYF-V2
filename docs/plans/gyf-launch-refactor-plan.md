@@ -759,8 +759,9 @@ Use the existing route and component layout as the behavioural oracle, not as a 
   Next.js handling.
 - Shell/navigation: `app/components/layout/app-shell.tsx` and `bottom-nav.tsx`.
 - Reusable primitives: `app/components/ui/*`.
-- Data boundary: `app/lib/api.ts`, `api-client.ts`, `packages/types/src/api.ts` generated from
-  FastAPI OpenAPI.
+- Data boundary: framework-neutral `packages/api-client/src/api.ts`,
+  `packages/types/src/api.ts` generated from FastAPI OpenAPI, and the retained Next
+  `app/lib/{api,api-client}.ts` compatibility/session adapters.
 - Existing animation patterns: `AnimatePresence`, `useReducedMotion`, and Framer Motion in
   `app/components/onboarding/onboarding-wizard.tsx` and surface components.
 
@@ -1116,8 +1117,10 @@ The implementer reads these before touching the relevant area:
   `media.md`, `storage.md`, `tabs.md`, `visual-effects.md`, and `search.md`.
 - GYF authority: `CLAUDE.md`, `docs/plans/active-execution-contract.md`,
   `docs/engineering-doctrine.md`, `docs/vision/ideas-complete.md`.
-- GYF patterns: `app/lib/api.ts`, `app/lib/api-client.ts`, `packages/types/src/api.ts`,
-  `services/api/app/main.py`, the router matching the ticket, and the nearest existing test.
+- GYF patterns: `packages/api-client/src/api.ts`, the platform binding for the affected client
+  (`apps/expo/src/lib/api.ts` or `app/lib/{api,api-client}.ts`),
+  `packages/types/src/api.ts`, `services/api/app/main.py`, the router matching the ticket, and
+  the nearest existing test.
 - ML controls: `models.registry.json`, `scripts/check_model_licenses.py`,
   `scripts/check_promotion.py`, `scripts/check_ports.py`, and the matching `ml/eval` harness.
 
