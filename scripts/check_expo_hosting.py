@@ -46,19 +46,27 @@ def findings(root: Path) -> list[str]:
         if headers.get(name) != value
     ]
     if app_config["expo"].get("web", {}).get("output") != "server":
-        errors.append("apps/expo/app.json must use server web output for deployment-ID verification")
+        errors.append(
+            "apps/expo/app.json must use server web output for deployment-ID verification"
+        )
     if router.get("unstable_useServerMiddleware") is not True:
-        errors.append("apps/expo/app.json must enable server middleware for response security headers")
+        errors.append(
+            "apps/expo/app.json must enable server middleware for response security headers"
+        )
 
     middleware = root / "apps/expo/src/app/+middleware.ts"
-    if not middleware.exists() or "setResponseHeaders" not in middleware.read_text(encoding="utf-8"):
+    if not middleware.exists() or "setResponseHeaders" not in middleware.read_text(
+        encoding="utf-8"
+    ):
         errors.append("apps/expo/src/app/+middleware.ts must set response security headers")
 
     package = json.loads((root / "apps/expo/package.json").read_text(encoding="utf-8"))
     if "expo-server" not in package.get("dependencies", {}):
         errors.append("apps/expo/package.json must retain expo-server for static response headers")
     if not (root / "apps/expo/src/app/__deployment+api.ts").exists():
-        errors.append("apps/expo/src/app/__deployment+api.ts must prove alias-to-deployment binding")
+        errors.append(
+            "apps/expo/src/app/__deployment+api.ts must prove alias-to-deployment binding"
+        )
 
     cd = (root / ".github/workflows/cd.yml").read_text(encoding="utf-8")
     if "deploy --non-interactive --dev-domain=get-your-fit" not in cd:
@@ -71,9 +79,15 @@ def findings(root: Path) -> list[str]:
         errors.append("CD must verify the immutable EAS deployment after deployment")
     elif promote_index < verify_index:
         errors.append("CD must verify before any production alias promotion")
-    if '--api-url "$EXPO_PUBLIC_API_URL"' not in cd or '--expected-source-sha "$CHECKED_OUT_SHA"' not in cd:
+    if (
+        '--api-url "$EXPO_PUBLIC_API_URL"' not in cd
+        or '--expected-source-sha "$CHECKED_OUT_SHA"' not in cd
+    ):
         errors.append("CD must verify API health, release identity and source SHA after deployment")
-    if "--cuelinks-evidence" not in cd or "verify-cuelinks-web-export.mjs --evidence-file" not in cd:
+    if (
+        "--cuelinks-evidence" not in cd
+        or "verify-cuelinks-web-export.mjs --evidence-file" not in cd
+    ):
         errors.append("CD must retain and verify Cuelinks export evidence")
     if "node scripts/capture-deploy-record.mjs" not in cd:
         errors.append("CD must persist the immutable Expo rollback record after deployment")

@@ -181,9 +181,9 @@ class Settings(BaseSettings):
     # RENDER_GIT_COMMIT automatically; GYF_RELEASE_SHA is an explicit override for
     # other production runtimes and tests. Unknown is reported honestly, never guessed.
     release_sha: str = Field(
-        default_factory=lambda: os.environ.get("GYF_RELEASE_SHA")
-        or os.environ.get("RENDER_GIT_COMMIT")
-        or "unknown"
+        default_factory=lambda: (
+            os.environ.get("GYF_RELEASE_SHA") or os.environ.get("RENDER_GIT_COMMIT") or "unknown"
+        )
     )
     # OTLP traces endpoint (e.g. http://localhost:4318). Unset = tracing disabled.
     otel_exporter_otlp_endpoint: str = ""
