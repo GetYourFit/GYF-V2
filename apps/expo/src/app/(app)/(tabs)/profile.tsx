@@ -1,6 +1,5 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import * as ImagePicker from "expo-image-picker";
 import {
   ActivityIndicator,
   Image,
@@ -23,7 +22,12 @@ import { capabilityUsable } from "@/lib/system-status";
 import { radii, spacing } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
 
+type ImagePickerModule = typeof import("expo-image-picker");
 type Status = "loading" | "ready" | "error";
+
+async function loadImagePicker(): Promise<ImagePickerModule> {
+  return import("expo-image-picker");
+}
 
 function readableError(error: unknown): string {
   if (error instanceof ApiError && error.isUnauthorized) {
@@ -101,6 +105,7 @@ export default function ProfileRoute() {
   const pickAvatar = useCallback(async () => {
     if (avatarBusy) return;
     setAvatarError(null);
+    const ImagePicker = await loadImagePicker();
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       setAvatarError("Photo library permission is needed to add a profile picture.");

@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear && node scripts/verify-cuelinks-web-export.mjs",
+    "build": "EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear && node scripts/verify-cuelinks-web-export.mjs && python3 ../../scripts/check_production_surfaces.py --expo-dist dist",
     "render:build": "GYF_RENDER_STATIC=true EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 expo export --platform web --clear && node scripts/verify-cuelinks-web-export.mjs && node scripts/check-web-env.mjs && node scripts/write-static-release-identity.mjs",
     "doctor": "EXPO_NO_TELEMETRY=1 expo-doctor",
     "check:web-env": "node scripts/check-web-env.mjs",

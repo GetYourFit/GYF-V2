@@ -1,7 +1,8 @@
 """GYF core API — application wiring.
 
 Constructs the FastAPI app (OpenAPI metadata, CORS, observability, static media)
-and mounts the system probes + the visual gallery. Every product surface lives in
+and mounts the system probes. The local-only review gallery is deliberately outside
+OpenAPI and production. Every product surface lives in
 its own router under :mod:`app.routers`, and all repository/adapter construction
 lives in :mod:`app.dependencies`. This module is the composition root — it wires
 those together and nothing else.
@@ -17,7 +18,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -45,11 +46,6 @@ from .telemetry import configure_telemetry
 
 _API_DESCRIPTION = """
 GYF — your AI-native personal stylist. This is the core API.
-
-### See it visually first → open [`/gallery`](/gallery)
-The fastest way to test: open **`/gallery`** in your browser. Type a styling goal
-(*"look slimmer / taller / broader"*), pick an occasion, and see complete outfits
-rendered **with real product photos** — no JSON, no clicking.
 
 ### Quick-start (local dev — no auth needed)
 In local mode every call is the same **dev user**, auto-provisioned for you, so
@@ -116,7 +112,7 @@ app = FastAPI(
             "description": "Shareable style posts, reactions & follower re-rendering.",
         },
         {"name": "feedback", "description": "Behavioral events that train personalization."},
-        {"name": "system", "description": "Health, identity probes & the visual gallery."},
+        {"name": "system", "description": "Health, identity probes & approved operational status."},
     ],
 )
 
@@ -190,7 +186,13 @@ def root() -> RedirectResponse:
     return RedirectResponse(url="/docs")
 
 
-@app.get("/gallery", response_class=HTMLResponse, tags=["system"], summary="Visual outfit gallery")
+@app.get(
+    "/gallery",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+    tags=["system"],
+    summary="Local visual outfit gallery",
+)
 def gallery() -> HTMLResponse:
     """A self-contained page that renders recommended outfits with real photos.
 
@@ -198,6 +200,11 @@ def gallery() -> HTMLResponse:
     its garments' ``image_url``. The single best way to *see* the stylist work —
     the NL goal box and occasion selector are wired in.
     """
+    if settings.env != "local":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The review gallery is available only in local development.",
+        )
     return HTMLResponse(_GALLERY_HTML)
 
 

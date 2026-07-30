@@ -95,8 +95,9 @@ export async function replaceAvatar(
   userId: string,
   previousUrl: string | null | undefined,
   saveUrl: (url: string) => Promise<unknown>,
-  supabase: SupabaseClient = getSupabaseClient(),
+  supabase?: SupabaseClient,
 ): Promise<string> {
+  const client = supabase ?? (await getSupabaseClient());
   const validationError = validateAvatarAsset(asset);
   if (validationError) throw new Error(validationError);
 
@@ -110,7 +111,7 @@ export async function replaceAvatar(
   const bytes = decodeBase64(asset.base64!);
   if (bytes.byteLength > MAX_AVATAR_BYTES) throw new Error("Choose an image smaller than 5 MB.");
 
-  const bucket = supabase.storage.from(AVATAR_BUCKET);
+  const bucket = client.storage.from(AVATAR_BUCKET);
   const { error } = await bucket.upload(targetPath, bytes, {
     cacheControl: "3600",
     contentType,
@@ -123,9 +124,9 @@ export async function replaceAvatar(
   try {
     await saveUrl(url);
   } catch (error) {
-    await removeAvatar(targetPath, supabase).catch(() => undefined);
+    await removeAvatar(targetPath, client).catch(() => undefined);
     throw error;
   }
-  if (previousPath) await removeAvatar(previousPath, supabase).catch(() => undefined);
+  if (previousPath) await removeAvatar(previousPath, client).catch(() => undefined);
   return url;
 }

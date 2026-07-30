@@ -5,7 +5,10 @@ platform=${1:?usage: check-bundle-budget.sh <web|android> <max-bytes>}
 max_bytes=${2:?usage: check-bundle-budget.sh <web|android> <max-bytes>}
 
 case "$platform" in
-  web) set -- dist/_expo/static/js/web/entry-*.js ;;
+  web)
+    set -- dist/_expo/static/js/web/entry-*.js
+    [[ $# -eq 1 && -f $1 ]] || set -- dist/client/_expo/static/js/web/entry-*.js
+    ;;
   android) set -- dist/_expo/static/js/android/entry-*.hbc ;;
   *) echo "unsupported platform: $platform" >&2; exit 2 ;;
 esac

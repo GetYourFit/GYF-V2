@@ -93,6 +93,8 @@ the subordinate launch-plan ledger but is not a separate roadmap.
 - Expo/Next transport extraction: [`evidence/expo-next-transport-extraction-2026-07-30.md`](./evidence/expo-next-transport-extraction-2026-07-30.md) —
   framework-neutral client boundary, import/dependency graph, parity tests and explicit F13 holds;
   Next remains the protected rollback/oracle until deletion evidence passes.
+- Production surface ownership: [`evidence/production-surface-ownership-2026-07-30.md`](./evidence/production-surface-ownership-2026-07-30.md) —
+  complete client/API route inventory, ownership classifications, protected paths and review-surface release gates.
 - Profitability measurement (conversion rate, repeat-use rate, parameterized contribution-margin
   estimate): [`evidence/c4-profitability-measurement-2026-07-27.md`](./evidence/c4-profitability-measurement-2026-07-27.md) —
   produced by `scripts/report_profitability.py`; honestly reports insufficient data in this

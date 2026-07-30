@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, Platform, RefreshControl, Share, TextInput, View } from "react-native";
-import { File, Paths } from "expo-file-system";
 
 import { IconHeart } from "@/components/icons";
 import { IllustrationEmptyHanger, IllustrationLooseThread } from "@/components/illustrations";
@@ -35,14 +34,19 @@ import { useResponsive } from "@/theme/use-responsive";
 
 type Status = "loading" | "ready" | "error";
 
+type FileSystemModule = typeof import("expo-file-system");
 type MediaLibraryModule = typeof import("expo-media-library");
+
+async function loadFileSystem(): Promise<FileSystemModule> {
+  return import("expo-file-system");
+}
 
 async function loadMediaLibrary(): Promise<MediaLibraryModule> {
   return import("expo-media-library");
 }
 
 async function saveImageToPhotos(url: string): Promise<void> {
-  const MediaLibrary = await loadMediaLibrary();
+  const [{ File, Paths }, MediaLibrary] = await Promise.all([loadFileSystem(), loadMediaLibrary()]);
   const { bytes, contentType } = await downloadValidatedPostImage(url);
   const file = new File(Paths.cache, `gyf-look-${Date.now()}.${imageExtension(url, contentType)}`);
   try {

@@ -1,5 +1,5 @@
-import { Image, type ImageStyle } from "expo-image";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import type { ImageStyle } from "expo-image";
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { spacing } from "@/theme/tokens";
@@ -8,6 +8,13 @@ import { isRemoteImage } from "./catalog-image-url";
 import { GyfText } from "./gyf-text";
 
 export { isRemoteImage } from "./catalog-image-url";
+
+type ExpoImageModule = typeof import("expo-image");
+
+const CatalogImageImpl = lazy(async () => {
+  const module: ExpoImageModule = await import("expo-image");
+  return { default: module.Image };
+});
 
 export function CatalogImage({
   label,
@@ -69,18 +76,20 @@ export function CatalogImage({
   }
 
   return (
-    <Image
-      accessibilityLabel={label}
-      cachePolicy="disk"
-      // The image IS the frame — fill the plate edge to edge, never letterbox.
-      contentFit="cover"
-      contentPosition="top center"
-      key={`${recyclingKey}:${attempt}`}
-      onError={() => setFailed(true)}
-      onLoad={(event) => onRatio?.(frameRatio(event.source?.width, event.source?.height))}
-      recyclingKey={recyclingKey}
-      source={uri}
-      style={style}
-    />
+    <Suspense fallback={<View accessibilityLabel={label} style={StyleSheet.flatten(style)} />}>
+      <CatalogImageImpl
+        accessibilityLabel={label}
+        cachePolicy="disk"
+        // The image IS the frame — fill the plate edge to edge, never letterbox.
+        contentFit="cover"
+        contentPosition="top center"
+        key={`${recyclingKey}:${attempt}`}
+        onError={() => setFailed(true)}
+        onLoad={(event) => onRatio?.(frameRatio(event.source?.width, event.source?.height))}
+        recyclingKey={recyclingKey}
+        source={uri}
+        style={style}
+      />
+    </Suspense>
   );
 }

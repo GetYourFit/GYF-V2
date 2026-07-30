@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { Session } from "@supabase/supabase-js";
 
-import { getSession, resolveRecoverySession } from "./auth";
+import { getSession, getSupabaseClient, resolveRecoverySession } from "./auth";
 import { readSupabaseEnv } from "./auth-config";
 
 const fakeSession = { access_token: "at", refresh_token: "rt" } as Session;
@@ -58,7 +58,12 @@ describe("getSession", () => {
     delete process.env.EXPO_PUBLIC_SUPABASE_URL;
     delete process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
     try {
-      await expect(getSession()).rejects.toThrow(/Supabase auth is not configured/);
+      const firstRequest = getSupabaseClient();
+      await expect(firstRequest).rejects.toBeTruthy();
+      const secondRequest = getSupabaseClient();
+      expect(secondRequest).not.toBe(firstRequest);
+      await expect(secondRequest).rejects.toBeTruthy();
+      await expect(getSession()).rejects.toBeTruthy();
     } finally {
       if (url === undefined) delete process.env.EXPO_PUBLIC_SUPABASE_URL;
       else process.env.EXPO_PUBLIC_SUPABASE_URL = url;

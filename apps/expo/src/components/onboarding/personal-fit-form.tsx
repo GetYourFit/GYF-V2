@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, TextInput, View } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { AtelierButton } from "@/components/ui/atelier-button";
@@ -45,7 +44,12 @@ const BODY_TYPE_OPTIONS = [
   { value: "oval", label: "Oval (apple) — fuller midsection" },
 ] as const;
 
+type ImagePickerModule = typeof import("expo-image-picker");
 type BudgetInputs = Readonly<{ min: string; max: string; currency: string }>;
+
+async function loadImagePicker(): Promise<ImagePickerModule> {
+  return import("expo-image-picker");
+}
 
 function confirmedFromProfile(value: string | null | undefined): ConfirmedField<string> {
   return value
@@ -158,6 +162,7 @@ export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
   }, [api]);
 
   async function launchAndUpload() {
+    const ImagePicker = await loadImagePicker();
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       setAnalysisState("failed");
