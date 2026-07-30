@@ -183,6 +183,36 @@ def test_embedding_dim_matches_schema_constant():
     assert EMBEDDING_DIM == 768
 
 
+def test_encoder_rejects_mps_before_model_load():
+    from perception.model import _resolve_device
+
+    with pytest.raises(RuntimeError, match="MPS is disabled"):
+        _resolve_device("mps", SimpleNamespace())
+
+
+def test_encoder_rejects_invalid_image_batch_size():
+    from perception.model import SiglipEncoder
+
+    encoder = SiglipEncoder("model")
+    with pytest.raises(ValueError, match="batch_size"):
+        encoder.encode_images([], batch_size=0)
+    with pytest.raises(ValueError, match="batch_size"):
+        encoder.encode_images([], batch_size=True)
+
+
+def test_encoder_refuses_cpu_load_below_memory_floor(monkeypatch):
+    from perception import model
+
+    monkeypatch.setitem(sys.modules, "open_clip", SimpleNamespace())
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace())
+    monkeypatch.setattr(model, "_memory_limit_bytes", lambda: 100)
+    encoder = model.SiglipEncoder("model", device="cpu")
+    encoder._min_memory_bytes = 101
+
+    with pytest.raises(RuntimeError, match="memory limit"):
+        encoder.encode_texts(["red dress"])
+
+
 def test_corrupt_or_missing_model_does_not_leave_a_half_loaded_encoder(monkeypatch):
     """A failed first load must be retriable, never a fake-ready encoder."""
     from perception.model import SiglipEncoder

@@ -166,6 +166,9 @@ load images with per-item failure isolation, write only complete validated rows 
 registry-resolved version, and resume by model version. Online text uses the existing durable
 (normalized query, model ID) cache, 512-row hot cache, lexical fallback and
 `X-GYF-Search-Mode`; no path may depend on a sleeping remote service during Indian daytime.
+The repeatable local text benchmark is `uv run --project ml --extra perception python -m eval.benchmark_encoder --device cpu --repeats 3 --timeout-seconds 300`; it records cold/warm
+latency, RSS, dimension/norm, device/thread settings and failed-run status without writing
+catalogue data. Its report is local evidence only.
 
 The frozen no-weight harness is `ml/eval/encoder_foundation.py` with fixture contract
 `ml/tests/fixtures/encoder_foundation.json`. It checks dimension/norm, cosine/top-k parity,

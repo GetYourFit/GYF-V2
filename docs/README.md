@@ -75,6 +75,8 @@ the subordinate launch-plan ledger but is not a separate roadmap.
   footwear taxonomy and outfit-compatibility rules that informed the current contracts and tests.
 - F2.5 bounded search/facets evidence: [`evidence/f2.5-search-facets-bounded-latency-2026-07-25.md`](./evidence/f2.5-search-facets-bounded-latency-2026-07-25.md) —
   implementation and focused-test evidence only; production India-vantage SLO/`EXPLAIN` proof remains required.
+- F2.5 local CPU encoder evidence: [`evidence/f2.5-local-cpu-encoder-lane-2026-07-28.md`](./evidence/f2.5-local-cpu-encoder-lane-2026-07-28.md) —
+  bounded local benchmark and safety regressions; local-only HOLD, no provider/config promotion.
 - Cuelinks commerce proof: [`evidence/cuelinks-shop-flow-readiness-2026-07-22.md`](./evidence/cuelinks-shop-flow-readiness-2026-07-22.md) -
   implementation evidence and external redirect proof for product-level Cuelinks shop handoff; it
   does not promote a launch gate.

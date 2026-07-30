@@ -86,12 +86,14 @@ forward pass** (compute), so neither the network nor the accelerator idles. Batc
 workers are configurable (`GYF_PERCEPTION_BATCH_SIZE`, `GYF_PERCEPTION_IO_WORKERS`).
 
 `GYF_PERCEPTION_DEVICE=auto` (default) picks the most powerful device that **actually runs the
-model correctly**: each accelerator (CUDA > Apple MPS) is *empirically probed* once — a real
-encode in an isolated subprocess, validated for finite, unit-norm output — and the result is
-cached per torch version (`$HF_HOME/gyf_device_probe.json`). A backend that aborts or returns
-non-finite embeddings (as MPS currently does for SigLIP) is rejected and we fall back, never
-hardcoding a blocklist; it auto-upgrades when the backend is fixed. Override with an explicit
-device (e.g. `cpu`, `cuda`, `mps`).
+model correctly**: CUDA > Intel XPU > CPU is empirically probed once with a real encode in an
+isolated subprocess and finite/unit-norm validation; the result is cached per torch version
+(`$HF_HOME/gyf_device_probe.json`). Apple MPS is fail-closed for SigLIP2 because known backend
+issues can corrupt vectors. Override with an explicit `cpu`, `cuda`, or `xpu`; unavailable
+accelerators fail honestly and the API keeps lexical search. CPU threads, text/image batch size,
+and a 4 GB detectable memory floor are bounded by configuration. Run
+`python -m eval.benchmark_encoder --device cpu --repeats 3 --timeout-seconds 300` for local-only
+cold/warm/RSS evidence; it never writes catalogue data or promotes F2.5.
 
 ## End-to-end proof on real data (Workstream A)
 
