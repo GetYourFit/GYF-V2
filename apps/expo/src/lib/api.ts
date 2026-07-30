@@ -1,20 +1,22 @@
 import {
   ApiError,
-  GyfApi as WebGyfApi,
+  GyfApi as SharedGyfApi,
   type CatalogFacets,
+  type MultipartFile,
+  type RecommendParams,
   type SearchParams,
   type TokenProvider,
-} from "../../../../app/lib/api";
+} from "@gyf/api-client";
 
 import { publicEnv } from "./env";
 import { getAccessToken } from "./auth";
 
 export { ApiError };
-export type { CatalogFacets, SearchParams, TokenProvider };
+export type { CatalogFacets, MultipartFile, RecommendParams, SearchParams, TokenProvider };
 export * from "@gyf/types";
 
-/** Expo binding for the existing typed transport; the web implementation stays untouched. */
-export class GyfApi extends WebGyfApi {
+/** Expo binding for the framework-neutral transport. Auth and public origin are injected here. */
+export class GyfApi extends SharedGyfApi {
   constructor(getToken: TokenProvider = getAccessToken, base = publicEnv.apiUrl) {
     super(getToken, base);
   }

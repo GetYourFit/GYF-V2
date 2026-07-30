@@ -66,7 +66,7 @@ describe("Expo interaction boundaries", () => {
 
   test("the root layout re-exports the shared error boundary so a crash never renders blank", () => {
     // Expo Router only catches a segment's render errors when that segment's own file
-    // exports `ErrorBoundary` — a boundary that lives solely in app/error.tsx (its own
+    // exports `ErrorBoundary` — a boundary that lives solely in src/app/error.tsx (its own
     // routed screen) never wraps the root layout. Without this, any uncaught render
     // exception in RootLayout or its children unmounts the whole tree to nothing.
     expect(rootLayoutSource).toMatch(/export\s*\{\s*ErrorBoundary\s*\}\s*from\s*["']\.\/error["']/);

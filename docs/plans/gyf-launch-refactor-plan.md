@@ -1792,10 +1792,30 @@ but it never reorders the backend contract.
 
 #### EXPO-02 execution evidence — 2026-07-15
 
-- Reused `app/lib/api.ts` through the isolated Expo binding at `apps/expo/src/lib/api.ts`; no
-  second request implementation was introduced. Supabase session refresh is coalesced through one
-  in-flight `getSession()` promise, logout clears the persisted auth key, native persistence uses
-  SecureStore, and web persistence uses browser storage.
+- The initial Expo binding reused `app/lib/api.ts` while the Next client remained the rollback
+  oracle. Supabase session refresh is coalesced through one in-flight `getSession()` promise,
+  logout clears the persisted auth key, native persistence uses SecureStore, and web persistence
+  uses browser storage.
+
+#### EXPO-02 transport extraction evidence — 2026-07-30
+
+- Extracted the one framework-neutral transport into `packages/api-client/src/api.ts`, with the
+  generated OpenAPI operations/components as its request/response type source. Expo now imports
+  only `@gyf/api-client`; `app/lib/api.ts` is a thin Next compatibility facade that owns only
+  `NEXT_PUBLIC_API_URL`, and the shared package imports no Next, React, Expo, Supabase, or Vercel
+  runtime.
+- Preserved bearer injection, refresh-provider injection, JSON and multipart boundaries, caller
+  cancellation, 15-second timeout, bounded safe-GET retry, stable feedback event/idempotency IDs,
+  `X-Request-ID`, 401/403/429/503 status mapping, consent/profile/photo, stylist, catalogue,
+  wardrobe, collections, social, account, support, commerce and closed try-on methods. The
+  generated type file was regenerated with `make types`; no generated diff remained.
+- Added `scripts/check_client_boundaries.py` to CI/doctrine and removed the two previous Expo
+  production import exceptions from `scripts/ownership_inventory.py`. The guard rejects runtime
+  Expo imports resolving into `app/` and framework imports in the shared transport.
+- Focused evidence: shared transport contract matrix covers all client endpoint methods (21
+  transport tests total); Expo photo/onboarding and activation transport suites pass; Next facade
+  parity suite passes. This is extraction evidence only—not Expo cutover, device/accessibility,
+  immutable deployment, rollback-window or F13 deletion evidence.
 - Added dependency-free Supabase configuration checks in `apps/expo/src/lib/auth-config.ts` and
   focused storage/config regressions in `apps/expo/src/lib/{storage,auth}.test.ts`.
 - Evidence: Expo tests `8 passed`; Expo typecheck passed; full web tests `71 passed`; API tests

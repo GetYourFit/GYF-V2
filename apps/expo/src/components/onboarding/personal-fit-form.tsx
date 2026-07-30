@@ -28,9 +28,8 @@ import type { BudgetRange, ProfileInput } from "@gyf/types";
 import { SubScreenHeader } from "@/components/ui/sub-screen-header";
 import { CURRENCIES, OptionChip, Section } from "./onboarding-form";
 
-// Monk Skin Tone scale, lightest (1) to deepest (10) — mirrors the canonical labels
-// the Next.js oracle already ships in `app/lib/vocab.ts`'s `SKIN_TONES`, kept as its
-// own copy here per this file's existing "one copy per client" convention.
+// Monk Skin Tone scale, lightest (1) to deepest (10). The manual values remain
+// editable and authoritative when photo assistance abstains.
 const SKIN_TONE_OPTIONS = Array.from({ length: 10 }, (_, index) => {
   const n = index + 1;
   const descriptor =

@@ -48,12 +48,9 @@ PROTECTED_BASELINE = {
 }
 
 PRODUCTION_ROOTS = ("apps/expo/src/", "services/api/app/")
-# Existing Expo transport/contact re-exports are the only reviewed shared-boundary exceptions.
-# New paths or imports remain failures until an F13 replacement map removes these seams.
-LEGACY_PRODUCTION_IMPORTS = {
-    "apps/expo/src/lib/api.ts": {"app/"},
-    "apps/expo/src/lib/contact.ts": {"app/"},
-}
+# Production clients must not import the retained Next rollback/oracle surface.
+# The framework-neutral transport and public support constants live in workspace packages.
+LEGACY_PRODUCTION_IMPORTS: dict[str, set[str]] = {}
 DEPLOYMENT_RULES = {
     ".github/workflows/cd.yml": (
         "app",
