@@ -33,12 +33,25 @@ function writeFixture(root, name, value) {
 }
 function browserFixture(stage) {
   return {
+    schema_version: 1,
     verified: true,
     stage,
-    surfaces: ["/welcome", "/terms", "/contact", "/grievance"].map((path) => ({
+    surfaces: [
+      "/welcome",
+      "/login",
+      "/terms",
+      "/contact",
+      "/grievance",
+      "/onboarding",
+      "/explore",
+      "/",
+      "/wardrobe",
+    ].map((path) => ({
       path,
       rendered: true,
       client_ready: true,
+      interaction: { ok: true },
+      navigation_asserted: path,
     })),
   };
 }
@@ -137,7 +150,7 @@ test("Render release record binds source/API/entry/header/Cuelinks and exact rol
   const record = JSON.parse(readFileSync(output, "utf8"));
   assert.equal(record.source.sha, SHA);
   assert.equal(record.candidate.entry_hash, "0123456789abcdef");
-  assert.equal(record.candidate.browser_surfaces.length, 4);
+  assert.equal(record.candidate.browser_surfaces.length, 9);
   assert.equal(record.api?.release_sha, undefined);
   assert.match(record.rollback.command, /services\/prod-service\/rollback/);
   assert.match(record.rollback.command, /old-deploy/);

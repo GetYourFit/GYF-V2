@@ -29,14 +29,30 @@ function rollbackCommand(serviceId, deploy) {
   return `curl --fail --request POST "https://api.render.com/v1/services/${serviceId}/rollback" --header "Authorization: Bearer $RENDER_API_KEY" --header "Content-Type: application/json" --data '${JSON.stringify({ deployId: deploy })}'`;
 }
 function validBrowserEvidence(value, stage) {
-  const expectedPaths = ["/welcome", "/terms", "/contact", "/grievance"];
+  const expectedPaths = [
+    "/welcome",
+    "/login",
+    "/terms",
+    "/contact",
+    "/grievance",
+    "/onboarding",
+    "/explore",
+    "/",
+    "/wardrobe",
+  ];
   return (
+    value.schema_version === 1 &&
     value.verified === true &&
     value.stage === stage &&
     expectedPaths.every((path) =>
       value.surfaces?.some(
         (surface) =>
-          surface.path === path && surface.rendered === true && surface.client_ready === true,
+          surface.path === path &&
+          surface.rendered === true &&
+          surface.client_ready === true &&
+          surface.interaction?.ok === true &&
+          typeof surface.navigation_asserted === "string" &&
+          surface.navigation_asserted,
       ),
     )
   );
