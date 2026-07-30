@@ -10,10 +10,9 @@ commercial hosting, rollback, security and cost authority lives in
 ## Current replacement summary
 
 - **Web:** Expo web/static is the active direction. Repository CD deploys `apps/expo` to EAS
-  Hosting (`https://get-your-fit.expo.app`) after main CI succeeds; see
-  [`../../apps/expo/README.md`](../../apps/expo/README.md#production) for the current deploy
-  verification method. Render Static is the current commercial static-host candidate after
-  Expo-web parity and the required F10/F11 evidence.
+  Hosting while the authorized Render Static lane is disabled; when explicitly enabled, Render
+  uses the candidate-before-production transaction in the
+  [current web release contract](./render-expo-static.md).
 - **API:** production is the single paid Render Starter service in **Virginia**. Oregon is
   suspended rollback-only until its gate closes. Singapore is prohibited.
 - **Next.js:** `app/` is preserved as a protected rollback/oracle client until F13/cutover; it is
@@ -21,8 +20,8 @@ commercial hosting, rollback, security and cost authority lives in
 - **Vercel:** Hobby/production deploy guidance from the old checklist is obsolete for this
   affiliate product. This repository must not re-add CI, Makefile or runbook steps that deploy
   production web to Vercel.
-  External Vercel project state and credentials remain untouched until the 2026-07-28 retirement
-  packet lands and the landed-main Expo proof passes.
+  External Vercel project state and credentials remain untouched until the Render live proof and
+  protected retirement gate pass.
 
 ## Do not run the old checklist
 

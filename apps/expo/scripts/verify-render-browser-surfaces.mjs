@@ -37,10 +37,7 @@ export function verifyBrowserSurfaces({
   spawn = spawnSync,
 }) {
   const baseUrl = new URL(deploymentUrl);
-  if (
-    baseUrl.protocol !== "https:" &&
-    !["localhost", "127.0.0.1"].includes(baseUrl.hostname)
-  )
+  if (baseUrl.protocol !== "https:" && !["localhost", "127.0.0.1"].includes(baseUrl.hostname))
     throw new Error(`deployment URL must use HTTPS: ${deploymentUrl}`);
   const command = browserCommand(executable);
   const surfaces = SURFACES.map(({ path, marker }) => {

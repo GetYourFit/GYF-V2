@@ -12,9 +12,10 @@ active execution contract, not historical free-tier runbooks.
   under `app/` remains a protected rollback/oracle surface until the F13/cutover deletion gate,
   but repository CI/Makefile automation must not deploy it to Vercel.
 - Local development: Postgres+pgvector and Redis through `container-stack.sh`.
-- Terraform here provisions only stateful backing services (Supabase/Upstash). Render, Expo web
-  hosting and any later commercial static host cutover are controlled by their phase gates and
-  provider dashboards, not by Terraform.
+- Terraform here provisions only stateful backing services (Supabase/Upstash). Render Static and
+  EAS web hosting are controlled by the
+  [web release contract](../docs/deploy/render-expo-static.md), repository CD, and provider
+  dashboards—not by Terraform.
 
 There is no Kafka, Redpanda, MLflow, Kubernetes, vault platform or complete environment-parity
 claim. Add infrastructure only when the active execution contract records a measured need and a
