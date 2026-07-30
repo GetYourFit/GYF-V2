@@ -13,6 +13,7 @@ imports keep working unchanged.
 
 from __future__ import annotations
 
+import logging
 from functools import lru_cache
 
 from fastapi import Depends, HTTPException, status
@@ -38,6 +39,8 @@ from .sink import EventSink, get_sink
 from .social import SocialRepository
 from .support import SupportRepository
 from .wardrobe import WardrobeRepository
+
+logger = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=4)
@@ -125,7 +128,8 @@ def get_text_embedder() -> TextEmbedder | None:
             shared_pool(settings.database_url),
             settings.perception_model,
         )
-    except ImportError:  # perception runtime / torch not installed
+    except Exception:  # noqa: BLE001 — optional encoder construction is a capability probe
+        logger.warning("text encoder construction failed; capability unavailable", exc_info=True)
         return None
 
 

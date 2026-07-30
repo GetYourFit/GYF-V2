@@ -1369,10 +1369,57 @@ def test_search_endpoint_unreachable_encoder_still_uses_lexical_fallback():
         app.dependency_overrides.clear()
 
 
-def test_search_endpoint_does_not_hide_database_failure_after_encoder_fallback():
+def test_search_endpoint_encoder_construction_failure_uses_lexical_and_matches_status(
+    monkeypatch,
+):
+    """A disabled encoder is truthful in both search mode and system status."""
+    import app.dependencies as dependencies
+    import app.routers.system as system
+    from app.routers.system import (
+        CatalogHealth,
+        InMemorySystemStatsRepository,
+        get_system_stats_repo,
+    )
+    from app.catalog import perception_adapter
+
+    monkeypatch.setattr(
+        dependencies,
+        "runtime_model_verdict",
+        lambda runtime, **_: (runtime == "encoder", []),
+    )
+
+    def construct_encoder():
+        raise RuntimeError("encoder workspace is disabled")
+
+    monkeypatch.setattr(perception_adapter, "cached_text_embedder", construct_encoder)
+    monkeypatch.setenv("GYF_ENCODER_REMOTE_URL", "https://encoder.example")
+    monkeypatch.setattr(system, "_remote_reachable", lambda _url: False)
+
+    app.dependency_overrides[get_search_repo] = lambda: StubRepo()
+    app.dependency_overrides[get_system_stats_repo] = lambda: InMemorySystemStatsRepository(
+        CatalogHealth(items=1, with_embedding=1, with_price=1, with_image=1)
+    )
+    try:
+        client = TestClient(app)
+        search = client.get("/items/search?q=linen+shirt")
+        status = client.get("/system/status")
+        assert search.status_code == 200
+        assert search.headers["X-GYF-Search-Mode"] == "lexical"
+        assert search.json()["results"][0]["item_id"] == "kw"
+        assert status.status_code == 200
+        assert status.json()["capabilities"]["text_search"] == {
+            "status": "degraded",
+            "lane": "keyword-fallback",
+            "detail": "GPU encoder lane is unreachable — search serves bounded lexical title matches.",
+        }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_search_endpoint_does_not_hide_fts_failure_after_encoder_fallback():
     class BrokenRepo(StubRepo):
         def keyword_search(self, *args, **kwargs):
-            raise RuntimeError("database unavailable")
+            raise QueryCanceled("FTS statement timeout")
 
     app.dependency_overrides[get_search_repo] = BrokenRepo
     app.dependency_overrides[get_text_embedder] = lambda: None
@@ -1380,6 +1427,7 @@ def test_search_endpoint_does_not_hide_database_failure_after_encoder_fallback()
         resp = TestClient(app, raise_server_exceptions=False).get("/items/search?q=shirt")
         assert resp.status_code == 500
         assert resp.json()["error"]["code"] == "internal_error"
+        assert "retry" in resp.json()["error"]["message"].lower()
         assert resp.headers["X-Request-ID"]
         assert "X-GYF-Search-Mode" not in resp.headers
     finally:
