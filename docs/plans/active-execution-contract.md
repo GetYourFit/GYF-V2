@@ -455,6 +455,208 @@ Gate outcomes are mechanical:
   visualisation, never fit or size truth. Owned training remains blocked until at least 2,000
   authorised pairs and a stable at-least-10% failure cluster exist.
 
+#### Canonical architecture and build-versus-buy decision register
+
+This section is the canonical architecture and procurement recommendation for GYF and does not create a second roadmap.
+
+**Current fact:** global F2.5 remains HOLD because the latest protected production evidence has failed EXPLAIN validation, the configured encoder workspace is disabled, live `/items/search` returns HTTP 500, and no sustained India-vantage SLO window has passed.
+
+**Current fact:** the sole execution pointer remains `COSMOS-DESIGN-BUILD` held for reconciliation, `NATIVE-ACCEPTANCE` is not open, and local implementation cannot promote a phase.
+
+**Recommendation:** own the outfit-decision moat, trust and privacy controls, catalogue and event contracts, deterministic decisioning, evaluation, attribution, and rollback policy.
+
+**Recommendation:** buy or use managed commodity infrastructure and specialist inference only behind replaceable ports when rebuilding it would be slower, riskier, or less economical.
+
+**Unresolved decisions:** the launch surface, product source, encoder lane, exact VTON provider, and any payment provider remain governed by their existing holds and later gates.
+
+**Evidence boundary:** the deep-tech report is `/Users/rvzaku/firstmate/data/gyf-sota-architecture/report.md`, the launch execution report is `/Users/rvzaku/firstmate/data/gyf-launch-execution-plan/report.md`, and the latest F2.5 report is `/Users/rvzaku/firstmate/data/gyf-f25-evidence/report.md`.
+
+**Repository evidence:** the implementation boundaries are `apps/expo`, `services/api`, `packages/contracts`, `packages/types`, `ml`, `models.registry.json`, `scripts`, and `infra`.
+
+##### Ownership and bounded contexts
+
+Bounded contexts are logical ownership boundaries inside one FastAPI process and are not permission to create microservices.
+
+| Context | In-house ownership | Authoritative boundary | Primary evidence paths |
+| --- | --- | --- | --- |
+| Identity and consent | Principal derivation, purpose-specific consent, profile provenance, export, deletion, and session policy | Supabase Auth identity plus API authorization and Postgres/RLS records | `services/api/app/auth.py`, `services/api/app/profile`, `packages/contracts/gyf_contracts` |
+| Catalogue and search | Feed normalization, rights, taxonomy, audience, currency, availability, freshness, query policy, and fallback semantics | Postgres catalogue truth snapshot plus FTS and pgvector retrieval | `services/api/app/catalog`, `services/api/app/routers/catalog.py`, migrations |
+| Outfit decisioning | Context resolution, hard constraints, compatibility, composition, MMR, explanations, confidence, and abstention | Recommendation response with stable recommendation and served-item IDs | `services/api/app/recsys`, `services/api/app/routers/recommendations.py` |
+| Behavioural learning | Event vocabulary, exposure joins, reversals, consent filters, data quality, and training exports | Append-only Postgres event spine and reproducible export manifest | `services/api/app/events.py`, `services/api/app/sink.py`, `ml/pipelines/export_events.py` |
+| Wardrobe and collections | Owned garments, corrections, private media references, saved looks, and own-versus-buy reasoning | Owner-scoped API aggregates and private media lifecycle | `services/api/app/wardrobe.py`, `services/api/app/routers/wardrobe.py`, `services/api/app/collections.py`, Expo wardrobe routes |
+| Commerce attribution | Disclosure, safe handoff, server subids, confirmed statement conversion, and reversal reconciliation | Product-level canonical URL plus attribution event and network statement | `services/api/app/affiliate.py`, `scripts/sync_conversions.py`, `docs/operations/commerce-attribution.md` |
+| Social and moderation | Posts, follows, reactions, blocks, reports, takedown, appeal, and emergency disable | Public-safe post facts with owner and moderation state | `services/api/app/social.py`, `services/api/app/routers/social.py`, migration `0025` |
+| Try-on and media jobs | Consent, durable job state, claim, retry, cancellation, TTL, quota, cost, and renderer port | Postgres `FOR UPDATE SKIP LOCKED` jobs and private result route | `services/api/app/tryon`, `services/api/app/routers/tryon.py`, migration `0018` |
+| Trust and operations | Status truth, telemetry, support, grievance, release evidence, and rollback controls | Runtime-derived status plus structured operational records | `services/api/app/routers/system.py`, `services/api/app/metrics.py`, support modules |
+
+The API owns request validation and policy while each context owns its domain invariants, repository boundary, events, and tests.
+
+Clients never query Postgres or choose a user scope, catalogue constraint, model result, price, confidence, or consent outcome.
+
+##### Runtime, data, and event ownership
+
+```text
+Expo Router for iOS, Android, and web
+        │ generated OpenAPI types, JWT, request IDs, and idempotency keys
+        ▼
+FastAPI modular monolith
+        │ capability ports for encoder, ranker, compatibility, body/tone, and try-on
+        ▼
+Supabase Postgres + pgvector + RLS + private Storage
+        │ consent-filtered events and catalogue snapshots
+        ▼
+Offline export → frozen evaluation → shadow → cohort → owner promotion or rollback
+```
+
+Expo is the one replacement client, Next.js remains a temporary behavioural oracle and rollback, and Flutter remains protected evidence until F13.
+
+FastAPI, Postgres, pgvector, RLS, the durable Postgres job spine, and existing Redis rate-limit capability remain the beta platform.
+
+Postgres is the source of truth for users, catalogue eligibility, events, jobs, attribution, and deletion lineage.
+
+Every served recommendation receives a stable recommendation ID and every exposed item receives a joinable server event before learning claims are made.
+
+Client mutations use stable event or idempotency IDs, while server-only impressions, confirmed purchases, and reversals cannot be forged by clients.
+
+The event spine remains append-only, consent-filtered, reversible, and exportable without Kafka or a second analytics store.
+
+##### Online and offline ML architecture
+
+The online decision path is hard audience and availability filtering, cached hybrid retrieval, deterministic compatibility and composition, taste and context scoring, per-slot MMR diversity, calibration or abstention, fact-derived explanation, and exposure logging.
+
+The online path must produce a complete outfit or a structured gap and must keep the deterministic incumbent available when an optional model, encoder, provider, or network fails.
+
+The offline path is consent and rights filtering, temporal and user-safe splitting, frozen replay metrics, calibration and fairness slices, cost and latency measurement, model-card generation, shadow traffic, cohort evaluation, and owner promotion.
+
+Production application code calls `ImageTextEncoder`, `Ranker`, `CompatibilityScorer`, `BodyEstimator`, `SkinToneEstimator`, `IntentParser`, and `TryOnRenderer` ports instead of model packages.
+
+Every production artifact requires an exact code, weight, preprocessing, and training-data license, SHA-256 lineage, registry metadata, fallback, evaluation report, observability, and rollback flag.
+
+The research lane may benchmark non-commercial or unevaluated methods offline only, and the production lane may load only `commercial_ok` artifacts with a passing promotion report.
+
+##### Model and evaluation governance
+
+The machine eligibility predicate is `commercial_ok == true` and `lane == production` plus a passing evaluation report, and it is enforced through `models.registry.json`, `scripts/check_model_licenses.py`, `scripts/check_promotion.py`, and `scripts/check_ports.py`.
+
+Offline metrics select candidates but never promote them by themselves because offline-to-online gaps, feedback loops, and subgroup regressions are material risks.
+
+A promotion report must include `evaluation_run_id`, source and artifact hashes, dataset and catalogue snapshot, consent basis, split method, metric definitions, uncertainty, subgroup results, calibration, abstention, latency, memory, cost, fallback, rollout, and rollback.
+
+A degraded candidate, missing provenance, missing consent, unknown training rights, missing join integrity, or missing rollback is a HOLD.
+
+##### Security and privacy architecture
+
+Supabase verifies identity while the API derives scope from the verified JWT and never trusts a client-supplied owner ID.
+
+RLS is defense in depth and every per-user repository still performs explicit owner authorization.
+
+Expo bundles contain only publishable configuration, native sessions use SecureStore, and provider, database, service-role, and Cuelinks secrets remain server-side.
+
+Sensitive uploads are validated by decoded bytes, content type, dimensions, and pixel count, stripped of EXIF, processed with purpose consent, stored privately, TTL-bound, and excluded from training by default.
+
+Photo body and tone assistance remains manual-first, editable, fairness-gated, and fail-closed when capability or consent is unavailable.
+
+Social and generated media require ownership, report, block, moderation, takedown, appeal, emergency disable, and unsafe-output reporting before public exposure.
+
+Critical or high security, privacy, licence, cross-user, deletion, export, or unsafe-media findings block promotion.
+
+##### Reliability, SLO, and degradation contract
+
+The fixed India-vantage catalogue SLOs are browse p50/p95 at 300/800 ms, cached search at 400/900 ms, uncached search at 1.5/3 seconds, authenticated page data at 500 ms p50, and zero daytime sleep wakes.
+
+Every SLO sample must be HTTP 200 with truthful content, and a fast error, empty EXPLAIN, skipped provider, or unavailable vantage is not a pass.
+
+Encoder failure degrades to successful PostgreSQL lexical search with `X-GYF-Search-Mode: lexical` when safe, or to a deliberate bounded 503 when lexical search itself cannot safely serve.
+
+Database cancellation, stale catalogue, failed feed, unavailable provider, or unsupported inference must preserve truthful state and must not fabricate empty content, confidence, progress, price, or success.
+
+Every request, database statement, pool wait, external call, job claim, retry, queue, and GPU action has a bounded deadline, timeout, concurrency limit, and observable failure reason.
+
+The Virginia Render Starter remains production, Oregon remains a time-bounded rollback, and Singapore is prohibited by the active owner decision.
+
+##### Observability, deployment, and rollback
+
+Structured logs use fixed low-cardinality labels and sanitized request IDs, while sampled traces may correlate stage timings without logging raw photos, tokens, emails, or full user queries.
+
+Required dashboards cover F2.5 search mode and plans, trusted-core activation, event joins and reversals, consent and deletion, catalogue freshness, moderation, try-on queue and cost, commerce statements, client errors, and deployment version.
+
+Synthetic checks validate status and content for health, readiness, status, lexical search, semantic search when enabled, recommendation, feedback, shop handoff, export, and deletion.
+
+Local development uses Apple `container`, Linux production uses the existing Docker image, and GitHub Actions, EAS, Render, and Supabase remain the current delivery substrates.
+
+Every release records source SHA, lock hashes, OpenAPI hash, migration head, Expo deployment ID and entry hash, model and catalogue versions, flags, scans, rollout thresholds, and tested rollback.
+
+API rollback restores the last known-good image or configuration, web rollback reassigns the immutable Expo alias, model rollback disables the candidate, photo rollback disables assistance, and VTON rollback uses the global kill switch.
+
+No external provider, client, schema, model, or deployment is deleted until its replacement and rollback are protected by the relevant phase gate.
+
+##### Measured extraction triggers
+
+| Boundary | Keep for beta | Revisit only when measured |
+| --- | --- | --- |
+| API process | One FastAPI modular monolith | A module has sustained independent SLO, memory, concurrency, or release needs that cannot be solved inside the process and a rollbackable split is cheaper overall |
+| Event transport | Postgres append-only spine | Event writes, retention, replay, or deletion demonstrably threaten core SLO or Postgres capacity after query and batching work |
+| Vector search | pgvector HNSW and PostgreSQL FTS | Recall or p95 remains outside the gate after plan/index tuning, or vector cardinality reaches the researched 50–100 million range |
+| Feature storage | Versioned Postgres features and exports | Measured online/offline skew or feature read p95 cannot be solved without an independent store |
+| Media storage | Current private storage and TTL jobs | Try-on TTL exceeds about 72 hours or daily resident media exceeds about 700 jobs, followed by a privacy and migration review |
+| GPU serving | Measured scale-to-zero adapters | Queue age, p95, memory, or cost requires independent GPU lifecycle and a proven commercial lane |
+| MLOps | Registry JSON, eval reports, and CI gates | Artifact lineage, reproducibility, or promotion volume exceeds the existing audited controls and a replacement deletes more complexity than it adds |
+| Orchestration | GitHub Actions plus current deploy controls | Release duration, dependency graph, or environment count creates a measured reliability failure that a new orchestrator resolves |
+
+Microservices, Kafka or Redpanda, Kubernetes, a feature store, MLflow, a second vector database, an agentic shopping system, paid VTON, and large model expansion are explicitly rejected until their named trigger and owner gate pass.
+
+##### Build-versus-buy matrix
+
+The matrix marks the product moat and control plane as `OWN` and commodity or specialist capacity as `BUY/USE`.
+
+Thin beta hours are planning ranges for a narrow, testable implementation and are not completed-work claims or staffing commitments.
+
+Recurring cost and risk entries are hypotheses until invoices, terms, limits, and production evidence are verified.
+
+| Capability | Ownership | Recommendation | Rationale | Thin beta hours | Recurring cost or risk | Revisit trigger |
+| --- | --- | --- | --- | ---: | --- | --- |
+| Auth, storage, and database | BUY/USE substrate plus OWN trust plane | Use Supabase Auth, Postgres, pgvector, Storage, and RLS, while owning consent, owner authorization, export, deletion, and private-media policy | Managed identity and database reduce rebuild risk, while trust and erasure are the product control plane | 100–160 | Current managed/free envelope is low cost, with vendor limits, egress, restore, and lock-in risk | Start a measured alternative review at 70% of a limit or after an RLS, restore, or SLO failure |
+| API and runtime | OWN product runtime plus BUY/USE compute | Keep the FastAPI modular monolith in Docker on the Virginia Render Starter | Domain policy, fallbacks, and contracts are moat-adjacent, while Linux compute is commodity | 160–240 | About ₹700/month planned API cost, with single-service and provider-region risk | Extract only after sustained independent SLO, memory, concurrency, or release pressure is measured |
+| Search and vector | OWN retrieval policy plus BUY/USE database engine | Build hybrid PostgreSQL FTS plus pgvector/HNSW retrieval and keep a lexical fallback without adding a vector service | Query policy, audience truth, relevance, and graceful degradation are owned value, while the engine is commodity | 120–180 | Included database path has query-plan and connection ceilings | Revisit after failed measured plans despite tuning or 50–100 million vectors |
+| Embeddings | BUY/USE foundation plus OWN port, cache, and evaluation | Retain registry-pinned SigLIP2 B/16 at 768 dimensions behind `ImageTextEncoder` and own cache keys, hashes, relevance tests, and rollback | Foundation models change quickly, while the shared representation, catalogue lineage, and evaluation compound | 80–140 | Remote credits, cold starts, model terms, CPU/RSS, and disabled-provider risk | Revisit after frozen text retrieval, India resource, shadow, and cost evidence shows a clean replacement wins |
+| Ranking and personalization | OWN moat | Own deterministic constraints, compatibility, MMR, taste vector, explanations, and a later small logistic or pairwise challenger | User taste, correction causality, and ranking policy are the primary product moat | 180–280 | CPU cost is low, while sparse data, feedback bias, and calibration risk are high | Train only after at least 99% clean joins and promote only after offline, shadow, and cohort lift |
+| Catalogue and feed | OWN truth plane plus BUY/USE licensed sources | Own normalization, rights, taxonomy, audience, dedupe, currency, availability, freshness, and snapshots, while using licensed merchant or affiliate feeds | Product truth and local coverage differentiate GYF, while feed acquisition is specialist and source-dependent | 220–340 | Feed terms, stale data, source outages, image rights, and coverage gaps are material risks | Revisit when source coverage, freshness, rights, or product-row quality misses the frozen gate |
+| Affiliate attribution | OWN attribution contract plus BUY/USE network | Own disclosure, server subids, event semantics, conversion and reversal reconciliation, while using Cuelinks or an approved network for links and statements | Attribution truth and non-incentivized ranking are owned trust, while network connectivity is commodity | 90–140 | Delayed statements, reversals, network terms, and unsafe redirects create risk | Revisit when a complete product source or direct network economics is proven and approved |
+| Analytics and events | OWN event spine plus USE standard telemetry | Own server-authoritative IDs, joins, consent filtering, export, and evaluation datasets, while using Postgres, Prometheus, and OpenTelemetry primitives | Joinable consented behaviour is the moat and standard telemetry avoids vendor lock-in | 160–240 | Database write/storage cost, privacy leakage, and high-cardinality telemetry risk | Extract only when measured event throughput, replay, retention, or deletion pressure threatens core SLO |
+| Media and photo assistance | OWN privacy boundary plus BUY/USE gated specialist capability | Build validation, EXIF removal, consent, TTL, correction, and manual fallback, while using a licensed model or provider only after F7 | Sensitive-data handling and user correction are trust controls, while specialist perception can be rented | 160–260 | Vendor retention, fairness, licensing, GPU cost, and sensitive-media abuse are high risk | Open a specialist lane only after the separate body and skin evidence gates pass |
+| VTON | OWN job, quota, privacy, and evaluation plane plus BUY/USE first renderer | Keep the durable `TryOnRenderer` spine and evaluate the active-contract FASHN v1.5 candidate after F9, with no public opening now | Queue durability, honest visualization, cost controls, and provider independence matter more than owning beta weights | 180–280 for the closed spine | Zero paid VTON spend before F9, followed by uncertain GPU cost, quality, privacy, and provider risk | Open one lane only after F9, and train an owned challenger only after at least 2,000 authorised pairs and a stable at-least-10% failure cluster |
+| Payments and entitlements | DEFER, then OWN ledger plus BUY processor | Do not implement payments now, and later own entitlement, reserve, consume, refund, and reconciliation while buying a web processor | Payment plumbing is commodity, but entitlement truth and scarce-compute policy affect trust | 80–140 for a future sandbox, not authorised work | Fees, tax, refunds, store rules, fraud, support, and working-capital risk | Revisit only after F9 and `MONETIZATION-READINESS` authorise a provider and web-first experiment |
+| Observability | OWN product signals plus BUY/USE sinks | Own SLOs, event definitions, redaction, dashboards, synthetic content checks, and incident actions, while using existing Render, GitHub, Prometheus, OpenTelemetry, and optional Sentry | What GYF measures and how it protects users is owned operational knowledge, while collection sinks are replaceable | 100–160 | Vendor retention, PII, alert fatigue, and optional sink cost are risks | Revisit when wall-time reconciliation, incident response, or trace volume exceeds current controls |
+| CI/CD | OWN policy gates plus BUY/USE runners and hosts | Own format, type, doctrine, licence, model, evidence, deploy, and rollback gates, while using GitHub Actions, EAS, Render, and Supabase | Release policy and provenance are durable controls, while runners and hosting are commodity | 120–180 | Secret-boundary, runner availability, provider limits, and deployment drift are risks | Revisit when the current gates create a measured release or environment reliability failure |
+| Moderation | OWN policy and lifecycle plus BUY/USE classifiers only if gated | Own terms, report, block, queue, takedown, appeal, emergency disable, and audit, while optionally using a classifier after privacy and quality review | Safety policy, ownership, and appeals are product trust, while classification can be specialist infrastructure | 120–200 | False positives, false negatives, UGC legal risk, vendor retention, and queue growth are risks | Revisit when real volume, latency, or classifier quality justifies a gated provider |
+| Support and grievance | OWN contract plus USE mailbox | Own receipt, status, owner, SLA, escalation, closure, and privacy handling, while using `gyf1ltd@gmail.com` and existing mail first | Accountability and user trust are owned, while a helpdesk is commodity before volume | 50–80 | Manual queue, missed SLA, and mailbox retention are risks | Revisit when ticket volume or response targets exceed the mailbox control |
+| Experimentation | OWN decision protocol plus USE existing data and CI | Own server-authoritative flags, assignment, denominators, one-change causal design, and rollback, while reusing Postgres, telemetry, and eval reports | Experiment semantics and guardrails protect the moat, while a platform adds little value at beta traffic | 100–160 | Small samples, contamination, multiple testing, and privacy risk are material | Revisit when traffic and experiment isolation exceed the existing flag and report controls |
+
+Buying any row does not transfer GYF ownership of consent, truth, attribution, evaluation, security, user experience, or rollback.
+
+A provider that cannot disclose commercial terms, retention, deletion, artifact lineage, cost, or exit conditions remains research-only or is rejected.
+
+##### SOTA method choices and evidence gates
+
+The report's methods are candidates for GYF evidence, not permission to claim general SOTA or to replace a passing incumbent.
+
+| Method | Current fact | Canonical choice | Evidence gate |
+| --- | --- | --- | --- |
+| Hybrid retrieval | The catalogue has pgvector/HNSW and PostgreSQL FTS boundaries, while the latest production report shows degraded English search returning 500 | Use semantic SigLIP2 retrieval with lexical FTS fallback and explicit mode reporting | F2.5 requires successful encoder-down lexical search, non-empty protected EXPLAIN plans, expected indexes, all-HTTP-200 India samples, and fixed p50/p95 SLOs |
+| SigLIP2 | `google-siglip2-base` is the current 768-dimensional registry binding, but existing evidence does not prove text-to-catalog relevance | Keep SigLIP2 behind `ImageTextEncoder` and cache by normalized query plus model version | Freeze judged text queries and catalogue candidates, verify artifact hashes and preprocessing, measure Recall/MRR, India latency/RSS, shadow behavior, and rollback |
+| Deterministic compatibility and MMR | Rules, compatibility facts, per-slot composition, and MMR are the current explainable incumbent | Own category-aware compatibility, CIELAB or colour facts, formality, wardrobe utility, per-slot repetition limits, and MMR before a learned set model | F5 requires complete looks or honest gaps, no repeated anchor failure, actual reason facts, calibration or abstention, and deterministic fallback under failure |
+| Calibrated abstention | Current heuristic scores are not automatically calibrated confidence | Separate raw score, calibrated confidence, cold-start state, and abstention, and show unknown when evidence is insufficient | Held-out labels must show ECE or Brier, coverage, subgroup behavior, correction utility, and explanation comprehension before a numeric confidence claim |
+| Small learned challenger | F6 lacks sufficient clean joined behavioural data today | Train the smallest interpretable pairwise or logistic challenger over incumbent facts after the data gate | At least 99% joined exposures, temporal and user-safe splits, NDCG or Recall lift, calibration, diversity, latency, privacy, shadow, cohort, and rollback must pass |
+| Offline, shadow, and cohort evaluation | Offline metrics can disagree with live outcomes and current deterministic exposure has no valid propensity | Use offline replay for selection, shadow for safety, and interleaving or cohort evaluation for promotion | Every result needs an `evaluation_run_id`, fixed denominator, uncertainty, guardrails, owner decision, staged rollout, and rollback |
+| Fairness and privacy | Body and skin-tone assistance have separate model and evidence risks, and manual values remain authoritative | Keep photo assistance optional, editable, consented, fail-closed, subgroup-evaluated, and excluded from training by default | A real consented panel across the full Monk Skin Tone range and relevant lighting/device slices must pass subgroup error, calibration, abstention, `max_band_gap`, privacy, licence, and deletion gates |
+| VTON | F9 has not promoted a lane, and the active contract names FASHN VTON v1.5 as the first external candidate | Keep VTON closed, package and hash the exact active-contract FASHN v1.5 artifact graph for F9, and build the owned challenger only after its data trigger | F9 requires identity/item-disjoint blinded quality, safety, privacy, queue and cost evidence, while the owned lane additionally requires at least 2,000 authorised pairs and a stable at-least-10% failure cluster |
+
+The checked-in registry contains other VTON candidate names, so F8 must reconcile registry metadata with the active contract before any lane is served.
+
+No research-only IDM-VTON, FitDiT, Leffa checkpoint, larger recommender, VLM explanation, or unlicensed preprocessing artifact may enter production through a naming change.
+
+The primary evidence for these choices is the deep-tech architecture report, `docs/research/deep-research-report.md`, `docs/engineering-doctrine.md`, `models.registry.json`, `ml/eval`, `services/api/app/catalog`, `services/api/app/recsys`, and `ml/usermodel`.
+
 Primary evidence: [Expo Router](https://docs.expo.dev/router/introduction/),
 [Expo SDK compatibility](https://docs.expo.dev/versions/latest/),
 [Expo production-mode testing](https://docs.expo.dev/workflow/development-mode/),
@@ -1193,6 +1395,84 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   physical-Android, browser-capture, owner-visual or product/release holds.
 - The Supabase PR workflow's local disposable-Postgres migration lane is useful. Its remote branch lane must remain disabled until management credentials are isolated from pull-request-controlled code, the CLI is pinned, failures are classified, and branch create/migrate/smoke/delete is proven without touching production.
 - The detailed ticket board and Expo parity/cutover sequence live in [`gyf-launch-refactor-plan.md`](./gyf-launch-refactor-plan.md). It is subordinate to this contract; no other roadmap is active.
+
+## Lean implementation order and 14/30/60/90-day milestones
+
+This calendar is a planning target for the canonical sequence and is not a phase promotion, a launch claim, or permission to bypass the current pointer.
+
+**Current fact:** global F2.5 remains HOLD, the current pointer remains `COSMOS-DESIGN-BUILD` held for reconciliation, the launch-surface and product-source decisions remain unresolved, and the encoder-lane decision remains unresolved.
+
+**Recommendation:** spend the first fourteen days closing the smallest evidence boundary, then execute one trusted vertical slice at a time through the existing F, P5, F10, F11, F12, F13, and HL gates.
+
+**Unresolved decision rule:** if an owner, provider, device, store, production-evidence, or dataset prerequisite is absent, the milestone remains HOLD and the calendar extends rather than weakening the gate.
+
+### Serialized order
+
+1. Close global F2.5 with truthful lexical degradation, protected production EXPLAIN, semantic-lane evidence, and sustained India-vantage SLO proof.
+2. Complete the Expo trusted loop from auth and manual onboarding through explained outfit, save, skip, shop, correction, undo, and a causally changed next outfit.
+3. Prove event joins, consent, deletion, export, catalogue rights, availability, audience, currency, freshness, and attribution.
+4. Close F5 deterministic incumbent evaluation before opening the F6 learned challenger gate.
+5. Execute `P5.1-LEARNED-RANKER`, `P5.2-WARDROBE`, `P5.3-PHOTO`, `P5.4-EXPLORE`, `P5.5-SOCIAL-PROFILE`, `P5.6-LOOKSPACE`, and `P5.7-VTON` sequentially through their own packets.
+6. Complete final experience, infrastructure, store, security, restore, rollback, cost, and integrated beta evidence.
+7. Run the protected F13 deletion groups and then the signed HL staged rollout.
+
+The detailed ticket write sets remain in `docs/plans/gyf-launch-refactor-plan.md`, and this order remains subordinate to the current pointer and gate register above.
+
+### Fourteen-day milestone: restore evidence readiness
+
+The fourteen-day target is to close governance and F2.5 evidence gaps rather than to claim that the product is launch-ready.
+
+The pointer acceptance gate is an explicit owner decision about undocumented Cosmos task evidence, and it must not advance to `NATIVE-ACCEPTANCE` by inference.
+
+The search acceptance gate is an encoder-down HTTP 200 lexical response with `X-GYF-Search-Mode: lexical`, or a deliberate bounded `503 catalog_search_unavailable` when lexical SQL cannot safely serve.
+
+The production-plan acceptance gate is a non-empty, status-valid protected `EXPLAIN (ANALYZE, BUFFERS)` artifact with one migration head, expected FTS/HNSW or indexed browse plans, and no `QueryCanceled` failure.
+
+The SLO acceptance gate is a sustained Indian-vantage window in which every required row is HTTP 200 and meets the fixed browse, cached-search, uncached-search, authenticated-page, and daytime-wake thresholds.
+
+The milestone result is `GO` only when the active contract records the evidence and owner decision, and otherwise it is `HOLD` with the smallest missing artifact named.
+
+### Thirty-day milestone: trusted economic core
+
+The thirty-day target is the deployed free outfit-decision core with truthful catalogue and attribution foundations, not the complete public product.
+
+The core acceptance gate is an independently reproduced adult India journey from auth and manual onboarding through a complete explained outfit, save, skip, shop, correction, undo, and a changed next recommendation on Expo web and the required physical Android path.
+
+The learning acceptance gate is at least 99% served-ID joins with idempotent events, reversals, opt-out exclusion, export correctness, deletion tombstones, and no deleted-data resurrection in restore evidence.
+
+The catalogue acceptance gate is rights, source, image, audience, availability, freshness, original currency, dated display conversion, product URL, disclosure, and safe retailer handoff truth with no adult/kids leakage.
+
+The incumbent acceptance gate is F5 frozen replay for completeness, compatibility, per-slot diversity, reason-fact coverage, confidence state, abstention, latency, and deterministic fallback.
+
+The milestone remains `HOLD` if any external SLO, device, store, source, privacy, security, or evidence prerequisite is missing.
+
+### Sixty-day milestone: earned intelligence and owned context
+
+The sixty-day target is sequential closure of the smallest learned challenger and the first owned-context verticals, subject to data and fairness readiness.
+
+The F6 acceptance gate is a small interpretable challenger with temporal and user-safe splits, at least 99% clean joins, offline lift, calibration, diversity, latency, shadow, cohort, and rollback evidence, while the incumbent remains active on failure.
+
+The wardrobe acceptance gate is private capture or manual entry, editable classification, owned-item persistence, own-versus-buy explanation, wardrobe-anchored recommendation, and deletion evidence.
+
+The photo acceptance gate is separate body and skin-tone evaluation on a real consented panel with subgroup error, calibration, abstention, `max_band_gap`, privacy, licensing, correction, and manual-fallback evidence.
+
+The milestone does not require a learned challenger or photo lane to open when their gates are not met, and it never treats a model file or endpoint as acceptance evidence.
+
+### Ninety-day milestone: full-surface readiness and beta entry
+
+The ninety-day target is to complete as many sequential full-vision packets as evidence permits and prepare the integrated beta, not to promise public launch on a calendar.
+
+The Explore acceptance gate is deep real catalogue paging, server-authoritative filters, dedupe, freshness, product truth, complete-the-look, attribution, and low-end Android performance under the F2.5 and F4 gates.
+
+The social and profile acceptance gate is populated safe data, create, recreate, follow, react, comment, share, download, report, block, moderation, takedown, appeal, professional profile, and badge truth.
+
+The Lookspace acceptance gate is a bounded server-fact scene with a feature-equivalent accessible list, no blank holes or repeats, measured frame, memory, bundle, battery, and CanvasKit fallback evidence.
+
+The VTON acceptance gate is the F8 durable spine plus F9 artifact, licence, blinded quality, safety, privacy, queue, cost, TTL, quota, and kill-switch evidence, with the capability remaining closed on any failure.
+
+The F10 and beta-entry acceptance gate is deployment provenance, restore, rollback, incident response, cost controls, support ownership, frozen metric denominators, and readiness for at least a 30-day integrated cohort.
+
+The integrated beta, F12 improvement, B2B boundary, F13 deletion, and HL rollout remain later gates even when the ninety-day milestone is met.
 
 ### Historical pre-v7 proposed slice — non-executable unless selected by the current pointer
 
