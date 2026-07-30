@@ -47,6 +47,12 @@ def findings(root: Path) -> list[str]:
     ]
     if app_config["expo"].get("web", {}).get("output") != "server":
         errors.append("apps/expo/app.json must use server web output for deployment-ID verification")
+    if router.get("unstable_useServerMiddleware") is not True:
+        errors.append("apps/expo/app.json must enable server middleware for response security headers")
+
+    middleware = root / "apps/expo/src/app/+middleware.ts"
+    if not middleware.exists() or "setResponseHeaders" not in middleware.read_text(encoding="utf-8"):
+        errors.append("apps/expo/src/app/+middleware.ts must set response security headers")
 
     package = json.loads((root / "apps/expo/package.json").read_text(encoding="utf-8"))
     if "expo-server" not in package.get("dependencies", {}):

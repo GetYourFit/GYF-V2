@@ -87,6 +87,9 @@ the subordinate launch-plan ledger but is not a separate roadmap.
 - Cuelinks Expo web JS install-check fix: [`evidence/cuelinks-web-js-install-check-fix-2026-07-28.md`](./evidence/cuelinks-web-js-install-check-fix-2026-07-28.md) —
   source-divergence diagnosis, exact-loader regression proof, and the still-required deployed
   browser/dashboard verification before claiming live installation success.
+- Expo EAS immutable security-header fix: [`evidence/expo-eas-x-frame-options-fix-2026-07-30.md`](./evidence/expo-eas-x-frame-options-fix-2026-07-30.md) —
+  immutable-URL reproduction, response-boundary middleware fix and local export/verifier evidence;
+  a fresh CD deployment must still prove the header before claiming production success.
 - Profitability measurement (conversion rate, repeat-use rate, parameterized contribution-margin
   estimate): [`evidence/c4-profitability-measurement-2026-07-27.md`](./evidence/c4-profitability-measurement-2026-07-27.md) —
   produced by `scripts/report_profitability.py`; honestly reports insufficient data in this
