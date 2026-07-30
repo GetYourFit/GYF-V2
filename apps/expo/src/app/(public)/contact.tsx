@@ -45,9 +45,17 @@ export default function ContactRoute() {
       .catch(() => {
         if (mounted) setAuthState("signed-out");
       });
-    const unsubscribe = onAuthStateChange((_event, session) => {
+    let unsubscribe = () => {};
+    void onAuthStateChange((_event, session) => {
       if (mounted) setAuthState(session ? "signed-in" : "signed-out");
-    });
+    })
+      .then((nextUnsubscribe) => {
+        if (mounted) unsubscribe = nextUnsubscribe;
+        else nextUnsubscribe();
+      })
+      .catch(() => {
+        if (mounted) setAuthState("signed-out");
+      });
     return () => {
       mounted = false;
       unsubscribe();

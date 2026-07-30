@@ -1,11 +1,10 @@
-import {
-  createClient,
-  type AuthChangeEvent,
-  type AuthResponse,
-  type AuthTokenResponse,
-  type Session,
-  type SupabaseClient,
-  type UserResponse,
+import type {
+  AuthChangeEvent,
+  AuthResponse,
+  AuthTokenResponse,
+  Session,
+  SupabaseClient,
+  UserResponse,
 } from "@supabase/supabase-js";
 
 import { clearAuthStorage, secureStorage, type AuthStorage, AUTH_STORAGE_KEY } from "./storage";
@@ -15,33 +14,39 @@ export { readSupabaseEnv } from "./auth-config";
 export type { SupabaseEnv } from "./auth-config";
 
 let client: SupabaseClient | null = null;
+let clientRequest: Promise<SupabaseClient> | null = null;
 let sessionRequest: Promise<Session | null> | null = null;
 
-export function getSupabaseClient(storage: AuthStorage = secureStorage): SupabaseClient {
-  if (client) return client;
-  const { url, anonKey } = readSupabaseEnv();
-  client = createClient(url, anonKey, {
-    auth: {
-      autoRefreshToken: true,
-      // PKCE (not implicit) so recovery links carry an opaque `?code=` query param
-      // instead of tokens in the URL fragment. detectSessionInUrl stays false on
-      // both native and web: RN has no window.location to parse, so the code is
-      // pulled from expo-router's parsed params instead (see resolveRecoverySession).
-      detectSessionInUrl: false,
-      flowType: "pkce",
-      persistSession: true,
-      storage,
-      storageKey: AUTH_STORAGE_KEY,
-    },
+export function getSupabaseClient(storage: AuthStorage = secureStorage): Promise<SupabaseClient> {
+  if (client) return Promise.resolve(client);
+  if (clientRequest) return clientRequest;
+  clientRequest = import("@supabase/supabase-js").then(({ createClient }) => {
+    if (client) return client;
+    const { url, anonKey } = readSupabaseEnv();
+    client = createClient(url, anonKey, {
+      auth: {
+        autoRefreshToken: true,
+        // PKCE (not implicit) so recovery links carry an opaque `?code=` query param
+        // instead of tokens in the URL fragment. detectSessionInUrl stays false on
+        // both native and web: RN has no window.location to parse, so the code is
+        // pulled from expo-router's parsed params instead (see resolveRecoverySession).
+        detectSessionInUrl: false,
+        flowType: "pkce",
+        persistSession: true,
+        storage,
+        storageKey: AUTH_STORAGE_KEY,
+      },
+    });
+    return client;
   });
-  return client;
+  return clientRequest;
 }
 
 export function getSession(): Promise<Session | null> {
   if (sessionRequest) return sessionRequest;
   try {
     sessionRequest = getSupabaseClient()
-      .auth.getSession()
+      .then((supabase) => supabase.auth.getSession())
       .then(({ data, error }) => {
         if (error) throw error;
         return data.session;
@@ -60,7 +65,12 @@ export async function getAccessToken(): Promise<string | null> {
 }
 
 export async function signIn(email: string, password: string): Promise<AuthResponse["data"]> {
-  const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
+  const { data, error } = await (
+    await getSupabaseClient()
+  ).auth.signInWithPassword({
+    email,
+    password,
+  });
   if (error) throw error;
   return data;
 }
@@ -70,7 +80,9 @@ export async function signUp(
   password: string,
   emailRedirectTo?: string,
 ): Promise<AuthResponse["data"]> {
-  const { data, error } = await getSupabaseClient().auth.signUp({
+  const { data, error } = await (
+    await getSupabaseClient()
+  ).auth.signUp({
     email,
     password,
     options: emailRedirectTo ? { emailRedirectTo } : undefined,
@@ -80,7 +92,9 @@ export async function signUp(
 }
 
 export async function sendPasswordRecovery(email: string, redirectTo?: string): Promise<void> {
-  const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email, {
+  const { error } = await (
+    await getSupabaseClient()
+  ).auth.resetPasswordForEmail(email, {
     redirectTo,
   });
   if (error) throw error;
@@ -109,7 +123,8 @@ export async function resolveRecoverySession(
     exchangeCodeForSession: (code: string) => Promise<AuthTokenResponse>;
     getSession: () => Promise<Session | null>;
   } = {
-    exchangeCodeForSession: (code) => getSupabaseClient().auth.exchangeCodeForSession(code),
+    exchangeCodeForSession: async (code) =>
+      (await getSupabaseClient()).auth.exchangeCodeForSession(code),
     getSession,
   },
 ): Promise<Session | null> {
@@ -126,14 +141,14 @@ export async function resolveRecoverySession(
 }
 
 export async function updatePassword(password: string): Promise<UserResponse["data"]> {
-  const { data, error } = await getSupabaseClient().auth.updateUser({ password });
+  const { data, error } = await (await getSupabaseClient()).auth.updateUser({ password });
   if (error) throw error;
   return data;
 }
 
 export async function signOut(): Promise<void> {
   try {
-    const { error } = await getSupabaseClient().auth.signOut({ scope: "global" });
+    const { error } = await (await getSupabaseClient()).auth.signOut({ scope: "global" });
     if (error) throw error;
   } finally {
     sessionRequest = null;
@@ -141,9 +156,9 @@ export async function signOut(): Promise<void> {
   }
 }
 
-export function onAuthStateChange(
+export async function onAuthStateChange(
   callback: (event: AuthChangeEvent, session: Session | null) => void,
-): () => void {
-  const { data } = getSupabaseClient().auth.onAuthStateChange(callback);
+): Promise<() => void> {
+  const { data } = (await getSupabaseClient()).auth.onAuthStateChange(callback);
   return () => data.subscription.unsubscribe();
 }

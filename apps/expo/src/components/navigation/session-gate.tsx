@@ -32,13 +32,16 @@ export function SessionGate({ children }: { children: ReactNode }) {
       if (mounted) setState("error");
     }
     let unsubscribe = () => {};
-    try {
-      unsubscribe = onAuthStateChange((_event, session) => {
-        if (mounted) setState(session ? "signed-in" : "signed-out");
+    void onAuthStateChange((_event, session) => {
+      if (mounted) setState(session ? "signed-in" : "signed-out");
+    })
+      .then((nextUnsubscribe) => {
+        if (mounted) unsubscribe = nextUnsubscribe;
+        else nextUnsubscribe();
+      })
+      .catch(() => {
+        if (mounted) setState("error");
       });
-    } catch {
-      if (mounted) setState("error");
-    }
     return () => {
       mounted = false;
       unsubscribe();

@@ -123,9 +123,13 @@ F13 approval.
 - FastAPI/OpenAPI and generated types both measure 43 paths / 55 operations; `/gallery` is absent from
   the generated contract. Local API tests prove `/gallery` remains available in local mode, returns
   404 outside local, and retains the security header set.
-- Expo production export and marker assertion pass. The production entry bundle is 2,840,603 bytes;
-  the existing 2,700,000-byte web budget remains exceeded, so the bundle-budget gate is a blocker and
-  no launch claim is made. The budget script now understands the current `dist/client` export layout.
+- Expo production export, Cuelinks export verification, fixture-marker assertion, and the unchanged
+  2,700,000-byte budget gate pass. The measured production entry bundle fell from 2,840,603 bytes to
+  2,511,582 bytes (329,021 bytes removed; 188,418 bytes of headroom). Supabase auth/API runtime,
+  image-picker, and file-system capabilities now load as async chunks; web catalogue images use a
+  lightweight browser-cache adapter instead of carrying the native `expo-image` runtime. The full
+  static route set remains 25 routes, and review fixtures remain local/test-only. The clean export also
+  emitted existing Node file-descriptor warnings from the Expo bundler; export and guards completed.
 - A standalone Next production build passed before the final proxy-only gate adjustment; the follow-up
   build was environment-killed (exit 137) during TypeScript while another worktree's Expo build was
   consuming host resources. Web typecheck/lint passed, and the source guard covers the proxy gate;

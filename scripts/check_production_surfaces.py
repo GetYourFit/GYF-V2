@@ -38,6 +38,8 @@ def source_failures(root: Path) -> list[str]:
     metro = (root / "apps/expo/metro.config.js").read_text(encoding="utf-8")
     if "review-surface-production.ts" not in metro or 'process.env.NODE_ENV === "production"' not in metro:
         failures.append("Expo Metro does not replace the review graph in production")
+    if "expo-image-web.tsx" not in metro or 'moduleName === "expo-image"' not in metro:
+        failures.append("Expo web export does not use the measured lightweight image adapter")
 
     api_main = (root / "services/api/app/main.py").read_text(encoding="utf-8")
     if 'include_in_schema=False' not in api_main or 'settings.env != "local"' not in api_main:
