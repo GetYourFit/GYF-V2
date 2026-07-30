@@ -34,6 +34,8 @@ if (!/^[0-9a-f]{40}$/.test(sourceSha))
   throw new Error("Source SHA must be a 40-character hexadecimal commit");
 const candidate = json(option("candidate-verification"));
 const production = json(option("production-verification"));
+const candidateBrowser = json(option("candidate-browser-verification"));
+const productionBrowser = json(option("production-browser-verification"));
 const candidateDeploy = json(option("candidate-deploy"));
 const productionDeploy = json(option("production-deploy"));
 const previousDeploys = json(option("previous-deploys"));
@@ -50,6 +52,13 @@ if (candidate.expected_entry_hash !== production.expected_entry_hash)
   throw new Error("Candidate and production entry hashes differ");
 if (!candidate.cuelinks?.static?.valid || !production.cuelinks?.static?.valid)
   throw new Error("Cuelinks proof is missing from candidate or production evidence");
+if (
+  candidateBrowser.verified !== true ||
+  candidateBrowser.stage !== "candidate" ||
+  productionBrowser.verified !== true ||
+  productionBrowser.stage !== "production"
+)
+  throw new Error("Browser-surface proof is missing from candidate or production evidence");
 const candidateDeployId = deployId(candidateDeploy) ?? candidate.deploy_id;
 const productionDeployId = deployId(productionDeploy) ?? production.deploy_id;
 if (!candidateDeployId || !productionDeployId)
@@ -76,6 +85,7 @@ const record = {
     identity: candidate.static.deployment_identity,
     api_release_sha: candidate.api.release_sha,
     cuelinks: candidate.cuelinks,
+    browser_surfaces: candidateBrowser.surfaces,
   },
   production: {
     service_id: production.service_id,
@@ -88,6 +98,7 @@ const record = {
     identity: production.static.deployment_identity,
     api_release_sha: production.api.release_sha,
     cuelinks: production.cuelinks,
+    browser_surfaces: productionBrowser.surfaces,
   },
   promotion: {
     method: "Render production-service deploy after candidate proof",
@@ -109,7 +120,7 @@ writeFileSync(option("output"), `${JSON.stringify(record, null, 2)}\n`, "utf8");
 const summary = option("summary-output");
 writeFileSync(
   summary,
-  `# Render Static release\n\n- Source/API SHA: \`${sourceSha}\`\n- Candidate service/deploy: \`${candidate.service_id}/${candidateDeployId}\`\n- Production service/deploy: \`${production.service_id}/${productionDeployId}\`\n- Entry bundle/hash: \`${record.production.entry_bundle}\` / \`${record.production.entry_hash}\`\n- Candidate verified before production deploy: **yes**\n- Required response headers: **verified on HTML, entry asset, identity, API and error probes**\n- Cuelinks: **verified in export and live HTML**\n- Rollback command: ${record.rollback.command}\n- Render limitation: ${record.rollback.limitation}\n- Recorded: ${now}\n`,
+  `# Render Static release\n\n- Source/API SHA: \`${sourceSha}\`\n- Candidate service/deploy: \`${candidate.service_id}/${candidateDeployId}\`\n- Production service/deploy: \`${production.service_id}/${productionDeployId}\`\n- Entry bundle/hash: \`${record.production.entry_bundle}\` / \`${record.production.entry_hash}\`\n- Candidate verified before production deploy: **yes**\n- Required response headers: **verified on HTML, entry asset, identity, API and error probes**\n- Browser surfaces: **verified on candidate and production**\n- Cuelinks: **verified in export and live HTML**\n- Rollback command: ${record.rollback.command}\n- Render limitation: ${record.rollback.limitation}\n- Recorded: ${now}\n`,
   "utf8",
 );
 console.log(`capture-render-release-record: recorded ${sourceSha}; rollback target ${previous}`);

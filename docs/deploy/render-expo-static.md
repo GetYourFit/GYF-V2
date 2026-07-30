@@ -35,6 +35,8 @@ artifact is validated with the current `render blueprints validate` command befo
    `/system/status`. Every response must carry CSP `frame-ancestors 'none'`, COOP `same-origin`,
    strict-origin referrer policy, `nosniff`, and `X-Frame-Options: DENY`. The identity and API
    release SHA must equal the source SHA, and the export/live Cuelinks evidence must match.
+   Headless Chrome must also directly load and render the welcome, terms, contact, and grievance
+   surfaces without an application error overlay.
 5. Only after step 4 succeeds does CI deploy the same SHA to `gyf-expo-web`.
 6. CI verifies the configured production/canonical URL again, then records provenance and the
    prior successful production deploy.

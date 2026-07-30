@@ -31,6 +31,16 @@ function writeFixture(root, name, value) {
   writeFileSync(path, JSON.stringify(value));
   return path;
 }
+function browserFixture(stage) {
+  return {
+    verified: true,
+    stage,
+    surfaces: ["/welcome", "/terms", "/contact", "/grievance"].map((path) => ({
+      path,
+      rendered: true,
+    })),
+  };
+}
 
 test("Render release record binds source/API/entry/header/Cuelinks and exact rollback command", () => {
   const root = mkdtempSync(join(tmpdir(), "render-release-record-"));
@@ -41,6 +51,16 @@ test("Render release record binds source/API/entry/header/Cuelinks and exact rol
     id: "production-deploy",
   });
   const previous = writeFixture(root, "previous.json", [{ id: "old-deploy", status: "live" }]);
+  const candidateBrowser = writeFixture(
+    root,
+    "candidate-browser.json",
+    browserFixture("candidate"),
+  );
+  const productionBrowser = writeFixture(
+    root,
+    "production-browser.json",
+    browserFixture("production"),
+  );
   const output = join(root, "record.json");
   const summary = join(root, "summary.md");
   execFileSync(
@@ -61,6 +81,10 @@ test("Render release record binds source/API/entry/header/Cuelinks and exact rol
       candidate,
       "--production-verification",
       production,
+      "--candidate-browser-verification",
+      candidateBrowser,
+      "--production-browser-verification",
+      productionBrowser,
       "--production-service-id",
       "prod-service",
       "--output",
@@ -73,6 +97,7 @@ test("Render release record binds source/API/entry/header/Cuelinks and exact rol
   const record = JSON.parse(readFileSync(output, "utf8"));
   assert.equal(record.source.sha, SHA);
   assert.equal(record.candidate.entry_hash, "0123456789abcdef");
+  assert.equal(record.candidate.browser_surfaces.length, 4);
   assert.equal(record.api?.release_sha, undefined);
   assert.match(record.rollback.command, /services\/prod-service\/rollback/);
   assert.match(record.rollback.command, /old-deploy/);
@@ -89,6 +114,8 @@ test("Render release record rejects candidate evidence that was not verified", a
     writeFixture(root, "candidate-deploy.json", { id: "candidate-deploy" }),
     writeFixture(root, "production-deploy.json", { id: "production-deploy" }),
     writeFixture(root, "previous.json", [{ id: "old-deploy", status: "live" }]),
+    writeFixture(root, "candidate-browser.json", browserFixture("candidate")),
+    writeFixture(root, "production-browser.json", browserFixture("production")),
   ];
   const output = join(root, "record.json");
   const script = "apps/expo/scripts/capture-render-release-record.mjs";
@@ -108,6 +135,10 @@ test("Render release record rejects candidate evidence that was not verified", a
     files[0],
     "--production-verification",
     files[1],
+    "--candidate-browser-verification",
+    files[5],
+    "--production-browser-verification",
+    files[6],
     "--production-service-id",
     "prod-service",
     "--output",

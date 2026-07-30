@@ -19,11 +19,13 @@ const diagnostic = {
   records: [
     "render-candidate-deploy.json",
     "render-candidate-verification.json",
+    "render-candidate-browser-verification.json",
     "render-production-deploy.json",
     "render-production-verification.json",
+    "render-production-browser-verification.json",
     "render-previous-deploys.json",
   ].filter((name) => existsSync(`${recordsDir}/${name}`)),
-  note: "Render release failed closed. The production service is not deployed unless candidate HTTP, identity, API, Cuelinks and browser-independent route checks pass first.",
+  note: "Render release failed closed. The production service is not deployed unless candidate HTTP, identity, API, Cuelinks and browser-surface checks pass first.",
 };
 writeFileSync(output, `${JSON.stringify(diagnostic, null, 2)}\n`, "utf8");
 console.log(`capture-render-failure-diagnostic: ${output}`);

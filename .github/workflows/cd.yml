@@ -301,6 +301,10 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
+          node apps/expo/scripts/verify-render-browser-surfaces.mjs \
+            --stage candidate \
+            --deployment-url "$RENDER_CANDIDATE_URL" \
+            --evidence-file apps/expo/deploy-records/render-candidate-browser-verification.json
           node apps/expo/scripts/verify-render-static-deploy.mjs \
             --stage candidate \
             --deployment-url "$RENDER_CANDIDATE_URL" \
@@ -331,6 +335,10 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
+          node apps/expo/scripts/verify-render-browser-surfaces.mjs \
+            --stage production \
+            --deployment-url "$RENDER_PRODUCTION_URL" \
+            --evidence-file apps/expo/deploy-records/render-production-browser-verification.json
           node apps/expo/scripts/verify-render-static-deploy.mjs \
             --stage production \
             --deployment-url "$RENDER_PRODUCTION_URL" \
@@ -356,6 +364,8 @@ jobs:
             --previous-deploys apps/expo/deploy-records/render-previous-deploys.json \
             --candidate-verification apps/expo/deploy-records/render-candidate-verification.json \
             --production-verification apps/expo/deploy-records/render-production-verification.json \
+            --candidate-browser-verification apps/expo/deploy-records/render-candidate-browser-verification.json \
+            --production-browser-verification apps/expo/deploy-records/render-production-browser-verification.json \
             --production-service-id "$RENDER_PRODUCTION_SERVICE_ID" \
             --output apps/expo/deploy-records/render-release-record.json \
             --summary-output apps/expo/deploy-records/render-release-summary.md
