@@ -27,9 +27,10 @@ export const REQUIRED_ROUTE_RULES = [
   },
 ];
 
+const EXPECTED_WORKSPACE_ID = "tea-d8p3vu5ckfvc73a025h0";
 const EXPECTED_SERVICES = {
-  candidate: { name: "gyf-expo-web-candidate" },
-  production: { name: "gyf-expo-web" },
+  candidate: { id: "srv-d9li80ijnfac73ajo9u0", name: "gyf-expo-web-candidate" },
+  production: { id: "srv-d9lim33m8hqs738qfsa0", name: "gyf-expo-web" },
 };
 
 function requestPath(serviceId, resource) {
@@ -182,6 +183,12 @@ export async function applyRenderStaticConfig({
   if (!workspaceId) throw new Error("RENDER_WORKSPACE_ID is required");
   if (!candidateServiceId || !productionServiceId || candidateServiceId === productionServiceId)
     throw new Error("distinct candidate and production service IDs are required");
+  if (workspaceId !== EXPECTED_WORKSPACE_ID)
+    throw new Error("RENDER_WORKSPACE_ID is not the approved Render workspace");
+  if (candidateServiceId !== EXPECTED_SERVICES.candidate.id)
+    throw new Error("RENDER_CANDIDATE_SERVICE_ID is not the approved existing candidate service");
+  if (productionServiceId !== EXPECTED_SERVICES.production.id)
+    throw new Error("RENDER_PRODUCTION_SERVICE_ID is not the approved existing production service");
 
   // Inspect both services before the first PUT. Unexpected existing rules are a hard
   // stop rather than an implicit destructive cleanup of manually-created services.

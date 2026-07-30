@@ -146,12 +146,28 @@ test("configuration refuses an unapproved service before any mutation", async ()
       apiBase: "https://render.test/v1",
       fetchImpl: api.fetchImpl,
     }),
-    /approved workspace/,
+    /approved Render workspace/,
   );
   assert.equal(
     api.calls.some((call) => call.method === "PUT"),
     false,
   );
+});
+
+test("configuration refuses same-named duplicate service IDs before provider access", async () => {
+  const api = fakeRenderApi();
+  await assert.rejects(
+    applyRenderStaticConfig({
+      apiKey: API_KEY,
+      workspaceId: WORKSPACE,
+      candidateServiceId: "srv-duplicate-candidate",
+      productionServiceId: "srv-d9lim33m8hqs738qfsa0",
+      apiBase: "https://render.test/v1",
+      fetchImpl: api.fetchImpl,
+    }),
+    /approved existing candidate service/,
+  );
+  assert.equal(api.calls.length, 0);
 });
 
 test("CD configures both services before any candidate or production deploy", () => {
