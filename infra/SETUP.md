@@ -65,6 +65,6 @@ Vercel as part of provider setup.
 ## Verification pointers
 
 - API: `GET /health`, `/ready` and `/system/status` against the Virginia Render service.
-- Expo web: deployed `https://get-your-fit.expo.app` journey evidence when the phase requires it.
+- Render Expo web: `https://app.getyourfit.co` plus direct candidate/production service URLs when the phase requires it; `https://get-your-fit.expo.app` remains Expo-owned comparison/rollback evidence.
 - Rollback: Oregon remains rollback-only while its gate is open; Next.js/Vercel oracle material is
   preserved until F13 but is not routine production deploy automation.

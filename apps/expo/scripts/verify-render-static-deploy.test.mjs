@@ -29,7 +29,10 @@ function fixtureServer({ missingHeader, wrongApiSha, cacheIdentity = "no-store" 
     const outputHeaders = { ...headers };
     if (missingHeader) delete outputHeaders[missingHeader];
     Object.assign(outputHeaders, {
-      "cache-control": path === "/__deployment/api" ? cacheIdentity : "no-cache",
+      "cache-control":
+        path === "/__deployment/api" || path === "/__deployment/api.json"
+          ? cacheIdentity
+          : "no-cache",
     });
     for (const [name, value] of Object.entries(outputHeaders)) response.setHeader(name, value);
     if (path === "/") {
@@ -40,7 +43,7 @@ function fixtureServer({ missingHeader, wrongApiSha, cacheIdentity = "no-store" 
     } else if (path === `/_expo/static/js/web/${ENTRY}`) {
       response.writeHead(200, { "content-type": "application/javascript" });
       response.end(ENTRY_BYTES);
-    } else if (path === "/__deployment/api") {
+    } else if (path === "/__deployment/api" || path === "/__deployment/api.json") {
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify(identity));
     } else if (path === "/health") {
@@ -105,6 +108,7 @@ test("Render verifier proves candidate HTTP boundary, identity, API, Cuelinks, e
     assert.equal(evidence.static.cuelinks.static.valid, true);
     assert.equal(evidence.static.cache_freshness.proven, true);
     assert.equal(evidence.static.error_headers["x-frame-options"], "DENY");
+    assert.equal(evidence.static.identity_json_headers["x-content-type-options"], "nosniff");
   });
 });
 

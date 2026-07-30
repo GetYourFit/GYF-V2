@@ -23,6 +23,8 @@ const diagnostic = {
     "render-production-deploy.json",
     "render-production-verification.json",
     "render-production-browser-verification.json",
+    "render-canonical-verification.json",
+    "render-canonical-browser-verification.json",
     "render-previous-deploys.json",
   ].filter((name) => existsSync(`${recordsDir}/${name}`)),
   note: "Render release failed closed. The production service is not deployed unless candidate HTTP, identity, API, Cuelinks and browser-surface checks pass first.",

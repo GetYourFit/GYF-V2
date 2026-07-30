@@ -41,14 +41,35 @@ function validBrowserEvidence(value, stage) {
     )
   );
 }
+function validAuthenticatedEvidence(value, stage, deploymentUrl) {
+  return (
+    value.schema_version === 2 &&
+    value.verified === true &&
+    value.stage === stage &&
+    value.deployment_url === deploymentUrl &&
+    typeof value.browser === "string" &&
+    value.browser &&
+    ["authenticated_session", "manual_onboarding", "stylist", "explore", "save_feedback"].every(
+      (check) => value.checks?.[check] === true,
+    ) &&
+    ["verified", "not_applicable"].includes(value.checks?.shop)
+  );
+}
 
 const sourceSha = option("source-sha");
 if (!/^[0-9a-f]{40}$/.test(sourceSha))
   throw new Error("Source SHA must be a 40-character hexadecimal commit");
 const candidate = json(option("candidate-verification"));
 const production = json(option("production-verification"));
+const canonical = json(option("canonical-verification"));
 const candidateBrowser = json(option("candidate-browser-verification"));
 const productionBrowser = json(option("production-browser-verification"));
+const canonicalBrowser = json(option("canonical-browser-verification"));
+const authenticated = {
+  candidate: json(option("candidate-authenticated-core-loop")),
+  production: json(option("production-authenticated-core-loop")),
+  canonical: json(option("canonical-authenticated-core-loop")),
+};
 const candidateDeploy = json(option("candidate-deploy"));
 const productionDeploy = json(option("production-deploy"));
 const previousDeploys = json(option("previous-deploys"));
@@ -57,19 +78,46 @@ if (candidate.verified !== true || candidate.verification_stage !== "candidate")
   throw new Error("Candidate verification is not a successful pre-promotion proof");
 if (production.verified !== true || production.verification_stage !== "production")
   throw new Error("Production verification is not a successful post-promotion proof");
-if (candidate.expected_source_sha !== sourceSha || production.expected_source_sha !== sourceSha)
+if (canonical.verified !== true || canonical.verification_stage !== "canonical")
+  throw new Error("Canonical-domain verification is not a successful post-promotion proof");
+if (
+  candidate.expected_source_sha !== sourceSha ||
+  production.expected_source_sha !== sourceSha ||
+  canonical.expected_source_sha !== sourceSha
+)
   throw new Error("Verification evidence does not bind the source SHA");
-if (candidate.api.release_sha !== sourceSha || production.api.release_sha !== sourceSha)
+if (
+  candidate.api.release_sha !== sourceSha ||
+  production.api.release_sha !== sourceSha ||
+  canonical.api.release_sha !== sourceSha
+)
   throw new Error("Verification evidence does not bind the API release SHA");
 if (candidate.expected_entry_hash !== production.expected_entry_hash)
   throw new Error("Candidate and production entry hashes differ");
-if (!candidate.cuelinks?.static?.valid || !production.cuelinks?.static?.valid)
-  throw new Error("Cuelinks proof is missing from candidate or production evidence");
+if (
+  !candidate.cuelinks?.static?.valid ||
+  !production.cuelinks?.static?.valid ||
+  !canonical.cuelinks?.static?.valid
+)
+  throw new Error("Cuelinks proof is missing from candidate, production, or canonical evidence");
 if (
   !validBrowserEvidence(candidateBrowser, "candidate") ||
-  !validBrowserEvidence(productionBrowser, "production")
+  !validBrowserEvidence(productionBrowser, "production") ||
+  !validBrowserEvidence(canonicalBrowser, "canonical")
 )
-  throw new Error("Browser-surface proof is missing from candidate or production evidence");
+  throw new Error(
+    "Browser-surface proof is missing from candidate, production, or canonical evidence",
+  );
+if (
+  !Object.entries(authenticated).every(([stage, value]) =>
+    validAuthenticatedEvidence(
+      value,
+      stage,
+      { candidate, production, canonical }[stage].deployment_url,
+    ),
+  )
+)
+  throw new Error("Authenticated core-loop proof is missing or failed");
 const candidateDeployId = deployId(candidateDeploy) ?? candidate.deploy_id;
 const productionDeployId = deployId(productionDeploy) ?? production.deploy_id;
 if (!candidateDeployId || !productionDeployId)
@@ -97,6 +145,7 @@ const record = {
     api_release_sha: candidate.api.release_sha,
     cuelinks: candidate.cuelinks,
     browser_surfaces: candidateBrowser.surfaces,
+    authenticated_core_loop: authenticated.candidate,
   },
   production: {
     service_id: production.service_id,
@@ -110,6 +159,19 @@ const record = {
     api_release_sha: production.api.release_sha,
     cuelinks: production.cuelinks,
     browser_surfaces: productionBrowser.surfaces,
+    authenticated_core_loop: authenticated.production,
+  },
+  canonical: {
+    url: canonical.deployment_url,
+    verified_at: canonical.static.verified_at,
+    entry_bundle: canonical.expected_entry_bundle,
+    entry_hash: canonical.expected_entry_hash,
+    headers: canonical.static.headers,
+    identity: canonical.static.deployment_identity,
+    api_release_sha: canonical.api.release_sha,
+    cuelinks: canonical.cuelinks,
+    browser_surfaces: canonicalBrowser.surfaces,
+    authenticated_core_loop: authenticated.canonical,
   },
   promotion: {
     method: "Render production-service deploy after candidate proof",
@@ -125,13 +187,14 @@ const record = {
   cache_freshness: {
     candidate: candidate.static.cache_freshness,
     production: production.static.cache_freshness,
+    canonical: canonical.static.cache_freshness,
   },
 };
 writeFileSync(option("output"), `${JSON.stringify(record, null, 2)}\n`, "utf8");
 const summary = option("summary-output");
 writeFileSync(
   summary,
-  `# Render Static release\n\n- Source/API SHA: \`${sourceSha}\`\n- Candidate service/deploy: \`${candidate.service_id}/${candidateDeployId}\`\n- Production service/deploy: \`${production.service_id}/${productionDeployId}\`\n- Entry bundle/hash: \`${record.production.entry_bundle}\` / \`${record.production.entry_hash}\`\n- Candidate verified before production deploy: **yes**\n- Required response headers: **verified on HTML, entry asset, identity, API and error probes**\n- Browser surfaces: **verified on candidate and production**\n- Cuelinks: **verified in export and live HTML**\n- Rollback command: ${record.rollback.command}\n- Render limitation: ${record.rollback.limitation}\n- Recorded: ${now}\n`,
+  `# Render Static release\n\n- Source/API SHA: \`${sourceSha}\`\n- Candidate service/deploy: \`${candidate.service_id}/${candidateDeployId}\`\n- Production service/deploy: \`${production.service_id}/${productionDeployId}\`\n- Entry bundle/hash: \`${record.production.entry_bundle}\` / \`${record.production.entry_hash}\`\n- Candidate verified before production deploy: **yes**\n- Required response headers: **verified on HTML, entry asset, identity, API and error probes**\n- Browser surfaces: **verified on candidate, Render production URL, and app.getyourfit.co**\n- Authenticated core loop: **verified on candidate, Render production URL, and app.getyourfit.co**\n- Cuelinks: **verified in export and live HTML**\n- Rollback command: ${record.rollback.command}\n- Render limitation: ${record.rollback.limitation}\n- Recorded: ${now}\n`,
   "utf8",
 );
 console.log(`capture-render-release-record: recorded ${sourceSha}; rollback target ${previous}`);

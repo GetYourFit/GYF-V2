@@ -231,6 +231,8 @@ jobs:
       EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
       EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      GYF_E2E_EMAIL: ${{ secrets.GYF_E2E_EMAIL }}
+      GYF_E2E_PASSWORD: ${{ secrets.GYF_E2E_PASSWORD }}
       SOURCE_WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
       SOURCE_WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
@@ -238,6 +240,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
       - name: Verify source and Render release configuration
         working-directory: ${{ github.workspace }}
@@ -247,14 +253,15 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$SOURCE_WORKFLOW_HEAD_SHA" ]]
           git fetch --no-tags --depth=1 origin "refs/heads/$DEFAULT_BRANCH"
           [[ "$(git rev-parse FETCH_HEAD)" == "$SOURCE_WORKFLOW_HEAD_SHA" ]]
-          for value in RENDER_API_KEY RENDER_WORKSPACE_ID RENDER_CANDIDATE_SERVICE_ID RENDER_PRODUCTION_SERVICE_ID RENDER_CANDIDATE_URL RENDER_PRODUCTION_URL RENDER_CANONICAL_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY; do
+          for value in RENDER_API_KEY RENDER_WORKSPACE_ID RENDER_CANDIDATE_SERVICE_ID RENDER_PRODUCTION_SERVICE_ID RENDER_CANDIDATE_URL RENDER_PRODUCTION_URL RENDER_CANONICAL_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY GYF_E2E_EMAIL GYF_E2E_PASSWORD; do
             if [[ -z "${!value:-}" ]]; then echo "$value is not configured in the RENDER_PRODUCTION environment." >&2; exit 1; fi
           done
           [[ "$RENDER_CANDIDATE_SERVICE_ID" != "$RENDER_PRODUCTION_SERVICE_ID" ]]
           [[ "$RENDER_CANDIDATE_URL" == https://* && "$RENDER_PRODUCTION_URL" == https://* && "$RENDER_CANONICAL_URL" == https://* ]]
           [[ "$RENDER_CANDIDATE_URL" != "$RENDER_PRODUCTION_URL" ]]
-          [[ "$RENDER_PRODUCTION_URL" == "$RENDER_CANONICAL_URL" ]]
-          [[ "$RENDER_CANONICAL_URL" == "https://get-your-fit.expo.app" ]]
+          [[ "$RENDER_CANDIDATE_URL" == "https://gyf-expo-web-candidate.onrender.com" ]]
+          [[ "$RENDER_PRODUCTION_URL" == "https://gyf-expo-web.onrender.com" ]]
+          [[ "$RENDER_CANONICAL_URL" == "https://app.getyourfit.co" ]]
           echo "CHECKED_OUT_SHA=$SOURCE_WORKFLOW_HEAD_SHA" >> "$GITHUB_ENV"
           echo "EXPO_PUBLIC_RELEASE_SHA=$SOURCE_WORKFLOW_HEAD_SHA" >> "$GITHUB_ENV"
 
@@ -270,6 +277,15 @@ jobs:
           sudo mv cli_v2.7.0 /usr/local/bin/render
           render --version
           render blueprints validate infra/render-expo-static.yaml --workspace "$RENDER_WORKSPACE_ID" --output json --confirm
+
+      - name: Configure Render Static headers and identity rewrite
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          node apps/expo/scripts/configure-render-static.mjs \
+            --workspace-id "$RENDER_WORKSPACE_ID" \
+            --candidate-service-id "$RENDER_CANDIDATE_SERVICE_ID" \
+            --production-service-id "$RENDER_PRODUCTION_SERVICE_ID"
 
       - name: Export and fingerprint the candidate locally
         working-directory: ${{ github.workspace }}
@@ -317,6 +333,10 @@ jobs:
             --expected-entry-sha256 "$EXPECTED_ENTRY_SHA256" \
             --cuelinks-evidence apps/expo/deploy-records/cuelinks-export-evidence.json \
             --evidence-file apps/expo/deploy-records/render-candidate-verification.json
+          node apps/expo/scripts/verify-render-authenticated-core-loop.mjs \
+            --stage candidate --deployment-url "$RENDER_CANDIDATE_URL" \
+            --api-url "$EXPO_PUBLIC_API_URL" \
+            --evidence-file apps/expo/deploy-records/render-candidate-authenticated-core-loop.json
 
       - name: Capture retained production deploy for rollback
         working-directory: ${{ github.workspace }}
@@ -331,7 +351,7 @@ jobs:
           [[ "$production_deploy_id" =~ ^[a-z0-9-]+$ ]]
           echo "RENDER_PRODUCTION_DEPLOY_ID=$production_deploy_id" >> "$GITHUB_ENV"
 
-      - name: Verify canonical Render production release
+      - name: Verify Render production service and canonical domain
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -351,6 +371,29 @@ jobs:
             --expected-entry-sha256 "$EXPECTED_ENTRY_SHA256" \
             --cuelinks-evidence apps/expo/deploy-records/cuelinks-export-evidence.json \
             --evidence-file apps/expo/deploy-records/render-production-verification.json
+          node apps/expo/scripts/verify-render-browser-surfaces.mjs \
+            --stage canonical \
+            --deployment-url "$RENDER_CANONICAL_URL" \
+            --evidence-file apps/expo/deploy-records/render-canonical-browser-verification.json
+          node apps/expo/scripts/verify-render-static-deploy.mjs \
+            --stage canonical \
+            --deployment-url "$RENDER_CANONICAL_URL" \
+            --service-id "$RENDER_PRODUCTION_SERVICE_ID" \
+            --deploy-id "$RENDER_PRODUCTION_DEPLOY_ID" \
+            --api-url "$EXPO_PUBLIC_API_URL" \
+            --expected-source-sha "$CHECKED_OUT_SHA" \
+            --expected-entry-bundle "$EXPECTED_ENTRY_BUNDLE" \
+            --expected-entry-hash "$EXPECTED_ENTRY_HASH" \
+            --expected-entry-sha256 "$EXPECTED_ENTRY_SHA256" \
+            --cuelinks-evidence apps/expo/deploy-records/cuelinks-export-evidence.json \
+            --evidence-file apps/expo/deploy-records/render-canonical-verification.json
+          for stage in production canonical; do
+            url_var="RENDER_${stage^^}_URL"
+            node apps/expo/scripts/verify-render-authenticated-core-loop.mjs \
+              --stage "$stage" --deployment-url "${!url_var}" \
+              --api-url "$EXPO_PUBLIC_API_URL" \
+              --evidence-file "apps/expo/deploy-records/render-${stage}-authenticated-core-loop.json"
+          done
 
       - name: Capture Render provenance and rollback contract
         working-directory: ${{ github.workspace }}
@@ -366,6 +409,11 @@ jobs:
             --production-verification apps/expo/deploy-records/render-production-verification.json \
             --candidate-browser-verification apps/expo/deploy-records/render-candidate-browser-verification.json \
             --production-browser-verification apps/expo/deploy-records/render-production-browser-verification.json \
+            --canonical-verification apps/expo/deploy-records/render-canonical-verification.json \
+            --canonical-browser-verification apps/expo/deploy-records/render-canonical-browser-verification.json \
+            --candidate-authenticated-core-loop apps/expo/deploy-records/render-candidate-authenticated-core-loop.json \
+            --production-authenticated-core-loop apps/expo/deploy-records/render-production-authenticated-core-loop.json \
+            --canonical-authenticated-core-loop apps/expo/deploy-records/render-canonical-authenticated-core-loop.json \
             --production-service-id "$RENDER_PRODUCTION_SERVICE_ID" \
             --output apps/expo/deploy-records/render-release-record.json \
             --summary-output apps/expo/deploy-records/render-release-summary.md

@@ -35,6 +35,20 @@ isolated candidate service URL plus deploy IDs and retained artifact are the evi
 DNS and their rollback assets remain untouched until that proof passes. No local or CI result claims
 F2.5, native acceptance, production cutover or hard launch.
 
+**Captain canonical-domain amendment — 2026-07-30.** The approved main production surface for the
+Render Static lane is `https://app.getyourfit.co`. The direct Render production URL
+`https://gyf-expo-web.onrender.com` remains a required proof URL, and the candidate is
+`https://gyf-expo-web-candidate.onrender.com`; the existing candidate/production services
+(`srv-d9li80ijnfac73ajo9u0` / `srv-d9lim33m8hqs738qfsa0`) and approved workspace
+`tea-d8p3vu5ckfvc73a025h0` remain fixed. Every merged release change must verify on the exact canonical domain and direct production URL,
+after candidate proof and before any live claim: source/API provenance, required headers on
+HTML/assets/identity/errors, `/__deployment/api` equality with `/__deployment/api.json`, Cuelinks,
+hydrated browser navigation and console-error evidence, authenticated core-loop evidence and rollback.
+This amendment does not mutate DNS, create services, change the API, or move
+`https://get-your-fit.expo.app`; that URL remains Expo-owned comparison/rollback material until its
+protected retirement gate. Render Static is the single web deployment owner only when this transaction
+passes; failure holds promotion and preserves EAS/Vercel rollback.
+
 ## Feedback v7 planning freeze and master-plan decision (2026-07-17)
 
 **Application implementation is frozen until P0 reconciliation passes and the owner records
