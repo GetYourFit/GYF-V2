@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { verifyBrowserSurfaces } from "./verify-render-browser-surfaces.mjs";
+import {
+  settledSurfaceState,
+  verifyBrowserSurfaces,
+} from "./verify-render-browser-surfaces.mjs";
 
 const markers = {
   "/welcome": "Your AI stylist",
@@ -96,4 +99,34 @@ test("rejects a browser error overlay", async () => {
     }),
     /rendered an error overlay/,
   );
+});
+
+test("waits for protected routes to settle after client startup", () => {
+  const surface = {
+    path: "/explore",
+    protectedRedirect: "/welcome",
+    marker: "Your AI stylist",
+    readySelector: 'a[href="/login"]',
+  };
+  const document = {
+    documentElement: {
+      dataset: { gyfClientReady: "true" },
+      outerHTML: "<html><body>Checking your session</body></html>",
+    },
+    querySelector: () => null,
+  };
+  const location = { pathname: "/explore" };
+
+  assert.equal(settledSurfaceState(document, location, surface), null);
+
+  document.documentElement.outerHTML =
+    '<html data-gyf-client-ready="true"><body>Your AI stylist<a href="/login">Sign in</a></body></html>';
+  document.querySelector = (selector) => (selector === surface.readySelector ? {} : null);
+  location.pathname = "/welcome";
+
+  assert.deepEqual(settledSurfaceState(document, location, surface), {
+    ready: true,
+    path: "/welcome",
+    dom: document.documentElement.outerHTML,
+  });
 });

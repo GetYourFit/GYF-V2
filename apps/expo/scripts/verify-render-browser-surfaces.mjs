@@ -10,6 +10,7 @@ const SURFACES = [
     name: "welcome",
     path: "/welcome",
     marker: "Your AI stylist",
+    readySelector: 'a[href="/login"]',
     interaction: `(() => { const target = document.querySelector('a[href="/login"]'); if (!target) return { ok: false, reason: "login navigation link missing" }; target.click(); return { ok: true, expected_path: "/login" }; })()`,
     expectedPath: "/login",
   },
@@ -17,12 +18,14 @@ const SURFACES = [
     name: "login",
     path: "/login",
     marker: "Welcome back",
+    readySelector: 'input[aria-label="Email address"]',
     interaction: `(() => { const target = document.querySelector('input[aria-label="Email address"]'); if (!target) return { ok: false, reason: "email input missing" }; target.focus(); return { ok: document.activeElement === target }; })()`,
   },
   {
     name: "terms",
     path: "/terms",
     marker: "Terms and privacy",
+    readySelector: 'a[href="/contact"]',
     interaction: `(() => { const target = document.querySelector('a[href="/contact"]'); if (!target) return { ok: false, reason: "contact support link missing" }; target.click(); return { ok: true, expected_path: "/contact" }; })()`,
     expectedPath: "/contact",
   },
@@ -30,6 +33,7 @@ const SURFACES = [
     name,
     path: `/${name}`,
     marker: name === "contact" ? "Contact" : "Grievance",
+    readySelector: 'a[href="/login"]',
     interaction: `(() => { const target = document.querySelector('a[href="/login"]'); if (!target) return { ok: false, reason: "anonymous sign-in link missing" }; target.click(); return { ok: true, expected_path: "/login" }; })()`,
     expectedPath: "/login",
   })),
@@ -38,6 +42,7 @@ const SURFACES = [
     path: name === "stylist" ? "/" : `/${name}`,
     marker: "Your AI stylist",
     protectedRedirect: "/welcome",
+    readySelector: 'a[href="/login"]',
     interaction: `(() => { const target = document.querySelector('a[href="/login"]'); if (!target) return { ok: false, reason: "anonymous fallback login link missing" }; target.click(); return { ok: true, expected_path: "/login" }; })()`,
     expectedPath: "/login",
   })),
@@ -226,6 +231,15 @@ async function waitFor(session, predicate, timeout = 12_000) {
   );
 }
 
+export function settledSurfaceState(document, location, surface) {
+  if (document.documentElement?.dataset?.gyfClientReady !== "true") return null;
+  const allowedPaths = [surface.path, surface.protectedRedirect].filter(Boolean);
+  if (!allowedPaths.includes(location.pathname)) return null;
+  const dom = document.documentElement?.outerHTML ?? "";
+  if (!dom.includes(surface.marker) || !document.querySelector(surface.readySelector)) return null;
+  return { ready: true, path: location.pathname, dom };
+}
+
 async function verifyWithDevTools({ deploymentUrl, stage, command }) {
   const port = await freePort();
   const profile = mkdtempSync(`${tmpdir()}/gyf-render-browser-`);
@@ -254,14 +268,16 @@ async function verifyWithDevTools({ deploymentUrl, stage, command }) {
       const url = new URL(surface.path, deploymentUrl).toString();
       session.errors.length = 0;
       await session.command("Page.navigate", { url });
-      const state = await waitFor(session, () => {
-        if (document.documentElement?.dataset?.gyfClientReady !== "true") return null;
-        return {
-          ready: true,
-          path: window.location.pathname,
-          dom: document.documentElement?.outerHTML ?? "",
-        };
-      });
+      const readinessSurface = {
+        path: surface.path,
+        protectedRedirect: surface.protectedRedirect,
+        marker: surface.marker,
+        readySelector: surface.readySelector,
+      };
+      const state = await waitFor(
+        session,
+        `() => (${settledSurfaceState.toString()})(document, window.location, ${JSON.stringify(readinessSurface)})`,
+      );
       assertDocument(state.dom, surface);
       const allowedPaths = [surface.path, surface.protectedRedirect].filter(Boolean);
       if (!allowedPaths.includes(state.path))
