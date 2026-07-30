@@ -192,7 +192,7 @@ def _text_search_capability() -> Capability:
         return Capability(
             status="degraded",
             lane="keyword-fallback",
-            detail="Encoder is blocked by the model registry — search falls back to keywords.",
+            detail="Semantic encoder is blocked by the model registry — search serves bounded lexical title matches.",
         )
     encoder_url = os.environ.get("GYF_ENCODER_REMOTE_URL", "").strip()
     if encoder_url:
@@ -208,7 +208,7 @@ def _text_search_capability() -> Capability:
         return Capability(
             status="degraded",
             lane="keyword-fallback",
-            detail="GPU encoder lane unreachable — search falls back to keyword match.",
+            detail="GPU encoder lane is unreachable — search serves bounded lexical title matches.",
         )
     if _runtime_installed("torch"):
         return Capability(
@@ -218,8 +218,8 @@ def _text_search_capability() -> Capability:
         )
     return Capability(
         status="degraded",
-        lane="none",
-        detail="No encoder lane configured and no local ML runtime — search returns 503.",
+        lane="keyword-fallback",
+        detail="No semantic encoder lane is available — search serves bounded lexical title matches.",
     )
 
 

@@ -707,7 +707,8 @@ class PostgresVectorSearchRepository:
         if taste_vector is not None:
             vec = _pgvector(taste_vector)
             sql = _BROWSE_TASTE.format(
-                searchable=SEARCHABLE_ITEM_PREDICATE + ("\n  " + budget_clause if budget_clause else ""),
+                searchable=SEARCHABLE_ITEM_PREDICATE
+                + ("\n  " + budget_clause if budget_clause else ""),
                 region=region_clause,
                 gender=gender_clause,
                 category=category_clause,
@@ -754,7 +755,8 @@ class PostgresVectorSearchRepository:
             _BROWSE_INDEXED if self._indexed_browse or taste_vector is not None else _BROWSE_LEGACY
         )
         sql = browse_query.format(
-            searchable=SEARCHABLE_ITEM_PREDICATE + ("\n     " + budget_clause if budget_clause else ""),
+            searchable=SEARCHABLE_ITEM_PREDICATE
+            + ("\n     " + budget_clause if budget_clause else ""),
             region=region_clause,
             gender=gender_clause,
             category=category_clause,
@@ -837,11 +839,6 @@ class PostgresVectorSearchRepository:
         tsquery = " | ".join(f"{token}:*" for token in tokens)
         vector_expr = "to_tsvector('simple'::regconfig, i.title)"
         query_expr = "to_tsquery('simple'::regconfig, %s)"
-        # Normalization 32 maps cover-density rank to rank/(rank+1), preserving
-        # SearchResult's bounded confidence contract. OR semantics and rank keep
-        # the strongest multi-token title matches first instead of dead-ending.
-        score_expr = f"ts_rank_cd({vector_expr}, {query_expr}, 32)"
-        params: list[object] = [tsquery]  # SELECT score expression
         # Require a stored embedding (same as browse()): a keyword hit with none
         # would dead-end on click, since recluster/similar joins item_embeddings.
         where = (
@@ -849,7 +846,7 @@ class PostgresVectorSearchRepository:
             " AND EXISTS (SELECT 1 FROM item_embeddings e WHERE e.item_id = i.id)"
             f" AND {vector_expr} @@ {query_expr}"
         )
-        params.append(tsquery)  # WHERE match expression
+        params: list[object] = [tsquery]  # WHERE match expression
         if region:
             where += " " + _REGION_FILTER
             params.append(region)
@@ -865,19 +862,33 @@ class PostgresVectorSearchRepository:
         if categories:
             where += " " + _CATEGORY_FILTER
             params.append(categories)
-        # Relevance: best keyword overlap first, then priced-with-images, then
-        # newest. Price sorts use the shared clauses.
+
+        # An encoder outage must not make a broad title term rank the entire
+        # catalogue before LIMIT/OFFSET can run. The GIN predicate selects a
+        # bounded candidate window first; only that window gets a relevance
+        # score. This keeps the lexical path useful and within the existing
+        # statement timeout without changing any catalogue safety predicate.
+        candidate_limit = offset + k
+        score_expr = f"ts_rank_cd({vector_expr}, {query_expr}, 32)"
+        candidate_order = _SORT_CLAUSES.get(sort, "")
         order = _SORT_CLAUSES.get(
             sort,
             "ORDER BY score DESC, (i.price IS NOT NULL) DESC, i.created_at DESC, i.id",
         )
-        params.extend([k, offset])
+        params.extend([candidate_limit, tsquery, k, offset])
         sql = f"""
+        WITH lexical_candidates AS MATERIALIZED (
+            SELECT i.id
+            FROM items i
+            {where}
+            {candidate_order}
+            LIMIT %s
+        )
         SELECT i.id, i.title, {score_expr} AS score, i.image_refs,
                i.price, i.currency, i.affiliate_url,
                i.attributes #>> '{{perception,color,hue_name}}' AS hue_name
         FROM items i
-        {where}
+        JOIN lexical_candidates candidate ON candidate.id = i.id
         {order}
         LIMIT %s OFFSET %s
         """
