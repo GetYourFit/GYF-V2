@@ -9,12 +9,18 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { SettingsGroup } from "@/components/ui/settings-group";
 import { hitSlopFor, MIN_TARGET } from "@/components/ui/pressable-scale";
 import { ApiError, createApi } from "@/lib/api";
+import { getSession } from "@/lib/auth";
 import {
   DEFAULT_CONSENT,
   EMPTY_PROFILE,
-  isOnboardingReady,
+  hasAudienceContext,
   mergeProfile,
 } from "@/lib/onboarding-validation";
+import {
+  loadOnboardingDraft,
+  saveOnboardingDraft,
+  type OnboardingDraft,
+} from "@/lib/onboarding-draft";
 import { OCCASIONS, STYLE_INTENTS } from "@/lib/vocab";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
 import { useThemeColors } from "@/theme/use-color-scheme";
@@ -93,8 +99,7 @@ function ConsentRow({
   return (
     <Pressable
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: value, disabled: required }}
-      disabled={required}
+      accessibilityState={{ checked: value }}
       onPress={onPress}
       // The row's height is bounded by the 22pt checkbox, so without this the consent
       // toggles every new user must hit are half the minimum target.
@@ -133,13 +138,22 @@ function ConsentRow({
  * `PersonalFitForm` — instead of navigating itself, so this form has no opinion on
  * what comes next.
  */
-export function OnboardingForm({ onSaved }: { onSaved: () => void }) {
+export type OnboardingFormProps = Readonly<{
+  onSaved: () => void;
+  onResumePersonalFit?: () => void;
+}>;
+
+export function OnboardingForm({ onSaved, onResumePersonalFit }: OnboardingFormProps) {
   const palette = useThemeColors();
   const [profile, setProfile] = useState<ProfileInput>(EMPTY_PROFILE);
   const [consent, setConsent] = useState<ConsentState>({ ...DEFAULT_CONSENT });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [resumePersonalFit, setResumePersonalFit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -150,15 +164,29 @@ export function OnboardingForm({ onSaved }: { onSaved: () => void }) {
         throw cause;
       }),
       api.getConsent().catch(() => ({})),
+      getSession(),
     ])
-      .then(([existing, flags]) => {
+      .then(async ([existing, flags, session]) => {
         if (!active) return;
-        if (existing) setProfile(mergeProfile(existing));
-        setConsent({ ...DEFAULT_CONSENT, ...flags, data_processing: true });
+        if (!session?.user.id) throw new Error("Your session expired. Sign in again.");
+        const draft = await loadOnboardingDraft(session.user.id);
+        if (!active) return;
+        setAccountId(session.user.id);
+        const nextProfile = mergeProfile({ ...(draft?.profile ?? {}), ...(existing ?? {}) });
+        if (existing || draft?.profile) setProfile(nextProfile);
+        const nextConsent = { ...DEFAULT_CONSENT, ...(draft?.consent ?? {}), ...flags };
+        setConsent(nextConsent);
+        if (existing && hasAudienceContext(nextProfile)) {
+          setResumePersonalFit(true);
+          onResumePersonalFit?.();
+        } else if (draft?.step === "personal-fit") {
+          setResumePersonalFit(true);
+          onResumePersonalFit?.();
+        }
       })
       .catch((cause: unknown) => {
         if (active)
-          setError(cause instanceof Error ? cause.message : "Could not load your profile.");
+          setLoadError(cause instanceof Error ? cause.message : "Could not load your profile.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -166,15 +194,29 @@ export function OnboardingForm({ onSaved }: { onSaved: () => void }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadAttempt, onResumePersonalFit]);
+
+  useEffect(() => {
+    if (loading || !accountId) return;
+    const draft: OnboardingDraft = {
+      consent,
+      profile,
+      step: resumePersonalFit ? "personal-fit" : "profile",
+    };
+    void saveOnboardingDraft(accountId, draft);
+  }, [accountId, consent, loading, profile, resumePersonalFit]);
 
   function update<K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) {
     setProfile((current) => ({ ...current, [key]: value }));
   }
 
   async function save() {
-    if (!isOnboardingReady(profile)) {
+    if (!hasAudienceContext(profile)) {
       setError("Choose who you are shopping for so GYF can keep the catalogue slice honest.");
+      return;
+    }
+    if (!consent.data_processing) {
+      setError("Allow personalized styling to continue. You can still skip the optional photo.");
       return;
     }
     setError(null);
@@ -194,15 +236,44 @@ export function OnboardingForm({ onSaved }: { onSaved: () => void }) {
   if (loading)
     return <ActivityIndicator accessibilityLabel="Loading your profile" color={palette.text} />;
 
+  if (loadError) {
+    return (
+      <AuthScreen>
+        <View style={{ gap: spacing.md }}>
+          <GyfText accessibilityRole="alert" style={{ color: palette.error }}>
+            {loadError}
+          </GyfText>
+          <AtelierButton
+            label="Try again"
+            onPress={() => {
+              setLoadError(null);
+              setLoading(true);
+              setLoadAttempt((attempt) => attempt + 1);
+            }}
+          />
+        </View>
+      </AuthScreen>
+    );
+  }
+
   return (
     <AuthScreen>
       <View style={{ gap: spacing.xl }}>
-        <View style={{ gap: spacing.xs }}>
+        <View
+          accessibilityLabel="Onboarding progress, step 1 of 2"
+          accessibilityRole="progressbar"
+          accessibilityValue={{ max: 2, min: 1, now: 1 }}
+          style={{ gap: spacing.xs }}
+        >
+          <GyfText tone="faint" variant="label">
+            STEP 1 OF 2 · YOUR STYLE CONTEXT
+          </GyfText>
           <GyfText accessibilityRole="header" variant="title">
             Tell GYF about your style
           </GyfText>
           <GyfText tone="muted">
-            Only the shopping slice is required. Everything else stays editable.
+            India-first catalogue, INR by default, adult styling. Photo assistance is never
+            required; every choice stays editable.
           </GyfText>
         </View>
         <Section title="Who are you shopping for?">
@@ -299,8 +370,13 @@ export function OnboardingForm({ onSaved }: { onSaved: () => void }) {
             <View style={{ gap: spacing.md }}>
               <ConsentRow
                 label="Process my data to provide GYF"
-                value={true}
-                onPress={() => undefined}
+                value={consent.data_processing}
+                onPress={() =>
+                  setConsent((current) => ({
+                    ...current,
+                    data_processing: !current.data_processing,
+                  }))
+                }
                 required
               />
               <ConsentRow
@@ -314,7 +390,7 @@ export function OnboardingForm({ onSaved }: { onSaved: () => void }) {
                 }
               />
               <ConsentRow
-                label="Store uploaded photos"
+                label="Store photos for future features"
                 value={consent.photo_storage}
                 onPress={() =>
                   setConsent((current) => ({ ...current, photo_storage: !current.photo_storage }))
@@ -329,7 +405,7 @@ export function OnboardingForm({ onSaved }: { onSaved: () => void }) {
               />
             </View>
           </AtelierCard>
-          <ConfidenceLabel reason="The next step may offer a photo-based estimate when it's available. Manual fields always work." />
+          <ConfidenceLabel reason="Photo assistance is optional and may be unavailable. Current profile-photo analysis is ephemeral; raw photos are not required or added to analytics." />
         </Section>
         {error ? (
           <GyfText accessibilityRole="alert" style={{ color: palette.error }}>

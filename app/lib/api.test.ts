@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { GyfApi as ExpoGyfApi } from "../../apps/expo/src/lib/api";
 import { ApiError, GyfApi } from "./api";
 
 // A typed stand-in for the global fetch the client calls.
@@ -233,6 +234,37 @@ describe("GyfApi", () => {
 
     expect(fetchSpy).toHaveBeenCalledOnce();
     expect((err as DOMException).name).toBe("AbortError");
+  });
+
+  it("reports a progress upload timeout instead of user cancellation", async () => {
+    vi.useFakeTimers();
+    class SynchronousAbortXhr {
+      upload = {};
+      onabort: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      onload: (() => void) | null = null;
+      open() {}
+      setRequestHeader() {}
+      send() {}
+      abort() {
+        this.onabort?.();
+      }
+    }
+    vi.stubGlobal("XMLHttpRequest", SynchronousAbortXhr);
+    try {
+      const upload = new ExpoGyfApi(() => "jwt", "http://api").uploadPhoto(
+        new Blob(["photo"], { type: "image/jpeg" }) as File,
+        undefined,
+        () => undefined,
+      );
+      const failedUpload = upload.catch((cause: unknown) => cause);
+      await vi.advanceTimersByTimeAsync(60_000);
+      const error = await failedUpload;
+      expect((error as DOMException).name).toBe("TimeoutError");
+      expect((error as DOMException).message).toBe("Upload timed out");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("still retries a safe GET after a gateway failure", async () => {

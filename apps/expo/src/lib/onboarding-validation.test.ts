@@ -9,9 +9,17 @@ import {
 } from "./onboarding-validation";
 
 describe("onboarding validation", () => {
-  test("requires an explicit catalogue gender slice", () => {
+  test("requires the complete manual readiness contract, not only gender", () => {
     expect(isOnboardingReady(EMPTY_PROFILE)).toBe(false);
-    expect(isOnboardingReady({ ...EMPTY_PROFILE, gender: "unisex" })).toBe(true);
+    expect(isOnboardingReady({ ...EMPTY_PROFILE, gender: "unisex" })).toBe(false);
+    expect(
+      isOnboardingReady({
+        ...EMPTY_PROFILE,
+        body_type: "rectangle",
+        gender: "unisex",
+        skin_tone: "mst4",
+      }),
+    ).toBe(true);
   });
   test("merges saved profile data without dropping defaults", () => {
     expect(mergeProfile({ gender: "women" }).budget_range).toEqual({
@@ -27,7 +35,15 @@ describe("onboarding validation", () => {
   });
   test("routes unonboarded profiles to onboarding, fails open when profile is unknown", () => {
     expect(needsOnboarding(EMPTY_PROFILE)).toBe(true);
-    expect(needsOnboarding({ ...EMPTY_PROFILE, gender: "men" })).toBe(false);
+    expect(needsOnboarding({ ...EMPTY_PROFILE, gender: "men" })).toBe(true);
+    expect(
+      needsOnboarding({
+        ...EMPTY_PROFILE,
+        body_type: "rectangle",
+        gender: "men",
+        skin_tone: "mst4",
+      }),
+    ).toBe(false);
     // Fetch failure must not trap a working session behind onboarding; the
     // Stylist's isNotOnboarded error path already covers the miss honestly.
     expect(needsOnboarding(null)).toBe(false);

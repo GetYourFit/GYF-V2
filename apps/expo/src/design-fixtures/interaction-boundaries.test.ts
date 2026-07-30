@@ -111,6 +111,15 @@ describe("Expo interaction boundaries", () => {
     );
   });
 
+  test("Explore uses the same complete onboarding readiness contract as SessionGate", () => {
+    expect(exploreSource).toContain(
+      'import { isOnboardingReady } from "@/lib/onboarding-validation";',
+    );
+    expect(exploreSource).toMatch(
+      /const profile = await api\.getProfile\(\);[\s\S]{0,120}isOnboardingReady\(profile\)/,
+    );
+  });
+
   test("profile refresh invalidates older catalogue responses before loading resumes", () => {
     expect(exploreSource).toContain("const profileGeneration = useRef(0);");
     expect(exploreSource).toMatch(

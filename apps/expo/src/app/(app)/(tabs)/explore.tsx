@@ -19,6 +19,7 @@ import { MasonryFeed } from "@/components/ui/masonry-feed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, createApi, type CatalogFacets, type SearchResult } from "@/lib/api";
 import { getSession } from "@/lib/auth";
+import { isOnboardingReady } from "@/lib/onboarding-validation";
 import {
   activeFilterCount,
   appendUniqueItems,
@@ -193,6 +194,7 @@ export default function ExploreRoute() {
       .then(async (session) => {
         if (!session) return { state: "anonymous" } as AudienceReadiness;
         const profile = await api.getProfile();
+        if (!isOnboardingReady(profile)) return { state: "needs-profile" } as AudienceReadiness;
         const gender = scopeGender(profile.gender);
         const max = profile.budget_range?.max;
         const currency = profile.budget_range?.currency;

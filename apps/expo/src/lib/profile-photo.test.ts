@@ -36,8 +36,13 @@ function api(photoAnalysis: Partial<ProfilePhotoResponse["photo_analysis"]> = {}
   return {
     uploads,
     systemStatus: async () => status("live", "beta"),
-    uploadPhoto: async (photo: unknown) => {
+    uploadPhoto: async (
+      photo: unknown,
+      _signal?: AbortSignal,
+      onProgress?: (progress: { loaded: number; total: number | null }) => void,
+    ) => {
       uploads.push(photo);
+      onProgress?.({ loaded: 5, total: 5 });
       return {
         source: "photo",
         skin_tone: "mst1",
@@ -66,7 +71,19 @@ describe("profile photo boundary", () => {
   });
 
   test("rejects picker assets without readable bytes", () => {
-    expect(validateProfilePhotoAsset(asset({ base64: null, file: undefined }))).toContain("read");
+    expect(validateProfilePhotoAsset(asset({ base64: null, file: undefined, uri: "" }))).toContain(
+      "read",
+    );
+  });
+
+  test("accepts a native URI when the platform does not expose File/base64 bytes", () => {
+    expect(validateProfilePhotoAsset(asset({ base64: null, file: undefined }))).toBeNull();
+  });
+
+  test("rejects oversized dimensions before a native upload", () => {
+    expect(validateProfilePhotoAsset(asset({ width: 10_000, height: 5_000 }))).toContain(
+      "40 megapixels",
+    );
   });
 
   test("rejects invalid base64 shape and padding before transport", () => {
@@ -88,8 +105,8 @@ describe("profile photo boundary", () => {
     ).toContain("10 MB");
   });
 
-  test("requires both photo capabilities and never uploads on a closed or unreadable gate", async () => {
-    for (const capabilities of [status("live", "shadow"), status("planned", "beta")]) {
+  test("requires one usable module and never uploads on a fully closed or unreadable gate", async () => {
+    for (const capabilities of [status("planned", "shadow"), status("degraded", "planned")]) {
       const client = api();
       client.systemStatus = async () => capabilities;
       await expect(uploadProfilePhoto(client, asset())).rejects.toThrow(
@@ -97,6 +114,18 @@ describe("profile photo boundary", () => {
       );
       expect(client.uploads).toHaveLength(0);
     }
+
+    const bodyOnly = api({
+      state: "partial",
+      body_type: "hourglass",
+      reason: "Review the estimate and complete the missing field manually.",
+    });
+    bodyOnly.systemStatus = async () => status("live", "shadow");
+    await expect(uploadProfilePhoto(bodyOnly, asset())).resolves.toMatchObject({
+      body_type: "hourglass",
+      state: "partial",
+    });
+    expect(bodyOnly.uploads).toHaveLength(1);
 
     const client = api();
     client.systemStatus = async () => {
@@ -106,6 +135,12 @@ describe("profile photo boundary", () => {
       "Photo analysis is unavailable",
     );
     expect(client.uploads).toHaveLength(0);
+  });
+
+  test("forwards real upload progress without inventing a percentage", async () => {
+    const progress: Array<{ loaded: number; total: number | null }> = [];
+    await uploadProfilePhoto(api(), asset(), undefined, (next) => progress.push(next));
+    expect(progress).toEqual([{ loaded: 5, total: 5 }]);
   });
 
   test("preserves a body-only result as partial", async () => {
@@ -145,6 +180,15 @@ describe("profile photo boundary", () => {
       field_confidence: { skin_tone: 0.7, undertone: 0.7 },
       reason: "Review the estimate and complete the missing field manually.",
     });
+  });
+
+  test("preserves cancellation so the UI can keep the private preview for retry", async () => {
+    const client = api();
+    client.uploadPhoto = async () => {
+      throw new DOMException("Aborted", "AbortError");
+    };
+    const error = await uploadProfilePhoto(client, asset()).catch((caught: unknown) => caught);
+    expect((error as Error).name).toBe("AbortError");
   });
 
   test("preserves an honest abstention without inventing an estimate", async () => {
@@ -226,7 +270,7 @@ describe("profile photo boundary", () => {
       });
       expect(calls.map(([url]) => url)).toEqual([
         "https://api.test/system/status",
-        "https://api.test/profile/photo",
+        "https://api.test/profile/photo?persist=false",
       ]);
       const headers = new Headers(calls[1][1]?.headers);
       expect(headers.get("Authorization")).toBe("Bearer jwt-photo");

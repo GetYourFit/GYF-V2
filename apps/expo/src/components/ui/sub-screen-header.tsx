@@ -16,7 +16,7 @@ const DISC = 40;
  * where the name is left-aligned and there is nothing to go back to — centring
  * here is what says "this is a level down, and you can leave".
  */
-export function SubScreenHeader({ title }: { title: string }) {
+export function SubScreenHeader({ title, onBack }: { title: string; onBack?: () => void }) {
   const palette = useThemeColors();
   return (
     <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.md }}>
@@ -24,9 +24,13 @@ export function SubScreenHeader({ title }: { title: string }) {
         accessibilityLabel="Back"
         accessibilityRole="button"
         hitSlop={hitSlopFor(44)}
-        onPress={() =>
-          router.canGoBack() ? router.back() : router.replace("/(app)/(tabs)/profile")
-        }
+        onPress={() => {
+          if (onBack) {
+            onBack();
+            return;
+          }
+          router.canGoBack() ? router.back() : router.replace("/(app)/(tabs)/profile");
+        }}
         style={{
           alignItems: "center",
           backgroundColor: palette.surface,
