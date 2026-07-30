@@ -1,5 +1,6 @@
 import type { FeedbackRequest } from "./api";
 
+import { createEventId } from "./event-id";
 import { safeExternalShopUrl } from "./shop-links";
 
 /**
@@ -13,7 +14,7 @@ export const COMMERCE_PLACEMENTS = ["stylist_outfit", "product_detail"] as const
 export type CommercePlacement = (typeof COMMERCE_PLACEMENTS)[number];
 
 export function catalogClickSubid(): string {
-  return `catalog_${crypto.randomUUID()}`;
+  return `catalog_${createEventId()}`;
 }
 
 export function shopClickFeedback(

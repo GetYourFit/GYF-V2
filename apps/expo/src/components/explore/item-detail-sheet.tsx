@@ -13,6 +13,7 @@ import { PressableScale, hitSlopFor } from "@/components/ui/pressable-scale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createApi, type Outfit, type OutfitItem, type SearchResult } from "@/lib/api";
 import { catalogClickSubid, shopClickFeedback } from "@/lib/commerce-attribution";
+import { createEventId, createLazyEventId } from "@/lib/event-id";
 import { compatibilityReason, formatCatalogPrice } from "@/lib/explore-feed";
 import { deeplinkSubid, safeExternalShopUrl, SHOP_AFFILIATE_DISCLOSURE } from "@/lib/shop-links";
 import { colors, materials, radii, spacing, type ThemeName } from "@/theme/tokens";
@@ -169,7 +170,7 @@ export function ItemDetailSheet({
   const [api] = useState(() => createApi());
   const [wardrobeState, setWardrobeState] = useState<"idle" | "busy" | "added">("idle");
   const [actionError, setActionError] = useState<string | null>(null);
-  const commerceSessionId = useRef(crypto.randomUUID());
+  const getCommerceSessionId = useRef(createLazyEventId()).current;
 
   // Every open is a fresh item: never show the previous item's success state.
   useEffect(() => {
@@ -217,10 +218,10 @@ export function ItemDetailSheet({
     }
     await Linking.openURL(trackedUrl);
     const event = shopClickFeedback(shopItem, {
-      eventId: crypto.randomUUID(),
+      eventId: createEventId(),
       placement: "product_detail",
       recommendationId,
-      sessionId: commerceSessionId.current,
+      sessionId: getCommerceSessionId(),
       subid: subid ?? undefined,
       unattributed: !recommendationId && !subid,
     });
