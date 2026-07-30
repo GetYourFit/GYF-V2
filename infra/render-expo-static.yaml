@@ -1,0 +1,74 @@
+# Render Static setup artifact for the Expo web release lane.
+#
+# This file is intentionally separate from render.yaml: the existing Blueprint owns
+# the Virginia API service, while the static web services are provisioned only in the
+# approved Render workspace after the Render environment variables/service IDs are
+# recorded in GitHub. It contains no domain, token, or secret. Do not sync it until
+# the candidate and production service IDs/URLs are configured in the release environment.
+#
+# Render has no immutable public URL per deploy for static sites. The release owner
+# therefore verifies the isolated candidate service before deploying the same commit
+# to the retained production service; the production deploy ID and prior successful
+# build artifact are retained for API rollback.
+services:
+  - type: web
+    name: gyf-expo-web-candidate
+    runtime: static
+    autoDeployTrigger: off
+    buildCommand: bun install --frozen-lockfile && cd apps/expo && bun run render:build
+    staticPublishPath: ./apps/expo/dist
+    headers: &security_headers
+      - path: /*
+        name: Content-Security-Policy
+        value: frame-ancestors 'none'
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        value: same-origin
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /__deployment/*
+        name: Cache-Control
+        value: no-store
+      - path: /*.html
+        name: Cache-Control
+        value: no-cache
+      - path: /**/*.html
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /__deployment/api
+        destination: /__deployment/api.json
+    envVars:
+      - key: EXPO_PUBLIC_API_URL
+        value: https://gyf-api-va.onrender.com
+      - key: EXPO_PUBLIC_SUPABASE_URL
+        value: https://tabjvaatrikogutkrjom.supabase.co
+      - key: EXPO_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+
+  - type: web
+    name: gyf-expo-web
+    runtime: static
+    autoDeployTrigger: off
+    buildCommand: bun install --frozen-lockfile && cd apps/expo && bun run render:build
+    staticPublishPath: ./apps/expo/dist
+    headers: *security_headers
+    routes:
+      - type: rewrite
+        source: /__deployment/api
+        destination: /__deployment/api.json
+    envVars:
+      - key: EXPO_PUBLIC_API_URL
+        value: https://gyf-api-va.onrender.com
+      - key: EXPO_PUBLIC_SUPABASE_URL
+        value: https://tabjvaatrikogutkrjom.supabase.co
+      - key: EXPO_PUBLIC_SUPABASE_ANON_KEY
+        sync: false

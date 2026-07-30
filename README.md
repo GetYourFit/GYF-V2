@@ -64,9 +64,12 @@ same interaction spine used by training exports.
   license/promotion checks, import-boundary lint, and doc-alignment checks.
 - **Local gate:** `make ci` runs format-check, lint, typecheck, doctrine, standards, and tests.
 - **CI:** GitHub Actions runs web, Expo and API checks; the API lane uses real Postgres.
-- **CD:** repository automation deploys Expo web to EAS Hosting after main CI. The FastAPI API runs
-  on the Virginia Render Starter. The Next.js rollback/oracle client is preserved until F13 but is
-  not deployed to Vercel by routine CI/Makefile automation.
+- **CD:** after main CI, repository automation uses the authorized Render Static
+  candidate-before-production lane when its explicit environment switch is enabled; otherwise the
+  existing EAS Hosting lane remains active. See the
+  [web release contract](./docs/deploy/render-expo-static.md). The FastAPI API runs on the Virginia
+  Render Starter. EAS and the Next.js/Vercel rollback assets remain preserved until the Render
+  proof and their protected retirement gates pass.
 - **Reviews** routed via [`.github/CODEOWNERS`](./.github/CODEOWNERS); PRs use the
   [pull request template](./.github/pull_request_template.md).
 

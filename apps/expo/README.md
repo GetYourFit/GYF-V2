@@ -56,36 +56,14 @@ active containment boundary, residual risk, and the conditions for any future re
 
 ## Production
 
-`.github/workflows/cd.yml` deploys Expo web to EAS Hosting after the `main` CI workflow succeeds.
-Before touching EAS it verifies the checked-out commit equals `workflow_run.head_sha` and equals
-the current tip of the default branch, refusing to deploy a stale or mismatched source SHA, and it
-fails closed (rather than silently skipping) when `EXPO_TOKEN` or the public production environment
-is absent. It then runs Expo Doctor (`bun --cwd apps/expo run doctor`, also required in CI) against
-the checked-in SDK and native peer set. The Expo Router configuration and enabled server
-middleware emit the security headers required on every served HTML response:
-`Content-Security-Policy: frame-ancestors 'none'`,
-`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
-`Referrer-Policy: strict-origin-when-cross-origin`, and `Cross-Origin-Opener-Policy: same-origin`.
-Middleware is the response-boundary defense in depth for EAS Hosting, whose prior deployment
-served the four configured headers but omitted `X-Frame-Options` despite the exported route manifest
-containing it. The CD job creates a non-production immutable deployment first, then rejects it
-unless its `https://get-your-fit--<id>.expo.app` URL serves those headers, the exact entry bundle,
-the exact Cuelinks loader and safe release identity, while the deployed API's `/health`, `/ready`,
-and `/system/status` return the expected content including the matching release SHA. Only after
-that verifier succeeds does the workflow run pinned `eas deploy:alias --prod --id=<id>`; a second
-verification captures the promotion evidence. A verification failure therefore cannot repoint the
-production alias. The alias is edge-cached for up to an hour, so its probe is best-effort and
-informational, never a substitute for the pinned promotion log. EAS deployment IDs are immutable;
-retain the successful deployment ID, source/API SHA and entry hash as the rollback record, then
-restore production only by reassigning the alias to that verified ID. Failed runs publish a
-redacted diagnostic artifact and do not claim release success.
+After the `main` CI workflow succeeds, `.github/workflows/cd.yml` selects exactly one web release
+job. `RENDER_PRODUCTION_ENABLED=true` selects the authorized Render Static
+candidate-before-production transaction; while that switch is absent or false, the retained EAS
+Hosting transaction remains active. Both paths verify the exact successful-main source and API
+release identity and fail closed on missing provider configuration. The authoritative setup,
+response-boundary, provenance, rollback, and external-blocker details live in the
+[Render Static Expo release contract](../../docs/deploy/render-expo-static.md).
 
-The deploy job uses the GitHub Actions environment named `EXPO_TOKEN` and reads
-`EXPO_TOKEN` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from its secrets, plus
-`EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SUPABASE_URL` from its variables. The EAS project is pinned in `app.json`; CI passes
-`--dev-domain=get-your-fit` on the immutable non-production create so the first non-interactive
-deploy activates Hosting at `https://get-your-fit.expo.app`. `eas-cli` is pinned to `21.4.0`
-(`apps/expo/eas.json` and every
-CD/deploy invocation); `eas.json` holds native production and internal-build profiles. Store
-submission remains credential-gated; no fake store deployment is claimed until Apple/Google
-credentials and a successful build exist.
+The EAS project and native production/internal profiles remain pinned in `app.json` and `eas.json`;
+`eas-cli` remains pinned to `21.4.0`. Store submission is still credential-gated, and no native
+release is claimed until Apple/Google credentials and a successful build exist.

@@ -2,14 +2,18 @@ name: CD
 
 # Continuous delivery. Runs only after CI succeeds on main.
 #
-# The EAS release is transactional at the repository boundary: create an immutable
-# non-production deployment, verify it (including source/API identity, bundle,
-# headers and Cuelinks), then promote that exact ID. A failed verification has no
-# path to deploy:alias --prod and publishes a diagnostic instead.
+# Render Static is the authorized production web owner once the RENDER_PRODUCTION
+# environment is enabled: deploy an isolated candidate service, verify its actual
+# HTTP boundary, then deploy the same commit to the retained production service.
+# A failed candidate verification has no path to the production deploy command.
+# Render has no immutable per-deploy public URL, so service/deploy IDs, the isolated
+# candidate URL, exact bundle hash, headers, API identity and rollback target are
+# retained as the provider limitation contract.
 #
-# API production is the owner-approved Virginia Render Starter service managed
-# outside this workflow from render.yaml. Oregon is rollback-only. Do not add a
-# Singapore deployment path.
+# Until the Render production environment is deliberately enabled, the existing EAS
+# production lane remains unchanged. Vercel and EAS assets are retained. API
+# production is the owner-approved Virginia Render Starter service managed from
+# render.yaml. Oregon is rollback-only. Do not add a Singapore deployment path.
 #
 # Required GitHub environment secrets (the job binds to environment `EXPO_TOKEN`):
 #   EXPO_TOKEN                         — EAS token for Expo web hosting
@@ -32,12 +36,13 @@ permissions:
 
 jobs:
   deploy-expo-web:
-    name: Deploy Expo web (EAS Hosting)
+    name: Deploy Expo web (EAS Hosting comparison/rollback lane)
     environment: EXPO_TOKEN
     runs-on: ubuntu-latest
     if: >-
       ${{ github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.head_branch == 'main' }}
+          github.event.workflow_run.head_branch == 'main' &&
+          vars.RENDER_PRODUCTION_ENABLED != 'true' }}
     defaults:
       run:
         working-directory: apps/expo
@@ -200,6 +205,194 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: expo-web-failed-deployment-${{ github.event.workflow_run.run_id }}
+          path: apps/expo/deploy-records/
+          retention-days: 30
+          if-no-files-found: warn
+
+  deploy-render-static:
+    name: Deploy Expo web (Render Static candidate then production)
+    environment: RENDER_PRODUCTION
+    runs-on: ubuntu-latest
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_branch == 'main' &&
+          vars.RENDER_PRODUCTION_ENABLED == 'true' }}
+    defaults:
+      run:
+        working-directory: apps/expo
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_CANDIDATE_SERVICE_ID: ${{ vars.RENDER_CANDIDATE_SERVICE_ID }}
+      RENDER_PRODUCTION_SERVICE_ID: ${{ vars.RENDER_PRODUCTION_SERVICE_ID }}
+      RENDER_WORKSPACE_ID: ${{ vars.RENDER_WORKSPACE_ID }}
+      RENDER_CANDIDATE_URL: ${{ vars.RENDER_CANDIDATE_URL }}
+      RENDER_PRODUCTION_URL: ${{ vars.RENDER_PRODUCTION_URL }}
+      RENDER_CANONICAL_URL: ${{ vars.RENDER_CANONICAL_URL }}
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      SOURCE_WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      SOURCE_WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Verify source and Render release configuration
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_WORKFLOW_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$(git rev-parse HEAD)" == "$SOURCE_WORKFLOW_HEAD_SHA" ]]
+          git fetch --no-tags --depth=1 origin "refs/heads/$DEFAULT_BRANCH"
+          [[ "$(git rev-parse FETCH_HEAD)" == "$SOURCE_WORKFLOW_HEAD_SHA" ]]
+          for value in RENDER_API_KEY RENDER_WORKSPACE_ID RENDER_CANDIDATE_SERVICE_ID RENDER_PRODUCTION_SERVICE_ID RENDER_CANDIDATE_URL RENDER_PRODUCTION_URL RENDER_CANONICAL_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY; do
+            if [[ -z "${!value:-}" ]]; then echo "$value is not configured in the RENDER_PRODUCTION environment." >&2; exit 1; fi
+          done
+          [[ "$RENDER_CANDIDATE_SERVICE_ID" != "$RENDER_PRODUCTION_SERVICE_ID" ]]
+          [[ "$RENDER_CANDIDATE_URL" == https://* && "$RENDER_PRODUCTION_URL" == https://* && "$RENDER_CANONICAL_URL" == https://* ]]
+          [[ "$RENDER_CANDIDATE_URL" != "$RENDER_PRODUCTION_URL" ]]
+          [[ "$RENDER_PRODUCTION_URL" == "$RENDER_CANONICAL_URL" ]]
+          [[ "$RENDER_CANONICAL_URL" == "https://get-your-fit.expo.app" ]]
+          echo "CHECKED_OUT_SHA=$SOURCE_WORKFLOW_HEAD_SHA" >> "$GITHUB_ENV"
+          echo "EXPO_PUBLIC_RELEASE_SHA=$SOURCE_WORKFLOW_HEAD_SHA" >> "$GITHUB_ENV"
+
+      - name: Install Render CLI 2.7.0
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors --max-time 60 \
+            https://github.com/render-oss/cli/releases/download/v2.7.0/cli_2.7.0_linux_amd64.zip \
+            --output render-cli.zip
+          unzip -q render-cli.zip
+          chmod 755 cli_v2.7.0
+          sudo mv cli_v2.7.0 /usr/local/bin/render
+          render --version
+          render blueprints validate infra/render-expo-static.yaml --workspace "$RENDER_WORKSPACE_ID" --output json --confirm
+
+      - name: Export and fingerprint the candidate locally
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          mkdir -p apps/expo/deploy-records
+          EXPO_NO_TELEMETRY=1 EXPO_NO_DOCTOR=1 npx --yes expo@57.0.9 export --platform web --clear
+          node apps/expo/scripts/verify-cuelinks-web-export.mjs --evidence-file apps/expo/deploy-records/cuelinks-export-evidence.json
+          node apps/expo/scripts/check-web-env.mjs
+          entry_path=$(find apps/expo/dist/client/_expo/static/js/web apps/expo/dist/_expo/static/js/web -name 'entry-*.js' -print -quit 2>/dev/null || true)
+          [[ -n "$entry_path" ]]
+          entry_bundle=$(basename "$entry_path")
+          entry_hash=${entry_bundle#entry-}; entry_hash=${entry_hash%.js}
+          echo "EXPECTED_ENTRY_BUNDLE=$entry_bundle" >> "$GITHUB_ENV"
+          echo "EXPECTED_ENTRY_HASH=$entry_hash" >> "$GITHUB_ENV"
+          echo "EXPECTED_ENTRY_SHA256=$(sha256sum "$entry_path" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          EXPO_PUBLIC_RELEASE_SHA="$CHECKED_OUT_SHA" node apps/expo/scripts/write-static-release-identity.mjs
+
+      - name: Deploy isolated Render candidate
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          render deploys create "$RENDER_CANDIDATE_SERVICE_ID" --commit "$CHECKED_OUT_SHA" --wait --output json --confirm > apps/expo/deploy-records/render-candidate-deploy.json
+          candidate_deploy_id=$(jq -r '.id // .deploy.id // .deployId // empty' apps/expo/deploy-records/render-candidate-deploy.json)
+          [[ "$candidate_deploy_id" =~ ^[a-z0-9-]+$ ]]
+          echo "RENDER_CANDIDATE_DEPLOY_ID=$candidate_deploy_id" >> "$GITHUB_ENV"
+
+      - name: Verify candidate before any production deploy
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          node apps/expo/scripts/verify-render-browser-surfaces.mjs \
+            --stage candidate \
+            --deployment-url "$RENDER_CANDIDATE_URL" \
+            --evidence-file apps/expo/deploy-records/render-candidate-browser-verification.json
+          node apps/expo/scripts/verify-render-static-deploy.mjs \
+            --stage candidate \
+            --deployment-url "$RENDER_CANDIDATE_URL" \
+            --service-id "$RENDER_CANDIDATE_SERVICE_ID" \
+            --deploy-id "$RENDER_CANDIDATE_DEPLOY_ID" \
+            --api-url "$EXPO_PUBLIC_API_URL" \
+            --expected-source-sha "$CHECKED_OUT_SHA" \
+            --expected-entry-bundle "$EXPECTED_ENTRY_BUNDLE" \
+            --expected-entry-hash "$EXPECTED_ENTRY_HASH" \
+            --expected-entry-sha256 "$EXPECTED_ENTRY_SHA256" \
+            --cuelinks-evidence apps/expo/deploy-records/cuelinks-export-evidence.json \
+            --evidence-file apps/expo/deploy-records/render-candidate-verification.json
+
+      - name: Capture retained production deploy for rollback
+        working-directory: ${{ github.workspace }}
+        run: render deploys list "$RENDER_PRODUCTION_SERVICE_ID" --output json --confirm > apps/expo/deploy-records/render-previous-deploys.json
+
+      - name: Promote verified candidate to Render production service
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          render deploys create "$RENDER_PRODUCTION_SERVICE_ID" --commit "$CHECKED_OUT_SHA" --wait --output json --confirm > apps/expo/deploy-records/render-production-deploy.json
+          production_deploy_id=$(jq -r '.id // .deploy.id // .deployId // empty' apps/expo/deploy-records/render-production-deploy.json)
+          [[ "$production_deploy_id" =~ ^[a-z0-9-]+$ ]]
+          echo "RENDER_PRODUCTION_DEPLOY_ID=$production_deploy_id" >> "$GITHUB_ENV"
+
+      - name: Verify canonical Render production release
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          node apps/expo/scripts/verify-render-browser-surfaces.mjs \
+            --stage production \
+            --deployment-url "$RENDER_PRODUCTION_URL" \
+            --evidence-file apps/expo/deploy-records/render-production-browser-verification.json
+          node apps/expo/scripts/verify-render-static-deploy.mjs \
+            --stage production \
+            --deployment-url "$RENDER_PRODUCTION_URL" \
+            --service-id "$RENDER_PRODUCTION_SERVICE_ID" \
+            --deploy-id "$RENDER_PRODUCTION_DEPLOY_ID" \
+            --api-url "$EXPO_PUBLIC_API_URL" \
+            --expected-source-sha "$CHECKED_OUT_SHA" \
+            --expected-entry-bundle "$EXPECTED_ENTRY_BUNDLE" \
+            --expected-entry-hash "$EXPECTED_ENTRY_HASH" \
+            --expected-entry-sha256 "$EXPECTED_ENTRY_SHA256" \
+            --cuelinks-evidence apps/expo/deploy-records/cuelinks-export-evidence.json \
+            --evidence-file apps/expo/deploy-records/render-production-verification.json
+
+      - name: Capture Render provenance and rollback contract
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          node apps/expo/scripts/capture-render-release-record.mjs \
+            --source-sha "$CHECKED_OUT_SHA" \
+            --workflow-run-id "$SOURCE_WORKFLOW_RUN_ID" \
+            --candidate-deploy apps/expo/deploy-records/render-candidate-deploy.json \
+            --production-deploy apps/expo/deploy-records/render-production-deploy.json \
+            --previous-deploys apps/expo/deploy-records/render-previous-deploys.json \
+            --candidate-verification apps/expo/deploy-records/render-candidate-verification.json \
+            --production-verification apps/expo/deploy-records/render-production-verification.json \
+            --candidate-browser-verification apps/expo/deploy-records/render-candidate-browser-verification.json \
+            --production-browser-verification apps/expo/deploy-records/render-production-browser-verification.json \
+            --production-service-id "$RENDER_PRODUCTION_SERVICE_ID" \
+            --output apps/expo/deploy-records/render-release-record.json \
+            --summary-output apps/expo/deploy-records/render-release-summary.md
+
+      - name: Publish Render provenance and rollback evidence
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-static-verified-release-${{ github.event.workflow_run.run_id }}
+          path: apps/expo/deploy-records/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Publish Render release summary
+        if: ${{ success() }}
+        run: cat apps/expo/deploy-records/render-release-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Capture failed Render release diagnostic
+        if: ${{ failure() }}
+        working-directory: ${{ github.workspace }}
+        run: node apps/expo/scripts/capture-render-failure-diagnostic.mjs --records-dir apps/expo/deploy-records --output apps/expo/deploy-records/render-failed-deployment-diagnostic.json
+
+      - name: Publish failed Render release diagnostic
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-static-failed-release-${{ github.event.workflow_run.run_id }}
           path: apps/expo/deploy-records/
           retention-days: 30
           if-no-files-found: warn

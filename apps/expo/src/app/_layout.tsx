@@ -77,6 +77,15 @@ export default function RootLayout() {
 /** Reads the scheme below the providers so a manual override restyles the stack. */
 function ThemedApp() {
   const scheme = useAppColorScheme();
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.dataset.gyfClientReady = "true";
+    return () => {
+      delete document.documentElement.dataset.gyfClientReady;
+    };
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

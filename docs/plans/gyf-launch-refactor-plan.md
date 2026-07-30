@@ -1825,10 +1825,11 @@ but it never reorders the backend contract.
   `378 passed, 17 skipped`; formatting, lint, doctrine and production build passed.
 - Remaining gate: device-level refresh/revocation smoke and authenticated route parity require the
   next auth/onboarding vertical slice; no production cutover is claimed.
-- Production wiring: `.github/workflows/cd.yml` exports and deploys Expo web to EAS Hosting after
-  successful `main` CI when `EXPO_TOKEN`, API origin, and Supabase public configuration exist;
-  `apps/expo/eas.json` defines native production/internal profiles. Current GitHub secret inventory
-  has no `EXPO_TOKEN`, so hosted Expo deployment is configured but not externally activated.
+- Production wiring: `.github/workflows/cd.yml` uses the authorized Render Static transaction when
+  its explicit production switch is enabled and otherwise retains EAS Hosting; see
+  [`docs/deploy/render-expo-static.md`](../deploy/render-expo-static.md) for the single release-lane
+  contract and current external blockers. `apps/expo/eas.json` continues to define native
+  production/internal profiles.
 
 ### EXPO-03 — Design tokens and primitives
 
