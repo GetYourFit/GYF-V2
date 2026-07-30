@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { GyfApi as ExpoGyfApi } from "../../apps/expo/src/lib/api";
 import { ApiError, GyfApi } from "./api";
 
 // A typed stand-in for the global fetch the client calls.
@@ -251,13 +252,14 @@ describe("GyfApi", () => {
     }
     vi.stubGlobal("XMLHttpRequest", SynchronousAbortXhr);
     try {
-      const upload = new GyfApi(() => "jwt", "http://api").uploadPhoto(
+      const upload = new ExpoGyfApi(() => "jwt", "http://api").uploadPhoto(
         new Blob(["photo"], { type: "image/jpeg" }) as File,
         undefined,
         () => undefined,
       );
+      const failedUpload = upload.catch((cause: unknown) => cause);
       await vi.advanceTimersByTimeAsync(60_000);
-      const error = await upload.catch((cause: unknown) => cause);
+      const error = await failedUpload;
       expect((error as DOMException).name).toBe("TimeoutError");
       expect((error as DOMException).message).toBe("Upload timed out");
     } finally {
