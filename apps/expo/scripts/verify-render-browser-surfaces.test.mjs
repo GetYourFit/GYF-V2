@@ -5,6 +5,9 @@ import { verifyBrowserSurfaces } from "./verify-render-browser-surfaces.mjs";
 const markers = {
   "/welcome": "Your AI stylist",
   "/login": "Welcome back",
+  "/terms": "Terms and privacy",
+  "/contact": "Contact",
+  "/grievance": "Grievance",
   "/onboarding": "Your AI stylist",
   "/explore": "Your AI stylist",
   "/": "Your AI stylist",
@@ -32,7 +35,17 @@ test("verifies every required surface through a browser", async () => {
   assert.equal(evidence.verified, true);
   assert.deepEqual(
     evidence.surfaces.map(({ path }) => path),
-    ["/welcome", "/login", "/onboarding", "/explore", "/", "/wardrobe"],
+    [
+      "/welcome",
+      "/login",
+      "/terms",
+      "/contact",
+      "/grievance",
+      "/onboarding",
+      "/explore",
+      "/",
+      "/wardrobe",
+    ],
   );
 });
 

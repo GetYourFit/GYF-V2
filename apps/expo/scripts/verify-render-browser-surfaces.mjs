@@ -19,6 +19,20 @@ const SURFACES = [
     marker: "Welcome back",
     interaction: `(() => { const target = document.querySelector('input[aria-label="Email address"]'); if (!target) return { ok: false, reason: "email input missing" }; target.focus(); return { ok: document.activeElement === target }; })()`,
   },
+  {
+    name: "terms",
+    path: "/terms",
+    marker: "Terms and privacy",
+    interaction: `(() => { const target = document.querySelector('a[href="/contact"]'); if (!target) return { ok: false, reason: "contact support link missing" }; target.click(); return { ok: true, expected_path: "/contact" }; })()`,
+    expectedPath: "/contact",
+  },
+  ...["contact", "grievance"].map((name) => ({
+    name,
+    path: `/${name}`,
+    marker: name === "contact" ? "Contact" : "Grievance",
+    interaction: `(() => { const target = document.querySelector('a[href="/login"]'); if (!target) return { ok: false, reason: "anonymous sign-in link missing" }; target.click(); return { ok: true, expected_path: "/login" }; })()`,
+    expectedPath: "/login",
+  })),
   ...["onboarding", "explore", "stylist", "wardrobe"].map((name) => ({
     name,
     path: name === "stylist" ? "/" : `/${name}`,
