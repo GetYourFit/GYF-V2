@@ -22,7 +22,7 @@ Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for auth. Nat
 SecureStore; web uses browser session storage. Never put service-role keys or access tokens in
 `EXPO_PUBLIC_*` values.
 
-SDK 57.0.6, React Native 0.86.0, and the new architecture are pinned in `package.json` and
+SDK 57.0.9, React Native 0.86.2, and the new architecture are pinned in `package.json` and
 `app.json`. The route directory contains routes only; components and utilities live under `src`.
 
 ## Live surfaces
@@ -57,21 +57,28 @@ active containment boundary, residual risk, and the conditions for any future re
 ## Production
 
 `.github/workflows/cd.yml` deploys Expo web to EAS Hosting after the `main` CI workflow succeeds.
-The Expo Router configuration emits the security headers required on every served HTML response:
-`Content-Security-Policy: frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`,
-`X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and
-`Cross-Origin-Opener-Policy: same-origin`. The CD job rejects a deployment unless its immutable
-per-deployment URL (`https://get-your-fit--<id>.expo.app`, parsed from the `eas deploy` log) serves
-those headers and its entry bundle matches the just-exported artifact, and eas-cli's own log
-confirms promotion to production; the production alias is edge-cached for up to an hour, so
-`scripts/verify-deploy.mjs` only probes it best-effort for an informational note and never gates on
-it. EAS deployment IDs are immutable; retain the successful deployment ID, commit and entry hash as
-the rollback record, then restore production only by reassigning the alias to that verified ID.
+Before touching EAS it verifies the checked-out commit equals `workflow_run.head_sha` and equals
+the current tip of the default branch, refusing to deploy a stale or mismatched source SHA, and it
+fails closed (rather than silently skipping) when `EXPO_TOKEN` or the public production environment
+is absent. It then runs Expo Doctor (`bun --cwd apps/expo run doctor`, also required in CI) against
+the checked-in SDK and native peer set. The Expo Router configuration emits the security headers
+required on every served HTML response: `Content-Security-Policy: frame-ancestors 'none'`,
+`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+`Referrer-Policy: strict-origin-when-cross-origin`, and `Cross-Origin-Opener-Policy: same-origin`.
+The CD job rejects a deployment unless its immutable per-deployment URL
+(`https://get-your-fit--<id>.expo.app`, parsed from the `eas deploy` log) serves those headers and
+its entry bundle matches the just-exported artifact, the deployed API's `/health`, `/ready`, and
+`/system/status` return the expected content, and eas-cli's own log confirms promotion to
+production; the production alias is edge-cached for up to an hour, so `scripts/verify-deploy.mjs`
+only probes it best-effort for an informational note and never gates on it. EAS deployment IDs are
+immutable; retain the successful deployment ID, commit and entry hash as the rollback record, then
+restore production only by reassigning the alias to that verified ID.
 
 The deploy job uses the GitHub Actions environment named `EXPO_TOKEN` and reads
 `EXPO_TOKEN` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from its secrets, plus
 `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SUPABASE_URL` from its variables. The EAS project is pinned in `app.json`; CI passes
 `--dev-domain=get-your-fit` so the first non-interactive deploy activates Hosting at
-`https://get-your-fit.expo.app`. `eas.json` holds native production and internal-build profiles. Store submission
-remains credential-gated; no fake store deployment is claimed until Apple/Google credentials and
-a successful build exist.
+`https://get-your-fit.expo.app`. `eas-cli` is pinned to `21.4.0` (`apps/expo/eas.json` and every
+CD/deploy invocation); `eas.json` holds native production and internal-build profiles. Store
+submission remains credential-gated; no fake store deployment is claimed until Apple/Google
+credentials and a successful build exist.

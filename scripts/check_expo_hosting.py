@@ -56,11 +56,29 @@ def findings(root: Path) -> list[str]:
 
     cd = (root / ".github/workflows/cd.yml").read_text(encoding="utf-8")
     if "node scripts/verify-deploy.mjs" not in cd:
-        errors.append("CD must verify the live EAS production alias after deployment")
+        errors.append("CD must verify the immutable EAS deployment after deployment")
+    if '--api-url "$EXPO_PUBLIC_API_URL"' not in cd:
+        errors.append("CD must verify API health, readiness, and status content after deployment")
     if "node scripts/capture-deploy-record.mjs" not in cd:
         errors.append("CD must persist the immutable Expo rollback record after deployment")
     if "actions/upload-artifact@v4" not in cd or "rollback-record-summary.md" not in cd:
         errors.append("CD must publish the Expo rollback record artifact and summary")
+    if "github.event.workflow_run.head_sha" not in cd or "git rev-parse HEAD" not in cd:
+        errors.append("CD must bind the checked-out source to workflow_run.head_sha")
+    if "git rev-parse FETCH_HEAD" not in cd or "current $DEFAULT_BRANCH" not in cd:
+        errors.append("CD must refuse a stale source SHA after the default branch advances")
+    if 'echo "CHECKED_OUT_SHA=$checked_out_sha" >> "$GITHUB_ENV"' not in cd:
+        errors.append("CD must persist the verified checked-out SHA for rollback capture")
+    if "npm exec --yes eas-cli@21.4.0" not in cd:
+        errors.append("CD must pin the EAS CLI version")
+    if "EXPO_TOKEN is not configured; refusing" not in cd:
+        errors.append("CD must fail closed when the production deploy token is unavailable")
+    if "enabled=false" in cd or "eas-cli@latest" in cd:
+        errors.append("CD must not silently skip production deployment or use a floating EAS CLI")
+
+    ci = (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    if "bun --cwd apps/expo run doctor" not in ci:
+        errors.append("CI must run Expo Doctor against the checked-in SDK and native peer set")
 
     return errors
 

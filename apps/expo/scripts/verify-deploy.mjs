@@ -112,6 +112,58 @@ async function fetchState(url) {
   };
 }
 
+async function verifyApiSurface(apiUrl) {
+  let parsed;
+  try {
+    parsed = new URL(apiUrl);
+  } catch {
+    throw new Error(`API surface URL is invalid: ${apiUrl}`);
+  }
+  if (parsed.protocol !== "https:" && !["127.0.0.1", "localhost"].includes(parsed.hostname)) {
+    throw new Error(`API surface URL must use HTTPS: ${apiUrl}`);
+  }
+
+  const probes = [
+    {
+      path: "/health",
+      valid: (body) => body?.status === "ok" && body?.service === "api",
+    },
+    {
+      path: "/ready",
+      valid: (body) => body?.status === "ready" && body?.checks?.database === true,
+    },
+    {
+      path: "/system/status",
+      valid: (body) =>
+        typeof body?.environment === "string" &&
+        typeof body?.database === "string" &&
+        typeof body?.capabilities === "object" &&
+        typeof body?.event_sink === "string",
+    },
+  ];
+  const results = {};
+  for (const probe of probes) {
+    const url = new URL(probe.path, parsed);
+    const response = await fetch(`${url}?release-check=${Date.now()}`, {
+      headers: { "cache-control": "no-cache", accept: "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error(`API ${probe.path} returned ${response.status}`);
+    }
+    let body;
+    try {
+      body = await response.json();
+    } catch {
+      throw new Error(`API ${probe.path} returned invalid JSON`);
+    }
+    if (!probe.valid(body)) {
+      throw new Error(`API ${probe.path} returned an unexpected status payload`);
+    }
+    results[probe.path] = { status: response.status, content: body };
+  }
+  return { base_url: parsed.origin, probes: results };
+}
+
 async function probeAliasBestEffort(productionUrl) {
   try {
     const state = await fetchState(productionUrl);
@@ -131,6 +183,7 @@ const deployLogPath = options["deploy-log"];
 if (!deployLogPath) throw new Error("Missing required option --deploy-log");
 const evidenceFile = options["evidence-file"];
 const productionUrl = options["production-url"] ?? DEFAULT_PRODUCTION_URL;
+const apiUrl = options["api-url"];
 const attempts = Number.parseInt(options["attempts"] ?? `${ATTEMPTS}`, 10);
 const intervalMs = Number.parseInt(options["interval-ms"] ?? `${INTERVAL_MS}`, 10);
 const deployment = deploymentFromLog(readFileSync(deployLogPath, "utf8"));
@@ -195,6 +248,7 @@ if (lastState.missingHeaders.length > 0) {
   process.exit(1);
 }
 
+const apiSurface = apiUrl ? await verifyApiSurface(apiUrl) : null;
 const alias = await probeAliasBestEffort(productionUrl);
 
 if (evidenceFile) {
@@ -212,6 +266,7 @@ if (evidenceFile) {
         expected_deployment_url: deploymentUrl,
         promoted_to_production: true,
         headers: lastState.headers,
+        api_surface: apiSurface,
         alias_probe: alias,
       },
       null,
@@ -224,6 +279,11 @@ if (evidenceFile) {
 console.log(
   `verify-deploy: deployment ${deployment.deploymentId} is live at ${deploymentUrl} serving ${expected} with all required security headers, and eas-cli confirmed promotion to production.`,
 );
+if (apiSurface) {
+  console.log(
+    `verify-deploy: API health, readiness, and status content passed at ${apiSurface.base_url}.`,
+  );
+}
 if (alias.reachable && alias.entryBundle === expected) {
   console.log(`verify-deploy: production alias ${productionUrl} has already picked up this build.`);
 } else if (alias.reachable) {

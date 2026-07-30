@@ -48,7 +48,7 @@ if (missing.length > 0) {
       .map(([name]) => name)
       .join(", ")}.\n` +
       "Export through EAS env so the values are present:\n" +
-      '  npx eas-cli env:exec production "npx expo export --platform web --clear"',
+      '  npx eas-cli@21.4.0 env:exec production "npx expo export --platform web --clear"',
   );
   process.exit(1);
 }

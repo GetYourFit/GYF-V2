@@ -680,10 +680,10 @@ Native surface that solves the job—not every Expo package.
 
 | Layer | Approved baseline or candidate | Contract |
 | --- | --- | --- |
-| Runtime | Expo `57.0.7`, React Native `0.86.0`, React `19.2.3`, RN Web `~0.21.0`, Hermes/New Architecture | keep exact SDK-coupled versions; `npx expo install --check` and Expo Doctor must agree |
-| Routing | Expo Router `57.0.7`, nested native stacks, current JavaScript tabs | route files only in `src/app`; components/domain/data stay outside; every tab owns a stack/history |
+| Runtime | Expo `57.0.9`, React Native `0.86.2`, React `19.2.3`, RN Web `~0.21.0`, Hermes/New Architecture | keep exact SDK-coupled versions; `npx expo install --check` and Expo Doctor must agree |
+| Routing | Expo Router `57.0.9`, nested native stacks, current JavaScript tabs | route files only in `src/app`; components/domain/data stay outside; every tab owns a stack/history |
 | Language/tooling | TypeScript `~6.0.3`, Bun `1.3.14`, Turbo, Python `>=3.12`, uv lockfiles | one lock update per approved dependency slice; no floating native peer set |
-| Motion/native peers | Reanimated `4.5.0`, Worklets `0.10.0`, Gesture Handler `~2.32.0`, Screens `~4.25.2`, Safe Area `~5.7.0` | keep the proven peer set together; never upgrade one native peer alone |
+| Motion/native peers | Reanimated `4.5.1`, Worklets `0.10.1`, Gesture Handler `~2.32.0`, Screens `~4.26.0`, Safe Area `~5.7.0` | keep the proven peer set together; never upgrade one native peer alone |
 | API/data | typed `GyfApi`, generated/shared contracts, FastAPI, Pydantic, psycopg pool, PostgreSQL/pgvector/RLS | API schema and client contract change atomically; no second transport or ORM domain model |
 | ML | SigLIP 2-compatible retrieval port, deterministic rules/MMR, frozen evaluators, optional isolated heavy extras | production API stays weight-light; model runtimes live behind capability ports |
 
@@ -1269,13 +1269,15 @@ Every skip and failure must be reported. A phase cannot promote with an unexplai
   Reanimated 4.5.0, Worklets 0.10.0, Gesture Handler 2.32.0, and Safe Area 5.7.0. `expo install
   --check`, TypeScript, 130 Expo tests, and fresh Android and web exports pass. The bounded dependency
   repair installs Router's required `expo-constants` and `expo-linking` peers, uses Bun 1.3.14's
-  hoisted workspace linker, but a clean frozen-lockfile install disproves the prior Doctor 20/20
-  claim: Expo Doctor passes 19/20 because `expo-linking` still installs `expo-constants` 57.0.5
-  beside the SDK's 57.0.6. The top-level Bun override, plain/forced lock regeneration and equivalent
-  resolution did not remove the nested native module, so dependency promotion remains HOLD pending
-  an owner-approved package-manager/provider correction rather than a hand-edited lockfile. The web
-  export contains 51 static routes with a 2,490,185-byte entry bundle and the Android export contains
-  a 4,689,439-byte Hermes bundle. These
+  hoisted workspace linker. A later CD-hardening pass bumped Expo 57.0.9, Router 57.0.9,
+  `expo-constants` 57.0.8, and `expo-linking` 57.0.4, which removed the nested duplicate
+  `expo-constants` copy and wired `expo-doctor` into CD (`bun --cwd apps/expo run doctor`) ahead of
+  every EAS Hosting deploy. Expo Doctor is now verified passing all 17/17 checks on a clean
+  frozen-lockfile install, closing the prior 19/20 dependency-promotion blocker. This is
+  workstation/CI dependency-graph evidence only: it does not verify production EAS/API credentials
+  or a deployed artifact, does not run the physical-device/native smoke, and does not close F2.5's
+  India-vantage catalogue/search SLO gate (see above). The web export contains 51 static routes with
+  a 2,490,185-byte entry bundle and the Android export contains a 4,689,439-byte Hermes bundle. These
   workstation bundle sizes are recorded baselines, not device startup/frame/memory proof. The
   repeated physical-device smoke and compact/regular Android evidence therefore remain HOLD.
 - `EXPO-DESIGN-CORE` now renders four review-only compositions—Stylist, Explore, item detail and

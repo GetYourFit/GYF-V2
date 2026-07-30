@@ -59,6 +59,8 @@ jobs:
         with:
           bun-version: "1.3.14"
       - run: bun install --frozen-lockfile
+      - name: Expo Doctor
+        run: bun --cwd apps/expo run doctor
       - run: bun run format:check
       - run: bun run typecheck
       - run: bun run lint

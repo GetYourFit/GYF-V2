@@ -52,9 +52,26 @@ async function withServer(handler, callback) {
 }
 
 function correctHandler(request, response) {
-  if (request.url.startsWith("/__deployment")) {
+  if (request.url.startsWith("/health")) {
     response.setHeader("content-type", "application/json");
-    response.end(JSON.stringify({ requestUrl: request.url, origin: null, forwardedHost: null }));
+    response.end(JSON.stringify({ status: "ok", service: "api" }));
+    return;
+  }
+  if (request.url.startsWith("/ready")) {
+    response.setHeader("content-type", "application/json");
+    response.end(JSON.stringify({ status: "ready", checks: { database: true } }));
+    return;
+  }
+  if (request.url.startsWith("/system/status")) {
+    response.setHeader("content-type", "application/json");
+    response.end(
+      JSON.stringify({
+        environment: "test",
+        database: "ready",
+        capabilities: {},
+        event_sink: "test",
+      }),
+    );
     return;
   }
   for (const [name, value] of Object.entries(REQUIRED_HEADERS)) {
@@ -62,6 +79,16 @@ function correctHandler(request, response) {
   }
   response.setHeader("content-type", "text/html");
   response.end('<!doctype html><script src="/_expo/static/js/web/entry-deadbeef.js"></script>');
+}
+
+function notReadyHandler(request, response) {
+  if (request.url.startsWith("/ready")) {
+    response.statusCode = 503;
+    response.setHeader("content-type", "application/json");
+    response.end(JSON.stringify({ status: "not_ready", checks: { database: false } }));
+    return;
+  }
+  correctHandler(request, response);
 }
 
 function missingHeaderHandler(request, response) {
@@ -91,6 +118,8 @@ async function testSucceedsOnImmutableDeploymentUrl() {
           join(root, "deploy-log.txt"),
           "--deployment-url",
           serverUrl,
+          "--api-url",
+          serverUrl,
           "--production-url",
           "http://127.0.0.1:1",
           "--attempts",
@@ -106,6 +135,42 @@ async function testSucceedsOnImmutableDeploymentUrl() {
       assert.equal(evidence.live_entry_bundle, "entry-deadbeef.js");
       assert.equal(evidence.headers["x-frame-options"], "DENY");
       assert.equal(evidence.promoted_to_production, true);
+      assert.equal(evidence.api_surface.base_url, new URL(serverUrl).origin);
+      assert.equal(evidence.api_surface.probes["/ready"].content.checks.database, true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
+
+async function testFailsWhenApiIsNotReady() {
+  await withServer(notReadyHandler, async (serverUrl) => {
+    const root = withFixtureRoot();
+    try {
+      writeDeployLog(root, { deploymentId: "or1170q9ix" });
+      await assert.rejects(
+        execFileAsync(
+          process.execPath,
+          [
+            SCRIPT_PATH,
+            "--deploy-log",
+            join(root, "deploy-log.txt"),
+            "--deployment-url",
+            serverUrl,
+            "--api-url",
+            serverUrl,
+            "--production-url",
+            "http://127.0.0.1:1",
+            "--attempts",
+            "1",
+          ],
+          { cwd: root },
+        ),
+        (error) => {
+          assert.match(error.stderr, /API \/ready returned 503/);
+          return true;
+        },
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -182,6 +247,7 @@ async function testFailsWhenLogDoesNotConfirmPromotion() {
 
 try {
   await testSucceedsOnImmutableDeploymentUrl();
+  await testFailsWhenApiIsNotReady();
   await testFailsWhenHeaderTrulyMissing();
   await testFailsWhenLogDoesNotConfirmPromotion();
   console.log("verify-deploy tests passed");
