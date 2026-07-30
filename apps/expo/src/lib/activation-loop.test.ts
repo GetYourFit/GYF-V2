@@ -38,7 +38,12 @@ const outfit: Outfit = {
 
 describe("synthetic R2 helper composition", () => {
   test("preserves profile, outfit snapshot, feedback IDs, and next-look CTA", () => {
-    const profile = mergeProfile({ gender: "women", occasion: "casual" });
+    const profile = mergeProfile({
+      body_type: "rectangle",
+      gender: "women",
+      occasion: "casual",
+      skin_tone: "mst4",
+    });
     expect(isOnboardingReady(profile)).toBe(true);
 
     const recommendationId = "rec-r2-1";
@@ -261,7 +266,12 @@ describe("synthetic R2 helper composition", () => {
 
     try {
       const api = new GyfApi(() => "jwt-r2", "https://api.test");
-      const profile = mergeProfile({ gender: "women", occasion: "casual" });
+      const profile = mergeProfile({
+        body_type: "rectangle",
+        gender: "women",
+        occasion: "casual",
+        skin_tone: "mst4",
+      });
       expect(isOnboardingReady(profile)).toBe(true);
       await api.putProfile(profile);
       const slate1 = await api.recommend({ occasion: profile.occasion ?? "", k: 1 });

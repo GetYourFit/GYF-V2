@@ -14,6 +14,12 @@ export const CONSENT_FLAGS: Array<{ key: ConsentPurpose; title: string; descript
       "Use your saves, skips, and views to sharpen recommendations over time. Turning this off keeps styling on your stated preferences only.",
   },
   {
+    key: "photo_storage",
+    title: "Store photos for future features",
+    description:
+      "Optional private storage for a separately approved feature. Current profile-photo analysis is ephemeral and does not store the raw image.",
+  },
+  {
     key: "marketing",
     title: "Product updates",
     description: "Occasional email about new features and styling drops. Never shared.",

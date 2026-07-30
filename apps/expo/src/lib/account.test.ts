@@ -21,6 +21,7 @@ describe("Expo Account model", () => {
     expect(consentPayload({ marketing: true, unknown_flag: true } as ConsentFlags)).toEqual({
       data_processing: false,
       behavioral_learning: false,
+      photo_storage: false,
       marketing: true,
     });
   });
@@ -33,6 +34,7 @@ describe("Expo Account model", () => {
     expect(consentPayload({ behavioral_learning: false })).toEqual({
       data_processing: false,
       behavioral_learning: false,
+      photo_storage: false,
       marketing: false,
     });
   });

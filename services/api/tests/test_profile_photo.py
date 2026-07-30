@@ -260,6 +260,16 @@ def test_consent_required():
     assert _upload(client).status_code == 403
 
 
+def test_ephemeral_analysis_does_not_request_photo_storage_consent(monkeypatch):
+    monkeypatch.setattr(main.settings, "skin_tone_enabled", True)
+    client = _client(skin=_FakeSkin(SKIN), body=_FakeBody(BODY), consent=("data_processing",))
+    response = _upload(client)
+    assert response.status_code == 200
+    body = response.json()
+    assert "photo_storage" not in body
+    assert "raw" not in body
+
+
 def test_unsupported_content_type():
     client = _client(skin=_FakeSkin(SKIN), body=_FakeBody(BODY))
     res = client.post("/profile/photo", files={"photo": ("x.gif", b"GIF89a", "image/gif")})

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { router } from "expo-router";
 
 import { OnboardingForm } from "@/components/onboarding/onboarding-form";
 import { PersonalFitForm } from "@/components/onboarding/personal-fit-form";
+import { setOnboardingDraftStep } from "@/lib/onboarding-draft";
 
 type Step = "profile" | "personal-fit";
 
@@ -14,8 +15,16 @@ type Step = "profile" | "personal-fit";
 export default function OnboardingRoute() {
   const [step, setStep] = useState<Step>("profile");
 
+  const showPersonalFit = useCallback(() => setStep("personal-fit"), []);
+  const showProfile = useCallback(() => {
+    void setOnboardingDraftStep("profile");
+    setStep("profile");
+  }, []);
+
   if (step === "personal-fit") {
-    return <PersonalFitForm mode="create" onSaved={() => router.replace("/")} />;
+    return (
+      <PersonalFitForm mode="create" onBack={showProfile} onSaved={() => router.replace("/")} />
+    );
   }
-  return <OnboardingForm onSaved={() => setStep("personal-fit")} />;
+  return <OnboardingForm onResumePersonalFit={showPersonalFit} onSaved={showPersonalFit} />;
 }

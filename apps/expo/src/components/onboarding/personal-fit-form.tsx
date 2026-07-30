@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, TextInput, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Image, Platform, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
 import { AuthScreen } from "@/components/auth/auth-screen";
@@ -9,6 +9,12 @@ import { GyfText } from "@/components/ui/gyf-text";
 import * as haptics from "@/lib/haptics";
 import { ApiError, createApi } from "@/lib/api";
 import { DEFAULT_CONSENT, mergeProfile } from "@/lib/onboarding-validation";
+import {
+  clearOnboardingDraft,
+  loadOnboardingDraft,
+  saveOnboardingDraft,
+  type OnboardingDraft,
+} from "@/lib/onboarding-draft";
 import {
   mergePhotoEstimate,
   parseBudgetInput,
@@ -74,6 +80,7 @@ function readBudget(inputs: BudgetInputs): { range: BudgetRange | null; maxError
 export type PersonalFitFormProps = Readonly<{
   mode: "create" | "edit";
   onSaved: () => void;
+  onBack?: () => void;
 }>;
 
 /**
@@ -82,12 +89,13 @@ export type PersonalFitFormProps = Readonly<{
  * Photo analysis only ever renders behind a live strict-capability check; the manual
  * skin tone / body type / currency / budget path always works on its own.
  */
-export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
+export function PersonalFitForm({ mode, onBack, onSaved }: PersonalFitFormProps) {
   const palette = useThemeColors();
   const api = useMemo(() => createApi(), []);
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [profile, setProfile] = useState<ProfileInput | null>(null);
   const [fields, setFields] = useState<PersonalFitFields>({
     skin_tone: { value: null, confirmed: false, source: "manual" },
@@ -101,11 +109,16 @@ export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
   const [errors, setErrors] = useState<PersonalFitErrors>({});
 
   const [consent, setConsent] = useState<Record<string, boolean>>({ ...DEFAULT_CONSENT });
-  // Fails closed: photo controls stay hidden until /system/status proves both photo
-  // modules are live, so a status blip is never the reason GYF asks for a photo.
-  const [photoCapable, setPhotoCapable] = useState(false);
+  // Fails closed: photo controls stay unavailable until /system/status proves at
+  // least one photo module is usable, so a status blip never solicits a photo.
+  const [photoCapability, setPhotoCapability] = useState<
+    "checking" | "available" | "manual-fallback"
+  >("checking");
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const uploadController = useRef<AbortController | null>(null);
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [analysisState, setAnalysisState] = useState<AnalysisState>("not_requested");
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
 
@@ -121,24 +134,45 @@ export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
       }),
       api.getConsent().catch(() => ({})),
       api.systemStatus().catch(() => null),
+      loadOnboardingDraft(),
     ])
-      .then(([existing, flags, status]) => {
+      .then(([existing, flags, status, draft]) => {
         if (!active) return;
-        const merged = mergeProfile(existing ?? {});
+        // In create mode the draft is deliberately allowed to restore unsaved manual
+        // choices after refresh. Server values remain authoritative in edit mode.
+        const merged = mergeProfile(
+          mode === "create" ? { ...(existing ?? {}), ...(draft?.profile ?? {}) } : (existing ?? {}),
+        );
         setProfile(merged);
+        const personalFit = mode === "create" ? draft?.personal_fit : undefined;
         setFields({
-          skin_tone: confirmedFromProfile(merged.skin_tone),
-          body_type: confirmedFromProfile(merged.body_type),
+          skin_tone:
+            personalFit?.skin_tone !== undefined
+              ? confirmedFromProfile(personalFit.skin_tone)
+              : confirmedFromProfile(merged.skin_tone),
+          body_type:
+            personalFit?.body_type !== undefined
+              ? confirmedFromProfile(personalFit.body_type)
+              : confirmedFromProfile(merged.body_type),
         });
-        setBudgetInputs({
-          min: String(merged.budget_range?.min ?? 0),
-          max: merged.budget_range?.max != null ? String(merged.budget_range.max) : "",
-          currency: merged.budget_range?.currency ?? "INR",
-        });
-        setConsent({ ...DEFAULT_CONSENT, ...flags, data_processing: true });
-        setPhotoCapable(
-          capabilityUsable(status, "photo_body_type") &&
-            capabilityUsable(status, "photo_skin_tone"),
+        setBudgetInputs(
+          personalFit
+            ? {
+                min: personalFit.budget_min,
+                max: personalFit.budget_max,
+                currency: personalFit.currency,
+              }
+            : {
+                min: String(merged.budget_range?.min ?? 0),
+                max: merged.budget_range?.max != null ? String(merged.budget_range.max) : "",
+                currency: merged.budget_range?.currency ?? "INR",
+              },
+        );
+        setConsent({ ...DEFAULT_CONSENT, ...(draft?.consent ?? {}), ...flags });
+        setPhotoCapability(
+          capabilityUsable(status, "photo_body_type") || capabilityUsable(status, "photo_skin_tone")
+            ? "available"
+            : "manual-fallback",
         );
       })
       .catch((cause: unknown) => {
@@ -155,76 +189,144 @@ export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
     // field changed would rerun the load, exactly what "do not rerun analysis on
     // mount" and edit-mode stability require.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api]);
+  }, [api, loadAttempt, mode]);
 
-  async function launchAndUpload() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      setAnalysisState("failed");
-      setPhotoError("Photo library permission is needed to analyze a photo.");
-      return;
-    }
-    const picked = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      base64: true,
-      exif: false,
-      mediaTypes: ["images"],
-      quality: 0.9,
-    });
-    if (picked.canceled || !picked.assets[0]) return;
-    const asset = picked.assets[0];
-    const validationError = validateProfilePhotoAsset(asset);
-    if (validationError) {
-      setAnalysisState("failed");
-      setPhotoError(validationError);
-      return;
-    }
-    setAnalysisState("uploading");
-    setAnalysisMessage("Uploading and analysing your photo…");
+  useEffect(() => {
+    if (loading || mode !== "create" || !profile) return;
+    const draft: OnboardingDraft = {
+      consent,
+      personal_fit: {
+        body_type: fields.body_type.value,
+        budget_max: budgetInputs.max,
+        budget_min: budgetInputs.min,
+        currency: budgetInputs.currency,
+        skin_tone: fields.skin_tone.value,
+      },
+      profile: {
+        ...profile,
+        body_type: fields.body_type.value,
+        budget_range: readBudget(budgetInputs).range ?? profile.budget_range,
+        skin_tone: fields.skin_tone.value,
+      },
+      step: "personal-fit",
+    };
+    void saveOnboardingDraft(draft);
+  }, [budgetInputs, consent, fields, loading, mode, profile]);
+
+  async function selectPhoto(source: "camera" | "library") {
+    if (photoBusy) return;
+    setPhotoBusy(true);
+    setPhotoError(null);
+    setAnalysisMessage(null);
     try {
-      const estimate = await uploadProfilePhoto(api, asset);
+      if (!consent.data_processing) {
+        setPhotoError("Personalized styling consent is required for photo analysis.");
+        return;
+      }
+      const permission =
+        source === "camera" && Platform.OS !== "web"
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setPhotoError(
+          source === "camera"
+            ? "Camera permission was not granted. You can choose a photo or continue manually."
+            : "Photo library permission was not granted. You can continue manually.",
+        );
+        return;
+      }
+      const picked =
+        source === "camera" && Platform.OS !== "web"
+          ? await ImagePicker.launchCameraAsync({
+              allowsEditing: true,
+              base64: false,
+              exif: false,
+              mediaTypes: ["images"],
+              quality: 0.9,
+            })
+          : await ImagePicker.launchImageLibraryAsync({
+              allowsEditing: true,
+              base64: false,
+              exif: false,
+              mediaTypes: ["images"],
+              quality: 0.9,
+            });
+      if (picked.canceled || !picked.assets[0]) return;
+      const asset = picked.assets[0];
+      const validationError = validateProfilePhotoAsset(asset);
+      if (validationError) {
+        setAnalysisState("failed");
+        setPhotoError(validationError);
+        return;
+      }
+      setSelectedAsset(asset);
+      setUploadPercent(null);
+      setAnalysisState("selected");
+      setAnalysisMessage(
+        "Photo selected. Crop it if your platform offers a crop step, then analyze when ready.",
+      );
+    } catch {
+      setPhotoError("Could not open your camera or photo library. Continue manually or try again.");
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  async function analyzeSelectedPhoto() {
+    if (!selectedAsset || photoBusy) return;
+    if (!consent.data_processing) {
+      setPhotoError("Personalized styling consent is required for photo analysis.");
+      return;
+    }
+    const controller = new AbortController();
+    uploadController.current = controller;
+    setPhotoBusy(true);
+    setPhotoError(null);
+    setUploadPercent(null);
+    setAnalysisState("uploading");
+    setAnalysisMessage("Uploading securely; analysis starts after the upload completes.");
+    try {
+      const estimate = await uploadProfilePhoto(
+        api,
+        selectedAsset,
+        controller.signal,
+        ({ loaded, total }) => {
+          setUploadPercent(
+            total && total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : null,
+          );
+        },
+      );
       setFields((current) => mergePhotoEstimate(current, estimate));
       setAnalysisState(estimate.state);
       setAnalysisMessage(estimate.reason);
     } catch (cause) {
-      setAnalysisState("failed");
-      setPhotoError(cause instanceof Error ? cause.message : "Photo analysis failed.");
-    }
-  }
-
-  async function pickPhoto() {
-    if (photoBusy) return;
-    setPhotoBusy(true);
-    setPhotoError(null);
-    try {
-      if (!consent.photo_storage) {
-        setAnalysisState("consent_required");
-        setAnalysisMessage("Allow GYF to store your photo before analysis can run.");
-        return;
+      if ((cause as { name?: string } | null)?.name === "AbortError") {
+        setUploadPercent(null);
+        setAnalysisState("selected");
+        setAnalysisMessage("Upload cancelled. The selected photo remains only on this screen.");
+      } else {
+        setAnalysisState("failed");
+        setPhotoError(
+          cause instanceof Error
+            ? cause.message
+            : "Photo analysis failed. Try again or continue manually.",
+        );
       }
-      await launchAndUpload();
     } finally {
+      uploadController.current = null;
+      setUploadPercent(null);
       setPhotoBusy(false);
     }
   }
 
-  async function allowPhotoStorageAndContinue() {
-    if (photoBusy) return;
-    setPhotoBusy(true);
-    setPhotoError(null);
-    try {
-      const savedFlags = await api.putConsent({ flags: { photo_storage: true } });
-      setConsent((current) => ({ ...current, ...savedFlags, photo_storage: true }));
-      await launchAndUpload();
-    } catch {
-      setAnalysisState("failed");
-      setPhotoError("Could not save your privacy choice. Try again.");
-    } finally {
-      setPhotoBusy(false);
-    }
+  function cancelPhotoUpload() {
+    uploadController.current?.abort();
   }
 
   function removePhotoEstimate() {
+    uploadController.current?.abort();
+    setSelectedAsset(null);
+    setUploadPercent(null);
     setFields((current) => ({
       skin_tone:
         current.skin_tone.source === "photo" && !current.skin_tone.confirmed
@@ -236,7 +338,10 @@ export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
           : current.body_type,
     }));
     setAnalysisState("removed");
-    setAnalysisMessage("Photo estimate removed. Your manual selections are unchanged.");
+    setPhotoError(null);
+    setAnalysisMessage(
+      "Photo and its unconfirmed estimate removed. Choose manual values to continue.",
+    );
   }
 
   async function save() {
@@ -259,6 +364,7 @@ export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
         budget_range,
       };
       await api.putProfile(input);
+      await clearOnboardingDraft();
       haptics.success();
       onSaved();
     } catch (cause) {
@@ -280,6 +386,14 @@ export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
           <GyfText accessibilityRole="alert" style={{ color: palette.error }}>
             {loadError ?? "Could not load your personal fit."}
           </GyfText>
+          <AtelierButton
+            label="Try again"
+            onPress={() => {
+              setLoadError(null);
+              setLoading(true);
+              setLoadAttempt((attempt) => attempt + 1);
+            }}
+          />
         </View>
       </AuthScreen>
     );
@@ -296,70 +410,149 @@ export function PersonalFitForm({ mode, onSaved }: PersonalFitFormProps) {
     <AuthScreen>
       <View style={{ gap: spacing.xl }}>
         {mode === "edit" ? (
-          <SubScreenHeader title="Personal fit" />
+          <SubScreenHeader onBack={onBack} title="Personal fit" />
         ) : (
           <View style={{ gap: spacing.xs }}>
+            <SubScreenHeader onBack={onBack} title="Personal fit" />
+            <GyfText tone="faint" variant="label">
+              STEP 2 OF 2 · PERSONAL FIT
+            </GyfText>
             <GyfText accessibilityRole="header" variant="title">
               Set up your personal fit
             </GyfText>
             <GyfText tone="muted">
-              Confirmed skin tone, body type, currency, and budget are required. Photo analysis is
-              optional and the manual fields always work.
+              Enter these manually or use optional photo assistance. Your values are editable and
+              INR is the India-first default.
             </GyfText>
           </View>
         )}
 
-        {photoCapable ? (
-          <Section title="Add a photo (optional)">
+        <Section title="Photo assistance (optional)">
+          {photoCapability === "available" ? (
             <GyfText tone="muted" variant="bodySmall">
-              Optional — GYF can estimate your skin tone and body type from one photo. You can
-              always continue without it.
+              Optional — GYF may estimate one or both personal-fit fields from a single crop. The
+              raw image is processed in memory, stripped of EXIF, never sent to analytics or
+              training, and deleted after analysis. Manual values remain the source of truth.
             </GyfText>
-            <AtelierButton
-              accessibilityLabel="Add or replace your photo for skin tone and body type analysis"
-              disabled={photoBusy}
-              label={
-                photoBusy
-                  ? "Analyzing your photo…"
-                  : hasAnalysisResult
-                    ? "Replace photo"
-                    : "Add photo"
-              }
-              onPress={() => void pickPhoto()}
-              variant="secondary"
-            />
-            {analysisState === "consent_required" ? (
+          ) : (
+            <GyfText tone="muted" variant="bodySmall">
+              Photo assistance is unavailable right now. Continue with the manual fields; a declined
+              or unavailable photo never blocks your stylist.
+            </GyfText>
+          )}
+          {photoCapability === "available" && consent.data_processing ? (
+            <View style={{ gap: spacing.sm }}>
+              {Platform.OS !== "web" ? (
+                <AtelierButton
+                  accessibilityLabel={
+                    selectedAsset
+                      ? "Replace selected photo using the camera"
+                      : "Take a photo for optional analysis"
+                  }
+                  disabled={photoBusy}
+                  label={selectedAsset ? "Replace with camera" : "Take a photo"}
+                  onPress={() => void selectPhoto("camera")}
+                  variant="secondary"
+                />
+              ) : null}
               <AtelierButton
-                accessibilityLabel="Allow storing your photo and continue"
+                accessibilityLabel={
+                  selectedAsset
+                    ? "Replace selected photo from the photo library"
+                    : "Choose a photo for optional analysis"
+                }
                 disabled={photoBusy}
-                label="Allow & continue"
-                onPress={() => void allowPhotoStorageAndContinue()}
-              />
-            ) : null}
-            {analysisMessage ? (
-              <GyfText accessibilityLiveRegion="polite" tone="muted" variant="bodySmall">
-                {analysisMessage}
-              </GyfText>
-            ) : null}
-            {photoError ? (
-              <GyfText
-                accessibilityRole="alert"
-                style={{ color: palette.error }}
-                variant="bodySmall"
-              >
-                {photoError}
-              </GyfText>
-            ) : null}
-            {hasUnconfirmedEstimate ? (
-              <AtelierButton
-                accessibilityLabel="Remove photo estimate"
-                label="Remove photo estimate"
-                onPress={removePhotoEstimate}
+                label={selectedAsset ? "Replace from library" : "Choose from library"}
+                onPress={() => void selectPhoto("library")}
                 variant="secondary"
               />
-            ) : null}
-          </Section>
-        ) : null}
+              {selectedAsset ? (
+                <View style={{ gap: spacing.sm }}>
+                  <Image
+                    accessibilityLabel="Selected private photo preview"
+                    source={{ uri: selectedAsset.uri }}
+                    style={{
+                      backgroundColor: palette.surfaceRaised,
+                      borderRadius: radii.card,
+                      height: 240,
+                      width: "100%",
+                    }}
+                  />
+                  <GyfText tone="faint" variant="bodySmall">
+                    This preview is temporary and stays on this device until you remove it or leave
+                    this screen.
+                  </GyfText>
+                  {photoBusy ? (
+                    <View
+                      accessibilityLabel="Uploading and analysing photo"
+                      accessibilityRole="progressbar"
+                      accessibilityValue={
+                        uploadPercent === null
+                          ? undefined
+                          : {
+                              max: 100,
+                              min: 0,
+                              now: uploadPercent,
+                              text: `${uploadPercent} percent uploaded; analysis follows`,
+                            }
+                      }
+                      style={{ alignItems: "center", flexDirection: "row", gap: spacing.sm }}
+                    >
+                      <ActivityIndicator color={palette.text} />
+                      <GyfText tone="muted" variant="bodySmall">
+                        {uploadPercent === null
+                          ? "Uploading and analysing…"
+                          : `Uploading ${uploadPercent}%… analysis follows`}
+                      </GyfText>
+                    </View>
+                  ) : (
+                    <AtelierButton
+                      accessibilityLabel={
+                        analysisState === "failed"
+                          ? "Retry photo analysis"
+                          : "Analyze selected photo"
+                      }
+                      label={analysisState === "failed" ? "Retry analysis" : "Analyze photo"}
+                      onPress={() => void analyzeSelectedPhoto()}
+                    />
+                  )}
+                  {photoBusy ? (
+                    <AtelierButton
+                      accessibilityLabel="Cancel photo upload"
+                      label="Cancel"
+                      onPress={cancelPhotoUpload}
+                      variant="secondary"
+                    />
+                  ) : null}
+                  {analysisMessage ? (
+                    <GyfText accessibilityLiveRegion="polite" tone="muted" variant="bodySmall">
+                      {analysisMessage}
+                    </GyfText>
+                  ) : null}
+                  {hasUnconfirmedEstimate || hasAnalysisResult ? (
+                    <AtelierButton
+                      accessibilityLabel="Remove selected photo and unconfirmed estimate"
+                      label="Remove photo and estimate"
+                      onPress={removePhotoEstimate}
+                      variant="secondary"
+                    />
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+          {photoError ? (
+            <GyfText accessibilityRole="alert" style={{ color: palette.error }} variant="bodySmall">
+              {photoError}
+            </GyfText>
+          ) : null}
+          {photoCapability === "available" && !consent.data_processing ? (
+            <GyfText tone="muted" variant="bodySmall">
+              Personalized styling consent is off. Turn it on in Account before requesting photo
+              analysis.
+            </GyfText>
+          ) : null}
+        </Section>
 
         <Section title="Skin tone">
           {fields.skin_tone.source === "photo" && !fields.skin_tone.confirmed ? (
