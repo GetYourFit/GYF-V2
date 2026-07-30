@@ -5,181 +5,128 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 
-function withFixture(callback) {
+const ROOT = new URL("..", import.meta.url);
+const SHA = "221d3df5c3cf05c7a31439b9cfbfc3885882c335";
+
+function withFixture(callback, mutate = () => {}) {
   const root = mkdtempSync(join(tmpdir(), "capture-deploy-record-"));
   try {
-    const deployRecords = join(root, "deploy-records");
-    mkdirSync(deployRecords, { recursive: true });
+    const records = join(root, "records");
+    mkdirSync(records, { recursive: true });
     writeFileSync(
-      join(root, "deploy-log.txt"),
-      [
-        "Published deployment:",
-        "https://get-your-fit--or1170q9ix.expo.app/",
-        "Promoted deployment to production.",
-        "",
-      ].join("\n"),
+      join(records, "deploy-log.txt"),
+      `Published deployment:\nhttps://get-your-fit--or1170q9ix.expo.app/\n`,
       "utf8",
     );
     writeFileSync(
-      join(deployRecords, "verification-evidence.json"),
-      JSON.stringify(
-        {
-          verified_at: "2026-07-28T12:34:56.000Z",
-          production_url: "https://get-your-fit.expo.app",
-          expected_entry_bundle: "entry-deadbeef.js",
-          live_entry_bundle: "entry-deadbeef.js",
-          live_deployment_id: "or1170q9ix",
-          live_deployment_url: "https://get-your-fit--or1170q9ix.expo.app/",
-          expected_deployment_id: "or1170q9ix",
-          expected_deployment_url: "https://get-your-fit--or1170q9ix.expo.app/",
-          alias_request_url:
-            "https://get-your-fit--or1170q9ix.expo.app/__deployment?deploy-check=1",
-          alias_origin: "https://get-your-fit.expo.app",
-          alias_forwarded_host: "get-your-fit.expo.app",
-          headers: {
-            "content-security-policy": "frame-ancestors 'none'",
-            "cross-origin-opener-policy": "same-origin",
-            "referrer-policy": "strict-origin-when-cross-origin",
-            "x-content-type-options": "nosniff",
-            "x-frame-options": "DENY",
-          },
-        },
-        null,
-        2,
-      ),
+      join(records, "promotion-log.txt"),
+      "Promoted deployment to production.\n",
       "utf8",
     );
-    callback(root);
+    const evidence = {
+      schema_version: 2,
+      verified_at: "2026-07-30T12:34:56.000Z",
+      production_url: "https://get-your-fit.expo.app",
+      expected_source_sha: SHA,
+      expected_entry_bundle: "entry-deadbeef.js",
+      expected_entry_hash: "deadbeef",
+      live_entry_bundle: "entry-deadbeef.js",
+      live_deployment_id: "or1170q9ix",
+      live_deployment_url: "https://get-your-fit--or1170q9ix.expo.app/",
+      expected_deployment_id: "or1170q9ix",
+      expected_deployment_url: "https://get-your-fit--or1170q9ix.expo.app/",
+      promoted_to_production: true,
+      promotion_attempted: true,
+      promotion: { confirmed: true, deployment_id: "or1170q9ix" },
+      headers: { "x-frame-options": "DENY" },
+      cuelinks: { export: { valid: true }, immutable: { valid: true } },
+      deployment_identity: { release_sha: SHA },
+      api_surface: { base_url: "https://gyf-api-va.onrender.com", release_sha: SHA },
+      alias_probe: { reachable: false, error: "edge cache" },
+    };
+    mutate(evidence);
+    writeFileSync(
+      join(records, "verification-evidence.json"),
+      `${JSON.stringify(evidence)}\n`,
+      "utf8",
+    );
+    callback(root, records);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 }
 
-test("capture-deploy-record binds rollback metadata to the exact deployment ID", () => {
-  withFixture((root) => {
-    const artifactOutput = join(root, "rollback-record.json");
-    const summaryOutput = join(root, "rollback-record-summary.md");
-    const result = spawnSync(
-      process.execPath,
-      [
-        "scripts/capture-deploy-record.mjs",
-        "--deploy-log",
-        join(root, "deploy-log.txt"),
-        "--verification-evidence",
-        join(root, "deploy-records", "verification-evidence.json"),
-        "--artifact-output",
-        artifactOutput,
-        "--summary-output",
-        summaryOutput,
-      ],
-      {
-        cwd: new URL("..", import.meta.url),
-        env: {
-          ...process.env,
-          GITHUB_SHA: "different-cd-workflow-sha",
-          CHECKED_OUT_SHA: "221d3df5c3cf05c7a31439b9cfbfc3885882c335",
-          GITHUB_RUN_ID: "12345",
-          GITHUB_RUN_ATTEMPT: "2",
-          SOURCE_WORKFLOW_RUN_ID: "67890",
-          SOURCE_WORKFLOW_HEAD_SHA: "221d3df5c3cf05c7a31439b9cfbfc3885882c335",
-        },
+function run(root, records, env = {}) {
+  return spawnSync(
+    process.execPath,
+    [
+      "scripts/capture-deploy-record.mjs",
+      "--deploy-log",
+      join(records, "deploy-log.txt"),
+      "--promotion-log",
+      join(records, "promotion-log.txt"),
+      "--verification-evidence",
+      join(records, "verification-evidence.json"),
+      "--artifact-output",
+      join(root, "rollback-record.json"),
+      "--summary-output",
+      join(root, "rollback-record-summary.md"),
+    ],
+    {
+      cwd: ROOT,
+      env: {
+        ...process.env,
+        GITHUB_RUN_ID: "12345",
+        GITHUB_RUN_ATTEMPT: "2",
+        SOURCE_WORKFLOW_RUN_ID: "67890",
+        SOURCE_WORKFLOW_HEAD_SHA: SHA,
+        CHECKED_OUT_SHA: SHA,
+        ...env,
       },
-    );
+    },
+  );
+}
 
+test("capture-deploy-record binds source/API/deployment/entry provenance and rollback", () => {
+  withFixture((root, records) => {
+    const result = run(root, records);
     assert.equal(result.status, 0, result.stderr.toString());
-
-    const artifact = JSON.parse(readFileSync(artifactOutput, "utf8"));
+    const artifact = JSON.parse(readFileSync(join(root, "rollback-record.json"), "utf8"));
+    assert.equal(artifact.commit.sha, SHA);
+    assert.equal(artifact.api.release_sha, SHA);
     assert.equal(artifact.deployment.id, "or1170q9ix");
-    assert.equal(
-      artifact.deployment.rollback_command,
-      "npm exec --yes eas-cli@21.4.0 -- deploy:alias --prod --non-interactive --id=or1170q9ix",
-    );
     assert.equal(artifact.bundle.entry_hash, "deadbeef");
-    assert.match(readFileSync(summaryOutput, "utf8"), /Deployment ID: `or1170q9ix`/);
+    assert.equal(artifact.promotion.confirmed, true);
+    assert.match(readFileSync(join(root, "rollback-record-summary.md"), "utf8"), /Source\/API SHA/);
   });
 });
 
-test("capture-deploy-record rejects a missing checked-out SHA", () => {
-  withFixture((root) => {
-    const result = spawnSync(
-      process.execPath,
-      [
-        "scripts/capture-deploy-record.mjs",
-        "--deploy-log",
-        join(root, "deploy-log.txt"),
-        "--verification-evidence",
-        join(root, "deploy-records", "verification-evidence.json"),
-        "--artifact-output",
-        join(root, "rollback-record.json"),
-        "--summary-output",
-        join(root, "rollback-record-summary.md"),
-      ],
-      {
-        cwd: new URL("..", import.meta.url),
-        env: {
-          ...process.env,
-          SOURCE_WORKFLOW_HEAD_SHA: "221d3df5c3cf05c7a31439b9cfbfc3885882c335",
-        },
-      },
-    );
+test("capture-deploy-record rejects promotion evidence without exact API identity", () => {
+  withFixture(
+    (root, records) => {
+      const result = run(root, records);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr.toString(), /API release identity/);
+    },
+    (evidence) => {
+      evidence.api_surface.release_sha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    },
+  );
+});
 
+test("capture-deploy-record rejects a missing promotion confirmation", () => {
+  withFixture((root, records) => {
+    writeFileSync(join(records, "promotion-log.txt"), "deployment created only\n", "utf8");
+    const result = run(root, records);
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr.toString(), /missing the source or checked-out SHA/);
+    assert.match(result.stderr.toString(), /does not confirm promotion/);
   });
 });
 
-test("capture-deploy-record fails when verification evidence is not bound to the exact deployment ID", () => {
-  withFixture((root) => {
-    const evidencePath = join(root, "deploy-records", "verification-evidence.json");
-    const evidence = JSON.parse(readFileSync(evidencePath, "utf8"));
-    evidence.expected_deployment_id = "wrong123";
-    writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
-
-    const result = spawnSync(
-      process.execPath,
-      [
-        "scripts/capture-deploy-record.mjs",
-        "--deploy-log",
-        join(root, "deploy-log.txt"),
-        "--verification-evidence",
-        evidencePath,
-        "--artifact-output",
-        join(root, "rollback-record.json"),
-        "--summary-output",
-        join(root, "rollback-record-summary.md"),
-      ],
-      { cwd: new URL("..", import.meta.url) },
-    );
-
+test("capture-deploy-record rejects missing checked-out SHA", () => {
+  withFixture((root, records) => {
+    const result = run(root, records, { CHECKED_OUT_SHA: "" });
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr.toString(), /deployment ID does not match deploy output/);
-  });
-});
-
-test("capture-deploy-record fails when the live alias deployment differs from the deploy output", () => {
-  withFixture((root) => {
-    const evidencePath = join(root, "deploy-records", "verification-evidence.json");
-    const evidence = JSON.parse(readFileSync(evidencePath, "utf8"));
-    evidence.live_deployment_id = "oldprod1";
-    writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
-
-    const result = spawnSync(
-      process.execPath,
-      [
-        "scripts/capture-deploy-record.mjs",
-        "--deploy-log",
-        join(root, "deploy-log.txt"),
-        "--verification-evidence",
-        evidencePath,
-        "--artifact-output",
-        join(root, "rollback-record.json"),
-        "--summary-output",
-        join(root, "rollback-record-summary.md"),
-      ],
-      { cwd: new URL("..", import.meta.url) },
-    );
-
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr.toString(), /live deployment ID does not match deploy output/);
+    assert.match(result.stderr.toString(), /missing a full source or checked-out SHA/);
   });
 });

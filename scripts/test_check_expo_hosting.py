@@ -33,7 +33,7 @@ class ExpoHostingGuardTests(unittest.TestCase):
                                     "unstable_useServerMiddleware": True,
                                 },
                             ]
-                        ]
+                        ],
                     }
                 }
             ),
@@ -51,16 +51,20 @@ class ExpoHostingGuardTests(unittest.TestCase):
         (self.root / ".github/workflows/cd.yml").write_text(
             "\n".join(
                 [
-                    "- run: node scripts/verify-deploy.mjs --api-url \"$EXPO_PUBLIC_API_URL\"",
+                    "- run: node scripts/verify-cuelinks-web-export.mjs --evidence-file deploy-records/cuelinks-export-evidence.json",
+                    '- run: node scripts/verify-deploy.mjs --api-url "$EXPO_PUBLIC_API_URL" --expected-source-sha "$CHECKED_OUT_SHA" --cuelinks-evidence deploy-records/cuelinks-export-evidence.json',
+                    "- run: npm exec --yes eas-cli@21.4.0 -- deploy:alias --prod --non-interactive --id=$deployment_id",
                     "- run: node scripts/capture-deploy-record.mjs",
-                    "- uses: actions/upload-artifact@v4",
-                    "- run: cat deploy-records/rollback-record-summary.md >> \"$GITHUB_STEP_SUMMARY\"",
+                    "- run: node apps/expo/scripts/capture-deploy-diagnostic.mjs",
+                    "- run: actions/upload-artifact@v4 failed-deployment",
+                    "- uses: actions/upload-artifact@v4 rollback-record-summary.md",
+                    '- run: cat deploy-records/rollback-record-summary.md >> "$GITHUB_STEP_SUMMARY"',
                     "github.event.workflow_run.head_sha",
                     "checked_out_sha=$(git rev-parse HEAD)",
                     "latest_default_sha=$(git rev-parse FETCH_HEAD)",
                     "echo current $DEFAULT_BRANCH",
-                    "echo \"CHECKED_OUT_SHA=$checked_out_sha\" >> \"$GITHUB_ENV\"",
-                    "npm exec --yes eas-cli@21.4.0 -- deploy --prod",
+                    'echo "CHECKED_OUT_SHA=$checked_out_sha" >> "$GITHUB_ENV"',
+                    "npm exec --yes eas-cli@21.4.0 -- deploy --non-interactive --dev-domain=get-your-fit",
                     "EXPO_TOKEN is not configured; refusing",
                     "",
                 ]
@@ -120,6 +124,13 @@ class ExpoHostingGuardTests(unittest.TestCase):
         self.assertIn(
             "CD must persist the immutable Expo rollback record after deployment",
             check_expo_hosting.findings(self.root),
+        )
+
+    def test_rejects_promotion_before_immutable_verification(self) -> None:
+        workflow = self.root / ".github/workflows/cd.yml"
+        text = workflow.read_text(encoding="utf-8")
+        self.assertLess(
+            text.find("node scripts/verify-deploy.mjs"), text.find("deploy:alias --prod")
         )
 
     def test_rejects_missing_expo_doctor(self) -> None:

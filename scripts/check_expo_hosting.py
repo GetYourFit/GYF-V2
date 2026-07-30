@@ -46,27 +46,53 @@ def findings(root: Path) -> list[str]:
         if headers.get(name) != value
     ]
     if app_config["expo"].get("web", {}).get("output") != "server":
-        errors.append("apps/expo/app.json must use server web output for deployment-ID verification")
+        errors.append(
+            "apps/expo/app.json must use server web output for deployment-ID verification"
+        )
     if router.get("unstable_useServerMiddleware") is not True:
-        errors.append("apps/expo/app.json must enable server middleware for response security headers")
+        errors.append(
+            "apps/expo/app.json must enable server middleware for response security headers"
+        )
 
     middleware = root / "apps/expo/src/app/+middleware.ts"
-    if not middleware.exists() or "setResponseHeaders" not in middleware.read_text(encoding="utf-8"):
+    if not middleware.exists() or "setResponseHeaders" not in middleware.read_text(
+        encoding="utf-8"
+    ):
         errors.append("apps/expo/src/app/+middleware.ts must set response security headers")
 
     package = json.loads((root / "apps/expo/package.json").read_text(encoding="utf-8"))
     if "expo-server" not in package.get("dependencies", {}):
         errors.append("apps/expo/package.json must retain expo-server for static response headers")
     if not (root / "apps/expo/src/app/__deployment+api.ts").exists():
-        errors.append("apps/expo/src/app/__deployment+api.ts must prove alias-to-deployment binding")
+        errors.append(
+            "apps/expo/src/app/__deployment+api.ts must prove alias-to-deployment binding"
+        )
 
     cd = (root / ".github/workflows/cd.yml").read_text(encoding="utf-8")
-    if "node scripts/verify-deploy.mjs" not in cd:
+    if "deploy --non-interactive --dev-domain=get-your-fit" not in cd:
+        errors.append("CD must create a non-production immutable EAS deployment")
+    if "deploy:alias --prod --non-interactive --id=" not in cd:
+        errors.append("CD must promote only an exact verified deployment ID")
+    verify_index = cd.find("node scripts/verify-deploy.mjs")
+    promote_index = cd.find("deploy:alias --prod --non-interactive --id=")
+    if verify_index < 0:
         errors.append("CD must verify the immutable EAS deployment after deployment")
-    if '--api-url "$EXPO_PUBLIC_API_URL"' not in cd:
-        errors.append("CD must verify API health, readiness, and status content after deployment")
+    elif promote_index < verify_index:
+        errors.append("CD must verify before any production alias promotion")
+    if (
+        '--api-url "$EXPO_PUBLIC_API_URL"' not in cd
+        or '--expected-source-sha "$CHECKED_OUT_SHA"' not in cd
+    ):
+        errors.append("CD must verify API health, release identity and source SHA after deployment")
+    if (
+        "--cuelinks-evidence" not in cd
+        or "verify-cuelinks-web-export.mjs --evidence-file" not in cd
+    ):
+        errors.append("CD must retain and verify Cuelinks export evidence")
     if "node scripts/capture-deploy-record.mjs" not in cd:
         errors.append("CD must persist the immutable Expo rollback record after deployment")
+    if "capture-deploy-diagnostic.mjs" not in cd or "failed-deployment" not in cd:
+        errors.append("CD must publish a failed-deployment diagnostic artifact")
     if "actions/upload-artifact@v4" not in cd or "rollback-record-summary.md" not in cd:
         errors.append("CD must publish the Expo rollback record artifact and summary")
     if "github.event.workflow_run.head_sha" not in cd or "git rev-parse HEAD" not in cd:
@@ -77,6 +103,8 @@ def findings(root: Path) -> list[str]:
         errors.append("CD must persist the verified checked-out SHA for rollback capture")
     if "npm exec --yes eas-cli@21.4.0" not in cd:
         errors.append("CD must pin the EAS CLI version")
+    if " deploy --prod" in cd and "deploy:alias --prod" not in cd:
+        errors.append("CD must not create-and-promote an EAS deployment in one command")
     if "EXPO_TOKEN is not configured; refusing" not in cd:
         errors.append("CD must fail closed when the production deploy token is unavailable")
     if "enabled=false" in cd or "eas-cli@latest" in cd:

@@ -1,29 +1,22 @@
 #!/usr/bin/env node
 /**
- * Proves the build `eas deploy --prod` just created is actually live and
- * correctly secured - on the exact immutable deployment URL that command
- * printed, not on the production alias.
+ * Verify a newly-created, non-production EAS deployment before any alias change.
  *
- * `eas deploy --prod` reports "Promoted deployment to production" the
- * moment the alias is repointed, but https://get-your-fit.expo.app serves
- * its index.html through an edge cache with `cache-control: max-age=3600`.
- * Until that entry expires (up to an hour), the alias keeps handing out the
- * previous document, so polling it can never reliably confirm *this* deploy
- * within a CI run. The immutable per-deployment URL
- * (`https://get-your-fit--<id>.expo.app`) has no such cache: it is unique to
- * this deployment and serves the real thing immediately. That URL, plus the
- * eas-cli log line confirming promotion, is the actual proof this deploy is
- * live in production - so that is what gates the build.
+ * The release transaction is deliberately split into two commands:
+ *   1. `eas deploy --non-interactive` creates an immutable preview deployment.
+ *   2. this verifier proves that deployment, then `eas deploy:alias --prod` promotes it.
  *
- * The alias is still probed once, best-effort, purely to record whether it
- * has already picked up the new bundle - it never blocks or fails the job.
+ * A deploy log containing a promotion line is rejected here. That makes it impossible
+ * for this verifier to bless the old `eas deploy --prod` ordering by accident.
  */
+import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 const DEFAULT_PRODUCTION_URL = "https://get-your-fit.expo.app";
 const ATTEMPTS = 3;
 const INTERVAL_MS = 5_000;
+const RELEASE_SHA_PATTERN = /^[0-9a-f]{40}$/;
 const REQUIRED_HEADERS = {
   "content-security-policy": "frame-ancestors 'none'",
   "cross-origin-opener-policy": "same-origin",
@@ -31,12 +24,26 @@ const REQUIRED_HEADERS = {
   "x-content-type-options": "nosniff",
   "x-frame-options": "DENY",
 };
+const CUELINKS_CID = "305057";
+const CUELINKS_VENDOR_LOADER = `var cId =  "${CUELINKS_CID}";
+
+(function(d, t) {
+  var s = document.createElement("script");
+  s.type = "text/javascript";
+  s.async = true;
+  s.src = (document.location.protocol == "https:" ? "https://cdn0.cuelinks.com/js/" : "http://cdn0.cuelinks.com/js/")  + "cuelinksv2.js";
+  document.getElementsByTagName("body")[0].appendChild(s);
+}());`;
+const CUELINKS_EXACT_LOADER = `<script id="gyf-cuelinks-web-loader" type="text/javascript" data-gyf-cuelinks-web="true" data-cuelinks-cid="${CUELINKS_CID}">${CUELINKS_VENDOR_LOADER}</script>`;
+const CUELINKS_SDK_PATTERN =
+  /<script\b(?=[^>]*\bsrc\s*=\s*["'][^"']*cuelinksv2\.js(?:\?[^"']*)?["'])(?![^>]*\btype\s*=\s*["']application\/(?:json|ld\+json)["'])[^>]*>\s*<\/script>/gi;
 
 function bundleDirectory() {
   const candidates = ["dist/client/_expo/static/js/web", "dist/_expo/static/js/web"];
   const directory = candidates.find((candidate) => {
     try {
-      return readdirSync(join(process.cwd(), candidate)).length >= 0;
+      readdirSync(join(process.cwd(), candidate));
+      return true;
     } catch {
       return false;
     }
@@ -54,35 +61,35 @@ function localEntry() {
   return entry;
 }
 
+function entryHash(entryBundle) {
+  const match = /^entry-([a-f0-9]+)\.js$/.exec(basename(entryBundle));
+  if (!match) throw new Error(`Invalid entry bundle name: ${entryBundle}`);
+  return match[1];
+}
+
 function parseArgs(argv) {
   const options = {};
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
-    if (!token.startsWith("--")) {
-      throw new Error(`Unexpected argument: ${token}`);
-    }
+    if (!token.startsWith("--")) throw new Error(`Unexpected argument: ${token}`);
     const name = token.slice(2);
     const value = argv[index + 1];
-    if (!value || value.startsWith("--")) {
-      throw new Error(`Missing value for --${name}`);
-    }
+    if (!value || value.startsWith("--")) throw new Error(`Missing value for --${name}`);
     options[name] = value;
     index += 1;
   }
   return options;
 }
 
-// Reads the eas-cli deploy log to find the exact deployment this run just
-// created and to require, in eas-cli's own words, that it was promoted to
-// production. This is the deployment's system of record - not something we
-// have to re-derive by fetching a cached alias.
 function deploymentFromLog(logText) {
+  if (/promoted deployment to production/i.test(logText)) {
+    throw new Error(
+      "Deploy log already confirms production promotion; verification must run before promotion",
+    );
+  }
   const urlMatches = [...logText.matchAll(/https:\/\/([a-z0-9-]+)--([a-z0-9]+)\.expo\.app\/?/gi)];
   if (urlMatches.length === 0) {
-    throw new Error("Deploy log is missing the immutable deployment URL");
-  }
-  if (!/promoted deployment to production/i.test(logText)) {
-    throw new Error("Deploy log does not confirm the deployment was promoted to production");
+    throw new Error("Deploy log is missing the immutable non-production deployment URL");
   }
   const urlMatch = urlMatches.at(-1);
   return {
@@ -91,28 +98,83 @@ function deploymentFromLog(logText) {
   };
 }
 
+function promotionFromLog(logText, deploymentId) {
+  if (!/promoted deployment to production/i.test(logText)) {
+    throw new Error("Promotion log does not confirm the deployment was promoted to production");
+  }
+  return {
+    confirmed: true,
+    deployment_id: deploymentId,
+    message: "Promoted deployment to production",
+  };
+}
+
+function inspectCuelinks(html) {
+  const exactLoaderCount = html.split(CUELINKS_EXACT_LOADER).length - 1;
+  const sdkReferenceCount = (html.match(CUELINKS_SDK_PATTERN) ?? []).length;
+  return {
+    cid: CUELINKS_CID,
+    exact_loader_count: exactLoaderCount,
+    executable_sdk_reference_count: sdkReferenceCount,
+    valid: exactLoaderCount === 1 && exactLoaderCount + sdkReferenceCount === 1,
+  };
+}
+
+function readCuelinksEvidence(path) {
+  if (!path) return null;
+  const evidence = JSON.parse(readFileSync(path, "utf8"));
+  if (evidence.cid !== CUELINKS_CID || evidence.valid !== true) {
+    throw new Error("Cuelinks export evidence is missing the exact verified loader");
+  }
+  return evidence;
+}
+
 async function fetchState(url) {
-  // Cache-bust the request itself, or we measure our own cached response
-  // rather than what the URL holds for real visitors.
   const response = await fetch(`${url}?deploy-check=${Date.now()}`, {
     headers: { "cache-control": "no-cache" },
   });
   if (!response.ok) throw new Error(`${url} returned ${response.status}`);
-
+  const html = await response.text();
   const missingHeaders = Object.entries(REQUIRED_HEADERS).filter(
     ([name, value]) => response.headers.get(name) !== value,
   );
-
   return {
-    entryBundle: /entry-[a-f0-9]+\.js/.exec(await response.text())?.[0] ?? null,
+    entryBundle: /entry-[a-f0-9]+\.js/.exec(html)?.[0] ?? null,
     headers: Object.fromEntries(
       Object.keys(REQUIRED_HEADERS).map((name) => [name, response.headers.get(name) ?? null]),
     ),
     missingHeaders,
+    cuelinks: inspectCuelinks(html),
   };
 }
 
-async function verifyApiSurface(apiUrl) {
+async function fetchDeploymentIdentity(url, expectedSourceSha, expectedDeploymentId) {
+  if (!expectedSourceSha) return null;
+  const identityUrl = new URL("/__deployment", url);
+  const response = await fetch(`${identityUrl}?release-check=${Date.now()}`, {
+    headers: { "cache-control": "no-cache", accept: "application/json" },
+  });
+  if (!response.ok) throw new Error(`Deployment identity returned ${response.status}`);
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error("Deployment identity returned invalid JSON");
+  }
+  if (body.release_sha !== expectedSourceSha) {
+    throw new Error(
+      `Immutable deployment identity source SHA ${body.release_sha ?? "unknown"} does not match ${expectedSourceSha}`,
+    );
+  }
+  if (body.deployment_id && body.deployment_id !== expectedDeploymentId) {
+    throw new Error(
+      `Immutable deployment identity ID ${body.deployment_id} does not match ${expectedDeploymentId}`,
+    );
+  }
+  return body;
+}
+
+async function verifyApiSurface(apiUrl, expectedSourceSha) {
   let parsed;
   try {
     parsed = new URL(apiUrl);
@@ -122,12 +184,8 @@ async function verifyApiSurface(apiUrl) {
   if (parsed.protocol !== "https:" && !["127.0.0.1", "localhost"].includes(parsed.hostname)) {
     throw new Error(`API surface URL must use HTTPS: ${apiUrl}`);
   }
-
   const probes = [
-    {
-      path: "/health",
-      valid: (body) => body?.status === "ok" && body?.service === "api",
-    },
+    { path: "/health", valid: (body) => body?.status === "ok" && body?.service === "api" },
     {
       path: "/ready",
       valid: (body) => body?.status === "ready" && body?.checks?.database === true,
@@ -138,7 +196,8 @@ async function verifyApiSurface(apiUrl) {
         typeof body?.environment === "string" &&
         typeof body?.database === "string" &&
         typeof body?.capabilities === "object" &&
-        typeof body?.event_sink === "string",
+        typeof body?.event_sink === "string" &&
+        typeof body?.release_sha === "string",
     },
   ];
   const results = {};
@@ -147,21 +206,31 @@ async function verifyApiSurface(apiUrl) {
     const response = await fetch(`${url}?release-check=${Date.now()}`, {
       headers: { "cache-control": "no-cache", accept: "application/json" },
     });
-    if (!response.ok) {
-      throw new Error(`API ${probe.path} returned ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`API ${probe.path} returned ${response.status}`);
     let body;
     try {
       body = await response.json();
     } catch {
       throw new Error(`API ${probe.path} returned invalid JSON`);
     }
-    if (!probe.valid(body)) {
+    if (!probe.valid(body))
       throw new Error(`API ${probe.path} returned an unexpected status payload`);
+    if (
+      probe.path === "/system/status" &&
+      expectedSourceSha &&
+      body.release_sha !== expectedSourceSha
+    ) {
+      throw new Error(
+        `API release SHA ${body.release_sha} does not match source SHA ${expectedSourceSha}`,
+      );
     }
     results[probe.path] = { status: response.status, content: body };
   }
-  return { base_url: parsed.origin, probes: results };
+  return {
+    base_url: parsed.origin,
+    release_sha: results["/system/status"].content.release_sha,
+    probes: results,
+  };
 }
 
 async function probeAliasBestEffort(productionUrl) {
@@ -171,6 +240,7 @@ async function probeAliasBestEffort(productionUrl) {
       reachable: true,
       entryBundle: state.entryBundle,
       missingHeaders: state.missingHeaders,
+      cuelinks: state.cuelinks,
     };
   } catch (error) {
     return { reachable: false, error: error.message };
@@ -179,22 +249,36 @@ async function probeAliasBestEffort(productionUrl) {
 
 const options = parseArgs(process.argv.slice(2));
 const expected = localEntry();
+const expectedHash = entryHash(expected);
 const deployLogPath = options["deploy-log"];
 if (!deployLogPath) throw new Error("Missing required option --deploy-log");
 const evidenceFile = options["evidence-file"];
 const productionUrl = options["production-url"] ?? DEFAULT_PRODUCTION_URL;
 const apiUrl = options["api-url"];
+const expectedSourceSha = options["expected-source-sha"];
+if (expectedSourceSha && !RELEASE_SHA_PATTERN.test(expectedSourceSha)) {
+  throw new Error(`Expected source SHA is malformed: ${expectedSourceSha}`);
+}
 const attempts = Number.parseInt(options["attempts"] ?? `${ATTEMPTS}`, 10);
 const intervalMs = Number.parseInt(options["interval-ms"] ?? `${INTERVAL_MS}`, 10);
 const deployment = deploymentFromLog(readFileSync(deployLogPath, "utf8"));
 const deploymentUrl = options["deployment-url"] ?? deployment.deploymentUrl;
+const cuelinksExport = readCuelinksEvidence(options["cuelinks-evidence"]);
+const promotionLogPath = options["promotion-log"];
+const promotion = promotionLogPath
+  ? promotionFromLog(readFileSync(promotionLogPath, "utf8"), deployment.deploymentId)
+  : { confirmed: false, deployment_id: deployment.deploymentId };
 
 let lastState = null;
 let lastError = null;
 for (let attempt = 1; attempt <= attempts; attempt += 1) {
   try {
     lastState = await fetchState(deploymentUrl);
-    if (lastState.entryBundle === expected && lastState.missingHeaders.length === 0) {
+    if (
+      lastState.entryBundle === expected &&
+      lastState.missingHeaders.length === 0 &&
+      lastState.cuelinks.valid
+    ) {
       break;
     }
   } catch (error) {
@@ -217,82 +301,80 @@ if (!lastState) {
   );
   process.exit(1);
 }
-
 if (lastState.entryBundle !== expected) {
   console.error(
-    [
-      "",
-      "verify-deploy: the immutable deployment URL is not serving the build we exported.",
-      `  deployment URL: ${deploymentUrl}`,
-      `  expected: ${expected}`,
-      `  serving:  ${lastState.entryBundle ?? "unknown"}`,
-      "",
-    ].join("\n"),
+    `\nverify-deploy: immutable deployment served ${lastState.entryBundle ?? "unknown"}; expected ${expected}.\n`,
   );
   process.exit(1);
 }
-
 if (lastState.missingHeaders.length > 0) {
   const detail = lastState.missingHeaders
     .map(([name, value]) => `${name}=${lastState.headers[name] ?? "missing"} (expected ${value})`)
     .join(", ");
   console.error(
-    [
-      "",
-      "verify-deploy: the immutable deployment URL is missing required security headers.",
-      `  deployment URL: ${deploymentUrl}`,
-      `  missing: ${detail}`,
-      "",
-    ].join("\n"),
+    `\nverify-deploy: immutable deployment is missing required security headers: ${detail}\n`,
+  );
+  process.exit(1);
+}
+if (!lastState.cuelinks.valid) {
+  console.error(
+    `\nverify-deploy: immutable deployment has invalid Cuelinks evidence (exact=${lastState.cuelinks.exact_loader_count}, sdk=${lastState.cuelinks.executable_sdk_reference_count}).\n`,
   );
   process.exit(1);
 }
 
-const apiSurface = apiUrl ? await verifyApiSurface(apiUrl) : null;
+const identity = await fetchDeploymentIdentity(
+  deploymentUrl,
+  expectedSourceSha,
+  deployment.deploymentId,
+);
+const apiSurface = apiUrl ? await verifyApiSurface(apiUrl, expectedSourceSha) : null;
 const alias = await probeAliasBestEffort(productionUrl);
-
-if (evidenceFile) {
-  writeFileSync(
-    evidenceFile,
-    `${JSON.stringify(
-      {
-        verified_at: new Date().toISOString(),
-        production_url: productionUrl,
-        expected_entry_bundle: expected,
-        live_entry_bundle: lastState.entryBundle,
-        live_deployment_id: deployment.deploymentId,
-        live_deployment_url: deploymentUrl,
-        expected_deployment_id: deployment.deploymentId,
-        expected_deployment_url: deploymentUrl,
-        promoted_to_production: true,
-        headers: lastState.headers,
-        api_surface: apiSurface,
-        alias_probe: alias,
-      },
-      null,
-      2,
-    )}\n`,
-    "utf8",
-  );
-}
+const verifiedAt = new Date().toISOString();
+const evidence = {
+  schema_version: 2,
+  verified_at: verifiedAt,
+  verification_stage: promotion.confirmed ? "post-promotion" : "immutable-before-promotion",
+  production_url: productionUrl,
+  expected_source_sha: expectedSourceSha ?? null,
+  expected_entry_bundle: expected,
+  expected_entry_hash: expectedHash,
+  live_entry_bundle: lastState.entryBundle,
+  live_deployment_id: deployment.deploymentId,
+  live_deployment_url: deploymentUrl,
+  expected_deployment_id: deployment.deploymentId,
+  expected_deployment_url: deploymentUrl,
+  promoted_to_production: promotion.confirmed,
+  promotion_attempted: promotion.confirmed,
+  promotion,
+  headers: lastState.headers,
+  cuelinks: {
+    export: cuelinksExport,
+    immutable: lastState.cuelinks,
+    alias_probe: alias.cuelinks ?? null,
+  },
+  deployment_identity: identity,
+  api_surface: apiSurface,
+  alias_probe: alias,
+};
+if (evidenceFile) writeFileSync(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
 
 console.log(
-  `verify-deploy: deployment ${deployment.deploymentId} is live at ${deploymentUrl} serving ${expected} with all required security headers, and eas-cli confirmed promotion to production.`,
+  `verify-deploy: immutable deployment ${deployment.deploymentId} serves ${expected} with all required security headers and Cuelinks evidence; promotion=${promotion.confirmed}.`,
 );
-if (apiSurface) {
+if (apiSurface)
   console.log(
-    `verify-deploy: API health, readiness, and status content passed at ${apiSurface.base_url}.`,
+    `verify-deploy: API release identity ${apiSurface.release_sha} and health probes passed.`,
   );
-}
 if (alias.reachable && alias.entryBundle === expected) {
   console.log(`verify-deploy: production alias ${productionUrl} has already picked up this build.`);
 } else if (alias.reachable) {
   console.log(
-    `verify-deploy: production alias ${productionUrl} is still serving ${alias.entryBundle ?? "unknown"} (edge cache up to 1h, cache-control: max-age=3600) - not a failure, informational only.`,
+    `verify-deploy: production alias ${productionUrl} is serving ${alias.entryBundle ?? "unknown"}; informational best-effort probe only.`,
   );
 } else {
   console.log(
-    `verify-deploy: production alias probe was inconclusive (${alias.error}) - not a failure, informational only.`,
+    `verify-deploy: production alias probe was inconclusive (${alias.error}); informational best-effort probe only.`,
   );
 }
 process.exit(0);

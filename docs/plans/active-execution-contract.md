@@ -73,6 +73,16 @@ is the only executable unit. Exactly one `CURRENT EXECUTION POINTER` may exist:
 previous protected Vercel rollback exception for this single provider-retirement packet. This does
 not advance the current pointer or any F2.5, native-acceptance, F10, F11, F13 or hard-launch gate.
 
+**2026-07-30 release-transaction correction:** Phase A CD now creates an immutable
+non-production EAS deployment, verifies the exact source/API SHA, deployment identity, entry hash,
+security headers and Cuelinks evidence, and only then runs the pinned production alias assignment.
+The pre-promotion verifier rejects any deploy log that already contains a promotion line; failed
+verification publishes a diagnostic artifact and cannot repoint the alias. Successful records retain
+source/API SHA, immutable deployment ID, entry hash, timestamp, promotion output and best-effort alias
+probe. The EAS `X-Frame-Options` provider limitation remains a truthful blocker until a fresh main CD
+run proves the middleware fix at its own immutable URL. This repository change does not claim a fresh
+production release or switch providers.
+
 **Phase A (repository replacement proof):** EAS Hosting is the selected replacement because Expo
 SDK 57 supports the required global HTML response headers through the `expo-router` header
 configuration with `expo-server`, and EAS Hosting provides immutable deployment IDs whose
@@ -83,12 +93,14 @@ configuration and post-deploy verifier; it must prove the immutable per-deployme
 `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and
 `Cross-Origin-Opener-Policy: same-origin`, and that its entry bundle matches the just-exported
 artifact. The production alias edge-caches `index.html` for up to an hour and cannot be proven
-fresh within the CI verification window, so production-alias promotion is instead confirmed from
-`eas-cli`'s own `Promoted deployment to production` log line, and the alias is probed only
-best-effort as an informational note that never blocks the gate. The verifier is required after
-every EAS production deploy. Once a landed-main deployment passes that live proof, it is the web
-rollback artifact; rollback is reassignment of the production alias to that immutable deployment
-ID. Preserve the deployment ID, commit, entry hash and response header evidence outside Vercel.
+fresh within the CI verification window. CD therefore creates a non-production immutable URL,
+proves it before any alias change, promotes only that verified deployment ID with the pinned
+`eas-cli`, and records the CLI promotion line as the alias-assignment proof; the alias is probed
+best-effort as an informational note that never substitutes for the command proof. The verifier is
+required both before and after every EAS production alias assignment. Once a landed-main deployment
+passes that live proof, it is the web rollback artifact; rollback is reassignment of the production
+alias to that immutable deployment ID. Preserve the deployment ID, source/API commit, entry hash,
+identity and response-header evidence outside Vercel.
 
 Do not change Vercel DNS, provider project/domain/deployments/build hooks/Git integration or
 provider/environment secrets in Phase A. Keep the Vercel API CORS origin until the landed-main
