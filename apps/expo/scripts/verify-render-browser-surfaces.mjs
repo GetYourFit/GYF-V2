@@ -240,6 +240,10 @@ export function settledSurfaceState(document, location, surface) {
   return { ready: true, path: location.pathname, dom };
 }
 
+export function invalidateClientReadiness(document) {
+  delete document.documentElement?.dataset?.gyfClientReady;
+}
+
 async function verifyWithDevTools({ deploymentUrl, stage, command }) {
   const port = await freePort();
   const profile = mkdtempSync(`${tmpdir()}/gyf-render-browser-`);
@@ -267,6 +271,14 @@ async function verifyWithDevTools({ deploymentUrl, stage, command }) {
     for (const surface of SURFACES) {
       const url = new URL(surface.path, deploymentUrl).toString();
       session.errors.length = 0;
+      const invalidated = await session.command("Runtime.evaluate", {
+        expression: `(${invalidateClientReadiness.toString()})(document)`,
+        returnByValue: true,
+      });
+      if (invalidated.exceptionDetails)
+        throw new Error(
+          `could not invalidate browser readiness: ${JSON.stringify(invalidated.exceptionDetails)}`,
+        );
       await session.command("Page.navigate", { url });
       const readinessSurface = {
         path: surface.path,

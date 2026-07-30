@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  invalidateClientReadiness,
   settledSurfaceState,
   verifyBrowserSurfaces,
 } from "./verify-render-browser-surfaces.mjs";
@@ -129,4 +130,8 @@ test("waits for protected routes to settle after client startup", () => {
     path: "/welcome",
     dom: document.documentElement.outerHTML,
   });
+
+  invalidateClientReadiness(document);
+
+  assert.equal(settledSurfaceState(document, location, surface), null);
 });
