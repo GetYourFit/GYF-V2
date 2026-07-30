@@ -181,9 +181,14 @@ test("CD configures both services before any candidate or production deploy", ()
     'render deploys create "$RENDER_PRODUCTION_SERVICE_ID"',
   );
   assert.ok(configure >= 0 && configure < candidateDeploy && configure < productionDeploy);
-  assert.match(workflow, /https:\/\/gyf-expo-web-candidate\.onrender\.com/);
-  assert.match(workflow, /https:\/\/gyf-expo-web\.onrender\.com/);
-  assert.match(workflow, /https:\/\/app\.getyourfit\.co/);
+  assert.match(workflow, /validate-render-environment\.mjs/);
+  const environmentValidator = readFileSync(
+    new URL("./validate-render-environment.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(environmentValidator, /https:\/\/gyf-expo-web-candidate\.onrender\.com/);
+  assert.match(environmentValidator, /https:\/\/gyf-expo-web\.onrender\.com/);
+  assert.match(environmentValidator, /https:\/\/app\.getyourfit\.co/);
 });
 
 test("a provider failure rejects configuration, so CD cannot reach deployment", async () => {
