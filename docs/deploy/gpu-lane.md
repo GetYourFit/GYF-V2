@@ -98,9 +98,20 @@ GYF_ENCODER_REMOTE_KIND=local_cpu
 `encoder_for()` then ignores any stale `GYF_ENCODER_REMOTE_URL` and instantiates the incumbent
 shared `google-siglip2-base-v1` text/image encoder on CPU. Use it only for the bounded local
 foundation work documented in [`docs/plans/scale-3k-inr.md`](../plans/scale-3k-inr.md). Before any
-future runtime export or deployment promotion, pass the frozen parity/truth/latency/RSS harness in
-`ml/eval/encoder_foundation.py`, then complete the shadow, canary, India-SLO, reindex, and
-rollback gates from that plan.
+future runtime export or deployment promotion, run the repeatable bounded text benchmark (no
+catalogue writes):
+
+```bash
+GYF_PERCEPTION_DEVICE=cpu OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 \
+  uv run --project ml --extra perception python -m eval.benchmark_encoder \
+  --device cpu --repeats 3 --timeout-seconds 300 \
+  --output docs/evidence/results/local-cpu-siglip2-YYYY-MM-DD.json
+```
+
+Then pass the frozen parity/truth/latency/RSS harness in `ml/eval/encoder_foundation.py`,
+followed by the shadow, canary, India-SLO, reindex, and rollback gates from that plan. The
+benchmark is local evidence only; a failed load/deadline is not semantic success, and the API
+keeps its lexical fallback.
 
 ---
 

@@ -5,6 +5,7 @@ environment with a ``GYF_`` prefix, so the ML jobs and the API share the same
 database URL and conventions.
 """
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from gyf_contracts.eval_report import RUNTIME_MODELS
 
@@ -27,8 +28,15 @@ class Settings(BaseSettings):
     # Apple MPS is never auto-selected. Set GYF_PERCEPTION_DEVICE explicitly
     # (e.g. "cpu") to override.
     perception_device: str = "auto"
-    perception_batch_size: int = 16  # images encoded per GPU forward pass in backfill
-    perception_io_workers: int = 8  # parallel image loaders feeding each batch
+    perception_batch_size: int = Field(
+        16, ge=1, le=64
+    )  # images encoded per forward pass in backfill
+    perception_io_workers: int = Field(8, ge=1, le=32)  # parallel image loaders feeding each batch
+    # CPU inference is explicitly bounded for Render-compatible local experiments. The
+    # model's measured cold RSS is recorded in the local-lane evidence; if a container
+    # advertises less memory, the encoder refuses to load and the API uses lexical search.
+    perception_cpu_threads: int = Field(2, ge=1, le=8)
+    perception_min_memory_bytes: int = Field(4_000_000_000, ge=0, le=64_000_000_000)
 
     # Free-tier GPU serving lane (D7). When set, perception encodes through a
     # remote HF ZeroGPU Space (see spaces/gyf-gpu) instead of loading weights

@@ -1796,6 +1796,18 @@ evidence and the rollback notes live in
 This is not promotion evidence: Virginia deployment, India-vantage sustained samples, and
 production `EXPLAIN (ANALYZE, BUFFERS)` remain required before any F2.5 closeout claim.
 
+**2026-07-28 local CPU SigLIP2 encoder lane (local evidence only).** The lazy `SiglipEncoder`
+behind explicit `GYF_ENCODER_REMOTE_KIND=local_cpu` now fails closed on Apple MPS and unavailable
+explicit devices, bounds CPU thread count, image/text batch size and a configurable 4 GB
+detectable-memory floor, and validates finite/unit/768-dimensional output before it reaches the
+cache or a vector index. The new repeatable `ml/eval/benchmark_encoder.py` CLI records model
+URI/version, device/thread settings and cold/warm p50/p95/RSS without writing catalogue data.
+Evidence and recommendation are filed in
+[`docs/evidence/f2.5-local-cpu-encoder-lane-2026-07-28.md`](../evidence/f2.5-local-cpu-encoder-lane-2026-07-28.md):
+**HOLD** for local CPU serving (10.1 s cold load, ~3.39 GB peak RSS unverified on Render), GO for
+continued local shadow/benchmark work only. No provider, registry lane, or production config
+changed.
+
 **2026-07-16 measurement correction and root cause (supersedes the stage diagnosis above).**
 
 *The gate itself was wrong.* `measure_slo.py` opened a fresh connection per sample via

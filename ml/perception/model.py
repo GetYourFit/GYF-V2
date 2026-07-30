@@ -61,6 +61,14 @@ def _resolve_device(preference: str, torch: object) -> str:
     never probed. An explicit preference is always respected.
     """
     if preference and preference != "auto":
+        if preference == "mps":
+            # MPS is deliberately not a supported SigLIP2 path: known backend
+            # failures can produce non-finite/non-unit vectors. Fail closed so
+            # the API's lexical fallback remains honest instead of hiding a
+            # device downgrade or corrupting the vector space.
+            raise RuntimeError("MPS is disabled for SigLIP2; use CPU or a validated accelerator")
+        if preference != "cpu" and not _accelerator_available(preference, torch):
+            raise RuntimeError(f"requested encoder device is unavailable: {preference}")
         return preference
     for device in _AUTO_ACCELERATORS:
         if _accelerator_available(device, torch) and _accelerator_works(device):
@@ -133,6 +141,78 @@ def l2_normalize(x: np.ndarray) -> np.ndarray:
     return x / np.clip(norms, 1e-12, None)
 
 
+def _memory_limit_bytes() -> int | None:
+    """Return the strictest detectable process/container memory limit."""
+    limits: list[int] = []
+    for path in (
+        Path("/sys/fs/cgroup/memory.max"),
+        Path("/sys/fs/cgroup/memory/memory.limit_in_bytes"),
+    ):
+        try:
+            raw = path.read_text().strip()
+        except OSError:
+            continue
+        if raw and raw != "max":
+            try:
+                value = int(raw)
+            except ValueError:
+                continue
+            if value > 0:
+                limits.append(value)
+    try:
+        import resource
+
+        address_space, _ = resource.getrlimit(resource.RLIMIT_AS)
+        if address_space not in (resource.RLIM_INFINITY, -1) and address_space > 0:
+            limits.append(int(address_space))
+    except (ImportError, OSError, ValueError):
+        pass
+    return min(limits) if limits else None
+
+
+def _configured_local_limits() -> tuple[int, int, int]:
+    """Load bounded local-runtime settings without making imports heavy."""
+    try:
+        from common.config import settings
+
+        return (
+            settings.perception_batch_size,
+            settings.perception_cpu_threads,
+            settings.perception_min_memory_bytes,
+        )
+    except (ImportError, AttributeError):
+        return 16, 2, 4_000_000_000
+
+
+def _configure_cpu_runtime(torch: object, threads: int) -> None:
+    """Cap Torch CPU parallelism; tolerate minimal/fake torch modules in tests."""
+    cpu_count = os.cpu_count() or 1
+    bounded = min(max(1, threads), cpu_count)
+    set_threads = getattr(torch, "set_num_threads", None)
+    if callable(set_threads):
+        set_threads(bounded)
+    set_interop = getattr(torch, "set_num_interop_threads", None)
+    if callable(set_interop):
+        try:
+            set_interop(1)
+        except RuntimeError:
+            # Torch only permits this before inter-op work starts; the existing
+            # process-wide setting is safer than failing a valid loaded model.
+            pass
+
+
+def _validate_embeddings(vectors: np.ndarray, dim: int) -> np.ndarray:
+    """Reject malformed model output before it reaches a cache or vector index."""
+    if vectors.ndim != 2 or vectors.shape[1] != dim:
+        raise RuntimeError(f"encoder returned shape {vectors.shape}; expected (N, {dim})")
+    if not np.isfinite(vectors).all():
+        raise RuntimeError("encoder returned non-finite embeddings")
+    norms = np.linalg.norm(vectors, axis=1)
+    if not np.allclose(norms, 1.0, atol=1e-3):
+        raise RuntimeError("encoder returned non-unit embeddings")
+    return vectors
+
+
 class SiglipEncoder:
     """Local SigLIP-family encoder. Lazily loads the registry-selected weights on first use."""
 
@@ -141,6 +221,7 @@ class SiglipEncoder:
     def __init__(self, model_id: str, *, device: str = "cpu") -> None:
         self._model_id = model_id
         self._device = device
+        self._max_batch_size, self._cpu_threads, self._min_memory_bytes = _configured_local_limits()
         self._model = None
         self._preprocess = None
         self._tokenizer = None
@@ -152,6 +233,14 @@ class SiglipEncoder:
         import torch
 
         self._device = _resolve_device(self._device, torch)
+        if self._device == "cpu":
+            _configure_cpu_runtime(torch, self._cpu_threads)
+            limit = _memory_limit_bytes()
+            if limit is not None and self._min_memory_bytes and limit < self._min_memory_bytes:
+                raise RuntimeError(
+                    "local SigLIP2 CPU lane refused: detected memory limit "
+                    f"{limit} bytes is below the configured {self._min_memory_bytes}-byte floor"
+                )
         model, preprocess = open_clip.create_model_from_pretrained(self._model_id)
         loaded = model.to(self._device).eval()
         tokenizer = open_clip.get_tokenizer(self._model_id)
@@ -173,9 +262,12 @@ class SiglipEncoder:
         return self._logit_scale
 
     def encode_images(self, images: list[Image], *, batch_size: int = 32) -> np.ndarray:
+        if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size < 1:
+            raise ValueError("batch_size must be a positive integer")
         if not images:
             return np.empty((0, self.dim), dtype=np.float32)
         self._load()
+        batch_size = min(batch_size, self._max_batch_size)
         # Encode in fixed-size chunks so activation memory stays bounded regardless of how many
         # images are passed (a single stacked forward over a large catalog through a big backbone
         # would otherwise spike RAM and OOM). Per-chunk features move to CPU immediately.
@@ -186,14 +278,19 @@ class SiglipEncoder:
             with self._torch.no_grad():
                 feats = self._model.encode_image(batch.to(self._device))
             chunks.append(feats.cpu().numpy().astype(np.float32))
-        return l2_normalize(np.concatenate(chunks, axis=0))
+        return _validate_embeddings(l2_normalize(np.concatenate(chunks, axis=0)), self.dim)
 
     def encode_texts(self, texts: list[str]) -> np.ndarray:
+        if not texts:
+            return np.empty((0, self.dim), dtype=np.float32)
         self._load()
-        tokens = self._tokenizer(texts)
-        with self._torch.no_grad():
-            feats = self._model.encode_text(tokens.to(self._device))
-        return l2_normalize(feats.cpu().numpy().astype(np.float32))
+        chunks: list[np.ndarray] = []
+        for start in range(0, len(texts), self._max_batch_size):
+            tokens = self._tokenizer(texts[start : start + self._max_batch_size])
+            with self._torch.no_grad():
+                feats = self._model.encode_text(tokens.to(self._device))
+            chunks.append(feats.cpu().numpy().astype(np.float32))
+        return _validate_embeddings(l2_normalize(np.concatenate(chunks, axis=0)), self.dim)
 
     def unload(self) -> None:
         """Free the model weights so a peak-memory-bound caller can hold one encoder at a time.
