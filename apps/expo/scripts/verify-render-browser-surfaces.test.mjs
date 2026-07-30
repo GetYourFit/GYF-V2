@@ -1,10 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  DevToolsSession,
   invalidateClientReadiness,
   settledSurfaceState,
   verifyBrowserSurfaces,
 } from "./verify-render-browser-surfaces.mjs";
+
+class SilentWebSocket extends EventTarget {
+  constructor() {
+    super();
+    queueMicrotask(() => this.dispatchEvent(new Event("open")));
+  }
+
+  send() {}
+
+  close() {
+    this.dispatchEvent(new Event("close"));
+  }
+}
 
 const markers = {
   "/welcome": "Your AI stylist",
@@ -134,4 +148,21 @@ test("waits for protected routes to settle after client startup", () => {
   invalidateClientReadiness(document);
 
   assert.equal(settledSurfaceState(document, location, surface), null);
+});
+
+test("bounds CDP commands and rejects them when the connection closes", async () => {
+  const timedSession = new DevToolsSession("ws://test", {
+    WebSocketImpl: SilentWebSocket,
+    commandTimeout: 10,
+  });
+  await assert.rejects(timedSession.command("Page.navigate"), /command timed out: Page.navigate/);
+
+  const closedSession = new DevToolsSession("ws://test", {
+    WebSocketImpl: SilentWebSocket,
+    commandTimeout: 1_000,
+  });
+  const pending = closedSession.command("Runtime.evaluate");
+  await closedSession.open;
+  closedSession.close();
+  await assert.rejects(pending, /connection closed/);
 });

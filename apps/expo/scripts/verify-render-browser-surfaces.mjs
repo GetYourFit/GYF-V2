@@ -160,23 +160,40 @@ async function waitForDebugger(port, child) {
   throw new Error("Chrome DevTools page endpoint did not become ready");
 }
 
-class DevToolsSession {
-  constructor(url) {
-    this.socket = new WebSocket(url);
+export class DevToolsSession {
+  constructor(url, { WebSocketImpl = WebSocket, commandTimeout = 15_000 } = {}) {
+    this.socket = new WebSocketImpl(url);
+    this.commandTimeout = commandTimeout;
     this.nextId = 0;
     this.pending = new Map();
     this.events = [];
     this.errors = [];
     this.open = new Promise((resolve, reject) => {
       this.socket.addEventListener("open", resolve, { once: true });
-      this.socket.addEventListener("error", reject, { once: true });
+      this.socket.addEventListener(
+        "error",
+        () => reject(new Error("Chrome DevTools connection failed")),
+        { once: true },
+      );
+      this.socket.addEventListener(
+        "close",
+        () => reject(new Error("Chrome DevTools connection closed before opening")),
+        { once: true },
+      );
     });
+    this.socket.addEventListener("error", () =>
+      this.rejectPending(new Error("Chrome DevTools connection failed")),
+    );
+    this.socket.addEventListener("close", () =>
+      this.rejectPending(new Error("Chrome DevTools connection closed")),
+    );
     this.socket.addEventListener("message", (event) => {
       const message = JSON.parse(event.data);
       if (message.id) {
         const pending = this.pending.get(message.id);
         if (!pending) return;
         this.pending.delete(message.id);
+        clearTimeout(pending.timeout);
         if (message.error) pending.reject(new Error(message.error.message));
         else pending.resolve(message.result);
       } else {
@@ -196,12 +213,30 @@ class DevToolsSession {
     });
   }
 
+  rejectPending(error) {
+    for (const pending of this.pending.values()) {
+      clearTimeout(pending.timeout);
+      pending.reject(error);
+    }
+    this.pending.clear();
+  }
+
   async command(method, params = {}) {
     await this.open;
     const id = ++this.nextId;
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
-      this.socket.send(JSON.stringify({ id, method, params }));
+      const timeout = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`Chrome DevTools command timed out: ${method}`));
+      }, this.commandTimeout);
+      this.pending.set(id, { resolve, reject, timeout });
+      try {
+        this.socket.send(JSON.stringify({ id, method, params }));
+      } catch (error) {
+        clearTimeout(timeout);
+        this.pending.delete(id);
+        reject(error);
+      }
     });
   }
 
