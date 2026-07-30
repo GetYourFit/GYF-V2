@@ -185,7 +185,10 @@ export async function verifyAuthenticatedCoreLoop(config) {
     }
     const feedbackCount = requests.filter(({ url, status }) => url.endsWith("/feedback") && status === 202).length;
     await evaluate(`(() => { ${browserHelpers} click("Save look"); })()`);
-    await waitFor(() => textIncludes("Feedback recorded"), "save feedback was not rendered");
+    await waitFor(
+      () => evaluate(`document.querySelector('[aria-label="Feedback recorded"]')?.textContent.includes("Saved.") === true`),
+      "save feedback was not rendered",
+    );
     await waitFor(() => requests.filter(({ url, status }) => url.endsWith("/feedback") && status === 202).length > feedbackCount, "save feedback was not accepted");
 
     await evaluate(`(() => { ${browserHelpers} click("Explore"); })()`);
