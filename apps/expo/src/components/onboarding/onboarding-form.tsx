@@ -9,6 +9,7 @@ import { GyfText } from "@/components/ui/gyf-text";
 import { SettingsGroup } from "@/components/ui/settings-group";
 import { hitSlopFor, MIN_TARGET } from "@/components/ui/pressable-scale";
 import { ApiError, createApi } from "@/lib/api";
+import { getSession } from "@/lib/auth";
 import {
   DEFAULT_CONSENT,
   EMPTY_PROFILE,
@@ -152,6 +153,7 @@ export function OnboardingForm({ onSaved, onResumePersonalFit }: OnboardingFormP
   const [resumePersonalFit, setResumePersonalFit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -162,10 +164,14 @@ export function OnboardingForm({ onSaved, onResumePersonalFit }: OnboardingFormP
         throw cause;
       }),
       api.getConsent().catch(() => ({})),
-      loadOnboardingDraft(),
+      getSession(),
     ])
-      .then(([existing, flags, draft]) => {
+      .then(async ([existing, flags, session]) => {
         if (!active) return;
+        if (!session?.user.id) throw new Error("Your session expired. Sign in again.");
+        const draft = await loadOnboardingDraft(session.user.id);
+        if (!active) return;
+        setAccountId(session.user.id);
         const nextProfile = mergeProfile({ ...(draft?.profile ?? {}), ...(existing ?? {}) });
         if (existing || draft?.profile) setProfile(nextProfile);
         const nextConsent = { ...DEFAULT_CONSENT, ...(draft?.consent ?? {}), ...flags };
@@ -191,14 +197,14 @@ export function OnboardingForm({ onSaved, onResumePersonalFit }: OnboardingFormP
   }, [loadAttempt, onResumePersonalFit]);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !accountId) return;
     const draft: OnboardingDraft = {
       consent,
       profile,
       step: resumePersonalFit ? "personal-fit" : "profile",
     };
-    void saveOnboardingDraft(draft);
-  }, [consent, loading, profile, resumePersonalFit]);
+    void saveOnboardingDraft(accountId, draft);
+  }, [accountId, consent, loading, profile, resumePersonalFit]);
 
   function update<K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) {
     setProfile((current) => ({ ...current, [key]: value }));

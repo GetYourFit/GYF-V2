@@ -8,6 +8,7 @@ import { ConfidenceLabel } from "@/components/ui/confidence-label";
 import { GyfText } from "@/components/ui/gyf-text";
 import * as haptics from "@/lib/haptics";
 import { ApiError, createApi } from "@/lib/api";
+import { getSession } from "@/lib/auth";
 import { DEFAULT_CONSENT, mergeProfile } from "@/lib/onboarding-validation";
 import {
   clearOnboardingDraft,
@@ -124,6 +125,7 @@ export function PersonalFitForm({ mode, onBack, onSaved }: PersonalFitFormProps)
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -134,10 +136,14 @@ export function PersonalFitForm({ mode, onBack, onSaved }: PersonalFitFormProps)
       }),
       api.getConsent().catch(() => ({})),
       api.systemStatus().catch(() => null),
-      loadOnboardingDraft(),
+      getSession(),
     ])
-      .then(([existing, flags, status, draft]) => {
+      .then(async ([existing, flags, status, session]) => {
         if (!active) return;
+        if (!session?.user.id) throw new Error("Your session expired. Sign in again.");
+        const draft = await loadOnboardingDraft(session.user.id);
+        if (!active) return;
+        setAccountId(session.user.id);
         // In create mode the draft is deliberately allowed to restore unsaved manual
         // choices after refresh. Server values remain authoritative in edit mode.
         const merged = mergeProfile(
@@ -192,7 +198,7 @@ export function PersonalFitForm({ mode, onBack, onSaved }: PersonalFitFormProps)
   }, [api, loadAttempt, mode]);
 
   useEffect(() => {
-    if (loading || mode !== "create" || !profile) return;
+    if (loading || mode !== "create" || !profile || !accountId) return;
     const draft: OnboardingDraft = {
       consent,
       personal_fit: {
@@ -210,8 +216,8 @@ export function PersonalFitForm({ mode, onBack, onSaved }: PersonalFitFormProps)
       },
       step: "personal-fit",
     };
-    void saveOnboardingDraft(draft);
-  }, [budgetInputs, consent, fields, loading, mode, profile]);
+    void saveOnboardingDraft(accountId, draft);
+  }, [accountId, budgetInputs, consent, fields, loading, mode, profile]);
 
   async function selectPhoto(source: "camera" | "library") {
     if (photoBusy) return;
@@ -364,7 +370,7 @@ export function PersonalFitForm({ mode, onBack, onSaved }: PersonalFitFormProps)
         budget_range,
       };
       await api.putProfile(input);
-      await clearOnboardingDraft();
+      await clearOnboardingDraft(accountId);
       haptics.success();
       onSaved();
     } catch (cause) {

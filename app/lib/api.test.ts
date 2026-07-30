@@ -235,6 +235,36 @@ describe("GyfApi", () => {
     expect((err as DOMException).name).toBe("AbortError");
   });
 
+  it("reports a progress upload timeout instead of user cancellation", async () => {
+    vi.useFakeTimers();
+    class SynchronousAbortXhr {
+      upload = {};
+      onabort: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      onload: (() => void) | null = null;
+      open() {}
+      setRequestHeader() {}
+      send() {}
+      abort() {
+        this.onabort?.();
+      }
+    }
+    vi.stubGlobal("XMLHttpRequest", SynchronousAbortXhr);
+    try {
+      const upload = new GyfApi(() => "jwt", "http://api").uploadPhoto(
+        new Blob(["photo"], { type: "image/jpeg" }) as File,
+        undefined,
+        () => undefined,
+      );
+      await vi.advanceTimersByTimeAsync(60_000);
+      const error = await upload.catch((cause: unknown) => cause);
+      expect((error as DOMException).name).toBe("TimeoutError");
+      expect((error as DOMException).message).toBe("Upload timed out");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("still retries a safe GET after a gateway failure", async () => {
     vi.spyOn(globalThis, "setTimeout").mockImplementation(((callback: () => void) => {
       callback();

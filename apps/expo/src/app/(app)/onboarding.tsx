@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { OnboardingForm } from "@/components/onboarding/onboarding-form";
 import { PersonalFitForm } from "@/components/onboarding/personal-fit-form";
 import { setOnboardingDraftStep } from "@/lib/onboarding-draft";
+import { getSession } from "@/lib/auth";
 
 type Step = "profile" | "personal-fit";
 
@@ -17,7 +18,9 @@ export default function OnboardingRoute() {
 
   const showPersonalFit = useCallback(() => setStep("personal-fit"), []);
   const showProfile = useCallback(() => {
-    void setOnboardingDraftStep("profile");
+    void getSession().then((session) => {
+      if (session?.user.id) return setOnboardingDraftStep(session.user.id, "profile");
+    });
     setStep("profile");
   }, []);
 

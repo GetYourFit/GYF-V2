@@ -10,6 +10,7 @@ import {
 
 import { clearAuthStorage, secureStorage, type AuthStorage, AUTH_STORAGE_KEY } from "./storage";
 import { readSupabaseEnv, type SupabaseEnv } from "./auth-config";
+import { clearOnboardingDraft } from "./onboarding-draft";
 
 export { readSupabaseEnv } from "./auth-config";
 export type { SupabaseEnv } from "./auth-config";
@@ -132,12 +133,13 @@ export async function updatePassword(password: string): Promise<UserResponse["da
 }
 
 export async function signOut(): Promise<void> {
+  const accountId = (await getSession().catch(() => null))?.user.id ?? null;
   try {
     const { error } = await getSupabaseClient().auth.signOut({ scope: "global" });
     if (error) throw error;
   } finally {
     sessionRequest = null;
-    await clearAuthStorage();
+    await Promise.all([clearAuthStorage(), clearOnboardingDraft(accountId)]);
   }
 }
 
