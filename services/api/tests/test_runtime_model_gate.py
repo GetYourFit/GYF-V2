@@ -157,6 +157,29 @@ def test_encoder_provider_rejects_configured_uri_mismatch(monkeypatch):
     assert deps.get_text_embedder() is None
 
 
+@pytest.mark.parametrize(
+    ("failure", "failure_kind"),
+    [
+        (ImportError("perception runtime is not installed"), "import"),
+        (ValueError("encoder configuration is invalid"), "config"),
+        (TimeoutError("encoder workspace is unavailable"), "remote-init"),
+    ],
+)
+def test_optional_encoder_construction_failures_abstain(monkeypatch, failure, failure_kind):
+    """Optional encoder construction must fail closed before the route is entered."""
+    from app import dependencies as deps
+    from app.catalog import perception_adapter
+
+    monkeypatch.setattr(deps, "runtime_model_verdict", lambda runtime, **_: (True, []))
+
+    def construct_encoder():
+        raise failure
+
+    monkeypatch.setattr(perception_adapter, "cached_text_embedder", construct_encoder)
+
+    assert deps.get_text_embedder() is None, failure_kind
+
+
 def test_dependency_providers_construct_only_registry_approved_models(monkeypatch):
     from app import dependencies as deps
     from app.catalog import perception_adapter
