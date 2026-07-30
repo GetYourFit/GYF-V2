@@ -107,12 +107,15 @@ def get_search_repo() -> VectorSearchRepository:
 
 def get_text_embedder() -> TextEmbedder | None:
     """The SigLIP text-query embedder from the ML runtime, or ``None`` when the
-    ML/torch stack is not installed in this runtime.
+    encoder is unavailable — the ML/torch stack is not installed, its
+    configuration is invalid, or remote initialization fails.
 
     Imported lazily so the API needs the stack only when text search is served.
     Returning ``None`` (rather than raising) lets ``/items/search`` fall back to a
     keyword title match, so search keeps working on the encoder-less prod image
-    instead of 503-ing.
+    instead of 503-ing. Construction failures are caught broadly (not just
+    ``ImportError``) so any capability-probe failure fails closed to the lexical
+    fallback instead of escaping dependency resolution as an unhandled 500.
 
     Wrapped in the shared query-embedding cache (F2.5): a repeated query never pays
     the remote encode again, so search is a pgvector scan instead of a GPU round trip.
